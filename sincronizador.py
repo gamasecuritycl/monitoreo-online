@@ -1,7 +1,4 @@
-import time
-import pyodbc
-import shutil
-import os
+import time, pyodbc, shutil, os
 from supabase import create_client
 
 URL = "https://onxwyrwmpjxtwlmjrosr.supabase.co"
@@ -14,58 +11,60 @@ password = 'Administ'
 
 def get_ultimo_mdb():
     archivos = [f for f in os.listdir(CARPETA_EVENTOS) if f.upper().endswith('.MDB')]
-    if not archivos:
-        return None
+    if not archivos: return None
     archivos.sort(key=lambda f: os.path.getmtime(os.path.join(CARPETA_EVENTOS, f)), reverse=True)
     return os.path.join(CARPETA_EVENTOS, archivos[0])
 
 def sincronizar():
-    print("--- Verificando nuevos eventos en Scorpion ---")
+    print("--- Verificando nuevos eventos ---")
     ruta_original = get_ultimo_mdb()
     if not ruta_original:
-        print("No se encontraron archivos .MDB en EVENTOS")
+        print("No hay archivos .MDB")
         return
 
     print(f"Archivo: {os.path.basename(ruta_original)}")
     try:
-        if os.path.exists(ruta_copia):
-            os.remove(ruta_copia)
+        if os.path.exists(ruta_copia): os.remove(ruta_copia)
         shutil.copy2(ruta_original, ruta_copia)
 
         conn_str = f'DRIVER={{Microsoft Access Driver (*.mdb, *.accdb)}};DBQ={ruta_copia};PWD={password};ReadOnly=1;'
         conn = pyodbc.connect(conn_str)
         cursor = conn.cursor()
-
         cursor.execute("SELECT * FROM EVENTOS ORDER BY HORA DESC")
-        registros = cursor.fetchall()
+        rows = cursor.fetchall()
         conn.close()
 
         nuevos = 0
-        for row in registros:
-            evento_data = {
-                "fecha_hora": str(row.HORA),
-                "cuenta": str(row.CUENTA),
-                "nombre_abonado": str(row.NOMBRE),
-                "evento": str(row.EVENTO),
-                "zona": str(row.ZONA),
-                "usuario": str(row.USUARIO)
+        for row in rows:
+            dia = str(row[0])
+            hora = str(row[1])
+            partes = dia.split('-')
+            if len(partes) == 3:
+                fecha_hora = f'{partes[2]}-{partes[1]}-{partes[0]}T{hora}'
+            else:
+                fecha_hora = hora
+
+            data = {
+                "fecha_hora": fecha_hora,
+                "cuenta": str(row[2]),
+                "nombre_abonado": str(row[3]),
+                "evento": str(row[4]),
+                "zona": str(row[6]),
+                "usuario": str(row[7])
             }
             try:
-                supabase.table("eventos_monitoreo").insert(evento_data).execute()
+                supabase.table("eventos_monitoreo").insert(data).execute()
                 nuevos += 1
-                print(f"  + {row.CUENTA} - {row.EVENTO}")
             except Exception:
                 pass
 
-        print(f"Sincronizados: {nuevos} nuevos eventos")
+        print(f"  Nuevos: {nuevos} eventos")
 
     except Exception as e:
-        print(f"ERROR: {e}")
+        print(f"  ERROR: {e}")
 
-    if os.path.exists(ruta_copia):
-        os.remove(ruta_copia)
-
-    print("--- Ciclo finalizado. Esperando 30 segundos ---")
+    if os.path.exists(ruta_copia): os.remove(ruta_copia)
+    print("--- Esperando 30 segundos ---")
 
 while True:
     sincronizar()
