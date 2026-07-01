@@ -5,19 +5,16 @@ import type { EventoMonitoreo } from '@/lib/supabase'
 interface EventRowProps {
   evento: EventoMonitoreo
   onClick: () => void
+  isLast: boolean
 }
 
-function getSignalStyle(evento: string): { color: string; badge: string } {
+function getSignalColor(evento: string): string {
   const upper = evento.toUpperCase()
-  if (upper.includes('ROBO') || upper.includes('PANICO') || upper.includes('INCENDIO'))
-    return { color: '#FF4D4D', badge: 'bg-[#FF4D4D]' }
-  if (upper.includes('CIERRE'))
-    return { color: '#3B82F6', badge: 'bg-[#3B82F6]' }
-  if (upper.includes('APERTURA'))
-    return { color: '#22C55E', badge: 'bg-[#22C55E]' }
-  if (upper.includes('AUTOTEST'))
-    return { color: '#9CA3AF', badge: 'bg-[#9CA3AF]' }
-  return { color: '#64748b', badge: 'bg-slate-500' }
+  if (upper.includes('ROBO') || upper.includes('PANICO') || upper.includes('INCENDIO')) return '#FF4D4D'
+  if (upper.includes('CIERRE')) return '#3B82F6'
+  if (upper.includes('APERTURA')) return '#22C55E'
+  if (upper.includes('AUTOTEST')) return '#9CA3AF'
+  return '#64748b'
 }
 
 function formatFecha(iso: string): string {
@@ -26,38 +23,38 @@ function formatFecha(iso: string): string {
   return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
 }
 
-export default function EventRow({ evento, onClick }: EventRowProps) {
-  const signal = getSignalStyle(evento.evento)
+export default function EventRow({ evento, onClick, isLast }: EventRowProps) {
+  const signalColor = getSignalColor(evento.evento)
 
   return (
-    <div
+    <tr
       onClick={onClick}
-      className="flex cursor-pointer hover:brightness-110 transition-all"
+      className="cursor-pointer bg-white hover:bg-blue-50/50 transition-colors"
     >
-      <div className="px-3 py-1.5 text-[11px] text-slate-600 font-mono whitespace-nowrap border-r border-[#334155] bg-white" style={{ width: '150px', minWidth: '150px' }}>
+      <td className={`px-3 py-2 text-[11px] font-mono text-slate-600 whitespace-nowrap border-b border-blue-200 ${isLast ? '' : ''} border-r border-blue-100`}>
         {formatFecha(evento.fecha_hora)}
-      </div>
-      <div className="px-3 py-1.5 text-[11px] font-semibold text-slate-700 font-mono border-r border-[#334155] bg-white" style={{ width: '70px', minWidth: '70px' }}>
+      </td>
+      <td className={`px-3 py-2 text-[11px] font-mono font-semibold text-slate-800 border-b border-blue-200 ${isLast ? '' : ''} border-r border-blue-100`}>
         {evento.cuenta}
-      </div>
-      <div className="px-3 py-1.5 text-[11px] text-slate-600 truncate border-r border-[#334155] bg-white" style={{ flex: 1, minWidth: 0 }}>
+      </td>
+      <td className={`px-3 py-2 text-[11px] font-mono text-slate-600 truncate max-w-[200px] border-b border-blue-200 ${isLast ? '' : ''} border-r border-blue-100`}>
         {evento.nombre_abonado}
-      </div>
-      <div className="px-3 py-1.5 text-[11px] font-semibold font-mono whitespace-nowrap border-r border-[#334155] bg-white" style={{ width: '130px', minWidth: '130px', color: signal.color }}>
+      </td>
+      <td className={`px-3 py-2 text-[11px] font-mono font-semibold whitespace-nowrap border-b border-blue-200 ${isLast ? '' : ''} border-r border-blue-100`} style={{ color: signalColor }}>
         {evento.evento}
-      </div>
-      <div className="px-3 py-1.5 text-[11px] text-slate-500 font-mono border-r border-[#334155] bg-white" style={{ width: '50px', minWidth: '50px' }}>
+      </td>
+      <td className={`px-3 py-2 text-[11px] font-mono text-slate-500 border-b border-blue-200 ${isLast ? '' : ''} border-r border-blue-100`}>
         {evento.zona}
-      </div>
-      <div className="px-3 py-1.5 text-[11px] text-slate-400 font-mono border-r border-[#334155] bg-white" style={{ width: '50px', minWidth: '50px' }}>
+      </td>
+      <td className={`px-3 py-2 text-[11px] font-mono text-slate-400 border-b border-blue-200 ${isLast ? '' : ''} border-r border-blue-100`}>
         --
-      </div>
-      <div className="px-3 py-1.5 text-[11px] text-slate-500 font-mono border-r border-[#334155] bg-white" style={{ width: '60px', minWidth: '60px' }}>
+      </td>
+      <td className={`px-3 py-2 text-[11px] font-mono text-slate-500 border-b border-blue-200 ${isLast ? '' : ''} border-r border-blue-100`}>
         {evento.usuario}
-      </div>
-      <div className="px-3 py-1.5 text-[11px] text-slate-400 font-mono bg-white" style={{ width: '60px', minWidth: '60px' }}>
+      </td>
+      <td className={`px-3 py-2 text-[11px] font-mono text-slate-400 border-b border-blue-200`}>
         --
-      </div>
-    </div>
+      </td>
+    </tr>
   )
 }
