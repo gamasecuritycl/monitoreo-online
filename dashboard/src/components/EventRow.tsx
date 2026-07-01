@@ -7,19 +7,17 @@ interface EventRowProps {
   onClick: () => void
 }
 
-function getSignalColor(evento: string): string {
+function getSignalStyle(evento: string): { color: string; badge: string } {
   const upper = evento.toUpperCase()
-  if (upper.includes('ROBO') || upper.includes('PANICO') || upper.includes('INCENDIO')) return 'text-[#FF4D4D] font-bold'
-  if (upper.includes('CIERRE')) return 'text-[#3B82F6]'
-  if (upper.includes('APERTURA')) return 'text-[#22C55E]'
-  if (upper.includes('AUTOTEST')) return 'text-[#9CA3AF]'
-  return 'text-slate-300'
-}
-
-function getRowBg(evento: string): string {
-  const upper = evento.toUpperCase()
-  if (upper.includes('ROBO') || upper.includes('PANICO') || upper.includes('INCENDIO')) return 'bg-[#FF4D4D]/5'
-  return ''
+  if (upper.includes('ROBO') || upper.includes('PANICO') || upper.includes('INCENDIO'))
+    return { color: '#FF4D4D', badge: 'bg-[#FF4D4D]' }
+  if (upper.includes('CIERRE'))
+    return { color: '#3B82F6', badge: 'bg-[#3B82F6]' }
+  if (upper.includes('APERTURA'))
+    return { color: '#22C55E', badge: 'bg-[#22C55E]' }
+  if (upper.includes('AUTOTEST'))
+    return { color: '#9CA3AF', badge: 'bg-[#9CA3AF]' }
+  return { color: '#64748b', badge: 'bg-slate-500' }
 }
 
 function formatFecha(iso: string): string {
@@ -29,22 +27,37 @@ function formatFecha(iso: string): string {
 }
 
 export default function EventRow({ evento, onClick }: EventRowProps) {
-  const signalColor = getSignalColor(evento.evento)
-  const rowBg = getRowBg(evento.evento)
+  const signal = getSignalStyle(evento.evento)
 
   return (
-    <tr
+    <div
       onClick={onClick}
-      className={`cursor-pointer border-b border-[#1a2340]/50 hover:bg-blue-500/5 transition-colors ${rowBg}`}
+      className="flex cursor-pointer hover:brightness-110 transition-all"
     >
-      <td className="px-3 py-1 text-slate-400 whitespace-nowrap">{formatFecha(evento.fecha_hora)}</td>
-      <td className="px-3 py-1 text-slate-200 font-semibold">{evento.cuenta}</td>
-      <td className="px-3 py-1 text-slate-300 truncate max-w-[200px]">{evento.nombre_abonado}</td>
-      <td className={`px-3 py-1 whitespace-nowrap ${signalColor}`}>{evento.evento}</td>
-      <td className="px-3 py-1 text-slate-400">{evento.zona}</td>
-      <td className="px-3 py-1 text-slate-600">--</td>
-      <td className="px-3 py-1 text-slate-400">{evento.usuario}</td>
-      <td className="px-3 py-1 text-slate-600">--</td>
-    </tr>
+      <div className="px-3 py-1.5 text-[11px] text-slate-600 font-mono whitespace-nowrap border-r border-[#334155] bg-white" style={{ width: '150px', minWidth: '150px' }}>
+        {formatFecha(evento.fecha_hora)}
+      </div>
+      <div className="px-3 py-1.5 text-[11px] font-semibold text-slate-700 font-mono border-r border-[#334155] bg-white" style={{ width: '70px', minWidth: '70px' }}>
+        {evento.cuenta}
+      </div>
+      <div className="px-3 py-1.5 text-[11px] text-slate-600 truncate border-r border-[#334155] bg-white" style={{ flex: 1, minWidth: 0 }}>
+        {evento.nombre_abonado}
+      </div>
+      <div className="px-3 py-1.5 text-[11px] font-semibold font-mono whitespace-nowrap border-r border-[#334155] bg-white" style={{ width: '130px', minWidth: '130px', color: signal.color }}>
+        {evento.evento}
+      </div>
+      <div className="px-3 py-1.5 text-[11px] text-slate-500 font-mono border-r border-[#334155] bg-white" style={{ width: '50px', minWidth: '50px' }}>
+        {evento.zona}
+      </div>
+      <div className="px-3 py-1.5 text-[11px] text-slate-400 font-mono border-r border-[#334155] bg-white" style={{ width: '50px', minWidth: '50px' }}>
+        --
+      </div>
+      <div className="px-3 py-1.5 text-[11px] text-slate-500 font-mono border-r border-[#334155] bg-white" style={{ width: '60px', minWidth: '60px' }}>
+        {evento.usuario}
+      </div>
+      <div className="px-3 py-1.5 text-[11px] text-slate-400 font-mono bg-white" style={{ width: '60px', minWidth: '60px' }}>
+        --
+      </div>
+    </div>
   )
 }

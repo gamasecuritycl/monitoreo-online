@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { supabase, type EventoMonitoreo } from '@/lib/supabase'
 import EventGrid from './EventGrid'
 import FooterActions from './FooterActions'
@@ -12,7 +12,6 @@ export default function ScorpionDashboard() {
   const [busqueda, setBusqueda] = useState('')
   const [eventoSeleccionado, setEventoSeleccionado] = useState<EventoMonitoreo | null>(null)
   const [modalActivo, setModalActivo] = useState<string | null>(null)
-  const scrollRef = useRef<HTMLDivElement>(null)
 
   const fetchEventos = useCallback(async () => {
     try {
@@ -20,14 +19,14 @@ export default function ScorpionDashboard() {
         .from('eventos_monitoreo')
         .select('*')
         .order('fecha_hora', { ascending: false })
-        .limit(200)
+        .limit(20)
 
       if (busqueda.trim()) {
         query = query.or(`cuenta.ilike.%${busqueda}%,nombre_abonado.ilike.%${busqueda}%`)
       }
 
       const { data } = await query
-      if (data) setEventos(data.reverse())
+      if (data) setEventos(data)
     } catch (err) {
       console.error('Error:', err)
     }
@@ -42,12 +41,6 @@ export default function ScorpionDashboard() {
       .subscribe()
     return () => { supabase.removeChannel(channel) }
   }, [fetchEventos])
-
-  useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight
-    }
-  }, [eventos])
 
   return (
     <div className="h-screen flex flex-col bg-[#0a0e1a] text-white overflow-hidden select-none">
@@ -74,12 +67,14 @@ export default function ScorpionDashboard() {
         </div>
       </header>
 
-      {/* Event Grid */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto">
-        <EventGrid
-          eventos={eventos}
-          onEventClick={(e) => setEventoSeleccionado(e)}
-        />
+      {/* Event Grid - Centered Square */}
+      <div className="flex-1 flex items-center justify-center p-4">
+        <div className="w-full max-w-[1100px]">
+          <EventGrid
+            eventos={eventos}
+            onEventClick={(e) => setEventoSeleccionado(e)}
+          />
+        </div>
       </div>
 
       {/* Expediente Modal */}
