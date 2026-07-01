@@ -1,1 +1,29 @@
 credentials.txt
+
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Next.js
+.next/
+out/
+
+# Build
+build/
+dist/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Database files (too large for git)
+BASES DE DATOS/**/*.MDB
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Vercel
+.vercel
