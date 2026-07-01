@@ -1,73 +1,34 @@
 @import "tailwindcss";
 
-:root {
-  --bg-primary: #0f172a;
-  --bg-secondary: #1e293b;
-  --bg-card: #1e293b;
-  --text-primary: #f8fafc;
-  --text-secondary: #94a3b8;
-  --border-color: #334155;
-  --accent: #3b82f6;
-  --red: #FF4D4D;
-  --blue: #3B82F6;
-  --green: #22C55E;
-  --gray: #9CA3AF;
-}
-
 * {
   box-sizing: border-box;
 }
 
 body {
-  background-color: var(--bg-primary);
-  color: var(--text-primary);
+  background-color: #0a0e1a;
+  color: #f8fafc;
   font-family: 'Geist', system-ui, sans-serif;
 }
 
-/* Custom scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: #0a0e1a; }
+::-webkit-scrollbar-thumb { background: #1a2340; border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: #2a3a5a; }
 
-::-webkit-scrollbar-track {
-  background: var(--bg-primary);
-}
-
-::-webkit-scrollbar-thumb {
-  background: var(--border-color);
-  border-radius: 3px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #475569;
-}
-
-/* Pulse animation for live indicator */
-@keyframes pulse-live {
+@keyframes pulse {
   0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+  50% { opacity: 0.4; }
 }
 
-.animate-pulse-live {
-  animation: pulse-live 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
-/* Row hover effect */
-.event-row {
-  transition: background-color 0.15s ease;
-}
-
-.event-row:hover {
-  background-color: rgba(59, 130, 246, 0.08);
-}
-
-/* Fade in animation */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(-4px); }
-  to { opacity: 1; transform: translateY(0); }
+@keyframes fade-in {
+  from { opacity: 0; transform: scale(0.95) translateY(-8px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
 }
 
 .animate-fade-in {
-  animation: fadeIn 0.3s ease-out;
+  animation: fade-in 0.2s ease-out;
 }

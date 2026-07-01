@@ -1,64 +1,50 @@
 'use client'
 
-import StatusBadge from './StatusBadge'
 import type { EventoMonitoreo } from '@/lib/supabase'
 
 interface EventRowProps {
   evento: EventoMonitoreo
+  onClick: () => void
 }
 
-function getRowBorderClass(tipo: string): string {
-  switch (tipo) {
-    case 'ALARMA DE ROBO':
-    case 'PANICO':
-    case 'INCENDIO':
-      return 'border-l-[#FF4D4D]'
-    case 'CIERRE':
-    case 'CIERRE ESPECIAL':
-      return 'border-l-[#3B82F6]'
-    case 'APERTURA':
-      return 'border-l-[#22C55E]'
-    case 'AUTOTEST':
-      return 'border-l-[#9CA3AF]'
-    default:
-      return 'border-l-slate-600'
-  }
+function getSignalColor(evento: string): string {
+  const upper = evento.toUpperCase()
+  if (upper.includes('ROBO') || upper.includes('PANICO') || upper.includes('INCENDIO')) return 'text-[#FF4D4D] font-bold'
+  if (upper.includes('CIERRE')) return 'text-[#3B82F6]'
+  if (upper.includes('APERTURA')) return 'text-[#22C55E]'
+  if (upper.includes('AUTOTEST')) return 'text-[#9CA3AF]'
+  return 'text-slate-300'
 }
 
-function formatFecha(fechaISO: string): string {
-  const fecha = new Date(fechaISO)
-  const dia = fecha.getDate().toString().padStart(2, '0')
-  const mes = (fecha.getMonth() + 1).toString().padStart(2, '0')
-  const anio = fecha.getFullYear()
-  const horas = fecha.getHours().toString().padStart(2, '0')
-  const mins = fecha.getMinutes().toString().padStart(2, '0')
-  const segs = fecha.getSeconds().toString().padStart(2, '0')
-  return `${dia}/${mes}/${anio} ${horas}:${mins}:${segs}`
+function getRowBg(evento: string): string {
+  const upper = evento.toUpperCase()
+  if (upper.includes('ROBO') || upper.includes('PANICO') || upper.includes('INCENDIO')) return 'bg-[#FF4D4D]/5'
+  return ''
 }
 
-export default function EventRow({ evento }: EventRowProps) {
-  const borderClass = getRowBorderClass(evento.tipo_evento)
-  
+function formatFecha(iso: string): string {
+  const d = new Date(iso)
+  const pad = (n: number) => n.toString().padStart(2, '0')
+  return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
+}
+
+export default function EventRow({ evento, onClick }: EventRowProps) {
+  const signalColor = getSignalColor(evento.evento)
+  const rowBg = getRowBg(evento.evento)
+
   return (
-    <tr className={`event-row border-l-4 ${borderClass} border-b border-slate-700/50`}>
-      <td className="px-4 py-3 text-sm text-slate-300 font-mono whitespace-nowrap">
-        {formatFecha(evento.fecha_hora)}
-      </td>
-      <td className="px-4 py-3 text-sm text-slate-200 font-semibold">
-        {evento.cuenta}
-      </td>
-      <td className="px-4 py-3 text-sm text-slate-200">
-        {evento.nombre_abonado}
-      </td>
-      <td className="px-4 py-3 text-sm text-slate-400">
-        {evento.zona}
-      </td>
-      <td className="px-4 py-3 text-sm text-slate-300">
-        {evento.evento}
-      </td>
-      <td className="px-4 py-3">
-        <StatusBadge tipo={evento.tipo_evento} />
-      </td>
+    <tr
+      onClick={onClick}
+      className={`cursor-pointer border-b border-[#1a2340]/50 hover:bg-blue-500/5 transition-colors ${rowBg}`}
+    >
+      <td className="px-3 py-1 text-slate-400 whitespace-nowrap">{formatFecha(evento.fecha_hora)}</td>
+      <td className="px-3 py-1 text-slate-200 font-semibold">{evento.cuenta}</td>
+      <td className="px-3 py-1 text-slate-300 truncate max-w-[200px]">{evento.nombre_abonado}</td>
+      <td className={`px-3 py-1 whitespace-nowrap ${signalColor}`}>{evento.evento}</td>
+      <td className="px-3 py-1 text-slate-400">{evento.zona}</td>
+      <td className="px-3 py-1 text-slate-600">--</td>
+      <td className="px-3 py-1 text-slate-400">{evento.usuario}</td>
+      <td className="px-3 py-1 text-slate-600">--</td>
     </tr>
   )
 }

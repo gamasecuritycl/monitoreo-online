@@ -1,5 +1,5 @@
-import CommandCenter from '@/components/CommandCenter'
+import ScorpionDashboard from '@/components/ScorpionDashboard'
 
 export default function Home() {
-  return <CommandCenter />
+  return <ScorpionDashboard />
 }
