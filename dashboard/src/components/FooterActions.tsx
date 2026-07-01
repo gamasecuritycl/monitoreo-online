@@ -20,16 +20,17 @@ const BOTONES = [
 
 export default function FooterActions({ onModalOpen }: FooterActionsProps) {
   return (
-    <footer className="shrink-0 bg-[#0d1225] border-t border-[#1a2340] px-2 py-1.5">
-      <div className="flex items-center justify-center gap-1">
+    <footer className="shrink-0 bg-[#0d1117] border-t border-[#2a2a4a] px-3 py-2">
+      <div className="flex items-center justify-center gap-1.5 flex-wrap">
         {BOTONES.map((btn) => (
           <button
             key={btn.id}
             onClick={() => onModalOpen(btn.id)}
-            className="flex flex-col items-center gap-0.5 px-3 py-1 rounded text-[10px] text-slate-500 hover:text-slate-200 hover:bg-blue-500/10 hover:border-blue-500/30 border border-transparent transition-all min-w-[56px]"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#e8e8e8] hover:bg-[#d4d4d4] active:bg-[#c0c0c0] border border-[#8a8a8a] rounded shadow-sm text-[11px] text-[#1a1a1a] font-medium transition-all min-w-[68px] select-none"
+            style={{ fontFamily: "'Segoe UI', 'Tahoma', sans-serif" }}
           >
-            <span className="text-sm">{btn.icon}</span>
-            <span className="tracking-wider uppercase">{btn.label}</span>
+            <span className="text-sm leading-none">{btn.icon}</span>
+            <span>{btn.label}</span>
           </button>
         ))}
       </div>
