@@ -19,6 +19,7 @@ Thumbs.db
 
 # Database files (too large for git)
 BASES DE DATOS/**/*.MDB
+*_TEMP.MDB
 
 # Environment
 .env
