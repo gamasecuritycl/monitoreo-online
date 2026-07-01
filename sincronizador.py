@@ -12,7 +12,7 @@ password = 'Administ'
 def get_ultimo_mdb():
     archivos = [f for f in os.listdir(CARPETA_EVENTOS) if f.upper().endswith('.MDB')]
     if not archivos: return None
-    archivos.sort(key=lambda f: os.path.getmtime(os.path.join(CARPETA_EVENTOS, f)), reverse=True)
+    archivos.sort(reverse=True)
     return os.path.join(CARPETA_EVENTOS, archivos[0])
 
 def sincronizar():
