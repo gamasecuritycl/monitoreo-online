@@ -10,7 +10,8 @@ echo.
 echo Deteniendo y eliminando tarea programada...
 
 schtasks /end /tn "GAMA_Sincronizador" >nul 2>&1
-schtasks /delete /tn "GAMA_Sincronizador" /f
+schtasks /delete /tn "GAMA_Sincronizador" /f >nul 2>&1
+reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Run" /v "GAMA_Sincronizador" /f >nul 2>&1
 
 echo.
 echo Deteniendo proceso pythonw.exe...

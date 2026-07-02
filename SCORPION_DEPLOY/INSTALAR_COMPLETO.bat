@@ -46,26 +46,28 @@ copy /Y "%~dp0sincronizador.py"      "%DESTINO%\sincronizador.py"      >nul
 copy /Y "%~dp0iniciar_silencioso.vbs" "%DESTINO%\iniciar_silencioso.vbs" >nul
 echo OK.
 
-:: ---- Registrar tarea en el Programador de Windows ----
+:: ---- Registrar en el Registro de Windows (Inicio Automático) ----
 echo.
-echo [4/5] Registrando tarea de inicio automatico...
+echo [4/5] Registrando inicio automatico en el Registro de Windows...
 
-:: Eliminar tarea previa si existe
+:: Eliminar tarea programada anterior para evitar conflictos
 schtasks /delete /tn "%TAREA%" /f >nul 2>&1
 
-:: Crear nueva tarea: arranca con el sistema, para cualquier usuario
-schtasks /create ^
-  /tn "%TAREA%" ^
-  /tr "wscript.exe \"%DESTINO%\iniciar_silencioso.vbs\"" ^
-  /sc ONLOGON ^
-  /rl HIGHEST ^
-  /f
+:: Agregar clave Run al Registro de Windows para el usuario actual
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Run" /v "%TAREA%" /t REG_SZ /d "wscript.exe \"%DESTINO%\iniciar_silencioso.vbs\"" /f >nul
+if %ERRORLEVEL% NEQ 0 (
+    echo [ERROR] No se pudo registrar en el Registro de Windows.
+    pause
+    exit /b 1
+)
 echo OK.
 
 :: ---- Iniciar ahora mismo ----
 echo.
-echo [5/5] Iniciando el sincronizador ahora...
-schtasks /run /tn "%TAREA%"
+echo [5/5] Iniciando el sincronizador en segundo plano...
+:: Matar procesos pythonw o wscript anteriores que estén corriendo de este script
+taskkill /IM wscript.exe /FI "WINDOWTITLE eq %TAREA%*" /F >nul 2>&1
+start "" wscript.exe "%DESTINO%\iniciar_silencioso.vbs"
 echo OK.
 
 echo.

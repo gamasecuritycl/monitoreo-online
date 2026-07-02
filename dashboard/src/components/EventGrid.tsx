@@ -10,14 +10,8 @@ interface EventGridProps {
 }
 
 export default function EventGrid({ eventos, onEventClick }: EventGridProps) {
-  const bottomRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [eventos.length])
-
   return (
-    <div className="w-full h-full overflow-y-auto bg-[#070b13]">
+    <div className="w-full h-full overflow-auto bg-[#070b13]">
       <table className="w-full border-collapse" style={{ fontFamily: "'Consolas', 'Courier New', monospace" }}>
         <thead className="sticky top-0 z-10">
           <tr className="bg-[#111827]">
@@ -45,7 +39,6 @@ export default function EventGrid({ eventos, onEventClick }: EventGridProps) {
           )}
         </tbody>
       </table>
-      <div ref={bottomRef} />
     </div>
   )
 }
