@@ -4,7 +4,7 @@ import type { EventoMonitoreo } from '@/lib/supabase'
 
 interface EventRowProps {
   evento: EventoMonitoreo
-  onClick: () => void
+  onClick?: () => void
 }
 
 function getSeverity(evento: string): { color: string; bg: string } {

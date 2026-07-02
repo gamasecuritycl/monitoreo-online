@@ -8,10 +8,10 @@ interface StatsBarProps {
 
 export default function StatsBar({ eventos }: StatsBarProps) {
   const total = eventos.length
-  const alertas = eventos.filter(e => ['ALARMA DE ROBO', 'PANICO', 'INCENDIO'].includes(e.tipo_evento)).length
-  const cierres = eventos.filter(e => ['CIERRE', 'CIERRE ESPECIAL'].includes(e.tipo_evento)).length
-  const aperturas = eventos.filter(e => e.tipo_evento === 'APERTURA').length
-  const autotests = eventos.filter(e => e.tipo_evento === 'AUTOTEST').length
+  const alertas = eventos.filter(e => ['ALARMA DE ROBO', 'PANICO', 'INCENDIO'].includes(e.evento)).length
+  const cierres = eventos.filter(e => ['CIERRE', 'CIERRE ESPECIAL'].includes(e.evento)).length
+  const aperturas = eventos.filter(e => e.evento === 'APERTURA').length
+  const autotests = eventos.filter(e => e.evento === 'AUTOTEST').length
 
   const stats = [
     { label: 'Total Eventos', value: total, color: 'text-slate-200', icon: '📊' },
