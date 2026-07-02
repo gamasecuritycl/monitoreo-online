@@ -11,6 +11,24 @@ if sys.executable.lower().endswith("pythonw.exe"):
     except Exception:
         pass
 
+# Evitar múltiples instancias del sincronizador a la vez en el mismo PC
+LOCK_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "_sincronizador.lock")
+try:
+    if os.path.exists(LOCK_FILE):
+        os.remove(LOCK_FILE)
+except Exception:
+    print("[ERROR] El sincronizador ya esta en ejecucion en segundo plano. Saliendo...")
+    sys.exit(0)
+
+try:
+    # Mantener el archivo abierto para bloquearlo en Windows
+    lock_handle = open(LOCK_FILE, "w")
+    lock_handle.write(str(os.getpid()))
+    lock_handle.flush()
+except Exception:
+    print("[ERROR] No se pudo crear el archivo de bloqueo.")
+    sys.exit(0)
+
 # ============================================================
 #  GAMA COMMAND CENTER - Sincronizador para PC Scorpion
 #  Versión: 2.2 - Rutas dinámicas y fix timezone Chile
