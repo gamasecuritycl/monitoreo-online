@@ -1,6 +1,6 @@
 import os, pyodbc
 
-base_dir = r'C:\SCORPION\BASES DE DATOS'
+base_dir = r'C:\SCORPION\BASES DE DATOS\EVENTOS'
 DB_PASSWORD = 'Administ'
 
 print("=" * 60)
