@@ -1,6 +1,15 @@
-import time, pyodbc, shutil, os, json
+import time, pyodbc, shutil, os, json, sys
 from datetime import datetime, timezone, timedelta
 from supabase import create_client
+
+# Redirigir salida a log si se ejecuta en segundo plano con pythonw.exe
+if sys.executable.lower().endswith("pythonw.exe"):
+    try:
+        log_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "_gama_log.txt")
+        sys.stdout = open(log_path, "a", encoding="utf-8", buffering=1)
+        sys.stderr = sys.stdout
+    except Exception:
+        pass
 
 # ============================================================
 #  GAMA COMMAND CENTER - Sincronizador para PC Scorpion
