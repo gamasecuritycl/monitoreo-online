@@ -20,17 +20,17 @@ const BOTONES = [
 
 export default function FooterActions({ onModalOpen }: FooterActionsProps) {
   return (
-    <footer className="shrink-0 bg-[#0d1117] border-t border-[#2a2a4a] px-3 py-2">
+    <footer className="shrink-0 bg-[#070b13] border-t border-[#1e293b] px-3 py-2">
       <div className="flex items-center justify-center gap-1.5 flex-wrap">
         {BOTONES.map((btn) => (
           <button
             key={btn.id}
             onClick={() => onModalOpen(btn.id)}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#e8e8e8] hover:bg-[#d4d4d4] active:bg-[#c0c0c0] border border-[#8a8a8a] rounded shadow-sm text-[11px] text-[#1a1a1a] font-medium transition-all min-w-[68px] select-none"
-            style={{ fontFamily: "'Segoe UI', 'Tahoma', sans-serif" }}
+            className="flex items-center gap-1.5 px-3 py-1 bg-[#1e293b] hover:bg-[#2d3a4f] text-slate-200 border border-slate-700 hover:border-slate-500 rounded text-[11px] font-semibold transition-all min-w-[80px] select-none cursor-pointer shadow-[inset_1px_1px_0px_rgba(255,255,255,0.15),2px_2px_4px_rgba(0,0,0,0.4)] active:translate-y-[1px] active:shadow-none"
+            style={{ fontFamily: "'Consolas', 'Courier New', monospace" }}
           >
-            <span className="text-sm leading-none">{btn.icon}</span>
-            <span>{btn.label}</span>
+            <span className="text-[12px] leading-none">{btn.icon}</span>
+            <span>{btn.label.toUpperCase()}</span>
           </button>
         ))}
       </div>

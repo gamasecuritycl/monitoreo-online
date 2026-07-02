@@ -47,17 +47,17 @@ export default function EventRow({ evento, onClick }: EventRowProps) {
       <td className="px-2 py-0.5 text-[11px] font-bold whitespace-nowrap border border-[#2a2a4a] leading-relaxed" style={{ color: severity.color }}>
         {evento.evento}
       </td>
-      <td className="px-2 py-0.5 text-[11px] text-slate-500 text-center border border-[#2a2a4a] leading-relaxed">
-        {evento.zona}
+      <td className="px-2 py-0.5 text-[11px] font-mono text-slate-300 text-center border border-[#2a2a4a] leading-relaxed">
+        {evento.zona && evento.zona !== 'None' ? evento.zona.padStart(2, '0') : '00'}
       </td>
-      <td className="px-2 py-0.5 text-[11px] text-slate-600 text-center border border-[#2a2a4a] leading-relaxed">
-        --
+      <td className="px-2 py-0.5 text-[11px] font-mono text-slate-400 text-center border border-[#2a2a4a] leading-relaxed">
+        {evento.zona && evento.zona !== 'None' ? '01' : '--'}
       </td>
-      <td className="px-2 py-0.5 text-[11px] text-slate-500 text-center border border-[#2a2a4a] leading-relaxed">
-        {evento.usuario}
+      <td className="px-2 py-0.5 text-[11px] font-mono text-slate-300 text-center border border-[#2a2a4a] leading-relaxed">
+        {evento.usuario && evento.usuario !== 'None' ? evento.usuario.padStart(2, '0') : '00'}
       </td>
-      <td className="px-2 py-0.5 text-[11px] text-slate-600 text-center border border-[#2a2a4a] leading-relaxed">
-        --
+      <td className="px-2 py-0.5 text-[11px] font-mono text-slate-400 text-center border border-[#2a2a4a] leading-relaxed">
+        01
       </td>
     </tr>
   )
