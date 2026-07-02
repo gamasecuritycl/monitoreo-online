@@ -98,6 +98,11 @@ def sincronizar(cache):
         rows = cursor.fetchall()
         conn.close()
 
+        print(f"  [DEBUG] Filas en MDB: {len(rows)}")
+        if rows:
+            print(f"  [DEBUG] Más reciente: Dia={str(rows[0][0]).strip()} | Hora={str(rows[0][1]).strip()}")
+            print(f"  [DEBUG] Más antiguo: Dia={str(rows[-1][0]).strip()} | Hora={str(rows[-1][1]).strip()}")
+
         rows.reverse()
         nuevos = 0
         cache_modificada = False
