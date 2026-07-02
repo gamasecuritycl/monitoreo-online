@@ -35,7 +35,45 @@ export default function ScorpionDashboard() {
 
   useEffect(() => { fetchEventos() }, [fetchEventos])
 
-  // Direct Push Subscription (low-latency postgres_changes)
+  // ── Polling every 3 seconds: guaranteed fallback for real-time ──
+  // Tracks the highest ID already shown to avoid redundant re-renders.
+  useEffect(() => {
+    let latestId = 0
+
+    const poll = async () => {
+      try {
+        const { data } = await supabase
+          .from('eventos_monitoreo')
+          .select('*')
+          .order('id', { ascending: false })
+          .limit(50)
+
+        if (!data || data.length === 0) return
+
+        const maxId = data[0].id as number
+        if (maxId <= latestId) return          // nothing new
+
+        latestId = maxId
+        // Apply search filter client-side if active
+        const filtered = busqueda.trim()
+          ? data.filter(
+              (e) =>
+                e.cuenta?.toLowerCase().includes(busqueda.toLowerCase()) ||
+                e.nombre_abonado?.toLowerCase().includes(busqueda.toLowerCase())
+            )
+          : data
+
+        setEventos([...filtered].reverse())
+      } catch (_) {}
+    }
+
+    // Run once immediately, then every 3 seconds
+    poll()
+    const timer = setInterval(poll, 3000)
+    return () => clearInterval(timer)
+  }, [busqueda])
+
+  // ── WebSocket push: catches events instantly when replication is ON ──
   useEffect(() => {
     const channel = supabase
       .channel('eventos-live')
@@ -45,21 +83,15 @@ export default function ScorpionDashboard() {
         (payload) => {
           const newEvent = payload.new as EventoMonitoreo
           setEventos((prev) => {
-            // Deduplicate if needed
             if (prev.some((e) => e.id === newEvent.id)) return prev
             const next = [...prev, newEvent]
-            // Maintain the 50 events buffer size
-            if (next.length > 50) {
-              next.shift()
-            }
+            if (next.length > 50) next.shift()
             return next
           })
         }
       )
       .subscribe()
-    return () => {
-      supabase.removeChannel(channel)
-    }
+    return () => { supabase.removeChannel(channel) }
   }, [])
 
   return (

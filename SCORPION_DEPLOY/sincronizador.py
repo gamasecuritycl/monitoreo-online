@@ -1,0 +1,140 @@
+import time, pyodbc, shutil, os, json
+
+# ============================================================
+#  GAMA COMMAND CENTER - Sincronizador para PC Scorpion
+#  Versión: 2.0
+# ============================================================
+
+SUPABASE_URL = "https://onxwyrwmpjxtwlmjrosr.supabase.co"
+SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9ueHd5cndtcGp4dHdsbWpyb3NyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI4NTUxNDQsImV4cCI6MjA5ODQzMTE0NH0.8kJRf8hm3rHK8sygMcyBT0R83tyK8hIQCmnAQxannJs"
+
+CARPETA_EVENTOS  = r'C:\SCORPION\BASES DE DATOS\EVENTOS'
+RUTA_COPIA_TEMP  = r'C:\SCORPION\BASES DE DATOS\_EVENTOS_TEMP.MDB'
+RUTA_CACHE       = r'C:\SCORPION\BASES DE DATOS\_sincronizador_cache.json'
+
+DB_PASSWORD      = 'Administ'
+INTERVALO_SEG    = 3
+
+from supabase import create_client
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+def load_cache():
+    if os.path.exists(RUTA_CACHE):
+        try:
+            with open(RUTA_CACHE, 'r', encoding='utf-8') as f:
+                return set(json.load(f))
+        except Exception as e:
+            print(f"[CACHE] Error: {e}")
+    return set()
+
+def save_cache(cache):
+    try:
+        cache_list = list(cache)
+        if len(cache_list) > 500:
+            cache_list = cache_list[-300:]
+        with open(RUTA_CACHE, 'w', encoding='utf-8') as f:
+            json.dump(cache_list, f, indent=2)
+    except Exception as e:
+        print(f"[CACHE] Error guardando: {e}")
+
+def get_ultimo_mdb():
+    try:
+        archivos = [f for f in os.listdir(CARPETA_EVENTOS) if f.upper().endswith('.MDB')]
+    except Exception as e:
+        print(f"[ERROR] No se puede leer EVENTOS: {e}")
+        return None
+    if not archivos:
+        return None
+    archivos.sort(reverse=True)
+    return os.path.join(CARPETA_EVENTOS, archivos[0])
+
+def sincronizar(cache):
+    print("--- Verificando nuevos eventos ---")
+    ruta_original = get_ultimo_mdb()
+    if not ruta_original:
+        print("[INFO] No hay archivos .MDB.")
+        return cache
+
+    print(f"[DB] {os.path.basename(ruta_original)}")
+
+    try:
+        if os.path.exists(RUTA_COPIA_TEMP):
+            os.remove(RUTA_COPIA_TEMP)
+        shutil.copy2(ruta_original, RUTA_COPIA_TEMP)
+
+        conn_str = (
+            f'DRIVER={{Microsoft Access Driver (*.mdb, *.accdb)}};'
+            f'DBQ={RUTA_COPIA_TEMP};PWD={DB_PASSWORD};ReadOnly=1;'
+        )
+        conn = pyodbc.connect(conn_str)
+        cursor = conn.cursor()
+        cursor.execute("SELECT TOP 50 * FROM EVENTOS ORDER BY HORA DESC")
+        rows = cursor.fetchall()
+        conn.close()
+
+        rows.reverse()
+        nuevos = 0
+        cache_modificada = False
+
+        for row in rows:
+            dia     = str(row[0]).strip()
+            hora    = str(row[1]).strip()
+            cuenta  = str(row[2]).strip()
+            nombre  = str(row[3]).strip()
+            evento  = str(row[4]).strip()
+            zona    = str(row[6]).strip()
+            usuario = str(row[7]).strip()
+
+            event_key = f"{dia}_{hora}_{cuenta}_{evento}_{zona}_{usuario}"
+            if event_key in cache:
+                continue
+
+            partes = dia.split('-')
+            fecha_hora = f'{partes[2]}-{partes[1]}-{partes[0]}T{hora}' if len(partes) == 3 else hora
+
+            data = {
+                "fecha_hora":     fecha_hora,
+                "cuenta":         cuenta,
+                "nombre_abonado": nombre,
+                "evento":         evento,
+                "zona":           zona,
+                "usuario":        usuario,
+            }
+
+            try:
+                supabase.table("eventos_monitoreo").insert(data).execute()
+                print(f"  [+] {cuenta} | {nombre} | {evento} | Z:{zona}")
+                cache.add(event_key)
+                cache_modificada = True
+                nuevos += 1
+            except Exception:
+                cache.add(event_key)
+                cache_modificada = True
+
+        if cache_modificada:
+            save_cache(cache)
+
+        print(f"  >>> {nuevos} evento(s) nuevo(s) subidos." if nuevos > 0 else "  Sin eventos nuevos.")
+
+    except Exception as e:
+        print(f"[ERROR] {e}")
+    finally:
+        if os.path.exists(RUTA_COPIA_TEMP):
+            try:
+                os.remove(RUTA_COPIA_TEMP)
+            except:
+                pass
+
+    print(f"--- Esperando {INTERVALO_SEG}s ---\n")
+    return cache
+
+
+if __name__ == "__main__":
+    print("=" * 55)
+    print("  GAMA COMMAND CENTER - Sincronizador v2.0")
+    print(f"  Carpeta: {CARPETA_EVENTOS}")
+    print("=" * 55)
+    cache = load_cache()
+    while True:
+        cache = sincronizar(cache)
+        time.sleep(INTERVALO_SEG)
