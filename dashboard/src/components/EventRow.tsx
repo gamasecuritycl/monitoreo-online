@@ -70,7 +70,7 @@ export default function EventRow({ evento, onClick }: EventRowProps) {
       <td className="px-2 py-0.5 text-[11px] font-bold border border-black leading-relaxed">
         {evento.cuenta}
       </td>
-      <td className="px-2 py-0.5 text-[11px] truncate max-w-[250px] border border-black leading-relaxed font-bold">
+      <td className="px-2 py-0.5 text-[11px] truncate max-w-[200px] border border-black leading-relaxed font-bold">
         {evento.nombre_abonado}
       </td>
       <td className="px-2 py-0.5 text-[11px] font-bold border border-black leading-relaxed">

@@ -27,7 +27,7 @@ export default function ScorpionDashboard() {
       }
 
       const { data } = await query
-      if (data) setEventos(data)
+      if (data) setEventos(data.reverse())
     } catch (err) {
       console.error('Error:', err)
     }
@@ -63,7 +63,7 @@ export default function ScorpionDashboard() {
             )
           : data
 
-        setEventos([...filtered])
+        setEventos([...filtered].reverse())
       } catch (_) {}
     }
 
@@ -84,8 +84,8 @@ export default function ScorpionDashboard() {
           const newEvent = payload.new as EventoMonitoreo
           setEventos((prev) => {
             if (prev.some((e) => e.id === newEvent.id)) return prev
-            const next = [newEvent, ...prev]
-            if (next.length > 50) next.pop()
+            const next = [...prev, newEvent]
+            if (next.length > 50) next.shift()
             return next
           })
         }

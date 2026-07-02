@@ -10,14 +10,20 @@ interface EventGridProps {
 }
 
 export default function EventGrid({ eventos, onEventClick }: EventGridProps) {
+  const bottomRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [eventos.length])
+
   return (
-    <div className="w-full h-full overflow-auto bg-[#070b13]">
+    <div className="w-full h-full overflow-y-auto bg-[#070b13]">
       <table className="w-full border-collapse" style={{ fontFamily: "'Consolas', 'Courier New', monospace" }}>
         <thead className="sticky top-0 z-10">
           <tr className="bg-[#111827]">
             <th className="px-2 py-1.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider text-left border border-[#1e293b] w-[155px]">FECHA/HORA</th>
             <th className="px-2 py-1.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider text-left border border-[#1e293b] w-[72px]">ABONADO</th>
-            <th className="px-2 py-1.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider text-left border border-[#1e293b]">NOMBRE</th>
+            <th className="px-2 py-1.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider text-left border border-[#1e293b] w-[200px]">NOMBRE</th>
             <th className="px-2 py-1.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider text-left border border-[#1e293b] w-[140px]">SEÑAL</th>
             <th className="px-2 py-1.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider text-center border border-[#1e293b] w-[48px]">ZN</th>
             <th className="px-2 py-1.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider text-center border border-[#1e293b] w-[48px]">PAR</th>
@@ -39,6 +45,7 @@ export default function EventGrid({ eventos, onEventClick }: EventGridProps) {
           )}
         </tbody>
       </table>
+      <div ref={bottomRef} />
     </div>
   )
 }
