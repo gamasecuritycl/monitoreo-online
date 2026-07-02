@@ -21,10 +21,27 @@ function getSeverity(evento: string): { color: string; bg: string } {
 }
 
 function formatFecha(iso: string): string {
-  const d = new Date(iso)
-  const pad = (n: number) => n.toString().padStart(2, '0')
-  return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
+  // Supabase returns timestamptz as UTC (e.g. "2026-07-02T09:59:47+00:00").
+  // JavaScript new Date() would subtract the browser's UTC offset and show
+  // the wrong local time. We always force America/Santiago so the timestamp
+  // matches what operators in Chile expect to see.
+  try {
+    const d = new Date(iso)
+    return new Intl.DateTimeFormat('es-CL', {
+      timeZone: 'America/Santiago',
+      year:    'numeric',
+      month:   '2-digit',
+      day:     '2-digit',
+      hour:    '2-digit',
+      minute:  '2-digit',
+      second:  '2-digit',
+      hour12:  false,
+    }).format(d).replace(',', '')
+  } catch {
+    return iso
+  }
 }
+
 
 export default function EventRow({ evento, onClick }: EventRowProps) {
   const severity = getSeverity(evento.evento)
