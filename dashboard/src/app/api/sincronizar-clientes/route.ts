@@ -14,7 +14,11 @@ export async function POST(request: Request) {
     console.log(`[SYNC API] Iniciando sincronización de ${clientes.length} clientes...`)
 
     const client = new Client({
-      connectionString: connectionString,
+      host: '2600:1f1e:dbb:f602:6a4f:3993:b9a4:9c39',
+      port: 5432,
+      user: 'postgres',
+      password: 'yr43d8lek%fr$6!xDzlMuqVf',
+      database: 'postgres',
       ssl: { rejectUnauthorized: false }
     })
 
