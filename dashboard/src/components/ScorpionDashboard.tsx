@@ -95,7 +95,37 @@ export default function ScorpionDashboard() {
   }, [])
 
   return (
-    <div className="h-screen flex flex-col bg-[#070b13] text-slate-100 overflow-hidden select-none" style={{ fontFamily: "'Consolas', 'Courier New', monospace" }}>
+    <div className="h-screen flex flex-col bg-[#070b13] text-slate-100 overflow-hidden select-none relative" style={{ fontFamily: "'Consolas', 'Courier New', monospace" }}>
+
+      {/* ⚔ SELLO ARCÁNGEL MIGUEL — Watermark de protección. Siempre presente, raramente visto. ⚔ */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 flex items-center justify-center z-0 overflow-hidden"
+        style={{ opacity: 0.018 }}
+      >
+        <svg width="520" height="520" viewBox="0 0 520 520" fill="none" xmlns="http://www.w3.org/2000/svg">
+          {/* Escudo */}
+          <path d="M260 40 L460 120 L460 280 Q460 400 260 480 Q60 400 60 280 L60 120 Z"
+            stroke="#4fa3e0" strokeWidth="3" fill="none"/>
+          {/* Cruz interior */}
+          <line x1="260" y1="100" x2="260" y2="420" stroke="#4fa3e0" strokeWidth="2"/>
+          <line x1="100" y1="260" x2="420" y2="260" stroke="#4fa3e0" strokeWidth="2"/>
+          {/* Espada vertical */}
+          <line x1="260" y1="30" x2="260" y2="490" stroke="#7ec8f7" strokeWidth="4" strokeLinecap="round"/>
+          <line x1="200" y1="120" x2="320" y2="120" stroke="#7ec8f7" strokeWidth="4" strokeLinecap="round"/>
+          {/* Llama en la punta */}
+          <ellipse cx="260" cy="30" rx="10" ry="18" fill="#4fa3e0" opacity="0.9"/>
+          {/* Círculo exterior */}
+          <circle cx="260" cy="260" r="230" stroke="#4fa3e0" strokeWidth="1.5" strokeDasharray="12 6"/>
+          {/* Estrellas en los cuadrantes */}
+          <text x="155" y="175" fill="#7ec8f7" fontSize="28" textAnchor="middle">✶</text>
+          <text x="365" y="175" fill="#7ec8f7" fontSize="28" textAnchor="middle">✶</text>
+          <text x="155" y="375" fill="#7ec8f7" fontSize="28" textAnchor="middle">✶</text>
+          <text x="365" y="375" fill="#7ec8f7" fontSize="28" textAnchor="middle">✶</text>
+          {/* Texto del sello */}
+          <text x="260" y="510" fill="#7ec8f7" fontSize="11" textAnchor="middle" letterSpacing="4">GAMA · PROTECCIÓN · MIGUEL</text>
+        </svg>
+      </div>
       {/* Top Bar Navy Bevel Style (Responsive) */}
       <header className="flex flex-col sm:flex-row items-center justify-between px-4 py-2 bg-[#0f172a] border-b border-[#1e293b] shrink-0 shadow-md gap-2 sm:gap-0">
         <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-start">
