@@ -190,43 +190,64 @@ export default function FooterActions({ onModalOpen }: FooterActionsProps) {
   return (
     <>
       {/* 
-        PIE DE PÁGINA ULTRA SIMPLE
-        Contiene únicamente el botón Hamburguesa clásico de Windows 95
+        PIE DE PÁGINA RESPONSIVO:
+        - En PC / Escritorio (md): Muestra los 10 botones tradicionales en fila directamente
+        - En Móvil / Tablet (<md): Muestra únicamente el botón de Menú Scorpion
       */}
-      <footer className="shrink-0 bg-[#d4d0c8] border-t-2 border-white px-3 py-1.5 flex justify-between items-center select-none z-30">
-        <button
-          onClick={() => setIsOpen(!isOpen)}
-          className="px-3 py-1 bg-[#d4d0c8] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 font-bold text-black flex items-center gap-2 cursor-pointer active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white text-[11px] select-none hover:bg-gray-200"
-        >
-          {/* Icono Hamburguesa Clásico 16-bits */}
-          <div className="flex flex-col gap-0.5 w-3.5 justify-center">
-            <div className="h-0.5 bg-black w-full" />
-            <div className="h-0.5 bg-black w-full" />
-            <div className="h-0.5 bg-black w-full" />
-          </div>
-          <span>MENU SCORPION</span>
-        </button>
+      <footer className="shrink-0 bg-[#d4d0c8] border-t-2 border-white px-2 py-1.5 flex justify-between items-center select-none z-30">
         
-        <span className="text-[10px] text-gray-600 font-bold uppercase tracking-wider">
-          Gama Seguridad · Central de Control
-        </span>
+        {/* VERSIÓN DE ESCRITORIO (PC): Fila de 10 botones horizontales */}
+        <div className="hidden md:flex items-center gap-1.5 mx-auto">
+          {BOTONES_RETRO.map((btn) => (
+            <button
+              key={btn.id}
+              onClick={() => onModalOpen(btn.id)}
+              title={btn.title}
+              className="w-13 h-13 bg-[#d4d0c8] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 flex items-center justify-center cursor-pointer select-none hover:bg-gray-200 active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white shadow-sm"
+            >
+              <div className="w-8 h-8 flex items-center justify-center">
+                {btn.renderSVG()}
+              </div>
+            </button>
+          ))}
+        </div>
+
+        {/* VERSIÓN MÓVIL: Botón Menú Scorpion (Aparece inmediatamente abajo a la izquierda) */}
+        <div className="flex md:hidden items-center justify-between w-full">
+          <button
+            onClick={() => setIsOpen(!isOpen)}
+            className="px-2.5 py-1 bg-[#d4d0c8] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 font-bold text-black flex items-center gap-1.5 cursor-pointer active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white text-[10px] select-none hover:bg-gray-200"
+          >
+            {/* Icono Hamburguesa 16-bits */}
+            <div className="flex flex-col gap-0.5 w-3 justify-center">
+              <div className="h-0.5 bg-black w-full" />
+              <div className="h-0.5 bg-black w-full" />
+              <div className="h-0.5 bg-black w-full" />
+            </div>
+            <span>MENU SCORPION</span>
+          </button>
+          
+          <span className="text-[9px] text-gray-600 font-bold uppercase tracking-wider">
+            Gama Seguridad
+          </span>
+        </div>
       </footer>
 
       {/* 
         SIDEBAR DESPLEGABLE ESTILO SCORPION WINDOWS 95
-        Se desliza verticalmente desde la izquierda sobre el resto de la interfaz
+        Se desliza desde la izquierda sobre la pantalla en móvil
       */}
       {isOpen && (
         <>
-          {/* Fondo sombreado traslúcido para hacer click y cerrar */}
+          {/* Fondo sombreado traslúcido */}
           <div 
-            className="fixed inset-0 z-40 bg-black/40"
+            className="fixed inset-0 z-40 bg-black/40 md:hidden"
             onClick={() => setIsOpen(false)}
           />
 
           {/* Menú Sidebar */}
           <div 
-            className="fixed top-0 left-0 h-full w-[290px] bg-[#d4d0c8] border-r-2 border-white shadow-2xl z-50 flex flex-col justify-between select-none animate-slide-in"
+            className="fixed top-0 left-0 h-full w-[290px] bg-[#d4d0c8] border-r-2 border-white shadow-2xl z-50 flex flex-col justify-between select-none animate-slide-in md:hidden"
             style={{ fontSize: '11px' }}
           >
             {/* Header del Sidebar */}

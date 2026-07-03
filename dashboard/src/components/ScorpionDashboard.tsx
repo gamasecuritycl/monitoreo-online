@@ -21,16 +21,12 @@ interface ZonaMapeada {
   codigoCID: string
 }
 
-function obtenerDatosAbonado(cuenta: string, nombreAbonado: string) {
-  // Datos base
+function obtenerDatosAbonado(cuenta: string, nombreAbonado: string, clienteDb: Record<string, string> | null) {
+  // Datos base con fallback por si no existe
   const datos = {
-    direccion: 'Av. Providencia 1420, Of. 602',
-    comuna: 'Providencia, Santiago',
-    contactos: [
-      { prioridad: 1, nombre: 'Tomás Toro (Admin)', telefono: '+56 9 8765 4321' },
-      { prioridad: 2, nombre: 'Conserjería Central', telefono: '+56 2 2345 6789' },
-      { prioridad: 3, nombre: 'Carabineros de Chile', telefono: '133' }
-    ] as ContactoAutorizado[],
+    direccion: clienteDb?.direccion || 'Av. Providencia 1420, Of. 602',
+    comuna: clienteDb?.ciudad || clienteDb?.sector || 'Providencia, Santiago',
+    contactos: [] as ContactoAutorizado[],
     zonas: [
       { numero: '01', descripcion: 'Puerta Acceso Principal', codigoCID: '130' },
       { numero: '02', descripcion: 'Sensor Movimiento Living', codigoCID: '130' },
@@ -39,20 +35,28 @@ function obtenerDatosAbonado(cuenta: string, nombreAbonado: string) {
     ] as ZonaMapeada[]
   }
 
-  // Personalización menor por cliente
-  if (nombreAbonado.toUpperCase().includes('MARCELA')) {
-    datos.direccion = 'Calle Los Alerces 7420'
-    datos.comuna = 'Las Condes, Santiago'
-    datos.contactos[0].nombre = 'Marcela Sepúlveda'
-  } else if (nombreAbonado.toUpperCase().includes('CLINICA')) {
-    datos.direccion = 'Av. Brasil 2950'
-    datos.comuna = 'Valparaíso'
-  } else if (nombreAbonado.toUpperCase().includes('TOYS')) {
-    datos.direccion = 'Mall Plaza Oeste, Local 114'
-    datos.comuna = 'Cerrillos, Santiago'
-  } else if (nombreAbonado.toUpperCase().includes('TALITA')) {
-    datos.direccion = 'Avenida Alemania 0890'
-    datos.comuna = 'Temuco'
+  // Extraer contactos reales del 1 al 7 de GENERAL.mdb (si existen en el payload)
+  if (clienteDb) {
+    for (let i = 1; i <= 7; i++) {
+      const nombre = clienteDb[`nombre${i}`]
+      const tel = clienteDb[`t${i}`] || clienteDb[`telefono${i}`]
+      if (nombre && nombre.trim()) {
+        datos.contactos.push({
+          prioridad: i,
+          nombre: nombre.toUpperCase().trim(),
+          telefono: (tel || '').trim()
+        })
+      }
+    }
+  }
+
+  // Si no hay contactos en la BD, rellenar con fallbacks por defecto
+  if (datos.contactos.length === 0) {
+    datos.contactos = [
+      { prioridad: 1, nombre: 'Tomás Toro (Admin)', telefono: '+56 9 8765 4321' },
+      { prioridad: 2, font: 'bold', nombre: 'Conserjería Central', telefono: '+56 2 2345 6789' },
+      { prioridad: 3, nombre: 'Carabineros de Chile', telefono: '133' }
+    ]
   }
 
   return datos
@@ -64,6 +68,33 @@ export default function ScorpionDashboard() {
   const [eventoSeleccionado, setEventoSeleccionado] = useState<EventoMonitoreo | null>(null)
   const [modalActivo, setModalActivo] = useState<string | null>(null)
   const [horaLocal, setHoraLocal] = useState('')
+  
+  // Mapa de clientes cargado en tiempo real
+  const [clientesMap, setClientesMap] = useState<Record<string, Record<string, string>>>({})
+
+  // Cargar base de datos de clientes reales de Supabase en caliente
+  useEffect(() => {
+    const fetchClientes = async () => {
+      try {
+        const { data } = await supabase
+          .from('eventos_monitoreo')
+          .select('*')
+          .eq('cuenta', 'CLIENTES')
+          .limit(1)
+        if (data && data.length > 0) {
+          const rawJson = data[0].nombre_abonado
+          if (rawJson) {
+            const map = JSON.parse(rawJson)
+            setClientesMap(map)
+            console.log(`[SUPABASE DASHBOARD] ${Object.keys(map).length} clientes cargados para el visor lateral.`)
+          }
+        }
+      } catch (err) {
+        console.warn('[SUPABASE DASHBOARD] Error cargando clientes, usando fallback.')
+      }
+    }
+    fetchClientes()
+  }, [])
 
   // Reloj digital inferior igual a Scorpion
   useEffect(() => {
@@ -164,10 +195,12 @@ export default function ScorpionDashboard() {
 
   // Extraer datos del abonado activo para poblar las tarjetas derechas
   const activeEvent = eventoSeleccionado || (eventos.length > 0 ? eventos[eventos.length - 1] : null)
-  const clientData = activeEvent ? obtenerDatosAbonado(activeEvent.cuenta, activeEvent.nombre_abonado) : null
+  const cuentaKey = activeEvent ? activeEvent.cuenta.toUpperCase().trim() : ''
+  const clienteDb = cuentaKey ? (clientesMap[cuentaKey] || null) : null
+  const clientData = activeEvent ? obtenerDatosAbonado(activeEvent.cuenta, activeEvent.nombre_abonado, clienteDb) : null
 
   return (
-    <div className="h-screen flex flex-col bg-[#070b13] text-slate-100 overflow-hidden select-none relative" style={{ fontFamily: "'Consolas', 'Courier New', monospace" }}>
+    <div className="h-[100dvh] flex flex-col bg-[#070b13] text-slate-100 overflow-hidden select-none relative" style={{ fontFamily: "'Consolas', 'Courier New', monospace" }}>
       
       {/* Top Bar Navy Bevel Style */}
       <header className="flex flex-col sm:flex-row items-center justify-between px-4 py-1.5 bg-[#0f172a] border-b border-[#1e293b] shrink-0 shadow-md gap-2 sm:gap-0 z-10">
@@ -195,16 +228,16 @@ export default function ScorpionDashboard() {
       {/* Contenedor Principal: Izquierda (Tabla), Derecha (Widgets de Scorpion) */}
       <div className="flex-1 flex overflow-hidden">
         
-        {/* Lado Izquierdo: Tabla de Eventos (845px para dar margen exacto a la columna UN + Scrollbar) */}
-        <div className="w-[845px] shrink-0 border-r border-[#1e293b] flex flex-col h-full bg-[#070b13]">
+        {/* Lado Izquierdo: Tabla de Eventos (Ocupa 100% en móvil y 845px fijos en PC) */}
+        <div className="w-full md:w-[845px] md:shrink-0 border-r border-[#1e293b] flex flex-col h-full bg-[#070b13] overflow-hidden">
           <EventGrid
             eventos={eventos}
             onEventClick={(e) => setEventoSeleccionado(e)}
           />
         </div>
 
-        {/* Lado Derecho: Réplica Panel Scorpion */}
-        <div className="flex-1 flex flex-col bg-[#c0c0c0] text-black overflow-y-auto border-l border-white p-2 gap-2 select-text">
+        {/* Lado Derecho: Réplica Panel Scorpion (Oculto en móvil, visible en PC) */}
+        <div className="hidden md:flex flex-1 flex-col bg-[#c0c0c0] text-black overflow-y-auto border-l border-white p-2 gap-2 select-text">
           
           {/* Fila 1: Logo GAMA / SCORPION + Estado en Negro */}
           <div className="grid grid-cols-2 gap-2 shrink-0">

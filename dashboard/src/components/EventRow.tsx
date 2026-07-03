@@ -49,21 +49,25 @@ function getScorpionStyle(evento: string): { bg: string; text: string } {
   return { bg: '#FFFFFF', text: '#000000' }
 }
 
-function formatFecha(iso: string): string {
+function renderFecha(iso: string) {
   try {
     const d = new Date(iso)
-    return new Intl.DateTimeFormat('es-CL', {
-      timeZone: 'America/Santiago',
-      year:    'numeric',
-      month:   '2-digit',
-      day:     '2-digit',
-      hour:    '2-digit',
-      minute:  '2-digit',
-      second:  '2-digit',
-      hour12:  false,
-    }).format(d).replace(',', '')
+    const dia = d.getDate().toString().padStart(2, '0')
+    const mes = (d.getMonth() + 1).toString().padStart(2, '0')
+    const anio = d.getFullYear()
+    const hora = d.getHours().toString().padStart(2, '0')
+    const min = d.getMinutes().toString().padStart(2, '0')
+    const seg = d.getSeconds().toString().padStart(2, '0')
+    
+    return (
+      <span className="whitespace-nowrap">
+        <span>{dia}-{mes}</span>
+        <span className="hidden md:inline">-{anio}</span>
+        <span> {hora}:{min}:{seg}</span>
+      </span>
+    )
   } catch {
-    return iso
+    return <span>{iso}</span>
   }
 }
 
@@ -84,27 +88,27 @@ export default function EventRow({ evento, onClick, isNew, isLatest }: EventRowP
       style={{ backgroundColor: style.bg, color: style.text }}
     >
       {/* FECHA/HORA */}
-      <td className="px-1.5 py-0.5 text-[11px] whitespace-nowrap border border-black leading-none font-bold align-middle h-6">
-        {formatFecha(evento.fecha_hora)}
+      <td className="px-1 py-0.5 text-[10px] md:text-[11px] whitespace-nowrap border border-black leading-none font-bold align-middle h-6">
+        {renderFecha(evento.fecha_hora)}
       </td>
 
       {/* ABONADO */}
-      <td className="px-1.5 py-0.5 text-[11px] font-bold border border-black leading-none align-middle">
+      <td className="px-1 py-0.5 text-[10px] md:text-[11px] font-bold border border-black leading-none align-middle">
         {evento.cuenta}
       </td>
 
       {/* NOMBRE */}
-      <td className="px-1.5 py-0.5 text-[11px] truncate max-w-[300px] border border-black leading-none font-bold align-middle">
+      <td className="px-1 py-0.5 text-[10px] md:text-[11px] truncate max-w-[90px] xs:max-w-[120px] md:max-w-[300px] border border-black leading-none font-bold align-middle">
         {evento.nombre_abonado}
       </td>
 
       {/* SEÑAL (sin sigilos/iconos, solo el texto) */}
-      <td className="px-1.5 py-0.5 text-[11px] font-bold border border-black leading-none align-middle">
+      <td className="px-1 py-0.5 text-[10px] md:text-[11px] font-bold border border-black leading-none align-middle truncate max-w-[80px] md:max-w-none">
         {evento.evento}
       </td>
 
       {/* ZN */}
-      <td className="px-1.5 py-0.5 text-[11px] font-bold text-center border border-black leading-none align-middle">
+      <td className="px-1 py-0.5 text-[10px] md:text-[11px] font-bold text-center border border-black leading-none align-middle">
         {evento.zona && evento.zona !== 'None' ? evento.zona.padStart(2, '0') : '00'}
       </td>
 
