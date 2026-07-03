@@ -273,6 +273,37 @@ export default function ScorpionDashboard() {
         </div>
       </header>
 
+      {/* ── BARRA DE MENÚ ESTILO SCORPION (solo PC, oculto en responsive) ── */}
+      <nav className="hidden md:flex items-center bg-[#8B0000] border-b border-[#600000] shrink-0 select-none" style={{ fontFamily: "'Arial', sans-serif" }}>
+        {/* Etiqueta servidor */}
+        <div className="px-2 py-0.5 text-[10px] font-bold text-white/70 border-r border-[#600000] tracking-wider whitespace-nowrap">
+          SCORPION-MONITOREO&nbsp;-SERVIDOR-
+        </div>
+
+        {/* Items del menú */}
+        {[
+          { label: 'OPERADORES',     id: 'menu-operadores' },
+          { label: 'USUARIOS',       id: 'menu-usuarios' },
+          { label: 'PUERTOS',        id: 'menu-puertos' },
+          { label: 'MARCADOR',       id: 'menu-marcador' },
+          { label: 'TABLAS',         id: 'menu-tablas' },
+          { label: 'UTILIDADES',     id: 'menu-utilidades' },
+          { label: 'NOTIFICACIONES', id: 'menu-notificaciones' },
+          { label: 'REPORTES',       id: 'menu-reportes' },
+          { label: 'EVENTOS',        id: 'menu-eventos' },
+          { label: 'AYUDA',          id: 'menu-ayuda' },
+        ].map((item, idx) => (
+          <button
+            key={idx}
+            id={item.id}
+            className="px-3 py-0.5 text-[11px] font-bold text-white tracking-wider whitespace-nowrap border-r border-[#600000] hover:bg-[#a00000] active:bg-[#700000] cursor-pointer transition-colors"
+            style={{ fontFamily: "'Arial', sans-serif" }}
+          >
+            {item.label}
+          </button>
+        ))}
+      </nav>
+
       {/* Contenedor Principal: Izquierda (Tabla), Derecha (Widgets de Scorpion) */}
       <div className="flex-1 flex overflow-hidden">
         
