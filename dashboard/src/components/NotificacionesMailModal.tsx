@@ -162,7 +162,7 @@ export default function NotificacionesMailModal({ onClose, clientesMap }: Notifi
                   {clientesFiltrados.map(([cuenta, datos]) => (
                     <tr 
                       key={cuenta} 
-                      className={\`cursor-pointer hover:bg-green-900 \${clienteSeleccionado?.cuenta === cuenta ? 'bg-green-800 text-white' : ''}\`}
+                      className={`cursor-pointer hover:bg-green-900 ${clienteSeleccionado?.cuenta === cuenta ? 'bg-green-800 text-white' : ''}`}
                       onClick={() => setClienteSeleccionado({ cuenta, nombre: datos.nombre || '' })}
                     >
                       <td className="p-1 border-r border-gray-800 font-bold">{cuenta}</td>
