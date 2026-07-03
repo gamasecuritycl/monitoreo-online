@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server'
 import { Client } from 'pg'
 
-// Conexión directa a Supabase Postgres desde la nube de Vercel (soporta IPv6)
-const connectionString = "postgresql://postgres:yr43d8lek%25fr$6!xDzlMuqVf@db.onxwyrwmpjxtwlmjrosr.supabase.co:5432/postgres"
+// Conexión directa a Supabase Postgres desde la nube de Vercel usando la dirección IPv6 física
+const connectionString = "postgresql://postgres:yr43d8lek%25fr$6!xDzlMuqVf@[2600:1f1e:dbb:f602:6a4f:3993:b9a4:9c39]:5432/postgres"
 
 export async function POST(request: Request) {
   try {
