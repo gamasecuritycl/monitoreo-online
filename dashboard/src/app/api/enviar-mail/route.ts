@@ -54,7 +54,7 @@ export async function POST(req: Request) {
     const data = await resend.emails.send({
       from: 'Gama Security <contacto@gamasecurity.cl>',
       to: destinatarios,
-      subject: `Notificación de ${tipo_evento.toUpperCase()} - Cuenta ${cuenta}`,
+      subject: `Notificación de ${tipo_evento.toUpperCase()}`,
       html: htmlContent,
     })
 
