@@ -1,5 +1,5 @@
 'use client'
-// GAMA Command Center - Webhook deployment trigger
+// GAMA Command Center - v2.3 - newest events always at bottom, auto-scroll
 
 import { useRef, useEffect } from 'react'
 import EventRow from './EventRow'
@@ -11,14 +11,18 @@ interface EventGridProps {
 }
 
 export default function EventGrid({ eventos, onEventClick }: EventGridProps) {
-  const bottomRef = useRef<HTMLDivElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
 
+  // Scroll al fondo en CADA actualización de eventos (no solo cuando cambia el largo).
+  // Garantiza que el evento más nuevo (abajo) siempre sea visible.
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [eventos.length])
+    const el = containerRef.current
+    if (!el) return
+    el.scrollTop = el.scrollHeight
+  }, [eventos])
 
   return (
-    <div className="w-full h-full overflow-y-auto bg-[#070b13]">
+    <div ref={containerRef} className="w-full h-full overflow-y-auto bg-[#070b13]">
       <table className="w-full border-collapse" style={{ fontFamily: "'Consolas', 'Courier New', monospace" }}>
         <thead className="sticky top-0 z-10">
           <tr className="bg-[#111827]">
@@ -46,7 +50,6 @@ export default function EventGrid({ eventos, onEventClick }: EventGridProps) {
           )}
         </tbody>
       </table>
-      <div ref={bottomRef} />
     </div>
   )
 }
