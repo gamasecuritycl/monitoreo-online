@@ -5,6 +5,15 @@ export async function GET() {
   const connectionString = "postgresql://postgres:yr43d8lek%25fr$6!xDzlMuqVf@db.onxwyrwmpjxtwlmjrosr.supabase.co:5432/postgres"
 
   const sql_create_table = `
+  CREATE TABLE IF NOT EXISTS public.notificaciones_mail (
+      cuenta VARCHAR(50) PRIMARY KEY,
+      emails TEXT[] DEFAULT '{}'
+  );
+  ALTER TABLE public.notificaciones_mail ENABLE ROW LEVEL SECURITY;
+  DROP POLICY IF EXISTS "Permitir todo en notificaciones_mail" ON public.notificaciones_mail;
+  CREATE POLICY "Permitir todo en notificaciones_mail" ON public.notificaciones_mail
+    FOR ALL USING (true) WITH CHECK (true);
+
   CREATE TABLE IF NOT EXISTS public.clientes_expediente (
       cuenta VARCHAR(50) PRIMARY KEY,
       nombre VARCHAR(255),
