@@ -30,7 +30,7 @@ export async function POST(req: Request) {
     const htmlContent = `
       <div style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #ddd; border-radius: 8px; overflow: hidden;">
         <div style="background-color: #000080; padding: 20px; text-align: center;">
-          <img src="https://dashboard-ten-self-68.vercel.app/logo-CASAS.png" alt="Gama Security" style="max-height: 80px;" />
+          <img src="https://dashboard-eight-sable-51.vercel.app/logo-CASAS.png" alt="Gama Security" style="max-height: 80px;" />
         </div>
         <div style="padding: 20px;">
           <h2 style="color: #000080;">Notificación de ${tipo_evento.toUpperCase()}</h2>
