@@ -1,4 +1,5 @@
 'use client'
+// GAMA Command Center - Webhook deployment trigger
 
 import { useRef, useEffect } from 'react'
 import EventRow from './EventRow'
