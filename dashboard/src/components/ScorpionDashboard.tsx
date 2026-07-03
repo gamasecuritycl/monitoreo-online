@@ -8,6 +8,8 @@ import ToolModal from './ToolModal'
 import ExpedienteModal from './ExpedienteModal'
 import EventosPorUsuarioModal from './EventosPorUsuarioModal'
 import ZonificacionModal from './ZonificacionModal'
+import NotificacionesMailModal from './NotificacionesMailModal'
+import { lookupContactId } from '@/lib/contact_id_library'
 
 // ── Contactos del Panel Lateral de Scorpion ──
 interface ContactoAutorizado {
@@ -57,6 +59,7 @@ export default function ScorpionDashboard() {
   const [eventoSeleccionado, setEventoSeleccionado] = useState<EventoMonitoreo | null>(null)
   const [modalActivo, setModalActivo] = useState<string | null>(null)
   const [horaLocal, setHoraLocal] = useState('')
+  const [mostrarMenuNotificaciones, setMostrarMenuNotificaciones] = useState(false)
   
   // Mapa de clientes cargado en tiempo real
   const [clientesMap, setClientesMap] = useState<Record<string, Record<string, string>>>({})
@@ -224,11 +227,12 @@ export default function ScorpionDashboard() {
   useEffect(() => {
     const channel = supabase
       .channel('eventos-live')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'eventos_monitoreo' }, (payload) => {
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'eventos_monitoreo' }, async (payload) => {
         const newEvent = payload.new as EventoMonitoreo
         // Ignorar filas especiales de sincronización
         const cuentasEspeciales = ['CLIENTES', 'CODIGOS', 'ZONAS']
         if (cuentasEspeciales.includes((newEvent.cuenta || '').toUpperCase().trim())) return
+        
         setEventos((prev) => {
           if (prev.some(e => e.id === newEvent.id)) return prev
           const next = [...prev, newEvent]
@@ -236,6 +240,38 @@ export default function ScorpionDashboard() {
           return next
         })
         setEventoSeleccionado(newEvent)
+
+        // Verificación de Notificaciones (Apertura o Cierre)
+        const eventoUpper = (newEvent.evento || '').toUpperCase()
+        const cidInfo = lookupContactId(eventoUpper)
+        const isAperturaCierre = eventoUpper.includes('APERTURA') || eventoUpper.includes('CIERRE') || (cidInfo && cidInfo.categoria === 'APERTURA')
+        
+        if (isAperturaCierre) {
+          try {
+            // Verificar si el cliente tiene correos configurados
+            const { data } = await supabase
+              .from('notificaciones_mail')
+              .select('emails')
+              .eq('cuenta', newEvent.cuenta)
+              .single()
+            
+            if (data && data.emails && data.emails.length > 0) {
+              await fetch('/api/enviar-mail', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  cuenta: newEvent.cuenta,
+                  nombre_cliente: newEvent.nombre_abonado,
+                  tipo_evento: eventoUpper,
+                  fecha_hora: newEvent.fecha_hora,
+                  destinatarios: data.emails
+                })
+              })
+            }
+          } catch (e) {
+            console.error('Error al verificar/enviar notificación por mail:', e)
+          }
+        }
       })
       .subscribe()
     return () => { supabase.removeChannel(channel) }
@@ -288,19 +324,37 @@ export default function ScorpionDashboard() {
           { label: 'MARCADOR',       id: 'menu-marcador' },
           { label: 'TABLAS',         id: 'menu-tablas' },
           { label: 'UTILIDADES',     id: 'menu-utilidades' },
-          { label: 'NOTIFICACIONES', id: 'menu-notificaciones' },
+          { label: 'NOTIFICACIONES', id: 'menu-notificaciones', hasDropdown: true },
           { label: 'REPORTES',       id: 'menu-reportes' },
           { label: 'EVENTOS',        id: 'menu-eventos' },
           { label: 'AYUDA',          id: 'menu-ayuda' },
         ].map((item, idx) => (
-          <button
-            key={idx}
-            id={item.id}
-            className="px-3 py-0.5 text-[11px] font-bold text-white tracking-wider whitespace-nowrap border-r border-[#600000] hover:bg-[#a00000] active:bg-[#700000] cursor-pointer transition-colors"
-            style={{ fontFamily: "'Arial', sans-serif" }}
-          >
-            {item.label}
-          </button>
+          <div key={idx} className="relative">
+            <button
+              id={item.id}
+              onClick={() => {
+                if (item.id === 'menu-notificaciones') {
+                  setMostrarMenuNotificaciones(!mostrarMenuNotificaciones)
+                } else {
+                  setMostrarMenuNotificaciones(false)
+                }
+              }}
+              className="px-3 py-0.5 text-[11px] font-bold text-white tracking-wider whitespace-nowrap border-r border-[#600000] hover:bg-[#a00000] active:bg-[#700000] cursor-pointer transition-colors"
+              style={{ fontFamily: "'Arial', sans-serif" }}
+            >
+              {item.label}
+            </button>
+            {item.hasDropdown && mostrarMenuNotificaciones && (
+              <div className="absolute top-full left-0 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 shadow-xl z-50 py-1 min-w-[120px]">
+                <button 
+                  className="w-full text-left px-4 py-1.5 text-xs text-black font-bold hover:bg-[#000080] hover:text-white"
+                  onClick={() => { setModalActivo('notificaciones-mail'); setMostrarMenuNotificaciones(false); }}
+                >
+                  POR MAIL
+                </button>
+              </div>
+            )}
+          </div>
         ))}
       </nav>
 
@@ -491,11 +545,19 @@ export default function ScorpionDashboard() {
         />
       )}
 
-      {/* Zonificación Modal (Controlado por el botón Árbol de Coberturas: 'zones-tree') */}
+      {/* Zonificacion Modal (Controlado por el botón hierarchy: 'zones-tree') */}
       {modalActivo === 'zones-tree' && (
         <ZonificacionModal
           eventoInicial={activeEvent || undefined}
           onClose={() => setModalActivo(null)}
+        />
+      )}
+
+      {/* Notificaciones Mail Modal (Controlado desde el menú superior) */}
+      {modalActivo === 'notificaciones-mail' && (
+        <NotificacionesMailModal
+          onClose={() => setModalActivo(null)}
+          clientesMap={clientesMap}
         />
       )}
 
