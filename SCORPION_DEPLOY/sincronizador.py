@@ -61,6 +61,24 @@ RUTAS_GENERAL_MDB = [
 ]
 PASSWORD_GENERAL = "SCORPION7"
 
+# Rutas del archivo CODIGOS.MDB (Mapeo de colores)
+RUTAS_CODIGOS_MDB = [
+    r"C:\SCORPION\BASES DE DATOS\CODIGOS.MDB",
+    r"E:\MONITOREO ONLINE\BASES DE DATOS\CODIGOS.MDB",
+    os.path.join(os.path.dirname(CARPETA_EVENTOS), "BASES DE DATOS", "CODIGOS.MDB"),
+    os.path.join(os.path.dirname(CARPETA_EVENTOS), "CODIGOS.MDB")
+]
+PASSWORD_CODIGOS = "SCORPION17"
+
+# Rutas de la carpeta ZONIFICACION (MDBs por abonado)
+RUTAS_ZONIFICACION_DIR = [
+    r"C:\SCORPION\BASES DE DATOS\ZONIFICACION",
+    r"E:\MONITOREO ONLINE\BASES DE DATOS\ZONIFICACION",
+    os.path.join(os.path.dirname(CARPETA_EVENTOS), "BASES DE DATOS", "ZONIFICACION"),
+    os.path.join(os.path.dirname(CARPETA_EVENTOS), "ZONIFICACION")
+]
+PASSWORD_ZONAS = "SCORPION29"
+
 DB_PASSWORD  = 'Administ'
 INTERVALO_SEG = 3
 
@@ -208,6 +226,183 @@ def sincronizar_clientes():
             except: pass
 
 
+def buscar_codigos_mdb():
+    for ruta in RUTAS_CODIGOS_MDB:
+        if os.path.exists(ruta):
+            return ruta
+    return None
+
+def buscar_zonificacion_dir():
+    for ruta in RUTAS_ZONIFICACION_DIR:
+        if os.path.exists(ruta) and os.path.isdir(ruta):
+            return ruta
+    return None
+
+def sincronizar_codigos():
+    ruta_codigos = buscar_codigos_mdb()
+    if not ruta_codigos:
+        print("[MIGRACIÓN CODIGOS] Archivo CODIGOS.MDB no encontrado. Omitiendo...")
+        return
+        
+    print(f"[MIGRACIÓN CODIGOS] Leyendo base de datos de codigos de color: {ruta_codigos}")
+    
+    # Copia de seguridad temporal
+    temp_codigos = ruta_codigos + ".temp"
+    try:
+        if os.path.exists(temp_codigos):
+            os.remove(temp_codigos)
+    except: pass
+        
+    try:
+        shutil.copy2(ruta_codigos, temp_codigos)
+        conn_str = (
+            f"DRIVER={{Microsoft Access Driver (*.mdb, *.accdb)}};"
+            f"DBQ={temp_codigos};PWD={PASSWORD_CODIGOS};ReadOnly=1;"
+        )
+        conn = pyodbc.connect(conn_str)
+        cursor = conn.cursor()
+        
+        cursor.execute("SELECT CODIGO, DESCRIPCION, [ZN/US], COLORES FROM CODIGOS")
+        rows = cursor.fetchall()
+        
+        codigos_map = {}
+        for row in rows:
+            codigo = str(row[0]).strip().upper()
+            if codigo:
+                codigos_map[codigo] = {
+                    "descripcion": str(row[1]).strip().upper(),
+                    "zn_us": str(row[2]).strip().upper(),
+                    "color": str(row[3]).strip().upper()
+                }
+                
+        cursor.close()
+        conn.close()
+        
+        codigos_json = json.dumps(codigos_map, ensure_ascii=False)
+        print(f"[MIGRACIÓN CODIGOS] Subiendo {len(codigos_map)} codigos a Supabase en fila especial...")
+        
+        try:
+            supabase.table("eventos_monitoreo").delete().eq("cuenta", "CODIGOS").execute()
+        except: pass
+        
+        chile_tz = get_chile_offset()
+        now_iso = datetime.now().strftime("%Y-%m-%dT%H:%M:%S") + chile_tz
+        
+        data = {
+            "fecha_hora": now_iso,
+            "cuenta": "CODIGOS",
+            "nombre_abonado": codigos_json,
+            "evento": "SINCRONIZACION CODIGOS COLORES MDB",
+            "zona": "000",
+            "usuario": "SYSTEM"
+        }
+        supabase.table("eventos_monitoreo").insert(data).execute()
+        print("[MIGRACIÓN CODIGOS SUCCESS] Tabla de colores sincronizada exitosamente en Supabase.")
+        
+    except Exception as e:
+        print(f"[MIGRACIÓN CODIGOS ERROR] Fallo: {e}")
+    finally:
+        if os.path.exists(temp_codigos):
+            try: os.remove(temp_codigos)
+            except: pass
+
+
+def sincronizar_zonas():
+    dir_zonas = buscar_zonificacion_dir()
+    if not dir_zonas:
+        print("[MIGRACIÓN ZONAS] Directorio ZONIFICACION no encontrado. Omitiendo...")
+        return
+        
+    print(f"[MIGRACIÓN ZONAS] Escaneando directorio de zonificacion: {dir_zonas}")
+    archivos = [f for f in os.listdir(dir_zonas) if f.upper().endswith('.MDB')]
+    
+    if not archivos:
+        print("[MIGRACIÓN ZONAS] No se encontraron archivos de zonificacion .MDB. Omitiendo...")
+        return
+        
+    print(f"[MIGRACIÓN ZONAS] Procesando {len(archivos)} archivos de abonados...")
+    
+    zonas_map = {}
+    for archivo in archivos:
+        cuenta = os.path.splitext(archivo)[0].upper().strip()
+        ruta_mdb = os.path.join(dir_zonas, archivo)
+        temp_zonas = ruta_mdb + ".temp"
+        
+        try:
+            if os.path.exists(temp_zonas):
+                os.remove(temp_zonas)
+        except: pass
+        
+        try:
+            shutil.copy2(ruta_mdb, temp_zonas)
+            conn_str = (
+                f"DRIVER={{Microsoft Access Driver (*.mdb, *.accdb)}};"
+                f"DBQ={temp_zonas};PWD={PASSWORD_ZONAS};ReadOnly=1;"
+            )
+            conn = pyodbc.connect(conn_str)
+            cursor = conn.cursor()
+            
+            cursor.execute("SELECT NUMERO, DISPOSITIVOS, AREA FROM ZONAS")
+            rows = cursor.fetchall()
+            
+            lista_zonas = []
+            for row in rows:
+                num = str(row[0]).strip()
+                if num and num != 'None':
+                    lista_zonas.append({
+                        "numero": num.zfill(2) if num.isdigit() else num,
+                        "dispositivo": str(row[1]).strip() if row[1] is not None else "",
+                        "area": str(row[2]).strip() if row[2] is not None else ""
+                    })
+            
+            cursor.close()
+            conn.close()
+            
+            if lista_zonas:
+                # Ordenar por número de zona numéricamente
+                try:
+                    lista_zonas.sort(key=lambda x: int(x['numero']) if x['numero'].isdigit() else 99)
+                except: pass
+                zonas_map[cuenta] = lista_zonas
+                
+        except Exception as file_err:
+            # Silenciar errores individuales por si hay algún archivo corrupto o abierto
+            pass
+        finally:
+            if os.path.exists(temp_zonas):
+                try: os.remove(temp_zonas)
+                except: pass
+                
+    if not zonas_map:
+        print("[MIGRACIÓN ZONAS] No se pudo leer la zonificación de ningún abonado. Omitiendo...")
+        return
+        
+    try:
+        zonas_json = json.dumps(zonas_map, ensure_ascii=False)
+        print(f"[MIGRACIÓN ZONAS] Subiendo zonificacion de {len(zonas_map)} abonados a Supabase en fila especial...")
+        
+        try:
+            supabase.table("eventos_monitoreo").delete().eq("cuenta", "ZONAS").execute()
+        except: pass
+        
+        chile_tz = get_chile_offset()
+        now_iso = datetime.now().strftime("%Y-%m-%dT%H:%M:%S") + chile_tz
+        
+        data = {
+            "fecha_hora": now_iso,
+            "cuenta": "ZONAS",
+            "nombre_abonado": zonas_json,
+            "evento": "SINCRONIZACION ZONAS MDB",
+            "zona": "000",
+            "usuario": "SYSTEM"
+        }
+        supabase.table("eventos_monitoreo").insert(data).execute()
+        print(f"[MIGRACIÓN ZONAS SUCCESS] Zonificación de {len(zonas_map)} abonados sincronizada exitosamente en Supabase.")
+        
+    except Exception as e:
+        print(f"[MIGRACIÓN ZONAS ERROR] Fallo al subir consolidado: {e}")
+
+
 # ============================================================
 #  BUCLE PRINCIPAL DE EVENTOS
 # ============================================================
@@ -327,7 +522,7 @@ def sincronizar_eventos(cache):
 
 if __name__ == "__main__":
     print("=" * 65)
-    print("  GAMA COMMAND CENTER - Sincronizador v4.0")
+    print("  GAMA COMMAND CENTER - Sincronizador v5.0")
     print(f"  Carpeta Eventos: {CARPETA_EVENTOS}")
     print(f"  Timezone: Chile ({get_chile_offset()})")
     print("=" * 65)
@@ -336,9 +531,21 @@ if __name__ == "__main__":
     print("\n[+] Iniciando sincronización inicial de clientes de GENERAL.mdb...")
     sincronizar_clientes()
     
-    # 2. Control de tiempo de modificación de GENERAL.mdb
+    # 2. Sincronización inicial de códigos de color (CODIGOS.MDB)
+    print("\n[+] Iniciando sincronización inicial de códigos de color (CODIGOS.MDB)...")
+    sincronizar_codigos()
+    
+    # 3. Sincronización inicial de zonificación de abonados
+    print("\n[+] Iniciando sincronización inicial de zonificación de abonados...")
+    sincronizar_zonas()
+    
+    # 4. Control de tiempo de modificación de GENERAL.mdb
     ruta_general = buscar_general_mdb()
     last_mtime = os.path.getmtime(ruta_general) if (ruta_general and os.path.exists(ruta_general)) else 0
+    
+    # 5. Control de tiempo para resincronización periódica de zonas/códigos (cada 1 hora)
+    last_sync_zonas = time.time()
+    INTERVALO_ZONAS = 3600  # 1 hora
     
     cache = load_cache()
     
@@ -355,6 +562,15 @@ if __name__ == "__main__":
                     last_mtime = current_mtime
             except Exception as ex:
                 print(f"[ERROR MTR] Fallo al monitorear GENERAL.mdb: {ex}")
+        
+        # Resincronización periódica de códigos y zonas (cada 1 hora)
+        ahora = time.time()
+        if ahora - last_sync_zonas >= INTERVALO_ZONAS:
+            print(f"\n[+] Resincronización periódica de códigos y zonas ({INTERVALO_ZONAS//60} min)...")
+            sincronizar_codigos()
+            sincronizar_zonas()
+            last_sync_zonas = ahora
                 
         cache, sleep_time = sincronizar_eventos(cache)
         time.sleep(sleep_time)
+

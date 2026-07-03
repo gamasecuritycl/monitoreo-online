@@ -1,52 +1,108 @@
 'use client'
 
 // ════════════════════════════════════════════════════════════════
-//  GAMA COMMAND CENTER - EventRow v3.1
-//  Fila ultra-compacta Scorpion (sin iconos en señales, altura ajustada)
+//  GAMA COMMAND CENTER - EventRow v4.0
+//  Colores dinámicos desde CODIGOS.MDB via Supabase
 // ════════════════════════════════════════════════════════════════
 
 import type { EventoMonitoreo } from '@/lib/supabase'
+
+interface CodigoInfo {
+  descripcion: string
+  zn_us: string
+  color: string
+}
 
 interface EventRowProps {
   evento: EventoMonitoreo
   onClick?: () => void
   isNew?: boolean
   isLatest?: boolean
+  codigosMap?: Record<string, CodigoInfo>
 }
 
-// ── Paleta Scorpion (colores físicos del panel) ─────────────────
-function getScorpionStyle(evento: string): { bg: string; text: string } {
+// Mapeo de nombres de colores de Access a valores CSS hexadecimales
+const COLOR_ACCESS_TO_CSS: Record<string, { bg: string; text: string }> = {
+  'AMARILLO': { bg: '#FFFF00', text: '#000000' },
+  'ROJO':     { bg: '#FF0000', text: '#FFFFFF' },
+  'VERDE':    { bg: '#00FF00', text: '#000000' },
+  'BLANCO':   { bg: '#FFFFFF', text: '#000000' },
+  'GRIS':     { bg: '#C0C0C0', text: '#000000' },
+  'VIOLETA':  { bg: '#EE82EE', text: '#000000' },
+  'AZUL':     { bg: '#0000FF', text: '#FFFFFF' },
+  'CELESTE':  { bg: '#00FFFF', text: '#000000' },
+  'ROSADO':   { bg: '#FFC0CB', text: '#000000' },
+  'COMPROBAR':{ bg: '#FFA500', text: '#000000' }, // Naranja para señales a verificar
+}
+
+// ── Paleta Scorpion de fallback (si el evento no coincide con CODIGOS.MDB) ─
+function getScorpionStyleFallback(evento: string): { bg: string; text: string } {
   const upper = evento.toUpperCase()
-  
-  // 1. Emergencia, Pánico, Fuego -> Rojo
+
+  // Emergencia, Pánico, Fuego -> Rojo
   if (upper.includes('PANICO') || upper.includes('FUEGO') || upper.includes('INCENDIO') || upper.includes('EMERGENCIA') || upper.includes('MEDICA')) {
     return { bg: '#FF0000', text: '#FFFFFF' }
   }
-  
-  // 2. Todos los Restablecimientos -> Amarillo
+  // Todos los Restablecimientos -> Amarillo
   if (upper.includes('RESTABLEC') || upper.includes('RESTAURACION') || upper.includes('RETORNO') || upper.includes('RESTABLECIMIENTO')) {
     return { bg: '#FFFF00', text: '#000000' }
   }
-  
-  // 3. Cortes de luz / Fallas de energía -> Verde
+  // Cortes de luz / Fallas de energía -> Verde
   if (upper.includes('FALLA AC') || upper.includes('FALLA DE ENERGIA') || upper.includes('CORTE DE LUZ') || upper.includes('AC FALLA') || upper.includes('E301') || upper.includes('E302')) {
     return { bg: '#00FF00', text: '#000000' }
   }
-  
-  // 4. Sabotajes de zona y Alarmas de robo -> Rosado / Rosa fuerte
+  // Sabotajes de zona y Alarmas de robo -> Rosado
   if (upper.includes('ROBO') || upper.includes('ALARMA') || upper.includes('INTRUSION') || upper.includes('SABOTAJE') || upper.includes('TAMPER')) {
-    return { bg: '#FFC0CB', text: '#000000' } // Pink / LightPink retro
+    return { bg: '#FFC0CB', text: '#000000' }
   }
-
-  // Por defecto, aperturas y otros
+  // Aperturas -> Azul
   if (upper.includes('APERTURA')) {
     return { bg: '#0000FF', text: '#FFFFFF' }
   }
+  // Autotests -> Celeste
   if (upper.includes('AUTOTEST')) {
     return { bg: '#00FFFF', text: '#000000' }
   }
 
   return { bg: '#FFFFFF', text: '#000000' }
+}
+
+/**
+ * Determina el color del evento usando CODIGOS.MDB primero, 
+ * luego fallback con las reglas predeterminadas de Scorpion.
+ */
+function getEventoStyle(
+  eventoTexto: string,
+  codigosMap?: Record<string, CodigoInfo>
+): { bg: string; text: string } {
+  if (codigosMap && eventoTexto) {
+    const upper = eventoTexto.toUpperCase().trim()
+    
+    // 1. Buscar coincidencia exacta por CODIGO (ej: "E130", "R100")
+    if (codigosMap[upper]) {
+      const colorNombre = codigosMap[upper].color
+      if (COLOR_ACCESS_TO_CSS[colorNombre]) {
+        return COLOR_ACCESS_TO_CSS[colorNombre]
+      }
+    }
+    
+    // 2. Buscar por coincidencia de DESCRIPCION en el mapa de códigos
+    for (const [, info] of Object.entries(codigosMap)) {
+      if (
+        info.descripcion &&
+        upper.includes(info.descripcion.toUpperCase().trim()) &&
+        info.descripcion.length > 3
+      ) {
+        const colorNombre = info.color
+        if (COLOR_ACCESS_TO_CSS[colorNombre]) {
+          return COLOR_ACCESS_TO_CSS[colorNombre]
+        }
+      }
+    }
+  }
+
+  // 3. Fallback a las reglas predeterminadas de Scorpion
+  return getScorpionStyleFallback(eventoTexto)
 }
 
 function renderFecha(iso: string) {
@@ -71,8 +127,8 @@ function renderFecha(iso: string) {
   }
 }
 
-export default function EventRow({ evento, onClick, isNew, isLatest }: EventRowProps) {
-  const style  = getScorpionStyle(evento.evento)
+export default function EventRow({ evento, onClick, isNew, isLatest, codigosMap }: EventRowProps) {
+  const style = getEventoStyle(evento.evento, codigosMap)
   const isCritical = ['#FF0000'].includes(style.bg)
 
   const rowClass = [
@@ -102,7 +158,7 @@ export default function EventRow({ evento, onClick, isNew, isLatest }: EventRowP
         {evento.nombre_abonado}
       </td>
 
-      {/* SEÑAL (sin sigilos/iconos, solo el texto) */}
+      {/* SEÑAL */}
       <td className="px-1 py-0.5 text-[10px] md:text-[11px] font-bold border border-black leading-none align-middle truncate max-w-[80px] md:max-w-none">
         {evento.evento}
       </td>

@@ -52,7 +52,7 @@ const BOTONES_RETRO: BotonRetro[] = [
   // 3. ÁRBOL DE JERARQUÍA (Tree Nodes)
   {
     id: 'zones-tree',
-    title: 'Árbol de Coberturas',
+    title: 'Zonificación',
     renderSVG: () => (
       <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
         <rect x="13" y="4" width="6" height="6" fill="#22c55e" stroke="#15803d" strokeWidth="1.5"/>

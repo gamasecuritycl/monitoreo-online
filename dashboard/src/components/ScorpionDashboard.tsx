@@ -7,6 +7,7 @@ import FooterActions from './FooterActions'
 import ToolModal from './ToolModal'
 import ExpedienteModal from './ExpedienteModal'
 import EventosPorUsuarioModal from './EventosPorUsuarioModal'
+import ZonificacionModal from './ZonificacionModal'
 
 // ── Contactos y Zonas simuladas por abonado para poblar el Panel Lateral de Scorpion ──
 interface ContactoAutorizado {
@@ -71,6 +72,9 @@ export default function ScorpionDashboard() {
   
   // Mapa de clientes cargado en tiempo real
   const [clientesMap, setClientesMap] = useState<Record<string, Record<string, string>>>({})
+  
+  // Mapa de códigos de color desde CODIGOS.MDB
+  const [codigosMap, setCodigosMap] = useState<Record<string, { descripcion: string; zn_us: string; color: string }> | undefined>(undefined)
 
   // Cargar base de datos de clientes reales de Supabase en caliente
   useEffect(() => {
@@ -94,6 +98,30 @@ export default function ScorpionDashboard() {
       }
     }
     fetchClientes()
+  }, [])
+
+  // Cargar mapa de códigos de color de CODIGOS.MDB
+  useEffect(() => {
+    const fetchCodigos = async () => {
+      try {
+        const { data } = await supabase
+          .from('eventos_monitoreo')
+          .select('*')
+          .eq('cuenta', 'CODIGOS')
+          .limit(1)
+        if (data && data.length > 0) {
+          const rawJson = data[0].nombre_abonado
+          if (rawJson) {
+            const map = JSON.parse(rawJson)
+            setCodigosMap(map)
+            console.log(`[SUPABASE DASHBOARD] ${Object.keys(map).length} codigos de color cargados desde CODIGOS.MDB.`)
+          }
+        }
+      } catch (err) {
+        console.warn('[SUPABASE DASHBOARD] Error cargando codigos de color.')
+      }
+    }
+    fetchCodigos()
   }, [])
 
   // Reloj digital inferior igual a Scorpion
@@ -233,6 +261,7 @@ export default function ScorpionDashboard() {
           <EventGrid
             eventos={eventos}
             onEventClick={(e) => setEventoSeleccionado(e)}
+            codigosMap={codigosMap}
           />
         </div>
 
@@ -393,6 +422,14 @@ export default function ScorpionDashboard() {
       {/* Eventos Por Usuario Modal (Controlado por el botón checklist: 'checklist') */}
       {modalActivo === 'checklist' && (
         <EventosPorUsuarioModal
+          eventoInicial={activeEvent || undefined}
+          onClose={() => setModalActivo(null)}
+        />
+      )}
+
+      {/* Zonificación Modal (Controlado por el botón Árbol de Coberturas: 'zones-tree') */}
+      {modalActivo === 'zones-tree' && (
+        <ZonificacionModal
           eventoInicial={activeEvent || undefined}
           onClose={() => setModalActivo(null)}
         />

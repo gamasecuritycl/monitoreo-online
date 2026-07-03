@@ -25,9 +25,10 @@ import type { EventoMonitoreo } from '@/lib/supabase'
 interface EventGridProps {
   eventos: EventoMonitoreo[]
   onEventClick: (evento: EventoMonitoreo) => void
+  codigosMap?: Record<string, { descripcion: string; zn_us: string; color: string }>
 }
 
-export default function EventGrid({ eventos, onEventClick }: EventGridProps) {
+export default function EventGrid({ eventos, onEventClick, codigosMap }: EventGridProps) {
   const containerRef = useRef<HTMLDivElement>(null)
 
   // Rastrear IDs nuevos para activar animación de entrada
@@ -87,6 +88,7 @@ export default function EventGrid({ eventos, onEventClick }: EventGridProps) {
                 onClick={() => onEventClick(evento)}
                 isNew={newIds.has(evento.id as number)}
                 isLatest={evento.id === latestId}
+                codigosMap={codigosMap}
               />
             ))
           )}
