@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { Client } from 'pg'
 
 export async function GET() {
-  const connectionString = "postgresql://postgres:yr43d8lek%25fr$6!xDzlMuqVf@db.onxwyrwmpjxtwlmjrosr.supabase.co:5432/postgres"
+  const connectionString = "postgresql://postgres.onxwyrwmpjxtwlmjrosr:yr43d8lek%25fr$6!xDzlMuqVf@aws-0-us-east-1.pooler.supabase.com:5432/postgres"
 
   const sql_create_table = `
   CREATE TABLE IF NOT EXISTS public.notificaciones_mail (
