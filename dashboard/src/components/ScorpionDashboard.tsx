@@ -54,7 +54,7 @@ function obtenerDatosAbonado(cuenta: string, nombreAbonado: string, clienteDb: R
   if (datos.contactos.length === 0) {
     datos.contactos = [
       { prioridad: 1, nombre: 'Tomás Toro (Admin)', telefono: '+56 9 8765 4321' },
-      { prioridad: 2, font: 'bold', nombre: 'Conserjería Central', telefono: '+56 2 2345 6789' },
+      { prioridad: 2, nombre: 'Conserjería Central', telefono: '+56 2 2345 6789' },
       { prioridad: 3, nombre: 'Carabineros de Chile', telefono: '133' }
     ]
   }
