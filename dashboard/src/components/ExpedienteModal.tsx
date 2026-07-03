@@ -17,7 +17,7 @@ export default function ExpedienteModal({ evento, onClose }: ExpedienteModalProp
   const modalRef = useRef<HTMLDivElement>(null)
   
   // Cuenta y cliente activo en el modal (por defecto el del evento recibido)
-  const [cuentaActiva, setCuentaActiva] = useState(evento.cuenta.toUpperCase().strip || 'C745')
+  const [cuentaActiva, setCuentaActiva] = useState(evento.cuenta.toUpperCase().trim() || 'C745')
   const [buscarCuentaInput, setBuscarCuentaInput] = useState('')
   
   // Pestañas independientes del panel original de Scorpion
@@ -452,7 +452,7 @@ export default function ExpedienteModal({ evento, onClose }: ExpedienteModalProp
                 <div
                   key={item.cuenta}
                   onClick={() => {
-                    setCuentaActiva(item.cuenta.upper.strip)
+                    setCuentaActiva(item.cuenta.toUpperCase().trim())
                     setBuscarCuentaInput('')
                   }}
                   className={`px-1 py-0.5 cursor-pointer font-mono font-bold select-none ${
