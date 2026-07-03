@@ -5,6 +5,7 @@ import { supabase, type EventoMonitoreo } from '@/lib/supabase'
 import EventGrid from './EventGrid'
 import FooterActions from './FooterActions'
 import ToolModal from './ToolModal'
+import ExpedienteModal from './ExpedienteModal'
 
 // ── Contactos y Zonas simuladas por abonado para poblar el Panel Lateral de Scorpion ──
 interface ContactoAutorizado {
@@ -340,9 +341,17 @@ export default function ScorpionDashboard() {
       </div>
 
       {/* Tool Modals */}
-      {modalActivo && (
+      {modalActivo && modalActivo !== 'bar-chart' && (
         <ToolModal
           modalId={modalActivo}
+          onClose={() => setModalActivo(null)}
+        />
+      )}
+
+      {/* Expediente Modal (Controlado por el botón de libros del Footer: 'bar-chart') */}
+      {modalActivo === 'bar-chart' && activeEvent && (
+        <ExpedienteModal
+          evento={activeEvent}
           onClose={() => setModalActivo(null)}
         />
       )}

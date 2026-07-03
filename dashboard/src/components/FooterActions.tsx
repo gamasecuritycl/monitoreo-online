@@ -99,29 +99,38 @@ const BOTONES_RETRO: BotonRetro[] = [
       </svg>
     )
   },
-  // 5. GRÁFICO BARRAS DE COLORES (Bar Chart)
+  // 5. EXPEDIENTE (Libros apilados)
   {
     id: 'bar-chart',
-    title: 'Frecuencia de Eventos',
+    title: 'Expediente de Usuario',
     renderSVG: () => (
       <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect x="4" y="4" width="24" height="24" fill="#ffffff" stroke="#1e293b" strokeWidth="1.5"/>
-        {/* Líneas horizontales */}
-        <line x1="5" y1="10" x2="27" y2="10" stroke="#f1f5f9" strokeWidth="1.5"/>
-        <line x1="5" y1="17" x2="27" y2="17" stroke="#f1f5f9" strokeWidth="1.5"/>
-        {/* Barras 3D */}
-        {/* Barra 1 - Amarilla */}
-        <rect x="6" y="14" width="4" height="11" fill="#eab308" stroke="#1e293b" strokeWidth="1.2"/>
-        <rect x="7" y="15" width="2" height="9" fill="#fef08a"/>
-        {/* Barra 2 - Roja */}
-        <rect x="11" y="8" width="4" height="17" fill="#ef4444" stroke="#1e293b" strokeWidth="1.2"/>
-        <rect x="12" y="9" width="2" height="15" fill="#fca5a5"/>
-        {/* Barra 3 - Azul */}
-        <rect x="16" y="16" width="4" height="9" fill="#2563eb" stroke="#1e293b" strokeWidth="1.2"/>
-        <rect x="17" y="17" width="2" height="7" fill="#93c5fd"/>
-        {/* Barra 4 - Verde */}
-        <rect x="21" y="11" width="4" height="14" fill="#22c55e" stroke="#1e293b" strokeWidth="1.2"/>
-        <rect x="22" y="12" width="2" height="12" fill="#86efac"/>
+        {/* Tres libros apilados verticalmente con lomos de colores clásicos */}
+        {/* Libro 1 - Rojo */}
+        <rect x="6" y="5" width="5" height="22" rx="1" fill="#ef4444" stroke="#1e293b" strokeWidth="1.2"/>
+        <rect x="8" y="7" width="1.5" height="18" fill="#fca5a5"/>
+        <line x1="6" y1="9" x2="11" y2="9" stroke="#1e293b" strokeWidth="1"/>
+        <line x1="6" y1="23" x2="11" y2="23" stroke="#1e293b" strokeWidth="1"/>
+
+        {/* Libro 2 - Azul */}
+        <rect x="12" y="5" width="5" height="22" rx="1" fill="#2563eb" stroke="#1e293b" strokeWidth="1.2"/>
+        <rect x="14" y="7" width="1.5" height="18" fill="#93c5fd"/>
+        <line x1="12" y1="9" x2="17" y2="9" stroke="#1e293b" strokeWidth="1"/>
+        <line x1="12" y1="23" x2="17" y2="23" stroke="#1e293b" strokeWidth="1"/>
+
+        {/* Libro 3 - Verde */}
+        <rect x="18" y="5" width="5" height="22" rx="1" fill="#22c55e" stroke="#1e293b" strokeWidth="1.2"/>
+        <rect x="20" y="7" width="1.5" height="18" fill="#86efac"/>
+        <line x1="18" y1="9" x2="23" y2="9" stroke="#1e293b" strokeWidth="1"/>
+        <line x1="18" y1="23" x2="23" y2="23" stroke="#1e293b" strokeWidth="1"/>
+
+        {/* Libro 4 inclinado (Gris/Amarillo) */}
+        <g transform="rotate(15 22 5)">
+          <rect x="22" y="4" width="5" height="22" rx="1" fill="#eab308" stroke="#1e293b" strokeWidth="1.2"/>
+          <rect x="24" y="6" width="1.5" height="18" fill="#fef08a"/>
+          <line x1="22" y1="8" x2="27" y2="8" stroke="#1e293b" strokeWidth="1"/>
+          <line x1="22" y1="22" x2="27" y2="22" stroke="#1e293b" strokeWidth="1"/>
+        </g>
       </svg>
     )
   },

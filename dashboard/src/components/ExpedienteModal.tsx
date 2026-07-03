@@ -3,46 +3,27 @@
 import { useEffect, useRef, useState } from 'react'
 import type { EventoMonitoreo } from '@/lib/supabase'
 
+// Importamos la base de datos de 464 clientes reales de GENERAL.mdb convertida a JSON
+import clientesDataRaw from '@/lib/clientes_general.json'
+
+const clientesGeneral = clientesDataRaw as Record<string, Record<string, string>>
+
 interface ExpedienteModalProps {
   evento: EventoMonitoreo
   onClose: () => void
 }
 
-function getSignalSeverity(evento: string): { label: string; color: string; bg: string } {
-  const upper = evento.toUpperCase()
-  if (upper.includes('ROBO') || upper.includes('PANICO') || upper.includes('INCENDIO'))
-    return { label: 'CRÍTICO', color: 'text-white', bg: 'bg-[#FF4D4D]' }
-  if (upper.includes('CIERRE'))
-    return { label: 'CIERRE', color: 'text-white', bg: 'bg-[#3B82F6]' }
-  if (upper.includes('APERTURA'))
-    return { label: 'APERTURA', color: 'text-white', bg: 'bg-[#22C55E]' }
-  if (upper.includes('AUTOTEST'))
-    return { label: 'SISTEMA', color: 'text-white', bg: 'bg-[#9CA3AF]' }
-  return { label: 'INFORMATIVO', color: 'text-slate-300', bg: 'bg-slate-700' }
-}
-
-function formatFecha(iso: string): string {
-  try {
-    const d = new Date(iso)
-    return new Intl.DateTimeFormat('es-CL', {
-      timeZone: 'America/Santiago',
-      year:    'numeric',
-      month:   '2-digit',
-      day:     '2-digit',
-      hour:    '2-digit',
-      minute:  '2-digit',
-      second:  '2-digit',
-      hour12:  false,
-    }).format(d).replace(',', '')
-  } catch {
-    return iso
-  }
-}
-
 export default function ExpedienteModal({ evento, onClose }: ExpedienteModalProps) {
-  const ref = useRef<HTMLDivElement>(null)
-  const severity = getSignalSeverity(evento.evento)
-  const [activeTab, setActiveTab] = useState<'general' | 'zones' | 'maintenance' | 'action'>('general')
+  const modalRef = useRef<HTMLDivElement>(null)
+  
+  // Cuenta y cliente activo en el modal (por defecto el del evento recibido)
+  const [cuentaActiva, setCuentaActiva] = useState(evento.cuenta.toUpperCase().strip || 'C745')
+  const [buscarCuentaInput, setBuscarCuentaInput] = useState('')
+  
+  // Pestañas independientes del panel original de Scorpion
+  const [tabEmergentes, setTabEmergentes] = useState<'telefonos' | 'horarios' | 'camara'>('telefonos')
+  const [tabInfo, setTabInfo] = useState<'caracteristicas' | 'referencias' | 'observaciones'>('caracteristicas')
+  const [tabInstalacion, setTabInstalacion] = useState<'instalacion' | 'ucontrol' | 'tiempos' | 'teclados' | 'sirenas'>('instalacion')
 
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
@@ -51,227 +32,469 @@ export default function ExpedienteModal({ evento, onClose }: ExpedienteModalProp
   }, [onClose])
 
   useEffect(() => {
-    ref.current?.focus()
+    modalRef.current?.focus()
   }, [])
 
-  // Dummy dynamic data based on client account
-  const accountNum = evento.cuenta || '7015'
-  const clientName = evento.nombre_abonado || 'GAMA SEGURIDAD'
+  // Buscar el registro completo del cliente en la base de datos
+  const cliente = clientesGeneral[cuentaActiva] || {
+    cuenta: cuentaActiva,
+    nombre: evento.nombre_abonado || 'SIN NOMBRE REGISTRADO',
+    ciudad: 'SANTIAGO',
+    direccion: 'DIRECCIÓN NO DISPONIBLE',
+    sector: 'NO DISPONIBLE'
+  }
+
+  // Lista de todos los clientes para el buscador de abajo
+  const listaAbonados = Object.values(clientesGeneral).map(c => ({
+    cuenta: c.cuenta || '',
+    nombre: c.nombre || ''
+  })).sort((a, b) => a.cuenta.localeCompare(b.cuenta))
+
+  // Filtrar lista de abonados según el input de búsqueda
+  const listaFiltrada = buscarCuentaInput.trim()
+    ? listaAbonados.filter(a => 
+        a.cuenta.toLowerCase().includes(buscarCuentaInput.toLowerCase()) ||
+        a.nombre.toLowerCase().includes(buscarCuentaInput.toLowerCase())
+      )
+    : listaAbonados.slice(0, 100) // Mostrar primeros 100 por rendimiento de renderizado
+
+  // Extraer teléfonos de emergencia indexados de la base de datos (NOMBRE1, DIRECCION1, T1...)
+  const telefonosEmergencia = []
+  for (let i = 1; i <= 7; i++) {
+    const nom = cliente[`nombre${i}`] || ''
+    const dir = cliente[`direccion${i}`] || ''
+    const carg = cliente[`carg${i}`] || ''
+    const tel = cliente[`t${i}`] || ''
+    if (nom || tel) {
+      telefonosEmergencia.push({
+        num: i,
+        nombre: nom,
+        direccion: dir,
+        cargo: carg,
+        telefono: tel
+      })
+    }
+  }
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-xs font-mono"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 font-mono"
       onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
     >
+      {/* Ventana de Diálogo Estilo Clásico Bevel Windows 95/98 */}
       <div
-        ref={ref}
+        ref={modalRef}
         tabIndex={-1}
-        className="w-full max-w-xl mx-4 bg-[#080d19] border border-[#1e293b] rounded-md shadow-2xl overflow-hidden focus:outline-none"
+        className="w-[960px] bg-[#d0d0d0] text-black border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 p-2 shadow-[4px_4px_10px_rgba(0,0,0,0.5)] focus:outline-none flex flex-col gap-2 select-none"
+        style={{ fontSize: '11px' }}
       >
-        {/* Header style Windows Desktop bevel */}
-        <div className="flex items-center justify-between px-4 py-2.5 bg-[#111827] border-b border-[#1e293b]">
-          <div className="flex items-center gap-3">
-            <h2 className="text-xs font-bold text-slate-200 tracking-wider">EXPEDIENTE DEL ABONADO</h2>
-            <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${severity.bg} ${severity.color}`}>
-              {severity.label}
-            </span>
+        {/* Barra de Título */}
+        <div className="bg-[#000080] text-white font-bold px-2 py-1 flex justify-between items-center select-none">
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs">📖</span>
+            <span className="text-xs tracking-wide">Scorpion - Expediente de Usuario</span>
           </div>
-          <button onClick={onClose} className="text-slate-500 hover:text-slate-200 text-lg leading-none cursor-pointer">&times;</button>
-        </div>
-
-        {/* Tab Selector Desktop Style */}
-        <div className="flex bg-[#0b1222] border-b border-[#1e293b] text-xs">
-          <button
-            onClick={() => setActiveTab('general')}
-            className={`px-4 py-2 border-r border-[#1e293b] font-semibold transition-all cursor-pointer ${
-              activeTab === 'general' ? 'bg-[#080d19] text-blue-400 border-b-2 border-b-blue-500' : 'text-slate-500 hover:bg-[#0e172a] hover:text-slate-300'
-            }`}
+          <button 
+            onClick={onClose} 
+            className="w-5 h-5 bg-[#d0d0d0] border border-t-white border-l-white border-b-gray-700 border-r-gray-700 text-black font-bold flex items-center justify-center active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white text-[10px] pb-0.5"
           >
-            FICHA TÉCNICA
-          </button>
-          <button
-            onClick={() => setActiveTab('zones')}
-            className={`px-4 py-2 border-r border-[#1e293b] font-semibold transition-all cursor-pointer ${
-              activeTab === 'zones' ? 'bg-[#080d19] text-blue-400 border-b-2 border-b-blue-500' : 'text-slate-500 hover:bg-[#0e172a] hover:text-slate-300'
-            }`}
-          >
-            ZONAS & COBERTURA
-          </button>
-          <button
-            onClick={() => setActiveTab('maintenance')}
-            className={`px-4 py-2 border-r border-[#1e293b] font-semibold transition-all cursor-pointer ${
-              activeTab === 'maintenance' ? 'bg-[#080d19] text-blue-400 border-b-2 border-b-blue-500' : 'text-slate-500 hover:bg-[#0e172a] hover:text-slate-300'
-            }`}
-          >
-            MANTENIMIENTO
-          </button>
-          <button
-            onClick={() => setActiveTab('action')}
-            className={`px-4 py-2 font-semibold transition-all cursor-pointer ${
-              activeTab === 'action' ? 'bg-[#080d19] text-blue-400 border-b-2 border-b-blue-500' : 'text-slate-500 hover:bg-[#0e172a] hover:text-slate-300'
-            }`}
-          >
-            PLAN DE ACCIÓN
+            x
           </button>
         </div>
 
-        {/* Modal Body */}
-        <div className="p-5 h-72 overflow-y-auto">
-          {activeTab === 'general' && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-[9px] uppercase tracking-wider text-slate-500 block">Número de Abonado</label>
-                  <p className="text-xs font-bold text-slate-200 mt-1 font-mono">{accountNum}</p>
-                </div>
-                <div>
-                  <label className="text-[9px] uppercase tracking-wider text-slate-500 block">Nombre Comercial</label>
-                  <p className="text-xs font-bold text-slate-200 mt-1">{clientName}</p>
-                </div>
+        {/* Sección Superior: Información Básica + Fotografía */}
+        <div className="grid grid-cols-3 gap-2">
+          
+          {/* INFORMACION BASICA (Ocupa 2 de las 3 columnas) */}
+          <div className="col-span-2 border-2 border-t-white border-l-white border-b-gray-600 border-r-gray-600 p-2 flex flex-col gap-2 relative">
+            <div className="absolute -top-2 left-3 bg-[#d0d0d0] px-1 font-bold text-[10px]">
+              INFORMACION BASICA:
+            </div>
+            
+            {/* Cuenta y Nombre */}
+            <div className="grid grid-cols-12 gap-2 items-center mt-1">
+              <div className="col-span-3 flex items-center gap-1">
+                <span>Cuenta:</span>
+                <input 
+                  type="text" 
+                  readOnly 
+                  value={cliente.cuenta || ''} 
+                  className="w-full bg-[#ffffe0] border border-gray-400 font-bold px-1 py-0.5 text-blue-900 focus:outline-none" 
+                />
               </div>
+              <div className="col-span-9 flex items-center gap-1">
+                <span>Nombre:</span>
+                <input 
+                  type="text" 
+                  readOnly 
+                  value={cliente.nombre || ''} 
+                  className="w-full bg-[#ffffe0] border border-gray-400 font-bold px-1 py-0.5 text-blue-900 focus:outline-none truncate" 
+                />
+              </div>
+            </div>
+
+            {/* Ciudad, Plan y Tipo */}
+            <div className="grid grid-cols-3 gap-2">
+              <div className="flex items-center gap-1">
+                <span>Ciudad:</span>
+                <select disabled className="w-full bg-[#ffffe0] border border-gray-400 font-bold py-0.5 px-0.5 text-black">
+                  <option>{cliente.ciudad || 'SANTIAGO'}</option>
+                </select>
+              </div>
+              <div className="flex items-center gap-1">
+                <span>Plan:</span>
+                <input type="text" readOnly value={cliente.plan || ''} className="w-full bg-[#ffffe0] border border-gray-400 font-bold px-1 py-0.5" />
+              </div>
+              <div className="flex items-center gap-1">
+                <span>Tipo:</span>
+                <input type="text" readOnly value={cliente.tipo1 || ''} className="w-full bg-[#ffffe0] border border-gray-400 font-bold px-1 py-0.5" />
+              </div>
+            </div>
+
+            {/* Dirección y Sector */}
+            <div className="grid grid-cols-2 gap-2">
+              <div className="flex items-center gap-1">
+                <span>Dirección:</span>
+                <input type="text" readOnly value={cliente.direccion || ''} className="w-full bg-[#ffffe0] border border-gray-400 font-bold px-1 py-0.5 truncate" />
+              </div>
+              <div className="flex items-center gap-1">
+                <span>Sector:</span>
+                <input type="text" readOnly value={cliente.sector || ''} className="w-full bg-[#ffffe0] border border-gray-400 font-bold px-1 py-0.5 truncate" />
+              </div>
+            </div>
+
+            {/* TELEFONOS */}
+            <div className="border border-gray-400 p-1.5 relative mt-1">
+              <div className="absolute -top-2.5 left-2 bg-[#d0d0d0] px-1 text-[9px] font-bold text-gray-700">
+                TELEFONOS:
+              </div>
+              <div className="grid grid-cols-6 gap-1 mt-1">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <input
+                    key={i}
+                    type="text"
+                    readOnly
+                    value={cliente[`telefono${i + 1}`] || ''}
+                    className="w-full bg-[#ffffe0] border border-gray-400 px-1 py-0.5 text-center font-bold text-gray-800"
+                    placeholder="---"
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* FOTOGRAFIA (Columna de la derecha) */}
+          <div className="border-2 border-t-white border-l-white border-b-gray-600 border-r-gray-600 p-1 flex flex-col justify-between bg-[#e0e0e0] h-full min-h-[140px]">
+            <div className="bg-[#b0b0b0] text-center font-bold text-[9px] py-0.5 border border-gray-500">
+              FOTOGRAFIA
+            </div>
+            {/* Espacio para imagen vacía gris */}
+            <div className="flex-1 bg-white border border-gray-400 my-1 flex items-center justify-center">
+              <span className="text-gray-300 text-3xl">👤</span>
+            </div>
+            <button disabled className="w-full bg-[#d0d0d0] border border-t-white border-l-white border-b-gray-500 border-r-gray-500 text-[9px] py-0.5 font-bold uppercase tracking-wider text-gray-500">
+              Insertar / Cambiar Fotografia
+            </button>
+          </div>
+
+        </div>
+
+        {/* Sección Media: Pestañas de Emergencia e Información Adicional */}
+        <div className="grid grid-cols-12 gap-2">
+          
+          {/* Pestañas de Emergencia (Ocupa 7 de 12 columnas) */}
+          <div className="col-span-7 flex flex-col">
+            {/* Headers de Pestañas */}
+            <div className="flex gap-0.5 text-[10px]">
+              <button
+                onClick={() => setTabEmergentes('telefonos')}
+                className={`px-3 py-1 font-bold border-t-2 border-l-2 border-r-2 border-white rounded-t-sm cursor-pointer ${
+                  tabEmergentes === 'telefonos' ? 'bg-[#d0d0d0] pb-1.5 -mb-0.5 z-10' : 'bg-[#b0b0b0] text-gray-700'
+                }`}
+              >
+                TELEFONOS EMERGENTES
+              </button>
+              <button
+                onClick={() => setTabEmergentes('horarios')}
+                className={`px-3 py-1 font-bold border-t-2 border-l-2 border-r-2 border-white rounded-t-sm cursor-pointer ${
+                  tabEmergentes === 'horarios' ? 'bg-[#d0d0d0] pb-1.5 -mb-0.5 z-10' : 'bg-[#b0b0b0] text-gray-700'
+                }`}
+              >
+                HORARIOS APERTURA Y CIERRE
+              </button>
+              <button
+                onClick={() => setTabEmergentes('camara')}
+                className={`px-3 py-1 font-bold border-t-2 border-l-2 border-r-2 border-white rounded-t-sm cursor-pointer ${
+                  tabEmergentes === 'camara' ? 'bg-[#d0d0d0] pb-1.5 -mb-0.5 z-10' : 'bg-[#b0b0b0] text-gray-700'
+                }`}
+              >
+                CAMARA DE VERIFICACION
+              </button>
+            </div>
+            {/* Contenido Pestaña Emergencia */}
+            <div className="border-2 border-white bg-[#d0d0d0] p-2 flex-1 min-h-[160px] flex flex-col justify-start">
               
-              <div className="grid grid-cols-2 gap-4 border-t border-[#131b30] pt-3">
-                <div>
-                  <label className="text-[9px] uppercase tracking-wider text-slate-500 block">Dirección Particular</label>
-                  <p className="text-xs text-slate-300 mt-1">Calle Falsa 123, Providencia</p>
-                </div>
-                <div>
-                  <label className="text-[9px] uppercase tracking-wider text-slate-500 block">Ciudad/Comuna</label>
-                  <p className="text-xs text-slate-300 mt-1">Santiago, Chile</p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 border-t border-[#131b30] pt-3">
-                <div>
-                  <label className="text-[9px] uppercase tracking-wider text-slate-500 block">Señal del Evento</label>
-                  <p className={`text-xs font-bold mt-1`} style={{ color: severity.label === 'CRÍTICO' ? '#FF4D4D' : '#3B82F6' }}>
-                    {evento.evento}
-                  </p>
-                </div>
-                <div>
-                  <label className="text-[9px] uppercase tracking-wider text-slate-500 block">Fecha/Hora Evento</label>
-                  <p className="text-xs text-slate-300 mt-1 font-mono">{formatFecha(evento.fecha_hora)}</p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'zones' && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* List of Zones */}
-              <div className="border border-[#1e293b] rounded overflow-hidden">
-                <table className="w-full text-left border-collapse text-[10px] font-mono">
-                  <thead>
-                    <tr className="bg-[#111827] text-slate-400">
-                      <th className="p-1.5 border-b border-[#1e293b] w-8 text-center">ZN</th>
-                      <th className="p-1.5 border-b border-[#1e293b]">Descripción</th>
-                      <th className="p-1.5 border-b border-[#1e293b] w-10 text-center">CID</th>
-                    </tr>
-                  </thead>
-                  <tbody className="text-slate-300 divide-y divide-[#131b30]">
-                    <tr className="hover:bg-[#131b30]/50">
-                      <td className="p-1.5 text-center text-yellow-400 font-bold">01</td>
-                      <td className="p-1.5">Puerta Acceso Principal</td>
-                      <td className="p-1.5 text-center text-slate-400">130</td>
-                    </tr>
-                    <tr className="hover:bg-[#131b30]/50">
-                      <td className="p-1.5 text-center text-yellow-400 font-bold">02</td>
-                      <td className="p-1.5">PIR Living Central</td>
-                      <td className="p-1.5 text-center text-slate-400">130</td>
-                    </tr>
-                    <tr className="hover:bg-[#131b30]/50">
-                      <td className="p-1.5 text-center text-yellow-400 font-bold">03</td>
-                      <td className="p-1.5">PIR Bodega de Insumos</td>
-                      <td className="p-1.5 text-center text-slate-400">130</td>
-                    </tr>
-                    <tr className="hover:bg-[#131b30]/50">
-                      <td className="p-1.5 text-center text-yellow-400 font-bold">04</td>
-                      <td className="p-1.5">Botón Pánico Caja 1</td>
-                      <td className="p-1.5 text-center text-red-400 font-bold">120</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Simulated Camera Video Verification */}
-              <div className="relative border border-[#1e293b] bg-black rounded overflow-hidden flex flex-col justify-between items-center text-center p-4">
-                <div className="absolute top-2 left-2 flex items-center gap-1.5">
-                  <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-                  <span className="text-[8px] text-red-500 font-bold tracking-widest uppercase">REC CAM_03</span>
-                </div>
-                <div className="text-slate-700 text-3xl my-auto">🎥</div>
-                <p className="text-[8px] text-slate-500 uppercase tracking-wider">Simulación de Verificación por Video</p>
-                <p className="text-[9px] text-green-400 font-mono mt-1">Conexión RTSP Estable (30 FPS)</p>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'maintenance' && (
-            <div className="space-y-3 font-mono text-xs">
-              <p className="text-[10px] text-slate-500 uppercase">Historial de Visitas Técnicas</p>
-              <div className="space-y-2">
-                <div className="p-2.5 bg-[#0a0e1a] border border-[#1e293b] rounded">
-                  <div className="flex justify-between font-bold text-[10px] text-slate-400">
-                    <span>15/05/2026</span>
-                    <span className="text-blue-400">Carlos Ruiz (Técnico)</span>
+              {tabEmergentes === 'telefonos' && (
+                <div className="border border-gray-400 p-1.5 relative w-full flex-1 bg-[#d0d0d0]">
+                  <div className="absolute -top-2.5 left-2 bg-[#d0d0d0] px-1 text-[9px] font-bold text-gray-700">
+                    NUMEROS DE EMERGENCIA
                   </div>
-                  <p className="text-xs text-slate-300 mt-1">Reemplazo de batería descargada en panel central DSC 1832.</p>
-                </div>
-                <div className="p-2.5 bg-[#0a0e1a] border border-[#1e293b] rounded">
-                  <div className="flex justify-between font-bold text-[10px] text-slate-400">
-                    <span>22/04/2026</span>
-                    <span className="text-blue-400">Luis Soto (Técnico)</span>
+                  <div className="overflow-x-auto w-full h-[120px] bg-white border border-gray-500">
+                    <table className="w-full border-collapse text-[10px] text-left">
+                      <thead>
+                        <tr className="bg-[#b0b0b0] border-b border-gray-400">
+                          <th className="p-1 font-bold border-r border-gray-400 w-1/4">Nombre</th>
+                          <th className="p-1 font-bold border-r border-gray-400 w-1/3">Dirección</th>
+                          <th className="p-1 font-bold border-r border-gray-400 w-1/5">Cargo/Afinidad</th>
+                          <th className="p-1 font-bold">Teléfono</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-300">
+                        {telefonosEmergencia.map((tel, idx) => (
+                          <tr key={idx} className="hover:bg-blue-100 font-bold">
+                            <td className="p-1 border-r border-gray-300 truncate max-w-[80px]">{tel.nombre}</td>
+                            <td className="p-1 border-r border-gray-300 truncate max-w-[120px]">{tel.direccion}</td>
+                            <td className="p-1 border-r border-gray-300 truncate max-w-[60px]">{tel.cargo}</td>
+                            <td className="p-1 font-mono text-blue-900">{tel.telefono}</td>
+                          </tr>
+                        ))}
+                        {telefonosEmergencia.length === 0 && (
+                          <tr>
+                            <td colSpan={4} className="p-4 text-center text-gray-400 italic">No hay contactos de emergencia registrados</td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
                   </div>
-                  <p className="text-xs text-slate-300 mt-1">Limpieza y re-calibración de sensor de movimiento Hall.</p>
                 </div>
-              </div>
-            </div>
-          )}
+              )}
 
-          {activeTab === 'action' && (
-            <div className="space-y-3">
-              <p className="text-[10px] text-slate-500 uppercase tracking-wider font-mono">Plan de Llamadas de Emergencia</p>
-              <div className="overflow-x-auto border border-[#1e293b] rounded">
-                <table className="w-full text-left border-collapse text-[10px] font-mono">
-                  <thead>
-                    <tr className="bg-[#111827] text-slate-400">
-                      <th className="p-1.5 border-b border-[#1e293b] w-10 text-center">Prioridad</th>
-                      <th className="p-1.5 border-b border-[#1e293b]">Contacto</th>
-                      <th className="p-1.5 border-b border-[#1e293b]">Teléfono</th>
-                    </tr>
-                  </thead>
-                  <tbody className="text-slate-300 divide-y divide-[#131b30]">
-                    <tr className="hover:bg-[#131b30]/50">
-                      <td className="p-1.5 text-center text-yellow-400 font-bold">1</td>
-                      <td className="p-1.5">Tomás Toro (Administrador)</td>
-                      <td className="p-1.5 font-bold text-slate-200">+56 9 8765 4321</td>
-                    </tr>
-                    <tr className="hover:bg-[#131b30]/50">
-                      <td className="p-1.5 text-center text-yellow-400 font-bold">2</td>
-                      <td className="p-1.5">Guardia Nocturno (Conserjería)</td>
-                      <td className="p-1.5 font-bold text-slate-200">+56 2 2345 6789</td>
-                    </tr>
-                    <tr className="hover:bg-[#131b30]/50 text-red-400 bg-red-950/10">
-                      <td className="p-1.5 text-center font-bold">3</td>
-                      <td className="p-1.5">Carabineros de Chile</td>
-                      <td className="p-1.5 font-bold">133</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
+              {tabEmergentes === 'horarios' && (
+                <div className="p-2 text-center text-gray-500 font-bold border border-gray-400 flex-1 flex items-center justify-center bg-white">
+                  [Horarios de Apertura/Cierre — Sin configuración especial]
+                </div>
+              )}
+
+              {tabEmergentes === 'camara' && (
+                <div className="p-2 text-center text-gray-500 font-bold border border-gray-400 flex-1 flex items-center justify-center bg-black text-green-400">
+                  🎥 CÁMARA DE VERIFICACIÓN NO CONECTADA
+                </div>
+              )}
+
             </div>
-          )}
+          </div>
+
+          {/* Pestañas de Información Adicional (Ocupa 5 de 12 columnas) */}
+          <div className="col-span-5 flex flex-col">
+            {/* Headers de Pestañas */}
+            <div className="flex gap-0.5 text-[10px]">
+              <button
+                onClick={() => setTabInfo('caracteristicas')}
+                className={`px-3 py-1 font-bold border-t-2 border-l-2 border-r-2 border-white rounded-t-sm cursor-pointer ${
+                  tabInfo === 'caracteristicas' ? 'bg-[#d0d0d0] pb-1.5 -mb-0.5 z-10' : 'bg-[#b0b0b0] text-gray-700'
+                }`}
+              >
+                CARACTERISTICAS
+              </button>
+              <button
+                onClick={() => setTabInfo('referencias')}
+                className={`px-3 py-1 font-bold border-t-2 border-l-2 border-r-2 border-white rounded-t-sm cursor-pointer ${
+                  tabInfo === 'referencias' ? 'bg-[#d0d0d0] pb-1.5 -mb-0.5 z-10' : 'bg-[#b0b0b0] text-gray-700'
+                }`}
+              >
+                REFERENCIAS
+              </button>
+              <button
+                onClick={() => setTabInfo('observaciones')}
+                className={`px-3 py-1 font-bold border-t-2 border-l-2 border-r-2 border-white rounded-t-sm cursor-pointer ${
+                  tabInfo === 'observaciones' ? 'bg-[#d0d0d0] pb-1.5 -mb-0.5 z-10' : 'bg-[#b0b0b0] text-gray-700'
+                }`}
+              >
+                OBSERVACIONES
+              </button>
+            </div>
+            {/* Contenido Pestaña */}
+            <div className="border-2 border-white bg-[#d0d0d0] p-2 flex-1 min-h-[160px] flex flex-col justify-start">
+              
+              {tabInfo === 'caracteristicas' && (
+                <div className="border border-gray-400 p-1 relative flex-1 flex flex-col bg-[#d0d0d0]">
+                  <div className="absolute -top-2.5 left-2 bg-[#d0d0d0] px-1 text-[9px] font-bold text-gray-700">
+                    CARACTERISTICAS
+                  </div>
+                  <textarea
+                    readOnly
+                    value={cliente.caract_adic1 || ''}
+                    className="w-full flex-1 bg-[#ffffe0] border border-gray-500 p-1.5 font-bold font-mono text-[10px] text-gray-800 resize-none focus:outline-none"
+                    placeholder="Sin características asignadas..."
+                  />
+                </div>
+              )}
+
+              {tabInfo === 'referencias' && (
+                <div className="border border-gray-400 p-1 relative flex-1 flex flex-col bg-[#d0d0d0]">
+                  <div className="absolute -top-2.5 left-2 bg-[#d0d0d0] px-1 text-[9px] font-bold text-gray-700">
+                    REFERENCIAS
+                  </div>
+                  <textarea
+                    readOnly
+                    value={cliente.referencia1 || ''}
+                    className="w-full flex-1 bg-[#ffffe0] border border-gray-500 p-1.5 font-bold font-mono text-[10px] text-gray-800 resize-none focus:outline-none"
+                    placeholder="Sin referencias de ubicación..."
+                  />
+                </div>
+              )}
+
+              {tabInfo === 'observaciones' && (
+                <div className="border border-gray-400 p-1 relative flex-1 flex flex-col bg-[#d0d0d0]">
+                  <div className="absolute -top-2.5 left-2 bg-[#d0d0d0] px-1 text-[9px] font-bold text-gray-700">
+                    OBSERVACIONES
+                  </div>
+                  <textarea
+                    readOnly
+                    value={cliente.observacion1 || ''}
+                    className="w-full flex-1 bg-[#ffffe0] border border-gray-500 p-1.5 font-bold font-mono text-[10px] text-gray-800 resize-none focus:outline-none"
+                    placeholder="Sin observaciones generales..."
+                  />
+                </div>
+              )}
+
+            </div>
+          </div>
+
         </div>
 
-        {/* Footer style Windows Desktop bevel */}
-        <div className="flex justify-end gap-2 px-4 py-2 bg-[#0a0e1a] border-t border-[#1e293b]">
-          <button
-            onClick={onClose}
-            className="px-4 py-1.5 bg-[#1e293b] hover:bg-[#334155] border border-slate-700 text-slate-200 text-xs font-semibold rounded cursor-pointer transition-colors"
-          >
-            CERRAR EXPEDIENTE
-          </button>
+        {/* Sección Inferior: Instalación + Buscador + Botones Acciones */}
+        <div className="grid grid-cols-12 gap-2 mt-1">
+          
+          {/* Instalación / U. Control (Ocupa 5 de 12) */}
+          <div className="col-span-5 flex flex-col">
+            <div className="flex gap-0.5 text-[9px]">
+              <button
+                onClick={() => setTabInstalacion('instalacion')}
+                className={`px-2 py-0.5 font-bold border-t border-l border-r border-white rounded-t-sm cursor-pointer ${
+                  tabInstalacion === 'instalacion' ? 'bg-[#d0d0d0] pb-1' : 'bg-[#b0b0b0] text-gray-700'
+                }`}
+              >
+                INSTALACION
+              </button>
+              <button
+                onClick={() => setTabInstalacion('ucontrol')}
+                className={`px-2 py-0.5 font-bold border-t border-l border-r border-white rounded-t-sm cursor-pointer ${
+                  tabInstalacion === 'ucontrol' ? 'bg-[#d0d0d0] pb-1' : 'bg-[#b0b0b0] text-gray-700'
+                }`}
+              >
+                U. CONTROL
+              </button>
+              <button
+                onClick={() => setTabInstalacion('tiempos')}
+                className={`px-2 py-0.5 font-bold border-t border-l border-r border-white rounded-t-sm cursor-pointer ${
+                  tabInstalacion === 'tiempos' ? 'bg-[#d0d0d0] pb-1' : 'bg-[#b0b0b0] text-gray-700'
+                }`}
+              >
+                TIEMPOS
+              </button>
+            </div>
+            <div className="border border-white bg-[#d0d0d0] p-2 flex-1 min-h-[90px] flex flex-col justify-center gap-1.5">
+              
+              {tabInstalacion === 'instalacion' && (
+                <div className="space-y-1.5 text-[10px]">
+                  <div className="grid grid-cols-3 items-center gap-1">
+                    <span className="text-right">Fecha de Instalación:</span>
+                    <input type="text" readOnly value={cliente.fecha || ''} className="col-span-2 bg-[#ffffe0] border border-gray-400 px-1 py-0.5 font-bold" />
+                  </div>
+                  <div className="grid grid-cols-3 items-center gap-1">
+                    <span className="text-right">Instalador:</span>
+                    <input type="text" readOnly value={cliente.instalador || ''} className="col-span-2 bg-[#ffffe0] border border-gray-400 px-1 py-0.5 font-bold" />
+                  </div>
+                </div>
+              )}
+
+              {tabInstalacion === 'ucontrol' && (
+                <div className="space-y-1.5 text-[10px]">
+                  <div className="grid grid-cols-3 items-center gap-1">
+                    <span className="text-right">Marca/Modelo:</span>
+                    <input type="text" readOnly value={`${cliente.marca || ''} ${cliente.modelo || ''}`} className="col-span-2 bg-[#ffffe0] border border-gray-400 px-1 py-0.5 font-bold" />
+                  </div>
+                  <div className="grid grid-cols-3 items-center gap-1">
+                    <span className="text-right">Ubicación UC:</span>
+                    <input type="text" readOnly value={cliente.ubicacion_uc || ''} className="col-span-2 bg-[#ffffe0] border border-gray-400 px-1 py-0.5 font-bold truncate" />
+                  </div>
+                </div>
+              )}
+
+              {tabInstalacion === 'tiempos' && (
+                <div className="p-2 text-center text-gray-400 italic text-[10px]">Tiempos de Test automáticos estándar.</div>
+              )}
+
+            </div>
+          </div>
+
+          {/* BUSCADOR DE USUARIOS (Ocupa 5 de 12) */}
+          <div className="col-span-5 border border-gray-400 p-1.5 relative bg-[#d0d0d0] flex flex-col gap-1">
+            <div className="absolute -top-2.5 left-2 bg-[#d0d0d0] px-1 text-[9px] font-bold text-gray-700">
+              BUSCAR USUARIO
+            </div>
+            
+            <div className="grid grid-cols-4 gap-1 items-center mt-1">
+              <span className="font-bold">CUENTA:</span>
+              <input
+                type="text"
+                value={buscarCuentaInput}
+                onChange={(e) => setBuscarCuentaInput(e.target.value)}
+                className="col-span-3 bg-white border border-gray-500 font-bold px-1"
+                placeholder="Filtro (C745 / Nombre)..."
+              />
+            </div>
+            
+            {/* Lista desplegable en azul marino con scroll */}
+            <div className="flex-1 bg-[#000080] text-white border border-gray-500 overflow-y-auto h-[70px] text-[10px]">
+              {listaFiltrada.map((item) => (
+                <div
+                  key={item.cuenta}
+                  onClick={() => {
+                    setCuentaActiva(item.cuenta.upper.strip)
+                    setBuscarCuentaInput('')
+                  }}
+                  className={`px-1 py-0.5 cursor-pointer font-mono font-bold select-none ${
+                    cuentaActiva === item.cuenta ? 'bg-yellow-500 text-black' : 'hover:bg-blue-900'
+                  }`}
+                >
+                  {item.cuenta.padEnd(6, ' ')} | {item.nombre}
+                </div>
+              ))}
+              {listaFiltrada.length === 0 && (
+                <div className="p-2 text-center text-blue-300 italic">No se encontraron coincidencias</div>
+              )}
+            </div>
+          </div>
+
+          {/* BOTONES ACCIONES (Ocupa 2 de 12) */}
+          <div className="col-span-2 flex flex-col gap-0.5 justify-end">
+            <button className="w-full bg-[#d0d0d0] border border-t-white border-l-white border-b-gray-700 border-r-gray-700 py-0.5 font-bold active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white cursor-pointer select-none hover:bg-gray-200">
+              EDITAR
+            </button>
+            <button disabled className="w-full bg-[#d0d0d0] border border-gray-400 py-0.5 font-bold text-gray-500 select-none">
+              GUARDAR
+            </button>
+            <button className="w-full bg-[#d0d0d0] border border-t-white border-l-white border-b-gray-700 border-r-gray-700 py-0.5 font-bold active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white cursor-pointer select-none hover:bg-gray-200">
+              NUEVO
+            </button>
+            <button className="w-full bg-[#d0d0d0] border border-t-white border-l-white border-b-gray-700 border-r-gray-700 py-0.5 font-bold active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white cursor-pointer select-none hover:bg-gray-200">
+              ELIMINAR
+            </button>
+            <button disabled className="w-full bg-[#d0d0d0] border border-gray-400 py-0.5 font-bold text-gray-500 select-none">
+              CANCELAR
+            </button>
+            <button 
+              onClick={onClose}
+              className="w-full bg-[#d0d0d0] border border-t-white border-l-white border-b-gray-700 border-r-gray-700 py-0.5 font-bold active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white cursor-pointer select-none hover:bg-gray-200"
+            >
+              SALIR
+            </button>
+          </div>
+
         </div>
+
       </div>
     </div>
   )
