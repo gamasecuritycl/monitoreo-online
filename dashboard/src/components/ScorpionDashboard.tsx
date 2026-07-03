@@ -149,12 +149,22 @@ export default function ScorpionDashboard() {
         </div>
       </header>
 
-      {/* Event Grid */}
-      <div className="flex-1 overflow-hidden">
-        <EventGrid
-          eventos={eventos}
-          onEventClick={(e) => setEventoSeleccionado(e)}
-        />
+      {/* Contenedor Principal de Dos Columnas: Izquierda (Tabla Fija), Derecha (Espacio para Cuadrados) */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Lado Izquierdo: Tabla de Eventos con ancho fijo 820px, no se deforma */}
+        <div className="w-[820px] shrink-0 border-r border-[#1e293b] flex flex-col h-full bg-[#070b13]">
+          <EventGrid
+            eventos={eventos}
+            onEventClick={(e) => setEventoSeleccionado(e)}
+          />
+        </div>
+
+        {/* Lado Derecho: Espacio libre para los futuros bloques de información */}
+        <div className="flex-1 overflow-y-auto bg-[#040810] p-4 flex flex-col gap-4">
+          <div className="border border-dashed border-[#1e293b]/60 rounded-md p-8 text-center text-xs text-slate-500 my-auto">
+            [Panel de Información Lateral — Espacio Reservado]
+          </div>
+        </div>
       </div>
 
       {/* Expediente Modal */}

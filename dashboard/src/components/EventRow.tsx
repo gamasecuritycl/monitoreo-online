@@ -101,7 +101,7 @@ export default function EventRow({ evento, onClick, isNew, isLatest }: EventRowP
       </td>
 
       {/* NOMBRE */}
-      <td className="px-2 py-0.5 text-[11px] truncate max-w-[200px] border border-black leading-relaxed font-bold">
+      <td className="px-2 py-0.5 text-[11px] truncate max-w-[300px] border border-black leading-relaxed font-bold">
         {evento.nombre_abonado}
       </td>
 
