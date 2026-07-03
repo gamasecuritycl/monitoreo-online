@@ -9,17 +9,11 @@ import ExpedienteModal from './ExpedienteModal'
 import EventosPorUsuarioModal from './EventosPorUsuarioModal'
 import ZonificacionModal from './ZonificacionModal'
 
-// ── Contactos y Zonas simuladas por abonado para poblar el Panel Lateral de Scorpion ──
+// ── Contactos del Panel Lateral de Scorpion ──
 interface ContactoAutorizado {
   prioridad: number
   nombre: string
   telefono: string
-}
-
-interface ZonaMapeada {
-  numero: string
-  descripcion: string
-  codigoCID: string
 }
 
 function obtenerDatosAbonado(cuenta: string, nombreAbonado: string, clienteDb: Record<string, string> | null) {
@@ -27,13 +21,7 @@ function obtenerDatosAbonado(cuenta: string, nombreAbonado: string, clienteDb: R
   const datos = {
     direccion: clienteDb?.direccion || 'Av. Providencia 1420, Of. 602',
     comuna: clienteDb?.ciudad || clienteDb?.sector || 'Providencia, Santiago',
-    contactos: [] as ContactoAutorizado[],
-    zonas: [
-      { numero: '01', descripcion: 'Puerta Acceso Principal', codigoCID: '130' },
-      { numero: '02', descripcion: 'Sensor Movimiento Living', codigoCID: '130' },
-      { numero: '03', descripcion: 'PIR Bodega de Insumos', codigoCID: '130' },
-      { numero: '04', descripcion: 'Pánico Teclado Caja 1', codigoCID: '120' }
-    ] as ZonaMapeada[]
+    contactos: [] as ContactoAutorizado[]
   }
 
   // Extraer contactos reales del 1 al 7 de GENERAL.mdb (si existen en el payload)
@@ -75,6 +63,9 @@ export default function ScorpionDashboard() {
   
   // Mapa de códigos de color desde CODIGOS.MDB
   const [codigosMap, setCodigosMap] = useState<Record<string, { descripcion: string; zn_us: string; color: string }> | undefined>(undefined)
+
+  // Mapa de zonificación por abonado desde ZONIFICACION MDB
+  const [zonasMap, setZonasMap] = useState<Record<string, { numero: string; dispositivo: string; area: string }[]>>({})
 
   // Cargar base de datos de clientes reales de Supabase en caliente
   useEffect(() => {
@@ -122,6 +113,30 @@ export default function ScorpionDashboard() {
       }
     }
     fetchCodigos()
+  }, [])
+
+  // Cargar mapa de zonificación de abonados
+  useEffect(() => {
+    const fetchZonas = async () => {
+      try {
+        const { data } = await supabase
+          .from('eventos_monitoreo')
+          .select('*')
+          .eq('cuenta', 'ZONAS')
+          .limit(1)
+        if (data && data.length > 0) {
+          const rawJson = data[0].nombre_abonado
+          if (rawJson) {
+            const map = JSON.parse(rawJson)
+            setZonasMap(map)
+            console.log(`[SUPABASE DASHBOARD] Zonificación de ${Object.keys(map).length} abonados cargada.`)
+          }
+        }
+      } catch (err) {
+        console.warn('[SUPABASE DASHBOARD] Error cargando zonificación.')
+      }
+    }
+    fetchZonas()
   }, [])
 
   // Reloj digital inferior igual a Scorpion
@@ -367,30 +382,43 @@ export default function ScorpionDashboard() {
             <div className="bg-[#000080] text-white text-[11px] font-bold px-2 py-0.5 tracking-wider uppercase">
               Zonificacion
             </div>
-            <div className="p-1 flex-1 overflow-y-auto">
-              <table className="w-full border-collapse text-[10px] text-left bg-white">
-                <thead>
-                  <tr className="bg-[#d0d0d0] border-b border-gray-400">
-                    <th className="p-1 font-bold border-r border-gray-400 w-8 text-center">ZN</th>
-                    <th className="p-1 font-bold border-r border-gray-400">Descripción del Sector</th>
-                    <th className="p-1 font-bold w-10 text-center">CID</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-300">
-                  {clientData?.zonas.map((zone) => (
-                    <tr key={zone.numero} className="hover:bg-blue-100 font-bold text-gray-800">
-                      <td className="p-1 text-center border-r border-gray-300 text-yellow-700">{zone.numero}</td>
-                      <td className="p-1 border-r border-gray-300 truncate max-w-[150px]">{zone.descripcion}</td>
-                      <td className="p-1 text-center font-mono text-gray-500">{zone.codigoCID}</td>
-                    </tr>
-                  ))}
-                  {!clientData && (
-                    <tr>
-                      <td colSpan={3} className="p-2 text-center text-gray-400">Seleccione un abonado</td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+            <div className="flex-1 overflow-y-auto">
+              {(() => {
+                const zonasAbonado = cuentaKey ? (zonasMap[cuentaKey] || []) : []
+                if (!activeEvent) {
+                  return (
+                    <div className="p-2 text-center text-gray-400 text-[10px] italic">Seleccione un abonado</div>
+                  )
+                }
+                if (zonasAbonado.length === 0) {
+                  return (
+                    <div className="p-2 text-center text-[10px]">
+                      <div className="text-gray-500 italic font-bold">Sin información</div>
+                      <div className="text-blue-700 font-bold mt-0.5 cursor-pointer hover:underline">Solicitar</div>
+                    </div>
+                  )
+                }
+                return (
+                  <table className="w-full border-collapse text-[10px] text-left bg-white">
+                    <thead>
+                      <tr className="bg-[#d0d0d0] border-b border-gray-400 sticky top-0">
+                        <th className="p-1 font-bold border-r border-gray-400 w-8 text-center">ZN</th>
+                        <th className="p-1 font-bold border-r border-gray-400">Dispositivos</th>
+                        <th className="p-1 font-bold">Area Cubierta</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-300">
+                      {zonasAbonado.map((zona, idx) => (
+                        <tr key={idx} className="hover:bg-blue-100 font-bold text-gray-800">
+                          <td className="p-1 text-center border-r border-gray-300 text-yellow-700">{zona.numero}</td>
+                          <td className="p-1 border-r border-gray-300 truncate max-w-[100px] capitalize">{(zona.dispositivo || '').toLowerCase()}</td>
+                          <td className="p-1 truncate max-w-[100px] capitalize">{(zona.area || '').toLowerCase()}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )
+              })()}
             </div>
           </div>
 
