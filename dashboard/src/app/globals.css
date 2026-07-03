@@ -15,20 +15,62 @@ body {
 ::-webkit-scrollbar-thumb { background: #1a2340; border-radius: 2px; }
 ::-webkit-scrollbar-thumb:hover { background: #2a3a5a; }
 
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
+/* ── LIVE indicator ── */
+@keyframes pulse-live {
+  0%, 100% { opacity: 1; box-shadow: 0 0 6px #22c55e; }
+  50% { opacity: 0.5; box-shadow: 0 0 2px #22c55e; }
+}
+.animate-pulse-live {
+  animation: pulse-live 1.2s ease-in-out infinite;
 }
 
-.animate-pulse {
-  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-}
-
+/* ── Fade-in general ── */
 @keyframes fade-in {
   from { opacity: 0; transform: scale(0.95) translateY(-8px); }
   to { opacity: 1; transform: scale(1) translateY(0); }
 }
-
 .animate-fade-in {
   animation: fade-in 0.2s ease-out;
 }
+
+/* ── Nueva fila: slide desde abajo ── */
+@keyframes row-enter {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+    filter: brightness(2);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: brightness(1);
+  }
+}
+.row-new {
+  animation: row-enter 0.35s ease-out forwards;
+}
+
+/* ── Flash crítico: parpadea el fondo rojo para alarmas ── */
+@keyframes flash-critical {
+  0%, 100% { filter: brightness(1); }
+  30%       { filter: brightness(1.6); }
+  60%       { filter: brightness(0.85); }
+}
+.row-critical {
+  animation: flash-critical 0.6s ease-out 1;
+}
+
+/* ── Último evento: resalta el borde inferior ── */
+tr.row-latest td:first-child {
+  border-left: 3px solid #facc15 !important;
+}
+
+/* ── Pulse lento para badge OFFLINE ── */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
