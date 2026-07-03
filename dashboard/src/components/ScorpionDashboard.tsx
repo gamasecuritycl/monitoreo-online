@@ -143,6 +143,7 @@ export default function ScorpionDashboard() {
       let query = supabase
         .from('eventos_monitoreo')
         .select('*')
+        .not('cuenta', 'in', '(CLIENTES,CODIGOS,ZONAS)')
         .order('id', { ascending: false })
         .limit(50)
 
@@ -174,6 +175,7 @@ export default function ScorpionDashboard() {
         const { data } = await supabase
           .from('eventos_monitoreo')
           .select('*')
+          .not('cuenta', 'in', '(CLIENTES,CODIGOS,ZONAS)')
           .order('id', { ascending: false })
           .limit(50)
 
@@ -209,6 +211,9 @@ export default function ScorpionDashboard() {
       .channel('eventos-live')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'eventos_monitoreo' }, (payload) => {
         const newEvent = payload.new as EventoMonitoreo
+        // Ignorar filas especiales de sincronización
+        const cuentasEspeciales = ['CLIENTES', 'CODIGOS', 'ZONAS']
+        if (cuentasEspeciales.includes((newEvent.cuenta || '').toUpperCase().trim())) return
         setEventos((prev) => {
           if (prev.some(e => e.id === newEvent.id)) return prev
           const next = [...prev, newEvent]
