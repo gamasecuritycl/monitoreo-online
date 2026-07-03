@@ -46,7 +46,7 @@ echo OK.
 :: ---- Instalar dependencias ----
 echo.
 echo [2/5] Instalando dependencias Python...
-pip install supabase pyodbc --quiet
+pip install supabase pyodbc requests --quiet
 if %ERRORLEVEL% NEQ 0 (
     echo [ERROR] Fallo la instalacion de dependencias.
     pause
@@ -61,7 +61,7 @@ copy /Y "%~dp0sincronizador.py"      "%DESTINO%\sincronizador.py"      >nul
 copy /Y "%~dp0iniciar_silencioso.vbs" "%DESTINO%\iniciar_silencioso.vbs" >nul
 echo OK.
 
-:: ---- Registrar Tarea Programada Perpetua (Al Iniciar el Sistema) ----
+:: ---- Registrar Tarea Programada Perpetua (Al Iniciar Sesion del Usuario) ----
 echo.
 echo [4/5] Registrando inicio automatico perpetuo en Task Scheduler...
 
@@ -71,21 +71,9 @@ reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Run" /v "%TAREA%" /f 
 :: Eliminar la tarea programada anterior para recrearla limpia
 schtasks /delete /tn "%TAREA%" /f >nul 2>&1
 
-:: Crear una nueva tarea programada de alta prioridad
-:: /RU "SYSTEM" -> Corre en segundo plano absoluto sin requerir inicio de sesión
-:: /SC ONSTART  -> Arranca en el segundo en que Windows enciende
-:: /RL HIGHEST  -> Privilegios administrativos máximos
-schtasks /create /tn "%TAREA%" /tr "wscript.exe \"%DESTINO%\iniciar_silencioso.vbs\"" /sc ONSTART /ru "SYSTEM" /rl HIGHEST /f
-if %ERRORLEVEL% NEQ 0 (
-    echo [ADVERTENCIA] No se pudo crear con usuario SYSTEM. Intentando con cuenta local...
-    schtasks /create /tn "%TAREA%" /tr "wscript.exe \"%DESTINO%\iniciar_silencioso.vbs\"" /sc ONSTART /rl HIGHEST /f
-)
-
-if %ERRORLEVEL% NEQ 0 (
-    echo [ERROR] No se pudo crear la tarea programada perpetua.
-    pause
-    exit /b 1
-)
+:: Crear una tarea programada que arranca al iniciar sesión del usuario (ONLOGON)
+:: con privilegios elevados para garantizar acceso total a la red física de AnyDesk
+schtasks /create /tn "%TAREA%" /tr "wscript.exe \"%DESTINO%\iniciar_silencioso.vbs\"" /sc ONLOGON /rl HIGHEST /f
 echo OK.
 
 :: ---- Iniciar ahora mismo ----
