@@ -6,6 +6,7 @@ import EventGrid from './EventGrid'
 import FooterActions from './FooterActions'
 import ToolModal from './ToolModal'
 import ExpedienteModal from './ExpedienteModal'
+import EventosPorUsuarioModal from './EventosPorUsuarioModal'
 
 // ── Contactos y Zonas simuladas por abonado para poblar el Panel Lateral de Scorpion ──
 interface ContactoAutorizado {
@@ -341,17 +342,25 @@ export default function ScorpionDashboard() {
       </div>
 
       {/* Tool Modals */}
-      {modalActivo && modalActivo !== 'bar-chart' && (
+      {modalActivo && modalActivo !== 'bar-chart' && modalActivo !== 'checklist' && (
         <ToolModal
           modalId={modalActivo}
           onClose={() => setModalActivo(null)}
         />
       )}
 
-      {/* Expediente Modal (Controlado por el botón de libros del Footer: 'bar-chart') */}
+      {/* Expediente Modal (Controlado por el botón de libros: 'bar-chart') */}
       {modalActivo === 'bar-chart' && activeEvent && (
         <ExpedienteModal
           evento={activeEvent}
+          onClose={() => setModalActivo(null)}
+        />
+      )}
+
+      {/* Eventos Por Usuario Modal (Controlado por el botón checklist: 'checklist') */}
+      {modalActivo === 'checklist' && (
+        <EventosPorUsuarioModal
+          eventoInicial={activeEvent || undefined}
           onClose={() => setModalActivo(null)}
         />
       )}

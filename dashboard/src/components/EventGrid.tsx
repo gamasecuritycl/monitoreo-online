@@ -59,17 +59,17 @@ export default function EventGrid({ eventos, onEventClick }: EventGridProps) {
 
   return (
     <div ref={containerRef} className="w-full h-full overflow-y-auto bg-[#070b13] flex justify-start">
-      <table className="border-collapse table-fixed" style={{ fontFamily: "'Consolas', 'Courier New', monospace", width: '820px', minWidth: '820px' }}>
+      <table className="border-collapse table-fixed w-full min-w-[580px] md:min-w-[820px]" style={{ fontFamily: "'Consolas', 'Courier New', monospace" }}>
         <thead className="sticky top-0 z-10">
           <tr className="bg-[#111827]">
-            <th className="px-2 py-1.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider text-left border border-[#1e293b] w-[130px]">FECHA/HORA</th>
+            <th className="px-2 py-1.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider text-left border border-[#1e293b] w-[150px]">FECHA/HORA</th>
             <th className="px-2 py-1.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider text-left border border-[#1e293b] w-[65px]">ABONADO</th>
-            <th className="px-2 py-1.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider text-left border border-[#1e293b] w-[300px]">NOMBRE</th>
-            <th className="px-2 py-1.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider text-left border border-[#1e293b] w-[170px]">SEÑAL</th>
+            <th className="px-2 py-1.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider text-left border border-[#1e293b] w-[200px] md:w-[300px]">NOMBRE</th>
+            <th className="px-2 py-1.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider text-left border border-[#1e293b] w-[130px] md:w-[170px]">SEÑAL</th>
             <th className="px-2 py-1.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider text-center border border-[#1e293b] w-[40px]">ZN</th>
-            <th className="px-2 py-1.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider text-center border border-[#1e293b] w-[40px]">PAR</th>
-            <th className="px-2 py-1.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider text-center border border-[#1e293b] w-[40px]">US</th>
-            <th className="px-2 py-1.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider text-center border border-[#1e293b] w-[45px]">UN</th>
+            <th className="px-2 py-1.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider text-center border border-[#1e293b] w-[40px] hidden md:table-cell">PAR</th>
+            <th className="px-2 py-1.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider text-center border border-[#1e293b] w-[40px] hidden md:table-cell">US</th>
+            <th className="px-2 py-1.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider text-center border border-[#1e293b] w-[45px] hidden md:table-cell">UN</th>
           </tr>
         </thead>
         <tbody>

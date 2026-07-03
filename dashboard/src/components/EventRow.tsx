@@ -17,16 +17,35 @@ interface EventRowProps {
 // ── Paleta Scorpion (colores físicos del panel) ─────────────────
 function getScorpionStyle(evento: string): { bg: string; text: string } {
   const upper = evento.toUpperCase()
-  if (upper.includes('ROBO') || upper.includes('PANICO') || upper.includes('INCENDIO') || upper.includes('SURGARD'))
+  
+  // 1. Emergencia, Pánico, Fuego -> Rojo
+  if (upper.includes('PANICO') || upper.includes('FUEGO') || upper.includes('INCENDIO') || upper.includes('EMERGENCIA') || upper.includes('MEDICA')) {
     return { bg: '#FF0000', text: '#FFFFFF' }
-  if (upper.includes('APERTURA'))
-    return { bg: '#0000FF', text: '#FFFFFF' }
-  if (upper.includes('AUTOTEST'))
-    return { bg: '#00FFFF', text: '#000000' }
-  if (upper.includes('RESTABLEC') || upper.includes('RESTAURACION'))
+  }
+  
+  // 2. Todos los Restablecimientos -> Amarillo
+  if (upper.includes('RESTABLEC') || upper.includes('RESTAURACION') || upper.includes('RETORNO') || upper.includes('RESTABLECIMIENTO')) {
     return { bg: '#FFFF00', text: '#000000' }
-  if (upper.includes('FALLA') || upper.includes('BATERIA'))
+  }
+  
+  // 3. Cortes de luz / Fallas de energía -> Verde
+  if (upper.includes('FALLA AC') || upper.includes('FALLA DE ENERGIA') || upper.includes('CORTE DE LUZ') || upper.includes('AC FALLA') || upper.includes('E301') || upper.includes('E302')) {
     return { bg: '#00FF00', text: '#000000' }
+  }
+  
+  // 4. Sabotajes de zona y Alarmas de robo -> Rosado / Rosa fuerte
+  if (upper.includes('ROBO') || upper.includes('ALARMA') || upper.includes('INTRUSION') || upper.includes('SABOTAJE') || upper.includes('TAMPER')) {
+    return { bg: '#FFC0CB', text: '#000000' } // Pink / LightPink retro
+  }
+
+  // Por defecto, aperturas y otros
+  if (upper.includes('APERTURA')) {
+    return { bg: '#0000FF', text: '#FFFFFF' }
+  }
+  if (upper.includes('AUTOTEST')) {
+    return { bg: '#00FFFF', text: '#000000' }
+  }
+
   return { bg: '#FFFFFF', text: '#000000' }
 }
 
@@ -90,17 +109,17 @@ export default function EventRow({ evento, onClick, isNew, isLatest }: EventRowP
       </td>
 
       {/* PAR */}
-      <td className="px-1.5 py-0.5 text-[11px] font-bold text-center border border-black leading-none align-middle">
+      <td className="px-1.5 py-0.5 text-[11px] font-bold text-center border border-black leading-none align-middle hidden md:table-cell">
         {evento.zona && evento.zona !== 'None' ? '01' : '--'}
       </td>
 
       {/* US */}
-      <td className="px-1.5 py-0.5 text-[11px] font-bold text-center border border-black leading-none align-middle">
+      <td className="px-1.5 py-0.5 text-[11px] font-bold text-center border border-black leading-none align-middle hidden md:table-cell">
         {evento.usuario && evento.usuario !== 'None' ? evento.usuario.padStart(2, '0') : '00'}
       </td>
 
       {/* UN */}
-      <td className="px-1.5 py-0.5 text-[11px] font-bold text-center border border-black leading-none align-middle">
+      <td className="px-1.5 py-0.5 text-[11px] font-bold text-center border border-black leading-none align-middle hidden md:table-cell">
         01
       </td>
     </tr>
