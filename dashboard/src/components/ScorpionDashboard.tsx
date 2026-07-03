@@ -19,7 +19,7 @@ export default function ScorpionDashboard() {
       let query = supabase
         .from('eventos_monitoreo')
         .select('*')
-        .order('fecha_hora', { ascending: false })
+        .order('id', { ascending: false })
         .limit(50)
 
       if (busqueda.trim()) {
