@@ -1,4 +1,4 @@
-import time, pyodbc, shutil, os, json, sys
+import time, pyodbc, shutil, os, json, sys, requests
 from datetime import datetime, timezone, timedelta
 from supabase import create_client
 
@@ -30,13 +30,13 @@ except Exception:
 
 # ============================================================
 #  GAMA COMMAND CENTER - Sincronizador para PC Scorpion
-#  Versión: 3.0 (Irrompible - Manejo estricto de bloqueos Access)
+#  Versión: 4.0 (Sincronización en tiempo real de clientes y eventos)
 # ============================================================
 
 SUPABASE_URL = "https://onxwyrwmpjxtwlmjrosr.supabase.co"
 SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9ueHd5cndtcGp4dHdsbWpyb3NyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI4NTUxNDQsImV4cCI6MjA5ODQzMTE0NH0.8kJRf8hm3rHK8sygMcyBT0R83tyK8hIQCmnAQxannJs"
 
-# Detectar rutas dinámicas
+# Rutas de base de datos de EVENTOS
 if os.path.exists(r'C:\SCORPION\BASES DE DATOS\EVENTOS'):
     CARPETA_EVENTOS = r'C:\SCORPION\BASES DE DATOS\EVENTOS'
     RUTA_COPIA_TEMP = r'C:\SCORPION\BASES DE DATOS\_EVENTOS_TEMP.MDB'
@@ -51,6 +51,15 @@ else:
     CARPETA_EVENTOS = os.path.join(root_dir, 'BASES DE DATOS', 'EVENTOS')
     RUTA_COPIA_TEMP = os.path.join(root_dir, 'BASES DE DATOS', '_EVENTOS_TEMP.MDB')
     RUTA_CACHE      = os.path.join(root_dir, 'BASES DE DATOS', '_sincronizador_cache.json')
+
+# Rutas del archivo GENERAL.mdb (Clientes de Scorpion)
+RUTAS_GENERAL_MDB = [
+    r"C:\SCORPION\BASE DE DATOS\GENERAL.mdb",
+    r"E:\MONITOREO ONLINE\GENERAL.mdb",
+    os.path.join(os.path.dirname(CARPETA_EVENTOS), "BASE DE DATOS", "GENERAL.mdb"),
+    os.path.join(os.path.dirname(CARPETA_EVENTOS), "GENERAL.mdb")
+]
+PASSWORD_GENERAL = "SCORPION7"
 
 DB_PASSWORD  = 'Administ'
 INTERVALO_SEG = 3
@@ -107,11 +116,91 @@ def get_ultimo_mdb():
     archivos.sort(reverse=True)
     return os.path.join(CARPETA_EVENTOS, archivos[0])
 
-def sincronizar(cache):
+# ============================================================
+#  FUNCIONES DE MONITORIZACIÓN Y SUBIDA DE CLIENTES (GENERAL.mdb)
+# ============================================================
+
+def buscar_general_mdb():
+    for ruta in RUTAS_GENERAL_MDB:
+        if os.path.exists(ruta):
+            return ruta
+    return None
+
+def sincronizar_clientes():
+    ruta_general = buscar_general_mdb()
+    if not ruta_general:
+        print("[MIGRACIÓN CLIENTES] Archivo GENERAL.mdb no encontrado. Omitiendo...")
+        return
+        
+    print(f"[MIGRACIÓN CLIENTES] Leyendo base de datos de clientes: {ruta_general}")
+    
+    # Copia de seguridad temporal para evitar bloqueo en caliente de Scorpion
+    temp_general = ruta_general + ".temp"
+    try:
+        if os.path.exists(temp_general):
+            os.remove(temp_general)
+    except:
+        pass
+        
+    try:
+        shutil.copy2(ruta_general, temp_general)
+        conn_str = (
+            f"DRIVER={{Microsoft Access Driver (*.mdb, *.accdb)}};"
+            f"DBQ={temp_general};PWD={PASSWORD_GENERAL};ReadOnly=1;"
+        )
+        conn = pyodbc.connect(conn_str)
+        cursor = conn.cursor()
+        
+        # Obtener columnas
+        columns = [row.column_name for row in cursor.columns(table='USUARIOS')]
+        
+        cursor.execute("SELECT * FROM USUARIOS")
+        rows = cursor.fetchall()
+        
+        clientes = []
+        for row in rows:
+            doc = {}
+            for col, val in zip(columns, row):
+                if val is None:
+                    doc[col.lower()] = ""
+                else:
+                    doc[col.lower()] = str(val).strip()
+            
+            # Solo añadir si tiene número de cuenta
+            if doc.get("cuenta"):
+                clientes.append(doc)
+                
+        cursor.close()
+        conn.close()
+        
+        # Subir el JSON mediante la API HTTP de Next.js
+        print(f"[MIGRACIÓN CLIENTES] Subiendo {len(clientes)} expedientes a Supabase...")
+        api_url = "https://dashboard-ten-self-68.vercel.app/api/sincronizar-clientes"
+        headers = {"Content-Type": "application/json"}
+        
+        res = requests.post(api_url, headers=headers, json=clientes, timeout=30)
+        if res.status_code == 200:
+            print("[MIGRACIÓN CLIENTES SUCCESS] Clientes actualizados exitosamente en Supabase.")
+        else:
+            print(f"[MIGRACIÓN CLIENTES ERROR] Error de API: {res.status_code} - {res.text}")
+            
+    except Exception as e:
+        print(f"[MIGRACIÓN CLIENTES ERROR] Fallo durante la sincronización: {e}")
+    finally:
+        if os.path.exists(temp_general):
+            try: os.remove(temp_general)
+            except: pass
+
+
+# ============================================================
+#  BUCLE PRINCIPAL DE EVENTOS
+# ============================================================
+
+def sincronizar_eventos(cache):
     print("--- Verificando nuevos eventos ---")
     ruta_original = get_ultimo_mdb()
     if not ruta_original:
-        print("[INFO] No hay archivos .MDB.")
+        print("[INFO] No hay archivos .MDB de eventos.")
         return cache, INTERVALO_SEG
 
     print(f"[DB] {os.path.basename(ruta_original)}")
@@ -122,14 +211,12 @@ def sincronizar(cache):
     tiempo_espera = INTERVALO_SEG
 
     try:
-        # Copia robusta del archivo para evitar bloqueos del archivo en uso
         if os.path.exists(RUTA_COPIA_TEMP):
             try:
                 os.remove(RUTA_COPIA_TEMP)
             except Exception:
                 pass
         
-        # Copiar de forma que no bloquee lecturas/escrituras concurrentes
         shutil.copy2(ruta_original, RUTA_COPIA_TEMP)
 
         conn_str = (
@@ -137,7 +224,6 @@ def sincronizar(cache):
             f'DBQ={RUTA_COPIA_TEMP};PWD={DB_PASSWORD};ReadOnly=1;'
         )
         
-        # Conectar a la base de datos con manejo estricto de errores de tareas de cliente
         try:
             conn = pyodbc.connect(conn_str)
             cursor = conn.cursor()
@@ -146,11 +232,8 @@ def sincronizar(cache):
         except pyodbc.Error as odbc_err:
             err_msg = str(odbc_err)
             print(f"[ERROR] {err_msg}")
-            
-            # Si el motor Access reporta saturación de conexiones (-1036 / Demasiadas tareas de cliente)
-            # incrementamos el tiempo de espera del bucle principal a 10s para dejar liberar recursos
             if "tareas de cliente" in err_msg or "-1036" in err_msg or "08004" in err_msg:
-                print(">>> El motor Access está saturado. Esperaremos 10s para liberar conexiones...")
+                print(">>> El motor Access está saturado. Esperaremos 10s...")
                 tiempo_espera = 10
             return cache, tiempo_espera
 
@@ -171,7 +254,6 @@ def sincronizar(cache):
             if event_key in cache:
                 continue
 
-            # Construir timestamp
             partes = dia.split('-')
             if len(partes) == 3:
                 if len(partes[0]) == 4:
@@ -191,7 +273,6 @@ def sincronizar(cache):
             }
 
             try:
-                # Insertar en Supabase. Si falla, se atrapa el error
                 supabase.table("eventos_monitoreo").insert(data).execute()
                 print(f"  [+] {cuenta} | {nombre} | {evento} | Z:{zona}")
                 cache.add(event_key)
@@ -204,8 +285,6 @@ def sincronizar(cache):
                     cache_modificada = True
                 else:
                     print(f"  [ERROR SUPABASE] Fallo de red al insertar: {e}")
-                    # En caso de desconexión con Supabase, paramos la iteración de esta tanda
-                    # para no perder la secuencia y reintentar en la siguiente vuelta.
                     break
 
         if cache_modificada:
@@ -216,31 +295,50 @@ def sincronizar(cache):
     except Exception as e:
         print(f"[ERROR CRITICO] {e}")
     finally:
-        # Asegurar el cierre estricto de los cursores y conexiones para no consumir recursos de Access
         if cursor:
             try: cursor.close()
             except: pass
         if conn:
             try: conn.close()
             except: pass
-            
         if os.path.exists(RUTA_COPIA_TEMP):
-            try:
-                os.remove(RUTA_COPIA_TEMP)
-            except:
-                pass
+            try: os.remove(RUTA_COPIA_TEMP)
+            except: pass
 
     print(f"--- Esperando {tiempo_espera}s ---\n")
     return cache, tiempo_espera
 
 
 if __name__ == "__main__":
-    print("=" * 55)
-    print("  GAMA COMMAND CENTER - Sincronizador v3.0")
-    print(f"  Carpeta: {CARPETA_EVENTOS}")
+    print("=" * 65)
+    print("  GAMA COMMAND CENTER - Sincronizador v4.0")
+    print(f"  Carpeta Eventos: {CARPETA_EVENTOS}")
     print(f"  Timezone: Chile ({get_chile_offset()})")
-    print("=" * 55)
+    print("=" * 65)
+    
+    # 1. Sincronización inicial de clientes al arrancar
+    print("\n[+] Iniciando sincronización inicial de clientes de GENERAL.mdb...")
+    sincronizar_clientes()
+    
+    # 2. Control de tiempo de modificación de GENERAL.mdb
+    ruta_general = buscar_general_mdb()
+    last_mtime = os.path.getmtime(ruta_general) if (ruta_general and os.path.exists(ruta_general)) else 0
+    
     cache = load_cache()
+    
+    # Bucle principal
     while True:
-        cache, sleep_time = sincronizar(cache)
+        # Verificar si GENERAL.mdb ha cambiado para resincronizar clientes
+        ruta_general_current = buscar_general_mdb()
+        if ruta_general_current and os.path.exists(ruta_general_current):
+            try:
+                current_mtime = os.path.getmtime(ruta_general_current)
+                if current_mtime != last_mtime:
+                    print(f"\n[+] Se detecto cambio en GENERAL.mdb ({datetime.fromtimestamp(current_mtime).strftime('%H:%M:%S')})")
+                    sincronizar_clientes()
+                    last_mtime = current_mtime
+            except Exception as ex:
+                print(f"[ERROR MTR] Fallo al monitorear GENERAL.mdb: {ex}")
+                
+        cache, sleep_time = sincronizar_eventos(cache)
         time.sleep(sleep_time)

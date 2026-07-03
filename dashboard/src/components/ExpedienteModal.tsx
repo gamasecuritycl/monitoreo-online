@@ -2,11 +2,12 @@
 
 import { useEffect, useRef, useState } from 'react'
 import type { EventoMonitoreo } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase'
 
-// Cargamos por defecto el archivo local, luego se integrará con la descarga del bucket de Supabase
+// Base de datos de fallback precargada
 import clientesDataRaw from '@/lib/clientes_general.json'
 
-const clientesGeneral = clientesDataRaw as Record<string, Record<string, string>>
+const clientesGeneralFallback = clientesDataRaw as Record<string, Record<string, string>>
 
 interface ExpedienteModalProps {
   evento: EventoMonitoreo
@@ -16,31 +17,44 @@ interface ExpedienteModalProps {
 export default function ExpedienteModal({ evento, onClose }: ExpedienteModalProps) {
   const modalRef = useRef<HTMLDivElement>(null)
   
-  // Cuenta activa en el modal (por defecto el del evento actual)
+  // Cuenta activa seleccionada
   const [cuentaActiva, setCuentaActiva] = useState(evento.cuenta.toUpperCase().trim() || 'C745')
   const [buscarCuentaInput, setBuscarCuentaInput] = useState('')
-  const [clientesDynamic, setClientesDynamic] = useState<Record<string, Record<string, string>>>(clientesGeneral)
+  
+  // Cache en memoria para todos los datos de clientes cargados
+  const [clientesMap, setClientesMap] = useState<Record<string, Record<string, string>>>(clientesGeneralFallback)
   
   // Control de pestañas
   const [tabEmergentes, setTabEmergentes] = useState<'telefonos' | 'horarios' | 'camara'>('telefonos')
   const [tabInfo, setTabInfo] = useState<'caracteristicas' | 'referencias' | 'observaciones'>('caracteristicas')
   const [tabInstalacion, setTabInstalacion] = useState<'instalacion' | 'ucontrol'>('instalacion')
 
-  // Cargar la base de datos actualizada en tiempo real desde Supabase Storage si está disponible
+  // Cargar lista actualizada de abonados desde Supabase en tiempo real
   useEffect(() => {
-    const cargarClientesOnline = async () => {
+    const fetchClientes = async () => {
       try {
-        const res = await fetch('https://onxwyrwmpjxtwlmjrosr.supabase.co/storage/v1/object/public/clientes-gama/clientes_general.json')
-        if (res.ok) {
-          const data = await res.json()
-          setClientesDynamic(data)
-          console.log('[STORAGE] Base de datos de clientes actualizada desde la nube.')
+        const { data, error } = await supabase
+          .from('clientes_expediente')
+          .select('*')
+        
+        if (data && !error) {
+          const map: Record<string, Record<string, string>> = {}
+          data.forEach((row: any) => {
+            const cuenta = (row.cuenta || '').toUpperCase().trim()
+            if (cuenta) {
+              map[cuenta] = row
+            }
+          })
+          setClientesMap(map)
+          console.log(`[SUPABASE] ${data.length} expedientes de clientes sincronizados con la nube.`)
+        } else if (error) {
+          console.warn('[SUPABASE] Fallo al leer clientes_expediente, usando fallback:', error)
         }
-      } catch (e) {
-        console.warn('[STORAGE] Usando base de datos de clientes local precargada.')
+      } catch (err) {
+        console.warn('[SUPABASE] Fallo de conexión de red, usando fallback local.')
       }
     }
-    cargarClientesOnline()
+    fetchClientes()
   }, [])
 
   useEffect(() => {
@@ -53,8 +67,8 @@ export default function ExpedienteModal({ evento, onClose }: ExpedienteModalProp
     modalRef.current?.focus()
   }, [])
 
-  // Obtener registro del cliente
-  const cliente = clientesDynamic[cuentaActiva] || {
+  // Buscar el registro completo del cliente en el mapa
+  const cliente = clientesMap[cuentaActiva] || clientesGeneralFallback[cuentaActiva] || {
     cuenta: cuentaActiva,
     nombre: evento.nombre_abonado || 'SIN NOMBRE REGISTRADO',
     ciudad: 'SANTIAGO',
@@ -62,8 +76,8 @@ export default function ExpedienteModal({ evento, onClose }: ExpedienteModalProp
     sector: 'NO DISPONIBLE'
   }
 
-  // Lista de todos los clientes para el buscador de abajo
-  const listaAbonados = Object.values(clientesDynamic).map(c => ({
+  // Lista de todos los clientes para el buscador inferior
+  const listaAbonados = Object.values(clientesMap).map(c => ({
     cuenta: (c.cuenta || '').toUpperCase().trim(),
     nombre: (c.nombre || '').toUpperCase().trim()
   })).sort((a, b) => a.cuenta.localeCompare(b.cuenta))
@@ -76,7 +90,7 @@ export default function ExpedienteModal({ evento, onClose }: ExpedienteModalProp
       )
     : listaAbonados
 
-  // Extraer contactos de emergencia indexados (nombre1, direccion1, t1...)
+  // Extraer teléfonos de emergencia indexados (nombre1, direccion1, t1...)
   const telefonosEmergencia = []
   for (let i = 1; i <= 7; i++) {
     const nom = cliente[`nombre${i}`] || ''
@@ -100,7 +114,7 @@ export default function ExpedienteModal({ evento, onClose }: ExpedienteModalProp
       onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
     >
       {/* 
-        VENTANA RETRO AJUSTADA (Ancho: 950px, Alto: 510px fijo para que quepa en laptops sin cortarse)
+        VENTANA RETRO PIXEL-PERFECT COMPACTA (Ancho 950px, Alto 510px)
       */}
       <div
         ref={modalRef}
@@ -122,10 +136,10 @@ export default function ExpedienteModal({ evento, onClose }: ExpedienteModalProp
           </button>
         </div>
 
-        {/* CONTENEDOR PRINCIPAL INTERNO (Altura fija ajustada) */}
+        {/* CONTENEDOR PRINCIPAL INTERNO */}
         <div className="flex-1 p-1 flex flex-col gap-2 overflow-hidden">
           
-          {/* FILA 1: INFORMACIÓN BÁSICA + FOTOGRAFÍA (Altura reducida a 140px) */}
+          {/* FILA 1: INFORMACIÓN BÁSICA + FOTOGRAFÍA (Altura 140px) */}
           <div className="h-[140px] flex gap-2 shrink-0">
             
             {/* Caja Información Básica */}
@@ -221,10 +235,10 @@ export default function ExpedienteModal({ evento, onClose }: ExpedienteModalProp
 
           </div>
 
-          {/* FILA 2: PESTAÑAS MEDIAS (Emergentes a la izq, Características a la derecha) (Altura reducida a 170px) */}
+          {/* FILA 2: PESTAÑAS MEDIAS (Emergentes y Características) (Altura 170px) */}
           <div className="h-[170px] flex gap-2 shrink-0">
             
-            {/* Lado Izquierdo: Teléfonos Emergentes (Ancho: 530px) */}
+            {/* Lado Izquierdo: Teléfonos Emergentes (Ancho 530px) */}
             <div className="w-[530px] flex flex-col shrink-0">
               <div className="flex gap-0.5 text-[9px]">
                 <button
@@ -303,7 +317,7 @@ export default function ExpedienteModal({ evento, onClose }: ExpedienteModalProp
               </div>
             </div>
 
-            {/* Lado Derecho: Características (Ancho: 400px para llenar) */}
+            {/* Lado Derecho: Características (Ancho restatnte) */}
             <div className="flex-1 flex flex-col shrink-0">
               <div className="flex gap-0.5 text-[9px]">
                 <button
@@ -353,10 +367,10 @@ export default function ExpedienteModal({ evento, onClose }: ExpedienteModalProp
 
           </div>
 
-          {/* FILA 3: INSTALACIÓN + BUSCADOR + BOTÓN SALIR (Altura: 140px) */}
+          {/* FILA 3: INSTALACIÓN + BUSCADOR + SALIR (Altura 140px) */}
           <div className="h-[140px] flex gap-2 shrink-0">
             
-            {/* Instalación / U. Control (Ancho: 400px) */}
+            {/* Instalación / U. Control (Ancho 400px) */}
             <div className="w-[400px] flex flex-col shrink-0">
               <div className="flex gap-0.5 text-[9px]">
                 <button
@@ -405,7 +419,7 @@ export default function ExpedienteModal({ evento, onClose }: ExpedienteModalProp
               </div>
             </div>
 
-            {/* BUSCADOR DE USUARIO (Ancho: 410px - Ocupa todo el centro libre) */}
+            {/* BUSCADOR DE USUARIO (Ancho restante) */}
             <div className="flex-1 border border-gray-400 p-2 relative bg-[#d4d0c8] flex flex-col gap-1 shrink-0">
               <div className="absolute -top-2 left-2 bg-[#d4d0c8] px-1 text-[9px] font-bold text-gray-700">
                 BUSCAR USUARIO
@@ -422,7 +436,7 @@ export default function ExpedienteModal({ evento, onClose }: ExpedienteModalProp
                 />
               </div>
 
-              {/* Lista azul marino (Scroll y altura fija reducida) */}
+              {/* Lista azul marino (Scroll y altura fija) */}
               <div className="h-[75px] bg-[#000080] text-white border border-t-gray-700 border-l-gray-700 border-b-white border-r-white overflow-y-auto text-[10px]">
                 {listaFiltrada.map((item) => (
                   <div
@@ -444,7 +458,7 @@ export default function ExpedienteModal({ evento, onClose }: ExpedienteModalProp
               </div>
             </div>
 
-            {/* BOTÓN SALIR / CERRAR (Ancho: 110px, Único botón de la derecha) */}
+            {/* BOTÓN SALIR (Ancho 110px) */}
             <div className="w-[110px] flex flex-col justify-end shrink-0 h-full">
               <button 
                 onClick={onClose}
