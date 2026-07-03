@@ -109,16 +109,18 @@ export default function ExpedienteModal({ evento, onClose }: ExpedienteModalProp
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 font-mono p-2 overflow-hidden"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 font-mono p-2 overflow-y-auto"
       onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
     >
       {/* 
-        VENTANA RETRO PIXEL-PERFECT COMPACTA (Ancho 950px, Alto 510px)
+        VENTANA RETRO PIXEL-PERFECT COMPACTA
+        PC: Ancho 950px, Alto 510px fijos.
+        Móvil: Ancho completo fluido, scrollbar vertical de formulario para autoajuste completo.
       */}
       <div
         ref={modalRef}
         tabIndex={-1}
-        className="w-[950px] h-[510px] bg-[#d4d0c8] text-black border-2 border-t-white border-l-white border-b-[#808080] border-r-[#808080] p-1 shadow-[4px_4px_12px_rgba(0,0,0,0.6)] focus:outline-none flex flex-col justify-between shrink-0 select-none"
+        className="w-full md:w-[950px] h-[92vh] md:h-[510px] bg-[#d4d0c8] text-black border-2 border-t-white border-l-white border-b-[#808080] border-r-[#808080] p-1 shadow-[4px_4px_12px_rgba(0,0,0,0.6)] focus:outline-none flex flex-col justify-between select-none"
         style={{ fontSize: '11px' }}
       >
         {/* Barra de Título */}
@@ -136,30 +138,30 @@ export default function ExpedienteModal({ evento, onClose }: ExpedienteModalProp
         </div>
 
         {/* CONTENEDOR PRINCIPAL INTERNO */}
-        <div className="flex-1 p-1 flex flex-col gap-2 overflow-hidden">
+        <div className="flex-1 p-1 flex flex-col gap-2 overflow-y-auto md:overflow-hidden">
           
-          {/* FILA 1: INFORMACIÓN BÁSICA + FOTOGRAFÍA (Altura 140px) */}
-          <div className="h-[140px] flex gap-2 shrink-0">
+          {/* FILA 1: INFORMACIÓN BÁSICA + FOTOGRAFÍA */}
+          <div className="h-auto md:h-[140px] flex flex-col md:flex-row gap-2 shrink-0">
             
             {/* Caja Información Básica */}
-            <div className="flex-1 border-2 border-t-[#808080] border-l-[#808080] border-b-white border-r-white p-2 relative pt-3 flex flex-col justify-between">
+            <div className="flex-1 border-2 border-t-[#808080] border-l-[#808080] border-b-white border-r-white p-2 relative pt-3 flex flex-col justify-between gap-1.5 md:gap-0">
               <div className="absolute -top-2 left-3 bg-[#d4d0c8] px-1 font-bold text-[9px] uppercase tracking-wider text-gray-700">
                 INFORMACION BASICA:
               </div>
 
               {/* Cuenta y Nombre */}
-              <div className="flex items-center gap-2">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                 <div className="flex items-center gap-1">
-                  <span className="font-bold">Cuenta:</span>
+                  <span className="font-bold w-[45px] sm:w-auto">Cuenta:</span>
                   <input 
                     type="text" 
                     readOnly 
                     value={cliente.cuenta || ''} 
-                    className="w-[70px] bg-[#ffffd0] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white font-bold px-1 py-0.5 text-blue-900 focus:outline-none text-[11px]" 
+                    className="w-full sm:w-[70px] bg-[#ffffd0] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white font-bold px-1 py-0.5 text-blue-900 focus:outline-none text-[11px]" 
                   />
                 </div>
                 <div className="flex-1 flex items-center gap-1">
-                  <span className="font-bold">Nombre:</span>
+                  <span className="font-bold w-[45px] sm:w-auto">Nombre:</span>
                   <input 
                     type="text" 
                     readOnly 
@@ -170,31 +172,31 @@ export default function ExpedienteModal({ evento, onClose }: ExpedienteModalProp
               </div>
 
               {/* Ciudad, Plan y Tipo */}
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 <div className="flex items-center gap-1">
-                  <span className="font-bold">Ciudad:</span>
+                  <span className="font-bold w-[45px] sm:w-auto">Ciudad:</span>
                   <select disabled className="w-full bg-[#ffffd0] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white font-bold py-0.5 px-1 text-black text-[11px]">
                     <option>{cliente.ciudad || 'SANTIAGO'}</option>
                   </select>
                 </div>
                 <div className="flex items-center gap-1">
-                  <span className="font-bold">Plan:</span>
+                  <span className="font-bold w-[45px] sm:w-auto">Plan:</span>
                   <input type="text" readOnly value={cliente.plan || ''} className="w-full bg-[#ffffd0] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white font-bold px-1 py-0.5 text-[11px]" />
                 </div>
                 <div className="flex items-center gap-1">
-                  <span className="font-bold">Tipo:</span>
+                  <span className="font-bold w-[45px] sm:w-auto">Tipo:</span>
                   <input type="text" readOnly value={cliente.tipo1 || ''} className="w-full bg-[#ffffd0] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white font-bold px-1 py-0.5 text-[11px]" />
                 </div>
               </div>
 
               {/* Dirección y Sector */}
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div className="flex items-center gap-1">
-                  <span className="font-bold">Dirección:</span>
+                  <span className="font-bold w-[45px] sm:w-auto">Dirección:</span>
                   <input type="text" readOnly value={cliente.direccion || ''} className="w-full bg-[#ffffd0] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white font-bold px-1.5 py-0.5 text-[11px] truncate" />
                 </div>
                 <div className="flex items-center gap-1">
-                  <span className="font-bold">Sector:</span>
+                  <span className="font-bold w-[45px] sm:w-auto">Sector:</span>
                   <input type="text" readOnly value={cliente.sector || ''} className="w-full bg-[#ffffd0] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white font-bold px-1.5 py-0.5 text-[11px] truncate" />
                 </div>
               </div>
@@ -204,7 +206,7 @@ export default function ExpedienteModal({ evento, onClose }: ExpedienteModalProp
                 <div className="absolute -top-2 left-2 bg-[#d4d0c8] px-1 text-[8px] font-bold text-gray-700">
                   TELEFONOS:
                 </div>
-                <div className="grid grid-cols-6 gap-1">
+                <div className="grid grid-cols-3 sm:grid-cols-6 gap-1">
                   {Array.from({ length: 6 }).map((_, i) => (
                     <input
                       key={i}
@@ -219,13 +221,13 @@ export default function ExpedienteModal({ evento, onClose }: ExpedienteModalProp
 
             </div>
 
-            {/* Caja de Fotografía */}
-            <div className="w-[200px] border-2 border-t-[#808080] border-l-[#808080] border-b-white border-r-white p-1 flex flex-col justify-between bg-[#d4d0c8] shrink-0">
+            {/* Caja de Fotografía (Oculta en móviles muy chicos, visible en md) */}
+            <div className="hidden sm:flex md:w-[200px] border-2 border-t-[#808080] border-l-[#808080] border-b-white border-r-white p-1 flex-col justify-between bg-[#d4d0c8] shrink-0 h-[100px] md:h-auto">
               <div className="bg-[#808080] text-white text-center font-bold text-[9px] py-0.5 border border-t-black border-l-black border-b-white border-r-white">
                 FOTOGRAFIA
               </div>
-              <div className="flex-1 bg-white border border-t-gray-700 border-l-gray-700 border-b-white border-r-white my-0.5 flex items-center justify-center">
-                <span className="text-gray-300 text-3xl">👤</span>
+              <div className="flex-1 bg-white border border-t-gray-700 border-l-gray-700 border-b-white border-r-white my-0.5 flex items-center justify-center min-h-[40px]">
+                <span className="text-gray-300 text-2xl">👤</span>
               </div>
               <button disabled className="w-full bg-[#d4d0c8] border border-t-white border-l-white border-b-gray-500 border-r-gray-500 text-[9px] py-0.5 font-bold uppercase tracking-wider text-gray-500">
                 Insertar / Cambiar Fotografia
@@ -234,15 +236,15 @@ export default function ExpedienteModal({ evento, onClose }: ExpedienteModalProp
 
           </div>
 
-          {/* FILA 2: PESTAÑAS MEDIAS (Emergentes y Características) (Altura 170px) */}
-          <div className="h-[170px] flex gap-2 shrink-0">
+          {/* FILA 2: PESTAÑAS MEDIAS (Emergentes y Características) */}
+          <div className="h-auto md:h-[170px] flex flex-col md:flex-row gap-2 shrink-0">
             
-            {/* Lado Izquierdo: Teléfonos Emergentes (Ancho 530px) */}
-            <div className="w-[530px] flex flex-col shrink-0">
-              <div className="flex gap-0.5 text-[9px]">
+            {/* Lado Izquierdo: Teléfonos Emergentes (PC: Ancho 530px, Móvil: Completo) */}
+            <div className="w-full md:w-[530px] flex flex-col shrink-0">
+              <div className="flex flex-wrap gap-0.5 text-[9px]">
                 <button
                   onClick={() => setTabEmergentes('telefonos')}
-                  className={`px-2 py-0.5 font-bold border-t border-l border-r border-white rounded-t-sm cursor-pointer ${
+                  className={`px-2 py-1 font-bold border-t border-l border-r border-white rounded-t-sm cursor-pointer ${
                     tabEmergentes === 'telefonos' ? 'bg-[#d4d0c8] pb-1 -mb-0.5 z-10' : 'bg-[#b0b0b0] text-gray-700'
                   }`}
                 >
@@ -250,15 +252,15 @@ export default function ExpedienteModal({ evento, onClose }: ExpedienteModalProp
                 </button>
                 <button
                   onClick={() => setTabEmergentes('horarios')}
-                  className={`px-2 py-0.5 font-bold border-t border-l border-r border-white rounded-t-sm cursor-pointer ${
+                  className={`px-2 py-1 font-bold border-t border-l border-r border-white rounded-t-sm cursor-pointer ${
                     tabEmergentes === 'horarios' ? 'bg-[#d4d0c8] pb-1 -mb-0.5 z-10' : 'bg-[#b0b0b0] text-gray-700'
                   }`}
                 >
-                  HORARIOS APERTURA Y CIERRE
+                  HORARIOS
                 </button>
                 <button
                   onClick={() => setTabEmergentes('camara')}
-                  className={`px-2 py-0.5 font-bold border-t border-l border-r border-white rounded-t-sm cursor-pointer ${
+                  className={`px-2 py-1 font-bold border-t border-l border-r border-white rounded-t-sm cursor-pointer ${
                     tabEmergentes === 'camara' ? 'bg-[#d4d0c8] pb-1 -mb-0.5 z-10' : 'bg-[#b0b0b0] text-gray-700'
                   }`}
                 >
@@ -266,7 +268,7 @@ export default function ExpedienteModal({ evento, onClose }: ExpedienteModalProp
                 </button>
               </div>
               
-              <div className="border-2 border-white bg-[#d4d0c8] p-1.5 flex-1 flex flex-col justify-start overflow-hidden">
+              <div className="border-2 border-white bg-[#d4d0c8] p-1 flex-1 flex flex-col justify-start overflow-hidden min-h-[110px] md:min-h-0">
                 {tabEmergentes === 'telefonos' && (
                   <div className="border border-gray-400 p-1 relative flex-1 bg-[#d4d0c8] flex flex-col overflow-hidden">
                     <div className="absolute -top-2 left-2 bg-[#d4d0c8] px-1 text-[8px] font-bold text-gray-700">
@@ -277,18 +279,18 @@ export default function ExpedienteModal({ evento, onClose }: ExpedienteModalProp
                         <thead>
                           <tr className="bg-[#b0b0b0] border-b border-gray-400 font-bold sticky top-0">
                             <th className="p-0.5 border-r border-gray-400 w-1/4">Nombre</th>
-                            <th className="p-0.5 border-r border-gray-400 w-2/5">Dirección</th>
-                            <th className="p-0.5 border-r border-gray-400 w-1/6">Cargo/Afinidad</th>
+                            <th className="p-0.5 border-r border-gray-400 w-1/4">Dirección</th>
+                            <th className="p-0.5 border-r border-gray-400 w-1/6">Cargo</th>
                             <th className="p-0.5">Teléfono</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-300">
                           {telefonosEmergencia.map((tel, idx) => (
                             <tr key={idx} className="hover:bg-blue-100 font-bold text-gray-800 h-5">
-                              <td className="p-0.5 border-r border-gray-300 truncate max-w-[120px]">{tel.nombre}</td>
-                              <td className="p-0.5 border-r border-gray-300 truncate max-w-[180px]">{tel.direccion}</td>
-                              <td className="p-0.5 border-r border-gray-300 truncate max-w-[80px]">{tel.cargo}</td>
-                              <td className="p-0.5 font-mono text-blue-900">{tel.telefono}</td>
+                              <td className="p-0.5 border-r border-gray-300 truncate max-w-[80px] sm:max-w-[120px]">{tel.nombre}</td>
+                              <td className="p-0.5 border-r border-gray-300 truncate max-w-[80px] sm:max-w-[180px]">{tel.direccion}</td>
+                              <td className="p-0.5 border-r border-gray-300 truncate max-w-[50px] sm:max-w-[80px]">{tel.cargo}</td>
+                              <td className="p-0.5 font-mono text-blue-900 truncate max-w-[80px]">{tel.telefono}</td>
                             </tr>
                           ))}
                           {telefonosEmergencia.length === 0 && (
@@ -316,12 +318,12 @@ export default function ExpedienteModal({ evento, onClose }: ExpedienteModalProp
               </div>
             </div>
 
-            {/* Lado Derecho: Características (Ancho restatnte) */}
+            {/* Lado Derecho: Características (PC: Lado Derecho, Móvil: Abajo) */}
             <div className="flex-1 flex flex-col shrink-0">
               <div className="flex gap-0.5 text-[9px]">
                 <button
                   onClick={() => setTabInfo('caracteristicas')}
-                  className={`px-2 py-0.5 font-bold border-t border-l border-r border-white rounded-t-sm cursor-pointer ${
+                  className={`px-2 py-1 font-bold border-t border-l border-r border-white rounded-t-sm cursor-pointer ${
                     tabInfo === 'caracteristicas' ? 'bg-[#d4d0c8] pb-1 -mb-0.5 z-10' : 'bg-[#b0b0b0] text-gray-700'
                   }`}
                 >
@@ -329,7 +331,7 @@ export default function ExpedienteModal({ evento, onClose }: ExpedienteModalProp
                 </button>
                 <button
                   onClick={() => setTabInfo('referencias')}
-                  className={`px-2 py-0.5 font-bold border-t border-l border-r border-white rounded-t-sm cursor-pointer ${
+                  className={`px-2 py-1 font-bold border-t border-l border-r border-white rounded-t-sm cursor-pointer ${
                     tabInfo === 'referencias' ? 'bg-[#d4d0c8] pb-1 -mb-0.5 z-10' : 'bg-[#b0b0b0] text-gray-700'
                   }`}
                 >
@@ -337,7 +339,7 @@ export default function ExpedienteModal({ evento, onClose }: ExpedienteModalProp
                 </button>
                 <button
                   onClick={() => setTabInfo('observaciones')}
-                  className={`px-2 py-0.5 font-bold border-t border-l border-r border-white rounded-t-sm cursor-pointer ${
+                  className={`px-2 py-1 font-bold border-t border-l border-r border-white rounded-t-sm cursor-pointer ${
                     tabInfo === 'observaciones' ? 'bg-[#d4d0c8] pb-1 -mb-0.5 z-10' : 'bg-[#b0b0b0] text-gray-700'
                   }`}
                 >
@@ -345,7 +347,7 @@ export default function ExpedienteModal({ evento, onClose }: ExpedienteModalProp
                 </button>
               </div>
 
-              <div className="border-2 border-white bg-[#d4d0c8] p-1.5 flex-1 flex flex-col justify-start overflow-hidden">
+              <div className="border-2 border-white bg-[#d4d0c8] p-1 flex-1 flex flex-col justify-start overflow-hidden min-h-[90px] md:min-h-0">
                 <div className="border border-gray-400 p-1 relative flex-1 flex flex-col bg-[#d4d0c8]">
                   <div className="absolute -top-2.5 left-2 bg-[#d4d0c8] px-1 text-[8px] font-bold text-gray-700 uppercase">
                     {tabInfo}
@@ -353,12 +355,11 @@ export default function ExpedienteModal({ evento, onClose }: ExpedienteModalProp
                   <textarea
                     readOnly
                     value={
-                      tabInfo === 'caracteristicas' ? cliente.caract_adic1 :
-                      tabInfo === 'referencias' ? cliente.referencia1 :
-                      cliente.observacion1
+                      tabInfo === 'caracteristicas' ? (cliente.caract_adic1 || 'Sin características') :
+                      tabInfo === 'referencias' ? (cliente.referencia1 || 'Sin referencias') :
+                      (cliente.observacion1 || 'Sin observaciones')
                     }
                     className="w-full flex-1 bg-[#ffffd0] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white p-1.5 font-bold font-mono text-[10px] text-gray-800 resize-none focus:outline-none leading-normal h-full overflow-y-auto"
-                    placeholder="Vacío"
                   />
                 </div>
               </div>
@@ -366,15 +367,15 @@ export default function ExpedienteModal({ evento, onClose }: ExpedienteModalProp
 
           </div>
 
-          {/* FILA 3: INSTALACIÓN + BUSCADOR + SALIR (Altura 140px) */}
-          <div className="h-[140px] flex gap-2 shrink-0">
+          {/* FILA 3: INSTALACIÓN + BUSCADOR + SALIR */}
+          <div className="h-auto md:h-[140px] flex flex-col md:flex-row gap-2 shrink-0">
             
-            {/* Instalación / U. Control (Ancho 400px) */}
-            <div className="w-[400px] flex flex-col shrink-0">
+            {/* Instalación / U. Control (PC: Ancho 400px, Móvil: Completo) */}
+            <div className="w-full md:w-[400px] flex flex-col shrink-0">
               <div className="flex gap-0.5 text-[9px]">
                 <button
                   onClick={() => setTabInstalacion('instalacion')}
-                  className={`px-2 py-0.5 font-bold border-t border-l border-r border-white rounded-t-sm cursor-pointer ${
+                  className={`px-2 py-1 font-bold border-t border-l border-r border-white rounded-t-sm cursor-pointer ${
                     tabInstalacion === 'instalacion' ? 'bg-[#d4d0c8] pb-1' : 'bg-[#b0b0b0] text-gray-700'
                   }`}
                 >
@@ -382,23 +383,23 @@ export default function ExpedienteModal({ evento, onClose }: ExpedienteModalProp
                 </button>
                 <button
                   onClick={() => setTabInstalacion('ucontrol')}
-                  className={`px-2 py-0.5 font-bold border-t border-l border-r border-white rounded-t-sm cursor-pointer ${
+                  className={`px-2 py-1 font-bold border-t border-l border-r border-white rounded-t-sm cursor-pointer ${
                     tabInstalacion === 'ucontrol' ? 'bg-[#d4d0c8] pb-1' : 'bg-[#b0b0b0] text-gray-700'
                   }`}
                 >
                   U. CONTROL
                 </button>
               </div>
-              <div className="border border-white bg-[#d4d0c8] p-2 flex-1 flex flex-col justify-center gap-1.5">
+              <div className="border border-white bg-[#d4d0c8] p-2 flex-1 flex flex-col justify-center gap-1.5 min-h-[60px] md:min-h-0">
                 {tabInstalacion === 'instalacion' && (
                   <div className="space-y-1.5 text-[10px]">
                     <div className="grid grid-cols-3 items-center gap-1">
-                      <span className="font-bold text-right text-gray-700">Fecha de Instalación:</span>
+                      <span className="font-bold text-right text-gray-700">Instalación:</span>
                       <input type="text" readOnly value={cliente.fecha || ''} className="col-span-2 bg-[#ffffd0] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white px-1.5 py-0.5 font-bold text-gray-800" />
                     </div>
                     <div className="grid grid-cols-3 items-center gap-1">
                       <span className="font-bold text-right text-gray-700">Instalador:</span>
-                      <input type="text" readOnly value={cliente.instalador || ''} className="col-span-2 bg-[#ffffd0] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white px-1.5 py-0.5 font-bold text-gray-800" />
+                      <input type="text" readOnly value={cliente.instalador || ''} className="col-span-2 bg-[#ffffd0] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white px-1.5 py-0.5 font-bold text-gray-800 truncate" />
                     </div>
                   </div>
                 )}
@@ -406,7 +407,7 @@ export default function ExpedienteModal({ evento, onClose }: ExpedienteModalProp
                 {tabInstalacion === 'ucontrol' && (
                   <div className="space-y-1.5 text-[10px]">
                     <div className="grid grid-cols-3 items-center gap-1">
-                      <span className="font-bold text-right text-gray-700">Marca / Modelo:</span>
+                      <span className="font-bold text-right text-gray-700">Marca/Mod:</span>
                       <input type="text" readOnly value={`${cliente.marca || ''} ${cliente.modelo || ''}`} className="col-span-2 bg-[#ffffd0] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white px-1.5 py-0.5 font-bold text-gray-800" />
                     </div>
                     <div className="grid grid-cols-3 items-center gap-1">
@@ -419,7 +420,7 @@ export default function ExpedienteModal({ evento, onClose }: ExpedienteModalProp
             </div>
 
             {/* BUSCADOR DE USUARIO (Ancho restante) */}
-            <div className="flex-1 border border-gray-400 p-2 relative bg-[#d4d0c8] flex flex-col gap-1 shrink-0">
+            <div className="flex-1 border border-gray-400 p-2 relative bg-[#d4d0c8] flex flex-col gap-1 shrink-0 min-h-[120px] md:min-h-0">
               <div className="absolute -top-2 left-2 bg-[#d4d0c8] px-1 text-[9px] font-bold text-gray-700">
                 BUSCAR USUARIO
               </div>
@@ -435,8 +436,8 @@ export default function ExpedienteModal({ evento, onClose }: ExpedienteModalProp
                 />
               </div>
 
-              {/* Lista azul marino (Scroll y altura fija) */}
-              <div className="h-[75px] bg-[#000080] text-white border border-t-gray-700 border-l-gray-700 border-b-white border-r-white overflow-y-auto text-[10px]">
+              {/* Lista azul marino (Scroll y altura adaptable) */}
+              <div className="h-[75px] md:h-[75px] bg-[#000080] text-white border border-t-gray-700 border-l-gray-700 border-b-white border-r-white overflow-y-auto text-[10px]">
                 {listaFiltrada.map((item) => (
                   <div
                     key={item.cuenta}
@@ -457,11 +458,11 @@ export default function ExpedienteModal({ evento, onClose }: ExpedienteModalProp
               </div>
             </div>
 
-            {/* BOTÓN SALIR (Ancho 110px) */}
-            <div className="w-[110px] flex flex-col justify-end shrink-0 h-full">
+            {/* BOTÓN SALIR (PC: 110px, Móvil: Completo) */}
+            <div className="w-full md:w-[110px] flex flex-col justify-end shrink-0 h-10 md:h-full">
               <button 
                 onClick={onClose}
-                className="w-full h-8 bg-[#d4d0c8] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 text-gray-800 font-bold active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white cursor-pointer select-none hover:bg-gray-200"
+                className="w-full h-8 bg-[#d4d0c8] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 text-gray-800 font-bold active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white cursor-pointer select-none hover:bg-gray-200 text-[11px]"
               >
                 SALIR
               </button>

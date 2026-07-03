@@ -58,13 +58,13 @@ export default function EventGrid({ eventos, onEventClick }: EventGridProps) {
   const latestId = eventos.length > 0 ? (eventos[eventos.length - 1].id as number) : null
 
   return (
-    <div ref={containerRef} className="w-full h-full overflow-y-auto bg-[#070b13] flex justify-start">
+    <div ref={containerRef} className="w-full h-full overflow-auto bg-[#070b13] flex justify-start">
       <table className="border-collapse table-fixed w-full" style={{ fontFamily: "'Consolas', 'Courier New', monospace" }}>
         <thead className="sticky top-0 z-10">
           <tr className="bg-[#111827]">
             <th className="px-1 py-1.5 text-[10px] md:text-[11px] font-bold text-slate-300 uppercase tracking-wider text-left border border-[#1e293b] w-[100px] md:w-[150px]">FECHA/HORA</th>
             <th className="px-1 py-1.5 text-[10px] md:text-[11px] font-bold text-slate-300 uppercase tracking-wider text-left border border-[#1e293b] w-[50px] md:w-[65px]">ABONADO</th>
-            <th className="px-1 py-1.5 text-[10px] md:text-[11px] font-bold text-slate-300 uppercase tracking-wider text-left border border-[#1e293b] w-[95px] md:w-[300px]">NOMBRE</th>
+            <th className="px-1 py-1.5 text-[10px] md:text-[11px] font-bold text-slate-300 uppercase tracking-wider text-left border border-[#1e293b] w-[170px] md:w-[300px]">NOMBRE</th>
             <th className="px-1 py-1.5 text-[10px] md:text-[11px] font-bold text-slate-300 uppercase tracking-wider text-left border border-[#1e293b] w-[85px] md:w-[170px]">SEÑAL</th>
             <th className="px-1 py-1.5 text-[10px] md:text-[11px] font-bold text-slate-300 uppercase tracking-wider text-center border border-[#1e293b] w-[30px] md:w-[40px]">ZN</th>
             <th className="px-1 py-1.5 text-[10px] md:text-[11px] font-bold text-slate-300 uppercase tracking-wider text-center border border-[#1e293b] w-[40px] hidden md:table-cell">PAR</th>

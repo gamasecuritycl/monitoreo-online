@@ -83,7 +83,7 @@ export default function EventosPorUsuarioModal({ onClose, eventoInicial }: Event
             }
           })
           
-          const listaDias = Array.from(diasSet).sort((a, b) => b.localeCompare(a)) // Orden descendente (más recientes primero)
+          const listaDias = Array.from(diasSet).sort((a, b) => b.localeCompare(a)) // Orden descendente
           setDiasDisponibles(listaDias)
           
           // Seleccionar por defecto el día más reciente
@@ -112,8 +112,6 @@ export default function EventosPorUsuarioModal({ onClose, eventoInicial }: Event
     const filtrados = todosEventosAbonado.filter(ev => {
       return ev.fecha_hora && ev.fecha_hora.startsWith(diaSeleccionado)
     })
-    // Invertir para mostrar de más antiguos a más recientes del día (estilo bitácora clásica) o viceversa
-    // Scorpion lo muestra en orden cronológico ascendente del día (horas más tempranas arriba)
     const ordenAsc = [...filtrados].sort((a, b) => a.fecha_hora.localeCompare(b.fecha_hora))
     setEventosMostrados(ordenAsc)
   }, [diaSeleccionado, todosEventosAbonado])
@@ -145,16 +143,14 @@ export default function EventosPorUsuarioModal({ onClose, eventoInicial }: Event
         c.cuenta.toLowerCase().includes(buscarNombreInput.toLowerCase()) ||
         c.nombre.toLowerCase().includes(buscarNombreInput.toLowerCase())
       )
-    : listaClientesBusqueda.slice(0, 100) // Mostrar 100 iniciales
+    : listaClientesBusqueda.slice(0, 100)
 
-  // Formatear hora de la celda
   const getHoraSolo = (iso: string): string => {
     try {
       const d = new Date(iso)
       const pad = (n: number) => n.toString().padStart(2, '0')
       return `${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())}`
     } catch {
-      // Fallback si no parsea
       const partes = iso.split('T')
       if (partes.length === 2) {
         return partes[1].substring(0, 8)
@@ -165,16 +161,18 @@ export default function EventosPorUsuarioModal({ onClose, eventoInicial }: Event
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 font-mono p-2 overflow-hidden"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 font-mono p-2 overflow-y-auto"
       onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
     >
       {/* 
-        VENTANA RETRO PIXEL-PERFECT (Ancho 950px, Alto 520px fijo para acomodarse a laptops)
+        VENTANA RETRO PIXEL-PERFECT COMPACTA E INTELIGENTE
+        PC: Ancho 950px, Alto 520px fijos.
+        Móvil: Stacking vertical y scroll fluido de formulario para visualización óptima en celulares.
       */}
       <div
         ref={modalRef}
         tabIndex={-1}
-        className="w-[950px] h-[520px] bg-[#d4d0c8] text-black border-2 border-t-white border-l-white border-b-[#808080] border-r-[#808080] p-1 shadow-[4px_4px_12px_rgba(0,0,0,0.6)] focus:outline-none flex flex-col justify-between shrink-0 select-none"
+        className="w-full md:w-[950px] h-[92vh] md:h-[520px] bg-[#d4d0c8] text-black border-2 border-t-white border-l-white border-b-[#808080] border-r-[#808080] p-1 shadow-[4px_4px_12px_rgba(0,0,0,0.6)] focus:outline-none flex flex-col justify-between select-none"
         style={{ fontSize: '11px' }}
       >
         {/* Barra de Título */}
@@ -192,47 +190,45 @@ export default function EventosPorUsuarioModal({ onClose, eventoInicial }: Event
         </div>
 
         {/* CONTENEDOR PRINCIPAL */}
-        <div className="flex-1 p-2 flex flex-col gap-2.5 overflow-hidden">
+        <div className="flex-1 p-2 flex flex-col gap-2.5 overflow-y-auto md:overflow-hidden">
           
           {/* CABECERA: TÍTULO EN AZUL + VISORES NEGROS */}
-          <div className="h-14 flex items-center justify-between shrink-0 bg-[#d4d0c8] border-b border-gray-400 pb-1">
-            <div className="text-[#000080] font-black text-[22px] italic tracking-widest pl-1">
+          <div className="h-auto md:h-14 flex flex-col md:flex-row items-start md:items-center justify-between shrink-0 bg-[#d4d0c8] border-b border-gray-400 pb-1.5 gap-2 md:gap-0">
+            <div className="text-[#000080] font-black text-[18px] md:text-[22px] italic tracking-widest pl-1 uppercase">
               EVENTOS POR USUARIO
             </div>
             
-            {/* Visor Negro / Letras Verdes (Cuenta y Nombre del cliente seleccionado) */}
-            <div className="flex gap-2 items-center">
+            {/* Visores Negros con Letras Verdes */}
+            <div className="flex flex-wrap gap-2 items-center w-full md:w-auto">
               <div className="flex items-center gap-1">
-                <span className="font-bold text-[10px] text-gray-700">CUENTA:</span>
-                <div className="w-[70px] h-7 bg-black border border-gray-500 flex items-center justify-center font-bold text-green-400 text-xs font-mono">
+                <span className="font-bold text-[9px] text-gray-700">CUENTA:</span>
+                <div className="w-[60px] sm:w-[70px] h-6 bg-black border border-gray-500 flex items-center justify-center font-bold text-green-400 text-xs font-mono">
                   {clienteActivo.cuenta || '-----'}
                 </div>
               </div>
-              <div className="flex items-center gap-1">
-                <span className="font-bold text-[10px] text-gray-700">NOMBRE:</span>
-                <div className="w-[360px] h-7 bg-black border border-gray-500 flex items-center pl-2 font-bold text-green-400 text-[10px] font-mono truncate">
+              <div className="flex-1 md:flex-none flex items-center gap-1">
+                <span className="font-bold text-[9px] text-gray-700">NOMBRE:</span>
+                <div className="w-full md:w-[320px] h-6 bg-black border border-gray-500 flex items-center pl-2 font-bold text-green-400 text-[10px] font-mono truncate">
                   {clienteActivo.nombre || '----------------------------------------'}
                 </div>
               </div>
             </div>
           </div>
 
-          {/* CUERPO CENTRAL (Grilla eventos + Selector Día + Buscador) */}
-          <div className="flex-1 flex gap-2 overflow-hidden">
+          {/* CUERPO CENTRAL (Eventos + Días + Buscador) */}
+          <div className="flex-1 flex flex-col md:flex-row gap-2.5 overflow-y-auto md:overflow-hidden">
             
-            {/* Lado Izquierdo: Grilla de Eventos (Ancho: 520px) */}
-            <div className="w-[520px] flex flex-col shrink-0 overflow-hidden border border-gray-500 bg-white">
-              {/* Encabezado del Día */}
-              <div className="bg-[#b0b0b0] text-black text-center font-bold py-1 border-b border-gray-500 uppercase tracking-wider text-[11px]">
+            {/* Lado Izquierdo: Grilla de Eventos (PC: w-[520px]) */}
+            <div className="w-full md:w-[520px] flex flex-col shrink-0 overflow-hidden border border-gray-500 bg-white min-h-[200px] md:min-h-0">
+              <div className="bg-[#b0b0b0] text-black text-center font-bold py-1 border-b border-gray-500 uppercase tracking-wider text-[10px]">
                 DIA: {diaSeleccionado || '------'}
               </div>
               
-              {/* Tabla de Eventos */}
               <div className="flex-1 overflow-y-auto">
                 <table className="w-full border-collapse text-[10px] text-left">
                   <thead>
                     <tr className="bg-[#e0e0e0] border-b border-gray-400 font-bold sticky top-0 text-gray-700">
-                      <th className="p-1 border-r border-gray-400 w-[70px] text-center">HORA</th>
+                      <th className="p-1 border-r border-gray-400 w-[65px] text-center">HORA</th>
                       <th className="p-1 border-r border-gray-400">EVENTO</th>
                       <th className="p-1 border-r border-gray-400 w-[35px] text-center">PAR</th>
                       <th className="p-1 border-r border-gray-400 w-[35px] text-center">ZN</th>
@@ -247,7 +243,7 @@ export default function EventosPorUsuarioModal({ onClose, eventoInicial }: Event
                     ) : eventosMostrados.map((ev, idx) => (
                       <tr key={idx} className="hover:bg-blue-100 h-5 font-bold">
                         <td className="p-1 border-r border-gray-300 text-center text-blue-900">{getHoraSolo(ev.fecha_hora)}</td>
-                        <td className="p-1 border-r border-gray-300 truncate max-w-[280px] uppercase">{ev.evento}</td>
+                        <td className="p-1 border-r border-gray-300 truncate max-w-[150px] sm:max-w-[250px] uppercase">{ev.evento}</td>
                         <td className="p-1 border-r border-gray-300 text-center text-gray-600">01</td>
                         <td className="p-1 border-r border-gray-300 text-center text-red-600">{ev.zona && ev.zona !== 'None' ? ev.zona.padStart(2, '0') : '00'}</td>
                         <td className="p-1 text-center text-green-700">{ev.usuario && ev.usuario !== 'None' ? ev.usuario.padStart(2, '0') : '00'}</td>
@@ -255,7 +251,7 @@ export default function EventosPorUsuarioModal({ onClose, eventoInicial }: Event
                     ))}
                     {!loading && eventosMostrados.length === 0 && (
                       <tr>
-                        <td colSpan={5} className="p-4 text-center text-gray-400 italic">No hay eventos registrados en este día</td>
+                        <td colSpan={5} className="p-4 text-center text-gray-400 italic">Sin actividad</td>
                       </tr>
                     )}
                   </tbody>
@@ -263,12 +259,12 @@ export default function EventosPorUsuarioModal({ onClose, eventoInicial }: Event
               </div>
             </div>
 
-            {/* Centro: Selector de Día (Lista Vertical, Ancho: 120px) */}
-            <div className="w-[120px] flex flex-col shrink-0 overflow-hidden bg-[#d4d0c8]">
+            {/* Centro: Selector de Día (PC: w-[120px], Móvil: Adaptable) */}
+            <div className="w-full md:w-[120px] flex flex-col shrink-0 bg-[#d4d0c8] min-h-[90px] md:min-h-0">
               <div className="text-[10px] font-bold text-gray-700 mb-1">
                 Seleccione Dia:
               </div>
-              <div className="flex-1 bg-white border border-t-gray-700 border-l-gray-700 border-b-white border-r-white overflow-y-auto">
+              <div className="flex-1 bg-white border border-t-gray-700 border-l-gray-700 border-b-white border-r-white overflow-y-auto max-h-[100px] md:max-h-none">
                 {diasDisponibles.map((dia) => (
                   <div
                     key={dia}
@@ -286,8 +282,8 @@ export default function EventosPorUsuarioModal({ onClose, eventoInicial }: Event
               </div>
             </div>
 
-            {/* Lado Derecho: Buscar Usuario (Ancho restante) */}
-            <div className="flex-1 border border-gray-400 p-2 relative bg-[#d4d0c8] flex flex-col gap-1.5 shrink-0 overflow-hidden">
+            {/* Lado Derecho: Buscar Usuario */}
+            <div className="flex-1 border border-gray-400 p-2 relative bg-[#d4d0c8] flex flex-col gap-1.5 shrink-0 min-h-[140px] md:min-h-0">
               <div className="absolute -top-2 left-2 bg-[#d4d0c8] px-1 text-[9px] font-bold text-gray-700 uppercase">
                 BUSCAR USUARIO
               </div>
@@ -299,14 +295,14 @@ export default function EventosPorUsuarioModal({ onClose, eventoInicial }: Event
                   value={buscarNombreInput}
                   onChange={(e) => setBuscarNombreInput(e.target.value)}
                   className="col-span-3 bg-white border border-t-gray-700 border-l-gray-700 border-b-white border-r-white font-bold px-1.5 py-0.5 text-black text-[11px]"
-                  placeholder="Escriba cuenta o nombre..."
+                  placeholder="Buscar..."
                 />
               </div>
 
-              <div className="text-[9px] font-bold text-gray-600">Resultado de la búsqueda:</div>
+              <div className="text-[9px] font-bold text-gray-600">Resultados:</div>
 
-              {/* Lista negra de resultados de búsqueda */}
-              <div className="flex-1 bg-black border border-t-gray-700 border-l-gray-700 border-b-white border-r-white overflow-y-auto font-mono text-[10px]">
+              {/* Lista negra de resultados */}
+              <div className="flex-1 h-[90px] md:h-auto bg-black border border-t-gray-700 border-l-gray-700 border-b-white border-r-white overflow-y-auto font-mono text-[10px]">
                 {listaClientesFiltrada.map((item) => (
                   <div
                     key={item.cuenta}
@@ -314,30 +310,27 @@ export default function EventosPorUsuarioModal({ onClose, eventoInicial }: Event
                       setCuentaActiva(item.cuenta.toUpperCase().trim())
                       setBuscarNombreInput('')
                     }}
-                    className={`px-2 py-0.5 cursor-pointer font-bold select-none ${
+                    className={`px-2 py-0.5 cursor-pointer font-bold select-none truncate ${
                       cuentaActiva === item.cuenta ? 'bg-green-600 text-white' : 'text-green-400 hover:bg-gray-900'
                     }`}
                   >
-                    {item.cuenta.padEnd(6, ' ')} | {item.nombre}
+                    {item.cuenta.padEnd(5, ' ')}|{item.nombre}
                   </div>
                 ))}
-                {listaClientesFiltrada.length === 0 && (
-                  <div className="p-2 text-center text-red-400 italic">No hay resultados</div>
-                )}
               </div>
             </div>
 
           </div>
 
-          {/* PIE DE DIÁLOGO: USUARIO ACTIVO Y BOTÓN CERRAR */}
+          {/* PIE DE DIÁLOGO */}
           <div className="h-10 border-t border-gray-400 pt-1.5 flex justify-between items-center shrink-0">
-            <div className="border border-gray-400 px-2 py-1 bg-[#e0e0e0] flex items-center gap-2">
-              <span className="font-bold text-gray-700 text-[10px]">USUARIO - CUENTA:</span>
+            <div className="border border-gray-400 px-2 py-1 bg-[#e0e0e0] flex items-center gap-1.5">
+              <span className="font-bold text-gray-700 text-[9px] sm:text-[10px]">CUENTA:</span>
               <input
                 type="text"
                 readOnly
                 value={cuentaActiva}
-                className="w-16 bg-white border border-gray-500 font-bold px-1 text-center text-blue-900"
+                className="w-14 bg-white border border-gray-500 font-bold text-center text-blue-900"
               />
             </div>
             
