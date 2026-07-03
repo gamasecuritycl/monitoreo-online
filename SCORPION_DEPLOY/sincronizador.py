@@ -157,7 +157,7 @@ def sincronizar_clientes():
         cursor.execute("SELECT * FROM USUARIOS")
         rows = cursor.fetchall()
         
-        clientes = []
+        clientes_map = {}
         for row in rows:
             doc = {}
             for col, val in zip(columns, row):
@@ -166,23 +166,39 @@ def sincronizar_clientes():
                 else:
                     doc[col.lower()] = str(val).strip()
             
-            # Solo añadir si tiene número de cuenta
-            if doc.get("cuenta"):
-                clientes.append(doc)
+            # Indexar por número de cuenta (en mayúsculas y sin espacios)
+            cuenta = doc.get("cuenta", "").upper().strip()
+            if cuenta:
+                clientes_map[cuenta] = doc
                 
         cursor.close()
         conn.close()
         
-        # Subir el JSON mediante la API HTTP de Next.js
-        print(f"[MIGRACIÓN CLIENTES] Subiendo {len(clientes)} expedientes a Supabase...")
-        api_url = "https://dashboard-ten-self-68.vercel.app/api/sincronizar-clientes"
-        headers = {"Content-Type": "application/json"}
+        clientes_json = json.dumps(clientes_map, ensure_ascii=False)
         
-        res = requests.post(api_url, headers=headers, json=clientes, timeout=30)
-        if res.status_code == 200:
-            print("[MIGRACIÓN CLIENTES SUCCESS] Clientes actualizados exitosamente en Supabase.")
-        else:
-            print(f"[MIGRACIÓN CLIENTES ERROR] Error de API: {res.status_code} - {res.text}")
+        print(f"[MIGRACIÓN CLIENTES] Subiendo {len(clientes_map)} expedientes a Supabase en fila especial...")
+        
+        # 1. Borrar registro anterior para no duplicar datos
+        try:
+            supabase.table("eventos_monitoreo").delete().eq("cuenta", "CLIENTES").execute()
+        except Exception as del_err:
+            print(f"[MIGRACIÓN CLIENTES] Nota al borrar: {del_err}")
+            
+        # 2. Insertar el nuevo JSON completo en la columna 'nombre_abonado'
+        chile_tz = get_chile_offset()
+        now_iso = datetime.now().strftime("%Y-%m-%dT%H:%M:%S") + chile_tz
+        
+        data = {
+            "fecha_hora": now_iso,
+            "cuenta": "CLIENTES",
+            "nombre_abonado": clientes_json,
+            "evento": "SINCRONIZACION CLIENTES MDB",
+            "zona": "000",
+            "usuario": "SYSTEM"
+        }
+        
+        supabase.table("eventos_monitoreo").insert(data).execute()
+        print("[MIGRACIÓN CLIENTES SUCCESS] Base de datos de clientes sincronizada exitosamente en Supabase (eventos_monitoreo).")
             
     except Exception as e:
         print(f"[MIGRACIÓN CLIENTES ERROR] Fallo durante la sincronización: {e}")

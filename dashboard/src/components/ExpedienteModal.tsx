@@ -29,29 +29,28 @@ export default function ExpedienteModal({ evento, onClose }: ExpedienteModalProp
   const [tabInfo, setTabInfo] = useState<'caracteristicas' | 'referencias' | 'observaciones'>('caracteristicas')
   const [tabInstalacion, setTabInstalacion] = useState<'instalacion' | 'ucontrol'>('instalacion')
 
-  // Cargar lista actualizada de abonados desde Supabase en tiempo real
+  // Cargar lista actualizada de abonados desde la fila especial CLIENTES en eventos_monitoreo
   useEffect(() => {
     const fetchClientes = async () => {
       try {
         const { data, error } = await supabase
-          .from('clientes_expediente')
+          .from('eventos_monitoreo')
           .select('*')
+          .eq('cuenta', 'CLIENTES')
+          .limit(1)
         
-        if (data && !error) {
-          const map: Record<string, Record<string, string>> = {}
-          data.forEach((row: any) => {
-            const cuenta = (row.cuenta || '').toUpperCase().trim()
-            if (cuenta) {
-              map[cuenta] = row
-            }
-          })
-          setClientesMap(map)
-          console.log(`[SUPABASE] ${data.length} expedientes de clientes sincronizados con la nube.`)
+        if (data && data.length > 0 && !error) {
+          const rawJson = data[0].nombre_abonado
+          if (rawJson) {
+            const map = JSON.parse(rawJson)
+            setClientesMap(map)
+            console.log(`[SUPABASE REST] ${Object.keys(map).length} expedientes de clientes sincronizados exitosamente en tiempo real.`)
+          }
         } else if (error) {
-          console.warn('[SUPABASE] Fallo al leer clientes_expediente, usando fallback:', error)
+          console.warn('[SUPABASE REST] Fallo al consultar eventos_monitoreo:', error)
         }
       } catch (err) {
-        console.warn('[SUPABASE] Fallo de conexión de red, usando fallback local.')
+        console.warn('[SUPABASE REST] Error de red, usando base de datos local.')
       }
     }
     fetchClientes()
