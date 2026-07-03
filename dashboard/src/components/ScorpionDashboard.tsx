@@ -4,16 +4,79 @@ import { useState, useEffect, useCallback } from 'react'
 import { supabase, type EventoMonitoreo } from '@/lib/supabase'
 import EventGrid from './EventGrid'
 import FooterActions from './FooterActions'
-import ExpedienteModal from './ExpedienteModal'
 import ToolModal from './ToolModal'
+
+// ── Contactos y Zonas simuladas por abonado para poblar el Panel Lateral de Scorpion ──
+interface ContactoAutorizado {
+  prioridad: number
+  nombre: string
+  telefono: string
+}
+
+interface ZonaMapeada {
+  numero: string
+  descripcion: string
+  codigoCID: string
+}
+
+function obtenerDatosAbonado(cuenta: string, nombreAbonado: string) {
+  // Datos base
+  const datos = {
+    direccion: 'Av. Providencia 1420, Of. 602',
+    comuna: 'Providencia, Santiago',
+    contactos: [
+      { prioridad: 1, nombre: 'Tomás Toro (Admin)', telefono: '+56 9 8765 4321' },
+      { prioridad: 2, nombre: 'Conserjería Central', telefono: '+56 2 2345 6789' },
+      { prioridad: 3, nombre: 'Carabineros de Chile', telefono: '133' }
+    ] as ContactoAutorizado[],
+    zonas: [
+      { numero: '01', descripcion: 'Puerta Acceso Principal', codigoCID: '130' },
+      { numero: '02', descripcion: 'Sensor Movimiento Living', codigoCID: '130' },
+      { numero: '03', descripcion: 'PIR Bodega de Insumos', codigoCID: '130' },
+      { numero: '04', descripcion: 'Pánico Teclado Caja 1', codigoCID: '120' }
+    ] as ZonaMapeada[]
+  }
+
+  // Personalización menor por cliente
+  if (nombreAbonado.toUpperCase().includes('MARCELA')) {
+    datos.direccion = 'Calle Los Alerces 7420'
+    datos.comuna = 'Las Condes, Santiago'
+    datos.contactos[0].nombre = 'Marcela Sepúlveda'
+  } else if (nombreAbonado.toUpperCase().includes('CLINICA')) {
+    datos.direccion = 'Av. Brasil 2950'
+    datos.comuna = 'Valparaíso'
+  } else if (nombreAbonado.toUpperCase().includes('TOYS')) {
+    datos.direccion = 'Mall Plaza Oeste, Local 114'
+    datos.comuna = 'Cerrillos, Santiago'
+  } else if (nombreAbonado.toUpperCase().includes('TALITA')) {
+    datos.direccion = 'Avenida Alemania 0890'
+    datos.comuna = 'Temuco'
+  }
+
+  return datos
+}
 
 export default function ScorpionDashboard() {
   const [eventos, setEventos] = useState<EventoMonitoreo[]>([])
   const [busqueda, setBusqueda] = useState('')
   const [eventoSeleccionado, setEventoSeleccionado] = useState<EventoMonitoreo | null>(null)
   const [modalActivo, setModalActivo] = useState<string | null>(null)
+  const [horaLocal, setHoraLocal] = useState('')
 
-  // Fetch initial events (circular buffer of last 50 events)
+  // Reloj digital inferior igual a Scorpion
+  useEffect(() => {
+    const tick = () => {
+      const d = new Date()
+      const fechaStr = d.toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' })
+      const horaStr = d.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hour12: false })
+      setHoraLocal(`${fechaStr} ${horaStr}`)
+    }
+    tick()
+    const t = setInterval(tick, 1000)
+    return () => clearInterval(t)
+  }, [])
+
+  // Fetch inicial ordenado por ID (para evitar problemas de desfase de hora de red)
   const fetchEventos = useCallback(async () => {
     try {
       let query = supabase
@@ -27,19 +90,24 @@ export default function ScorpionDashboard() {
       }
 
       const { data } = await query
-      if (data) setEventos(data.reverse())
+      if (data) {
+        const ordenados = data.reverse()
+        setEventos(ordenados)
+        // Seleccionar por defecto el evento más reciente de la lista al cargar
+        if (ordenados.length > 0 && !eventoSeleccionado) {
+          setEventoSeleccionado(ordenados[ordenados.length - 1])
+        }
+      }
     } catch (err) {
       console.error('Error:', err)
     }
-  }, [busqueda])
+  }, [busqueda, eventoSeleccionado])
 
   useEffect(() => { fetchEventos() }, [fetchEventos])
 
-  // ── Polling every 3 seconds: guaranteed fallback for real-time ──
-  // Tracks the highest ID already shown to avoid redundant re-renders.
+  // Polling cada 3 segundos
   useEffect(() => {
     let latestId = 0
-
     const poll = async () => {
       try {
         const { data } = await supabase
@@ -49,85 +117,58 @@ export default function ScorpionDashboard() {
           .limit(50)
 
         if (!data || data.length === 0) return
-
         const maxId = data[0].id as number
-        if (maxId <= latestId) return          // nothing new
+        if (maxId <= latestId) return
 
         latestId = maxId
-        // Apply search filter client-side if active
         const filtered = busqueda.trim()
-          ? data.filter(
-              (e) =>
-                e.cuenta?.toLowerCase().includes(busqueda.toLowerCase()) ||
-                e.nombre_abonado?.toLowerCase().includes(busqueda.toLowerCase())
+          ? data.filter(e =>
+              e.cuenta?.toLowerCase().includes(busqueda.toLowerCase()) ||
+              e.nombre_abonado?.toLowerCase().includes(busqueda.toLowerCase())
             )
           : data
 
-        setEventos([...filtered].reverse())
+        const ordenados = [...filtered].reverse()
+        setEventos(ordenados)
+        
+        // Auto-seleccionar el evento que va llegando si no hay selección manual activa
+        if (ordenados.length > 0) {
+          setEventoSeleccionado(ordenados[ordenados.length - 1])
+        }
       } catch (_) {}
     }
-
-    // Run once immediately, then every 3 seconds
     poll()
     const timer = setInterval(poll, 3000)
     return () => clearInterval(timer)
   }, [busqueda])
 
-  // ── WebSocket push: catches events instantly when replication is ON ──
+  // WebSocket instantáneo
   useEffect(() => {
     const channel = supabase
       .channel('eventos-live')
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'eventos_monitoreo' },
-        (payload) => {
-          const newEvent = payload.new as EventoMonitoreo
-          setEventos((prev) => {
-            if (prev.some((e) => e.id === newEvent.id)) return prev
-            const next = [...prev, newEvent]
-            if (next.length > 50) next.shift()
-            return next
-          })
-        }
-      )
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'eventos_monitoreo' }, (payload) => {
+        const newEvent = payload.new as EventoMonitoreo
+        setEventos((prev) => {
+          if (prev.some(e => e.id === newEvent.id)) return prev
+          const next = [...prev, newEvent]
+          if (next.length > 50) next.shift()
+          return next
+        })
+        setEventoSeleccionado(newEvent)
+      })
       .subscribe()
     return () => { supabase.removeChannel(channel) }
   }, [])
 
+  // Extraer datos del abonado activo para poblar las tarjetas derechas
+  const activeEvent = eventoSeleccionado || (eventos.length > 0 ? eventos[eventos.length - 1] : null)
+  const clientData = activeEvent ? obtenerDatosAbonado(activeEvent.cuenta, activeEvent.nombre_abonado) : null
+
   return (
     <div className="h-screen flex flex-col bg-[#070b13] text-slate-100 overflow-hidden select-none relative" style={{ fontFamily: "'Consolas', 'Courier New', monospace" }}>
-
-      {/* ⚔ SELLO ARCÁNGEL MIGUEL — Watermark de protección. Siempre presente, raramente visto. ⚔ */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 flex items-center justify-center z-0 overflow-hidden"
-        style={{ opacity: 0.018 }}
-      >
-        <svg width="520" height="520" viewBox="0 0 520 520" fill="none" xmlns="http://www.w3.org/2000/svg">
-          {/* Escudo */}
-          <path d="M260 40 L460 120 L460 280 Q460 400 260 480 Q60 400 60 280 L60 120 Z"
-            stroke="#4fa3e0" strokeWidth="3" fill="none"/>
-          {/* Cruz interior */}
-          <line x1="260" y1="100" x2="260" y2="420" stroke="#4fa3e0" strokeWidth="2"/>
-          <line x1="100" y1="260" x2="420" y2="260" stroke="#4fa3e0" strokeWidth="2"/>
-          {/* Espada vertical */}
-          <line x1="260" y1="30" x2="260" y2="490" stroke="#7ec8f7" strokeWidth="4" strokeLinecap="round"/>
-          <line x1="200" y1="120" x2="320" y2="120" stroke="#7ec8f7" strokeWidth="4" strokeLinecap="round"/>
-          {/* Llama en la punta */}
-          <ellipse cx="260" cy="30" rx="10" ry="18" fill="#4fa3e0" opacity="0.9"/>
-          {/* Círculo exterior */}
-          <circle cx="260" cy="260" r="230" stroke="#4fa3e0" strokeWidth="1.5" strokeDasharray="12 6"/>
-          {/* Estrellas en los cuadrantes */}
-          <text x="155" y="175" fill="#7ec8f7" fontSize="28" textAnchor="middle">✶</text>
-          <text x="365" y="175" fill="#7ec8f7" fontSize="28" textAnchor="middle">✶</text>
-          <text x="155" y="375" fill="#7ec8f7" fontSize="28" textAnchor="middle">✶</text>
-          <text x="365" y="375" fill="#7ec8f7" fontSize="28" textAnchor="middle">✶</text>
-          {/* Texto del sello */}
-          <text x="260" y="510" fill="#7ec8f7" fontSize="11" textAnchor="middle" letterSpacing="4">GAMA · PROTECCIÓN · MIGUEL</text>
-        </svg>
-      </div>
-      {/* Top Bar Navy Bevel Style (Responsive) */}
-      <header className="flex flex-col sm:flex-row items-center justify-between px-4 py-2 bg-[#0f172a] border-b border-[#1e293b] shrink-0 shadow-md gap-2 sm:gap-0">
+      
+      {/* Top Bar Navy Bevel Style */}
+      <header className="flex flex-col sm:flex-row items-center justify-between px-4 py-1.5 bg-[#0f172a] border-b border-[#1e293b] shrink-0 shadow-md gap-2 sm:gap-0 z-10">
         <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-start">
           <div className="text-blue-400 font-bold text-xs tracking-widest">GAMA SEGURIDAD</div>
           <div className="hidden sm:block h-3.5 w-px bg-[#1e293b]" />
@@ -149,31 +190,154 @@ export default function ScorpionDashboard() {
         </div>
       </header>
 
-      {/* Contenedor Principal de Dos Columnas: Izquierda (Tabla Fija), Derecha (Espacio para Cuadrados) */}
+      {/* Contenedor Principal: Izquierda (Tabla), Derecha (Widgets de Scorpion) */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Lado Izquierdo: Tabla de Eventos con ancho fijo 820px, no se deforma */}
-        <div className="w-[820px] shrink-0 border-r border-[#1e293b] flex flex-col h-full bg-[#070b13]">
+        
+        {/* Lado Izquierdo: Tabla de Eventos (845px para dar margen exacto a la columna UN + Scrollbar) */}
+        <div className="w-[845px] shrink-0 border-r border-[#1e293b] flex flex-col h-full bg-[#070b13]">
           <EventGrid
             eventos={eventos}
             onEventClick={(e) => setEventoSeleccionado(e)}
           />
         </div>
 
-        {/* Lado Derecho: Espacio libre para los futuros bloques de información */}
-        <div className="flex-1 overflow-y-auto bg-[#040810] p-4 flex flex-col gap-4">
-          <div className="border border-dashed border-[#1e293b]/60 rounded-md p-8 text-center text-xs text-slate-500 my-auto">
-            [Panel de Información Lateral — Espacio Reservado]
+        {/* Lado Derecho: Réplica Panel Scorpion */}
+        <div className="flex-1 flex flex-col bg-[#c0c0c0] text-black overflow-y-auto border-l border-white p-2 gap-2 select-text">
+          
+          {/* Fila 1: Logo GAMA / SCORPION + Estado en Negro */}
+          <div className="grid grid-cols-2 gap-2 shrink-0">
+            {/* Box Izquierdo GAMA */}
+            <div className="bg-[#e0e0e0] border-2 border-t-white border-l-white border-b-gray-600 border-r-gray-600 p-2 flex items-center justify-center">
+              <span className="text-[#0a1a5c] font-black text-3xl tracking-wider" style={{ fontFamily: 'sans-serif' }}>GAMA</span>
+            </div>
+            {/* Box Derecho SCORPION */}
+            <div className="bg-[#000080] border-2 border-t-white border-l-white border-b-gray-600 border-r-gray-600 p-2 flex flex-col items-center justify-center text-white">
+              <span className="font-bold text-sm tracking-wide" style={{ fontFamily: 'sans-serif' }}>SCORPION</span>
+              <span className="text-[9px] opacity-75">monitoring software</span>
+            </div>
           </div>
+
+          {/* Visor de Señal Activa (Negro) */}
+          <div className="bg-black border-2 border-t-gray-600 border-l-gray-600 border-b-white border-r-white p-2 font-mono text-green-400 text-xs shrink-0 space-y-1">
+            <div className="flex justify-between font-bold text-sm border-b border-green-900 pb-1">
+              <span>CTA: {activeEvent?.cuenta || '-----'}</span>
+              <span>GRP: 01</span>
+              <span>ZN: {activeEvent?.zona || '--'}</span>
+              <span>US: {activeEvent?.usuario || '---'}</span>
+            </div>
+            {/* Barra de progreso de señal verde */}
+            <div className="w-full bg-green-950 h-2.5 rounded-sm overflow-hidden my-1 flex gap-0.5">
+              {Array.from({ length: 15 }).map((_, i) => (
+                <div key={i} className="flex-1 bg-green-400 animate-pulse" style={{ animationDelay: `${i * 50}ms` }} />
+              ))}
+            </div>
+            <div className="text-[10px] text-green-500/80 truncate text-center">
+              RAW: 5051 18{activeEvent?.cuenta || 'C000'}E{activeEvent?.zona || '000'}01{activeEvent?.usuario || '000'}
+            </div>
+          </div>
+
+          {/* Box 2: INFORMACION BASICA */}
+          <div className="bg-[#e0e0e0] border-2 border-t-white border-l-white border-b-gray-600 border-r-gray-600 flex flex-col">
+            <div className="bg-[#000080] text-white text-[11px] font-bold px-2 py-0.5 tracking-wider uppercase">
+              Informacion Basica
+            </div>
+            <div className="p-2 space-y-1 text-xs">
+              <div className="grid grid-cols-4 gap-1">
+                <span className="font-bold text-gray-700">Abonado:</span>
+                <span className="col-span-3 bg-white px-1 border border-gray-400 font-bold">{activeEvent?.cuenta || '---'}</span>
+              </div>
+              <div className="grid grid-cols-4 gap-1">
+                <span className="font-bold text-gray-700">Nombre:</span>
+                <span className="col-span-3 bg-white px-1 border border-gray-400 font-bold truncate">{activeEvent?.nombre_abonado || '---'}</span>
+              </div>
+              <div className="grid grid-cols-4 gap-1">
+                <span className="font-bold text-gray-700">Dirección:</span>
+                <span className="col-span-3 bg-white px-1 border border-gray-400 font-bold truncate">{clientData?.direccion || '---'}</span>
+              </div>
+              <div className="grid grid-cols-4 gap-1">
+                <span className="font-bold text-gray-700">Comuna:</span>
+                <span className="col-span-3 bg-white px-1 border border-gray-400 font-bold">{clientData?.comuna || '---'}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Box 3: PERSONAS AUTORIZADAS */}
+          <div className="bg-[#e0e0e0] border-2 border-t-white border-l-white border-b-gray-600 border-r-gray-600 flex flex-col flex-1 min-h-[120px]">
+            <div className="bg-[#000080] text-white text-[11px] font-bold px-2 py-0.5 tracking-wider uppercase">
+              Personas Autorizadas
+            </div>
+            <div className="p-1 flex-1 overflow-y-auto">
+              <table className="w-full border-collapse text-[10px] text-left bg-white">
+                <thead>
+                  <tr className="bg-[#d0d0d0] border-b border-gray-400">
+                    <th className="p-1 font-bold border-r border-gray-400 w-8 text-center">PR</th>
+                    <th className="p-1 font-bold border-r border-gray-400">Nombre</th>
+                    <th className="p-1 font-bold">Teléfono</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-300">
+                  {clientData?.contactos.map((contact) => (
+                    <tr key={contact.prioridad} className="hover:bg-blue-100 font-bold text-gray-800">
+                      <td className="p-1 text-center border-r border-gray-300">{contact.prioridad}</td>
+                      <td className="p-1 border-r border-gray-300 truncate max-w-[120px]">{contact.nombre}</td>
+                      <td className="p-1 font-mono text-blue-800">{contact.telefono}</td>
+                    </tr>
+                  ))}
+                  {!clientData && (
+                    <tr>
+                      <td colSpan={3} className="p-2 text-center text-gray-400">Seleccione un abonado</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Box 4: ZONIFICACION */}
+          <div className="bg-[#e0e0e0] border-2 border-t-white border-l-white border-b-gray-600 border-r-gray-600 flex flex-col flex-1 min-h-[120px]">
+            <div className="bg-[#000080] text-white text-[11px] font-bold px-2 py-0.5 tracking-wider uppercase">
+              Zonificacion
+            </div>
+            <div className="p-1 flex-1 overflow-y-auto">
+              <table className="w-full border-collapse text-[10px] text-left bg-white">
+                <thead>
+                  <tr className="bg-[#d0d0d0] border-b border-gray-400">
+                    <th className="p-1 font-bold border-r border-gray-400 w-8 text-center">ZN</th>
+                    <th className="p-1 font-bold border-r border-gray-400">Descripción del Sector</th>
+                    <th className="p-1 font-bold w-10 text-center">CID</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-300">
+                  {clientData?.zonas.map((zone) => (
+                    <tr key={zone.numero} className="hover:bg-blue-100 font-bold text-gray-800">
+                      <td className="p-1 text-center border-r border-gray-300 text-yellow-700">{zone.numero}</td>
+                      <td className="p-1 border-r border-gray-300 truncate max-w-[150px]">{zone.descripcion}</td>
+                      <td className="p-1 text-center font-mono text-gray-500">{zone.codigoCID}</td>
+                    </tr>
+                  ))}
+                  {!clientData && (
+                    <tr>
+                      <td colSpan={3} className="p-2 text-center text-gray-400">Seleccione un abonado</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Botón de verificación de video inferior */}
+          <button className="w-full bg-[#d0d0d0] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 py-1.5 text-xs text-gray-800 font-bold hover:bg-[#e0e0e0] active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white cursor-pointer select-none">
+            🎥 Activar verificación por video
+          </button>
+
+          {/* Reloj y Fecha inferior de Scorpion */}
+          <div className="flex justify-between items-center bg-[#d0d0d0] border border-gray-400 px-2 py-0.5 text-[10px] font-mono text-gray-700">
+            <span>Operador: MASTER SCORPION</span>
+            <span className="font-bold">{horaLocal}</span>
+          </div>
+
         </div>
       </div>
-
-      {/* Expediente Modal */}
-      {eventoSeleccionado && (
-        <ExpedienteModal
-          evento={eventoSeleccionado}
-          onClose={() => setEventoSeleccionado(null)}
-        />
-      )}
 
       {/* Tool Modals */}
       {modalActivo && (

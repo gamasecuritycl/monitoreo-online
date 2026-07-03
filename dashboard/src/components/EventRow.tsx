@@ -1,9 +1,8 @@
 'use client'
 
 // ════════════════════════════════════════════════════════════════
-//  GAMA COMMAND CENTER - EventRow v2.3
-//  ⚕ Simbología Oculta: cada señal porta su sigilo alquímico
-//  ☽ ♄ ♂ ☿ ⊕ ☊ ✶  — Fuente: Emerald Tablet, Cairo, 1482
+//  GAMA COMMAND CENTER - EventRow v3.1
+//  Fila ultra-compacta Scorpion (sin iconos en señales, altura ajustada)
 // ════════════════════════════════════════════════════════════════
 
 import type { EventoMonitoreo } from '@/lib/supabase'
@@ -13,29 +12,6 @@ interface EventRowProps {
   onClick?: () => void
   isNew?: boolean
   isLatest?: boolean
-}
-
-// ── Tabla alquímica de señales ──────────────────────────────────
-// Cada evento del mundo físico corresponde a un principio hermético
-const SIGILO: Record<string, { glyph: string; title: string }> = {
-  ROBO:        { glyph: '⚔', title: 'Marte — Conflicto' },
-  PANICO:      { glyph: '☿', title: 'Mercurio — Mensajero de Peligro' },
-  INCENDIO:    { glyph: '🜂', title: 'Azufre — Fuego Primordial' },
-  APERTURA:    { glyph: '☽', title: 'Luna — Umbral Abierto' },
-  CIERRE:      { glyph: '♄', title: 'Saturno — El Sellador' },
-  AUTOTEST:    { glyph: '⊕', title: 'Terra — Pulso Vital' },
-  BATERIA:     { glyph: '🜄', title: 'Agua — Energía Latente' },
-  FALLA:       { glyph: '♂', title: 'Marte — Ruptura' },
-  RESTABLEC:   { glyph: '☀', title: 'Sol — Restauración' },
-  DEFAULT:     { glyph: '✶', title: 'Aether — Señal Desconocida' },
-}
-
-function getSigilo(evento: string) {
-  const u = evento.toUpperCase()
-  for (const [key, val] of Object.entries(SIGILO)) {
-    if (key !== 'DEFAULT' && u.includes(key)) return val
-  }
-  return SIGILO.DEFAULT
 }
 
 // ── Paleta Scorpion (colores físicos del panel) ─────────────────
@@ -74,14 +50,12 @@ function formatFecha(iso: string): string {
 
 export default function EventRow({ evento, onClick, isNew, isLatest }: EventRowProps) {
   const style  = getScorpionStyle(evento.evento)
-  const sigilo = getSigilo(evento.evento)
-
   const isCritical = ['#FF0000'].includes(style.bg)
 
   const rowClass = [
     isNew     ? (isCritical ? 'row-new row-critical' : 'row-new') : '',
     isLatest  ? 'row-latest' : '',
-    'cursor-pointer hover:opacity-90 transition-all font-bold',
+    'cursor-pointer hover:opacity-95 transition-all font-bold select-none',
   ].join(' ')
 
   return (
@@ -91,52 +65,44 @@ export default function EventRow({ evento, onClick, isNew, isLatest }: EventRowP
       style={{ backgroundColor: style.bg, color: style.text }}
     >
       {/* FECHA/HORA */}
-      <td className="px-2 py-0.5 text-[11px] whitespace-nowrap border border-black leading-relaxed font-bold">
+      <td className="px-1.5 py-0.5 text-[11px] whitespace-nowrap border border-black leading-none font-bold align-middle h-6">
         {formatFecha(evento.fecha_hora)}
       </td>
 
       {/* ABONADO */}
-      <td className="px-2 py-0.5 text-[11px] font-bold border border-black leading-relaxed">
+      <td className="px-1.5 py-0.5 text-[11px] font-bold border border-black leading-none align-middle">
         {evento.cuenta}
       </td>
 
       {/* NOMBRE */}
-      <td className="px-2 py-0.5 text-[11px] truncate max-w-[300px] border border-black leading-relaxed font-bold">
+      <td className="px-1.5 py-0.5 text-[11px] truncate max-w-[300px] border border-black leading-none font-bold align-middle">
         {evento.nombre_abonado}
       </td>
 
-      {/* SEÑAL + sigilo oculto ← aquí está la magia */}
-      <td className="px-2 py-0.5 text-[11px] font-bold border border-black leading-relaxed">
-        <span
-          className="mr-1 opacity-60 select-none"
-          title={sigilo.title}          /* hover revela el nombre hermético */
-          style={{ fontSize: '10px' }}
-        >
-          {sigilo.glyph}
-        </span>
+      {/* SEÑAL (sin sigilos/iconos, solo el texto) */}
+      <td className="px-1.5 py-0.5 text-[11px] font-bold border border-black leading-none align-middle">
         {evento.evento}
       </td>
 
       {/* ZN */}
-      <td className="px-2 py-0.5 text-[11px] font-bold text-center border border-black leading-relaxed">
+      <td className="px-1.5 py-0.5 text-[11px] font-bold text-center border border-black leading-none align-middle">
         {evento.zona && evento.zona !== 'None' ? evento.zona.padStart(2, '0') : '00'}
       </td>
 
       {/* PAR */}
-      <td className="px-2 py-0.5 text-[11px] font-bold text-center border border-black leading-relaxed">
+      <td className="px-1.5 py-0.5 text-[11px] font-bold text-center border border-black leading-none align-middle">
         {evento.zona && evento.zona !== 'None' ? '01' : '--'}
       </td>
 
       {/* US */}
-      <td className="px-2 py-0.5 text-[11px] font-bold text-center border border-black leading-relaxed">
+      <td className="px-1.5 py-0.5 text-[11px] font-bold text-center border border-black leading-none align-middle">
         {evento.usuario && evento.usuario !== 'None' ? evento.usuario.padStart(2, '0') : '00'}
       </td>
 
       {/* UN */}
-      <td className="px-2 py-0.5 text-[11px] font-bold text-center border border-black leading-relaxed">
+      <td className="px-1.5 py-0.5 text-[11px] font-bold text-center border border-black leading-none align-middle">
         01
       </td>
     </tr>
   )
 }
-
