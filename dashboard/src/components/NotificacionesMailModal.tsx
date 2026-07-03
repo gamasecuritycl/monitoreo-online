@@ -187,18 +187,18 @@ export default function NotificacionesMailModal({ onClose, clientesMap }: Notifi
             ) : (
               <div className="flex flex-col flex-1">
                 <div className="mb-4">
-                  <div className="text-[10px] font-bold mb-1">Abonado Seleccionado:</div>
-                  <div className="bg-white border border-gray-400 px-2 py-1 font-bold text-xs truncate">
+                  <div className="text-[10px] font-bold text-gray-800 mb-1">Abonado Seleccionado:</div>
+                  <div className="bg-white border border-gray-400 px-2 py-1 font-bold text-xs text-gray-800 truncate">
                     {clienteSeleccionado.cuenta} - {clienteSeleccionado.nombre}
                   </div>
                 </div>
 
                 <div className="mb-2">
-                  <div className="text-[10px] font-bold mb-1">Agregar Email:</div>
+                  <div className="text-[10px] font-bold text-gray-800 mb-1">Agregar Email:</div>
                   <div className="flex gap-1">
                     <input 
                       type="email" 
-                      className="flex-1 border border-gray-500 px-2 text-xs py-1"
+                      className="flex-1 border border-gray-500 px-2 text-xs py-1 text-gray-800"
                       placeholder="ejemplo@correo.com"
                       value={nuevoEmail}
                       onChange={e => setNuevoEmail(e.target.value)}
@@ -219,7 +219,7 @@ export default function NotificacionesMailModal({ onClose, clientesMap }: Notifi
                   ) : (
                     <ul className="divide-y divide-gray-200">
                       {emails.map((email, i) => (
-                        <li key={i} className="flex justify-between items-center p-2 text-xs font-bold hover:bg-blue-50">
+                        <li key={i} className="flex justify-between items-center p-2 text-xs font-bold text-gray-800 hover:bg-blue-50">
                           <span className="truncate mr-2">{email}</span>
                           <button 
                             onClick={() => eliminarEmail(email)}
