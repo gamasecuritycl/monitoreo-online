@@ -13,20 +13,31 @@ if sys.executable.lower().endswith("pythonw.exe"):
 
 # Evitar múltiples instancias del sincronizador a la vez en el mismo PC
 LOCK_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "_sincronizador.lock")
-try:
-    if os.path.exists(LOCK_FILE):
-        os.remove(LOCK_FILE)
-except Exception:
-    print("[ERROR] El sincronizador ya esta en ejecucion en segundo plano. Saliendo...")
-    sys.exit(0)
 
+# Si el lock existe y es valido (el proceso aun esta vivo), salir
+if os.path.exists(LOCK_FILE):
+    try:
+        with open(LOCK_FILE, 'r') as f:
+            old_pid = int(f.read().strip())
+        # En windows no podemos hacer kill(0, 0) facil, pero intentamos ver si el proceso existe
+        import ctypes
+        kernel32 = ctypes.windll.kernel32
+        handle = kernel32.OpenProcess(0x400000, False, old_pid)  # PROCESS_QUERY_INFORMATION
+        if handle:
+            kernel32.CloseHandle(handle)
+            print("[ERROR] El sincronizador ya esta en ejecucion. Saliendo...")
+            sys.exit(0)
+        kernel32.CloseHandle(handle)
+    except Exception:
+        # Lock file invalido o proceso muerto — continuar y sobrescribir
+        pass
+
+# Escribir lock file nuevo
 try:
-    lock_handle = open(LOCK_FILE, "w")
-    lock_handle.write(str(os.getpid()))
-    lock_handle.flush()
-except Exception:
-    print("[ERROR] No se pudo crear el archivo de bloqueo.")
-    sys.exit(0)
+    with open(LOCK_FILE, "w") as f:
+        f.write(str(os.getpid()))
+except Exception as e:
+    print(f"[WARN] No se pudo crear archivo de bloqueo: {e}. Continuando de todas formas...")
 
 # ============================================================
 #  GAMA COMMAND CENTER - Sincronizador para PC Scorpion
