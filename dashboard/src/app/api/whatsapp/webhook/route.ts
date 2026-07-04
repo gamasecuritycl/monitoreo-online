@@ -118,13 +118,16 @@ export async function POST(req: Request) {
 
       case 'panico': {
         const contactos: { nombre: string; telefono: string }[] = config.contactos_escalamiento as any || []
+        const gpsInfo = reply.gps
+          ? `\n📍 GPS: https://maps.google.com/?q=${reply.gps.lat},${reply.gps.lng}`
+          : ''
 
         await sendMessage(reply.numero,
           '🛡️ *GAMA SEGURIDAD*\n' +
           '━━━━━━━━━━━━━━━━━━━━━\n' +
           '🚨 *EMERGENCIA CONFIRMADA*\n\n' +
           `Cliente: *${cuenta}*\n` +
-          `Hora: ${new Date().toLocaleString('es-CL')}\n\n` +
+          `Hora: ${new Date().toLocaleString('es-CL')}${gpsInfo}\n\n` +
           'Operador de emergencia despachado.\n' +
           'Línea directa: *56948855190*\n\n' +
           '_Gama Seguridad - Monitoreo 24/7_')
@@ -139,7 +142,7 @@ export async function POST(req: Request) {
             '🛡️ *GAMA SEGURIDAD*\n' +
             '━━━━━━━━━━━━━━━━━━━━━\n' +
             `🚨 *EMERGENCIA* - *${cuenta}*\n\n` +
-            `Contacto: ${c.nombre}\n\n` +
+            `Contacto: ${c.nombre}${gpsInfo}\n\n` +
             'Despache unidad urgente.')
         }
 

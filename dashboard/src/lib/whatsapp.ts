@@ -1,6 +1,5 @@
-const EVOLUTION_API_URL = process.env.EVOLUTION_API_URL || ''
-const EVOLUTION_API_KEY = process.env.EVOLUTION_API_KEY || ''
-const EVOLUTION_INSTANCE = process.env.EVOLUTION_INSTANCE || 'gama-seguridad'
+const CALLMEBOT_API = 'https://api.callmebot.com/whatsapp.php'
+const CALLMEBOT_APIKEY = process.env.CALLMEBOT_APIKEY || '4238719'
 
 export interface EventInfo {
   cuenta: string
@@ -15,37 +14,27 @@ export interface ReplyResult {
   tipo: 'ok' | 'ayuda' | 'silencio' | 'panico' | 'confirmacion_energia' | 'desconocido'
   mensaje: string
   numero: string
+  session: string
   gps?: { lat: number; lng: number; timestamp: number }
 }
 
 const PANICO_KEYWORDS = ['SOCORRO', 'PÁNICO', 'PANICO', 'EMERGENCIA', 'AYUDA YA', 'SOS']
 const ENERGIA_KEYWORDS = ['ENERGÍA', 'ENERGIA', 'CORTE', 'LUZ', 'RESTABLECIDO']
 
-export async function sendMessage(telefono: string, texto: string): Promise<boolean> {
-  if (!EVOLUTION_API_URL || !EVOLUTION_API_KEY) {
-    console.error('Evolution API no configurada')
-    return false
-  }
-
+export async function sendMessage(telefono: string, texto: string): Promise<{ ok: boolean; debug?: string }> {
   try {
-    const res = await fetch(`${EVOLUTION_API_URL}/message/sendText/${EVOLUTION_INSTANCE}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': EVOLUTION_API_KEY,
-      },
-      body: JSON.stringify({
-        number: telefono,
-        textMessage: { text: texto },
-        delay: 1200,
-      }),
+    const params = new URLSearchParams({
+      phone: telefono,
+      text: texto,
+      apikey: CALLMEBOT_APIKEY,
     })
-
-    const data = await res.json()
-    return res.ok && data.key?.id
-  } catch (err) {
-    console.error('Error enviando WhatsApp:', err)
-    return false
+    const url = `${CALLMEBOT_API}?${params.toString()}`
+    const res = await fetch(url)
+    const data = await res.text()
+    const ok = data.includes('Message queued')
+    return { ok, debug: `status=${res.status} body=${data.substring(0, 200)}` }
+  } catch (err: any) {
+    return { ok: false, debug: `error=${err.message}` }
   }
 }
 
@@ -140,35 +129,41 @@ export function generarMensajeEnergia(info: EventInfo): string {
 }
 
 export function interpretarRespuesta(body: any): ReplyResult | null {
-  const evento = body?.event
-  const datos = body?.data
+  const event = body?.event
+  const data = body?.data
+  if (event !== 'message.received' || !data) return null
 
-  if (evento !== 'messages.upsert' || !datos) return null
-
-  const mensaje = datos?.message?.conversation || datos?.message?.extendedTextMessage?.text || ''
-  const texto = mensaje.trim().toUpperCase()
-  const numero = (datos.key?.remoteJid || '').replace('@s.whatsapp.net', '').replace('@c.us', '')
-
-  if (!numero || datos.key?.fromMe) return null
+  const texto = (data.body || '').trim().toUpperCase()
+  const numero = (data.from || '').replace('@c.us', '').replace('@s.whatsapp.net', '')
+  const session = data.session || ''
 
   if (texto === 'OK' || texto === 'OK.') {
-    return { tipo: 'ok', mensaje: texto, numero }
+    return { tipo: 'ok', mensaje: texto, numero, session }
   }
   if (texto === 'AYUDA' || texto === 'AYUDA.') {
-    return { tipo: 'ayuda', mensaje: texto, numero }
+    return { tipo: 'ayuda', mensaje: texto, numero, session }
   }
   if (texto === 'SILENCIO' || texto === 'SILENCIO.') {
-    return { tipo: 'silencio', mensaje: texto, numero }
+    return { tipo: 'silencio', mensaje: texto, numero, session }
   }
 
   const isPanico = PANICO_KEYWORDS.some(k => texto.includes(k))
   if (isPanico) {
-    return { tipo: 'panico', mensaje: texto, numero }
+    const gps = extraerGPS(body)
+    return { tipo: 'panico', mensaje: texto, numero, session, gps }
   }
 
   if (ENERGIA_KEYWORDS.some(k => texto.includes(k)) && (texto.includes('OK') || texto.includes('RECIBIDO'))) {
-    return { tipo: 'confirmacion_energia', mensaje: texto, numero }
+    return { tipo: 'confirmacion_energia', mensaje: texto, numero, session }
   }
 
-  return { tipo: 'desconocido', mensaje: texto, numero }
+  return { tipo: 'desconocido', mensaje: texto, numero, session }
+}
+
+function extraerGPS(body: any): { lat: number; lng: number; timestamp: number } | undefined {
+  const location = body?.data?.location
+  if (location?.latitude && location?.longitude) {
+    return { lat: location.latitude, lng: location.longitude, timestamp: Date.now() }
+  }
+  return undefined
 }
