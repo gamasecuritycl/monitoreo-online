@@ -1,0 +1,5 @@
+node_modules/
+.baileys-session/
+*.log
+*.err
+package-lock.json
