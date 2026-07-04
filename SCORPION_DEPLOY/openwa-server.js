@@ -65,6 +65,10 @@ async function iniciarBaileys() {
           if (fs.existsSync(dir)) {
             fs.rmSync(dir, { recursive: true, force: true })
           }
+          currentQR = null
+          reconnectAttempts = 0
+          console.log('[Baileys] Generando nuevo QR en 3 segundos...')
+          setTimeout(iniciarBaileys, 3000)
           return
         }
 
