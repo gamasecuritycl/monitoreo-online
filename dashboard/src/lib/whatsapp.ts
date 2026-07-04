@@ -1,5 +1,5 @@
-const OPENWA_URL = process.env.OPENWA_URL || 'http://localhost:2785'
-const OPENWA_API_KEY = process.env.OPENWA_API_KEY || ''
+const CALLMEBOT_API = 'https://api.callmebot.com/whatsapp.php'
+const CALLMEBOT_APIKEY = process.env.CALLMEBOT_APIKEY || '4238719'
 
 export interface EventInfo {
   cuenta: string
@@ -23,19 +23,14 @@ const ENERGIA_KEYWORDS = ['ENERGÍA', 'ENERGIA', 'CORTE', 'LUZ', 'RESTABLECIDO']
 
 export async function sendMessage(telefono: string, texto: string): Promise<boolean> {
   try {
-    const res = await fetch(`${OPENWA_URL}/api/send/text`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': OPENWA_API_KEY,
-      },
-      body: JSON.stringify({
-        session: 'gama-monitoreo',
-        to: telefono,
-        text: texto,
-      }),
+    const params = new URLSearchParams({
+      phone: telefono,
+      text: texto,
+      apikey: CALLMEBOT_APIKEY,
     })
-    return res.ok
+    const res = await fetch(`${CALLMEBOT_API}?${params.toString()}`)
+    const data = await res.text()
+    return data.includes('Message queued')
   } catch {
     return false
   }
