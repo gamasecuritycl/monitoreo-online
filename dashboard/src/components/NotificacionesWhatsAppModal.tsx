@@ -130,7 +130,7 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap }: Pr
     try {
       setMensaje('Enviando prueba...')
       const telLimpio = telefono.replace(/[^0-9]/g, '')
-      const texto = `🛡️ *GAMA SEGURIDAD*\n━━━━━━━━━━━━━━━━━━━━━\n\n⚠️ *NOTIFICACIÓN DE PRUEBA*\n\n👤 Cliente: *${clienteSeleccionado.cuenta}* - ${clienteSeleccionado.nombre}\n🕐 Hora: ${new Date().toLocaleString('es-CL')}\n\n━━━━━━━━━━━━━━━━━━━━━\n_Gama Seguridad - Monitoreo 24/7_`
+      const texto = `🛡️ *GAMA SEGURIDAD*\n━━━━━━━━━━━━━━━━━━━━━\n\n⚠️ *NOTIFICACIÓN DE PRUEBA*\n\n🕐 Hora: ${new Date().toLocaleString('es-CL')}\n\n━━━━━━━━━━━━━━━━━━━━━\n_Gama Seguridad - Monitoreo 24/7_`
       const resultado = await sendMessage(telLimpio, texto)
       setMensaje(resultado.ok ? '✅ Mensaje enviado' : '❌ Error: ' + (resultado.debug || ''))
       setTimeout(() => setMensaje(''), 3000)
@@ -205,7 +205,7 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap }: Pr
               </div>
 
               {/* Config del cliente */}
-              <div className="w-96 border-2 border-t-gray-700 border-l-gray-700 border-b-white border-r-white bg-[#e0e0e0] flex flex-col p-3">
+              <div className="w-96 border-2 border-t-gray-700 border-l-gray-700 border-b-white border-r-white bg-[#e0e0e0] flex flex-col p-3 overflow-y-auto">
                 <div className="text-[#000080] font-bold text-sm border-b border-gray-400 pb-1 mb-3">CONFIGURACIÓN WHATSAPP</div>
                 {!clienteSeleccionado ? (
                   <div className="flex-1 flex items-center justify-center text-gray-500 font-bold text-xs text-center p-4">

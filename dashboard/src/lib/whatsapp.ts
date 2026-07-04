@@ -95,7 +95,6 @@ export function generarMensajeAlerta(info: EventInfo, critico: boolean): string 
       ? `🚨 *ALERTA CRÍTICA* - ${info.tipo_evento}`
       : `⚠️ *NOTIFICACIÓN* - ${info.tipo_evento}`,
     '',
-    `👤 Cliente: *${info.cuenta}* - ${info.nombre_cliente}`,
   ]
 
   if (info.direccion) {
@@ -140,7 +139,6 @@ export function generarMensajeEnergia(info: EventInfo): string {
     '',
     '⚡ *ALERTA DE ENERGÍA ELÉCTRICA*',
     '',
-    `👤 Cliente: *${info.cuenta}* - ${info.nombre_cliente}`,
     info.direccion ? `📍 Dirección: ${info.direccion}` : '',
     `🕐 Hora: ${info.fecha_hora}`,
     '',
