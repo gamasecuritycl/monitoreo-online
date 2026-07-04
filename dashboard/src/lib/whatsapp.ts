@@ -1,4 +1,6 @@
 const OPENWA_URL = 'http://localhost:3015'
+const CALLMEBOT_API = 'https://api.callmebot.com/whatsapp.php'
+const CALLMEBOT_APIKEY = '4238719'
 
 export interface EventInfo {
   cuenta: string
@@ -21,6 +23,7 @@ const PANICO_KEYWORDS = ['SOCORRO', 'PÁNICO', 'PANICO', 'EMERGENCIA', 'AYUDA YA
 const ENERGIA_KEYWORDS = ['ENERGÍA', 'ENERGIA', 'CORTE', 'LUZ', 'RESTABLECIDO']
 
 export async function sendMessage(telefono: string, texto: string): Promise<{ ok: boolean; debug?: string }> {
+  // Intento 1: OpenWA (localhost)
   try {
     const res = await fetch(`${OPENWA_URL}/api/send`, {
       method: 'POST',
@@ -28,7 +31,20 @@ export async function sendMessage(telefono: string, texto: string): Promise<{ ok
       body: JSON.stringify({ phone: telefono, text: texto }),
     })
     const data = await res.json()
-    return { ok: data.ok, debug: JSON.stringify(data) }
+    if (data.ok) return { ok: true, debug: 'openwa: ' + JSON.stringify(data) }
+  } catch {}
+
+  // Intento 2: CallMeBot directo desde el navegador
+  try {
+    const params = new URLSearchParams({
+      phone: telefono,
+      text: texto,
+      apikey: CALLMEBOT_APIKEY,
+    })
+    const res = await fetch(`${CALLMEBOT_API}?${params.toString()}`)
+    const data = await res.text()
+    const ok = data.includes('Message queued')
+    return { ok, debug: `callmebot: status=${res.status}` }
   } catch (err: any) {
     return { ok: false, debug: `error=${err.message}` }
   }

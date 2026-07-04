@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
+import { sendMessage } from '@/lib/whatsapp'
 
 interface Props {
   onClose: () => void
@@ -98,18 +99,11 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap }: Pr
     try {
       setMensaje('Enviando prueba...')
       const telLimpio = telefono.replace(/[^0-9]/g, '')
-      const res = await fetch('http://localhost:3015/api/send', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          phone: telLimpio,
-          text: `🛡️ *GAMA SEGURIDAD*\n━━━━━━━━━━━━━━━━━━━━━\n\n⚠️ *NOTIFICACIÓN DE PRUEBA*\n\n👤 Cliente: *${clienteSeleccionado.cuenta}* - ${clienteSeleccionado.nombre}\n🕐 Hora: ${new Date().toLocaleString('es-CL')}\n\n━━━━━━━━━━━━━━━━━━━━━\n_Gama Seguridad - Monitoreo 24/7_`,
-        }),
-      })
-      const data = await res.json()
-      setMensaje(data.ok ? '✅ Mensaje de prueba enviado' : '❌ Error: ' + (data.error || 'No se pudo enviar'))
+      const texto = `🛡️ *GAMA SEGURIDAD*\n━━━━━━━━━━━━━━━━━━━━━\n\n⚠️ *NOTIFICACIÓN DE PRUEBA*\n\n👤 Cliente: *${clienteSeleccionado.cuenta}* - ${clienteSeleccionado.nombre}\n🕐 Hora: ${new Date().toLocaleString('es-CL')}\n\n━━━━━━━━━━━━━━━━━━━━━\n_Gama Seguridad - Monitoreo 24/7_`
+      const resultado = await sendMessage(telLimpio, texto)
+      setMensaje(resultado.ok ? '✅ Mensaje enviado' : '❌ Error: ' + (resultado.debug || ''))
       setTimeout(() => setMensaje(''), 3000)
-    } catch { setMensaje('❌ OpenWA no está corriendo. Inicie openwa-server.js') }
+    } catch { setMensaje('❌ Error al enviar') }
   }
 
   const silencioActivo = silenciaHasta && new Date(silenciaHasta) > new Date()
