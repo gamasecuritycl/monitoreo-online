@@ -475,11 +475,6 @@ export default function ScorpionDashboard() {
 
       {/* ── BARRA DE MENÚ ESTILO SCORPION (solo PC, oculto en responsive) ── */}
       <nav className="hidden md:flex items-center bg-[#8B0000] border-b border-[#600000] shrink-0 select-none" style={{ fontFamily: "'Arial', sans-serif" }}>
-        {/* Etiqueta servidor */}
-        <div className="px-2 py-0.5 text-[10px] font-bold text-white/70 border-r border-[#600000] tracking-wider whitespace-nowrap">
-          SCORPION-MONITOREO&nbsp;-SERVIDOR-
-        </div>
-
         {/* Items del menú */}
         {[
           { label: 'OPERADORES',     id: 'menu-operadores' },
@@ -489,7 +484,6 @@ export default function ScorpionDashboard() {
           { label: 'TABLAS',         id: 'menu-tablas' },
           { label: 'UTILIDADES',     id: 'menu-utilidades' },
           { label: 'NOTIFICACIONES', id: 'menu-notificaciones', hasDropdown: true },
-          { label: 'BITÁCORA',        id: 'menu-bitacora' },
           { label: 'REPORTES',       id: 'menu-reportes' },
           { label: 'EVENTOS',        id: 'menu-eventos' },
           { label: 'AYUDA',          id: 'menu-ayuda' },
@@ -500,9 +494,6 @@ export default function ScorpionDashboard() {
               onClick={() => {
                 if (item.id === 'menu-notificaciones') {
                   setMostrarMenuNotificaciones(!mostrarMenuNotificaciones)
-                } else if (item.id === 'menu-bitacora') {
-                  setModalActivo('bitacora')
-                  setMostrarMenuNotificaciones(false)
                 } else {
                   setMostrarMenuNotificaciones(false)
                 }

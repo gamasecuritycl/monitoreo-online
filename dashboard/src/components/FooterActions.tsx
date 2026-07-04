@@ -198,6 +198,14 @@ export default function FooterActions({ onModalOpen }: FooterActionsProps) {
         
         {/* VERSIÓN DE ESCRITORIO (PC): Fila de 10 botones horizontales */}
         <div className="hidden md:flex items-center gap-1.5 mx-auto">
+          {/* Botón BITÁCORA (rectangular con texto) */}
+          <button
+            onClick={() => onModalOpen('bitacora')}
+            title="Bitácora de Eventos"
+            className="h-13 bg-[#d4d0c8] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 flex items-center justify-center cursor-pointer select-none hover:bg-gray-200 active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white shadow-sm px-3"
+          >
+            <span className="text-[13px] font-bold text-[#000080] tracking-wider whitespace-nowrap">BITÁCORA</span>
+          </button>
           {BOTONES_RETRO.map((btn) => (
             <button
               key={btn.id}
@@ -263,6 +271,13 @@ export default function FooterActions({ onModalOpen }: FooterActionsProps) {
 
             {/* Listado de Botones en Vertical */}
             <div className="flex-1 p-2 overflow-y-auto flex flex-col gap-1.5 bg-[#d4d0c8]">
+              {/* BITÁCORA primero */}
+              <div
+                onClick={() => { onModalOpen('bitacora'); setIsOpen(false) }}
+                className="flex items-center gap-3 p-2 bg-[#000080] hover:bg-[#0000a0] border border-[#4444cc] cursor-pointer rounded-sm select-none transition-all"
+              >
+                <span className="font-bold text-white text-[13px] tracking-wider">📋 BITÁCORA</span>
+              </div>
               {BOTONES_RETRO.map((btn) => (
                 <div
                   key={btn.id}
