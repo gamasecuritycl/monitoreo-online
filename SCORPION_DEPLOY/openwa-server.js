@@ -1,7 +1,7 @@
 const express = require('express')
 const cors = require('cors')
 const path = require('path')
-const { makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion, makeInMemoryStore } = require('@whiskeysockets/baileys')
+const { makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion } = require('@whiskeysockets/baileys')
 const pino = require('pino')
 const qrcode = require('qrcode-terminal')
 
@@ -15,6 +15,7 @@ let sock = null
 let isReady = false
 let mensajesRecibidos = []
 let currentQR = null
+let reconnectAttempts = 0
 
 async function iniciarBaileys() {
   try {
@@ -26,8 +27,14 @@ async function iniciarBaileys() {
       auth: state,
       logger: pino({ level: 'silent' }),
       printQRInTerminal: false,
-      markOnlineOnConnect: true,
-      browser: ['Gama Seguridad', 'Chrome', '2.0'],
+      markOnlineOnConnect: false,
+      connectTimeoutMs: 60000,
+      keepAliveIntervalMs: 25000,
+      emitOwnEvents: false,
+      browser: ['Chrome', 'Linux', '120.0.6099.144'],
+      syncFullHistory: false,
+      generateHighQualityLinkPreview: false,
+      patchMessageBeforeSending: true,
     })
 
     sock.ev.on('creds.update', saveCreds)
@@ -35,22 +42,36 @@ async function iniciarBaileys() {
     sock.ev.on('connection.update', ({ connection, lastDisconnect, qr }) => {
       if (qr) {
         currentQR = qr
-        qrcode.generate(qr, { small: true })
-        console.log('[Baileys] QR actualizado - escanea con WhatsApp')
+        if (!isReady) {
+          qrcode.generate(qr, { small: true })
+          console.log('[Baileys] 📱 Escanea el QR con WhatsApp (solo la primera vez)')
+        }
       }
       if (connection === 'open') {
         isReady = true
         currentQR = null
+        reconnectAttempts = 0
         console.log('[Baileys] ✅ WhatsApp conectado como', sock.user?.name || sock.user?.id)
       }
       if (connection === 'close') {
         isReady = false
         const statusCode = lastDisconnect?.error?.output?.statusCode
-        const shouldReconnect = statusCode !== DisconnectReason.loggedOut
-        console.log('[Baileys] Desconectado, reconectando:', shouldReconnect)
-        if (shouldReconnect) {
-          setTimeout(iniciarBaileys, 3000)
+        const reason = lastDisconnect?.error?.message || 'desconocido'
+
+        if (statusCode === DisconnectReason.loggedOut) {
+          console.log('[Baileys] ❌ Sesión cerrada. Vuelve a escanear QR')
+          const fs = require('fs')
+          const dir = SESSION_DIR
+          if (fs.existsSync(dir)) {
+            fs.rmSync(dir, { recursive: true, force: true })
+          }
+          return
         }
+
+        reconnectAttempts++
+        const delay = Math.min(30 + reconnectAttempts * 5, 120)
+        console.log(`[Baileys] Desconectado (${reason}). Reintento en ${delay}s (intento ${reconnectAttempts})`)
+        setTimeout(iniciarBaileys, delay * 1000)
       }
     })
 
@@ -68,17 +89,15 @@ async function iniciarBaileys() {
         }
         mensajesRecibidos.push(registro)
         if (mensajesRecibidos.length > 200) mensajesRecibidos.shift()
-        console.log('[Baileys] Mensaje de', msg.key.remoteJid, ':', body)
+        console.log('[Baileys] 📩 Mensaje de', msg.key.remoteJid, ':', body)
       }
     })
 
   } catch (err) {
-    console.error('[Baileys] Error:', err.message)
-    setTimeout(iniciarBaileys, 5000)
+    console.error('[Baileys] Error al iniciar:', err.message)
+    setTimeout(iniciarBaileys, 60000)
   }
 }
-
-// ── API REST ──
 
 app.get('/api/status', (req, res) => {
   res.json({
@@ -123,13 +142,7 @@ app.get('/api/messages', (req, res) => {
   res.json({ messages: mensajes })
 })
 
-// ── Iniciar ──
 app.listen(PORT, () => {
   console.log(`[Baileys] Servidor corriendo en http://localhost:${PORT}`)
-  console.log('[Baileys] Endpoints:')
-  console.log('  GET  /api/status    - Estado de conexión')
-  console.log('  GET  /api/qr        - QR para escanear')
-  console.log('  POST /api/send      - Enviar mensaje')
-  console.log('  GET  /api/messages  - Mensajes recibidos')
   iniciarBaileys()
 })
