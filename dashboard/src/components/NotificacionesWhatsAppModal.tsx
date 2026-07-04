@@ -86,19 +86,30 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap }: Pr
     setGuardando(true)
     setMensaje('')
     try {
-      const { error } = await supabase.from('notificaciones_whatsapp').upsert({
+      const payload: any = {
         cuenta: clienteSeleccionado.cuenta,
         telefono: telLimpio,
         activo,
         contactos_escalamiento: contactos,
         silencio_hasta: null,
-        notificar_alarma: notificarAlarma,
-        notificar_energia: notificarEnergia,
-        notificar_apertura: notificarApertura,
-        notificar_cierre: notificarCierre,
         updated_at: new Date().toISOString(),
-      }, { onConflict: 'cuenta' })
-      if (error) throw error
+      }
+      // Intentar guardar con campos de configuración (si existen en la DB)
+      try {
+        payload.notificar_alarma = notificarAlarma
+        payload.notificar_energia = notificarEnergia
+        payload.notificar_apertura = notificarApertura
+        payload.notificar_cierre = notificarCierre
+        const { error } = await supabase.from('notificaciones_whatsapp').upsert(payload, { onConflict: 'cuenta' })
+        if (error) throw error
+      } catch {
+        delete payload.notificar_alarma
+        delete payload.notificar_energia
+        delete payload.notificar_apertura
+        delete payload.notificar_cierre
+        const { error } = await supabase.from('notificaciones_whatsapp').upsert(payload, { onConflict: 'cuenta' })
+        if (error) throw error
+      }
       setMensaje('✅ Guardado OK')
       setTimeout(() => setMensaje(''), 3000)
     } catch (err: any) {

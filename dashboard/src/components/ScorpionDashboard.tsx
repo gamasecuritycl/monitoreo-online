@@ -291,25 +291,30 @@ export default function ScorpionDashboard() {
 
         // WhatsApp: enviar notificación según configuración del cliente
         try {
-          const { data: waConfig } = await supabase
+          const { data: waConfig, error: waErr } = await supabase
             .from('notificaciones_whatsapp')
-            .select('telefono, activo, silencio_hasta, notificar_alarma, notificar_energia, notificar_apertura, notificar_cierre')
+            .select('*')
             .eq('cuenta', newEvent.cuenta)
             .eq('activo', true)
             .single()
 
-          if (waConfig?.telefono) {
+          if (waConfig?.telefono && !waErr) {
             const silenciado = waConfig.silencio_hasta && new Date(waConfig.silencio_hasta) > new Date()
             if (!silenciado) {
               const isEnergia = eventoUpper.includes('ENERGÍA') || eventoUpper.includes('ENERGIA') || eventoUpper.includes('FALLA')
               const esApertura = eventoUpper.includes('APERTURA') || (cidInfo && cidInfo.categoria === 'APERTURA')
               const esCierre = eventoUpper.includes('CIERRE')
 
-              // Respetar configuración individual
-              if (isEnergia && !waConfig.notificar_energia) return
-              if (esApertura && !waConfig.notificar_apertura) return
-              if (esCierre && !waConfig.notificar_cierre) return
-              if (!isEnergia && !esApertura && !esCierre && !waConfig.notificar_alarma) return
+              // Respetar configuración individual (con defaults si columnas no existen)
+              const waNotifAlarma = waConfig.notificar_alarma !== undefined ? waConfig.notificar_alarma : true
+              const waNotifEnergia = waConfig.notificar_energia !== undefined ? waConfig.notificar_energia : true
+              const waNotifApertura = waConfig.notificar_apertura === true
+              const waNotifCierre = waConfig.notificar_cierre === true
+
+              if (isEnergia && !waNotifEnergia) { return }
+              if (esApertura && !waNotifApertura) { return }
+              if (esCierre && !waNotifCierre) { return }
+              if (!isEnergia && !esApertura && !esCierre && !waNotifAlarma) { return }
 
               const telefono = waConfig.telefono.replace(/[^0-9]/g, '')
 
