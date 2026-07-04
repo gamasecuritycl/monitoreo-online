@@ -356,6 +356,84 @@ export default function ScorpionDashboard() {
         } catch (e) {
           console.error('Error al verificar/enviar notificación por WhatsApp:', e)
         }
+
+        // ── Registro automático en Bitácora ──
+        try {
+          const BITACORA_API = 'https://bitacora.gamasecurity.cl/api-bitacora.php'
+          const isEnergia = eventoUpper.includes('ENERGÍA') || eventoUpper.includes('ENERGIA') || eventoUpper.includes('FALLA')
+          const esApertura = eventoUpper.includes('APERTURA') || (cidInfo && cidInfo.categoria === 'APERTURA')
+          const esCierre = eventoUpper.includes('CIERRE')
+
+          let debeRegistrar = false
+          let tipoBitacora = '1'
+          let comentarioBitacora = ''
+
+          if (isEnergia) {
+            debeRegistrar = true
+            tipoBitacora = '4'
+            comentarioBitacora = '⚡ Corte de energía eléctrica - Sistema operando con batería de respaldo'
+          } else if (esApertura) {
+            debeRegistrar = true
+            tipoBitacora = '3'
+            const zn = newEvent.zona && newEvent.zona !== 'None' ? ` (Zona ${newEvent.zona})` : ''
+            comentarioBitacora = `🔓 Apertura de sistema${zn}`
+          } else if (esCierre) {
+            debeRegistrar = true
+            tipoBitacora = '3'
+            const zn = newEvent.zona && newEvent.zona !== 'None' ? ` (Zona ${newEvent.zona})` : ''
+            comentarioBitacora = `🔒 Cierre de sistema${zn}`
+          } else {
+            // Múltiples activaciones (patrón crítico)
+            const { data: eventosRecientes } = await supabase
+              .from('eventos_monitoreo')
+              .select('zona, evento')
+              .eq('cuenta', newEvent.cuenta)
+              .gte('fecha_hora', new Date(Date.now() - 5 * 60 * 1000).toISOString())
+              .limit(10)
+
+            const { critico } = detectarPatronEvento(eventosRecientes || [])
+            if (critico) {
+              debeRegistrar = true
+              tipoBitacora = '1'
+
+              const zonasUnicas = [...new Set([...(eventosRecientes || []).map((e: any) => e.zona)])].filter(Boolean)
+              const cuentaKey = (newEvent.cuenta || '').toUpperCase().trim()
+              const zonasAbonado = zonasMap[cuentaKey] || []
+
+              let detalleZonas = ''
+              if (zonasAbonado.length > 0) {
+                const nombresZonas = zonasUnicas.map(z => {
+                  const match = zonasAbonado.find(za => za.numero === z)
+                  return match ? `${z}: ${match.area}` : `Zona ${z}`
+                })
+                detalleZonas = '\nZonas involucradas:\n' + nombresZonas.map(zn => `  • ${zn}`).join('\n')
+              } else {
+                detalleZonas = '\nZonas involucradas: ' + zonasUnicas.join(', ')
+              }
+
+              comentarioBitacora = `🚨 INCIDENCIA CONCURRENTE - ${eventoUpper}${detalleZonas}`
+            }
+          }
+
+          if (debeRegistrar) {
+            const res = await fetch(`${BITACORA_API}?action=abonados&q=${encodeURIComponent(newEvent.cuenta)}`)
+            const abonados = await res.json()
+            if (abonados.length > 0) {
+              await fetch(`${BITACORA_API}?action=crear`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  id_abonado: abonados[0].id,
+                  comentario: comentarioBitacora,
+                  tipo_evento: parseInt(tipoBitacora),
+                  id_responsable: 1,
+                }),
+              })
+            }
+          }
+        } catch (e) {
+          console.error('Error al registrar en bitácora:', e)
+        }
       })
       .subscribe()
     return () => { supabase.removeChannel(channel) }
