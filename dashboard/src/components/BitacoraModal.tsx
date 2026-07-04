@@ -302,37 +302,4 @@ export default function BitacoraModal({ onClose, cuentaDefault }: { onClose: () 
       </div>
     </div>
   )
-                  })}
-                </div>
-              </div>
-            </div>
-
-            <div className="w-64 border-2 border-t-gray-700 border-l-gray-700 border-b-white border-r-white bg-[#e0e0e0] flex flex-col p-2 shrink-0">
-              <div className="text-[#000080] font-bold text-xs border-b border-gray-400 pb-1 mb-2">NUEVO EVENTO</div>
-              {!abonadoSel ? (
-                <div className="flex-1 flex items-center justify-center text-gray-500 text-xs text-center p-2">Selecciona un abonado primero</div>
-              ) : (
-                <>
-                  <div className="text-[10px] font-bold text-gray-700 mb-1">{abonadoSel.cod} — {abonadoSel.nombre}</div>
-                  <label className="text-[10px] font-bold text-gray-600 mb-0.5">Tipo</label>
-                  <select className="w-full border-2 border-t-gray-700 border-l-gray-700 border-b-white border-r-white bg-white px-1 py-0.5 text-xs font-bold mb-2"
-                    value={tipoEvento} onChange={e => setTipoEvento(e.target.value)}>
-                    {tipos.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                  </select>
-                  <label className="text-[10px] font-bold text-gray-600 mb-0.5">Comentario</label>
-                  <textarea className="w-full flex-1 border-2 border-t-gray-700 border-l-gray-700 border-b-white border-r-white bg-white p-1 text-xs resize-none focus:outline-none"
-                    placeholder="Escribe el evento..." value={comentario} onChange={e => setComentario(e.target.value)} />
-                  {mensaje && <div className="text-[10px] font-bold mt-1 text-center">{mensaje}</div>}
-                  <button className="mt-2 bg-[#000080] text-white font-bold text-xs py-1.5 border-2 border-t-[#4444cc] border-l-[#4444cc] border-b-[#000044] border-r-[#000044] hover:bg-[#0000a0] disabled:opacity-50"
-                    disabled={enviando || !comentario.trim()} onClick={crearEvento}>
-                    {enviando ? 'ENVIANDO...' : 'REGISTRAR EVENTO'}
-                  </button>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
 }
