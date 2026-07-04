@@ -371,17 +371,15 @@ export default function ScorpionDashboard() {
           if (isEnergia) {
             debeRegistrar = true
             tipoBitacora = '4'
-            comentarioBitacora = '⚡ Corte de energía eléctrica - Sistema operando con batería de respaldo'
+            comentarioBitacora = '⚡ Corte de energía eléctrica - Sistema operando con batería de respaldo. Se avisará al cliente'
           } else if (esApertura) {
             debeRegistrar = true
             tipoBitacora = '3'
-            const zn = newEvent.zona && newEvent.zona !== 'None' ? ` (Zona ${newEvent.zona})` : ''
-            comentarioBitacora = `🔓 Apertura de sistema${zn}`
+            comentarioBitacora = '🔓 Apertura de sistema'
           } else if (esCierre) {
             debeRegistrar = true
             tipoBitacora = '3'
-            const zn = newEvent.zona && newEvent.zona !== 'None' ? ` (Zona ${newEvent.zona})` : ''
-            comentarioBitacora = `🔒 Cierre de sistema${zn}`
+            comentarioBitacora = '🔒 Cierre de sistema'
           } else {
             // Múltiples activaciones (patrón crítico)
             const { data: eventosRecientes } = await supabase
