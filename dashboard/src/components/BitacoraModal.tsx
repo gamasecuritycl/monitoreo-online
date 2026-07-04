@@ -9,6 +9,15 @@ type Archivo = { id: number; nombre_original: string; url: string; tipo: string;
 
 const API_URL = 'https://bitacora.gamasecurity.cl/api-bitacora.php'
 
+function getUltimos7Dias() {
+  const hoy = new Date()
+  const hace7 = new Date(hoy.getTime() - 7 * 86400000)
+  return {
+    desde: hace7.toISOString().split('T')[0] + ' 00:00',
+    hasta: hoy.toISOString().split('T')[0] + ' 23:59',
+  }
+}
+
 function getTurnoInfo() {
   const now = new Date()
   const h = now.getHours()
@@ -25,19 +34,19 @@ function getTurnoInfo() {
 }
 
 export default function BitacoraModal({ onClose, cuentaDefault }: { onClose: () => void; cuentaDefault?: string }) {
-  const turnoInfo = getTurnoInfo()
   const [abonados, setAbonados] = useState<Abonado[]>([])
   const [abonadoSel, setAbonadoSel] = useState<Abonado | null>(null)
   const [busqueda, setBusqueda] = useState(cuentaDefault || '')
+  const ultimos7 = getUltimos7Dias()
   const [eventos, setEventos] = useState<Evento[]>([])
   const [tipos, setTipos] = useState<TipoEvento[]>([])
   const [comentario, setComentario] = useState('')
   const [tipoEvento, setTipoEvento] = useState('1')
   const [enviando, setEnviando] = useState(false)
   const [mensaje, setMensaje] = useState('')
-  const [desde, setDesde] = useState(turnoInfo.desde)
-  const [hasta, setHasta] = useState(turnoInfo.hasta)
-  const [modoFecha, setModoFecha] = useState<'turno' | 'personalizado'>('turno')
+  const [desde, setDesde] = useState(ultimos7.desde)
+  const [hasta, setHasta] = useState(ultimos7.hasta)
+  const [modoFecha, setModoFecha] = useState<'turno' | 'semana' | 'personalizado'>('semana')
   const [editandoId, setEditandoId] = useState<number | null>(null)
   const [editComentario, setEditComentario] = useState('')
   const [editTipo, setEditTipo] = useState('')
@@ -58,6 +67,18 @@ export default function BitacoraModal({ onClose, cuentaDefault }: { onClose: () 
 
   useEffect(() => {
     fetch(`${API_URL}?action=tipos`).then(r => r.ok && r.json()).then(d => d && setTipos(d)).catch(() => {})
+
+    // Auto-seleccionar abonado si viene cuentaDefault
+    if (cuentaDefault) {
+      fetch(`${API_URL}?action=abonados&q=${encodeURIComponent(cuentaDefault)}`).then(r => r.ok && r.json()).then(data => {
+        if (data && data.length > 0) {
+          const match = data.find((a: Abonado) => a.cod === cuentaDefault) || data[0]
+          setAbonadoSel(match)
+          setBusqueda(`${match.cod} - ${match.nombre}`)
+          fetch(`${API_URL}?action=eventos&id=${match.id}&desde=${encodeURIComponent(ultimos7.desde)}&hasta=${encodeURIComponent(ultimos7.hasta)}`).then(r => r.ok && r.json()).then(ev => ev && setEventos(ev))
+        }
+      }).catch(() => {})
+    }
   }, [])
 
   const cargarEventos = async (id: number) => {
@@ -186,6 +207,88 @@ export default function BitacoraModal({ onClose, cuentaDefault }: { onClose: () 
     if (abonadoSel) cargarEventos(abonadoSel.id)
   }
 
+  const exportarExcel = () => {
+    if (!abonadoSel || eventos.length === 0) return
+    const rows = eventos.map(e => {
+      const d = new Date(e.created_at)
+      const fecha = d.toLocaleDateString('es-CL')
+      const hora = d.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })
+      const tipo = (tipos.find(t => t.id === e.tipo_evento)?.name || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      const comentario = (e.comentario || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      return { fecha, hora, tipo, responsable: e.responsable_nombre, comentario }
+    })
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:o="urn:schemas-microsoft-com:office:office"
+ xmlns:x="urn:schemas-microsoft-com:office:excel"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:html="http://www.w3.org/TR/REC-html40">
+ <Styles>
+  <Style ss:ID="Default" ss:Name="Normal"><Font ss:FontName="Calibri" ss:Size="10"/></Style>
+  <Style ss:ID="sHeader"><Font ss:Bold="1" ss:Size="10"/><Interior ss:Color="#1e293b" ss:Pattern="Solid"/><Font ss:Color="#FFFFFF"/></Style>
+ </Styles>
+ <Worksheet ss:Name="Bitácora ${abonadoSel.cod}">
+  <Table>
+   <Column ss:AutoFitWidth="1"/>
+   <Column ss:AutoFitWidth="1"/>
+   <Column ss:AutoFitWidth="1"/>
+   <Column ss:AutoFitWidth="1"/>
+   <Column ss:AutoFitWidth="1"/>
+   <Row ss:StyleID="sHeader">
+    <Cell><Data ss:Type="String">Fecha</Data></Cell>
+    <Cell><Data ss:Type="String">Hora</Data></Cell>
+    <Cell><Data ss:Type="String">Tipo</Data></Cell>
+    <Cell><Data ss:Type="String">Responsable</Data></Cell>
+    <Cell><Data ss:Type="String">Comentario</Data></Cell>
+   </Row>
+${rows.map(r => `   <Row>
+    <Cell><Data ss:Type="String">${r.fecha}</Data></Cell>
+    <Cell><Data ss:Type="String">${r.hora}</Data></Cell>
+    <Cell><Data ss:Type="String">${r.tipo}</Data></Cell>
+    <Cell><Data ss:Type="String">${r.responsable}</Data></Cell>
+    <Cell><Data ss:Type="String">${r.comentario}</Data></Cell>
+   </Row>`).join('\n')}
+  </Table>
+ </Worksheet>
+</Workbook>`
+    const blob = new Blob([xml], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url; a.download = `bitacora_${abonadoSel.cod}.xml`; a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  const exportarPDF = () => {
+    if (!abonadoSel || eventos.length === 0) return
+    const turno = getTurnoInfo().nombre
+    const filas = eventos.map(e => {
+      const d = new Date(e.created_at)
+      const fecha = d.toLocaleDateString('es-CL')
+      const hora = d.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })
+      const tipo = tipos.find(t => t.id === e.tipo_evento)?.name || ''
+      return `<tr><td>${fecha}</td><td>${hora}</td><td>${tipo}</td><td>${e.responsable_nombre}</td><td>${e.comentario || ''}</td></tr>`
+    }).join('')
+    const win = window.open('', '_blank')
+    if (!win) return
+    win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Bitácora - ${abonadoSel.cod}</title>
+<style>
+body{font-family:Calibri,sans-serif;font-size:10pt;padding:20px}
+h1{font-size:14pt;color:#1e293b;border-bottom:2px solid #1e293b;padding-bottom:5px}
+h2{font-size:10pt;color:#666;font-weight:normal;margin-top:-5px}
+table{width:100%;border-collapse:collapse;margin-top:10px}
+th{background:#1e293b;color:#fff;padding:5px 8px;text-align:left;font-size:9pt}
+td{padding:4px 8px;border-bottom:1px solid #ddd;font-size:9pt}
+tr:nth-child(even){background:#f8f8f8}
+@media print{@page{size:landscape;margin:15mm}}
+</style></head><body>
+<h1>BITÁCORA VIRTUAL — ${abonadoSel.cod} ${abonadoSel.nombre}</h1>
+<h2>${turno} | ${eventos.length} eventos</h2>
+<table><thead><tr><th>Fecha</th><th>Hora</th><th>Tipo</th><th>Responsable</th><th>Comentario</th></tr></thead><tbody>${filas}</tbody></table>
+<script>window.print()</script></body></html>`)
+    win.document.close()
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-2" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="w-full md:w-[1200px] h-[95vh] md:h-[750px] bg-[#0f172a] border border-[#1e293b] rounded-lg shadow-2xl flex flex-col overflow-hidden">
@@ -193,10 +296,20 @@ export default function BitacoraModal({ onClose, cuentaDefault }: { onClose: () 
         {/* Header */}
         <div className="bg-[#1e293b] flex justify-between items-center px-4 py-2 shrink-0 border-b border-[#334155]">
           <div className="flex items-center gap-3">
-            <span className="text-slate-100 font-bold text-base tracking-wide">📋 BITÁCORA</span>
-            <span className="bg-[#334155] text-cyan-300 text-xs font-bold px-2 py-0.5 rounded">{turnoInfo.nombre}</span>
+            <span className="text-slate-100 font-bold text-base tracking-wide">📋 BITÁCORA VIRTUAL</span>
+            {abonadoSel && (
+              <span className="bg-[#334155] text-cyan-300 text-xs font-bold px-2 py-0.5 rounded">{abonadoSel.cod} — {abonadoSel.nombre}</span>
+            )}
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-white text-lg font-bold px-1.5 leading-none hover:bg-slate-700 rounded">&times;</button>
+          <div className="flex items-center gap-2">
+            {eventos.length > 0 && (
+              <>
+                <button onClick={exportarExcel} className="text-xs text-slate-400 hover:text-white font-bold px-2 py-0.5 rounded hover:bg-slate-700 transition-colors" title="Exportar Excel XML">📊 XLS</button>
+                <button onClick={exportarPDF} className="text-xs text-slate-400 hover:text-white font-bold px-2 py-0.5 rounded hover:bg-slate-700 transition-colors" title="Ver PDF para imprimir">📄 PDF</button>
+              </>
+            )}
+            <button onClick={onClose} className="text-slate-400 hover:text-white text-lg font-bold px-1.5 leading-none hover:bg-slate-700 rounded">&times;</button>
+          </div>
         </div>
 
         <div className="flex-1 flex flex-col p-4 gap-3 overflow-hidden">
@@ -229,9 +342,11 @@ export default function BitacoraModal({ onClose, cuentaDefault }: { onClose: () 
                     value={hasta.split(' ')[0]} onChange={e => { setHasta(e.target.value + ' 23:59'); setModoFecha('personalizado') }} />
                   <button className="bg-cyan-700 hover:bg-cyan-600 text-white text-sm font-bold px-3 py-1 rounded transition-colors"
                     onClick={() => abonadoSel && cargarEventos(abonadoSel.id)}>FILTRAR</button>
-                  {modoFecha !== 'turno' && (
+                  <button className="bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm font-bold px-3 py-1 rounded transition-colors"
+                    onClick={volverTurno}>TURNO</button>
+                  {modoFecha !== 'semana' && (
                     <button className="bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm font-bold px-3 py-1 rounded transition-colors"
-                      onClick={volverTurno}>TURNO</button>
+                      onClick={() => { const d = getUltimos7Dias(); setDesde(d.desde); setHasta(d.hasta); setModoFecha('semana'); if (abonadoSel) cargarEventos(abonadoSel.id) }}>7 DÍAS</button>
                   )}
                 </div>
               )}
