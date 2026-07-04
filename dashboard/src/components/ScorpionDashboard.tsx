@@ -11,6 +11,7 @@ import ZonificacionModal from './ZonificacionModal'
 import NotificacionesMailModal from './NotificacionesMailModal'
 import NotificacionesWhatsAppModal from './NotificacionesWhatsAppModal'
 import { lookupContactId } from '@/lib/contact_id_library'
+import { sendMessage, generarMensajeAlerta, generarMensajeEnergia, detectarPatronEvento, type EventInfo } from '@/lib/whatsapp'
 
 // ── Contactos del Panel Lateral de Scorpion ──
 interface ContactoAutorizado {
@@ -274,7 +275,7 @@ export default function ScorpionDashboard() {
           }
         }
 
-        // WhatsApp: enviar notificación para eventos críticos (alarmas)
+        // WhatsApp: enviar notificación directamente desde el navegador (CallMeBot bloquea IPs de Vercel)
         if (!isAperturaCierre) {
           try {
             const { data: waConfig } = await supabase
@@ -288,18 +289,54 @@ export default function ScorpionDashboard() {
               const silenciado = waConfig.silencio_hasta && new Date(waConfig.silencio_hasta) > new Date()
               if (!silenciado) {
                 const isEnergia = eventoUpper.includes('ENERGÍA') || eventoUpper.includes('ENERGIA') || eventoUpper.includes('FALLA')
-                fetch('/api/whatsapp/send', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    cuenta: newEvent.cuenta,
-                    nombre_cliente: newEvent.nombre_abonado,
-                    tipo_evento: isEnergia ? 'FALLA ENERGÍA ELÉCTRICA' : eventoUpper,
-                    zona: newEvent.zona || '',
-                    fecha_hora: newEvent.fecha_hora,
-                    direccion: '',
-                    esEnergia: isEnergia,
-                  })
+                const telefono = waConfig.telefono.replace(/[^0-9]/g, '')
+
+                const { data: eventosRecientes } = await supabase
+                  .from('eventos_monitoreo')
+                  .select('zona, evento')
+                  .eq('cuenta', newEvent.cuenta)
+                  .gte('fecha_hora', new Date(Date.now() - 5 * 60 * 1000).toISOString())
+                  .limit(10)
+
+                const info: EventInfo = {
+                  cuenta: newEvent.cuenta,
+                  nombre_cliente: newEvent.nombre_abonado,
+                  tipo_evento: isEnergia ? 'FALLA ENERGÍA ELÉCTRICA' : eventoUpper,
+                  zonas: [...new Set([...(eventosRecientes || []).map((e: any) => e.zona)])].filter(Boolean),
+                  fecha_hora: newEvent.fecha_hora,
+                  direccion: '',
+                }
+                if (!info.zonas.includes(newEvent.zona || '')) {
+                  info.zonas.push(newEvent.zona || '')
+                }
+
+                const { critico } = detectarPatronEvento(eventosRecientes || [])
+                const texto = isEnergia ? generarMensajeEnergia(info) : generarMensajeAlerta(info, critico)
+
+                // Llamada directa a CallMeBot desde el navegador (no pasa por Vercel)
+                sendMessage(telefono, texto).then((resultado) => {
+                  if (resultado.ok) {
+                    const ahora = new Date()
+                    const silencioHasta = new Date(ahora.getTime() + 60 * 60 * 1000)
+
+                    supabase.from('conversaciones_whatsapp').insert({
+                      cuenta: newEvent.cuenta,
+                      numero: telefono,
+                      tipo_evento: isEnergia ? 'FALLA ENERGÍA' : eventoUpper,
+                      estado: isEnergia ? 'energia' : (critico ? 'critico' : 'informativo'),
+                      mensaje_enviado: isEnergia ? 'FALLA ENERGÍA' : (critico ? 'ALERTA CRÍTICA' : 'NOTIFICACIÓN'),
+                      respuesta_cliente: null,
+                      created_at: ahora.toISOString(),
+                    }).then(() => {}).catch(() => {})
+
+                    supabase.from('notificaciones_whatsapp').upsert({
+                      cuenta: newEvent.cuenta,
+                      telefono,
+                      activo: true,
+                      silencio_hasta: silencioHasta.toISOString(),
+                      updated_at: ahora.toISOString(),
+                    }, { onConflict: 'cuenta' }).then(() => {}).catch(() => {})
+                  }
                 }).catch(() => {})
               }
             }
