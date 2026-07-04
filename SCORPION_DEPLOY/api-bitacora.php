@@ -45,19 +45,22 @@ try {
     exit;
 }
 
-// ── Crear tabla de archivos si no existe ──
-$pdo->exec("
-    CREATE TABLE IF NOT EXISTS eventos_archivos (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        evento_id INT NOT NULL,
-        nombre_original VARCHAR(255) NOT NULL,
-        archivo VARCHAR(255) NOT NULL,
-        tipo VARCHAR(100) NOT NULL,
-        tamanio INT NOT NULL DEFAULT 0,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (evento_id) REFERENCES eventos(id) ON DELETE CASCADE
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-");
+// ── Crear tabla de archivos si no existe (con manejo de errores) ──
+try {
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS eventos_archivos (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            evento_id INT NOT NULL,
+            nombre_original VARCHAR(255) NOT NULL,
+            archivo VARCHAR(255) NOT NULL,
+            tipo VARCHAR(100) NOT NULL,
+            tamanio INT NOT NULL DEFAULT 0,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+    ");
+} catch (PDOException $e) {
+    // La tabla ya existe o no se pudo crear — continuar de todas formas
+}
 
 // ── Crear directorio de uploads si no existe ──
 $UPLOAD_DIR = __DIR__ . '/uploads';
