@@ -56,7 +56,10 @@ export default function BitacoraModal({ onClose, cuentaDefault }: { onClose: () 
   const cargarArchivos = async (eventoId: number) => {
     try {
       const r = await fetch(`${API_URL}?action=archivos&evento_id=${eventoId}`)
-      if (r.ok) setArchivos(prev => ({ ...prev, [eventoId]: (await r.json()) }))
+      if (r.ok) {
+        const data = await r.json()
+        setArchivos(prev => ({ ...prev, [eventoId]: data }))
+      }
     } catch {}
   }
 
