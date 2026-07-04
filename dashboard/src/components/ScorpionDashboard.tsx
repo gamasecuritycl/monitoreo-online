@@ -9,6 +9,7 @@ import ExpedienteModal from './ExpedienteModal'
 import EventosPorUsuarioModal from './EventosPorUsuarioModal'
 import ZonificacionModal from './ZonificacionModal'
 import NotificacionesMailModal from './NotificacionesMailModal'
+import NotificacionesWhatsAppModal from './NotificacionesWhatsAppModal'
 import { lookupContactId } from '@/lib/contact_id_library'
 
 // ── Contactos del Panel Lateral de Scorpion ──
@@ -272,6 +273,38 @@ export default function ScorpionDashboard() {
             console.error('Error al verificar/enviar notificación por mail:', e)
           }
         }
+
+        // WhatsApp: enviar notificación para eventos críticos (alarmas)
+        if (!isAperturaCierre) {
+          try {
+            const { data: waConfig } = await supabase
+              .from('notificaciones_whatsapp')
+              .select('telefono, activo, silencio_hasta')
+              .eq('cuenta', newEvent.cuenta)
+              .eq('activo', true)
+              .single()
+
+            if (waConfig?.telefono) {
+              const silenciado = waConfig.silencio_hasta && new Date(waConfig.silencio_hasta) > new Date()
+              if (!silenciado) {
+                fetch('/api/whatsapp/send', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    cuenta: newEvent.cuenta,
+                    nombre_cliente: newEvent.nombre_abonado,
+                    tipo_evento: eventoUpper,
+                    zona: newEvent.zona || '',
+                    fecha_hora: newEvent.fecha_hora,
+                    direccion: '',
+                  })
+                }).catch(() => {})
+              }
+            }
+          } catch (e) {
+            console.error('Error al verificar/enviar notificación por WhatsApp:', e)
+          }
+        }
       })
       .subscribe()
     return () => { supabase.removeChannel(channel) }
@@ -351,6 +384,12 @@ export default function ScorpionDashboard() {
                   onClick={() => { setModalActivo('notificaciones-mail'); setMostrarMenuNotificaciones(false); }}
                 >
                   POR MAIL
+                </button>
+                <button 
+                  className="w-full text-left px-4 py-1.5 text-xs text-black font-bold hover:bg-[#000080] hover:text-white"
+                  onClick={() => { setModalActivo('notificaciones-whatsapp'); setMostrarMenuNotificaciones(false); }}
+                >
+                  POR WHATSAPP
                 </button>
               </div>
             )}
@@ -556,6 +595,14 @@ export default function ScorpionDashboard() {
       {/* Notificaciones Mail Modal (Controlado desde el menú superior) */}
       {modalActivo === 'notificaciones-mail' && (
         <NotificacionesMailModal
+          onClose={() => setModalActivo(null)}
+          clientesMap={clientesMap}
+        />
+      )}
+
+      {/* Notificaciones WhatsApp Modal */}
+      {modalActivo === 'notificaciones-whatsapp' && (
+        <NotificacionesWhatsAppModal
           onClose={() => setModalActivo(null)}
           clientesMap={clientesMap}
         />

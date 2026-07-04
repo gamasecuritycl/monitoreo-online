@@ -66,6 +66,40 @@ export async function GET() {
 
   -- Habilitar RLS pero permitir todo a anon de forma simple para desarrollo rápido
   ALTER TABLE public.clientes_expediente DISABLE ROW LEVEL SECURITY;
+
+  -- Tabla de configuración WhatsApp por cliente
+  CREATE TABLE IF NOT EXISTS public.notificaciones_whatsapp (
+      cuenta VARCHAR(50) PRIMARY KEY,
+      telefono VARCHAR(20) NOT NULL,
+      activo BOOLEAN DEFAULT true,
+      contactos_escalamiento JSONB DEFAULT '[]',
+      silencio_hasta TIMESTAMP DEFAULT null,
+      created_at TIMESTAMP DEFAULT NOW(),
+      updated_at TIMESTAMP DEFAULT NOW()
+  );
+  ALTER TABLE public.notificaciones_whatsapp ENABLE ROW LEVEL SECURITY;
+  DROP POLICY IF EXISTS "Permitir todo en notificaciones_whatsapp" ON public.notificaciones_whatsapp;
+  CREATE POLICY "Permitir todo en notificaciones_whatsapp" ON public.notificaciones_whatsapp
+    FOR ALL USING (true) WITH CHECK (true);
+
+  -- Tabla de conversaciones WhatsApp (historial de alertas y respuestas)
+  CREATE TABLE IF NOT EXISTS public.conversaciones_whatsapp (
+      id SERIAL PRIMARY KEY,
+      cuenta VARCHAR(50) NOT NULL,
+      numero VARCHAR(20) NOT NULL,
+      tipo_evento VARCHAR(100),
+      estado VARCHAR(20) DEFAULT 'pendiente',
+      mensaje_enviado TEXT,
+      respuesta_recibida TEXT,
+      created_at TIMESTAMP DEFAULT NOW(),
+      responded_at TIMESTAMP DEFAULT null
+  );
+  CREATE INDEX IF NOT EXISTS idx_conversaciones_cuenta ON public.conversaciones_whatsapp(cuenta);
+  CREATE INDEX IF NOT EXISTS idx_conversaciones_estado ON public.conversaciones_whatsapp(estado);
+  ALTER TABLE public.conversaciones_whatsapp ENABLE ROW LEVEL SECURITY;
+  DROP POLICY IF EXISTS "Permitir todo en conversaciones_whatsapp" ON public.conversaciones_whatsapp;
+  CREATE POLICY "Permitir todo en conversaciones_whatsapp" ON public.conversaciones_whatsapp
+    FOR ALL USING (true) WITH CHECK (true);
   `
 
   const client = new Client({
