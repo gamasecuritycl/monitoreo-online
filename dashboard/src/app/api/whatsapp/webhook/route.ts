@@ -87,6 +87,54 @@ export async function POST(req: Request) {
         }
         break
       }
+
+      case 'panico': {
+        const contactos: { nombre: string; telefono: string }[] = config.contactos_escalamiento as any || []
+        const gpsInfo = reply.gps
+          ? `\n📍 GPS: https://maps.google.com/?q=${reply.gps.lat},${reply.gps.lng}`
+          : ''
+
+        const msgUrgente = `🚨 SOS - EMERGENCIA CONFIRMADA\nCliente: ${cuenta}\nHora: ${new Date().toLocaleString('es-CL')}${gpsInfo}\n\nOperador de emergencia despachado.\nLínea directa: 56948855190`
+
+        await sendMessage(reply.numero, msgUrgente)
+
+        for (const c of contactos) {
+          const tel = c.telefono.replace(/[^0-9]/g, '')
+          await sendMessage(tel,
+            `🚨 EMERGENCIA - ${cuenta}\nContacto: ${c.nombre}${gpsInfo}\nDespache unidad urgente.`)
+        }
+
+        await supabase.from('conversaciones_whatsapp').insert({
+          cuenta,
+          numero: reply.numero,
+          tipo_evento: 'PÁNICO SOS',
+          estado: 'emergencia',
+          mensaje_enviado: 'PÁNICO ACTIVADO',
+          respuesta_recibida: reply.mensaje,
+          created_at: new Date().toISOString(),
+          responded_at: new Date().toISOString(),
+        })
+        break
+      }
+
+      case 'confirmacion_energia': {
+        await sendMessage(reply.numero,
+          '✅ ACUSE RECIBIDO - Fallo de energía registrado.\n' +
+          'Su sistema está operando con batería de respaldo.\n' +
+          'Notificaremos cuando se restablezca.')
+
+        await supabase.from('conversaciones_whatsapp').insert({
+          cuenta,
+          numero: reply.numero,
+          tipo_evento: 'FALLA ENERGÍA',
+          estado: 'confirmado_energia',
+          mensaje_enviado: 'FALLA ENERGÍA ELÉCTRICA',
+          respuesta_recibida: reply.mensaje,
+          created_at: new Date().toISOString(),
+          responded_at: new Date().toISOString(),
+        })
+        break
+      }
     }
 
     return NextResponse.json({ ok: true, processed: true, tipo: reply.tipo })

@@ -11,11 +11,15 @@ export interface EventInfo {
 }
 
 export interface ReplyResult {
-  tipo: 'ok' | 'ayuda' | 'silencio' | 'desconocido'
+  tipo: 'ok' | 'ayuda' | 'silencio' | 'panico' | 'confirmacion_energia' | 'desconocido'
   mensaje: string
   numero: string
   session: string
+  gps?: { lat: number; lng: number; timestamp: number }
 }
+
+const PANICO_KEYWORDS = ['SOCORRO', 'PÁNICO', 'PANICO', 'EMERGENCIA', 'AYUDA YA', 'SOS']
+const ENERGIA_KEYWORDS = ['ENERGÍA', 'ENERGIA', 'CORTE', 'LUZ', 'RESTABLECIDO']
 
 export async function sendMessage(telefono: string, texto: string): Promise<boolean> {
   try {
@@ -109,5 +113,23 @@ export function interpretarRespuesta(body: any): ReplyResult | null {
     return { tipo: 'silencio', mensaje: texto, numero, session }
   }
 
+  const isPanico = PANICO_KEYWORDS.some(k => texto.includes(k))
+  if (isPanico) {
+    const gps = extraerGPS(body)
+    return { tipo: 'panico', mensaje: texto, numero, session, gps }
+  }
+
+  if (ENERGIA_KEYWORDS.some(k => texto.includes(k)) && (texto.includes('OK') || texto.includes('RECIBIDO'))) {
+    return { tipo: 'confirmacion_energia', mensaje: texto, numero, session }
+  }
+
   return { tipo: 'desconocido', mensaje: texto, numero, session }
+}
+
+function extraerGPS(body: any): { lat: number; lng: number; timestamp: number } | undefined {
+  const location = body?.data?.location
+  if (location?.latitude && location?.longitude) {
+    return { lat: location.latitude, lng: location.longitude, timestamp: Date.now() }
+  }
+  return undefined
 }

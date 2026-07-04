@@ -2,10 +2,27 @@ import { NextResponse } from 'next/server'
 import { sendMessage, detectarPatronEvento, generarMensajeAlerta, type EventInfo } from '@/lib/whatsapp'
 import { supabase } from '@/lib/supabase'
 
+function generarMensajeEnergia(info: EventInfo): string {
+  return [
+    `⚡ ALERTA DE ENERGÍA ELÉCTRICA`,
+    '',
+    `Cliente: ${info.cuenta} - ${info.nombre_cliente}`,
+    info.direccion ? `Dirección: ${info.direccion}` : '',
+    `Hora: ${info.fecha_hora}`,
+    '',
+    'Se ha detectado un corte o falla de energía eléctrica.',
+    'Su sistema de seguridad está operando con batería de respaldo.',
+    'Tiempo estimado de batería: 72 horas.',
+    '',
+    'Responda OK para confirmar recepción.',
+    'Si necesita asistencia, responda AYUDA.',
+  ].filter(Boolean).join('\n')
+}
+
 export async function POST(req: Request) {
   try {
     const body = await req.json()
-    const { cuenta, nombre_cliente, tipo_evento, zona, fecha_hora, direccion } = body
+    const { cuenta, nombre_cliente, tipo_evento, zona, fecha_hora, direccion, esEnergia } = body
 
     if (!cuenta || !nombre_cliente || !tipo_evento) {
       return NextResponse.json({ error: 'Faltan datos requeridos (cuenta, nombre_cliente, tipo_evento)' }, { status: 400 })
@@ -45,7 +62,7 @@ export async function POST(req: Request) {
     }
 
     const { critico, mensaje: asunto } = detectarPatronEvento(eventosRecientes || [])
-    const texto = generarMensajeAlerta(info, critico)
+    const texto = esEnergia ? generarMensajeEnergia(info) : generarMensajeAlerta(info, critico)
 
     const enviado = await sendMessage(telefono, texto)
 
@@ -54,8 +71,8 @@ export async function POST(req: Request) {
         cuenta,
         numero: telefono,
         tipo_evento,
-        estado: critico ? 'critico' : 'informativo',
-        mensaje_enviado: asunto,
+        estado: esEnergia ? 'energia' : (critico ? 'critico' : 'informativo'),
+        mensaje_enviado: esEnergia ? 'FALLA ENERGÍA' : asunto,
         created_at: new Date().toISOString(),
       })
     }
@@ -64,6 +81,7 @@ export async function POST(req: Request) {
       success: enviado,
       critico,
       asunto,
+      esEnergia,
       telefono_enmascarado: telefono.slice(0, -4).replace(/./g, '*') + telefono.slice(-4),
     })
   } catch (err: any) {

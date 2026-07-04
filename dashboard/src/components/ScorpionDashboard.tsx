@@ -287,16 +287,18 @@ export default function ScorpionDashboard() {
             if (waConfig?.telefono) {
               const silenciado = waConfig.silencio_hasta && new Date(waConfig.silencio_hasta) > new Date()
               if (!silenciado) {
+                const isEnergia = eventoUpper.includes('ENERGÍA') || eventoUpper.includes('ENERGIA') || eventoUpper.includes('FALLA')
                 fetch('/api/whatsapp/send', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({
                     cuenta: newEvent.cuenta,
                     nombre_cliente: newEvent.nombre_abonado,
-                    tipo_evento: eventoUpper,
+                    tipo_evento: isEnergia ? 'FALLA ENERGÍA ELÉCTRICA' : eventoUpper,
                     zona: newEvent.zona || '',
                     fecha_hora: newEvent.fecha_hora,
                     direccion: '',
+                    esEnergia: isEnergia,
                   })
                 }).catch(() => {})
               }
