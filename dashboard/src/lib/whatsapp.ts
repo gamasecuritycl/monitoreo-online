@@ -21,18 +21,20 @@ export interface ReplyResult {
 const PANICO_KEYWORDS = ['SOCORRO', 'PÁNICO', 'PANICO', 'EMERGENCIA', 'AYUDA YA', 'SOS']
 const ENERGIA_KEYWORDS = ['ENERGÍA', 'ENERGIA', 'CORTE', 'LUZ', 'RESTABLECIDO']
 
-export async function sendMessage(telefono: string, texto: string): Promise<boolean> {
+export async function sendMessage(telefono: string, texto: string): Promise<{ ok: boolean; debug?: string }> {
   try {
     const params = new URLSearchParams({
       phone: telefono,
       text: texto,
       apikey: CALLMEBOT_APIKEY,
     })
-    const res = await fetch(`${CALLMEBOT_API}?${params.toString()}`)
+    const url = `${CALLMEBOT_API}?${params.toString()}`
+    const res = await fetch(url)
     const data = await res.text()
-    return data.includes('Message queued')
-  } catch {
-    return false
+    const ok = data.includes('Message queued')
+    return { ok, debug: `status=${res.status} body=${data.substring(0, 200)}` }
+  } catch (err: any) {
+    return { ok: false, debug: `error=${err.message}` }
   }
 }
 
