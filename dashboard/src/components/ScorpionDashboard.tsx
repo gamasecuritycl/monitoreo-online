@@ -314,12 +314,12 @@ export default function ScorpionDashboard() {
                 const texto = isEnergia ? generarMensajeEnergia(info) : generarMensajeAlerta(info, critico)
 
                 // Llamada directa a CallMeBot desde el navegador (no pasa por Vercel)
-                sendMessage(telefono, texto).then((resultado) => {
+                sendMessage(telefono, texto).then(async (resultado) => {
                   if (resultado.ok) {
                     const ahora = new Date()
                     const silencioHasta = new Date(ahora.getTime() + 60 * 60 * 1000)
 
-                    supabase.from('conversaciones_whatsapp').insert({
+                    await supabase.from('conversaciones_whatsapp').insert({
                       cuenta: newEvent.cuenta,
                       numero: telefono,
                       tipo_evento: isEnergia ? 'FALLA ENERGÍA' : eventoUpper,
@@ -327,15 +327,15 @@ export default function ScorpionDashboard() {
                       mensaje_enviado: isEnergia ? 'FALLA ENERGÍA' : (critico ? 'ALERTA CRÍTICA' : 'NOTIFICACIÓN'),
                       respuesta_cliente: null,
                       created_at: ahora.toISOString(),
-                    }).then(() => {}).catch(() => {})
+                    })
 
-                    supabase.from('notificaciones_whatsapp').upsert({
+                    await supabase.from('notificaciones_whatsapp').upsert({
                       cuenta: newEvent.cuenta,
                       telefono,
                       activo: true,
                       silencio_hasta: silencioHasta.toISOString(),
                       updated_at: ahora.toISOString(),
-                    }, { onConflict: 'cuenta' }).then(() => {}).catch(() => {})
+                    }, { onConflict: 'cuenta' })
                   }
                 }).catch(() => {})
               }
