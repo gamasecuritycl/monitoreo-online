@@ -387,6 +387,7 @@ export default function ScorpionDashboard() {
           <div className="flex items-center gap-1.5 ml-1">
             <div className={`w-2 h-2 rounded-full ${openWAReady ? 'bg-green-500 animate-pulse shadow-[0_0_8px_#22c55e]' : 'bg-red-500 shadow-[0_0_8px_#ef4444]'}`} />
             <span className={`font-bold text-[10px] tracking-wider ${openWAReady ? 'text-green-400' : 'text-red-400'}`}>OpenWA</span>
+          </div>
           <span className="text-slate-500 font-mono">BUFFER: {eventos.length}/50</span>
           <input
             type="text"
