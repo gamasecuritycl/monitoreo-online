@@ -10,6 +10,9 @@ import EventosPorUsuarioModal from './EventosPorUsuarioModal'
 import ZonificacionModal from './ZonificacionModal'
 import NotificacionesMailModal from './NotificacionesMailModal'
 import NotificacionesWhatsAppModal from './NotificacionesWhatsAppModal'
+import WhatsAppAlertasModal from './WhatsAppInfoModals/WhatsAppAlertasModal'
+import WhatsAppPanicoModal from './WhatsAppInfoModals/WhatsAppPanicoModal'
+import WhatsAppEnergiaModal from './WhatsAppInfoModals/WhatsAppEnergiaModal'
 import { lookupContactId } from '@/lib/contact_id_library'
 
 // ── Contactos del Panel Lateral de Scorpion ──
@@ -380,18 +383,37 @@ export default function ScorpionDashboard() {
               {item.label}
             </button>
             {item.hasDropdown && mostrarMenuNotificaciones && (
-              <div className="absolute top-full left-0 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 shadow-xl z-50 py-1 min-w-[120px]">
+              <div className="absolute top-full left-0 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 shadow-xl z-50 py-1 min-w-[140px]">
                 <button 
                   className="w-full text-left px-4 py-1.5 text-xs text-black font-bold hover:bg-[#000080] hover:text-white"
                   onClick={() => { setModalActivo('notificaciones-mail'); setMostrarMenuNotificaciones(false); }}
                 >
                   POR MAIL
                 </button>
+                <div className="border-t border-gray-500 my-1" />
                 <button 
                   className="w-full text-left px-4 py-1.5 text-xs text-black font-bold hover:bg-[#000080] hover:text-white"
                   onClick={() => { setModalActivo('notificaciones-whatsapp'); setMostrarMenuNotificaciones(false); }}
                 >
-                  POR WHATSAPP
+                  WHATSAPP - Config
+                </button>
+                <button 
+                  className="w-full text-left px-4 py-1.5 text-xs text-black font-bold hover:bg-[#000080] hover:text-white"
+                  onClick={() => { setModalActivo('whatsapp-alertas'); setMostrarMenuNotificaciones(false); }}
+                >
+                  WHATSAPP - Alertas
+                </button>
+                <button 
+                  className="w-full text-left px-4 py-1.5 text-xs text-black font-bold hover:bg-[#000080] hover:text-white"
+                  onClick={() => { setModalActivo('whatsapp-panico'); setMostrarMenuNotificaciones(false); }}
+                >
+                  WHATSAPP - Pánico
+                </button>
+                <button 
+                  className="w-full text-left px-4 py-1.5 text-xs text-black font-bold hover:bg-[#000080] hover:text-white"
+                  onClick={() => { setModalActivo('whatsapp-energia'); setMostrarMenuNotificaciones(false); }}
+                >
+                  WHATSAPP - Energía
                 </button>
               </div>
             )}
@@ -608,6 +630,17 @@ export default function ScorpionDashboard() {
           onClose={() => setModalActivo(null)}
           clientesMap={clientesMap}
         />
+      )}
+
+      {/* WhatsApp Info Modals */}
+      {modalActivo === 'whatsapp-alertas' && (
+        <WhatsAppAlertasModal onClose={() => setModalActivo(null)} />
+      )}
+      {modalActivo === 'whatsapp-panico' && (
+        <WhatsAppPanicoModal onClose={() => setModalActivo(null)} />
+      )}
+      {modalActivo === 'whatsapp-energia' && (
+        <WhatsAppEnergiaModal onClose={() => setModalActivo(null)} />
       )}
 
       {/* Footer */}
