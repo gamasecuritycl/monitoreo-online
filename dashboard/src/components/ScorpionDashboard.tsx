@@ -10,9 +10,6 @@ import EventosPorUsuarioModal from './EventosPorUsuarioModal'
 import ZonificacionModal from './ZonificacionModal'
 import NotificacionesMailModal from './NotificacionesMailModal'
 import NotificacionesWhatsAppModal from './NotificacionesWhatsAppModal'
-import WhatsAppAlertasModal from './WhatsAppInfoModals/WhatsAppAlertasModal'
-import WhatsAppPanicoModal from './WhatsAppInfoModals/WhatsAppPanicoModal'
-import WhatsAppEnergiaModal from './WhatsAppInfoModals/WhatsAppEnergiaModal'
 import { lookupContactId } from '@/lib/contact_id_library'
 
 // ── Contactos del Panel Lateral de Scorpion ──
@@ -390,30 +387,11 @@ export default function ScorpionDashboard() {
                 >
                   POR MAIL
                 </button>
-                <div className="border-t border-gray-500 my-1" />
                 <button 
                   className="w-full text-left px-4 py-1.5 text-xs text-black font-bold hover:bg-[#000080] hover:text-white"
                   onClick={() => { setModalActivo('notificaciones-whatsapp'); setMostrarMenuNotificaciones(false); }}
                 >
-                  WHATSAPP - Config
-                </button>
-                <button 
-                  className="w-full text-left px-4 py-1.5 text-xs text-black font-bold hover:bg-[#000080] hover:text-white"
-                  onClick={() => { setModalActivo('whatsapp-alertas'); setMostrarMenuNotificaciones(false); }}
-                >
-                  WHATSAPP - Alertas
-                </button>
-                <button 
-                  className="w-full text-left px-4 py-1.5 text-xs text-black font-bold hover:bg-[#000080] hover:text-white"
-                  onClick={() => { setModalActivo('whatsapp-panico'); setMostrarMenuNotificaciones(false); }}
-                >
-                  WHATSAPP - Pánico
-                </button>
-                <button 
-                  className="w-full text-left px-4 py-1.5 text-xs text-black font-bold hover:bg-[#000080] hover:text-white"
-                  onClick={() => { setModalActivo('whatsapp-energia'); setMostrarMenuNotificaciones(false); }}
-                >
-                  WHATSAPP - Energía
+                  POR WHATSAPP
                 </button>
               </div>
             )}
@@ -630,17 +608,6 @@ export default function ScorpionDashboard() {
           onClose={() => setModalActivo(null)}
           clientesMap={clientesMap}
         />
-      )}
-
-      {/* WhatsApp Info Modals */}
-      {modalActivo === 'whatsapp-alertas' && (
-        <WhatsAppAlertasModal onClose={() => setModalActivo(null)} />
-      )}
-      {modalActivo === 'whatsapp-panico' && (
-        <WhatsAppPanicoModal onClose={() => setModalActivo(null)} />
-      )}
-      {modalActivo === 'whatsapp-energia' && (
-        <WhatsAppEnergiaModal onClose={() => setModalActivo(null)} />
       )}
 
       {/* Footer */}
