@@ -1,112 +1,120 @@
-const { create, Client } = require('@open-wa/wa-automate')
 const express = require('express')
 const cors = require('cors')
 const path = require('path')
+const { makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion, makeInMemoryStore } = require('@whiskeysockets/baileys')
+const pino = require('pino')
+const qrcode = require('qrcode-terminal')
 
 const app = express()
 app.use(cors())
 app.use(express.json())
 
 const PORT = 3015
-const SESSION_DIR = path.join(__dirname, '.openwa-session')
-
-let client = null
+const SESSION_DIR = path.join(__dirname, '.baileys-session')
+let sock = null
 let isReady = false
 let mensajesRecibidos = []
+let currentQR = null
 
-// ── Iniciar OpenWA ──
-async function iniciarOpenWA() {
-  console.log('[OpenWA] Iniciando sesión WhatsApp Web...')
+async function iniciarBaileys() {
   try {
-    client = await create({
-      sessionId: 'gama-seguridad',
-      dataPath: SESSION_DIR,
-      headless: true,
-      qrTimeout: 0,
-      authTimeout: 0,
-      restartOnCrash: true,
-      cacheEnabled: false,
-      useChrome: true,
-      killProcessOnBrowserClose: true,
-      throwErrorOnTosBlock: false,
-      chromiumArgs: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-accelerated-2d-canvas',
-        '--no-first-run',
-        '--no-zygote',
-        '--single-process',
-        '--disable-gpu',
-      ],
+    const { state, saveCreds } = await useMultiFileAuthState(SESSION_DIR)
+    const { version } = await fetchLatestBaileysVersion()
+
+    sock = makeWASocket({
+      version,
+      auth: state,
+      logger: pino({ level: 'silent' }),
+      printQRInTerminal: false,
+      markOnlineOnConnect: true,
+      browser: ['Gama Seguridad', 'Chrome', '2.0'],
     })
 
-    client.onStateChange((state) => {
-      console.log('[OpenWA] Estado:', state)
-      if (state === 'CONNECTED') {
+    sock.ev.on('creds.update', saveCreds)
+
+    sock.ev.on('connection.update', ({ connection, lastDisconnect, qr }) => {
+      if (qr) {
+        currentQR = qr
+        qrcode.generate(qr, { small: true })
+        console.log('[Baileys] QR actualizado - escanea con WhatsApp')
+      }
+      if (connection === 'open') {
         isReady = true
-        console.log('[OpenWA] ✅ WhatsApp conectado y listo')
-      } else {
+        currentQR = null
+        console.log('[Baileys] ✅ WhatsApp conectado como', sock.user?.name || sock.user?.id)
+      }
+      if (connection === 'close') {
         isReady = false
+        const statusCode = lastDisconnect?.error?.output?.statusCode
+        const shouldReconnect = statusCode !== DisconnectReason.loggedOut
+        console.log('[Baileys] Desconectado, reconectando:', shouldReconnect)
+        if (shouldReconnect) {
+          setTimeout(iniciarBaileys, 3000)
+        }
       }
     })
 
-    client.onMessage(async (message) => {
-      const registro = {
-        from: message.from,
-        body: message.body,
-        timestamp: Date.now(),
-        chatId: message.chatId,
-        senderName: message.sender?.pushname || '',
+    sock.ev.on('messages.upsert', (m) => {
+      if (!m.messages) return
+      for (const msg of m.messages) {
+        if (msg.key.fromMe) continue
+        const body = msg.message?.conversation || msg.message?.extendedTextMessage?.text || ''
+        if (!body) continue
+        const registro = {
+          from: msg.key.remoteJid,
+          body: body,
+          timestamp: Date.now(),
+          senderName: msg.pushName || '',
+        }
+        mensajesRecibidos.push(registro)
+        if (mensajesRecibidos.length > 200) mensajesRecibidos.shift()
+        console.log('[Baileys] Mensaje de', msg.key.remoteJid, ':', body)
       }
-      mensajesRecibidos.push(registro)
-      if (mensajesRecibidos.length > 200) mensajesRecibidos.shift()
-      console.log('[OpenWA] Mensaje recibido de', message.from, ':', message.body)
     })
 
-    console.log('[OpenWA] Esperando escaneo de código QR...')
   } catch (err) {
-    console.error('[OpenWA] Error al iniciar:', err.message)
-    console.log('[OpenWA] Reintentando en 10 segundos...')
-    setTimeout(iniciarOpenWA, 10000)
+    console.error('[Baileys] Error:', err.message)
+    setTimeout(iniciarBaileys, 5000)
   }
 }
 
 // ── API REST ──
 
-// Status del servidor
 app.get('/api/status', (req, res) => {
   res.json({
     ready: isReady,
     mensajes_recibidos: mensajesRecibidos.length,
     uptime: process.uptime(),
+    usuario: sock?.user?.id || null,
   })
 })
 
-// Enviar mensaje
+app.get('/api/qr', (req, res) => {
+  res.json({
+    qr: currentQR,
+    status: isReady ? 'connected' : (currentQR ? 'waiting_qr' : 'connecting'),
+  })
+})
+
 app.post('/api/send', async (req, res) => {
   const { phone, text } = req.body
-
   if (!phone || !text) {
     return res.status(400).json({ ok: false, error: 'Faltan phone y text' })
   }
-
-  if (!isReady || !client) {
-    return res.status(503).json({ ok: false, error: 'WhatsApp no está conectado' })
+  if (!isReady || !sock) {
+    return res.status(503).json({ ok: false, error: 'WhatsApp no conectado' })
   }
-
   try {
-    const chatId = phone.includes('@') ? phone : `${phone}@c.us`
-    const result = await client.sendText(chatId, text)
-    console.log('[OpenWA] ✅ Mensaje enviado a', phone)
-    res.json({ ok: true, messageId: result.id })
+    const jid = phone.includes('@s.whatsapp.net') ? phone : `${phone}@s.whatsapp.net`
+    const result = await sock.sendMessage(jid, { text })
+    console.log('[Baileys] ✅ Mensaje enviado a', phone)
+    res.json({ ok: true, messageId: result?.key?.id })
   } catch (err) {
-    console.error('[OpenWA] ❌ Error al enviar:', err.message)
+    console.error('[Baileys] Error al enviar:', err.message)
     res.json({ ok: false, error: err.message })
   }
 })
 
-// Obtener mensajes recibidos
 app.get('/api/messages', (req, res) => {
   const since = parseInt(req.query.since || '0')
   const mensajes = since
@@ -115,26 +123,13 @@ app.get('/api/messages', (req, res) => {
   res.json({ messages: mensajes })
 })
 
-// Obtener QR code (para escanear)
-app.get('/api/qr', async (req, res) => {
-  if (!client) {
-    return res.json({ qr: null, status: 'not_started' })
-  }
-  try {
-    const qr = await client.getQrCode()
-    res.json({ qr: qr || null, status: isReady ? 'connected' : 'waiting_qr' })
-  } catch {
-    res.json({ qr: null, status: isReady ? 'connected' : 'unknown' })
-  }
-})
-
 // ── Iniciar ──
 app.listen(PORT, () => {
-  console.log(`[OpenWA] Servidor HTTP corriendo en http://localhost:${PORT}`)
-  console.log('[OpenWA] Endpoints:')
-  console.log('  GET  /api/status    - Estado de la conexión')
-  console.log('  GET  /api/qr        - Código QR para escanear')
-  console.log('  POST /api/send      - Enviar mensaje {phone, text}')
+  console.log(`[Baileys] Servidor corriendo en http://localhost:${PORT}`)
+  console.log('[Baileys] Endpoints:')
+  console.log('  GET  /api/status    - Estado de conexión')
+  console.log('  GET  /api/qr        - QR para escanear')
+  console.log('  POST /api/send      - Enviar mensaje')
   console.log('  GET  /api/messages  - Mensajes recibidos')
-  iniciarOpenWA()
+  iniciarBaileys()
 })

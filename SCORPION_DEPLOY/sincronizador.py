@@ -160,6 +160,8 @@ def sincronizar_clientes():
     except:
         pass
         
+    conn = None
+    cursor = None
     try:
         shutil.copy2(ruta_general, temp_general)
         conn_str = (
@@ -190,7 +192,9 @@ def sincronizar_clientes():
                 clientes_map[cuenta] = doc
                 
         cursor.close()
+        cursor = None
         conn.close()
+        conn = None
         
         clientes_json = json.dumps(clientes_map, ensure_ascii=False)
         
@@ -221,9 +225,16 @@ def sincronizar_clientes():
     except Exception as e:
         print(f"[MIGRACIÓN CLIENTES ERROR] Fallo durante la sincronización: {e}")
     finally:
+        if cursor:
+            try: cursor.close()
+            except: pass
+        if conn:
+            try: conn.close()
+            except: pass
         if os.path.exists(temp_general):
             try: os.remove(temp_general)
             except: pass
+
 
 
 def buscar_codigos_mdb():
@@ -253,6 +264,8 @@ def sincronizar_codigos():
             os.remove(temp_codigos)
     except: pass
         
+    conn = None
+    cursor = None
     try:
         shutil.copy2(ruta_codigos, temp_codigos)
         conn_str = (
@@ -276,7 +289,9 @@ def sincronizar_codigos():
                 }
                 
         cursor.close()
+        cursor = None
         conn.close()
+        conn = None
         
         codigos_json = json.dumps(codigos_map, ensure_ascii=False)
         print(f"[MIGRACIÓN CODIGOS] Subiendo {len(codigos_map)} codigos a Supabase en fila especial...")
@@ -302,9 +317,16 @@ def sincronizar_codigos():
     except Exception as e:
         print(f"[MIGRACIÓN CODIGOS ERROR] Fallo: {e}")
     finally:
+        if cursor:
+            try: cursor.close()
+            except: pass
+        if conn:
+            try: conn.close()
+            except: pass
         if os.path.exists(temp_codigos):
             try: os.remove(temp_codigos)
             except: pass
+
 
 
 def sincronizar_zonas():
@@ -333,6 +355,8 @@ def sincronizar_zonas():
                 os.remove(temp_zonas)
         except: pass
         
+        conn = None
+        cursor = None
         try:
             shutil.copy2(ruta_mdb, temp_zonas)
             conn_str = (
@@ -356,7 +380,9 @@ def sincronizar_zonas():
                     })
             
             cursor.close()
+            cursor = None
             conn.close()
+            conn = None
             
             if lista_zonas:
                 # Ordenar por número de zona numéricamente
@@ -369,9 +395,45 @@ def sincronizar_zonas():
             # Silenciar errores individuales por si hay algún archivo corrupto o abierto
             pass
         finally:
+            if cursor:
+                try: cursor.close()
+                except: pass
+            if conn:
+                try: conn.close()
+                except: pass
             if os.path.exists(temp_zonas):
                 try: os.remove(temp_zonas)
                 except: pass
+                
+    if not zonas_map:
+        print("[MIGRACIÓN ZONAS] No se pudo leer la zonificación de ningún abonado. Omitiendo...")
+        return
+        
+    try:
+        zonas_json = json.dumps(zonas_map, ensure_ascii=False)
+        print(f"[MIGRACIÓN ZONAS] Subiendo zonificacion de {len(zonas_map)} abonados a Supabase en fila especial...")
+        
+        try:
+            supabase.table("eventos_monitoreo").delete().eq("cuenta", "ZONAS").execute()
+        except: pass
+        
+        chile_tz = get_chile_offset()
+        now_iso = datetime.now().strftime("%Y-%m-%dT%H:%M:%S") + chile_tz
+        
+        data = {
+            "fecha_hora": now_iso,
+            "cuenta": "ZONAS",
+            "nombre_abonado": zonas_json,
+            "evento": "SINCRONIZACION ZONAS MDB",
+            "zona": "000",
+            "usuario": "SYSTEM"
+        }
+        supabase.table("eventos_monitoreo").insert(data).execute()
+        print(f"[MIGRACIÓN ZONAS SUCCESS] Zonificación de {len(zonas_map)} abonados sincronizada exitosamente en Supabase.")
+        
+    except Exception as e:
+        print(f"[MIGRACIÓN ZONAS ERROR] Fallo al subir consolidado: {e}")
+
                 
     if not zonas_map:
         print("[MIGRACIÓN ZONAS] No se pudo leer la zonificación de ningún abonado. Omitiendo...")
@@ -443,9 +505,9 @@ def sincronizar_eventos(cache):
         except pyodbc.Error as odbc_err:
             err_msg = str(odbc_err)
             print(f"[ERROR] {err_msg}")
-            if "tareas de cliente" in err_msg or "-1036" in err_msg or "08004" in err_msg:
-                print(">>> El motor Access está saturado. Esperaremos 10s...")
-                tiempo_espera = 10
+            # Ante cualquier fallo de pyodbc, esperamos 10s para no saturar el motor
+            print(">>> Error de base de datos. Esperaremos 10s...")
+            tiempo_espera = 10
             return cache, tiempo_espera
 
         rows.reverse()
