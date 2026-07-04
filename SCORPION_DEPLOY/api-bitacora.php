@@ -1,19 +1,22 @@
 <?php
 /**
- * GAMA SEGURIDAD - API Bitácora
- * Conexión directa a MySQL (Laravel) para leer/escribir eventos
+ * GAMA SEGURIDAD - API Bitácora v2.0
  * 
  * Subir a: bitacora.gamasecurity.cl/api-bitacora.php
  * 
  * Endpoints:
- *   GET  ?action=abonados&q=TEXT    → buscar abonados
- *   GET  ?action=eventos&id=X       → eventos de un abonado
- *   GET  ?action=tipos               → tipos de evento disponibles
- *   POST ?action=crear               → crear nuevo evento (JSON body)
+ *   GET   ?action=abonados&q=TEXT              → buscar abonados
+ *   GET   ?action=eventos&id=X&desde=&hasta=   → eventos (con filtro fecha)
+ *   GET   ?action=tipos                         → tipos de evento
+ *   POST  ?action=crear                         → crear evento (JSON)
+ *   POST  ?action=editar                        → editar evento (JSON: id, comentario, tipo_evento)
+ *   POST  ?action=adjuntar                      → subir archivo (multipart: id, archivo)
+ *   GET   ?action=archivos&evento_id=X          → archivos de un evento
+ *   DELETE ?action=eliminar_archivo&id=X        → eliminar archivo
  */
 
 header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
+header('Access-Control-Allow-Methods: GET, POST, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type');
 header('Content-Type: application/json; charset=utf-8');
 
@@ -42,11 +45,32 @@ try {
     exit;
 }
 
+// ── Crear tabla de archivos si no existe ──
+$pdo->exec("
+    CREATE TABLE IF NOT EXISTS eventos_archivos (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        evento_id INT NOT NULL,
+        nombre_original VARCHAR(255) NOT NULL,
+        archivo VARCHAR(255) NOT NULL,
+        tipo VARCHAR(100) NOT NULL,
+        tamanio INT NOT NULL DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (evento_id) REFERENCES eventos(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+");
+
+// ── Crear directorio de uploads si no existe ──
+$UPLOAD_DIR = __DIR__ . '/uploads';
+if (!is_dir($UPLOAD_DIR)) {
+    mkdir($UPLOAD_DIR, 0755, true);
+    file_put_contents($UPLOAD_DIR . '/index.html', '');
+}
+
 $action = $_GET['action'] ?? '';
 
 switch ($action) {
 
-    // ── BUSCAR ABONADOS (autocomplete) ──
+    // ── BUSCAR ABONADOS ──
     case 'abonados':
         $q = $_GET['q'] ?? '';
         if (strlen($q) < 1) {
@@ -65,7 +89,7 @@ switch ($action) {
         echo json_encode($stmt->fetchAll());
         break;
 
-    // ── LISTAR EVENTOS DE UN ABONADO ──
+    // ── LISTAR EVENTOS ──
     case 'eventos':
         $abonadoId = $_GET['id'] ?? '';
         if (!$abonadoId) {
@@ -73,7 +97,10 @@ switch ($action) {
             echo json_encode(['error' => 'Falta id_abonado']);
             exit;
         }
-        $stmt = $pdo->prepare("
+        $desde = $_GET['desde'] ?? '';
+        $hasta = $_GET['hasta'] ?? '';
+
+        $sql = "
             SELECT e.id, e.comentario, e.tipo_evento, e.created_at, e.updated_at,
                    et.name AS tipo_nombre, et.color AS tipo_color,
                    u.name AS responsable_nombre
@@ -81,10 +108,22 @@ switch ($action) {
             LEFT JOIN eventos_type et ON e.tipo_evento = et.id
             LEFT JOIN users u ON e.id_responsable = u.id
             WHERE e.id_abonado = ?
-            ORDER BY e.created_at DESC
-            LIMIT 100
-        ");
-        $stmt->execute([$abonadoId]);
+        ";
+        $params = [$abonadoId];
+
+        if ($desde) {
+            $sql .= " AND e.created_at >= ?";
+            $params[] = $desde . ' 00:00:00';
+        }
+        if ($hasta) {
+            $sql .= " AND e.created_at <= ?";
+            $params[] = $hasta . ' 23:59:59';
+        }
+
+        $sql .= " ORDER BY e.created_at DESC LIMIT 200";
+
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
         echo json_encode($stmt->fetchAll());
         break;
 
@@ -125,8 +164,123 @@ switch ($action) {
         echo json_encode(['ok' => true, 'id' => $pdo->lastInsertId()]);
         break;
 
+    // ── EDITAR EVENTO ──
+    case 'editar':
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode(['error' => 'Método no permitido']);
+            exit;
+        }
+        $input = json_decode(file_get_contents('php://input'), true);
+        if (!$input || empty($input['id'])) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Falta id del evento']);
+            exit;
+        }
+
+        $comentario = $input['comentario'] ?? '';
+        $tipoEvento = $input['tipo_evento'] ?? 1;
+        $now = date('Y-m-d H:i:s');
+
+        $stmt = $pdo->prepare("UPDATE eventos SET comentario = ?, tipo_evento = ?, updated_at = ? WHERE id = ?");
+        $stmt->execute([$comentario, $tipoEvento, $now, $input['id']]);
+        echo json_encode(['ok' => true]);
+        break;
+
+    // ── SUBIR ARCHIVO ──
+    case 'adjuntar':
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode(['error' => 'Método no permitido']);
+            exit;
+        }
+        $eventoId = $_POST['evento_id'] ?? '';
+        if (!$eventoId || !isset($_FILES['archivo'])) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Falta evento_id o archivo']);
+            exit;
+        }
+
+        $file = $_FILES['archivo'];
+        if ($file['error'] !== UPLOAD_ERR_OK) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Error al subir el archivo: código ' . $file['error']]);
+            exit;
+        }
+
+        $ext = pathinfo($file['name'], PATHINFO_EXTENSION);
+        $nombreUnico = uniqid('file_') . '.' . $ext;
+        $destino = $UPLOAD_DIR . '/' . $nombreUnico;
+
+        if (!move_uploaded_file($file['tmp_name'], $destino)) {
+            http_response_code(500);
+            echo json_encode(['error' => 'No se pudo guardar el archivo']);
+            exit;
+        }
+
+        $stmt = $pdo->prepare("
+            INSERT INTO eventos_archivos (evento_id, nombre_original, archivo, tipo, tamanio, created_at)
+            VALUES (?, ?, ?, ?, ?, NOW())
+        ");
+        $stmt->execute([
+            $eventoId,
+            $file['name'],
+            $nombreUnico,
+            $file['type'],
+            $file['size']
+        ]);
+
+        echo json_encode([
+            'ok' => true,
+            'id' => $pdo->lastInsertId(),
+            'url' => 'uploads/' . $nombreUnico,
+            'nombre' => $file['name']
+        ]);
+        break;
+
+    // ── LISTAR ARCHIVOS DE UN EVENTO ──
+    case 'archivos':
+        $eventoId = $_GET['evento_id'] ?? '';
+        if (!$eventoId) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Falta evento_id']);
+            exit;
+        }
+        $stmt = $pdo->prepare("
+            SELECT id, evento_id, nombre_original, archivo, tipo, tamanio, created_at
+            FROM eventos_archivos
+            WHERE evento_id = ?
+            ORDER BY created_at ASC
+        ");
+        $stmt->execute([$eventoId]);
+        $archivos = $stmt->fetchAll();
+        foreach ($archivos as &$a) {
+            $a['url'] = 'uploads/' . $a['archivo'];
+        }
+        echo json_encode($archivos);
+        break;
+
+    // ── ELIMINAR ARCHIVO ──
+    case 'eliminar_archivo':
+        $id = $_GET['id'] ?? '';
+        if (!$id) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Falta id']);
+            exit;
+        }
+        $stmt = $pdo->prepare("SELECT archivo FROM eventos_archivos WHERE id = ?");
+        $stmt->execute([$id]);
+        $archivo = $stmt->fetch();
+        if ($archivo) {
+            $ruta = $UPLOAD_DIR . '/' . $archivo['archivo'];
+            if (file_exists($ruta)) unlink($ruta);
+            $pdo->prepare("DELETE FROM eventos_archivos WHERE id = ?")->execute([$id]);
+        }
+        echo json_encode(['ok' => true]);
+        break;
+
     default:
         http_response_code(404);
-        echo json_encode(['error' => 'Acción no válida. Usar: abonados, eventos, tipos, crear']);
+        echo json_encode(['error' => 'Acción no válida. Usar: abonados, eventos, tipos, crear, editar, adjuntar, archivos, eliminar_archivo']);
         break;
 }

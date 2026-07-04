@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 type Abonado = { id: number; cod: string; nombre: string; direccion: string; plan: string; ciudad: string }
 type TipoEvento = { id: number; name: string; color: string }
-type Evento = { id: number; comentario: string; tipo_evento: number; tipo_nombre: string; tipo_color: string; responsable_nombre: string; created_at: string }
+type Evento = { id: number; comentario: string; tipo_evento: number; tipo_nombre: string; tipo_color: string; responsable_nombre: string; created_at: string; updated_at: string }
+type Archivo = { id: number; nombre_original: string; url: string; tipo: string; tamanio: number; created_at: string }
 
 const API_URL = 'https://bitacora.gamasecurity.cl/api-bitacora.php'
 
@@ -18,8 +19,15 @@ export default function BitacoraModal({ onClose, cuentaDefault }: { onClose: () 
   const [tipoEvento, setTipoEvento] = useState('1')
   const [enviando, setEnviando] = useState(false)
   const [mensaje, setMensaje] = useState('')
+  const [desde, setDesde] = useState('')
+  const [hasta, setHasta] = useState('')
+  const [editandoId, setEditandoId] = useState<number | null>(null)
+  const [editComentario, setEditComentario] = useState('')
+  const [editTipo, setEditTipo] = useState('')
+  const [archivos, setArchivos] = useState<Record<number, Archivo[]>>({})
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [subiendoArchivo, setSubiendoArchivo] = useState(false)
 
-  // Buscar abonados al escribir
   useEffect(() => {
     if (busqueda.length < 1) { setAbonados([]); return }
     const t = setTimeout(async () => {
@@ -31,16 +39,24 @@ export default function BitacoraModal({ onClose, cuentaDefault }: { onClose: () 
     return () => clearTimeout(t)
   }, [busqueda])
 
-  // Cargar tipos al montar
   useEffect(() => {
     fetch(`${API_URL}?action=tipos`).then(r => r.ok && r.json()).then(d => d && setTipos(d)).catch(() => {})
   }, [])
 
-  // Cargar eventos al seleccionar abonado
   const cargarEventos = async (id: number) => {
     try {
-      const r = await fetch(`${API_URL}?action=eventos&id=${id}`)
+      let url = `${API_URL}?action=eventos&id=${id}`
+      if (desde) url += `&desde=${encodeURIComponent(desde)}`
+      if (hasta) url += `&hasta=${encodeURIComponent(hasta)}`
+      const r = await fetch(url)
       if (r.ok) setEventos(await r.json())
+    } catch {}
+  }
+
+  const cargarArchivos = async (eventoId: number) => {
+    try {
+      const r = await fetch(`${API_URL}?action=archivos&evento_id=${eventoId}`)
+      if (r.ok) setArchivos(prev => ({ ...prev, [eventoId]: (await r.json()) }))
     } catch {}
   }
 
@@ -81,25 +97,80 @@ export default function BitacoraModal({ onClose, cuentaDefault }: { onClose: () 
     setTimeout(() => setMensaje(''), 3000)
   }
 
+  const iniciarEdicion = (e: Evento) => {
+    setEditandoId(e.id)
+    setEditComentario(e.comentario)
+    setEditTipo(String(e.tipo_evento))
+  }
+
+  const guardarEdicion = async () => {
+    if (editandoId === null) return
+    try {
+      const r = await fetch(`${API_URL}?action=editar`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: editandoId, comentario: editComentario, tipo_evento: parseInt(editTipo) }),
+      })
+      const d = await r.json()
+      if (d.ok) {
+        setEditandoId(null)
+        if (abonadoSel) cargarEventos(abonadoSel.id)
+      }
+    } catch {}
+  }
+
+  const subirArchivo = async (eventoId: number, file: File) => {
+    setSubiendoArchivo(true)
+    const formData = new FormData()
+    formData.append('evento_id', String(eventoId))
+    formData.append('archivo', file)
+    try {
+      const r = await fetch(`${API_URL}?action=adjuntar`, { method: 'POST', body: formData })
+      const d = await r.json()
+      if (d.ok) cargarArchivos(eventoId)
+    } catch {}
+    setSubiendoArchivo(false)
+  }
+
+  const handleFileChange = (eventoId: number) => {
+    const file = fileInputRef.current?.files?.[0]
+    if (file) subirArchivo(eventoId, file)
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
+  const eliminarArchivo = async (archivoId: number, eventoId: number) => {
+    try {
+      await fetch(`${API_URL}?action=eliminar_archivo&id=${archivoId}`, { method: 'DELETE' })
+      cargarArchivos(eventoId)
+    } catch {}
+  }
+
+  const toggleArchivos = (eventoId: number) => {
+    if (archivos[eventoId]) {
+      setArchivos(prev => { const n = { ...prev }; delete n[eventoId]; return n })
+    } else {
+      cargarArchivos(eventoId)
+    }
+  }
+
+  const formatBytes = (bytes: number) => {
+    if (bytes < 1024) return bytes + ' B'
+    return (bytes / 1024).toFixed(1) + ' KB'
+  }
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 font-mono p-2">
-      <div className="w-full md:w-[800px] h-[90vh] md:h-[540px] bg-[#d4d0c8] text-black border-2 border-t-white border-l-white border-b-[#808080] border-r-[#808080] p-1 shadow-[4px_4px_12px_rgba(0,0,0,0.6)] flex flex-col">
-        {/* Barra título */}
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 font-mono p-2" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="w-full md:w-[900px] h-[90vh] md:h-[580px] bg-[#d4d0c8] text-black border-2 border-t-white border-l-white border-b-[#808080] border-r-[#808080] p-1 shadow-[4px_4px_12px_rgba(0,0,0,0.6)] flex flex-col">
         <div className="bg-[#000080] text-white flex justify-between items-center px-2 py-0.5 text-xs font-bold shrink-0">
           <span>📋 BITÁCORA</span>
           <button onClick={onClose} className="bg-[#c0c0c0] text-black font-bold border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 px-1.5 leading-none hover:bg-[#d0d0d0]">X</button>
         </div>
 
-        {/* Contenido */}
         <div className="flex-1 flex flex-col p-2 gap-2 overflow-hidden">
-          {/* Buscador de abonado */}
           <div className="relative">
-            <input
-              className="w-full border-2 border-t-gray-700 border-l-gray-700 border-b-white border-r-white bg-white px-2 py-1 text-xs font-bold focus:outline-none"
+            <input className="w-full border-2 border-t-gray-700 border-l-gray-700 border-b-white border-r-white bg-white px-2 py-1 text-xs font-bold focus:outline-none"
               placeholder="Buscar abonado (cuenta o nombre)..."
-              value={busqueda}
-              onChange={e => { setBusqueda(e.target.value); setAbonadoSel(null); setEventos([]) }}
-            />
+              value={busqueda} onChange={e => { setBusqueda(e.target.value); setAbonadoSel(null); setEventos([]) }} />
             {abonados.length > 0 && !abonadoSel && (
               <div className="absolute top-full left-0 right-0 bg-white border-2 border-t-gray-700 border-l-gray-700 border-b-gray-700 border-r-gray-700 z-10 max-h-40 overflow-y-auto shadow-md">
                 {abonados.map(a => (
@@ -113,36 +184,95 @@ export default function BitacoraModal({ onClose, cuentaDefault }: { onClose: () 
           </div>
 
           <div className="flex-1 flex gap-2 overflow-hidden">
-            {/* Eventos */}
-            <div className="flex-1 border-2 border-t-gray-700 border-l-gray-700 border-b-white border-r-white bg-white flex flex-col overflow-hidden">
-              <div className="bg-[#000080] text-white text-[10px] font-bold px-2 py-0.5 shrink-0">HISTORIAL</div>
-              <div className="flex-1 overflow-y-auto p-1">
-                {eventos.length === 0 && <div className="text-gray-400 text-xs text-center mt-8">Sin eventos registrados</div>}
-                {eventos.map(e => {
-                  const color = tipos.find(t => t.id === e.tipo_evento)?.color || '#666'
-                  return (
-                    <div key={e.id} className="border-b border-gray-200 py-1.5 px-1 last:border-0">
-                      <div className="flex items-center gap-1.5">
-                        <span className="w-2 h-2 rounded-full inline-block shrink-0" style={{ backgroundColor: color }} />
-                        <span className="text-[10px] font-bold text-gray-500">{new Date(e.created_at).toLocaleString('es-CL')}</span>
-                        <span className="text-[10px] font-bold" style={{ color }}>{e.tipo_nombre}</span>
-                        <span className="text-[10px] text-gray-400">— {e.responsable_nombre}</span>
+            <div className="flex-1 flex flex-col overflow-hidden">
+              {abonadoSel && (
+                <div className="flex gap-1 mb-1 shrink-0">
+                  <input type="date" className="border-2 border-t-gray-700 border-l-gray-700 border-b-white border-r-white bg-white px-1 py-0.5 text-[10px] font-bold"
+                    value={desde} onChange={e => setDesde(e.target.value)} />
+                  <span className="text-[10px] font-bold self-center">→</span>
+                  <input type="date" className="border-2 border-t-gray-700 border-l-gray-700 border-b-white border-r-white bg-white px-1 py-0.5 text-[10px] font-bold"
+                    value={hasta} onChange={e => setHasta(e.target.value)} />
+                  <button className="bg-[#000080] text-white text-[10px] font-bold px-2 border-2 border-t-[#4444cc] border-l-[#4444cc] border-b-[#000044] border-r-[#000044] hover:bg-[#0000a0]"
+                    onClick={() => abonadoSel && cargarEventos(abonadoSel.id)}>FILTRAR</button>
+                  {(desde || hasta) && (
+                    <button className="bg-gray-500 text-white text-[10px] font-bold px-2 border-2 border-t-gray-400 border-l-gray-400 border-b-gray-600 border-r-gray-600 hover:bg-gray-600"
+                      onClick={() => { setDesde(''); setHasta(''); if (abonadoSel) cargarEventos(abonadoSel.id) }}>X</button>
+                  )}
+                </div>
+              )}
+              <div className="flex-1 border-2 border-t-gray-700 border-l-gray-700 border-b-white border-r-white bg-white flex flex-col overflow-hidden">
+                <div className="bg-[#000080] text-white text-[10px] font-bold px-2 py-0.5 shrink-0 flex justify-between">
+                  <span>HISTORIAL ({eventos.length})</span>
+                </div>
+                <div className="flex-1 overflow-y-auto p-1">
+                  {eventos.length === 0 && <div className="text-gray-400 text-xs text-center mt-8">Sin eventos en este período</div>}
+                  {eventos.map(e => {
+                    const color = tipos.find(t => t.id === e.tipo_evento)?.color || '#666'
+                    return (
+                      <div key={e.id} className="border-b border-gray-200 py-1.5 px-1 last:border-0 group">
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full inline-block shrink-0" style={{ backgroundColor: color }} />
+                          <span className="text-[10px] font-bold text-gray-500">{new Date(e.created_at).toLocaleString('es-CL')}</span>
+                          {editandoId === e.id ? (
+                            <select className="text-[10px] font-bold border border-gray-400" value={editTipo} onChange={e2 => setEditTipo(e2.target.value)}>
+                              {tipos.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                            </select>
+                          ) : (
+                            <span className="text-[10px] font-bold" style={{ color }}>{e.tipo_nombre}</span>
+                          )}
+                          <span className="text-[10px] text-gray-400">— {e.responsable_nombre}</span>
+                          <span className="ml-auto flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button className="text-[10px] text-[#000080] font-bold hover:underline"
+                              onClick={() => iniciarEdicion(e)} title="Editar">✏️</button>
+                            <button className="text-[10px] text-gray-500 font-bold hover:underline"
+                              onClick={() => toggleArchivos(e.id)} title="Archivos">📎</button>
+                          </span>
+                        </div>
+                        {editandoId === e.id ? (
+                          <div className="mt-1 ml-3.5 flex gap-1">
+                            <textarea className="flex-1 border border-gray-400 text-xs p-0.5 resize-none"
+                              value={editComentario} onChange={e2 => setEditComentario(e2.target.value)} rows={2} />
+                            <div className="flex flex-col gap-0.5">
+                              <button className="bg-[#000080] text-white text-[10px] font-bold px-1.5 py-0.5" onClick={guardarEdicion}>💾</button>
+                              <button className="bg-gray-500 text-white text-[10px] font-bold px-1.5 py-0.5" onClick={() => setEditandoId(null)}>✕</button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="text-xs mt-0.5 ml-3.5 text-gray-800">{e.comentario}</div>
+                        )}
+                        {archivos[e.id] && (
+                          <div className="ml-3.5 mt-1 flex flex-wrap gap-1">
+                            {archivos[e.id].map(a => (
+                              <div key={a.id} className="flex items-center gap-1 bg-gray-100 border border-gray-300 px-1.5 py-0.5 text-[10px]">
+                                <a href={API_URL.replace('/api-bitacora.php', '') + '/' + a.url} target="_blank" className="text-[#000080] font-bold hover:underline truncate max-w-[120px]">
+                                  {a.nombre_original}
+                                </a>
+                                <span className="text-gray-400">({formatBytes(a.tamanio)})</span>
+                                <button className="text-red-600 font-bold hover:text-red-800"
+                                  onClick={() => eliminarArchivo(a.id, e.id)}>✕</button>
+                              </div>
+                            ))}
+                            <label className="text-[10px] text-[#000080] font-bold cursor-pointer hover:underline">
+                              + Archivo
+                              <input type="file" className="hidden" ref={fileInputRef}
+                                onChange={() => handleFileChange(e.id)} disabled={subiendoArchivo} />
+                            </label>
+                          </div>
+                        )}
                       </div>
-                      <div className="text-xs mt-0.5 ml-3.5 text-gray-800">{e.comentario}</div>
-                    </div>
-                  )
-                })}
+                    )
+                  })}
+                </div>
               </div>
             </div>
 
-            {/* Formulario crear evento */}
             <div className="w-64 border-2 border-t-gray-700 border-l-gray-700 border-b-white border-r-white bg-[#e0e0e0] flex flex-col p-2 shrink-0">
               <div className="text-[#000080] font-bold text-xs border-b border-gray-400 pb-1 mb-2">NUEVO EVENTO</div>
               {!abonadoSel ? (
                 <div className="flex-1 flex items-center justify-center text-gray-500 text-xs text-center p-2">Selecciona un abonado primero</div>
               ) : (
                 <>
-                  <div className="text-[10px] font-bold text-gray-700 mb-1">Abonado: {abonadoSel.cod} — {abonadoSel.nombre}</div>
+                  <div className="text-[10px] font-bold text-gray-700 mb-1">{abonadoSel.cod} — {abonadoSel.nombre}</div>
                   <label className="text-[10px] font-bold text-gray-600 mb-0.5">Tipo</label>
                   <select className="w-full border-2 border-t-gray-700 border-l-gray-700 border-b-white border-r-white bg-white px-1 py-0.5 text-xs font-bold mb-2"
                     value={tipoEvento} onChange={e => setTipoEvento(e.target.value)}>
@@ -150,8 +280,7 @@ export default function BitacoraModal({ onClose, cuentaDefault }: { onClose: () 
                   </select>
                   <label className="text-[10px] font-bold text-gray-600 mb-0.5">Comentario</label>
                   <textarea className="w-full flex-1 border-2 border-t-gray-700 border-l-gray-700 border-b-white border-r-white bg-white p-1 text-xs resize-none focus:outline-none"
-                    placeholder="Escribe el evento..."
-                    value={comentario} onChange={e => setComentario(e.target.value)} />
+                    placeholder="Escribe el evento..." value={comentario} onChange={e => setComentario(e.target.value)} />
                   {mensaje && <div className="text-[10px] font-bold mt-1 text-center">{mensaje}</div>}
                   <button className="mt-2 bg-[#000080] text-white font-bold text-xs py-1.5 border-2 border-t-[#4444cc] border-l-[#4444cc] border-b-[#000044] border-r-[#000044] hover:bg-[#0000a0] disabled:opacity-50"
                     disabled={enviando || !comentario.trim()} onClick={crearEvento}>
