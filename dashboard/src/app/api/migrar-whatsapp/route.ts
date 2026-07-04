@@ -1,23 +1,32 @@
 import { NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
 
 export async function GET() {
   try {
-    await supabase.from('notificaciones_whatsapp').delete().eq('cuenta', '0001')
+    const connectionString = 'postgresql://postgres:yr43d8lek%25fr$6!xDzlMuqVf@db.onxwyrwmpjxtwlmjrosr.supabase.co:5432/postgres'
 
-    const { error } = await supabase.from('notificaciones_whatsapp').upsert({
-      cuenta: 'C701',
-      telefono: '+56948855200',
-      activo: true,
-      silencio_hasta: null,
-    }, { onConflict: 'cuenta' })
+    const sql = `
+      ALTER TABLE public.notificaciones_whatsapp 
+      ADD COLUMN IF NOT EXISTS notificar_apertura BOOLEAN DEFAULT false,
+      ADD COLUMN IF NOT EXISTS notificar_cierre BOOLEAN DEFAULT false,
+      ADD COLUMN IF NOT EXISTS notificar_alarma BOOLEAN DEFAULT true,
+      ADD COLUMN IF NOT EXISTS notificar_energia BOOLEAN DEFAULT true;
 
-    if (error) {
-      return NextResponse.json({ status: 'error', message: error.message })
-    }
+      UPDATE public.notificaciones_whatsapp SET
+        notificar_alarma = true,
+        notificar_energia = true,
+        notificar_apertura = false,
+        notificar_cierre = false
+      WHERE notificar_alarma IS NULL;
+    `
 
-    const { data } = await supabase.from('notificaciones_whatsapp').select('cuenta, telefono, activo').order('cuenta')
-    return NextResponse.json({ status: 'success', data })
+    const { Client } = await import('pg')
+    const client = new Client({ connectionString, ssl: { rejectUnauthorized: false } })
+    await client.connect()
+    await client.query(sql)
+    const { rows } = await client.query('SELECT cuenta, telefono, activo, notificar_alarma, notificar_energia, notificar_apertura, notificar_cierre FROM public.notificaciones_whatsapp ORDER BY cuenta')
+    await client.end()
+
+    return NextResponse.json({ status: 'success', data: rows })
   } catch (err: any) {
     return NextResponse.json({ status: 'error', message: err.message })
   }

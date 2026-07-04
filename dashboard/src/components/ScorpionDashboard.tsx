@@ -289,74 +289,80 @@ export default function ScorpionDashboard() {
           }
         }
 
-        // WhatsApp: enviar notificación directamente desde el navegador (CallMeBot bloquea IPs de Vercel)
-        if (!isAperturaCierre) {
-          try {
-            const { data: waConfig } = await supabase
-              .from('notificaciones_whatsapp')
-              .select('telefono, activo, silencio_hasta')
-              .eq('cuenta', newEvent.cuenta)
-              .eq('activo', true)
-              .single()
+        // WhatsApp: enviar notificación según configuración del cliente
+        try {
+          const { data: waConfig } = await supabase
+            .from('notificaciones_whatsapp')
+            .select('telefono, activo, silencio_hasta, notificar_alarma, notificar_energia, notificar_apertura, notificar_cierre')
+            .eq('cuenta', newEvent.cuenta)
+            .eq('activo', true)
+            .single()
 
-            if (waConfig?.telefono) {
-              const silenciado = waConfig.silencio_hasta && new Date(waConfig.silencio_hasta) > new Date()
-              if (!silenciado) {
-                const isEnergia = eventoUpper.includes('ENERGÍA') || eventoUpper.includes('ENERGIA') || eventoUpper.includes('FALLA')
-                const telefono = waConfig.telefono.replace(/[^0-9]/g, '')
+          if (waConfig?.telefono) {
+            const silenciado = waConfig.silencio_hasta && new Date(waConfig.silencio_hasta) > new Date()
+            if (!silenciado) {
+              const isEnergia = eventoUpper.includes('ENERGÍA') || eventoUpper.includes('ENERGIA') || eventoUpper.includes('FALLA')
+              const esApertura = eventoUpper.includes('APERTURA') || (cidInfo && cidInfo.categoria === 'APERTURA')
+              const esCierre = eventoUpper.includes('CIERRE')
 
-                const { data: eventosRecientes } = await supabase
-                  .from('eventos_monitoreo')
-                  .select('zona, evento')
-                  .eq('cuenta', newEvent.cuenta)
-                  .gte('fecha_hora', new Date(Date.now() - 5 * 60 * 1000).toISOString())
-                  .limit(10)
+              // Respetar configuración individual
+              if (isEnergia && !waConfig.notificar_energia) return
+              if (esApertura && !waConfig.notificar_apertura) return
+              if (esCierre && !waConfig.notificar_cierre) return
+              if (!isEnergia && !esApertura && !esCierre && !waConfig.notificar_alarma) return
 
-                const info: EventInfo = {
-                  cuenta: newEvent.cuenta,
-                  nombre_cliente: newEvent.nombre_abonado,
-                  tipo_evento: isEnergia ? 'FALLA ENERGÍA ELÉCTRICA' : eventoUpper,
-                  zonas: [...new Set([...(eventosRecientes || []).map((e: any) => e.zona)])].filter(Boolean),
-                  fecha_hora: newEvent.fecha_hora,
-                  direccion: '',
-                }
-                if (!info.zonas.includes(newEvent.zona || '')) {
-                  info.zonas.push(newEvent.zona || '')
-                }
+              const telefono = waConfig.telefono.replace(/[^0-9]/g, '')
 
-                const { critico } = detectarPatronEvento(eventosRecientes || [])
-                const texto = isEnergia ? generarMensajeEnergia(info) : generarMensajeAlerta(info, critico)
+              const { data: eventosRecientes } = await supabase
+                .from('eventos_monitoreo')
+                .select('zona, evento')
+                .eq('cuenta', newEvent.cuenta)
+                .gte('fecha_hora', new Date(Date.now() - 5 * 60 * 1000).toISOString())
+                .limit(10)
 
-                // Llamada directa a CallMeBot desde el navegador (no pasa por Vercel)
-                sendMessage(telefono, texto).then(async (resultado) => {
-                  if (resultado.ok) {
-                    const ahora = new Date()
-                    const silencioHasta = new Date(ahora.getTime() + 60 * 60 * 1000)
-
-                    await supabase.from('conversaciones_whatsapp').insert({
-                      cuenta: newEvent.cuenta,
-                      numero: telefono,
-                      tipo_evento: isEnergia ? 'FALLA ENERGÍA' : eventoUpper,
-                      estado: isEnergia ? 'energia' : (critico ? 'critico' : 'informativo'),
-                      mensaje_enviado: isEnergia ? 'FALLA ENERGÍA' : (critico ? 'ALERTA CRÍTICA' : 'NOTIFICACIÓN'),
-                      respuesta_cliente: null,
-                      created_at: ahora.toISOString(),
-                    })
-
-                    await supabase.from('notificaciones_whatsapp').upsert({
-                      cuenta: newEvent.cuenta,
-                      telefono,
-                      activo: true,
-                      silencio_hasta: silencioHasta.toISOString(),
-                      updated_at: ahora.toISOString(),
-                    }, { onConflict: 'cuenta' })
-                  }
-                }).catch(() => {})
+              const info: EventInfo = {
+                cuenta: newEvent.cuenta,
+                nombre_cliente: newEvent.nombre_abonado,
+                tipo_evento: isEnergia ? 'FALLA ENERGÍA ELÉCTRICA' : eventoUpper,
+                zonas: [...new Set([...(eventosRecientes || []).map((e: any) => e.zona)])].filter(Boolean),
+                fecha_hora: newEvent.fecha_hora,
+                direccion: '',
               }
+              if (!info.zonas.includes(newEvent.zona || '')) {
+                info.zonas.push(newEvent.zona || '')
+              }
+
+              const { critico } = detectarPatronEvento(eventosRecientes || [])
+              const texto = isEnergia ? generarMensajeEnergia(info) : generarMensajeAlerta(info, critico)
+
+              sendMessage(telefono, texto).then(async (resultado) => {
+                if (resultado.ok) {
+                  const ahora = new Date()
+                  const silencioHasta = new Date(ahora.getTime() + 60 * 60 * 1000)
+
+                  await supabase.from('conversaciones_whatsapp').insert({
+                    cuenta: newEvent.cuenta,
+                    numero: telefono,
+                    tipo_evento: isEnergia ? 'FALLA ENERGÍA' : eventoUpper,
+                    estado: isEnergia ? 'energia' : (critico ? 'critico' : 'informativo'),
+                    mensaje_enviado: isEnergia ? 'FALLA ENERGÍA' : (critico ? 'ALERTA CRÍTICA' : 'NOTIFICACIÓN'),
+                    respuesta_cliente: null,
+                    created_at: ahora.toISOString(),
+                  })
+
+                  await supabase.from('notificaciones_whatsapp').upsert({
+                    cuenta: newEvent.cuenta,
+                    telefono,
+                    activo: true,
+                    silencio_hasta: silencioHasta.toISOString(),
+                    updated_at: ahora.toISOString(),
+                  }, { onConflict: 'cuenta' })
+                }
+              }).catch(() => {})
             }
-          } catch (e) {
-            console.error('Error al verificar/enviar notificación por WhatsApp:', e)
           }
+        } catch (e) {
+          console.error('Error al verificar/enviar notificación por WhatsApp:', e)
         }
       })
       .subscribe()

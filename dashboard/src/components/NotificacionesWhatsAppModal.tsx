@@ -25,6 +25,10 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap }: Pr
   const [guardando, setGuardando] = useState(false)
   const [mensaje, setMensaje] = useState('')
   const [silenciaHasta, setSilenciaHasta] = useState('')
+  const [notificarAlarma, setNotificarAlarma] = useState(true)
+  const [notificarEnergia, setNotificarEnergia] = useState(true)
+  const [notificarApertura, setNotificarApertura] = useState(false)
+  const [notificarCierre, setNotificarCierre] = useState(false)
 
   const clientesFiltrados = Object.entries(clientesMap)
     .filter(([cuenta, datos]) => {
@@ -40,6 +44,10 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap }: Pr
       setActivo(true)
       setContactos([])
       setSilenciaHasta('')
+      setNotificarAlarma(true)
+      setNotificarEnergia(true)
+      setNotificarApertura(false)
+      setNotificarCierre(false)
       return
     }
     const cargar = async () => {
@@ -53,11 +61,19 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap }: Pr
         setActivo(data.activo !== false)
         setContactos((data.contactos_escalamiento as ContactoEscalamiento[]) || [])
         setSilenciaHasta(data.silencio_hasta || '')
+        setNotificarAlarma(data.notificar_alarma !== false)
+        setNotificarEnergia(data.notificar_energia !== false)
+        setNotificarApertura(data.notificar_apertura === true)
+        setNotificarCierre(data.notificar_cierre === true)
       } else {
         setTelefono('')
         setActivo(true)
         setContactos([])
         setSilenciaHasta('')
+        setNotificarAlarma(true)
+        setNotificarEnergia(true)
+        setNotificarApertura(false)
+        setNotificarCierre(false)
       }
     }
     cargar()
@@ -76,11 +92,15 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap }: Pr
         activo,
         contactos_escalamiento: contactos,
         silencio_hasta: null,
+        notificar_alarma: notificarAlarma,
+        notificar_energia: notificarEnergia,
+        notificar_apertura: notificarApertura,
+        notificar_cierre: notificarCierre,
         updated_at: new Date().toISOString(),
       }, { onConflict: 'cuenta' })
       if (error) throw error
-      setMensaje('Guardado OK')
-      setTimeout(() => setMensaje(''), 2000)
+      setMensaje('✅ Guardado OK')
+      setTimeout(() => setMensaje(''), 3000)
     } catch (err: any) {
       setMensaje('Error: ' + err.message)
     } finally {
@@ -201,6 +221,27 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap }: Pr
                           SILENCIADO HASTA {new Date(silenciaHasta).toLocaleTimeString()}
                         </span>
                       )}
+                    </div>
+                    <div className="border-t border-gray-400 pt-2">
+                      <div className="text-[10px] font-bold text-gray-800 mb-1">Notificar:</div>
+                      <div className="grid grid-cols-2 gap-x-3 gap-y-1">
+                        <label className="flex items-center gap-1.5 text-[10px] cursor-pointer">
+                          <input type="checkbox" checked={notificarAlarma} onChange={(e) => setNotificarAlarma(e.target.checked)} className="accent-red-600" />
+                          <span className="text-red-700 font-bold">🚨 Alarmas</span>
+                        </label>
+                        <label className="flex items-center gap-1.5 text-[10px] cursor-pointer">
+                          <input type="checkbox" checked={notificarEnergia} onChange={(e) => setNotificarEnergia(e.target.checked)} className="accent-yellow-600" />
+                          <span className="text-yellow-700 font-bold">⚡ Corte energía</span>
+                        </label>
+                        <label className="flex items-center gap-1.5 text-[10px] cursor-pointer">
+                          <input type="checkbox" checked={notificarApertura} onChange={(e) => setNotificarApertura(e.target.checked)} className="accent-blue-600" />
+                          <span className="text-blue-700 font-bold">🔓 Apertura</span>
+                        </label>
+                        <label className="flex items-center gap-1.5 text-[10px] cursor-pointer">
+                          <input type="checkbox" checked={notificarCierre} onChange={(e) => setNotificarCierre(e.target.checked)} className="accent-blue-600" />
+                          <span className="text-blue-700 font-bold">🔒 Cierre</span>
+                        </label>
+                      </div>
                     </div>
                     <div className="border-t border-gray-400 pt-2">
                       <div className="flex justify-between items-center mb-1">
