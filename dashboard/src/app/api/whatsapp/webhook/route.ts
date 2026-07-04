@@ -41,8 +41,17 @@ export async function POST(req: Request) {
     switch (reply.tipo) {
       case 'ok': {
         await sendMessage(reply.numero,
-          '✅ CONFIRMADO - Su sistema está siendo monitoreado.\n' +
-          'Ante cualquier eventualidad le contactaremos de inmediato.')
+          '🛡️ *GAMA SEGURIDAD*\n' +
+          '━━━━━━━━━━━━━━━━━━━━━\n' +
+          '✅ *CONFIRMADO*\n\n' +
+          'Su sistema está siendo monitoreado.\n' +
+          'Ante cualquier eventualidad le contactaremos.\n\n' +
+          '_Gama Seguridad - Monitoreo 24/7_')
+
+        await supabase.from('notificaciones_whatsapp')
+          .update({ silencio_hasta: null })
+          .eq('cuenta', cuenta)
+
         if (conv) {
           await supabase.from('conversaciones_whatsapp')
             .update({ estado: 'confirmado', respuesta_recibida: reply.mensaje, responded_at: new Date().toISOString() })
@@ -53,17 +62,28 @@ export async function POST(req: Request) {
 
       case 'ayuda': {
         const contactos: { nombre: string; telefono: string }[] = config.contactos_escalamiento as any || []
-        const msg = '🆘 SOLICITUD DE ASISTENCIA\n' +
-          `Cliente: ${cuenta}\n` +
-          'Operador asignado. Le contactaremos en breve.\n' +
-          'Si es una emergencia, llame al 56948855190.'
 
-        await sendMessage(reply.numero, msg)
+        await sendMessage(reply.numero,
+          '🛡️ *GAMA SEGURIDAD*\n' +
+          '━━━━━━━━━━━━━━━━━━━━━\n' +
+          '🆘 *SOLICITUD DE ASISTENCIA*\n\n' +
+          `Cliente: *${cuenta}*\n\n` +
+          'Operador asignado. Le contactaremos en breve.\n' +
+          'Si es emergencia, llame al *56948855190*.\n\n' +
+          '_Gama Seguridad - Monitoreo 24/7_')
+
+        await supabase.from('notificaciones_whatsapp')
+          .update({ silencio_hasta: null })
+          .eq('cuenta', cuenta)
 
         for (const c of contactos) {
           const tel = c.telefono.replace(/[^0-9]/g, '')
           await sendMessage(tel,
-            `[ESCALAMIENTO] ${cuenta} solicita asistencia.\nContacto: ${c.nombre}\nResponda OK si lo gestiona.`)
+            `🛡️ *GAMA SEGURIDAD*\n` +
+            '━━━━━━━━━━━━━━━━━━━━━\n' +
+            `📋 ESCALAMIENTO - *${cuenta}*\n\n` +
+            `Contacto: ${c.nombre}\nsolicita asistencia.\n\n` +
+            'Responda OK si lo gestiona.')
         }
 
         if (conv) {
@@ -76,10 +96,18 @@ export async function POST(req: Request) {
 
       case 'silencio': {
         const hasta = new Date(Date.now() + SILENCIO_DURACION_MS).toISOString()
-        await sendMessage(reply.numero, '🔇 MODO SILENCIO activado por 1 hora. No recibirá notificaciones hasta nuevo aviso.')
+        await sendMessage(reply.numero,
+          '🛡️ *GAMA SEGURIDAD*\n' +
+          '━━━━━━━━━━━━━━━━━━━━━\n' +
+          '🔇 *MODO SILENCIO*\n\n' +
+          'Activado por 1 hora.\n' +
+          'No recibirá notificaciones.\n\n' +
+          '_Gama Seguridad - Monitoreo 24/7_')
+
         await supabase.from('notificaciones_whatsapp')
           .update({ silencio_hasta: hasta })
           .eq('cuenta', cuenta)
+
         if (conv) {
           await supabase.from('conversaciones_whatsapp')
             .update({ estado: 'silencio', respuesta_recibida: reply.mensaje, responded_at: new Date().toISOString() })
@@ -94,14 +122,28 @@ export async function POST(req: Request) {
           ? `\n📍 GPS: https://maps.google.com/?q=${reply.gps.lat},${reply.gps.lng}`
           : ''
 
-        const msgUrgente = `🚨 SOS - EMERGENCIA CONFIRMADA\nCliente: ${cuenta}\nHora: ${new Date().toLocaleString('es-CL')}${gpsInfo}\n\nOperador de emergencia despachado.\nLínea directa: 56948855190`
+        await sendMessage(reply.numero,
+          '🛡️ *GAMA SEGURIDAD*\n' +
+          '━━━━━━━━━━━━━━━━━━━━━\n' +
+          '🚨 *EMERGENCIA CONFIRMADA*\n\n' +
+          `Cliente: *${cuenta}*\n` +
+          `Hora: ${new Date().toLocaleString('es-CL')}${gpsInfo}\n\n` +
+          'Operador de emergencia despachado.\n' +
+          'Línea directa: *56948855190*\n\n' +
+          '_Gama Seguridad - Monitoreo 24/7_')
 
-        await sendMessage(reply.numero, msgUrgente)
+        await supabase.from('notificaciones_whatsapp')
+          .update({ silencio_hasta: null })
+          .eq('cuenta', cuenta)
 
         for (const c of contactos) {
           const tel = c.telefono.replace(/[^0-9]/g, '')
           await sendMessage(tel,
-            `🚨 EMERGENCIA - ${cuenta}\nContacto: ${c.nombre}${gpsInfo}\nDespache unidad urgente.`)
+            '🛡️ *GAMA SEGURIDAD*\n' +
+            '━━━━━━━━━━━━━━━━━━━━━\n' +
+            `🚨 *EMERGENCIA* - *${cuenta}*\n\n` +
+            `Contacto: ${c.nombre}${gpsInfo}\n\n` +
+            'Despache unidad urgente.')
         }
 
         await supabase.from('conversaciones_whatsapp').insert({
@@ -119,9 +161,17 @@ export async function POST(req: Request) {
 
       case 'confirmacion_energia': {
         await sendMessage(reply.numero,
-          '✅ ACUSE RECIBIDO - Fallo de energía registrado.\n' +
-          'Su sistema está operando con batería de respaldo.\n' +
-          'Notificaremos cuando se restablezca.')
+          '🛡️ *GAMA SEGURIDAD*\n' +
+          '━━━━━━━━━━━━━━━━━━━━━\n' +
+          '✅ *ACUSE RECIBIDO*\n\n' +
+          'Fallo de energía registrado.\n' +
+          'Su sistema opera con batería (72 hrs).\n' +
+          'Notificaremos cuando se restablezca.\n\n' +
+          '_Gama Seguridad - Monitoreo 24/7_')
+
+        await supabase.from('notificaciones_whatsapp')
+          .update({ silencio_hasta: null })
+          .eq('cuenta', cuenta)
 
         await supabase.from('conversaciones_whatsapp').insert({
           cuenta,

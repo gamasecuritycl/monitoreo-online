@@ -1,23 +1,6 @@
 import { NextResponse } from 'next/server'
-import { sendMessage, detectarPatronEvento, generarMensajeAlerta, type EventInfo } from '@/lib/whatsapp'
+import { sendMessage, detectarPatronEvento, generarMensajeAlerta, generarMensajeEnergia, type EventInfo } from '@/lib/whatsapp'
 import { supabase } from '@/lib/supabase'
-
-function generarMensajeEnergia(info: EventInfo): string {
-  return [
-    `⚡ ALERTA DE ENERGÍA ELÉCTRICA`,
-    '',
-    `Cliente: ${info.cuenta} - ${info.nombre_cliente}`,
-    info.direccion ? `Dirección: ${info.direccion}` : '',
-    `Hora: ${info.fecha_hora}`,
-    '',
-    'Se ha detectado un corte o falla de energía eléctrica.',
-    'Su sistema de seguridad está operando con batería de respaldo.',
-    'Tiempo estimado de batería: 72 horas.',
-    '',
-    'Responda OK para confirmar recepción.',
-    'Si necesita asistencia, responda AYUDA.',
-  ].filter(Boolean).join('\n')
-}
 
 export async function POST(req: Request) {
   try {
@@ -30,13 +13,17 @@ export async function POST(req: Request) {
 
     const { data: config } = await supabase
       .from('notificaciones_whatsapp')
-      .select('telefono, contactos_escalamiento')
+      .select('telefono, contactos_escalamiento, silencio_hasta')
       .eq('cuenta', cuenta)
       .eq('activo', true)
       .single()
 
     if (!config?.telefono) {
       return NextResponse.json({ error: 'Cliente sin WhatsApp configurado' }, { status: 404 })
+    }
+
+    if (config.silencio_hasta && new Date(config.silencio_hasta) > new Date()) {
+      return NextResponse.json({ error: 'Cliente silenciado temporalmente' }, { status: 200 })
     }
 
     const telefono = config.telefono.replace(/[^0-9]/g, '')
@@ -67,14 +54,26 @@ export async function POST(req: Request) {
     const enviado = await sendMessage(telefono, texto)
 
     if (enviado) {
+      const ahora = new Date()
+      const silencioHasta = new Date(ahora.getTime() + 60 * 60 * 1000)
+
       await supabase.from('conversaciones_whatsapp').insert({
         cuenta,
         numero: telefono,
         tipo_evento,
         estado: esEnergia ? 'energia' : (critico ? 'critico' : 'informativo'),
         mensaje_enviado: esEnergia ? 'FALLA ENERGÍA' : asunto,
-        created_at: new Date().toISOString(),
+        respuesta_cliente: null,
+        created_at: ahora.toISOString(),
       })
+
+      await supabase.from('notificaciones_whatsapp').upsert({
+        cuenta,
+        telefono,
+        activo: true,
+        silencio_hasta: silencioHasta.toISOString(),
+        updated_at: ahora.toISOString(),
+      }, { onConflict: 'cuenta' })
     }
 
     return NextResponse.json({

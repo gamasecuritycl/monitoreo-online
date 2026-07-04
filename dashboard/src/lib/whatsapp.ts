@@ -55,38 +55,75 @@ export function detectarPatronEvento(ultimosEventos: { zona: string; evento: str
 
 export function generarMensajeAlerta(info: EventInfo, critico: boolean): string {
   const lineas = [
-    critico
-      ? `[🚨] ALERTA CRÍTICA - ${info.tipo_evento}`
-      : `[!] NOTIFICACIÓN - ${info.tipo_evento}`,
+    '🛡️ *GAMA SEGURIDAD*',
+    '━━━━━━━━━━━━━━━━━━━━━',
     '',
-    `Cliente: ${info.cuenta} - ${info.nombre_cliente}`,
+    critico
+      ? `🚨 *ALERTA CRÍTICA* - ${info.tipo_evento}`
+      : `⚠️ *NOTIFICACIÓN* - ${info.tipo_evento}`,
+    '',
+    `👤 Cliente: *${info.cuenta}* - ${info.nombre_cliente}`,
   ]
 
   if (info.direccion) {
-    lineas.push(`Dirección: ${info.direccion}`)
+    lineas.push(`📍 Dirección: ${info.direccion}`)
   }
 
-  lineas.push(`Zonas: ${info.zonas.join(', ')}`)
-  lineas.push(`Hora: ${info.fecha_hora}`)
+  lineas.push(`🕐 Hora: ${info.fecha_hora}`)
   lineas.push('')
 
   if (critico) {
-    lineas.push('⚠ MÚLTIPLES ACTIVACIONES DETECTADAS')
-    lineas.push('Se ha despachado una unidad de emergencia a su dirección.')
+    lineas.push('⚠️ *MÚLTIPLES ACTIVACIONES DETECTADAS*')
+    lineas.push('Se ha despachado una unidad de emergencia.')
     lineas.push('')
+    lineas.push('━━━━━━━━━━━━━━━━━━━━━')
     lineas.push('Responda:')
-    lineas.push('  OK      → Ya estoy en el lugar, todo controlado')
-    lineas.push('  AYUDA   → Necesito asistencia')
-    lineas.push('  SILENCIO→ No molestar por 1 hora')
+    lineas.push('✅ *OK* → Todo controlado')
+    lineas.push('🆘 *AYUDA* → Necesito asistencia')
+    lineas.push('🔇 *SILENCIO* → No molestar 1 hora')
   } else {
     lineas.push('Hemos registrado una activación en su sistema.')
-    lineas.push('Estamos atentos ante cualquier nueva activación.')
+    lineas.push('Estamos atentos.')
     lineas.push('')
-    lineas.push('Si requiere asistencia responda:')
-    lineas.push('  AYUDA   → Necesito asistencia')
+    lineas.push('━━━━━━━━━━━━━━━━━━━━━')
+    lineas.push('Responda:')
+    lineas.push('✅ *OK* → Confirmado')
+    lineas.push('🆘 *AYUDA* → Necesito asistencia')
   }
 
+  lineas.push('')
+  lineas.push('⚡ Si no responde en 1 hora,')
+  lineas.push('no se volverá a notificar.')
+  lineas.push('')
+  lineas.push('_Gama Seguridad - Monitoreo 24/7_')
+
   return lineas.join('\n')
+}
+
+export function generarMensajeEnergia(info: EventInfo): string {
+  return [
+    '🛡️ *GAMA SEGURIDAD*',
+    '━━━━━━━━━━━━━━━━━━━━━',
+    '',
+    '⚡ *ALERTA DE ENERGÍA ELÉCTRICA*',
+    '',
+    `👤 Cliente: *${info.cuenta}* - ${info.nombre_cliente}`,
+    info.direccion ? `📍 Dirección: ${info.direccion}` : '',
+    `🕐 Hora: ${info.fecha_hora}`,
+    '',
+    'Su sistema opera con batería de respaldo.',
+    'Tiempo estimado: 72 horas.',
+    '',
+    '━━━━━━━━━━━━━━━━━━━━━',
+    'Responda:',
+    '✅ *OK* → Confirmado recepción',
+    '🆘 *AYUDA* → Necesito asistencia',
+    '',
+    '⚡ Si no responde en 1 hora,',
+    'no se volverá a notificar.',
+    '',
+    '_Gama Seguridad - Monitoreo 24/7_',
+  ].filter(Boolean).join('\n')
 }
 
 export function interpretarRespuesta(body: any): ReplyResult | null {
