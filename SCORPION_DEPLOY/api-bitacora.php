@@ -116,11 +116,11 @@ switch ($action) {
 
         if ($desde) {
             $sql .= " AND e.created_at >= ?";
-            $params[] = $desde . ' 00:00:00';
+            $params[] = strpos($desde, ' ') !== false ? $desde : $desde . ' 00:00:00';
         }
         if ($hasta) {
             $sql .= " AND e.created_at <= ?";
-            $params[] = $hasta . ' 23:59:59';
+            $params[] = strpos($hasta, ' ') !== false ? $hasta : $hasta . ' 23:59:59';
         }
 
         $sql .= " ORDER BY e.created_at DESC LIMIT 200";
