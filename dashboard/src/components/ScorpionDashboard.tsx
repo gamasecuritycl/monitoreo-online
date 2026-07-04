@@ -10,6 +10,7 @@ import EventosPorUsuarioModal from './EventosPorUsuarioModal'
 import ZonificacionModal from './ZonificacionModal'
 import NotificacionesMailModal from './NotificacionesMailModal'
 import NotificacionesWhatsAppModal from './NotificacionesWhatsAppModal'
+import BitacoraModal from './BitacoraModal'
 import { lookupContactId } from '@/lib/contact_id_library'
 import { sendMessage, generarMensajeAlerta, generarMensajeEnergia, detectarPatronEvento, type EventInfo } from '@/lib/whatsapp'
 
@@ -412,6 +413,7 @@ export default function ScorpionDashboard() {
           { label: 'TABLAS',         id: 'menu-tablas' },
           { label: 'UTILIDADES',     id: 'menu-utilidades' },
           { label: 'NOTIFICACIONES', id: 'menu-notificaciones', hasDropdown: true },
+          { label: 'BITÁCORA',        id: 'menu-bitacora' },
           { label: 'REPORTES',       id: 'menu-reportes' },
           { label: 'EVENTOS',        id: 'menu-eventos' },
           { label: 'AYUDA',          id: 'menu-ayuda' },
@@ -422,6 +424,9 @@ export default function ScorpionDashboard() {
               onClick={() => {
                 if (item.id === 'menu-notificaciones') {
                   setMostrarMenuNotificaciones(!mostrarMenuNotificaciones)
+                } else if (item.id === 'menu-bitacora') {
+                  setModalActivo('bitacora')
+                  setMostrarMenuNotificaciones(false)
                 } else {
                   setMostrarMenuNotificaciones(false)
                 }
@@ -659,6 +664,14 @@ export default function ScorpionDashboard() {
         <NotificacionesWhatsAppModal
           onClose={() => setModalActivo(null)}
           clientesMap={clientesMap}
+        />
+      )}
+
+      {/* Bitácora Modal */}
+      {modalActivo === 'bitacora' && (
+        <BitacoraModal
+          onClose={() => setModalActivo(null)}
+          cuentaDefault={activeEvent?.cuenta || undefined}
         />
       )}
 
