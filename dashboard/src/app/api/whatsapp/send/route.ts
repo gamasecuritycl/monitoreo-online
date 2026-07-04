@@ -51,8 +51,7 @@ export async function POST(req: Request) {
     const { critico, mensaje: asunto } = detectarPatronEvento(eventosRecientes || [])
     const texto = esEnergia ? generarMensajeEnergia(info) : generarMensajeAlerta(info, critico)
 
-    const resultado = await sendMessage(telefono, texto)
-    const enviado = resultado.ok
+    const enviado = await sendMessage(telefono, texto)
 
     if (enviado) {
       const ahora = new Date()
@@ -82,7 +81,6 @@ export async function POST(req: Request) {
       critico,
       asunto,
       esEnergia,
-      debug: resultado.debug,
       telefono_enmascarado: telefono.slice(0, -4).replace(/./g, '*') + telefono.slice(-4),
     })
   } catch (err: any) {
