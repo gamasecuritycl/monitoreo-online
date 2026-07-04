@@ -97,21 +97,19 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap }: Pr
     if (!clienteSeleccionado || !telefono) { alert('Configure un teléfono primero'); return }
     try {
       setMensaje('Enviando prueba...')
-      const res = await fetch('/api/whatsapp/send', {
+      const telLimpio = telefono.replace(/[^0-9]/g, '')
+      const res = await fetch('http://localhost:3015/api/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          cuenta: clienteSeleccionado.cuenta,
-          nombre_cliente: clienteSeleccionado.nombre,
-          tipo_evento: 'NOTIFICACIÓN DE PRUEBA',
-          zona: 'PRUEBA',
-          fecha_hora: new Date().toISOString(),
-          direccion: '',
+          phone: telLimpio,
+          text: `🛡️ *GAMA SEGURIDAD*\n━━━━━━━━━━━━━━━━━━━━━\n\n⚠️ *NOTIFICACIÓN DE PRUEBA*\n\n👤 Cliente: *${clienteSeleccionado.cuenta}* - ${clienteSeleccionado.nombre}\n🕐 Hora: ${new Date().toLocaleString('es-CL')}\n\n━━━━━━━━━━━━━━━━━━━━━\n_Gama Seguridad - Monitoreo 24/7_`,
         }),
       })
-      setMensaje(res.ok ? 'Mensaje de prueba enviado' : 'Error al enviar')
+      const data = await res.json()
+      setMensaje(data.ok ? '✅ Mensaje de prueba enviado' : '❌ Error: ' + (data.error || 'No se pudo enviar'))
       setTimeout(() => setMensaje(''), 3000)
-    } catch { setMensaje('Error de conexión') }
+    } catch { setMensaje('❌ OpenWA no está corriendo. Inicie openwa-server.js') }
   }
 
   const silencioActivo = silenciaHasta && new Date(silenciaHasta) > new Date()

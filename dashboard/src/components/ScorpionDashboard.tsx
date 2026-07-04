@@ -11,7 +11,7 @@ import ZonificacionModal from './ZonificacionModal'
 import NotificacionesMailModal from './NotificacionesMailModal'
 import NotificacionesWhatsAppModal from './NotificacionesWhatsAppModal'
 import { lookupContactId } from '@/lib/contact_id_library'
-import { sendMessage, generarMensajeAlerta, generarMensajeEnergia, detectarPatronEvento, type EventInfo } from '@/lib/whatsapp'
+import { sendMessage, getOpenWAStatus, generarMensajeAlerta, generarMensajeEnergia, detectarPatronEvento, type EventInfo } from '@/lib/whatsapp'
 
 // ── Contactos del Panel Lateral de Scorpion ──
 interface ContactoAutorizado {
@@ -71,6 +71,9 @@ export default function ScorpionDashboard() {
 
   // Mapa de zonificación por abonado desde ZONIFICACION MDB
   const [zonasMap, setZonasMap] = useState<Record<string, { numero: string; dispositivo: string; area: string }[]>>({})
+  
+  // Estado de OpenWA
+  const [openWAReady, setOpenWAReady] = useState(false)
 
   // Cargar base de datos de clientes reales de Supabase en caliente
   useEffect(() => {
@@ -142,6 +145,17 @@ export default function ScorpionDashboard() {
       }
     }
     fetchZonas()
+  }, [])
+
+  // Verificar estado de OpenWA periódicamente
+  useEffect(() => {
+    const checkOpenWA = async () => {
+      const status = await getOpenWAStatus()
+      setOpenWAReady(status.ready)
+    }
+    checkOpenWA()
+    const timer = setInterval(checkOpenWA, 10000)
+    return () => clearInterval(timer)
   }, [])
 
   // Reloj digital inferior igual a Scorpion
@@ -370,6 +384,9 @@ export default function ScorpionDashboard() {
             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_#22c55e]" />
             <span className="text-green-400 font-bold text-[10px] tracking-wider">LIVE</span>
           </div>
+          <div className="flex items-center gap-1.5 ml-1">
+            <div className={`w-2 h-2 rounded-full ${openWAReady ? 'bg-green-500 animate-pulse shadow-[0_0_8px_#22c55e]' : 'bg-red-500 shadow-[0_0_8px_#ef4444]'}`} />
+            <span className={`font-bold text-[10px] tracking-wider ${openWAReady ? 'text-green-400' : 'text-red-400'}`}>OpenWA</span>
           <span className="text-slate-500 font-mono">BUFFER: {eventos.length}/50</span>
           <input
             type="text"

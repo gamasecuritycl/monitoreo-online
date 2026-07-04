@@ -1,5 +1,4 @@
-const CALLMEBOT_API = 'https://api.callmebot.com/whatsapp.php'
-const CALLMEBOT_APIKEY = process.env.CALLMEBOT_APIKEY || '4238719'
+const OPENWA_URL = 'http://localhost:3015'
 
 export interface EventInfo {
   cuenta: string
@@ -23,18 +22,34 @@ const ENERGIA_KEYWORDS = ['ENERGÍA', 'ENERGIA', 'CORTE', 'LUZ', 'RESTABLECIDO']
 
 export async function sendMessage(telefono: string, texto: string): Promise<{ ok: boolean; debug?: string }> {
   try {
-    const params = new URLSearchParams({
-      phone: telefono,
-      text: texto,
-      apikey: CALLMEBOT_APIKEY,
+    const res = await fetch(`${OPENWA_URL}/api/send`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone: telefono, text: texto }),
     })
-    const url = `${CALLMEBOT_API}?${params.toString()}`
-    const res = await fetch(url)
-    const data = await res.text()
-    const ok = data.includes('Message queued')
-    return { ok, debug: `status=${res.status} body=${data.substring(0, 200)}` }
+    const data = await res.json()
+    return { ok: data.ok, debug: JSON.stringify(data) }
   } catch (err: any) {
     return { ok: false, debug: `error=${err.message}` }
+  }
+}
+
+export async function getOpenWAStatus(): Promise<{ ready: boolean }> {
+  try {
+    const res = await fetch(`${OPENWA_URL}/api/status`)
+    return await res.json()
+  } catch {
+    return { ready: false }
+  }
+}
+
+export async function getMensajesRecibidos(since?: number): Promise<{ messages: any[] }> {
+  try {
+    const url = since ? `${OPENWA_URL}/api/messages?since=${since}` : `${OPENWA_URL}/api/messages`
+    const res = await fetch(url)
+    return await res.json()
+  } catch {
+    return { messages: [] }
   }
 }
 
