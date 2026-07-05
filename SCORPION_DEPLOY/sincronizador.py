@@ -25,7 +25,7 @@ if ctypes.GetLastError() == 183:  # ERROR_ALREADY_EXISTS
 
 # ============================================================
 #  GAMA COMMAND CENTER - Sincronizador para PC Scorpion
-#  Versión: 5.2 (Mutex Windows, fail-safe 24/7)
+#  Versión: 5.3 (Heartbeat fijo, log flush, crash-safe)
 # ============================================================
 
 SUPABASE_URL = "https://onxwyrwmpjxtwlmjrosr.supabase.co"
@@ -110,7 +110,7 @@ def enviar_heartbeat():
             "fecha_hora": ahora,
             "cuenta": "__SINCRONIZADOR__",
             "nombre_abonado": "",
-            "evento": "HEARTBEAT v5.0",
+            "evento": "HEARTBEAT",
             "zona": str(os.getpid()),
             "usuario": "",
         }).execute()
@@ -641,7 +641,7 @@ def sincronizar_eventos(cache):
 if __name__ == "__main__":
     try:
         log_flush("=" * 65)
-        log_flush("  GAMA COMMAND CENTER - Sincronizador v5.2")
+        log_flush("  GAMA COMMAND CENTER - Sincronizador v5.3")
         log_flush(f"  Carpeta Eventos: {CARPETA_EVENTOS}")
         log_flush(f"  Timezone: Chile ({get_chile_offset()})")
         log_flush(f"  Heartbeat cada ~{HEARTBEAT_CADENCIA * INTERVALO_SEG}s en Supabase")
