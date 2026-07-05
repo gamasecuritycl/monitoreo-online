@@ -63,6 +63,7 @@ echo   ✓ sincronizador.py copiado.
 echo   Limpiando archivos de versiones anteriores...
 if exist "%DESTINO%\_sincronizador.lock" del /F "%DESTINO%\_sincronizador.lock" >nul 2>&1 & echo     - _sincronizador.lock eliminado
 if exist "%DESTINO%\_sincronizador_cache.json" del /F "%DESTINO%\_sincronizador_cache.json" >nul 2>&1 & echo     - _sincronizador_cache.json eliminado
+if exist "%DESTINO%\_sincronizador_cursor.txt" del /F "%DESTINO%\_sincronizador_cursor.txt" >nul 2>&1 & echo     - _sincronizador_cursor.txt eliminado (formato viejo)
 if exist "%DESTINO%\iniciar_silencioso.vbs" del /F "%DESTINO%\iniciar_silencioso.vbs" >nul 2>&1 & echo     - iniciar_silencioso.vbs eliminado (ya no se usa)
 if exist "%DESTINO%\sincronizador.py.bak" del /F "%DESTINO%\sincronizador.py.bak" >nul 2>&1
 echo   OK.
@@ -112,13 +113,16 @@ echo   INSTALACION NUCLEAR COMPLETADA v5.2
 echo.
 echo   Resumen del sistema 24/7:
 echo   - Mutex Windows: no hay duplicados jamas
-echo   - Cursor persistente: al reiniciar NO reprocesa eventos
+echo   - Cursor con nombre MDB: rotacion diaria no pierde eventos
 echo   - Heartbeat cada ~30s en Supabase (dashboard lo monitorea)
 echo   - Backoff exponencial: si Supabase falla, espera hasta 30s
 echo   - Crash logging: cualquier error queda en _gama_log.txt
-echo   - Task Scheduler: arranca al boot + logon + reinicio 15s
+echo   - Task Scheduler: arranca al boot + logon + reinicio 1min
 echo   - Sin VBS, sin lock files, sin ventanas
 echo.
+echo   El cursor viejo fue eliminado. En el primer ciclo
+echo   se procesaran todos los eventos del MDB actual.
+echo.  
 echo   Para verificar: abre el Administrador de Tareas
 echo   y busca "pythonw.exe". O abre el dashboard
 echo   y mira el indicador SINCRONIZADOR (verde = vivo).
