@@ -108,6 +108,14 @@ tr:nth-child(even){background:#f8f8f8}
           return t.includes('APERTURA') || t.includes('CIERRE')
         }).length,
       }
+      const eventosDetalle = datos.slice(0, 150).map((e: any) => {
+        const f = new Date(e.created_at).toLocaleString('es-CL')
+        const a = e.abonado_nombre || e.abonado_cod || 'S/ID'
+        const t = e.tipo_nombre || 'S/T'
+        const r = e.responsable_nombre || ''
+        const c = (e.comentario || '').replace(/\n/g, ' | ')
+        return `[${f}] ${a} | ${t} | ${r} | ${c}`
+      }).join('\n')
       const promptTemplate = getPromptConfig()
       const prompt = promptTemplate
         .replace(/\{rango\}/g, resumen.rango)
@@ -116,6 +124,7 @@ tr:nth-child(even){background:#f8f8f8}
         .replace(/\{topClientes\}/g, resumen.topClientes)
         .replace(/\{fallas\}/g, String(resumen.fallas))
         .replace(/\{aperturas\}/g, String(resumen.aperturas))
+        .replace(/\{eventosDetalle\}/g, eventosDetalle)
       const r = await fetch('/api/gemini', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

@@ -30,7 +30,14 @@ Datos del período {rango}:
 - Eventos de falla/energía: {fallas}
 - Aperturas/cierres: {aperturas}
 
-Para alarmas de robo: coteja con la bitácora para saber qué procedimiento se tomó (despacho, verificación, descarte).
+Registros detallados de la bitácora (máx 150):
+{eventosDetalle}
+
+Analiza cada registro uno por uno. Por cada evento:
+- Identifica el cliente y el tipo de evento
+- Verifica si el evento tiene un comentario o acción registrada en bitácora
+- Si falta registro, señálalo como "sin acción registrada"
+- Para alarmas de robo: coteja con la bitácora para saber qué procedimiento se tomó (despacho, verificación, descarte).
 
 Responde en español, directo al punto, sin saludos ni despedidas. Usa viñetas cortas. Mantén memoria del análisis para ir actualizando la información a medida que llegan más datos.`
 
