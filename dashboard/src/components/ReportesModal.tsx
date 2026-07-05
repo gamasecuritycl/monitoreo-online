@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import * as XLSX from 'xlsx'
 import { getPromptConfig } from './ConfigModal'
 
@@ -156,28 +156,115 @@ tr:nth-child(even){background:#f8f8f8}
     setAiAnalizando(false)
   }
 
+  const renderAIContent = (text: string) => {
+    const lines = text.split('\n')
+    const elements: React.ReactNode[] = []
+    let inList = false
+    lines.forEach((l, i) => {
+      const t = l.trim()
+      if (!t) {
+        if (inList) { inList = false; elements.push(<br key={`br${i}`} />) }
+        return
+      }
+      if (t.startsWith('## ')) {
+        inList = false
+        elements.push(
+          <div key={`h${i}`} className="flex items-center gap-2 mt-4 mb-2 first:mt-0">
+            <div className="w-1 h-5 bg-purple-500 rounded-full" />
+            <span className="text-purple-300 font-bold text-sm tracking-wide">{t.replace(/^##\s*/, '')}</span>
+          </div>
+        )
+      } else if (t.startsWith('- ') || t.startsWith('* ')) {
+        inList = true
+        elements.push(
+          <div key={`l${i}`} className="flex items-start gap-2 ml-2 mb-1">
+            <span className="text-cyan-400 mt-1 text-xs">▪</span>
+            <span className="text-slate-200 text-sm leading-relaxed flex-1">{t.replace(/^[-*]\s*/, '')}</span>
+          </div>
+        )
+      } else if (t.startsWith('> ')) {
+        inList = false
+        elements.push(
+          <div key={`q${i}`} className="border-l-2 border-cyan-700 pl-3 my-2 text-slate-400 text-sm italic">
+            {t.replace(/^>\s*/, '')}
+          </div>
+        )
+      } else {
+        inList = false
+        elements.push(
+          <p key={`p${i}`} className="text-slate-200 text-sm leading-relaxed mb-1">{t}</p>
+        )
+      }
+    })
+    return elements
+  }
+
   const enviarPorCorreo = async () => {
     if (!aiResultado) return
-    const lineas = aiResultado.split('\n').filter(Boolean)
+    const lineas = aiResultado.split('\n')
+    let inList = false
     const bodyHtml = lineas.map(l => {
-      if (l.startsWith('#')) return `<h3 style="color:#1e293b;margin:16px 0 8px;font-size:13px">${l.replace(/^#+\s*/, '')}</h3>`
-      if (l.match(/^[▪•*\-]/)) return `<li style="margin:2px 0;color:#333;font-size:12px;line-height:1.5">${l.replace(/^[▪•*\-]\s*/, '')}</li>`
-      return `<p style="margin:4px 0;color:#333;font-size:12px;line-height:1.5">${l}</p>`
+      const t = l.trim()
+      if (!t) {
+        if (inList) { inList = false; return '</ul>' }
+        return '<div style="height:8px"></div>'
+      }
+      if (t.startsWith('## ')) {
+        inList = false
+        const titulo = t.replace(/^##\s*/, '')
+        return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:16px 0 8px"><tr><td width="4" bgcolor="#7c3aed" style="border-radius:2px">&nbsp;</td><td style="padding-left:10px"><h2 style="margin:0;font-family:Arial,sans-serif;font-size:13px;font-weight:700;color:#1e293b;text-transform:uppercase;letter-spacing:0.5px">${titulo}</h2></td></tr></table>`
+      }
+      if (t.startsWith('- ') || t.startsWith('* ')) {
+        const item = t.replace(/^[-*]\s*/, '')
+        if (!inList) { inList = true; return `<ul style="margin:2px 0 2px;padding-left:16px"><li style="font-family:Arial,sans-serif;font-size:12px;color:#333;line-height:1.6;margin:2px 0">${item}</li>` }
+        return `<li style="font-family:Arial,sans-serif;font-size:12px;color:#333;line-height:1.6;margin:2px 0">${item}</li>`
+      }
+      if (t.startsWith('> ')) {
+        inList = false
+        return `<div style="border-left:3px solid #0891b2;padding:6px 12px;margin:6px 0;background:#f0fdfa;border-radius:0 4px 4px 0;font-family:Arial,sans-serif;font-size:12px;color:#555;font-style:italic">${t.replace(/^>\s*/, '')}</div>`
+      }
+      inList = false
+      return `<p style="font-family:Arial,sans-serif;font-size:12px;color:#333;line-height:1.6;margin:4px 0">${t}</p>`
     }).join('')
+    if (inList) bodyHtml + '</ul>'
+    const fallas = datos.filter((e: any) => { const t = (e.tipo_nombre || '').toUpperCase(); return t.includes('FALLA') || t.includes('ENERG') || t.includes('BATER') }).length
+    const aperturas = datos.filter((e: any) => { const t = (e.tipo_nombre || '').toUpperCase(); return t.includes('APERTURA') || t.includes('CIERRE') }).length
+    const now = new Date()
+    const fechaChile = new Intl.DateTimeFormat('es-CL', { timeZone: 'America/Santiago', day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(now)
     const html = `<!DOCTYPE html>
-<html><head><meta charset="UTF-8"><style>
-body{font-family:Calibri,sans-serif;background:#f4f4f4;padding:20px}
-.container{max-width:650px;margin:auto;background:#fff;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.1);overflow:hidden}
-.header{background:#1e293b;color:#fff;padding:16px 24px;font-size:15px;font-weight:bold}
-.content{padding:20px 24px}
-.footer{border-top:1px solid #ddd;padding:12px 24px;font-size:11px;color:#888}
-ul{padding-left:18px;margin:4px 0}
-li{color:#333;font-size:12px;line-height:1.5;margin:2px 0}
+<html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+body{margin:0;padding:0;background:#e8e8e8;font-family:Arial,Helvetica,sans-serif}
+.wrap{max-width:620px;margin:24px auto;background:#ffffff;border-radius:6px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.08)}
+.top{background:#1e293b;padding:22px 28px 18px}
+.top h1{margin:0;font-size:16px;font-weight:700;color:#ffffff;letter-spacing:0.3px}
+.top .sub{margin:4px 0 0;font-size:11px;color:#94a3b8;letter-spacing:0.5px}
+.stats{background:#f8fafc;border-bottom:1px solid #e2e8f0;padding:14px 28px}
+.stats table{width:100%}
+.stats td{text-align:center;font-size:11px;color:#64748b;font-weight:600;padding:0 6px;font-family:Arial,sans-serif}
+.stats .num{display:block;font-size:18px;font-weight:700;color:#1e293b;margin-bottom:2px}
+.body{padding:8px 28px 20px}
+.footer{background:#1e293b;padding:14px 28px;font-size:10px;color:#94a3b8;text-align:center;letter-spacing:0.3px}
+h2{font-family:Arial,sans-serif;font-size:13px;font-weight:700;color:#1e293b;text-transform:uppercase;letter-spacing:0.5px;margin:16px 0 8px}
+ul{margin:2px 0 2px;padding-left:16px}
+li{font-family:Arial,sans-serif;font-size:12px;color:#333;line-height:1.6;margin:2px 0}
+p{font-family:Arial,sans-serif;font-size:12px;color:#333;line-height:1.6;margin:4px 0}
+.blockquote{border-left:3px solid #0891b2;padding:6px 12px;margin:6px 0;background:#f0fdfa;border-radius:0 4px 4px 0;font-size:12px;color:#555;font-style:italic}
 </style></head><body>
-<div class="container">
-<div class="header">📊 Análisis IA · Gama Seguridad · ${desde} → ${hasta}</div>
-<div class="content">${bodyHtml}</div>
-<div class="footer">Generado por Gemini AI — ${new Date().toLocaleString('es-CL', { timeZone: 'America/Santiago' })}</div>
+<div class="wrap">
+<div class="top">
+<h1>GAMA SEGURIDAD · INFORME DE TURNO</h1>
+<div class="sub">${desde} → ${hasta} · Generado ${fechaChile}</div>
+</div>
+<div class="stats">
+<table><tr>
+<td><span class="num">${datos.length}</span>Total Eventos</td>
+<td><span class="num">${fallas}</span>Fallas / Energía</td>
+<td><span class="num">${aperturas}</span>Aperturas / Cierres</td>
+</tr></table>
+</div>
+<div class="body">${bodyHtml}</div>
+<div class="footer">Gama Seguridad Chile · Este informe fue generado automáticamente · ${fechaChile}</div>
 </div></body></html>`
     const destino = correoDestino.trim() || 'operaciones@gamasecurity.cl'
     try {
@@ -186,7 +273,7 @@ li{color:#333;font-size:12px;line-height:1.5;margin:2px 0}
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           destino,
-          asunto: `Análisis IA - Reporte ${desde} → ${hasta}`,
+          asunto: `📊 Informe de Turno Gama Seguridad — ${desde} → ${hasta}`,
           html,
         }),
       })
@@ -428,7 +515,9 @@ li{color:#333;font-size:12px;line-height:1.5;margin:2px 0}
               {aiError && <div className="text-red-400 text-sm font-bold">❌ {aiError}</div>}
               {aiTruncado && <div className="text-yellow-400 text-xs font-bold mb-2">⚠ Análisis truncado por límite de longitud — puedes aumentar tokens en CONFIGURACIÓN</div>}
               {aiResultado && (
-                <div className="bg-[#1e293b] rounded p-3 text-slate-200 text-sm whitespace-pre-wrap leading-relaxed font-['Calibri'] overflow-y-auto">{aiResultado}</div>
+                <div className="overflow-y-auto">
+                  {renderAIContent(aiResultado)}
+                </div>
               )}
             </div>
           )}

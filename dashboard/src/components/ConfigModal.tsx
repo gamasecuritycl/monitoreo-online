@@ -24,11 +24,27 @@ Al final entrega un resumen ejecutivo con:
 - Recomendaciones operativas concretas
 - Estado general del turno (normal / crítico / con observaciones)
 
-Reglas:
+Reglas de formato (ESTRICTAMENTE):
+- Usa ## para títulos de sección
+- Usa - para items o viñetas
+- Separación clara entre secciones con línea en blanco
 - Sé concluyente, no descriptivo
-- Formato profesional pero natural (no parezca generado por IA)
+- Formato profesional, natural (no parezca generado por IA)
 - Sin saludos ni despedidas
-- En español, viñetas cortas donde corresponda
+- En español
+
+Estructura obligatoria del informe:
+## RESUMEN DEL TURNO
+(2-3 líneas con estado general y eventos principales)
+
+## CLIENTES CON INCIDENCIAS
+(por cada cliente relevante: nombre, evento, acción tomada, conclusión)
+
+## RECOMENDACIONES
+(acciones concretas: llamar, enviar técnico, notificar, etc.)
+
+## ESTADO DEL SISTEMA
+(normal / crítico / con observaciones)
 
 Datos del período {rango}:
 - Total eventos: {total}
