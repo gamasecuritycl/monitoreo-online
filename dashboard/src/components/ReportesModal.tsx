@@ -108,13 +108,13 @@ tr:nth-child(even){background:#f8f8f8}
           return t.includes('APERTURA') || t.includes('CIERRE')
         }).length,
       }
-      const eventosDetalle = datos.slice(0, 150).map((e: any) => {
+      const eventosDetalle = datos.slice(0, 100).map((e: any) => {
         const f = new Date(e.created_at).toLocaleString('es-CL')
-        const a = e.abonado_nombre || e.abonado_cod || 'S/ID'
-        const t = e.tipo_nombre || 'S/T'
+        const a = e.abonado_nombre || e.abonado_cod || '?'
+        const t = e.tipo_nombre || '?'
         const r = e.responsable_nombre || ''
-        const c = (e.comentario || '').replace(/\n/g, ' | ')
-        return `[${f}] ${a} | ${t} | ${r} | ${c}`
+        const c = (e.comentario || '').slice(0, 120).replace(/\n/g, ' | ')
+        return `${f} | ${a} | ${t} | ${r} | ${c}`
       }).join('\n')
       const promptTemplate = getPromptConfig()
       const prompt = promptTemplate
@@ -132,7 +132,7 @@ tr:nth-child(even){background:#f8f8f8}
       })
       const d = await r.json()
       if (d.ok) {
-        setAiResultado(d.texto + (d.truncado ? '\n\n⚠ [El análisis se truncó por longitud — aumenta maxOutputTokens en api/gemini/route.ts o acorta el prompt]' : ''))
+        setAiResultado(d.texto + (d.truncado ? '\n\n⚠ [Análisis incompleto — el límite de tokens de salida se alcanzó. Se aumentó a 65536, si persiste reduce la cantidad de eventos en el prompt]' : ''))
         setAiTruncado(d.truncado || false)
       } else setAiError(d.error || 'Error al analizar')
     } catch (e: any) {
