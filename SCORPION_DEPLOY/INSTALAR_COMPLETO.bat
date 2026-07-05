@@ -67,7 +67,7 @@ if exist "%DESTINO%\iniciar_silencioso.vbs" del /F "%DESTINO%\iniciar_silencioso
 if exist "%DESTINO%\sincronizador.py.bak" del /F "%DESTINO%\sincronizador.py.bak" >nul 2>&1
 echo   OK.
 
-:: ---- 4. Registrar Tarea Programada NUCLEAR ----
+:: ---- 4. Registrar Tarea Programada NUCLEAR vía PowerShell ----
 echo.
 echo [4/5] Registrando servicio perpetuo en Task Scheduler...
 
@@ -85,58 +85,26 @@ if not defined PYTHONW set PYTHONW=pythonw.exe
 
 echo   Usando: %PYTHONW%
 
-:: Crear XML — SIN VBS, directo a pythonw.exe
-set XML_FILE=%TEMP%\gama_task.xml
+:: PowerShell script para crear tarea (más confiable que XML)
+set PS_SCRIPT=%TEMP%\gama_crear_tarea.ps1
 
-> "%XML_FILE%" echo ^<?xml version="1.0" encoding="UTF-16"?^>
->> "%XML_FILE%" echo ^<Task version="1.2" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task"^>
->> "%XML_FILE%" echo   ^<RegistrationInfo^>
->> "%XML_FILE%" echo     ^<Description^>GAMA Command Center - Sincronizador Nuclear v5.2^</Description^>
->> "%XML_FILE%" echo   ^</RegistrationInfo^>
->> "%XML_FILE%" echo   ^<Triggers^>
->> "%XML_FILE%" echo     ^<BootTrigger^>
->> "%XML_FILE%" echo       ^<Enabled^>true^</Enabled^>
->> "%XML_FILE%" echo       ^<Delay^>PT10S^</Delay^>
->> "%XML_FILE%" echo     ^</BootTrigger^>
->> "%XML_FILE%" echo     ^<LogonTrigger^>
->> "%XML_FILE%" echo       ^<Enabled^>true^</Enabled^>
->> "%XML_FILE%" echo       ^<Delay^>PT5S^</Delay^>
->> "%XML_FILE%" echo     ^</LogonTrigger^>
->> "%XML_FILE%" echo   ^</Triggers^>
->> "%XML_FILE%" echo   ^<Principals^>
->> "%XML_FILE%" echo     ^<Principal id="Author"^>
->> "%XML_FILE%" echo       ^<RunLevel^>HighestAvailable^</RunLevel^>
->> "%XML_FILE%" echo     ^</Principal^>
->> "%XML_FILE%" echo   ^</Principals^>
->> "%XML_FILE%" echo   ^<Settings^>
->> "%XML_FILE%" echo     ^<Enabled^>true^</Enabled^>
->> "%XML_FILE%" echo     ^<StartWhenAvailable^>true^</StartWhenAvailable^>
->> "%XML_FILE%" echo     ^<AllowStartOnDemand^>true^</AllowStartOnDemand^>
->> "%XML_FILE%" echo     ^<RestartOnFailure^>
->> "%XML_FILE%" echo       ^<Interval^>PT15S^</Interval^>
->> "%XML_FILE%" echo       ^<Count^>9999^</Count^>
->> "%XML_FILE%" echo     ^</RestartOnFailure^>
->> "%XML_FILE%" echo     ^<ExecutionTimeLimit^>PT0S^</ExecutionTimeLimit^>
->> "%XML_FILE%" echo     ^<Priority^>7^</Priority^>
->> "%XML_FILE%" echo   ^</Settings^>
->> "%XML_FILE%" echo   ^<Actions Context="Author"^>
->> "%XML_FILE%" echo     ^<Exec^>
->> "%XML_FILE%" echo       ^<Command^>"%PYTHONW%"^</Command^>
->> "%XML_FILE%" echo       ^<Arguments^>"%DESTINO%\sincronizador.py"^</Arguments^>
->> "%XML_FILE%" echo       ^<WorkingDirectory^>%DESTINO%^</WorkingDirectory^>
->> "%XML_FILE%" echo     ^</Exec^>
->> "%XML_FILE%" echo   ^</Actions^>
->> "%XML_FILE%" echo ^</Task^>
+> "%PS_SCRIPT%" echo $action = New-ScheduledTaskAction -Execute '%PYTHONW%' -Argument '"%DESTINO%\sincronizador.py"' -WorkingDirectory '%DESTINO%'
+>> "%PS_SCRIPT%" echo $trigger1 = New-ScheduledTaskTrigger -AtStartup -RandomDelay "00:00:10"
+>> "%PS_SCRIPT%" echo $trigger2 = New-ScheduledTaskTrigger -AtLogOn -RandomDelay "00:00:05"
+>> "%PS_SCRIPT%" echo $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable -RestartCount 9999 -RestartInterval (New-TimeSpan -Seconds 15) -ExecutionTimeLimit 0 -MultipleInstances IgnoreNew
+>> "%PS_SCRIPT%" echo Register-ScheduledTask -TaskName "%TAREA%" -Action $action -Trigger $trigger1,$trigger2 -Settings $settings -RunLevel Highest -Force ^| Out-Null
+>> "%PS_SCRIPT%" echo Write-Host "OK."
 
-schtasks /create /tn "%TAREA%" /xml "%XML_FILE%" /f
-del /F "%XML_FILE%" >nul 2>&1
+powershell -ExecutionPolicy Bypass -File "%PS_SCRIPT%"
+del /F "%PS_SCRIPT%" >nul 2>&1
 echo   OK.
 
 :: ---- 5. Iniciar ahora mismo ----
 echo.
 echo [5/5] Arrancando sincronizador en segundo plano...
+Start-Sleep -Seconds 2
 schtasks /run /tn "%TAREA%"
-echo   OK.
+if %ERRORLEVEL% EQU 0 ( echo   OK. ) else ( echo   [AVISO] No se pudo arrancar ahora, pero arrancara al boot/logon. )
 
 echo.
 echo ============================================================
