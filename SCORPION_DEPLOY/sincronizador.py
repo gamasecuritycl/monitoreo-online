@@ -93,6 +93,35 @@ def conectar_supabase():
 
 conectar_supabase()
 
+def execute_supabase_with_retry(func, max_retries=5, delay=2):
+    """Ejecuta una llamada a Supabase con reintentos y retroceso exponencial ante fallas de red/conexión."""
+    for intento in range(1, max_retries + 1):
+        try:
+            return func()
+        except Exception as e:
+            err_str = str(e).lower()
+            if "duplicate" in err_str or "23505" in err_str or "already exists" in err_str:
+                raise e
+            print(f"[SUPABASE RETRY] Intento {intento}/{max_retries} falló: {e}")
+            sys.stdout.flush()
+            if intento == max_retries:
+                raise e
+            time.sleep(delay * (2 ** (intento - 1)))
+
+def copiar_archivo_seguro(src, dst, max_retries=3, delay=0.5):
+    """Copia un archivo reintentando si está bloqueado temporalmente por otro proceso."""
+    for intento in range(1, max_retries + 1):
+        try:
+            if os.path.exists(dst):
+                try: os.remove(dst)
+                except: pass
+            shutil.copy2(src, dst)
+            return True
+        except Exception as e:
+            if intento == max_retries:
+                raise e
+            time.sleep(delay)
+
 # Heartbeat: cada N ciclos inserta un marker en Supabase para que el dashboard sepa que vivo
 HEARTBEAT_CADENCIA = 10
 _heartbeat_counter = 0
@@ -105,14 +134,14 @@ def enviar_heartbeat():
         return
     try:
         ahora = datetime.now(timezone.utc).isoformat()
-        supabase.table("eventos_monitoreo").insert({
+        execute_supabase_with_retry(lambda: supabase.table("eventos_monitoreo").insert({
             "fecha_hora": ahora,
             "cuenta": "__SINCRONIZADOR__",
             "nombre_abonado": "",
             "evento": "HEARTBEAT",
             "zona": str(os.getpid()),
             "usuario": "",
-        }).execute()
+        }).execute())
     except Exception as e:
         print(f"[HEARTBEAT] Error: {e}")
 
@@ -270,16 +299,10 @@ def sincronizar_clientes():
     
     # Copia de seguridad temporal para evitar bloqueo en caliente de Scorpion
     temp_general = ruta_general + ".temp"
-    try:
-        if os.path.exists(temp_general):
-            os.remove(temp_general)
-    except:
-        pass
-        
     conn = None
     cursor = None
     try:
-        shutil.copy2(ruta_general, temp_general)
+        copiar_archivo_seguro(ruta_general, temp_general)
         conn_str = (
             f"DRIVER={{Microsoft Access Driver (*.mdb, *.accdb)}};"
             f"DBQ={temp_general};PWD={PASSWORD_GENERAL};ReadOnly=1;"
@@ -318,7 +341,7 @@ def sincronizar_clientes():
         
         # 1. Borrar registro anterior para no duplicar datos
         try:
-            supabase.table("eventos_monitoreo").delete().eq("cuenta", "CLIENTES").execute()
+            execute_supabase_with_retry(lambda: supabase.table("eventos_monitoreo").delete().eq("cuenta", "CLIENTES").execute())
         except Exception as del_err:
             print(f"[MIGRACIÓN CLIENTES] Nota al borrar: {del_err}")
             
@@ -335,7 +358,7 @@ def sincronizar_clientes():
             "usuario": "SYSTEM"
         }
         
-        supabase.table("eventos_monitoreo").insert(data).execute()
+        execute_supabase_with_retry(lambda: supabase.table("eventos_monitoreo").insert(data).execute())
         print("[MIGRACIÓN CLIENTES SUCCESS] Base de datos de clientes sincronizada exitosamente en Supabase (eventos_monitoreo).")
             
     except Exception as e:
@@ -375,15 +398,10 @@ def sincronizar_codigos():
     
     # Copia de seguridad temporal
     temp_codigos = ruta_codigos + ".temp"
-    try:
-        if os.path.exists(temp_codigos):
-            os.remove(temp_codigos)
-    except: pass
-        
     conn = None
     cursor = None
     try:
-        shutil.copy2(ruta_codigos, temp_codigos)
+        copiar_archivo_seguro(ruta_codigos, temp_codigos)
         conn_str = (
             f"DRIVER={{Microsoft Access Driver (*.mdb, *.accdb)}};"
             f"DBQ={temp_codigos};PWD={PASSWORD_CODIGOS};ReadOnly=1;"
@@ -413,7 +431,7 @@ def sincronizar_codigos():
         print(f"[MIGRACIÓN CODIGOS] Subiendo {len(codigos_map)} codigos a Supabase en fila especial...")
         
         try:
-            supabase.table("eventos_monitoreo").delete().eq("cuenta", "CODIGOS").execute()
+            execute_supabase_with_retry(lambda: supabase.table("eventos_monitoreo").delete().eq("cuenta", "CODIGOS").execute())
         except: pass
         
         chile_tz = get_chile_offset()
@@ -427,7 +445,7 @@ def sincronizar_codigos():
             "zona": "000",
             "usuario": "SYSTEM"
         }
-        supabase.table("eventos_monitoreo").insert(data).execute()
+        execute_supabase_with_retry(lambda: supabase.table("eventos_monitoreo").insert(data).execute())
         print("[MIGRACIÓN CODIGOS SUCCESS] Tabla de colores sincronizada exitosamente en Supabase.")
         
     except Exception as e:
@@ -466,15 +484,10 @@ def sincronizar_zonas():
         ruta_mdb = os.path.join(dir_zonas, archivo)
         temp_zonas = ruta_mdb + ".temp"
         
-        try:
-            if os.path.exists(temp_zonas):
-                os.remove(temp_zonas)
-        except: pass
-        
         conn = None
         cursor = None
         try:
-            shutil.copy2(ruta_mdb, temp_zonas)
+            copiar_archivo_seguro(ruta_mdb, temp_zonas)
             conn_str = (
                 f"DRIVER={{Microsoft Access Driver (*.mdb, *.accdb)}};"
                 f"DBQ={temp_zonas};PWD={PASSWORD_ZONAS};ReadOnly=1;"
@@ -530,7 +543,7 @@ def sincronizar_zonas():
         print(f"[MIGRACIÓN ZONAS] Subiendo zonificacion de {len(zonas_map)} abonados a Supabase en fila especial...")
         
         try:
-            supabase.table("eventos_monitoreo").delete().eq("cuenta", "ZONAS").execute()
+            execute_supabase_with_retry(lambda: supabase.table("eventos_monitoreo").delete().eq("cuenta", "ZONAS").execute())
         except: pass
         
         chile_tz = get_chile_offset()
@@ -544,7 +557,7 @@ def sincronizar_zonas():
             "zona": "000",
             "usuario": "SYSTEM"
         }
-        supabase.table("eventos_monitoreo").insert(data).execute()
+        execute_supabase_with_retry(lambda: supabase.table("eventos_monitoreo").insert(data).execute())
         print(f"[MIGRACIÓN ZONAS SUCCESS] Zonificación de {len(zonas_map)} abonados sincronizada exitosamente en Supabase.")
         
     except Exception as e:
@@ -563,13 +576,7 @@ def procesar_mdb(ruta_mdb, mdb_name, cache):
     cache_modificada = False
 
     try:
-        if os.path.exists(RUTA_COPIA_TEMP):
-            try:
-                os.remove(RUTA_COPIA_TEMP)
-            except Exception:
-                pass
-        
-        shutil.copy2(ruta_mdb, RUTA_COPIA_TEMP)
+        copiar_archivo_seguro(ruta_mdb, RUTA_COPIA_TEMP)
 
         conn_str = (
             f'DRIVER={{Microsoft Access Driver (*.mdb, *.accdb)}};'
@@ -638,7 +645,7 @@ def procesar_mdb(ruta_mdb, mdb_name, cache):
             }
 
             try:
-                supabase.table("eventos_monitoreo").insert(data).execute()
+                execute_supabase_with_retry(lambda: supabase.table("eventos_monitoreo").insert(data).execute())
                 cache.add(event_key)
                 cache_modificada = True
                 nuevos += 1
@@ -767,28 +774,40 @@ if __name__ == "__main__":
         
         # Bucle principal
         while True:
-            # Verificar si GENERAL.mdb ha cambiado para resincronizar clientes
-            ruta_general_current = buscar_general_mdb()
-            if ruta_general_current and os.path.exists(ruta_general_current):
+            try:
+                # Verificar si GENERAL.mdb ha cambiado para resincronizar clientes
+                ruta_general_current = buscar_general_mdb()
+                if ruta_general_current and os.path.exists(ruta_general_current):
+                    try:
+                        current_mtime = os.path.getmtime(ruta_general_current)
+                        if current_mtime != last_mtime:
+                            log_flush(f"\n[+] Se detecto cambio en GENERAL.mdb ({datetime.fromtimestamp(current_mtime).strftime('%H:%M:%S')})")
+                            sincronizar_clientes()
+                            last_mtime = current_mtime
+                    except Exception as ex:
+                        log_flush(f"[ERROR MTR] Fallo al monitorear GENERAL.mdb: {ex}")
+                
+                # Resincronización periódica de códigos y zonas (cada 1 hora)
+                ahora = time.time()
+                if ahora - last_sync_zonas >= INTERVALO_ZONAS:
+                    log_flush(f"\n[+] Resincronización periódica de códigos y zonas ({INTERVALO_ZONAS//60} min)...")
+                    sincronizar_codigos()
+                    sincronizar_zonas()
+                    last_sync_zonas = ahora
+                        
+                cache, sleep_time = sincronizar_eventos(cache)
+                time.sleep(sleep_time)
+            except Exception as loop_error:
+                log_flush(f"\n[ERROR BUCLE PRINCIPAL] Ocurrió un error en el ciclo: {loop_error}")
+                sys.stdout.flush()
+                # Re-conectar a Supabase por seguridad en caso de pérdida de socket/sesión
                 try:
-                    current_mtime = os.path.getmtime(ruta_general_current)
-                    if current_mtime != last_mtime:
-                        log_flush(f"\n[+] Se detecto cambio en GENERAL.mdb ({datetime.fromtimestamp(current_mtime).strftime('%H:%M:%S')})")
-                        sincronizar_clientes()
-                        last_mtime = current_mtime
-                except Exception as ex:
-                    log_flush(f"[ERROR MTR] Fallo al monitorear GENERAL.mdb: {ex}")
-            
-            # Resincronización periódica de códigos y zonas (cada 1 hora)
-            ahora = time.time()
-            if ahora - last_sync_zonas >= INTERVALO_ZONAS:
-                log_flush(f"\n[+] Resincronización periódica de códigos y zonas ({INTERVALO_ZONAS//60} min)...")
-                sincronizar_codigos()
-                sincronizar_zonas()
-                last_sync_zonas = ahora
-                    
-            cache, sleep_time = sincronizar_eventos(cache)
-            time.sleep(sleep_time)
+                    conectar_supabase()
+                except Exception as recon_err:
+                    log_flush(f"[RECONECTAR ERROR] No se pudo reestablecer Supabase: {recon_err}")
+                
+                # Esperar 10 segundos antes de continuar para no hacer bucles violentos
+                time.sleep(10)
     except Exception as crash:
         log_flush(f"\n{'='*60}")
         log_flush(f"[CRASH FATAL] El sincronizador se detuvo inesperadamente:")
