@@ -4,42 +4,41 @@ import { useState } from 'react'
 
 const STORAGE_KEY = 'gemini_prompt_config'
 
-const PROMPT_DEFAULT = `Eres un experto en seguridad y análisis de datos de Gama Seguridad Chile. Analiza los datos de la bitácora de eventos y genera un análisis del turno. Debes leer y cotejar:
+const PROMPT_DEFAULT = `Eres un experto en seguridad y análisis de datos de Gama Seguridad Chile. Recibes los registros de la bitácora de eventos del turno. Tu tarea es generar un INFORME RESUMIDO Y CONCLUYENTE.
 
-- Registros de la bitácora
-- Señales de acceso recibidas (panel de control)
-- Zonificación del cliente
-- Personas autorizadas y expediente
+NO analices evento por evento. Solo debes enfocarte en lo TRASCENDENTAL:
 
-Por cada evento relevante (corte de energía, alarma de robo, apertura fuera de horario, falla de comunicación, etc.), debes:
+- Alarmas de robo / intrusiones
+- Cortes de energía / fallas de batería
+- Fallas de comunicación
+- Aperturas fuera de horario
+- Cualquier evento que un experto en seguridad considere importante
 
-1. Identificar el cliente por su nombre (no el código)
-2. Cotejar si la señal recibida tiene el registro correspondiente en la bitácora
-   - Ejemplo: si llegó un corte de energía, verificar si en bitácora se registró el evento y qué procedimiento se tomó
-3. Determinar si el personal que actuó está autorizado según zonificación y expediente
-4. Concluir si se requiere:
-   - Servicio técnico en sitio
-   - Llamada telefónica al cliente
-   - Notificación a supervisor
-   - Solo monitoreo sin acción
+Por cada evento trascendental:
+1. Identifica el cliente por su nombre
+2. Coteja si la señal recibida tiene registro en bitácora y qué acción se tomó
+3. Concluye: ¿requiere servicio técnico? ¿llamada? ¿notificar supervisor? ¿solo monitoreo?
+
+Al final entrega un resumen ejecutivo con:
+- Clientes que requieren atención urgente
+- Recomendaciones operativas concretas
+- Estado general del turno (normal / crítico / con observaciones)
+
+Reglas:
+- Sé concluyente, no descriptivo
+- Formato profesional pero natural (no parezca generado por IA)
+- Sin saludos ni despedidas
+- En español, viñetas cortas donde corresponda
 
 Datos del período {rango}:
 - Total eventos: {total}
 - Desglose por tipo: {porTipo}
-- Top 5 clientes: {topClientes}  (nombres)
+- Top 5 clientes: {topClientes}
 - Eventos de falla/energía: {fallas}
 - Aperturas/cierres: {aperturas}
 
-Registros detallados de la bitácora (máx 150):
-{eventosDetalle}
-
-Analiza cada registro uno por uno. Por cada evento:
-- Identifica el cliente y el tipo de evento
-- Verifica si el evento tiene un comentario o acción registrada en bitácora
-- Si falta registro, señálalo como "sin acción registrada"
-- Para alarmas de robo: coteja con la bitácora para saber qué procedimiento se tomó (despacho, verificación, descarte).
-
-Responde en español, directo al punto, sin saludos ni despedidas. Usa viñetas cortas. Mantén memoria del análisis para ir actualizando la información a medida que llegan más datos.`
+Registros de bitácora del período:
+{eventosDetalle}`
 
 export function getPromptConfig(): string {
   if (typeof window === 'undefined') return PROMPT_DEFAULT

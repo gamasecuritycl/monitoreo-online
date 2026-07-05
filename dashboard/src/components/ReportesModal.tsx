@@ -8,13 +8,21 @@ const API_URL = 'https://bitacora.gamasecurity.cl/api-bitacora.php'
 
 type ReporteTab = 'diario' | 'semanal' | 'cliente' | 'fallas' | 'ranking' | 'operadores'
 
+function hoyChile(): string {
+  const ahora = new Date()
+  const chile = new Date(ahora.toLocaleString('en-US', { timeZone: 'America/Santiago' }))
+  return chile.toISOString().split('T')[0]
+}
+
 export default function ReportesModal({ onClose }: { onClose: () => void }) {
   const [tab, setTab] = useState<ReporteTab>('diario')
   const [desde, setDesde] = useState(() => {
-    const d = new Date(); d.setDate(d.getDate() - 7)
+    const h = hoyChile()
+    const d = new Date(h + 'T12:00:00')
+    d.setDate(d.getDate() - 7)
     return d.toISOString().split('T')[0]
   })
-  const [hasta, setHasta] = useState(() => new Date().toISOString().split('T')[0])
+  const [hasta, setHasta] = useState(() => hoyChile())
   const [datos, setDatos] = useState<any[]>([])
   const [cargando, setCargando] = useState(false)
   const [aiAnalizando, setAiAnalizando] = useState(false)
@@ -22,6 +30,7 @@ export default function ReportesModal({ onClose }: { onClose: () => void }) {
   const [aiError, setAiError] = useState('')
   const [aiTruncado, setAiTruncado] = useState(false)
   const [mostrarAI, setMostrarAI] = useState(false)
+  const [correoDestino, setCorreoDestino] = useState('operaciones@gamasecurity.cl')
 
   const tabs: { id: ReporteTab; label: string }[] = [
     { id: 'diario', label: 'RESUMEN DEL DÍA' },
@@ -143,22 +152,39 @@ tr:nth-child(even){background:#f8f8f8}
 
   const enviarPorCorreo = async () => {
     if (!aiResultado) return
-    const html = `<div style="font-family:Calibri,sans-serif;padding:20px;max-width:700px">
-<h1 style="color:#1e293b;border-bottom:2px solid #1e293b;padding-bottom:5px">📊 Análisis IA - Reporte ${desde} → ${hasta}</h1>
-<p style="color:#666;font-size:12px">Generado por Gemini AI — Gama Seguridad</p>
-<div style="white-space:pre-wrap;font-size:13px;line-height:1.6;color:#333">${aiResultado.replace(/\n/g, '<br>')}</div>
-</div>`
+    const lineas = aiResultado.split('\n').filter(Boolean)
+    const bodyHtml = lineas.map(l => {
+      if (l.startsWith('#')) return `<h3 style="color:#1e293b;margin:16px 0 8px;font-size:13px">${l.replace(/^#+\s*/, '')}</h3>`
+      if (l.match(/^[▪•*\-]/)) return `<li style="margin:2px 0;color:#333;font-size:12px;line-height:1.5">${l.replace(/^[▪•*\-]\s*/, '')}</li>`
+      return `<p style="margin:4px 0;color:#333;font-size:12px;line-height:1.5">${l}</p>`
+    }).join('')
+    const html = `<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><style>
+body{font-family:Calibri,sans-serif;background:#f4f4f4;padding:20px}
+.container{max-width:650px;margin:auto;background:#fff;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.1);overflow:hidden}
+.header{background:#1e293b;color:#fff;padding:16px 24px;font-size:15px;font-weight:bold}
+.content{padding:20px 24px}
+.footer{border-top:1px solid #ddd;padding:12px 24px;font-size:11px;color:#888}
+ul{padding-left:18px;margin:4px 0}
+li{color:#333;font-size:12px;line-height:1.5;margin:2px 0}
+</style></head><body>
+<div class="container">
+<div class="header">📊 Análisis IA · Gama Seguridad · ${desde} → ${hasta}</div>
+<div class="content">${bodyHtml}</div>
+<div class="footer">Generado por Gemini AI — ${new Date().toLocaleString('es-CL', { timeZone: 'America/Santiago' })}</div>
+</div></body></html>`
+    const destino = correoDestino.trim() || 'operaciones@gamasecurity.cl'
     try {
       const r = await fetch('/api/enviar-reporte', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          destino: 'operaciones@gamasecurity.cl',
+          destino,
           asunto: `Análisis IA - Reporte ${desde} → ${hasta}`,
           html,
         }),
       })
-      if (r.ok) alert('✅ Correo enviado a operaciones@gamasecurity.cl')
+      if (r.ok) alert(`✅ Correo enviado a ${destino}`)
       else {
         const d = await r.json()
         alert('❌ Error: ' + (d.error || ''))
@@ -378,19 +404,25 @@ tr:nth-child(even){background:#f8f8f8}
             {renderTab()}
           </div>
           {mostrarAI && (
-            <div className="w-1/2 overflow-y-auto border-l border-[#334155] pl-4">
-              <div className="flex items-center justify-between mb-3">
+            <div className="w-1/2 overflow-y-auto border-l border-[#334155] pl-4 flex flex-col">
+              <div className="flex items-center justify-between mb-2 shrink-0">
                 <span className="text-purple-400 font-bold text-sm">🤖 ANÁLISIS IA</span>
-                <div className="flex gap-1">
+                <div className="flex items-center gap-1">
                   <button onClick={enviarPorCorreo} disabled={!aiResultado} className="text-xs text-blue-400 hover:text-white font-bold px-2 py-0.5 rounded hover:bg-blue-800 disabled:opacity-50">📧 ENVIAR</button>
                   <button onClick={() => setMostrarAI(false)} className="text-xs text-slate-500 hover:text-white px-1.5 py-0.5 rounded hover:bg-slate-700">✕</button>
                 </div>
+              </div>
+              <div className="flex items-center gap-1 mb-3 shrink-0">
+                <span className="text-slate-500 text-[10px] font-bold">Para:</span>
+                <input type="email" value={correoDestino} onChange={e => setCorreoDestino(e.target.value)}
+                  className="flex-1 bg-[#1e293b] border border-[#334155] rounded px-2 py-1 text-xs text-slate-200 font-mono focus:outline-none focus:border-cyan-700"
+                  placeholder="correo@dominio.cl" />
               </div>
               {aiAnalizando && <div className="text-slate-400 text-sm animate-pulse">Analizando con Gemini...</div>}
               {aiError && <div className="text-red-400 text-sm font-bold">❌ {aiError}</div>}
               {aiTruncado && <div className="text-yellow-400 text-xs font-bold mb-2">⚠ Análisis truncado por límite de longitud — puedes aumentar tokens en CONFIGURACIÓN</div>}
               {aiResultado && (
-                <div className="text-slate-200 text-sm whitespace-pre-wrap leading-relaxed">{aiResultado}</div>
+                <div className="bg-[#1e293b] rounded p-3 text-slate-200 text-sm whitespace-pre-wrap leading-relaxed font-['Calibri'] overflow-y-auto">{aiResultado}</div>
               )}
             </div>
           )}
