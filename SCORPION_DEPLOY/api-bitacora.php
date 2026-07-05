@@ -95,24 +95,40 @@ switch ($action) {
     // ── LISTAR EVENTOS ──
     case 'eventos':
         $abonadoId = $_GET['id'] ?? '';
-        if (!$abonadoId) {
-            http_response_code(400);
-            echo json_encode(['error' => 'Falta id_abonado']);
-            exit;
-        }
         $desde = $_GET['desde'] ?? '';
         $hasta = $_GET['hasta'] ?? '';
 
         $sql = "
-            SELECT e.id, e.comentario, e.tipo_evento, e.created_at, e.updated_at,
+            SELECT e.id, e.id_abonado, e.comentario, e.tipo_evento, e.created_at, e.updated_at,
                    et.name AS tipo_nombre, et.color AS tipo_color,
-                   u.name AS responsable_nombre
+                   u.name AS responsable_nombre,
+                   a.cod AS abonado_cod, a.nombre AS abonado_nombre
             FROM eventos e
             LEFT JOIN eventos_type et ON e.tipo_evento = et.id
             LEFT JOIN users u ON e.id_responsable = u.id
-            WHERE e.id_abonado = ?
+            LEFT JOIN abonados a ON e.id_abonado = a.id
+            WHERE 1=1
         ";
-        $params = [$abonadoId];
+        $params = [];
+
+        if ($abonadoId) {
+            $sql .= " AND e.id_abonado = ?";
+            $params[] = $abonadoId;
+        }
+
+        // Si no hay filtro de fecha, usar turno actual por defecto
+        if (!$desde && !$hasta) {
+            $h = (int)date('H');
+            $hoy = date('Y-m-d');
+            $ayer = date('Y-m-d', strtotime('-1 day'));
+            if ($h >= 8 && $h < 16) {
+                $desde = "$hoy 08:00"; $hasta = "$hoy 16:00";
+            } elseif ($h >= 16 && $h < 22) {
+                $desde = "$hoy 16:00"; $hasta = "$hoy 22:00";
+            } else {
+                $desde = "$ayer 22:00"; $hasta = "$hoy 08:00";
+            }
+        }
 
         if ($desde) {
             $sql .= " AND e.created_at >= ?";

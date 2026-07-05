@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 
 type Abonado = { id: number; cod: string; nombre: string; direccion: string; plan: string; ciudad: string }
 type TipoEvento = { id: number; name: string; color: string }
-type Evento = { id: number; comentario: string; tipo_evento: number; tipo_nombre: string; tipo_color: string; responsable_nombre: string; created_at: string; updated_at: string }
+type Evento = { id: number; id_abonado: number; abonado_cod: string; abonado_nombre: string; comentario: string; tipo_evento: number; tipo_nombre: string; tipo_color: string; responsable_nombre: string; created_at: string; updated_at: string }
 type Archivo = { id: number; nombre_original: string; url: string; tipo: string; tamanio: number; created_at: string }
 
 const API_URL = 'https://bitacora.gamasecurity.cl/api-bitacora.php'
@@ -36,7 +36,7 @@ function getTurnoInfo() {
 export default function BitacoraModal({ onClose, cuentaDefault }: { onClose: () => void; cuentaDefault?: string }) {
   const [abonados, setAbonados] = useState<Abonado[]>([])
   const [abonadoSel, setAbonadoSel] = useState<Abonado | null>(null)
-  const [busqueda, setBusqueda] = useState(cuentaDefault || '')
+  const [busqueda, setBusqueda] = useState('')
   const ultimos7 = getUltimos7Dias()
   const [eventos, setEventos] = useState<Evento[]>([])
   const [tipos, setTipos] = useState<TipoEvento[]>([])
@@ -68,17 +68,11 @@ export default function BitacoraModal({ onClose, cuentaDefault }: { onClose: () 
   useEffect(() => {
     fetch(`${API_URL}?action=tipos`).then(r => r.ok && r.json()).then(d => d && setTipos(d)).catch(() => {})
 
-    // Auto-seleccionar abonado si viene cuentaDefault
-    if (cuentaDefault) {
-      fetch(`${API_URL}?action=abonados&q=${encodeURIComponent(cuentaDefault)}`).then(r => r.ok && r.json()).then(data => {
-        if (data && data.length > 0) {
-          const match = data.find((a: Abonado) => a.cod === cuentaDefault) || data[0]
-          setAbonadoSel(match)
-          setBusqueda(`${match.cod} - ${match.nombre}`)
-          fetch(`${API_URL}?action=eventos&id=${match.id}&desde=${encodeURIComponent(ultimos7.desde)}&hasta=${encodeURIComponent(ultimos7.hasta)}`).then(r => r.ok && r.json()).then(ev => ev && setEventos(ev))
-        }
-      }).catch(() => {})
-    }
+    // Cargar eventos del turno actual (sin filtro de abonado)
+    const t = getTurnoInfo()
+    setDesde(t.desde)
+    setHasta(t.hasta)
+    fetch(`${API_URL}?action=eventos&desde=${encodeURIComponent(t.desde)}&hasta=${encodeURIComponent(t.hasta)}`).then(r => r.ok && r.json()).then(ev => ev && setEventos(ev)).catch(() => {})
   }, [])
 
   const cargarEventos = async (id: number) => {
@@ -204,7 +198,9 @@ export default function BitacoraModal({ onClose, cuentaDefault }: { onClose: () 
     setDesde(t.desde)
     setHasta(t.hasta)
     setModoFecha('turno')
-    if (abonadoSel) cargarEventos(abonadoSel.id)
+    setAbonadoSel(null)
+    setBusqueda('')
+    fetch(`${API_URL}?action=eventos&desde=${encodeURIComponent(t.desde)}&hasta=${encodeURIComponent(t.hasta)}`).then(r => r.ok && r.json()).then(ev => ev && setEventos(ev)).catch(() => {})
   }
 
   const exportarExcel = () => {
@@ -290,8 +286,8 @@ tr:nth-child(even){background:#f8f8f8}
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-2" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="w-full md:w-[1200px] h-[95vh] md:h-[750px] bg-[#0f172a] border border-[#1e293b] rounded-lg shadow-2xl flex flex-col overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/70 p-2 pt-[5vh] overflow-y-auto" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="w-full md:w-[1200px] h-[95vh] bg-[#0f172a] border border-[#1e293b] rounded-lg shadow-2xl flex flex-col overflow-hidden">
 
         {/* Header */}
         <div className="bg-[#1e293b] flex justify-between items-center px-4 py-2 shrink-0 border-b border-[#334155]">
@@ -346,7 +342,7 @@ tr:nth-child(even){background:#f8f8f8}
                     onClick={volverTurno}>TURNO</button>
                   {modoFecha !== 'semana' && (
                     <button className="bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm font-bold px-3 py-1 rounded transition-colors"
-                      onClick={() => { const d = getUltimos7Dias(); setDesde(d.desde); setHasta(d.hasta); setModoFecha('semana'); if (abonadoSel) cargarEventos(abonadoSel.id) }}>7 DÍAS</button>
+                      onClick={() => { const d = getUltimos7Dias(); setDesde(d.desde); setHasta(d.hasta); setModoFecha('semana'); if (abonadoSel) cargarEventos(abonadoSel.id); else fetch(`${API_URL}?action=eventos&desde=${encodeURIComponent(d.desde)}&hasta=${encodeURIComponent(d.hasta)}`).then(r => r.ok && r.json()).then(ev => ev && setEventos(ev)).catch(() => {}) }}>7 DÍAS</button>
                   )}
                 </div>
               )}
@@ -355,7 +351,7 @@ tr:nth-child(even){background:#f8f8f8}
                   <span>HISTORIAL <span className="text-slate-500">({eventos.length})</span></span>
                 </div>
                 <div className="flex-1 overflow-y-auto">
-                  {eventos.length === 0 && <div className="text-slate-600 text-sm text-center mt-16">Sin eventos en este turno</div>}
+                  {eventos.length === 0 && <div className="text-slate-600 text-sm text-center mt-16">Sin eventos en este turno o selecciona un abonado</div>}
                   {eventos.map((e, i) => {
                     const color = tipos.find(t => t.id === e.tipo_evento)?.color || '#666'
                     return (
@@ -376,6 +372,7 @@ tr:nth-child(even){background:#f8f8f8}
                                   <span className="font-semibold" style={{ color }}>{e.tipo_nombre}</span>
                                 )}
                                 <span className="text-slate-600">— {e.responsable_nombre}</span>
+                                <span className="text-cyan-600 text-xs ml-2">{e.abonado_cod}</span>
                                 <span className="ml-auto flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                   <button className="text-sm text-cyan-400 hover:text-cyan-300"
                                     onClick={() => iniciarEdicion(e)} title="Editar">✏️</button>
