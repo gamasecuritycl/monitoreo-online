@@ -112,7 +112,6 @@ set XML_FILE=%TEMP%\gama_task.xml
 >> "%XML_FILE%" echo     ^<Enabled^>true^</Enabled^>
 >> "%XML_FILE%" echo     ^<StartWhenAvailable^>true^</StartWhenAvailable^>
 >> "%XML_FILE%" echo     ^<AllowStartOnDemand^>true^</AllowStartOnDemand^>
->> "%XML_FILE%" echo     ^<MultipleInstances^>IgnoreNew^</MultipleInstances^>
 >> "%XML_FILE%" echo     ^<RestartOnFailure^>
 >> "%XML_FILE%" echo       ^<Interval^>PT15S^</Interval^>
 >> "%XML_FILE%" echo       ^<Count^>9999^</Count^>
