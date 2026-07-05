@@ -14,20 +14,9 @@ function hoyChile(): string {
   return _fmtChile.format(new Date())
 }
 
-function desdeChile(): string {
-  const ahora = new Date()
-  const p = Intl.DateTimeFormat('en-US', { timeZone: 'America/Santiago', year: 'numeric', month: 'numeric', day: 'numeric' }).formatToParts(ahora)
-  const dia = parseInt(p.find(x => x.type === 'day')!.value)
-  const mes = parseInt(p.find(x => x.type === 'month')!.value) - 1
-  const año = parseInt(p.find(x => x.type === 'year')!.value)
-  const chile = new Date(año, mes, dia, 12, 0, 0)
-  chile.setDate(chile.getDate() - 7)
-  return _fmtChile.format(chile)
-}
-
 export default function ReportesModal({ onClose }: { onClose: () => void }) {
   const [tab, setTab] = useState<ReporteTab>('diario')
-  const [desde, setDesde] = useState(() => desdeChile())
+  const [desde, setDesde] = useState(() => hoyChile())
   const [hasta, setHasta] = useState(() => hoyChile())
   const [datos, setDatos] = useState<any[]>([])
   const [cargando, setCargando] = useState(false)
@@ -122,6 +111,11 @@ tr:nth-child(even){background:#f8f8f8}
           const t = (e.tipo_nombre || '').toUpperCase()
           return t.includes('APERTURA') || t.includes('CIERRE')
         }).length,
+      }
+      if (datos.length > 200) {
+        setAiError('Demasiados eventos (' + datos.length + '). Acorta el rango de fechas antes de analizar.')
+        setAiAnalizando(false)
+        return
       }
       const eventosDetalle = datos.slice(0, 100).map((e: any) => {
         const f = new Date(e.created_at).toLocaleString('es-CL')
@@ -288,21 +282,22 @@ p{font-family:Arial,sans-serif;font-size:12px;color:#333;line-height:1.6;margin:
   }
 
   const renderDiario = () => {
-    const hoy = datos.filter((e: any) => new Date(e.created_at).toDateString() === new Date().toDateString())
     const porTipo: Record<string, number> = {}
-    const porAbonado: Record<string, number> = {}
-    hoy.forEach((e: any) => {
+    const porAbonado: Record<string, { nom: string; count: number }> = {}
+    datos.forEach((e: any) => {
       const t = e.tipo_nombre || 'SIN TIPO'
       porTipo[t] = (porTipo[t] || 0) + 1
-      const a = `${e.abonado_cod || ''}`
-      porAbonado[a] = (porAbonado[a] || 0) + 1
+      const cod = e.abonado_cod || 'SIN CÓDIGO'
+      const nom = e.abonado_nombre || cod
+      if (!porAbonado[cod]) porAbonado[cod] = { nom, count: 0 }
+      porAbonado[cod].count++
     })
-    const topClientes = Object.entries(porAbonado).sort((a, b) => b[1] - a[1]).slice(0, 5)
+    const topIncidencias = Object.entries(porAbonado).sort((a, b) => b[1].count - a[1].count).slice(0, 5)
     return (
       <div className="space-y-4">
         <div className="bg-[#1e293b] rounded p-3">
-          <div className="text-cyan-400 font-bold text-lg">{hoy.length}</div>
-          <div className="text-slate-400 text-xs font-bold">Eventos hoy</div>
+          <div className="text-cyan-400 font-bold text-lg">{datos.length}</div>
+          <div className="text-slate-400 text-xs font-bold">Eventos del período</div>
         </div>
         <div>
           <div className="text-slate-300 font-bold text-sm mb-2">POR TIPO</div>
@@ -316,12 +311,12 @@ p{font-family:Arial,sans-serif;font-size:12px;color:#333;line-height:1.6;margin:
           </div>
         </div>
         <div>
-          <div className="text-slate-300 font-bold text-sm mb-2">TOP 5 CLIENTES</div>
+          <div className="text-slate-300 font-bold text-sm mb-2">INCIDENCIAS CRÍTICAS</div>
           <div className="space-y-1">
-            {topClientes.map(([cod, count]) => (
+            {topIncidencias.map(([cod, info]) => (
               <div key={cod} className="flex justify-between bg-[#1e293b] rounded px-3 py-1.5 text-sm">
-                <span className="text-slate-300">{cod || 'SIN CÓDIGO'}</span>
-                <span className="text-cyan-400 font-bold">{count}</span>
+                <span className="text-slate-300">{info.nom}</span>
+                <span className="text-cyan-400 font-bold">{info.count}</span>
               </div>
             ))}
           </div>
