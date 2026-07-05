@@ -1,98 +1,106 @@
 @echo off
-title GAMA COMMAND CENTER - Instalacion Completa v4.0
+title GAMA COMMAND CENTER - Instalacion Nuclear v5.2
 color 0A
-setlocal
+setlocal enabledelayedexpansion
 
 set DESTINO=C:\SCORPION\BASES DE DATOS
 set TAREA=GAMA_Sincronizador
 
 echo.
-echo =====================================================
-echo   GAMA COMMAND CENTER - Instalador Completo v4.0
-echo   (Ejecutar como Administrador)
-echo =====================================================
+echo ============================================================
+echo   GAMA COMMAND CENTER - INSTALACION NUCLEAR v5.2
+echo   (Ejecutar como Administrador - UNICA VEZ)
+echo ============================================================
 echo.
 
-:: ---- Verificar privilegios de Administrador ----
+:: ---- Verificar Administrador ----
 net session >nul 2>&1
 if %ERRORLEVEL% NEQ 0 (
-    echo [ERROR] Debes ejecutar este script como Administrador.
-    echo Haz clic derecho sobre el archivo y selecciona "Ejecutar como Administrador".
-    echo.
+    echo [ERROR] Debes ejecutar como Administrador.
+    echo Haz clic derecho ^> "Ejecutar como Administrador".
     pause
     exit /b 1
 )
 
-:: ---- Crear directorio destino si no existe ----
-if not exist "%DESTINO%" (
-    mkdir "%DESTINO%"
-)
-
-:: ---- Verificar Python ----
+:: ---- 1. Verificar Python ----
 echo [1/5] Verificando Python...
 python --version >nul 2>&1
 if %ERRORLEVEL% NEQ 0 (
-    echo.
-    echo [ERROR] Python no esta instalado.
-    echo Descargalo desde: https://www.python.org/downloads/
-    echo IMPORTANTE: Marca "Add Python to PATH" al instalar.
-    echo.
+    echo [ERROR] Python no instalado. Descarga desde python.org
+    echo IMPORTANTE: Marca "Add Python to PATH"
     pause
     exit /b 1
 )
-python --version
-echo OK.
+for /f "tokens=*" %%v in ('python --version 2^>^&1') do echo   %%v
+echo   OK.
 
-:: ---- Instalar dependencias ----
+:: ---- 2. Instalar dependencias ----
 echo.
-echo [2/5] Instalando dependencias Python...
+echo [2/5] Instalando dependencias...
 pip install supabase pyodbc requests --quiet
 if %ERRORLEVEL% NEQ 0 (
-    echo [ERROR] Fallo la instalacion de dependencias.
+    echo [ERROR] Fallo instalacion de dependencias.
     pause
     exit /b 1
 )
-echo OK.
+echo   OK.
 
-:: ---- Copiar archivos al destino ----
+:: ---- 3. MATAR TODO proceso viejo ----
 echo.
-echo [3/5] Copiando archivos a "%DESTINO%"...
-copy /Y "%~dp0sincronizador.py"      "%DESTINO%\sincronizador.py"      >nul
-copy /Y "%~dp0iniciar_silencioso.vbs" "%DESTINO%\iniciar_silencioso.vbs" >nul
-echo OK.
-
-:: ---- Detener cualquier instancia previa ----
+echo [3/5] Matando procesos anteriores...
 taskkill /f /im pythonw.exe >nul 2>&1
+taskkill /f /im wscript.exe >nul 2>&1
+echo   ✓ pythonw.exe y wscript.exe eliminados.
 
-:: ---- Eliminar lock file stale si existe ----
-if exist "%DESTINO%\_sincronizador.lock" (
-    del /F "%DESTINO%\_sincronizador.lock" >nul 2>&1
-)
+:: ---- Crear directorio destino ----
+if not exist "%DESTINO%" mkdir "%DESTINO%"
 
-:: ---- Registrar Tarea Programada (se ejecuta al iniciar el PC y al iniciar sesion) ----
+:: ---- Copiar archivos ----
+copy /Y "%~dp0sincronizador.py" "%DESTINO%\sincronizador.py" >nul
+echo   ✓ sincronizador.py copiado.
+
+:: ---- LIMPIAR archivos obsoletos ----
+echo   Limpiando archivos de versiones anteriores...
+if exist "%DESTINO%\_sincronizador.lock" del /F "%DESTINO%\_sincronizador.lock" >nul 2>&1 & echo     - _sincronizador.lock eliminado
+if exist "%DESTINO%\_sincronizador_cache.json" del /F "%DESTINO%\_sincronizador_cache.json" >nul 2>&1 & echo     - _sincronizador_cache.json eliminado
+if exist "%DESTINO%\iniciar_silencioso.vbs" del /F "%DESTINO%\iniciar_silencioso.vbs" >nul 2>&1 & echo     - iniciar_silencioso.vbs eliminado (ya no se usa)
+if exist "%DESTINO%\sincronizador.py.bak" del /F "%DESTINO%\sincronizador.py.bak" >nul 2>&1
+echo   OK.
+
+:: ---- 4. Registrar Tarea Programada NUCLEAR ----
 echo.
-echo [4/5] Registrando inicio automatico perpetuo en Task Scheduler...
+echo [4/5] Registrando servicio perpetuo en Task Scheduler...
 
-:: Eliminar registro previo en Run por si existia
-reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Run" /v "%TAREA%" /f >nul 2>&1
-
-:: Eliminar la tarea programada anterior para recrearla limpia
+:: Eliminar tarea anterior
 schtasks /delete /tn "%TAREA%" /f >nul 2>&1
 
-:: Crear XML temporal con dos disparadores: ONSTART (arranque del PC) + ONLOGON (inicio de sesion)
+:: Buscar pythonw.exe en rutas comunes
+set PYTHONW=
+if exist "%LOCALAPPDATA%\Programs\Python\Python313\pythonw.exe" set PYTHONW=%LOCALAPPDATA%\Programs\Python\Python313\pythonw.exe
+if not defined PYTHONW if exist "%LOCALAPPDATA%\Programs\Python\Python312\pythonw.exe" set PYTHONW=%LOCALAPPDATA%\Programs\Python\Python312\pythonw.exe
+if not defined PYTHONW if exist "%LOCALAPPDATA%\Programs\Python\Python311\pythonw.exe" set PYTHONW=%LOCALAPPDATA%\Programs\Python\Python311\pythonw.exe
+if not defined PYTHONW if exist "C:\Python313\pythonw.exe" set PYTHONW=C:\Python313\pythonw.exe
+if not defined PYTHONW if exist "C:\Python312\pythonw.exe" set PYTHONW=C:\Python312\pythonw.exe
+if not defined PYTHONW set PYTHONW=pythonw.exe
+
+echo   Usando: %PYTHONW%
+
+:: Crear XML — SIN VBS, directo a pythonw.exe
 set XML_FILE=%TEMP%\gama_task.xml
 
 > "%XML_FILE%" echo ^<?xml version="1.0" encoding="UTF-16"?^>
 >> "%XML_FILE%" echo ^<Task version="1.2" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task"^>
 >> "%XML_FILE%" echo   ^<RegistrationInfo^>
->> "%XML_FILE%" echo     ^<Description^>GAMA Command Center - Sincronizador de eventos Scorpion^</Description^>
+>> "%XML_FILE%" echo     ^<Description^>GAMA Command Center - Sincronizador Nuclear v5.2^</Description^>
 >> "%XML_FILE%" echo   ^</RegistrationInfo^>
 >> "%XML_FILE%" echo   ^<Triggers^>
 >> "%XML_FILE%" echo     ^<BootTrigger^>
 >> "%XML_FILE%" echo       ^<Enabled^>true^</Enabled^>
+>> "%XML_FILE%" echo       ^<Delay^>PT10S^</Delay^>
 >> "%XML_FILE%" echo     ^</BootTrigger^>
 >> "%XML_FILE%" echo     ^<LogonTrigger^>
 >> "%XML_FILE%" echo       ^<Enabled^>true^</Enabled^>
+>> "%XML_FILE%" echo       ^<Delay^>PT5S^</Delay^>
 >> "%XML_FILE%" echo     ^</LogonTrigger^>
 >> "%XML_FILE%" echo   ^</Triggers^>
 >> "%XML_FILE%" echo   ^<Principals^>
@@ -104,43 +112,49 @@ set XML_FILE=%TEMP%\gama_task.xml
 >> "%XML_FILE%" echo     ^<Enabled^>true^</Enabled^>
 >> "%XML_FILE%" echo     ^<StartWhenAvailable^>true^</StartWhenAvailable^>
 >> "%XML_FILE%" echo     ^<AllowStartOnDemand^>true^</AllowStartOnDemand^>
+>> "%XML_FILE%" echo     ^<MultipleInstances^>IgnoreNew^</MultipleInstances^>
 >> "%XML_FILE%" echo     ^<RestartOnFailure^>
->> "%XML_FILE%" echo       ^<Interval^>PT1M^</Interval^>
->> "%XML_FILE%" echo       ^<Count^>999^</Count^>
+>> "%XML_FILE%" echo       ^<Interval^>PT15S^</Interval^>
+>> "%XML_FILE%" echo       ^<Count^>9999^</Count^>
 >> "%XML_FILE%" echo     ^</RestartOnFailure^>
+>> "%XML_FILE%" echo     ^<ExecutionTimeLimit^>PT0S^</ExecutionTimeLimit^>
+>> "%XML_FILE%" echo     ^<Priority^>7^</Priority^>
 >> "%XML_FILE%" echo   ^</Settings^>
 >> "%XML_FILE%" echo   ^<Actions Context="Author"^>
 >> "%XML_FILE%" echo     ^<Exec^>
->> "%XML_FILE%" echo       ^<Command^>wscript.exe^</Command^>
->> "%XML_FILE%" echo       ^<Arguments^>"%DESTINO%\iniciar_silencioso.vbs"^</Arguments^>
+>> "%XML_FILE%" echo       ^<Command^>"%PYTHONW%"^</Command^>
+>> "%XML_FILE%" echo       ^<Arguments^>"%DESTINO%\sincronizador.py"^</Arguments^>
+>> "%XML_FILE%" echo       ^<WorkingDirectory^>%DESTINO%^</WorkingDirectory^>
 >> "%XML_FILE%" echo     ^</Exec^>
 >> "%XML_FILE%" echo   ^</Actions^>
 >> "%XML_FILE%" echo ^</Task^>
 
 schtasks /create /tn "%TAREA%" /xml "%XML_FILE%" /f
-
-:: Limpiar XML temporal
 del /F "%XML_FILE%" >nul 2>&1
+echo   OK.
 
-echo OK.
-
-:: ---- Iniciar ahora mismo ----
+:: ---- 5. Iniciar ahora mismo ----
 echo.
-echo [5/5] Iniciando el sincronizador en segundo plano...
+echo [5/5] Arrancando sincronizador en segundo plano...
 schtasks /run /tn "%TAREA%"
-echo OK.
+echo   OK.
 
 echo.
-echo =====================================================
-echo   INSTALACION COMPLETADA v4.0 (SERVICIO PERPETUO)
+echo ============================================================
+echo   INSTALACION NUCLEAR COMPLETADA v5.2
 echo.
-echo   El sincronizador ahora:
-echo   - Arranca automaticamente al encender el PC
-echo   - Arranca al iniciar sesion de cualquier usuario
-echo   - Se auto-reinicia si ocurre un error
+echo   Resumen del sistema 24/7:
+echo   - Mutex Windows: no hay duplicados jamas
+echo   - Cursor persistente: al reiniciar NO reprocesa eventos
+echo   - Heartbeat cada ~30s en Supabase (dashboard lo monitorea)
+echo   - Backoff exponencial: si Supabase falla, espera hasta 30s
+echo   - Crash logging: cualquier error queda en _gama_log.txt
+echo   - Task Scheduler: arranca al boot + logon + reinicio 15s
+echo   - Sin VBS, sin lock files, sin ventanas
 echo.
 echo   Para verificar: abre el Administrador de Tareas
-echo   y busca el proceso "pythonw.exe".
-echo =====================================================
+echo   y busca "pythonw.exe". O abre el dashboard
+echo   y mira el indicador SINCRONIZADOR (verde = vivo).
+echo ============================================================
 echo.
 pause
