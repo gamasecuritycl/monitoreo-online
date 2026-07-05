@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import * as XLSX from 'xlsx'
 
 type Abonado = { id: number; cod: string; nombre: string; direccion: string; plan: string; ciudad: string }
 type TipoEvento = { id: number; name: string; color: string }
@@ -68,11 +69,10 @@ export default function BitacoraModal({ onClose, cuentaDefault }: { onClose: () 
   useEffect(() => {
     fetch(`${API_URL}?action=tipos`).then(r => r.ok && r.json()).then(d => d && setTipos(d)).catch(() => {})
 
-    // Cargar eventos del turno actual (sin filtro de abonado)
-    const t = getTurnoInfo()
-    setDesde(t.desde)
-    setHasta(t.hasta)
-    fetch(`${API_URL}?action=eventos&desde=${encodeURIComponent(t.desde)}&hasta=${encodeURIComponent(t.hasta)}`).then(r => r.ok && r.json()).then(ev => ev && setEventos(ev)).catch(() => {})
+    // Cargar eventos de los últimos 7 días (para que siempre muestre algo)
+    const d = getUltimos7Dias()
+    const url = `${API_URL}?action=eventos&desde=${encodeURIComponent(d.desde)}&hasta=${encodeURIComponent(d.hasta)}`
+    fetch(url).then(r => r.ok && r.json()).then(ev => ev && setEventos(ev)).catch(() => {})
   }, [])
 
   const cargarEventos = async (id: number) => {
@@ -204,70 +204,37 @@ export default function BitacoraModal({ onClose, cuentaDefault }: { onClose: () 
   }
 
   const exportarExcel = () => {
-    if (!abonadoSel || eventos.length === 0) return
-    const rows = eventos.map(e => {
-      const d = new Date(e.created_at)
-      const fecha = d.toLocaleDateString('es-CL')
-      const hora = d.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })
-      const tipo = (tipos.find(t => t.id === e.tipo_evento)?.name || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-      const comentario = (e.comentario || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-      return { fecha, hora, tipo, responsable: e.responsable_nombre, comentario }
-    })
-    const xml = `<?xml version="1.0" encoding="UTF-8"?>
-<?mso-application progid="Excel.Sheet"?>
-<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
- xmlns:o="urn:schemas-microsoft-com:office:office"
- xmlns:x="urn:schemas-microsoft-com:office:excel"
- xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"
- xmlns:html="http://www.w3.org/TR/REC-html40">
- <Styles>
-  <Style ss:ID="Default" ss:Name="Normal"><Font ss:FontName="Calibri" ss:Size="10"/></Style>
-  <Style ss:ID="sHeader"><Font ss:Bold="1" ss:Size="10"/><Interior ss:Color="#1e293b" ss:Pattern="Solid"/><Font ss:Color="#FFFFFF"/></Style>
- </Styles>
- <Worksheet ss:Name="Bitácora ${abonadoSel.cod}">
-  <Table>
-   <Column ss:AutoFitWidth="1"/>
-   <Column ss:AutoFitWidth="1"/>
-   <Column ss:AutoFitWidth="1"/>
-   <Column ss:AutoFitWidth="1"/>
-   <Column ss:AutoFitWidth="1"/>
-   <Row ss:StyleID="sHeader">
-    <Cell><Data ss:Type="String">Fecha</Data></Cell>
-    <Cell><Data ss:Type="String">Hora</Data></Cell>
-    <Cell><Data ss:Type="String">Tipo</Data></Cell>
-    <Cell><Data ss:Type="String">Responsable</Data></Cell>
-    <Cell><Data ss:Type="String">Comentario</Data></Cell>
-   </Row>
-${rows.map(r => `   <Row>
-    <Cell><Data ss:Type="String">${r.fecha}</Data></Cell>
-    <Cell><Data ss:Type="String">${r.hora}</Data></Cell>
-    <Cell><Data ss:Type="String">${r.tipo}</Data></Cell>
-    <Cell><Data ss:Type="String">${r.responsable}</Data></Cell>
-    <Cell><Data ss:Type="String">${r.comentario}</Data></Cell>
-   </Row>`).join('\n')}
-  </Table>
- </Worksheet>
-</Workbook>`
-    const blob = new Blob([xml], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url; a.download = `bitacora_${abonadoSel.cod}.xml`; a.click()
-    URL.revokeObjectURL(url)
+    if (eventos.length === 0) return
+    const cod = abonadoSel?.cod || 'TODOS'
+    const data = eventos.map(e => ({
+      Fecha: new Date(e.created_at).toLocaleDateString('es-CL'),
+      Hora: new Date(e.created_at).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }),
+      ...(cod === 'TODOS' ? { Abonado: e.abonado_cod || '' } : {}),
+      Tipo: tipos.find(t => t.id === e.tipo_evento)?.name || '',
+      Responsable: e.responsable_nombre,
+      Comentario: e.comentario || '',
+    }))
+    const wb = XLSX.utils.book_new()
+    const ws = XLSX.utils.json_to_sheet(data)
+    XLSX.utils.book_append_sheet(wb, ws, `Bitácora ${cod}`)
+    XLSX.writeFile(wb, `bitacora_${cod}.xlsx`)
   }
 
   const exportarPDF = () => {
-    if (!abonadoSel || eventos.length === 0) return
+    if (eventos.length === 0) return
+    const cod = abonadoSel?.cod || 'TODOS'
+    const nom = abonadoSel?.nombre || ''
     const turno = getTurnoInfo().nombre
     const filas = eventos.map(e => {
       const d = new Date(e.created_at)
       const fecha = d.toLocaleDateString('es-CL')
       const hora = d.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })
       const tipo = tipos.find(t => t.id === e.tipo_evento)?.name || ''
-      return `<tr><td>${fecha}</td><td>${hora}</td><td>${tipo}</td><td>${e.responsable_nombre}</td><td>${e.comentario || ''}</td></tr>`
+      return `<tr><td>${fecha}</td><td>${hora}</td><td>${e.abonado_cod || ''}</td><td>${tipo}</td><td>${e.responsable_nombre}</td><td>${e.comentario || ''}</td></tr>`
     }).join('')
     const win = window.open('', '_blank')
     if (!win) return
-    win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Bitácora - ${abonadoSel.cod}</title>
+    win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Bitácora - ${cod}</title>
 <style>
 body{font-family:Calibri,sans-serif;font-size:10pt;padding:20px}
 h1{font-size:14pt;color:#1e293b;border-bottom:2px solid #1e293b;padding-bottom:5px}
@@ -278,9 +245,9 @@ td{padding:4px 8px;border-bottom:1px solid #ddd;font-size:9pt}
 tr:nth-child(even){background:#f8f8f8}
 @media print{@page{size:landscape;margin:15mm}}
 </style></head><body>
-<h1>BITÁCORA VIRTUAL — ${abonadoSel.cod} ${abonadoSel.nombre}</h1>
+<h1>BITÁCORA VIRTUAL — ${cod} ${nom}</h1>
 <h2>${turno} | ${eventos.length} eventos</h2>
-<table><thead><tr><th>Fecha</th><th>Hora</th><th>Tipo</th><th>Responsable</th><th>Comentario</th></tr></thead><tbody>${filas}</tbody></table>
+<table><thead><tr><th>Fecha</th><th>Hora</th><th>Abonado</th><th>Tipo</th><th>Responsable</th><th>Comentario</th></tr></thead><tbody>${filas}</tbody></table>
 <script>window.print()</script></body></html>`)
     win.document.close()
   }
@@ -329,15 +296,14 @@ tr:nth-child(even){background:#f8f8f8}
           <div className="flex-1 flex gap-3 overflow-hidden">
             {/* Eventos */}
             <div className="flex-1 flex flex-col overflow-hidden">
-              {abonadoSel && (
-                <div className="flex gap-2 mb-2 shrink-0 items-center">
+              <div className="flex gap-2 mb-2 shrink-0 items-center">
                   <input type="date" className="bg-[#1e293b] border border-[#334155] rounded px-2 py-1 text-sm text-slate-100 focus:outline-none focus:border-cyan-500"
                     value={desde.split(' ')[0]} onChange={e => { setDesde(e.target.value + ' 00:00'); setModoFecha('personalizado') }} />
                   <span className="text-slate-500 text-sm">→</span>
                   <input type="date" className="bg-[#1e293b] border border-[#334155] rounded px-2 py-1 text-sm text-slate-100 focus:outline-none focus:border-cyan-500"
                     value={hasta.split(' ')[0]} onChange={e => { setHasta(e.target.value + ' 23:59'); setModoFecha('personalizado') }} />
                   <button className="bg-cyan-700 hover:bg-cyan-600 text-white text-sm font-bold px-3 py-1 rounded transition-colors"
-                    onClick={() => abonadoSel && cargarEventos(abonadoSel.id)}>FILTRAR</button>
+                    onClick={() => abonadoSel ? cargarEventos(abonadoSel.id) : fetch(`${API_URL}?action=eventos&desde=${encodeURIComponent(desde)}&hasta=${encodeURIComponent(hasta)}`).then(r => r.ok && r.json()).then(ev => ev && setEventos(ev)).catch(() => {})}>FILTRAR</button>
                   <button className="bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm font-bold px-3 py-1 rounded transition-colors"
                     onClick={volverTurno}>TURNO</button>
                   {modoFecha !== 'semana' && (
@@ -345,7 +311,6 @@ tr:nth-child(even){background:#f8f8f8}
                       onClick={() => { const d = getUltimos7Dias(); setDesde(d.desde); setHasta(d.hasta); setModoFecha('semana'); if (abonadoSel) cargarEventos(abonadoSel.id); else fetch(`${API_URL}?action=eventos&desde=${encodeURIComponent(d.desde)}&hasta=${encodeURIComponent(d.hasta)}`).then(r => r.ok && r.json()).then(ev => ev && setEventos(ev)).catch(() => {}) }}>7 DÍAS</button>
                   )}
                 </div>
-              )}
               <div className="flex-1 bg-[#0f172a] border border-[#1e293b] rounded-lg flex flex-col overflow-hidden">
                 <div className="bg-[#1e293b] text-slate-200 text-sm font-bold px-4 py-1.5 shrink-0 flex justify-between items-center">
                   <span>HISTORIAL <span className="text-slate-500">({eventos.length})</span></span>

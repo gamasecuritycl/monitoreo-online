@@ -11,6 +11,8 @@ import ZonificacionModal from './ZonificacionModal'
 import NotificacionesMailModal from './NotificacionesMailModal'
 import NotificacionesWhatsAppModal from './NotificacionesWhatsAppModal'
 import BitacoraModal from './BitacoraModal'
+import ReportesModal from './ReportesModal'
+import ConfigModal from './ConfigModal'
 import { lookupContactId } from '@/lib/contact_id_library'
 import { sendMessage, generarMensajeAlerta, generarMensajeEnergia, detectarPatronEvento, type EventInfo } from '@/lib/whatsapp'
 
@@ -63,6 +65,7 @@ export default function ScorpionDashboard() {
   const [modalActivo, setModalActivo] = useState<string | null>(null)
   const [horaLocal, setHoraLocal] = useState('')
   const [mostrarMenuNotificaciones, setMostrarMenuNotificaciones] = useState(false)
+  const [mostrarMenuReportes, setMostrarMenuReportes] = useState(false)
   
   // Mapa de clientes cargado en tiempo real
   const [clientesMap, setClientesMap] = useState<Record<string, Record<string, string>>>({})
@@ -479,12 +482,12 @@ export default function ScorpionDashboard() {
         {[
           { label: 'OPERADORES',     id: 'menu-operadores' },
           { label: 'USUARIOS',       id: 'menu-usuarios' },
-          { label: 'PUERTOS',        id: 'menu-puertos' },
+          { label: 'CONFIGURACION',  id: 'menu-configuracion' },
           { label: 'MARCADOR',       id: 'menu-marcador' },
           { label: 'TABLAS',         id: 'menu-tablas' },
           { label: 'UTILIDADES',     id: 'menu-utilidades' },
           { label: 'NOTIFICACIONES', id: 'menu-notificaciones', hasDropdown: true },
-          { label: 'REPORTES',       id: 'menu-reportes' },
+          { label: 'REPORTES',       id: 'menu-reportes', hasDropdown: true },
           { label: 'EVENTOS',        id: 'menu-eventos' },
           { label: 'AYUDA',          id: 'menu-ayuda' },
         ].map((item, idx) => (
@@ -494,8 +497,17 @@ export default function ScorpionDashboard() {
               onClick={() => {
                 if (item.id === 'menu-notificaciones') {
                   setMostrarMenuNotificaciones(!mostrarMenuNotificaciones)
+                  setMostrarMenuReportes(false)
+                } else if (item.id === 'menu-reportes') {
+                  setMostrarMenuReportes(!mostrarMenuReportes)
+                  setMostrarMenuNotificaciones(false)
+                } else if (item.id === 'menu-configuracion') {
+                  setModalActivo('configuracion')
+                  setMostrarMenuNotificaciones(false)
+                  setMostrarMenuReportes(false)
                 } else {
                   setMostrarMenuNotificaciones(false)
+                  setMostrarMenuReportes(false)
                 }
               }}
               className="px-3 py-0.5 text-[11px] font-bold text-white tracking-wider whitespace-nowrap border-r border-[#600000] hover:bg-[#a00000] active:bg-[#700000] cursor-pointer transition-colors"
@@ -503,20 +515,26 @@ export default function ScorpionDashboard() {
             >
               {item.label}
             </button>
-            {item.hasDropdown && mostrarMenuNotificaciones && (
+            {item.hasDropdown && item.id === 'menu-notificaciones' && mostrarMenuNotificaciones && (
               <div className="absolute top-full left-0 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 shadow-xl z-50 py-1 min-w-[140px]">
-                <button 
+                <button
                   className="w-full text-left px-4 py-1.5 text-xs text-black font-bold hover:bg-[#000080] hover:text-white"
                   onClick={() => { setModalActivo('notificaciones-mail'); setMostrarMenuNotificaciones(false); }}
                 >
                   POR MAIL
                 </button>
-                <button 
+                <button
                   className="w-full text-left px-4 py-1.5 text-xs text-black font-bold hover:bg-[#000080] hover:text-white"
                   onClick={() => { setModalActivo('notificaciones-whatsapp'); setMostrarMenuNotificaciones(false); }}
                 >
                   POR WHATSAPP
                 </button>
+              </div>
+            )}
+            {item.hasDropdown && item.id === 'menu-reportes' && mostrarMenuReportes && (
+              <div className="absolute top-full left-0 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 shadow-xl z-50 py-1 min-w-[160px]">
+                <button className="w-full text-left px-4 py-1.5 text-xs text-black font-bold hover:bg-[#000080] hover:text-white"
+                  onClick={() => { setModalActivo('reportes'); setMostrarMenuReportes(false); }}>TODOS LOS REPORTES</button>
               </div>
             )}
           </div>
@@ -740,6 +758,16 @@ export default function ScorpionDashboard() {
           onClose={() => setModalActivo(null)}
           cuentaDefault={activeEvent?.cuenta || undefined}
         />
+      )}
+
+      {/* Reportes Modal */}
+      {modalActivo === 'reportes' && (
+        <ReportesModal onClose={() => setModalActivo(null)} />
+      )}
+
+      {/* Configuración Modal */}
+      {modalActivo === 'configuracion' && (
+        <ConfigModal onClose={() => setModalActivo(null)} />
       )}
 
       {/* Footer */}
