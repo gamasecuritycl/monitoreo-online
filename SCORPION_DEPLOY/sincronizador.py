@@ -36,6 +36,7 @@ if os.path.exists(r'C:\SCORPION\BASES DE DATOS\EVENTOS'):
     CARPETA_EVENTOS = r'C:\SCORPION\BASES DE DATOS\EVENTOS'
     RUTA_COPIA_TEMP = r'C:\SCORPION\BASES DE DATOS\_EVENTOS_TEMP.MDB'
     RUTA_CACHE      = r'C:\SCORPION\BASES DE DATOS\_sincronizador_cache.json'
+    RUTA_CURSOR     = r'C:\SCORPION\BASES DE DATOS\_sincronizador_cursor.txt'
 else:
     base_dir = os.path.dirname(os.path.abspath(__file__))
     if os.path.basename(base_dir).upper() == "SCORPION_DEPLOY":
@@ -46,6 +47,8 @@ else:
     CARPETA_EVENTOS = os.path.join(root_dir, 'BASES DE DATOS', 'EVENTOS')
     RUTA_COPIA_TEMP = os.path.join(root_dir, 'BASES DE DATOS', '_EVENTOS_TEMP.MDB')
     RUTA_CACHE      = os.path.join(root_dir, 'BASES DE DATOS', '_sincronizador_cache.json')
+
+RUTA_CURSOR = os.path.join(os.path.dirname(CARPETA_EVENTOS), '_sincronizador_cursor.txt')
 
 # Rutas del archivo GENERAL.mdb (Clientes de Scorpion)
 RUTAS_GENERAL_MDB = [
@@ -122,6 +125,34 @@ def get_chile_offset() -> str:
     sign = '+' if offset_hours >= 0 else '-'
     return f"{sign}{abs(offset_hours):02d}:00"
 
+# ── Sistema de cursor: trackea el último evento subido para no reprocesar en reinicios ──
+def normalizar_dia(dia: str) -> str:
+    """Convierte DD-MM-YYYY a YYYY-MM-DD para comparación lexicográfica correcta."""
+    partes = dia.split('-')
+    if len(partes) == 3 and len(partes[0]) <= 2:
+        return f"{partes[2]}-{partes[1]}-{partes[0]}"
+    return dia
+
+def load_cursor():
+    try:
+        with open(RUTA_CURSOR, 'r', encoding='utf-8') as f:
+            lines = f.read().strip().split('\n')
+            if len(lines) >= 2:
+                return lines[0].strip(), lines[1].strip()
+    except:
+        pass
+    return "", ""
+
+def save_cursor(dia, hora):
+    try:
+        nd = normalizar_dia(dia)
+        temp = RUTA_CURSOR + ".tmp"
+        with open(temp, 'w', encoding='utf-8') as f:
+            f.write(f"{nd}\n{hora}")
+        os.replace(temp, RUTA_CURSOR)
+    except Exception as e:
+        print(f"[CURSOR] Error guardando: {e}")
+
 def load_cache():
     if os.path.exists(RUTA_CACHE):
         try:
@@ -136,8 +167,10 @@ def save_cache(cache):
         cache_list = list(cache)
         if len(cache_list) > 3000:
             cache_list = cache_list[-2000:]
-        with open(RUTA_CACHE, 'w', encoding='utf-8') as f:
+        temp = RUTA_CACHE + ".tmp"
+        with open(temp, 'w', encoding='utf-8') as f:
             json.dump(cache_list, f, indent=2)
+        os.replace(temp, RUTA_CACHE)
     except Exception as e:
         print(f"[CACHE] Error guardando: {e}")
 
@@ -488,15 +521,11 @@ def sincronizar_zonas():
 # ============================================================
 
 def sincronizar_eventos(cache):
-    print("--- Verificando nuevos eventos ---")
     ruta_original = get_ultimo_mdb()
     if not ruta_original:
-        print("[INFO] No hay archivos .MDB de eventos.")
         return cache, INTERVALO_SEG
 
-    print(f"[DB] {os.path.basename(ruta_original)}")
     chile_tz = get_chile_offset()
-
     conn = None
     cursor = None
     tiempo_espera = INTERVALO_SEG
@@ -521,16 +550,16 @@ def sincronizar_eventos(cache):
             cursor.execute("SELECT * FROM EVENTOS ORDER BY HORA DESC")
             rows = cursor.fetchall()
         except pyodbc.Error as odbc_err:
-            err_msg = str(odbc_err)
-            print(f"[ERROR] {err_msg}")
-            # Ante cualquier fallo de pyodbc, esperamos 10s para no saturar el motor
-            print(">>> Error de base de datos. Esperaremos 10s...")
-            tiempo_espera = 10
-            return cache, tiempo_espera
+            print(f"[ERROR] {odbc_err}")
+            return cache, 10
 
         rows.reverse()
         nuevos = 0
         cache_modificada = False
+
+        # Cargar cursor al inicio (persiste entre reinicios)
+        cur_dia, cur_hora = load_cursor()
+        salteando = bool(cur_dia and cur_hora)
 
         for row in rows:
             dia     = str(row[0]).strip()
@@ -540,6 +569,13 @@ def sincronizar_eventos(cache):
             evento  = str(row[4]).strip()
             zona    = str(row[6]).strip()
             usuario = str(row[7]).strip()
+
+            # Si tenemos cursor, saltar eventos ya subidos en ejecuciones anteriores
+            if salteando:
+                nd = normalizar_dia(dia)
+                if nd < cur_dia or (nd == cur_dia and hora <= cur_hora):
+                    continue
+                salteando = False  # pasamos el cursor, procesar el resto
 
             event_key = f"{dia}_{hora}_{cuenta}_{evento}_{zona}_{usuario}"
             if event_key in cache:
@@ -565,7 +601,6 @@ def sincronizar_eventos(cache):
 
             try:
                 supabase.table("eventos_monitoreo").insert(data).execute()
-                print(f"  [+] {cuenta} | {nombre} | {evento} | Z:{zona}")
                 cache.add(event_key)
                 cache_modificada = True
                 nuevos += 1
@@ -577,22 +612,25 @@ def sincronizar_eventos(cache):
                     cache_modificada = True
                 else:
                     _errores_consecutivos += 1
-                    print(f"  [ERROR SUPABASE] Fallo de red al insertar ({_errores_consecutivos}x consecutivo): {e}")
-                    # Backoff exponencial: si falla muchas veces, esperar mas
+                    print(f"  [ERROR SUPABASE] ({_errores_consecutivos}x) {e}")
                     if _errores_consecutivos >= 5:
                         tiempo_espera = min(30, 3 * _errores_consecutivos)
-                        print(f"  >>> Demasiados errores consecutivos. Esperando {tiempo_espera}s...")
                     break
 
         if cache_modificada:
             save_cache(cache)
 
-        enviar_heartbeat()
+        # Guardar cursor del último evento subido (persiste entre reinicios)
+        if nuevos > 0 or not cur_dia:
+            last = rows[-1] if rows else None
+            if last:
+                save_cursor(str(last[0]).strip(), str(last[1]).strip())
 
-        print(f"  >>> {nuevos} evento(s) nuevo(s) subidos." if nuevos > 0 else "  Sin eventos nuevos.")
-        
-        # Reset contador de errores si hubo exito
+        enviar_heartbeat()
         _errores_consecutivos = 0
+
+        if nuevos:
+            print(f"  >>> {nuevos} nuevo(s).")
 
     except Exception as e:
         print(f"[ERROR CRITICO] {e}")
@@ -607,7 +645,6 @@ def sincronizar_eventos(cache):
             try: os.remove(RUTA_COPIA_TEMP)
             except: pass
 
-    print(f"--- Esperando {tiempo_espera}s ---\n")
     return cache, tiempo_espera
 
 
