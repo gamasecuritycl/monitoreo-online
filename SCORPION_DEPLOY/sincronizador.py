@@ -36,7 +36,7 @@ if os.path.exists(r'C:\SCORPION\BASES DE DATOS\EVENTOS'):
     CARPETA_EVENTOS = r'C:\SCORPION\BASES DE DATOS\EVENTOS'
     RUTA_COPIA_TEMP = r'C:\SCORPION\BASES DE DATOS\_EVENTOS_TEMP.MDB'
     RUTA_CACHE      = r'C:\SCORPION\BASES DE DATOS\_sincronizador_cache.json'
-    RUTA_CURSOR     = r'C:\SCORPION\BASES DE DATOS\_sincronizador_cursor.txt'
+    RUTA_CURSOR_JSON = r'C:\SCORPION\BASES DE DATOS\_sincronizador_cursors.json'
 else:
     base_dir = os.path.dirname(os.path.abspath(__file__))
     if os.path.basename(base_dir).upper() == "SCORPION_DEPLOY":
@@ -47,8 +47,7 @@ else:
     CARPETA_EVENTOS = os.path.join(root_dir, 'BASES DE DATOS', 'EVENTOS')
     RUTA_COPIA_TEMP = os.path.join(root_dir, 'BASES DE DATOS', '_EVENTOS_TEMP.MDB')
     RUTA_CACHE      = os.path.join(root_dir, 'BASES DE DATOS', '_sincronizador_cache.json')
-
-RUTA_CURSOR = os.path.join(os.path.dirname(CARPETA_EVENTOS), '_sincronizador_cursor.txt')
+    RUTA_CURSOR_JSON = os.path.join(root_dir, 'BASES DE DATOS', '_sincronizador_cursors.json')
 
 # Rutas del archivo GENERAL.mdb (Clientes de Scorpion)
 RUTAS_GENERAL_MDB = [
@@ -130,6 +129,8 @@ def log_flush(*args, **kwargs):
     sys.stdout.flush()
 
 # ── Sistema de cursor: trackea el archivo MDB + último evento para no reprocesar en reinicios ──
+RUTA_CURSOR_JSON = os.path.join(os.path.dirname(CARPETA_EVENTOS), '_sincronizador_cursors.json')
+
 def normalizar_dia(dia: str) -> str:
     """Convierte DD-MM-YYYY a YYYY-MM-DD para comparación lexicográfica correcta."""
     partes = dia.split('-')
@@ -137,25 +138,32 @@ def normalizar_dia(dia: str) -> str:
         return f"{partes[2]}-{partes[1]}-{partes[0]}"
     return dia
 
-def load_cursor():
+def load_cursors():
     try:
-        with open(RUTA_CURSOR, 'r', encoding='utf-8') as f:
-            lines = f.read().strip().split('\n')
-            if len(lines) >= 3:
-                return lines[0].strip(), lines[1].strip(), lines[2].strip()
+        with open(RUTA_CURSOR_JSON, 'r', encoding='utf-8') as f:
+            return json.load(f)
     except:
-        pass
-    return "", "", ""
+        return {}
 
-def save_cursor(mdb_file, dia, hora):
+def save_cursors(cursors):
     try:
-        nd = normalizar_dia(dia)
-        temp = RUTA_CURSOR + ".tmp"
+        temp = RUTA_CURSOR_JSON + ".tmp"
         with open(temp, 'w', encoding='utf-8') as f:
-            f.write(f"{mdb_file}\n{nd}\n{hora}")
-        os.replace(temp, RUTA_CURSOR)
+            json.dump(cursors, f, indent=2)
+        os.replace(temp, RUTA_CURSOR_JSON)
     except Exception as e:
         print(f"[CURSOR] Error guardando: {e}")
+
+def load_cursor(mdb_name):
+    cursors = load_cursors()
+    if mdb_name in cursors:
+        return mdb_name, cursors[mdb_name].get('dia', ''), cursors[mdb_name].get('hora', '')
+    return "", "", ""
+
+def save_cursor(mdb_name, dia, hora):
+    cursors = load_cursors()
+    cursors[mdb_name] = {'dia': normalizar_dia(dia), 'hora': hora}
+    save_cursors(cursors)
 
 def load_cache():
     if os.path.exists(RUTA_CACHE):
@@ -178,17 +186,24 @@ def save_cache(cache):
     except Exception as e:
         print(f"[CACHE] Error guardando: {e}")
 
-def get_ultimo_mdb():
+def get_todos_mdb():
+    """Devuelve lista de TODOS los archivos MDB ordenados cronológicamente (más antiguo primero)."""
     try:
         archivos = [f for f in os.listdir(CARPETA_EVENTOS) if f.upper().endswith('.MDB')]
     except Exception as e:
         print(f"[ERROR] No se puede leer EVENTOS: {e}")
-        return None
+        return []
     if not archivos:
-        return None
-    # Ordenar por fecha de modificación (más reciente primero)
-    archivos.sort(key=lambda f: os.path.getmtime(os.path.join(CARPETA_EVENTOS, f)), reverse=True)
-    return os.path.join(CARPETA_EVENTOS, archivos[0])
+        return []
+    # Ordenar por fecha en el nombre (YYYY-MM-DD.MDB) si es posible, si no por mtime
+    def sort_key(f):
+        nombre = os.path.splitext(f)[0]
+        try:
+            return datetime.strptime(nombre, "%Y-%m-%d")
+        except ValueError:
+            return datetime.fromtimestamp(os.path.getmtime(os.path.join(CARPETA_EVENTOS, f)))
+    archivos.sort(key=sort_key)
+    return [os.path.join(CARPETA_EVENTOS, f) for f in archivos]
 
 # ============================================================
 #  FUNCIONES DE MONITORIZACIÓN Y SUBIDA DE CLIENTES (GENERAL.mdb)
@@ -495,21 +510,12 @@ def sincronizar_zonas():
 #  BUCLE PRINCIPAL DE EVENTOS
 # ============================================================
 
-def sincronizar_eventos(cache):
-    global _errores_consecutivos
-    _errores_consecutivos = 0
-    ruta_original = get_ultimo_mdb()
-    if not ruta_original:
-        return cache, INTERVALO_SEG
-
-    mdb_name = os.path.basename(ruta_original)
-    mtime = datetime.fromtimestamp(os.path.getmtime(ruta_original)).strftime('%H:%M:%S')
-    print(f"[DB] {mdb_name} (modificado {mtime})")
-    sys.stdout.flush()
+def procesar_mdb(ruta_mdb, mdb_name, cache):
     chile_tz = get_chile_offset()
     conn = None
     cursor = None
-    tiempo_espera = INTERVALO_SEG
+    nuevos = 0
+    cache_modificada = False
 
     try:
         if os.path.exists(RUTA_COPIA_TEMP):
@@ -518,7 +524,7 @@ def sincronizar_eventos(cache):
             except Exception:
                 pass
         
-        shutil.copy2(ruta_original, RUTA_COPIA_TEMP)
+        shutil.copy2(ruta_mdb, RUTA_COPIA_TEMP)
 
         conn_str = (
             f'DRIVER={{Microsoft Access Driver (*.mdb, *.accdb)}};'
@@ -533,15 +539,12 @@ def sincronizar_eventos(cache):
         except pyodbc.Error as odbc_err:
             print(f"[ERROR] {odbc_err}")
             sys.stdout.flush()
-            return cache, 10
+            return cache, 0
 
         rows.reverse()
-        nuevos = 0
-        cache_modificada = False
 
-        # Cargar cursor: [mdb_file, dia, hora]
-        cur_mdb, cur_dia, cur_hora = load_cursor()
-        # Si cambió el archivo MDB (rotación diaria), ignorar cursor y procesar todo
+        # Cargar cursor específico para este MDB
+        cur_mdb, cur_dia, cur_hora = load_cursor(mdb_name)
         salteando = bool(cur_dia and cur_hora and cur_mdb == mdb_name)
 
         if cur_mdb and cur_mdb != mdb_name:
@@ -557,12 +560,11 @@ def sincronizar_eventos(cache):
             zona    = str(row[6]).strip()
             usuario = str(row[7]).strip()
 
-            # Si tenemos cursor, saltar eventos ya subidos en ejecuciones anteriores
             if salteando:
                 nd = normalizar_dia(dia)
                 if nd < cur_dia or (nd == cur_dia and hora <= cur_hora):
                     continue
-                salteando = False  # pasamos el cursor, procesar el resto
+                salteando = False
 
             event_key = f"{dia}_{hora}_{cuenta}_{evento}_{zona}_{usuario}"
             if event_key in cache:
@@ -591,42 +593,33 @@ def sincronizar_eventos(cache):
                 cache.add(event_key)
                 cache_modificada = True
                 nuevos += 1
-                _errores_consecutivos = 0
             except Exception as e:
                 err_str = str(e).lower()
                 if "duplicate" in err_str or "23505" in err_str or "already exists" in err_str:
                     cache.add(event_key)
                     cache_modificada = True
                 else:
-                    _errores_consecutivos += 1
-                    print(f"  [ERROR SUPABASE] ({_errores_consecutivos}x) {e}")
-                    if _errores_consecutivos >= 5:
-                        tiempo_espera = min(30, 3 * _errores_consecutivos)
-                    break
+                    raise
 
         if cache_modificada:
             save_cache(cache)
 
-        # Guardar cursor del archivo MDB + último evento
+        # Guardar cursor de este MDB
         if nuevos > 0 or not cur_mdb:
-            try:
-                if rows and len(rows) > 0:
-                    last = rows[-1]
-                    save_cursor(mdb_name, str(last[0]).strip(), str(last[1]).strip())
-            except Exception as cur_err:
-                print(f"[CURSOR] Error guardando cursor: {cur_err}")
-                sys.stdout.flush()
-
-        enviar_heartbeat()
+            if rows:
+                last = rows[-1]
+                save_cursor(mdb_name, str(last[0]).strip(), str(last[1]).strip())
 
         if nuevos:
-            print(f"  >>> {nuevos} nuevo(s).")
-            if rows:
-                print(f"  [ULTIMOS EVENTOS] {str(rows[-1][0]).strip()} {str(rows[-1][1]).strip()} | {str(rows[-2][0]).strip()} {str(rows[-2][1]).strip()} | {str(rows[-3][0]).strip()} {str(rows[-3][1]).strip()}")
+            print(f"  [{mdb_name}] >>> {nuevos} nuevo(s).")
             sys.stdout.flush()
+
+        return cache, nuevos
 
     except Exception as e:
         print(f"[ERROR CRITICO] {e}")
+        sys.stdout.flush()
+        return cache, 0
     finally:
         if cursor:
             try: cursor.close()
@@ -638,7 +631,33 @@ def sincronizar_eventos(cache):
             try: os.remove(RUTA_COPIA_TEMP)
             except: pass
 
-    return cache, tiempo_espera
+
+def sincronizar_eventos(cache):
+    global _errores_consecutivos
+    _errores_consecutivos = 0
+    
+    todos_mdb = get_todos_mdb()
+    if not todos_mdb:
+        return cache, INTERVALO_SEG
+
+    total_nuevos = 0
+    for ruta_mdb in todos_mdb:
+        mdb_name = os.path.basename(ruta_mdb)
+        mtime = datetime.fromtimestamp(os.path.getmtime(ruta_mdb)).strftime('%H:%M:%S')
+        print(f"[DB] {mdb_name} (modificado {mtime})")
+        sys.stdout.flush()
+        
+        cache, nuevos = procesar_mdb(ruta_mdb, mdb_name, cache)
+        total_nuevos += nuevos
+
+    enviar_heartbeat()
+    _errores_consecutivos = 0
+    
+    if total_nuevos == 0:
+        print(f"  [OK] Sin eventos nuevos en {len(todos_mdb)} archivo(s) MDB")
+        sys.stdout.flush()
+    
+    return cache, INTERVALO_SEG
 
 
 if __name__ == "__main__":
