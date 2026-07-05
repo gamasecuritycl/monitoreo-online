@@ -91,7 +91,7 @@ set PS_SCRIPT=%TEMP%\gama_crear_tarea.ps1
 > "%PS_SCRIPT%" echo $action = New-ScheduledTaskAction -Execute '%PYTHONW%' -Argument '"%DESTINO%\sincronizador.py"' -WorkingDirectory '%DESTINO%'
 >> "%PS_SCRIPT%" echo $trigger1 = New-ScheduledTaskTrigger -AtStartup -RandomDelay "00:00:10"
 >> "%PS_SCRIPT%" echo $trigger2 = New-ScheduledTaskTrigger -AtLogOn -RandomDelay "00:00:05"
->> "%PS_SCRIPT%" echo $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable -RestartCount 9999 -RestartInterval (New-TimeSpan -Seconds 15) -ExecutionTimeLimit 0 -MultipleInstances IgnoreNew
+>> "%PS_SCRIPT%" echo $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable -RestartCount 9999 -RestartInterval (New-TimeSpan -Minutes 1) -ExecutionTimeLimit 0 -MultipleInstances IgnoreNew
 >> "%PS_SCRIPT%" echo Register-ScheduledTask -TaskName "%TAREA%" -Action $action -Trigger $trigger1,$trigger2 -Settings $settings -RunLevel Highest -Force ^| Out-Null
 >> "%PS_SCRIPT%" echo Write-Host "OK."
 
@@ -102,7 +102,7 @@ echo   OK.
 :: ---- 5. Iniciar ahora mismo ----
 echo.
 echo [5/5] Arrancando sincronizador en segundo plano...
-Start-Sleep -Seconds 2
+timeout /t 3 /nobreak >nul 2>&1
 schtasks /run /tn "%TAREA%"
 if %ERRORLEVEL% EQU 0 ( echo   OK. ) else ( echo   [AVISO] No se pudo arrancar ahora, pero arrancara al boot/logon. )
 
