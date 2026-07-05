@@ -131,8 +131,24 @@ def log_flush(*args, **kwargs):
 # ── Sistema de cursor: trackea el archivo MDB + último evento para no reprocesar en reinicios ──
 RUTA_CURSOR_JSON = os.path.join(os.path.dirname(CARPETA_EVENTOS), '_sincronizador_cursors.json')
 
+def parsear_fecha(dia: str) -> datetime:
+    """Intenta parsear una fecha en formato YYYY-MM-DD o DD-MM-YYYY (con/sin hora o usando slashes)."""
+    if not dia:
+        return None
+    s = dia.strip().replace('/', '-')
+    s = s.split(' ')[0]
+    for fmt in ("%Y-%m-%d", "%d-%m-%Y"):
+        try:
+            return datetime.strptime(s, fmt)
+        except ValueError:
+            continue
+    return None
+
 def normalizar_dia(dia: str) -> str:
-    """Convierte DD-MM-YYYY a YYYY-MM-DD para comparación lexicográfica correcta."""
+    """Convierte cualquier formato de fecha a YYYY-MM-DD."""
+    dt = parsear_fecha(dia)
+    if dt:
+        return dt.strftime("%Y-%m-%d")
     partes = dia.split('-')
     if len(partes) == 3 and len(partes[0]) <= 2:
         return f"{partes[2]}-{partes[1]}-{partes[0]}"
@@ -186,8 +202,21 @@ def save_cache(cache):
     except Exception as e:
         print(f"[CACHE] Error guardando: {e}")
 
+# Dias hacia atrás a procesar (0 = todos, 90 = últimos 3 meses)
+DIAS_PROCESAR = 90
+
+# Límite de fecha para eventos (solo sube eventos de los últimos DIAS_PROCESAR días)
+LIMITE_FECHA_EVENTOS = None
+
+def init_limite_fecha():
+    global LIMITE_FECHA_EVENTOS
+    if DIAS_PROCESAR > 0:
+        LIMITE_FECHA_EVENTOS = (datetime.now() - timedelta(days=DIAS_PROCESAR)).replace(hour=0, minute=0, second=0, microsecond=0)
+    else:
+        LIMITE_FECHA_EVENTOS = None
+
 def get_todos_mdb():
-    """Devuelve lista de TODOS los archivos MDB ordenados cronológicamente (más antiguo primero)."""
+    """Devuelve lista de archivos MDB de los últimos DIAS_PROCESAR días, ordenados cronológicamente."""
     try:
         archivos = [f for f in os.listdir(CARPETA_EVENTOS) if f.upper().endswith('.MDB')]
     except Exception as e:
@@ -195,14 +224,30 @@ def get_todos_mdb():
         return []
     if not archivos:
         return []
-    # Ordenar por fecha en el nombre (YYYY-MM-DD.MDB) si es posible, si no por mtime
+    
     def sort_key(f):
         nombre = os.path.splitext(f)[0]
         try:
             return datetime.strptime(nombre, "%Y-%m-%d")
         except ValueError:
             return datetime.fromtimestamp(os.path.getmtime(os.path.join(CARPETA_EVENTOS, f)))
+    
     archivos.sort(key=sort_key)
+    
+    if DIAS_PROCESAR > 0:
+        if LIMITE_FECHA_EVENTOS is None:
+            init_limite_fecha()
+        filtrados = []
+        for f in archivos:
+            nombre = os.path.splitext(f)[0]
+            try:
+                f_fecha = datetime.strptime(nombre, "%Y-%m-%d")
+                if f_fecha >= LIMITE_FECHA_EVENTOS:
+                    filtrados.append(f)
+            except ValueError:
+                filtrados.append(f)  # si no se puede parsear, incluirlo por seguridad
+        archivos = filtrados
+    
     return [os.path.join(CARPETA_EVENTOS, f) for f in archivos]
 
 # ============================================================
@@ -560,6 +605,12 @@ def procesar_mdb(ruta_mdb, mdb_name, cache):
             zona    = str(row[6]).strip()
             usuario = str(row[7]).strip()
 
+            # Filtro por fecha: solo últimos DIAS_PROCESAR días
+            if LIMITE_FECHA_EVENTOS:
+                ev_fecha = parsear_fecha(dia)
+                if ev_fecha and ev_fecha < LIMITE_FECHA_EVENTOS:
+                    continue
+
             if salteando:
                 nd = normalizar_dia(dia)
                 if nd < cur_dia or (nd == cur_dia and hora <= cur_hora):
@@ -570,12 +621,10 @@ def procesar_mdb(ruta_mdb, mdb_name, cache):
             if event_key in cache:
                 continue
 
-            partes = dia.split('-')
+            dia_norm = normalizar_dia(dia)
+            partes = dia_norm.split('-')
             if len(partes) == 3:
-                if len(partes[0]) == 4:
-                    fecha_hora = f'{partes[0]}-{partes[1]}-{partes[2]}T{hora}{chile_tz}'
-                else:
-                    fecha_hora = f'{partes[2]}-{partes[1]}-{partes[0]}T{hora}{chile_tz}'
+                fecha_hora = f'{partes[0]}-{partes[1]}-{partes[2]}T{hora}{chile_tz}'
             else:
                 fecha_hora = hora
 
@@ -636,6 +685,9 @@ def sincronizar_eventos(cache):
     global _errores_consecutivos
     _errores_consecutivos = 0
     
+    # Inicializar/actualizar el límite de fecha antes de procesar los archivos MDB
+    init_limite_fecha()
+    
     todos_mdb = get_todos_mdb()
     if not todos_mdb:
         return cache, INTERVALO_SEG
@@ -662,6 +714,7 @@ def sincronizar_eventos(cache):
 
 if __name__ == "__main__":
     try:
+        init_limite_fecha()
         log_flush("=" * 65)
         log_flush("  GAMA COMMAND CENTER - Sincronizador v5.3")
         log_flush(f"  Carpeta Eventos: {CARPETA_EVENTOS}")
