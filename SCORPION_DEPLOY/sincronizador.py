@@ -503,7 +503,8 @@ def sincronizar_eventos(cache):
         return cache, INTERVALO_SEG
 
     mdb_name = os.path.basename(ruta_original)
-    print(f"[DB] {mdb_name}")
+    mtime = datetime.fromtimestamp(os.path.getmtime(ruta_original)).strftime('%H:%M:%S')
+    print(f"[DB] {mdb_name} (modificado {mtime})")
     sys.stdout.flush()
     chile_tz = get_chile_offset()
     conn = None
@@ -620,6 +621,8 @@ def sincronizar_eventos(cache):
 
         if nuevos:
             print(f"  >>> {nuevos} nuevo(s).")
+            if rows:
+                print(f"  [ULTIMOS EVENTOS] {str(rows[-1][0]).strip()} {str(rows[-1][1]).strip()} | {str(rows[-2][0]).strip()} {str(rows[-2][1]).strip()} | {str(rows[-3][0]).strip()} {str(rows[-3][1]).strip()}")
             sys.stdout.flush()
 
     except Exception as e:
@@ -674,6 +677,18 @@ if __name__ == "__main__":
         INTERVALO_ZONAS = 3600  # 1 hora
         
         cache = load_cache()
+        
+        # Diagnóstico: listar todos los MDB y su fecha de modificación
+        log_flush("[+] Archivos MDB en carpeta EVENTOS:")
+        sys.stdout.flush()
+        try:
+            for f in sorted(os.listdir(CARPETA_EVENTOS), key=lambda x: os.path.getmtime(os.path.join(CARPETA_EVENTOS, x)), reverse=True):
+                if f.upper().endswith('.MDB'):
+                    fm = datetime.fromtimestamp(os.path.getmtime(os.path.join(CARPETA_EVENTOS, f))).strftime('%Y-%m-%d %H:%M:%S')
+                    log_flush(f"    {f}  ->  modificado {fm}")
+        except Exception as diag_err:
+            log_flush(f"    [ERROR] {diag_err}")
+        sys.stdout.flush()
         
         log_flush("[+] Sincronización inicial completa. Entrando en bucle principal de eventos...")
         sys.stdout.flush()
