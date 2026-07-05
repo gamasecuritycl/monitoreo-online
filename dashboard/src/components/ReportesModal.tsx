@@ -8,20 +8,26 @@ const API_URL = 'https://bitacora.gamasecurity.cl/api-bitacora.php'
 
 type ReporteTab = 'diario' | 'semanal' | 'cliente' | 'fallas' | 'ranking' | 'operadores'
 
+const _fmtChile = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Santiago', year: 'numeric', month: '2-digit', day: '2-digit' })
+
 function hoyChile(): string {
+  return _fmtChile.format(new Date())
+}
+
+function desdeChile(): string {
   const ahora = new Date()
-  const chile = new Date(ahora.toLocaleString('en-US', { timeZone: 'America/Santiago' }))
-  return chile.toISOString().split('T')[0]
+  const p = Intl.DateTimeFormat('en-US', { timeZone: 'America/Santiago', year: 'numeric', month: 'numeric', day: 'numeric' }).formatToParts(ahora)
+  const dia = parseInt(p.find(x => x.type === 'day')!.value)
+  const mes = parseInt(p.find(x => x.type === 'month')!.value) - 1
+  const año = parseInt(p.find(x => x.type === 'year')!.value)
+  const chile = new Date(año, mes, dia, 12, 0, 0)
+  chile.setDate(chile.getDate() - 7)
+  return _fmtChile.format(chile)
 }
 
 export default function ReportesModal({ onClose }: { onClose: () => void }) {
   const [tab, setTab] = useState<ReporteTab>('diario')
-  const [desde, setDesde] = useState(() => {
-    const h = hoyChile()
-    const d = new Date(h + 'T12:00:00')
-    d.setDate(d.getDate() - 7)
-    return d.toISOString().split('T')[0]
-  })
+  const [desde, setDesde] = useState(() => desdeChile())
   const [hasta, setHasta] = useState(() => hoyChile())
   const [datos, setDatos] = useState<any[]>([])
   const [cargando, setCargando] = useState(false)
