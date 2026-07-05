@@ -172,7 +172,7 @@ export default function ScorpionDashboard() {
         .from('eventos_monitoreo')
         .select('*')
         .not('cuenta', 'in', '(CLIENTES,CODIGOS,ZONAS,__SINCRONIZADOR__)')
-        .order('id', { ascending: false })
+        .order('fecha_hora', { ascending: false })
         .limit(50)
 
       if (busqueda.trim()) {
@@ -197,21 +197,21 @@ export default function ScorpionDashboard() {
 
   // Polling cada 3 segundos
   useEffect(() => {
-    let latestId = 0
+    let latestTime = ''
     const poll = async () => {
       try {
         const { data } = await supabase
           .from('eventos_monitoreo')
           .select('*')
           .not('cuenta', 'in', '(CLIENTES,CODIGOS,ZONAS,__SINCRONIZADOR__)')
-          .order('id', { ascending: false })
+          .order('fecha_hora', { ascending: false })
           .limit(50)
 
         if (!data || data.length === 0) return
-        const maxId = data[0].id as number
-        if (maxId <= latestId) return
+        const maxTime = data[0].fecha_hora
+        if (maxTime <= latestTime) return
 
-        latestId = maxId
+        latestTime = maxTime
         const filtered = busqueda.trim()
           ? data.filter(e =>
               e.cuenta?.toLowerCase().includes(busqueda.toLowerCase()) ||
@@ -453,7 +453,7 @@ export default function ScorpionDashboard() {
           .select('fecha_hora')
           .eq('cuenta', '__SINCRONIZADOR__')
           .eq('evento', 'HEARTBEAT')
-          .order('id', { ascending: false })
+          .order('fecha_hora', { ascending: false })
           .limit(1)
         if (data && data.length > 0) {
           const hbTime = new Date(data[0].fecha_hora).getTime()
