@@ -107,6 +107,29 @@ def conectar_supabase():
 
 conectar_supabase()
 
+# Heartbeat: cada N ciclos inserta un marker en Supabase para que el dashboard sepa que vivo
+HEARTBEAT_CADENCIA = 10
+_heartbeat_counter = 0
+_errores_consecutivos = 0
+
+def enviar_heartbeat():
+    global _heartbeat_counter
+    _heartbeat_counter += 1
+    if _heartbeat_counter % HEARTBEAT_CADENCIA != 0:
+        return
+    try:
+        ahora = datetime.now(timezone.utc).isoformat()
+        supabase.table("eventos_monitoreo").insert({
+            "fecha_hora": ahora,
+            "cuenta": "__SINCRONIZADOR__",
+            "nombre_abonado": "",
+            "evento": "HEARTBEAT v5.0",
+            "zona": str(os.getpid()),
+            "usuario": "",
+        }).execute()
+    except Exception as e:
+        print(f"[HEARTBEAT] Error: {e}")
+
 def get_chile_offset() -> str:
     if time.daylight and time.localtime().tm_isdst:
         offset_hours = -3
@@ -562,19 +585,30 @@ def sincronizar_eventos(cache):
                 cache.add(event_key)
                 cache_modificada = True
                 nuevos += 1
+                _errores_consecutivos = 0
             except Exception as e:
                 err_str = str(e).lower()
                 if "duplicate" in err_str or "23505" in err_str or "already exists" in err_str:
                     cache.add(event_key)
                     cache_modificada = True
                 else:
-                    print(f"  [ERROR SUPABASE] Fallo de red al insertar: {e}")
+                    _errores_consecutivos += 1
+                    print(f"  [ERROR SUPABASE] Fallo de red al insertar ({_errores_consecutivos}x consecutivo): {e}")
+                    # Backoff exponencial: si falla muchas veces, esperar mas
+                    if _errores_consecutivos >= 5:
+                        tiempo_espera = min(30, 3 * _errores_consecutivos)
+                        print(f"  >>> Demasiados errores consecutivos. Esperando {tiempo_espera}s...")
                     break
 
         if cache_modificada:
             save_cache(cache)
 
+        enviar_heartbeat()
+
         print(f"  >>> {nuevos} evento(s) nuevo(s) subidos." if nuevos > 0 else "  Sin eventos nuevos.")
+        
+        # Reset contador de errores si hubo exito
+        _errores_consecutivos = 0
 
     except Exception as e:
         print(f"[ERROR CRITICO] {e}")
@@ -595,9 +629,10 @@ def sincronizar_eventos(cache):
 
 if __name__ == "__main__":
     print("=" * 65)
-    print("  GAMA COMMAND CENTER - Sincronizador v5.0")
+    print("  GAMA COMMAND CENTER - Sincronizador v5.1")
     print(f"  Carpeta Eventos: {CARPETA_EVENTOS}")
     print(f"  Timezone: Chile ({get_chile_offset()})")
+    print(f"  Heartbeat cada ~{HEARTBEAT_CADENCIA * INTERVALO_SEG}s en Supabase")
     print("=" * 65)
     
     # 1. Sincronización inicial de clientes al arrancar

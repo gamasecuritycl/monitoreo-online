@@ -84,6 +84,7 @@ supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 # Heartbeat: cada N ciclos actualiza la tabla para que el dashboard sepa que vivo
 HEARTBEAT_CADENCIA = 10  # cada 10 ciclos (~30 seg)
 _heartbeat_counter = 0
+_errores_consecutivos = 0
 
 def enviar_heartbeat():
     global _heartbeat_counter
@@ -218,6 +219,7 @@ def sincronizar(cache):
                 cache.add(event_key)
                 cache_modificada = True
                 nuevos += 1
+                _errores_consecutivos = 0
             except Exception as e:
                 err_str = str(e).lower()
                 # 23505 es el código de violación de clave única en PostgreSQL (Supabase)
@@ -225,7 +227,8 @@ def sincronizar(cache):
                     cache.add(event_key)
                     cache_modificada = True
                 else:
-                    print(f"  [ERROR] Fallo de red/conexión: {e}")
+                    _errores_consecutivos += 1
+                    print(f"  [ERROR] Fallo de red/conexión ({_errores_consecutivos}x consecutivo): {e}")
 
         if cache_modificada:
             save_cache(cache)
@@ -233,6 +236,8 @@ def sincronizar(cache):
         enviar_heartbeat()
 
         print(f"  >>> {nuevos} evento(s) nuevo(s) subidos." if nuevos > 0 else "  Sin eventos nuevos.")
+
+        _errores_consecutivos = 0
 
     except Exception as e:
         print(f"[ERROR] {e}")

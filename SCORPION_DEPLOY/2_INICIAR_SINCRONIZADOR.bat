@@ -3,7 +3,7 @@ title GAMA COMMAND CENTER - Sincronizador ACTIVO
 color 0A
 echo.
 echo =====================================================
-echo   GAMA COMMAND CENTER - Sincronizador v2.2
+echo   GAMA COMMAND CENTER - Sincronizador v5.1
 echo   Conectando con Supabase...
 echo   NO CERRAR ESTA VENTANA
 echo =====================================================
