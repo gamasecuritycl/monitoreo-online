@@ -1,5 +1,5 @@
 @echo off
-title GAMA COMMAND CENTER - Instalacion Nuclear v5.2
+title GAMA COMMAND CENTER - Instalacion Nuclear v5.3
 color 0A
 setlocal enabledelayedexpansion
 
@@ -8,8 +8,8 @@ set TAREA=GAMA_Sincronizador
 
 echo.
 echo ============================================================
-echo   GAMA COMMAND CENTER - INSTALACION NUCLEAR v5.2
-echo   (Ejecutar como Administrador - UNICA VEZ)
+echo   GAMA COMMAND CENTER - INSTALACION NUCLEAR v5.3
+echo   (Ejecutar como Administrador - SOLO UNA VEZ)
 echo ============================================================
 echo.
 
@@ -49,23 +49,42 @@ echo   OK.
 echo.
 echo [3/5] Matando procesos anteriores...
 taskkill /f /im pythonw.exe >nul 2>&1
+taskkill /f /im python.exe >nul 2>&1
 taskkill /f /im wscript.exe >nul 2>&1
-echo   ✓ pythonw.exe y wscript.exe eliminados.
+echo   - pythonw.exe, python.exe, wscript.exe eliminados.
+:: Esperar a que Windows libere handles de archivos
+timeout /t 3 /nobreak >nul
 
 :: ---- Crear directorio destino ----
 if not exist "%DESTINO%" mkdir "%DESTINO%"
 
-:: ---- Copiar archivos ----
-copy /Y "%~dp0sincronizador.py" "%DESTINO%\sincronizador.py" >nul
-echo   ✓ sincronizador.py copiado.
+:: ---- FORZAR reemplazo del archivo ----
+echo   Copiando sincronizador.py...
+:: Eliminar primero si existe para evitar file locking residual
+if exist "%DESTINO%\sincronizador.py" (
+    del /F /Q "%DESTINO%\sincronizador.py" >nul 2>&1
+    timeout /t 1 /nobreak >nul
+)
+copy /Y "%~dp0sincronizador.py" "%DESTINO%\sincronizador.py"
+if %ERRORLEVEL% NEQ 0 (
+    echo [ERROR] Fallo la copia del sincronizador.
+    pause
+    exit /b 1
+)
+echo   OK - sincronizador.py copiado.
 
 :: ---- LIMPIAR archivos obsoletos ----
 echo   Limpiando archivos de versiones anteriores...
 if exist "%DESTINO%\_sincronizador.lock" del /F "%DESTINO%\_sincronizador.lock" >nul 2>&1 & echo     - _sincronizador.lock eliminado
 if exist "%DESTINO%\_sincronizador_cache.json" del /F "%DESTINO%\_sincronizador_cache.json" >nul 2>&1 & echo     - _sincronizador_cache.json eliminado
-if exist "%DESTINO%\_sincronizador_cursor.txt" del /F "%DESTINO%\_sincronizador_cursor.txt" >nul 2>&1 & echo     - _sincronizador_cursor.txt eliminado (formato viejo)
-if exist "%DESTINO%\iniciar_silencioso.vbs" del /F "%DESTINO%\iniciar_silencioso.vbs" >nul 2>&1 & echo     - iniciar_silencioso.vbs eliminado (ya no se usa)
+if exist "%DESTINO%\_sincronizador_cursor.txt" del /F "%DESTINO%\_sincronizador_cursor.txt" >nul 2>&1 & echo     - _sincronizador_cursor.txt eliminado
+if exist "%DESTINO%\iniciar_silencioso.vbs" del /F "%DESTINO%\iniciar_silencioso.vbs" >nul 2>&1 & echo     - iniciar_silencioso.vbs eliminado
 if exist "%DESTINO%\sincronizador.py.bak" del /F "%DESTINO%\sincronizador.py.bak" >nul 2>&1
+:: Limpiar log viejo para arrancar fresco
+if exist "%DESTINO%\_gama_log.txt" (
+    del /F "%DESTINO%\_gama_log.txt" >nul 2>&1
+    echo     - _gama_log.txt eliminado (log fresco)
+)
 echo   OK.
 
 :: ---- 4. Registrar Tarea Programada NUCLEAR vía PowerShell ----
@@ -86,7 +105,7 @@ if not defined PYTHONW set PYTHONW=pythonw.exe
 
 echo   Usando: %PYTHONW%
 
-:: PowerShell script para crear tarea (más confiable que XML)
+:: PowerShell script para crear tarea
 set PS_SCRIPT=%TEMP%\gama_crear_tarea.ps1
 
 > "%PS_SCRIPT%" echo $action = New-ScheduledTaskAction -Execute '%PYTHONW%' -Argument '"%DESTINO%\sincronizador.py"' -WorkingDirectory '%DESTINO%'
@@ -109,20 +128,18 @@ if %ERRORLEVEL% EQU 0 ( echo   OK. ) else ( echo   [AVISO] No se pudo arrancar a
 
 echo.
 echo ============================================================
-echo   INSTALACION NUCLEAR COMPLETADA v5.2
+echo   INSTALACION NUCLEAR COMPLETADA v5.3
 echo.
 echo   Resumen del sistema 24/7:
 echo   - Mutex Windows: no hay duplicados jamas
 echo   - Cursor con nombre MDB: rotacion diaria no pierde eventos
 echo   - Heartbeat cada ~30s en Supabase (dashboard lo monitorea)
 echo   - Backoff exponencial: si Supabase falla, espera hasta 30s
-echo   - Crash logging: cualquier error queda en _gama_log.txt
+echo   - Crash logging con flush inmediato
+echo   - Log fresco (se borro _gama_log.txt)
 echo   - Task Scheduler: arranca al boot + logon + reinicio 1min
 echo   - Sin VBS, sin lock files, sin ventanas
 echo.
-echo   El cursor viejo fue eliminado. En el primer ciclo
-echo   se procesaran todos los eventos del MDB actual.
-echo.  
 echo   Para verificar: abre el Administrador de Tareas
 echo   y busca "pythonw.exe". O abre el dashboard
 echo   y mira el indicador SINCRONIZADOR (verde = vivo).

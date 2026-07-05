@@ -125,6 +125,10 @@ def get_chile_offset() -> str:
     sign = '+' if offset_hours >= 0 else '-'
     return f"{sign}{abs(offset_hours):02d}:00"
 
+def log_flush(*args, **kwargs):
+    print(*args, **kwargs)
+    sys.stdout.flush()
+
 # ── Sistema de cursor: trackea el archivo MDB + último evento para no reprocesar en reinicios ──
 def normalizar_dia(dia: str) -> str:
     """Convierte DD-MM-YYYY a YYYY-MM-DD para comparación lexicográfica correcta."""
@@ -486,47 +490,21 @@ def sincronizar_zonas():
     except Exception as e:
         print(f"[MIGRACIÓN ZONAS ERROR] Fallo al subir consolidado: {e}")
 
-                
-    if not zonas_map:
-        print("[MIGRACIÓN ZONAS] No se pudo leer la zonificación de ningún abonado. Omitiendo...")
-        return
-        
-    try:
-        zonas_json = json.dumps(zonas_map, ensure_ascii=False)
-        print(f"[MIGRACIÓN ZONAS] Subiendo zonificacion de {len(zonas_map)} abonados a Supabase en fila especial...")
-        
-        try:
-            supabase.table("eventos_monitoreo").delete().eq("cuenta", "ZONAS").execute()
-        except: pass
-        
-        chile_tz = get_chile_offset()
-        now_iso = datetime.now().strftime("%Y-%m-%dT%H:%M:%S") + chile_tz
-        
-        data = {
-            "fecha_hora": now_iso,
-            "cuenta": "ZONAS",
-            "nombre_abonado": zonas_json,
-            "evento": "SINCRONIZACION ZONAS MDB",
-            "zona": "000",
-            "usuario": "SYSTEM"
-        }
-        supabase.table("eventos_monitoreo").insert(data).execute()
-        print(f"[MIGRACIÓN ZONAS SUCCESS] Zonificación de {len(zonas_map)} abonados sincronizada exitosamente en Supabase.")
-        
-    except Exception as e:
-        print(f"[MIGRACIÓN ZONAS ERROR] Fallo al subir consolidado: {e}")
-
 
 # ============================================================
 #  BUCLE PRINCIPAL DE EVENTOS
 # ============================================================
 
 def sincronizar_eventos(cache):
+    global _errores_consecutivos
+    _errores_consecutivos = 0
     ruta_original = get_ultimo_mdb()
     if not ruta_original:
         return cache, INTERVALO_SEG
 
     mdb_name = os.path.basename(ruta_original)
+    print(f"[DB] {mdb_name}")
+    sys.stdout.flush()
     chile_tz = get_chile_offset()
     conn = None
     cursor = None
@@ -553,6 +531,7 @@ def sincronizar_eventos(cache):
             rows = cursor.fetchall()
         except pyodbc.Error as odbc_err:
             print(f"[ERROR] {odbc_err}")
+            sys.stdout.flush()
             return cache, 10
 
         rows.reverse()
@@ -566,6 +545,7 @@ def sincronizar_eventos(cache):
 
         if cur_mdb and cur_mdb != mdb_name:
             print(f"  [CURSOR] Nuevo archivo MDB detectado ({mdb_name}), procesando todo...")
+            sys.stdout.flush()
 
         for row in rows:
             dia     = str(row[0]).strip()
@@ -626,17 +606,21 @@ def sincronizar_eventos(cache):
         if cache_modificada:
             save_cache(cache)
 
-        # Guardar cursor del archivo MDB + último evento (persiste entre reinicios)
+        # Guardar cursor del archivo MDB + último evento
         if nuevos > 0 or not cur_mdb:
-            last = rows[-1] if rows else None
-            if last:
-                save_cursor(mdb_name, str(last[0]).strip(), str(last[1]).strip())
+            try:
+                if rows and len(rows) > 0:
+                    last = rows[-1]
+                    save_cursor(mdb_name, str(last[0]).strip(), str(last[1]).strip())
+            except Exception as cur_err:
+                print(f"[CURSOR] Error guardando cursor: {cur_err}")
+                sys.stdout.flush()
 
         enviar_heartbeat()
-        _errores_consecutivos = 0
 
         if nuevos:
             print(f"  >>> {nuevos} nuevo(s).")
+            sys.stdout.flush()
 
     except Exception as e:
         print(f"[ERROR CRITICO] {e}")
@@ -656,24 +640,30 @@ def sincronizar_eventos(cache):
 
 if __name__ == "__main__":
     try:
-        print("=" * 65)
-        print("  GAMA COMMAND CENTER - Sincronizador v5.2")
-        print(f"  Carpeta Eventos: {CARPETA_EVENTOS}")
-        print(f"  Timezone: Chile ({get_chile_offset()})")
-        print(f"  Heartbeat cada ~{HEARTBEAT_CADENCIA * INTERVALO_SEG}s en Supabase")
-        print("=" * 65)
+        log_flush("=" * 65)
+        log_flush("  GAMA COMMAND CENTER - Sincronizador v5.2")
+        log_flush(f"  Carpeta Eventos: {CARPETA_EVENTOS}")
+        log_flush(f"  Timezone: Chile ({get_chile_offset()})")
+        log_flush(f"  Heartbeat cada ~{HEARTBEAT_CADENCIA * INTERVALO_SEG}s en Supabase")
+        log_flush("=" * 65)
+        
+        # Pequeña espera al inicio para evitar restart loops violentos
+        time.sleep(2)
         
         # 1. Sincronización inicial de clientes al arrancar
-        print("\n[+] Iniciando sincronización inicial de clientes de GENERAL.mdb...")
+        log_flush("\n[+] Iniciando sincronización inicial de clientes de GENERAL.mdb...")
         sincronizar_clientes()
+        sys.stdout.flush()
         
         # 2. Sincronización inicial de códigos de color (CODIGOS.MDB)
-        print("\n[+] Iniciando sincronización inicial de códigos de color (CODIGOS.MDB)...")
+        log_flush("\n[+] Iniciando sincronización inicial de códigos de color (CODIGOS.MDB)...")
         sincronizar_codigos()
+        sys.stdout.flush()
         
         # 3. Sincronización inicial de zonificación de abonados
-        print("\n[+] Iniciando sincronización inicial de zonificación de abonados...")
+        log_flush("\n[+] Iniciando sincronización inicial de zonificación de abonados...")
         sincronizar_zonas()
+        sys.stdout.flush()
         
         # 4. Control de tiempo de modificación de GENERAL.mdb
         ruta_general = buscar_general_mdb()
@@ -685,6 +675,9 @@ if __name__ == "__main__":
         
         cache = load_cache()
         
+        log_flush("[+] Sincronización inicial completa. Entrando en bucle principal de eventos...")
+        sys.stdout.flush()
+        
         # Bucle principal
         while True:
             # Verificar si GENERAL.mdb ha cambiado para resincronizar clientes
@@ -693,16 +686,16 @@ if __name__ == "__main__":
                 try:
                     current_mtime = os.path.getmtime(ruta_general_current)
                     if current_mtime != last_mtime:
-                        print(f"\n[+] Se detecto cambio en GENERAL.mdb ({datetime.fromtimestamp(current_mtime).strftime('%H:%M:%S')})")
+                        log_flush(f"\n[+] Se detecto cambio en GENERAL.mdb ({datetime.fromtimestamp(current_mtime).strftime('%H:%M:%S')})")
                         sincronizar_clientes()
                         last_mtime = current_mtime
                 except Exception as ex:
-                    print(f"[ERROR MTR] Fallo al monitorear GENERAL.mdb: {ex}")
+                    log_flush(f"[ERROR MTR] Fallo al monitorear GENERAL.mdb: {ex}")
             
             # Resincronización periódica de códigos y zonas (cada 1 hora)
             ahora = time.time()
             if ahora - last_sync_zonas >= INTERVALO_ZONAS:
-                print(f"\n[+] Resincronización periódica de códigos y zonas ({INTERVALO_ZONAS//60} min)...")
+                log_flush(f"\n[+] Resincronización periódica de códigos y zonas ({INTERVALO_ZONAS//60} min)...")
                 sincronizar_codigos()
                 sincronizar_zonas()
                 last_sync_zonas = ahora
@@ -710,12 +703,18 @@ if __name__ == "__main__":
             cache, sleep_time = sincronizar_eventos(cache)
             time.sleep(sleep_time)
     except Exception as crash:
-        print(f"\n{'='*60}")
-        print(f"[CRASH FATAL] El sincronizador se detuvo inesperadamente:")
-        print(f"  {crash}")
+        log_flush(f"\n{'='*60}")
+        log_flush(f"[CRASH FATAL] El sincronizador se detuvo inesperadamente:")
+        log_flush(f"  {crash}")
         import traceback
         traceback.print_exc()
-        print(f"{'='*60}")
-        print("El VBS lo reiniciará en 5 segundos. Revisa _gama_log.txt para más detalles.")
-        print(f"{'='*60}")
+        sys.stdout.flush()
+        log_flush(f"{'='*60}")
+        log_flush(f"Task Scheduler reiniciará el proceso en 1 minuto.")
+        log_flush(f"{'='*60}")
+    finally:
+        try:
+            kernel32.CloseHandle(mutex)
+        except:
+            pass
 
