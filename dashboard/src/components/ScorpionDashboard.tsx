@@ -76,6 +76,10 @@ export default function ScorpionDashboard() {
   // Mapa de zonificación por abonado desde ZONIFICACION MDB
   const [zonasMap, setZonasMap] = useState<Record<string, { numero: string; dispositivo: string; area: string }[]>>({})
 
+  // Heartbeat del sincronizador.py en PC Scorpion
+  const [sincronizadorVivo, setSincronizadorVivo] = useState(true)
+  const [ultimoHeartbeat, setUltimoHeartbeat] = useState<string | null>(null)
+
   // Cargar base de datos de clientes reales de Supabase en caliente
   useEffect(() => {
     const fetchClientes = async () => {
@@ -167,7 +171,7 @@ export default function ScorpionDashboard() {
       let query = supabase
         .from('eventos_monitoreo')
         .select('*')
-        .not('cuenta', 'in', '(CLIENTES,CODIGOS,ZONAS)')
+        .not('cuenta', 'in', '(CLIENTES,CODIGOS,ZONAS,__SINCRONIZADOR__)')
         .order('id', { ascending: false })
         .limit(50)
 
@@ -199,7 +203,7 @@ export default function ScorpionDashboard() {
         const { data } = await supabase
           .from('eventos_monitoreo')
           .select('*')
-          .not('cuenta', 'in', '(CLIENTES,CODIGOS,ZONAS)')
+          .not('cuenta', 'in', '(CLIENTES,CODIGOS,ZONAS,__SINCRONIZADOR__)')
           .order('id', { ascending: false })
           .limit(50)
 
@@ -236,7 +240,7 @@ export default function ScorpionDashboard() {
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'eventos_monitoreo' }, async (payload) => {
         const newEvent = payload.new as EventoMonitoreo
         // Ignorar filas especiales de sincronización
-        const cuentasEspeciales = ['CLIENTES', 'CODIGOS', 'ZONAS']
+        const cuentasEspeciales = ['CLIENTES', 'CODIGOS', 'ZONAS', '__SINCRONIZADOR__']
         if (cuentasEspeciales.includes((newEvent.cuenta || '').toUpperCase().trim())) return
         
         setEventos((prev) => {
@@ -440,6 +444,35 @@ export default function ScorpionDashboard() {
     return () => { supabase.removeChannel(channel) }
   }, [])
 
+  // Monitorear heartbeat del sincronizador en PC Scorpion
+  useEffect(() => {
+    const checkHeartbeat = async () => {
+      try {
+        const { data } = await supabase
+          .from('eventos_monitoreo')
+          .select('fecha_hora')
+          .eq('cuenta', '__SINCRONIZADOR__')
+          .eq('evento', 'HEARTBEAT')
+          .order('id', { ascending: false })
+          .limit(1)
+        if (data && data.length > 0) {
+          const hbTime = new Date(data[0].fecha_hora).getTime()
+          const now = Date.now()
+          const diffSec = (now - hbTime) / 1000
+          setSincronizadorVivo(diffSec < 60)
+          setUltimoHeartbeat(data[0].fecha_hora)
+        } else {
+          setSincronizadorVivo(false)
+        }
+      } catch {
+        // ignorar
+      }
+    }
+    checkHeartbeat()
+    const timer = setInterval(checkHeartbeat, 15000)
+    return () => clearInterval(timer)
+  }, [])
+
   // Extraer datos del abonado activo para poblar las tarjetas derechas
   const activeEvent = eventoSeleccionado || (eventos.length > 0 ? eventos[eventos.length - 1] : null)
   const cuentaKey = activeEvent ? activeEvent.cuenta.toUpperCase().trim() : ''
@@ -464,6 +497,16 @@ export default function ScorpionDashboard() {
           <div className="flex items-center gap-1.5 ml-1">
             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_#22c55e]" />
             <span className="text-green-400 font-bold text-[10px] tracking-wider">WhatsApp</span>
+          </div>
+          <div className="flex items-center gap-1.5 ml-1" title={ultimoHeartbeat ? `Último heartbeat: ${ultimoHeartbeat}` : 'Sin heartbeat'}>
+            <div className={`w-2 h-2 rounded-full animate-pulse shadow-[0_0_8px] ${
+              sincronizadorVivo
+                ? 'bg-green-500 shadow-[#22c55e]'
+                : 'bg-red-500 shadow-[#ef4444]'
+            }`} />
+            <span className={`font-bold text-[10px] tracking-wider ${
+              sincronizadorVivo ? 'text-green-400' : 'text-red-400'
+            }`}>SINCR.</span>
           </div>
           <span className="text-slate-500 font-mono">BUFFER: {eventos.length}/50</span>
           <input
@@ -540,6 +583,19 @@ export default function ScorpionDashboard() {
           </div>
         ))}
       </nav>
+
+      {/* Alerta de sincronizador caído */}
+      {!sincronizadorVivo && (
+        <div className="bg-red-900/60 border-b border-red-700 px-4 py-1.5 flex items-center gap-3 shrink-0 animate-pulse">
+          <div className="w-2.5 h-2.5 bg-red-500 rounded-full shadow-[0_0_12px_#ef4444]" />
+          <span className="text-red-300 text-xs font-bold tracking-wider">
+            SINCRONIZADOR OFFLINE — PC SCORPION NO ESTÁ ENVIANDO DATOS A SUPABASE
+          </span>
+          <span className="text-red-400 text-[10px] ml-auto">
+            {ultimoHeartbeat ? `Último heartbeat: ${ultimoHeartbeat}` : 'Sin heartbeat'}
+          </span>
+        </div>
+      )}
 
       {/* Contenedor Principal: Izquierda (Tabla), Derecha (Widgets de Scorpion) */}
       <div className="flex-1 flex overflow-hidden">

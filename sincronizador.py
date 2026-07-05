@@ -11,28 +11,48 @@ if sys.executable.lower().endswith("pythonw.exe"):
     except Exception:
         pass
 
-# Evitar múltiples instancias del sincronizador a la vez en el mismo PC
+# ============================================================
+#  GAMA COMMAND CENTER - Sincronizador para PC Scorpion
+#  Versión: 2.3 - Lock robusto, heartbeat Supabase, fail-safe
+# ============================================================
+
+# Evitar múltiples instancias — verifica si el PID del lock sigue vivo
 LOCK_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "_sincronizador.lock")
-try:
-    if os.path.exists(LOCK_FILE):
+def check_lock():
+    if not os.path.exists(LOCK_FILE):
+        return True
+    try:
+        with open(LOCK_FILE, 'r') as f:
+            old_pid = int(f.read().strip())
+        # Verificar si el proceso aún existe en Windows
+        import ctypes
+        kernel32 = ctypes.windll.kernel32
+        handle = kernel32.OpenProcess(0x400, False, old_pid)
+        if handle:
+            kernel32.CloseHandle(handle)
+            print("[LOCK] El sincronizador ya está en ejecución (PID activo). Saliendo...")
+            return False
+        # Proceso muerto, lock obsoleto
         os.remove(LOCK_FILE)
-except Exception:
-    print("[ERROR] El sincronizador ya esta en ejecucion en segundo plano. Saliendo...")
+        print("[LOCK] Lock obsoleto eliminado (PID muerto).")
+    except Exception as e:
+        print(f"[LOCK] Error verificando lock, se elimina y continúa: {e}")
+        try:
+            os.remove(LOCK_FILE)
+        except:
+            pass
+    return True
+
+if not check_lock():
     sys.exit(0)
 
 try:
-    # Mantener el archivo abierto para bloquearlo en Windows
     lock_handle = open(LOCK_FILE, "w")
     lock_handle.write(str(os.getpid()))
     lock_handle.flush()
-except Exception:
-    print("[ERROR] No se pudo crear el archivo de bloqueo.")
+except Exception as e:
+    print(f"[ERROR] No se pudo crear el archivo de bloqueo: {e}")
     sys.exit(0)
-
-# ============================================================
-#  GAMA COMMAND CENTER - Sincronizador para PC Scorpion
-#  Versión: 2.2 - Rutas dinámicas y fix timezone Chile
-# ============================================================
 
 SUPABASE_URL = "https://onxwyrwmpjxtwlmjrosr.supabase.co"
 SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9ueHd5cndtcGp4dHdsbWpyb3NyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI4NTUxNDQsImV4cCI6MjA5ODQzMTE0NH0.8kJRf8hm3rHK8sygMcyBT0R83tyK8hIQCmnAQxannJs"
@@ -60,6 +80,29 @@ DB_PASSWORD  = 'Administ'
 INTERVALO_SEG = 3
 
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+# Heartbeat: cada N ciclos actualiza la tabla para que el dashboard sepa que vivo
+HEARTBEAT_CADENCIA = 10  # cada 10 ciclos (~30 seg)
+_heartbeat_counter = 0
+
+def enviar_heartbeat():
+    global _heartbeat_counter
+    _heartbeat_counter += 1
+    if _heartbeat_counter % HEARTBEAT_CADENCIA != 0:
+        return
+    try:
+        ahora = datetime.now(timezone.utc).isoformat()
+        data = {
+            "fecha_hora": ahora,
+            "cuenta": "__SINCRONIZADOR__",
+            "nombre_abonado": "",  # reservado
+            "evento": "HEARTBEAT",
+            "zona": str(os.getpid()),
+            "usuario": "",
+        }
+        supabase.table("eventos_monitoreo").insert(data).execute()
+    except Exception as e:
+        print(f"[HEARTBEAT] Error: {e}")
 
 def get_chile_offset() -> str:
     """Retorna el offset UTC de Chile (-04:00 invierno / -03:00 verano)."""
@@ -187,6 +230,8 @@ def sincronizar(cache):
         if cache_modificada:
             save_cache(cache)
 
+        enviar_heartbeat()
+
         print(f"  >>> {nuevos} evento(s) nuevo(s) subidos." if nuevos > 0 else "  Sin eventos nuevos.")
 
     except Exception as e:
@@ -204,9 +249,10 @@ def sincronizar(cache):
 
 if __name__ == "__main__":
     print("=" * 55)
-    print("  GAMA COMMAND CENTER - Sincronizador v2.2")
+    print("  GAMA COMMAND CENTER - Sincronizador v2.3")
     print(f"  Carpeta: {CARPETA_EVENTOS}")
     print(f"  Timezone: Chile ({get_chile_offset()})")
+    print(f"  Heartbeat cada ~{HEARTBEAT_CADENCIA * INTERVALO_SEG}s en Supabase")
     print("=" * 55)
     cache = load_cache()
     while True:
