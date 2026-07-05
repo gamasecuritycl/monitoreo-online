@@ -1,4 +1,4 @@
-import time, pyodbc, shutil, os, json, sys, requests
+import time, pyodbc, shutil, os, json, sys, requests, ctypes
 from datetime import datetime, timezone, timedelta
 from supabase import create_client
 
@@ -11,37 +11,21 @@ if sys.executable.lower().endswith("pythonw.exe"):
     except Exception:
         pass
 
-# Evitar múltiples instancias del sincronizador a la vez en el mismo PC
-LOCK_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "_sincronizador.lock")
-
-# Si el lock existe y es valido (el proceso aun esta vivo), salir
-if os.path.exists(LOCK_FILE):
-    try:
-        with open(LOCK_FILE, 'r') as f:
-            old_pid = int(f.read().strip())
-        # En windows no podemos hacer kill(0, 0) facil, pero intentamos ver si el proceso existe
-        import ctypes
-        kernel32 = ctypes.windll.kernel32
-        handle = kernel32.OpenProcess(0x400000, False, old_pid)  # PROCESS_QUERY_INFORMATION
-        if handle:
-            kernel32.CloseHandle(handle)
-            print("[ERROR] El sincronizador ya esta en ejecucion. Saliendo...")
-            sys.exit(0)
-        kernel32.CloseHandle(handle)
-    except Exception:
-        # Lock file invalido o proceso muerto — continuar y sobrescribir
-        pass
-
-# Escribir lock file nuevo
-try:
-    with open(LOCK_FILE, "w") as f:
-        f.write(str(os.getpid()))
-except Exception as e:
-    print(f"[WARN] No se pudo crear archivo de bloqueo: {e}. Continuando de todas formas...")
+# ── Mutex de Windows (evita duplicados aunque se lance desde VBS, terminal o tarea programada) ──
+MUTEX_NAME = "Global\\GAMA_Sincronizador"
+kernel32 = ctypes.windll.kernel32
+mutex = kernel32.CreateMutexW(None, False, MUTEX_NAME)
+if not mutex:
+    print("[ERROR] No se pudo crear el mutex de sincronización.")
+    sys.exit(1)
+if ctypes.GetLastError() == 183:  # ERROR_ALREADY_EXISTS
+    print("[ERROR] El sincronizador ya está en ejecución. Saliendo...")
+    kernel32.CloseHandle(mutex)
+    sys.exit(0)
 
 # ============================================================
 #  GAMA COMMAND CENTER - Sincronizador para PC Scorpion
-#  Versión: 4.0 (Sincronización en tiempo real de clientes y eventos)
+#  Versión: 5.2 (Mutex Windows, fail-safe 24/7)
 # ============================================================
 
 SUPABASE_URL = "https://onxwyrwmpjxtwlmjrosr.supabase.co"
@@ -628,57 +612,67 @@ def sincronizar_eventos(cache):
 
 
 if __name__ == "__main__":
-    print("=" * 65)
-    print("  GAMA COMMAND CENTER - Sincronizador v5.1")
-    print(f"  Carpeta Eventos: {CARPETA_EVENTOS}")
-    print(f"  Timezone: Chile ({get_chile_offset()})")
-    print(f"  Heartbeat cada ~{HEARTBEAT_CADENCIA * INTERVALO_SEG}s en Supabase")
-    print("=" * 65)
-    
-    # 1. Sincronización inicial de clientes al arrancar
-    print("\n[+] Iniciando sincronización inicial de clientes de GENERAL.mdb...")
-    sincronizar_clientes()
-    
-    # 2. Sincronización inicial de códigos de color (CODIGOS.MDB)
-    print("\n[+] Iniciando sincronización inicial de códigos de color (CODIGOS.MDB)...")
-    sincronizar_codigos()
-    
-    # 3. Sincronización inicial de zonificación de abonados
-    print("\n[+] Iniciando sincronización inicial de zonificación de abonados...")
-    sincronizar_zonas()
-    
-    # 4. Control de tiempo de modificación de GENERAL.mdb
-    ruta_general = buscar_general_mdb()
-    last_mtime = os.path.getmtime(ruta_general) if (ruta_general and os.path.exists(ruta_general)) else 0
-    
-    # 5. Control de tiempo para resincronización periódica de zonas/códigos (cada 1 hora)
-    last_sync_zonas = time.time()
-    INTERVALO_ZONAS = 3600  # 1 hora
-    
-    cache = load_cache()
-    
-    # Bucle principal
-    while True:
-        # Verificar si GENERAL.mdb ha cambiado para resincronizar clientes
-        ruta_general_current = buscar_general_mdb()
-        if ruta_general_current and os.path.exists(ruta_general_current):
-            try:
-                current_mtime = os.path.getmtime(ruta_general_current)
-                if current_mtime != last_mtime:
-                    print(f"\n[+] Se detecto cambio en GENERAL.mdb ({datetime.fromtimestamp(current_mtime).strftime('%H:%M:%S')})")
-                    sincronizar_clientes()
-                    last_mtime = current_mtime
-            except Exception as ex:
-                print(f"[ERROR MTR] Fallo al monitorear GENERAL.mdb: {ex}")
+    try:
+        print("=" * 65)
+        print("  GAMA COMMAND CENTER - Sincronizador v5.2")
+        print(f"  Carpeta Eventos: {CARPETA_EVENTOS}")
+        print(f"  Timezone: Chile ({get_chile_offset()})")
+        print(f"  Heartbeat cada ~{HEARTBEAT_CADENCIA * INTERVALO_SEG}s en Supabase")
+        print("=" * 65)
         
-        # Resincronización periódica de códigos y zonas (cada 1 hora)
-        ahora = time.time()
-        if ahora - last_sync_zonas >= INTERVALO_ZONAS:
-            print(f"\n[+] Resincronización periódica de códigos y zonas ({INTERVALO_ZONAS//60} min)...")
-            sincronizar_codigos()
-            sincronizar_zonas()
-            last_sync_zonas = ahora
-                
-        cache, sleep_time = sincronizar_eventos(cache)
-        time.sleep(sleep_time)
+        # 1. Sincronización inicial de clientes al arrancar
+        print("\n[+] Iniciando sincronización inicial de clientes de GENERAL.mdb...")
+        sincronizar_clientes()
+        
+        # 2. Sincronización inicial de códigos de color (CODIGOS.MDB)
+        print("\n[+] Iniciando sincronización inicial de códigos de color (CODIGOS.MDB)...")
+        sincronizar_codigos()
+        
+        # 3. Sincronización inicial de zonificación de abonados
+        print("\n[+] Iniciando sincronización inicial de zonificación de abonados...")
+        sincronizar_zonas()
+        
+        # 4. Control de tiempo de modificación de GENERAL.mdb
+        ruta_general = buscar_general_mdb()
+        last_mtime = os.path.getmtime(ruta_general) if (ruta_general and os.path.exists(ruta_general)) else 0
+        
+        # 5. Control de tiempo para resincronización periódica de zonas/códigos (cada 1 hora)
+        last_sync_zonas = time.time()
+        INTERVALO_ZONAS = 3600  # 1 hora
+        
+        cache = load_cache()
+        
+        # Bucle principal
+        while True:
+            # Verificar si GENERAL.mdb ha cambiado para resincronizar clientes
+            ruta_general_current = buscar_general_mdb()
+            if ruta_general_current and os.path.exists(ruta_general_current):
+                try:
+                    current_mtime = os.path.getmtime(ruta_general_current)
+                    if current_mtime != last_mtime:
+                        print(f"\n[+] Se detecto cambio en GENERAL.mdb ({datetime.fromtimestamp(current_mtime).strftime('%H:%M:%S')})")
+                        sincronizar_clientes()
+                        last_mtime = current_mtime
+                except Exception as ex:
+                    print(f"[ERROR MTR] Fallo al monitorear GENERAL.mdb: {ex}")
+            
+            # Resincronización periódica de códigos y zonas (cada 1 hora)
+            ahora = time.time()
+            if ahora - last_sync_zonas >= INTERVALO_ZONAS:
+                print(f"\n[+] Resincronización periódica de códigos y zonas ({INTERVALO_ZONAS//60} min)...")
+                sincronizar_codigos()
+                sincronizar_zonas()
+                last_sync_zonas = ahora
+                    
+            cache, sleep_time = sincronizar_eventos(cache)
+            time.sleep(sleep_time)
+    except Exception as crash:
+        print(f"\n{'='*60}")
+        print(f"[CRASH FATAL] El sincronizador se detuvo inesperadamente:")
+        print(f"  {crash}")
+        import traceback
+        traceback.print_exc()
+        print(f"{'='*60}")
+        print("El VBS lo reiniciará en 5 segundos. Revisa _gama_log.txt para más detalles.")
+        print(f"{'='*60}")
 
