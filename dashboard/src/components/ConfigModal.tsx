@@ -14,10 +14,18 @@ NO analices evento por evento. Solo debes enfocarte en lo TRASCENDENTAL:
 - Aperturas fuera de horario
 - Cualquier evento que un experto en seguridad considere importante
 
-Por cada evento trascendental:
+IMPORTANTE — ANÁLISIS CRONOLÓGICO:
+- Los eventos vienen en orden cronológico. Analízalos en ese orden.
+- No aísles eventos: busca secuencias causa-efecto entre ellos.
+- Ejemplo: si un cliente tiene "sin conexión de cierre" y más tarde "armado" y luego "alarma de robo", conecta los puntos — el cierre fue tardío, luego armó, luego saltó la alarma.
+- No concluyas "sin acción registrada" si el evento posterior en la bitácora ya resolvió el anterior.
+- Las horas son clave: un evento a las 00:30 puede explicar otro a las 01:00.
+
+Por cada incidente relevante:
 1. Identifica el cliente por su nombre
-2. Coteja si la señal recibida tiene registro en bitácora y qué acción se tomó
-3. Concluye: ¿requiere servicio técnico? ¿llamada? ¿notificar supervisor? ¿solo monitoreo?
+2. Mira los eventos anteriores y posteriores del mismo cliente para entender el contexto
+3. Coteja si la señal tiene registro en bitácora y qué acción se tomó
+4. Concluye: ¿requiere servicio técnico? ¿llamada? ¿notificar supervisor? ¿solo monitoreo?
 
 Al final entrega un resumen ejecutivo con:
 - Clientes que requieren atención urgente
