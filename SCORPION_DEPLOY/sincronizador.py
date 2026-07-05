@@ -125,7 +125,7 @@ def get_chile_offset() -> str:
     sign = '+' if offset_hours >= 0 else '-'
     return f"{sign}{abs(offset_hours):02d}:00"
 
-# ── Sistema de cursor: trackea el último evento subido para no reprocesar en reinicios ──
+# ── Sistema de cursor: trackea el archivo MDB + último evento para no reprocesar en reinicios ──
 def normalizar_dia(dia: str) -> str:
     """Convierte DD-MM-YYYY a YYYY-MM-DD para comparación lexicográfica correcta."""
     partes = dia.split('-')
@@ -137,18 +137,18 @@ def load_cursor():
     try:
         with open(RUTA_CURSOR, 'r', encoding='utf-8') as f:
             lines = f.read().strip().split('\n')
-            if len(lines) >= 2:
-                return lines[0].strip(), lines[1].strip()
+            if len(lines) >= 3:
+                return lines[0].strip(), lines[1].strip(), lines[2].strip()
     except:
         pass
-    return "", ""
+    return "", "", ""
 
-def save_cursor(dia, hora):
+def save_cursor(mdb_file, dia, hora):
     try:
         nd = normalizar_dia(dia)
         temp = RUTA_CURSOR + ".tmp"
         with open(temp, 'w', encoding='utf-8') as f:
-            f.write(f"{nd}\n{hora}")
+            f.write(f"{mdb_file}\n{nd}\n{hora}")
         os.replace(temp, RUTA_CURSOR)
     except Exception as e:
         print(f"[CURSOR] Error guardando: {e}")
@@ -525,6 +525,7 @@ def sincronizar_eventos(cache):
     if not ruta_original:
         return cache, INTERVALO_SEG
 
+    mdb_name = os.path.basename(ruta_original)
     chile_tz = get_chile_offset()
     conn = None
     cursor = None
@@ -557,9 +558,13 @@ def sincronizar_eventos(cache):
         nuevos = 0
         cache_modificada = False
 
-        # Cargar cursor al inicio (persiste entre reinicios)
-        cur_dia, cur_hora = load_cursor()
-        salteando = bool(cur_dia and cur_hora)
+        # Cargar cursor: [mdb_file, dia, hora]
+        cur_mdb, cur_dia, cur_hora = load_cursor()
+        # Si cambió el archivo MDB (rotación diaria), ignorar cursor y procesar todo
+        salteando = bool(cur_dia and cur_hora and cur_mdb == mdb_name)
+
+        if cur_mdb and cur_mdb != mdb_name:
+            print(f"  [CURSOR] Nuevo archivo MDB detectado ({mdb_name}), procesando todo...")
 
         for row in rows:
             dia     = str(row[0]).strip()
@@ -620,11 +625,11 @@ def sincronizar_eventos(cache):
         if cache_modificada:
             save_cache(cache)
 
-        # Guardar cursor del último evento subido (persiste entre reinicios)
-        if nuevos > 0 or not cur_dia:
+        # Guardar cursor del archivo MDB + último evento (persiste entre reinicios)
+        if nuevos > 0 or not cur_mdb:
             last = rows[-1] if rows else None
             if last:
-                save_cursor(str(last[0]).strip(), str(last[1]).strip())
+                save_cursor(mdb_name, str(last[0]).strip(), str(last[1]).strip())
 
         enviar_heartbeat()
         _errores_consecutivos = 0
