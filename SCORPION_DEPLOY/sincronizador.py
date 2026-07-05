@@ -182,7 +182,8 @@ def get_ultimo_mdb():
         return None
     if not archivos:
         return None
-    archivos.sort(reverse=True)
+    # Ordenar por fecha de modificación (más reciente primero)
+    archivos.sort(key=lambda f: os.path.getmtime(os.path.join(CARPETA_EVENTOS, f)), reverse=True)
     return os.path.join(CARPETA_EVENTOS, archivos[0])
 
 # ============================================================
