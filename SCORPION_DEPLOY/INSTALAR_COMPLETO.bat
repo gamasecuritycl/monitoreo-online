@@ -58,20 +58,30 @@ timeout /t 3 /nobreak >nul
 :: ---- Crear directorio destino ----
 if not exist "%DESTINO%" mkdir "%DESTINO%"
 
-:: ---- FORZAR reemplazo del archivo ----
+:: ---- FORZAR reemplazo del archivo ---
 echo   Copiando sincronizador.py...
-:: Eliminar primero si existe para evitar file locking residual
 if exist "%DESTINO%\sincronizador.py" (
     del /F /Q "%DESTINO%\sincronizador.py" >nul 2>&1
     timeout /t 1 /nobreak >nul
 )
-copy /Y "%~dp0sincronizador.py" "%DESTINO%\sincronizador.py"
-if %ERRORLEVEL% NEQ 0 (
-    echo [ERROR] Fallo la copia del sincronizador.
-    pause
-    exit /b 1
+if exist "%~dp0sincronizador.py" (
+    copy /Y "%~dp0sincronizador.py" "%DESTINO%\sincronizador.py"
+    if %ERRORLEVEL% NEQ 0 (
+        echo [ERROR] Fallo la copia local.
+        pause
+        exit /b 1
+    )
+    echo   OK - copiado desde %~dp0sincronizador.py
+) else (
+    echo   Sincronizador.py no encontrado localmente, descargando desde GitHub...
+    powershell -Command "(New-Object System.Net.WebClient).DownloadFile('https://raw.githubusercontent.com/gamasecuritycl/monitoreo-online/main/SCORPION_DEPLOY/sincronizador.py', '%DESTINO%\sincronizador.py')"
+    if %ERRORLEVEL% NEQ 0 (
+        echo [ERROR] No se pudo descargar. Verifica conexion a internet.
+        pause
+        exit /b 1
+    )
+    echo   OK - descargado desde GitHub.
 )
-echo   OK - sincronizador.py copiado.
 
 :: ---- LIMPIAR archivos obsoletos ----
 echo   Limpiando archivos de versiones anteriores...
