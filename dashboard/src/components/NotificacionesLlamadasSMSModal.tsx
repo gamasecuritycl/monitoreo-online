@@ -16,6 +16,7 @@ interface ClientData {
 interface Props {
   onClose: () => void
   clientData: ClientData | null
+  clientesMap: Record<string, any>
 }
 
 interface AlertaHistorial {
@@ -26,10 +27,27 @@ interface AlertaHistorial {
   estado: string
 }
 
-export default function NotificacionesLlamadasSMSModal({ onClose, clientData }: Props) {
+function obtenerContactos(clienteDb: any): Contacto[] {
+  const contactos: Contacto[] = []
+  if (clienteDb) {
+    for (let i = 1; i <= 7; i++) {
+      const tel = clienteDb['t' + i] || clienteDb['telefono' + i]
+      const nom = clienteDb['nombre' + i] || clienteDb['usuario' + i] || `Contacto ${i}`
+      if (tel && tel.trim()) {
+        contactos.push({ prioridad: i, nombre: nom.trim(), telefono: tel.trim() })
+      }
+    }
+  }
+  return contactos
+}
+
+export default function NotificacionesLlamadasSMSModal({ onClose, clientData, clientesMap }: Props) {
   const [activeTab, setActiveTab] = useState<'dialer' | 'config'>('dialer')
   
   // Tab 1: Dialer States
+  const [buscarTexto, setBuscarTexto] = useState('')
+  const [clienteFiltrado, setClienteFiltrado] = useState<any>(null)
+  const [contactosActivos, setContactosActivos] = useState<Contacto[]>([])
   const [numeroMarcador, setNumeroMarcador] = useState('')
   const [contactoSeleccionado, setContactoSeleccionado] = useState<string>('')
 
@@ -84,14 +102,43 @@ export default function NotificacionesLlamadasSMSModal({ onClose, clientData }: 
     cargarHistorial()
   }, [])
 
-  // Auto-cargar primer contacto del abonado en el dialer al abrir
+  // Auto-cargar contactos del abonado activo de la pantalla principal al abrir
   useEffect(() => {
-    if (clientData?.contactos && clientData.contactos.length > 0) {
-      const primerTel = clientData.contactos[0].telefono
-      setNumeroMarcador(primerTel)
-      setContactoSeleccionado(primerTel)
+    if (clientData) {
+      setContactosActivos(clientData.contactos)
+      setClienteFiltrado(null) // Limpiar búsqueda manual
+      if (clientData.contactos.length > 0) {
+        const primerTel = clientData.contactos[0].telefono
+        setNumeroMarcador(primerTel)
+        setContactoSeleccionado(primerTel)
+      }
     }
   }, [clientData])
+
+  // Filtrar base de datos de abonados completa
+  const listaSugeridos = Object.values(clientesMap || {})
+    .filter((c: any) => {
+      if (!buscarTexto) return false
+      const term = buscarTexto.toLowerCase().trim()
+      const cuenta = (c.cuenta || '').toLowerCase()
+      const nombre = (c.nombre || '').toLowerCase()
+      return cuenta.includes(term) || nombre.includes(term)
+    })
+    .slice(0, 5) // Máximo 5 resultados
+
+  const seleccionarClienteBuscado = (c: any) => {
+    const contactos = obtenerContactos(c)
+    setClienteFiltrado(c)
+    setContactosActivos(contactos)
+    setBuscarTexto('') // Limpiar input de búsqueda
+    if (contactos.length > 0) {
+      setNumeroMarcador(contactos[0].telefono)
+      setContactoSeleccionado(contactos[0].telefono)
+    } else {
+      setNumeroMarcador('')
+      setContactoSeleccionado('')
+    }
+  }
 
   // Guardar número de administración
   const handleGuardar = async () => {
@@ -183,7 +230,6 @@ export default function NotificacionesLlamadasSMSModal({ onClose, clientData }: 
   const handleDialCall = () => {
     const numLimpio = numeroMarcador.replace(/[^0-9+]/g, '')
     if (!numLimpio) return
-    // Dispara el protocolo telefónico del dispositivo
     window.location.href = `tel:${numLimpio}`
   }
 
@@ -234,18 +280,48 @@ export default function NotificacionesLlamadasSMSModal({ onClose, clientData }: 
           {activeTab === 'dialer' && (
             <div className="space-y-3 flex-1 flex flex-col justify-between">
               
+              {/* Buscador de Clientes */}
+              <div className="flex flex-col gap-1 relative">
+                <span className="text-[10px] font-bold text-gray-700">🔍 BUSCAR ABONADO (CUENTA O NOMBRE):</span>
+                <input
+                  type="text"
+                  value={buscarTexto}
+                  onChange={(e) => setBuscarTexto(e.target.value)}
+                  placeholder="Escribe cuenta o nombre..."
+                  className="w-full bg-white border border-gray-400 font-bold px-2 py-1 text-xs text-black select-text focus:outline-none"
+                />
+                
+                {/* Resultados de Búsqueda */}
+                {buscarTexto && listaSugeridos.length > 0 && (
+                  <div className="absolute top-full left-0 right-0 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 shadow-lg z-50 py-0.5 mt-0.5 max-h-[140px] overflow-y-auto">
+                    {listaSugeridos.map((c: any) => (
+                      <button
+                        key={c.cuenta}
+                        onClick={() => seleccionarClienteBuscado(c)}
+                        className="w-full text-left px-2 py-1 text-[10px] text-black font-bold hover:bg-[#000080] hover:text-white border-b border-gray-300 truncate cursor-pointer"
+                      >
+                        [{c.cuenta}] {c.nombre}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               {/* Información Abonado */}
               <div className="bg-[#d0d0d0] border border-gray-400 p-2 text-xs">
-                <div className="font-bold text-gray-700 mb-1">ABONADO ACTIVO:</div>
+                <div className="font-bold text-gray-700 mb-0.5">ABONADO CARGADO EN MARCADOR:</div>
                 <div className="bg-white border border-gray-500 p-1 font-bold text-blue-900 truncate">
-                  {clientData ? '📱 DATOS DE CONTACTOS SYNCED' : '❌ SELECCIONE ABONADO EN LA LISTA'}
+                  {clienteFiltrado 
+                    ? `[${clienteFiltrado.cuenta}] ${clienteFiltrado.nombre}`
+                    : (clientData ? '📱 ABONADO ACTIVO DEL DASHBOARD' : '❌ SELECCIONE ABONADO')
+                  }
                 </div>
               </div>
 
               {/* Selector de Contacto de Abonado */}
-              {clientData && clientData.contactos.length > 0 && (
+              {contactosActivos.length > 0 ? (
                 <div className="flex flex-col gap-1">
-                  <span className="text-[10px] font-bold text-gray-700">CONTACTOS DEL ABONADO:</span>
+                  <span className="text-[10px] font-bold text-gray-700">CONTACTOS DISPONIBLES:</span>
                   <select
                     value={contactoSeleccionado}
                     onChange={(e) => {
@@ -254,12 +330,16 @@ export default function NotificacionesLlamadasSMSModal({ onClose, clientData }: 
                     }}
                     className="w-full bg-white border border-gray-400 text-xs p-1 font-bold focus:outline-none"
                   >
-                    {clientData.contactos.map((c, i) => (
+                    {contactosActivos.map((c, i) => (
                       <option key={i} value={c.telefono}>
                         {c.prioridad}. {c.nombre} ({c.telefono})
                       </option>
                     ))}
                   </select>
+                </div>
+              ) : (
+                <div className="text-[10px] italic text-red-700 font-bold text-center bg-red-100 border border-red-300 py-1.5">
+                  Este abonado no tiene contactos guardados en la base de datos.
                 </div>
               )}
 

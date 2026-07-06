@@ -907,6 +907,7 @@ export default function ScorpionDashboard() {
         <NotificacionesLlamadasSMSModal
           onClose={() => setModalActivo(null)}
           clientData={clientData}
+          clientesMap={clientesMap}
         />
       )}
 
