@@ -109,8 +109,7 @@ export async function GET() {
       status: 'offline_alert_sent',
       ultimo_heartbeat: hbData[0].fecha_hora,
       diferencia_minutos: diffMinutes.toFixed(2),
-      whatsapp_success: res.ok,
-      debug: res.debug,
+      success: resOk,
     })
 
   } catch (err: any) {
