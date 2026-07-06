@@ -473,11 +473,30 @@ export default function ScorpionDashboard() {
     return () => clearInterval(timer)
   }, [])
 
+  // Trigger de chequeo del sincronizador caído en la nube para enviar alertas de WhatsApp
+  useEffect(() => {
+    const triggerHeartbeatAlertCheck = async () => {
+      try {
+        await fetch('/api/check-heartbeat')
+      } catch {
+        // Silenciar errores
+      }
+    }
+    triggerHeartbeatAlertCheck()
+    const interval = setInterval(triggerHeartbeatAlertCheck, 120000)
+    return () => clearInterval(interval)
+  }, [])
+
   // Extraer datos del abonado activo para poblar las tarjetas derechas
   const activeEvent = eventoSeleccionado || (eventos.length > 0 ? eventos[eventos.length - 1] : null)
   const cuentaKey = activeEvent ? activeEvent.cuenta.toUpperCase().trim() : ''
   const clienteDb = cuentaKey ? (clientesMap[cuentaKey] || null) : null
   const clientData = activeEvent ? obtenerDatosAbonado(activeEvent.cuenta, activeEvent.nombre_abonado, clienteDb) : null
+
+  const direccionParaMapa = clientData?.direccion && clientData.direccion !== 'Av. Providencia 1420, Of. 602'
+    ? `${clientData.direccion}, ${clientData.comuna || ''}, Chile`
+    : ''
+  const mapUrl = direccionParaMapa ? `https://maps.google.com/maps?q=${encodeURIComponent(direccionParaMapa)}&t=&z=15&ie=UTF8&iwloc=&output=embed` : ''
 
   return (
     <div className="h-[100dvh] flex flex-col bg-[#070b13] text-slate-100 overflow-hidden select-none relative" style={{ fontFamily: "'Consolas', 'Courier New', monospace" }}>
@@ -668,6 +687,26 @@ export default function ScorpionDashboard() {
               </div>
             </div>
           </div>
+
+          {/* Mapa de Geo-Localización */}
+          {direccionParaMapa && (
+            <div className="bg-[#e0e0e0] border-2 border-t-white border-l-white border-b-gray-600 border-r-gray-600 flex flex-col shrink-0">
+              <div className="bg-[#000080] text-white text-[11px] font-bold px-2 py-0.5 tracking-wider uppercase flex justify-between items-center">
+                <span>📍 MAPA DE UBICACIÓN</span>
+              </div>
+              <div className="p-1 h-[140px] w-full bg-white border border-gray-400">
+                <iframe
+                  title="Mapa de Ubicación"
+                  width="100%"
+                  height="100%"
+                  style={{ border: 0 }}
+                  loading="lazy"
+                  allowFullScreen
+                  src={mapUrl}
+                />
+              </div>
+            </div>
+          )}
 
           {/* Box 3: PERSONAS AUTORIZADAS */}
           <div className="bg-[#e0e0e0] border-2 border-t-white border-l-white border-b-gray-600 border-r-gray-600 flex flex-col flex-1 min-h-[120px]">

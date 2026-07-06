@@ -364,6 +364,31 @@ def buscar_general_mdb():
             return ruta
     return None
 
+def formatear_telefono_chile(num_str):
+    if not num_str:
+        return ""
+    # Eliminar cualquier caracter que no sea digito o '+'
+    cleaned = ''.join(c for c in num_str if c.isdigit() or c == '+')
+    cleaned_digits = ''.join(c for c in cleaned if c.isdigit())
+    if not cleaned_digits:
+        return ""
+    
+    # Movil: 987654321 -> +56 9 8765 4321
+    if len(cleaned_digits) == 9 and cleaned_digits.startswith('9'):
+        return f"+56 9 {cleaned_digits[1:5]} {cleaned_digits[5:]}"
+    # Fijo Santiago: 22345678 -> +56 2 2345 6789
+    if len(cleaned_digits) == 8:
+        return f"+56 2 {cleaned_digits[0:4]} {cleaned_digits[4:]}"
+    # Movil internacionalizado: 56987654321
+    if len(cleaned_digits) == 11 and cleaned_digits.startswith('569'):
+        return f"+56 9 {cleaned_digits[3:7]} {cleaned_digits[7:]}"
+    # Fijo internacionalizado: 5622345678
+    if len(cleaned_digits) == 10 and cleaned_digits.startswith('562'):
+        return f"+56 2 {cleaned_digits[3:6]} {cleaned_digits[6:]}"
+    if cleaned.startswith('+'):
+        return cleaned
+    return num_str
+
 def sincronizar_clientes():
     ruta_general = buscar_general_mdb()
     if not ruta_general:
@@ -399,6 +424,13 @@ def sincronizar_clientes():
                     doc[col.lower()] = ""
                 else:
                     doc[col.lower()] = str(val).strip()
+            
+            # Limpiar y formatear teléfonos t1 a t7 y telefono1 a telefono7
+            for i in range(1, 8):
+                for key_prefix in ["t", "telefono"]:
+                    key_t = f"{key_prefix}{i}"
+                    if key_t in doc and doc[key_t]:
+                        doc[key_t] = formatear_telefono_chile(doc[key_t])
             
             # Indexar por número de cuenta (en mayúsculas y sin espacios)
             cuenta = doc.get("cuenta", "").upper().strip()
