@@ -751,8 +751,10 @@ def procesar_mdb(ruta_mdb, mdb_name, cache):
             except: pass
 
 
+_mdb_last_mtimes = {}
+
 def sincronizar_eventos(cache):
-    global _errores_consecutivos
+    global _errores_consecutivos, _mdb_last_mtimes
     _errores_consecutivos = 0
     
     # Inicializar/actualizar el límite de fecha antes de procesar los archivos MDB
@@ -763,19 +765,35 @@ def sincronizar_eventos(cache):
         return cache, INTERVALO_SEG
 
     total_nuevos = 0
+    un_cambio = False
+    
     for ruta_mdb in todos_mdb:
         mdb_name = os.path.basename(ruta_mdb)
-        mtime = datetime.fromtimestamp(os.path.getmtime(ruta_mdb)).strftime('%H:%M:%S')
-        print(f"[DB] {mdb_name} (modificado {mtime})")
+        
+        try:
+            mtime = os.path.getmtime(ruta_mdb)
+        except Exception:
+            mtime = 0
+            
+        # Omitir si el archivo no ha cambiado desde el último ciclo
+        if mdb_name in _mdb_last_mtimes and _mdb_last_mtimes[mdb_name] == mtime:
+            continue
+            
+        un_cambio = True
+        mtime_str = datetime.fromtimestamp(mtime).strftime('%H:%M:%S')
+        print(f"[DB] {mdb_name} (modificado {mtime_str})")
         sys.stdout.flush()
         
         cache, nuevos = procesar_mdb(ruta_mdb, mdb_name, cache)
         total_nuevos += nuevos
+        
+        # Guardar ultima modificacion procesada
+        _mdb_last_mtimes[mdb_name] = mtime
 
     enviar_heartbeat()
     _errores_consecutivos = 0
     
-    if total_nuevos == 0:
+    if total_nuevos == 0 and un_cambio:
         print(f"  [OK] Sin eventos nuevos en {len(todos_mdb)} archivo(s) MDB")
         sys.stdout.flush()
     
