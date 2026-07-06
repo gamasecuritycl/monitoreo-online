@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 import { sendMessage } from '@/lib/whatsapp'
 
-const ADMIN_PHONE = '56991016912'
 const OFFLINE_THRESHOLD_MINUTES = 5
 const SILENCE_PERIOD_HOURS = 4
 
@@ -40,6 +39,15 @@ export async function GET() {
       })
     }
 
+    // Obtener teléfono del administrador guardado en la base de datos (cuenta '__SYSTEM__')
+    const { data: configSystem } = await supabase
+      .from('notificaciones_whatsapp')
+      .select('telefono')
+      .eq('cuenta', '__SYSTEM__')
+      .single()
+
+    const adminPhone = configSystem?.telefono || '56991016912'
+
     // 2. Si está offline, verificar si ya enviamos una alerta en las últimas 4 horas
     const cuatroHorasAtras = new Date(ahora.getTime() - SILENCE_PERIOD_HOURS * 60 * 60 * 1000).toISOString()
     
@@ -65,13 +73,13 @@ export async function GET() {
     // 3. Enviar alerta por WhatsApp
     const mensaje = `🚨 *ALERTA SISTEMA GAMA SEGURIDAD*\n━━━━━━━━━━━━━━━━━━━━━\n\n⚠️ *SINCRONIZADOR OFFLINE*\n\nEl servidor local de Scorpion en la central ha dejado de reportar a Supabase.\n\n🕐 Último Heartbeat: ${ultimoHb.toLocaleString('es-CL')}\n⏳ Tiempo sin reportar: *${diffMinutes.toFixed(0)} minutos*\n\n━━━━━━━━━━━━━━━━━━━━━\n_Gama Seguridad - Monitoreo Autónomo_`
     
-    const res = await sendMessage(ADMIN_PHONE, mensaje)
+    const res = await sendMessage(adminPhone, mensaje)
     
     if (res.ok) {
       // Registrar la conversación para silenciar alertas duplicadas
       await supabase.from('conversaciones_whatsapp').insert({
         cuenta: '__SINCRONIZADOR__',
-        numero: ADMIN_PHONE,
+        numero: adminPhone,
         tipo_evento: 'MONITOR_OFFLINE',
         estado: 'critico',
         mensaje_enviado: 'SINCRONIZADOR OFFLINE',

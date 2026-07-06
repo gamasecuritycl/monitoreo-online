@@ -10,6 +10,7 @@ import EventosPorUsuarioModal from './EventosPorUsuarioModal'
 import ZonificacionModal from './ZonificacionModal'
 import NotificacionesMailModal from './NotificacionesMailModal'
 import NotificacionesWhatsAppModal from './NotificacionesWhatsAppModal'
+import NotificacionesLlamadasSMSModal from './NotificacionesLlamadasSMSModal'
 import BitacoraModal from './BitacoraModal'
 import ReportesModal from './ReportesModal'
 import ConfigModal from './ConfigModal'
@@ -591,6 +592,12 @@ export default function ScorpionDashboard() {
                 >
                   POR WHATSAPP
                 </button>
+                <button
+                  className="w-full text-left px-4 py-1.5 text-xs text-black font-bold hover:bg-[#000080] hover:text-white"
+                  onClick={() => { setModalActivo('notificaciones-llamadas-sms'); setMostrarMenuNotificaciones(false); }}
+                >
+                  POR SMS / VOZ
+                </button>
               </div>
             )}
             {item.hasDropdown && item.id === 'menu-reportes' && mostrarMenuReportes && (
@@ -844,6 +851,13 @@ export default function ScorpionDashboard() {
         <NotificacionesWhatsAppModal
           onClose={() => setModalActivo(null)}
           clientesMap={clientesMap}
+        />
+      )}
+
+      {/* Notificaciones Llamadas / SMS Modal */}
+      {modalActivo === 'notificaciones-llamadas-sms' && (
+        <NotificacionesLlamadasSMSModal
+          onClose={() => setModalActivo(null)}
         />
       )}
 
