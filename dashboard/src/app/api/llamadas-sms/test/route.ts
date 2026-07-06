@@ -9,13 +9,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Falta teléfono' }, { status: 400 })
     }
 
-    const telLimpio = telefono.replace(/[^0-9]/g, '')
+    const inputContacto = telefono.trim()
+    const esTelegram = inputContacto.startsWith('@')
+    const userParam = esTelegram ? inputContacto : '+' + inputContacto.replace(/[^0-9]/g, '')
 
     if (tipo === 'call') {
-      // Disparar llamada de voz CallMeBot via WhatsApp
+      // Disparar llamada de voz CallMeBot via WhatsApp/Telegram
       const mensajeLlamada = `Alerta de prueba del Command Center de Gama Seguridad. Tu sistema de llamadas y SMS de emergencia está operando correctamente.`
       const params = new URLSearchParams({
-        user: '+' + telLimpio,
+        user: userParam,
         text: mensajeLlamada,
         apikey: CALLMEBOT_APIKEY,
         lang: 'es-es',
@@ -26,10 +28,11 @@ export async function POST(req: Request) {
       
       return NextResponse.json({ success, debug: `callmebot_call: status=${res.status}, response=${text}` })
     } else {
-      // Disparar SMS / Texto de prueba (via WhatsApp)
+      // Disparar WhatsApp text de prueba (solo para teléfonos)
+      const phoneParam = esTelegram ? '56991016912' : inputContacto.replace(/[^0-9]/g, '')
       const mensajeSMS = `🛡️ *GAMA SEGURIDAD*\n━━━━━━━━━━━━━━━━━━━━━\n\n💬 *SMS/TEXTO DE PRUEBA EXITOSO*\n\nEste es un mensaje de prueba de tu sistema de alertas del Command Center.`
       const params = new URLSearchParams({
-        phone: telLimpio,
+        phone: phoneParam,
         text: mensajeSMS,
         apikey: CALLMEBOT_APIKEY,
       })

@@ -69,9 +69,17 @@ export default function NotificacionesLlamadasSMSModal({ onClose }: Props) {
 
   // 2. Guardar número en Supabase
   const handleGuardar = async () => {
-    const telLimpio = telefono.replace(/[^0-9]/g, '')
-    if (!telLimpio) {
-      setMensaje('❌ Ingrese un teléfono válido')
+    const valorLimpio = telefono.trim()
+    if (!valorLimpio) {
+      setMensaje('❌ Ingrese un contacto válido')
+      return
+    }
+
+    const esTelegram = valorLimpio.startsWith('@')
+    const finalVal = esTelegram ? valorLimpio : valorLimpio.replace(/[^0-9]/g, '')
+
+    if (!finalVal) {
+      setMensaje('❌ Ingrese un contacto válido')
       return
     }
 
@@ -82,7 +90,7 @@ export default function NotificacionesLlamadasSMSModal({ onClose }: Props) {
         .from('notificaciones_whatsapp')
         .upsert({
           cuenta: '__SYSTEM__',
-          telefono: telLimpio,
+          telefono: finalVal,
           activo: true,
           updated_at: new Date().toISOString()
         }, { onConflict: 'cuenta' })
@@ -99,9 +107,17 @@ export default function NotificacionesLlamadasSMSModal({ onClose }: Props) {
 
   // 3. Disparar API de prueba (Llamada o SMS)
   const handleProbar = async (tipo: 'call' | 'sms') => {
-    const telLimpio = telefono.replace(/[^0-9]/g, '')
-    if (!telLimpio) {
-      alert('Configure y guarde un teléfono primero')
+    const valorLimpio = telefono.trim()
+    if (!valorLimpio) {
+      alert('Configure y guarde un contacto primero')
+      return
+    }
+
+    const esTelegram = valorLimpio.startsWith('@')
+    const finalVal = esTelegram ? valorLimpio : valorLimpio.replace(/[^0-9]/g, '')
+
+    if (!finalVal) {
+      alert('Ingrese un contacto válido')
       return
     }
 
@@ -110,7 +126,7 @@ export default function NotificacionesLlamadasSMSModal({ onClose }: Props) {
       const res = await fetch('/api/llamadas-sms/test', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ telefono: telLimpio, tipo })
+        body: JSON.stringify({ telefono: finalVal, tipo })
       })
       const data = await res.json()
       
@@ -149,18 +165,18 @@ export default function NotificacionesLlamadasSMSModal({ onClose }: Props) {
             <>
               {/* Explicación */}
               <div className="bg-blue-900/10 border border-blue-900/30 p-2.5 text-[11px] text-blue-900 leading-normal">
-                📍 Este número recibirá alertas automáticas mediante <strong>Llamadas de Voz por WhatsApp</strong> y <strong>Mensajes de WhatsApp</strong> en caso de que la central local Scorpion pierda conexión a internet por más de 5 minutos.
+                📍 Este contacto recibirá alertas automáticas mediante <strong>Llamadas de Voz (WhatsApp/Telegram)</strong> y <strong>Mensajes de WhatsApp</strong> en caso de que la central local Scorpion pierda conexión a internet por más de 5 minutos.
               </div>
 
               {/* Teléfono Input */}
               <div className="bg-[#e0e0e0] border-2 border-t-white border-l-white border-b-gray-600 border-r-gray-600 p-3 flex flex-col gap-2">
-                <span className="font-bold text-[11px] text-gray-700">MÓVIL DEL ADMINISTRADOR (FORMATO INTERNACIONAL):</span>
+                <span className="font-bold text-[11px] text-gray-700">CONTACTO DEL ADMINISTRADOR (WHATSAPP O TELEGRAM CON @):</span>
                 <div className="flex gap-2">
                   <input
                     type="text"
                     value={telefono}
                     onChange={(e) => setTelefono(e.target.value)}
-                    placeholder="Ej: +56991016912"
+                    placeholder="Ej: +56991016912 o @tetoromoreno"
                     className="flex-1 bg-white border border-gray-400 font-bold px-2 py-1 text-xs text-black focus:outline-none"
                   />
                   <button

@@ -70,19 +70,36 @@ export async function GET() {
       })
     }
 
-    // 3. Enviar alerta por WhatsApp
     const mensaje = `🚨 *ALERTA SISTEMA GAMA SEGURIDAD*\n━━━━━━━━━━━━━━━━━━━━━\n\n⚠️ *SINCRONIZADOR OFFLINE*\n\nEl servidor local de Scorpion en la central ha dejado de reportar a Supabase.\n\n🕐 Último Heartbeat: ${ultimoHb.toLocaleString('es-CL')}\n⏳ Tiempo sin reportar: *${diffMinutes.toFixed(0)} minutos*\n\n━━━━━━━━━━━━━━━━━━━━━\n_Gama Seguridad - Monitoreo Autónomo_`
+
+    // 3. Enviar alerta por WhatsApp o Telegram
+    const isTelegram = adminPhone.startsWith('@')
+    let resOk = false
+
+    if (isTelegram) {
+      const msgLlamada = `Alerta crítica de Gama Seguridad. El sincronizador local de Scorpion en la central ha dejado de reportar a Supabase. Tiempo sin reportar: ${diffMinutes.toFixed(0)} minutos.`
+      const params = new URLSearchParams({
+        user: adminPhone,
+        text: msgLlamada,
+        apikey: '4238719',
+        lang: 'es-es',
+      })
+      const callRes = await fetch(`https://api.callmebot.com/start.php?${params.toString()}`)
+      const text = await callRes.text()
+      resOk = callRes.ok && !text.toLowerCase().includes('error') && !text.toLowerCase().includes('not authorized')
+    } else {
+      const res = await sendMessage(adminPhone, mensaje)
+      resOk = res.ok
+    }
     
-    const res = await sendMessage(adminPhone, mensaje)
-    
-    if (res.ok) {
+    if (resOk) {
       // Registrar la conversación para silenciar alertas duplicadas
       await supabase.from('conversaciones_whatsapp').insert({
         cuenta: '__SINCRONIZADOR__',
         numero: adminPhone,
         tipo_evento: 'MONITOR_OFFLINE',
         estado: 'critico',
-        mensaje_enviado: 'SINCRONIZADOR OFFLINE',
+        mensaje_enviado: isTelegram ? 'SINCRONIZADOR OFFLINE (LLAMADA TELEGRAM)' : 'SINCRONIZADOR OFFLINE',
         respuesta_cliente: null,
         created_at: ahora.toISOString(),
       })
