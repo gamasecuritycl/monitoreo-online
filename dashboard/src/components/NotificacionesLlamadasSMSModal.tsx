@@ -302,13 +302,13 @@ export default function NotificacionesLlamadasSMSModal({ onClose, clientData, cl
                 <div className="bg-white border border-gray-500 p-1 font-bold text-blue-900 truncate">
                   {clienteFiltrado 
                     ? `[${clienteFiltrado.cuenta}] ${clienteFiltrado.nombre}`
-                    : (clientData ? '📱 ABONADO ACTIVO DEL DASHBOARD' : '❌ SELECCIONE ABONADO')
+                    : '❌ SELECCIONE ABONADO'
                   }
                 </div>
               </div>
 
               {/* Selector de Contacto de Abonado */}
-              {!clienteFiltrado && !clientData ? (
+              {!clienteFiltrado ? (
                 <div className="text-[10px] italic text-blue-900 font-bold text-center bg-blue-100 border border-blue-300 py-3.5 px-2">
                   🔍 Por favor, use el buscador superior para cargar los contactos de un abonado.
                 </div>
