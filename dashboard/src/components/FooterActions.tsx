@@ -109,21 +109,16 @@ const BOTONES_RETRO: BotonRetro[] = [
       </svg>
     )
   },
-  // 6. MATRIZ DE CELDAS (Zones Matrix)
+  // 6. TODOS LOS EVENTOS (All Events by Day)
   {
-    id: 'zones-grid',
-    title: 'Matriz de Zonas',
+    id: 'todos-los-eventos',
+    title: 'Todos los Eventos',
     renderSVG: () => (
       <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
         <rect x="4" y="6" width="24" height="20" fill="#ffffff" stroke="#1e293b" strokeWidth="1.5"/>
-        <rect x="7" y="9" width="6" height="6" fill="#ef4444" stroke="#1e293b" strokeWidth="1"/>
-        <rect x="8" y="10" width="4" height="4" fill="#fca5a5"/>
-        <rect x="14" y="9" width="6" height="6" fill="#22c55e" stroke="#1e293b" strokeWidth="1"/>
-        <rect x="15" y="10" width="4" height="4" fill="#86efac"/>
-        <rect x="7" y="17" width="6" height="6" fill="#3b82f6" stroke="#1e293b" strokeWidth="1"/>
-        <rect x="8" y="18" width="4" height="4" fill="#93c5fd"/>
-        <rect x="14" y="17" width="6" height="6" fill="#eab308" stroke="#1e293b" strokeWidth="1"/>
-        <rect x="15" y="18" width="4" height="4" fill="#fef08a"/>
+        <line x1="8" y1="11" x2="24" y2="11" stroke="#2563eb" strokeWidth="2"/>
+        <line x1="8" y1="16" x2="24" y2="16" stroke="#22c55e" strokeWidth="2"/>
+        <line x1="8" y1="21" x2="24" y2="21" stroke="#ef4444" strokeWidth="2"/>
       </svg>
     )
   },

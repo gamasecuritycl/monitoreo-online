@@ -12,6 +12,7 @@ import NotificacionesMailModal from './NotificacionesMailModal'
 import NotificacionesWhatsAppModal from './NotificacionesWhatsAppModal'
 import NotificacionesLlamadasSMSModal from './NotificacionesLlamadasSMSModal'
 import BitacoraModal from './BitacoraModal'
+import TodosLosEventosModal from './TodosLosEventosModal'
 import ReportesModal from './ReportesModal'
 import ConfigModal from './ConfigModal'
 import { lookupContactId } from '@/lib/contact_id_library'
@@ -909,6 +910,11 @@ export default function ScorpionDashboard() {
           clientData={clientData}
           clientesMap={clientesMap}
         />
+      )}
+
+      {/* Todos los Eventos Modal */}
+      {modalActivo === 'todos-los-eventos' && (
+        <TodosLosEventosModal onClose={() => setModalActivo(null)} />
       )}
 
       {/* Bitácora Modal */}
