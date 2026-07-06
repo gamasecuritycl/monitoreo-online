@@ -15,14 +15,14 @@ export async function POST(req: Request) {
       // Disparar llamada de voz CallMeBot via WhatsApp
       const mensajeLlamada = `Alerta de prueba del Command Center de Gama Seguridad. Tu sistema de llamadas y SMS de emergencia está operando correctamente.`
       const params = new URLSearchParams({
-        phone: telLimpio,
+        user: '+' + telLimpio,
         text: mensajeLlamada,
         apikey: CALLMEBOT_APIKEY,
         lang: 'es-es',
       })
       const res = await fetch(`https://api.callmebot.com/start.php?${params.toString()}`)
       const text = await res.text()
-      const success = res.ok && (text.toLowerCase().includes('queued') || text.toLowerCase().includes('success') || text.toLowerCase().includes('calling') || text.toLowerCase().includes('message'))
+      const success = res.ok && !text.toLowerCase().includes('error') && !text.toLowerCase().includes('not authorized')
       
       return NextResponse.json({ success, debug: `callmebot_call: status=${res.status}, response=${text}` })
     } else {

@@ -117,10 +117,14 @@ export default function NotificacionesLlamadasSMSModal({ onClose }: Props) {
       if (data.success) {
         alert(tipo === 'call' 
           ? '📞 Llamada de prueba enviada con éxito. Tu WhatsApp debería sonar.' 
-          : '💬 SMS de prueba enviado con éxito.'
+          : '💬 SMS/Texto de prueba enviado con éxito.'
         )
       } else {
-        alert('❌ Error al enviar prueba: ' + (data.error || 'Fallo desconocido'))
+        if (data.debug && data.debug.includes('not authorized')) {
+          alert('⚠️ NÚMERO NO AUTORIZADO:\n\nEl número +56991016912 no está autorizado en CallMeBot para recibir llamadas de voz.\n\nPara solucionarlo:\n1. Agrega el bot de llamadas a tus contactos en WhatsApp.\n2. Haz clic en el enlace de autorización para activarlo:\nhttps://api2.callmebot.com/txt/auth.php')
+        } else {
+          alert('❌ Detalle del error:\n\n' + (data.error || data.debug || 'Error desconocido'))
+        }
       }
     } catch (err: any) {
       alert('❌ Error de red: ' + err.message)
