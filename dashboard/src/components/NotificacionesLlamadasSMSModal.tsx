@@ -102,18 +102,7 @@ export default function NotificacionesLlamadasSMSModal({ onClose, clientData, cl
     cargarHistorial()
   }, [])
 
-  // Auto-cargar contactos del abonado activo de la pantalla principal al abrir
-  useEffect(() => {
-    if (clientData) {
-      setContactosActivos(clientData.contactos)
-      setClienteFiltrado(null) // Limpiar búsqueda manual
-      if (clientData.contactos.length > 0) {
-        const primerTel = clientData.contactos[0].telefono
-        setNumeroMarcador(primerTel)
-        setContactoSeleccionado(primerTel)
-      }
-    }
-  }, [clientData])
+  // No auto-cargar contactos del abonado activo al abrir para evitar que los refrescos en segundo plano cambien la selección del operador
 
   // Filtrar base de datos de abonados completa
   const listaSugeridos = Object.values(clientesMap || {})
@@ -319,7 +308,11 @@ export default function NotificacionesLlamadasSMSModal({ onClose, clientData, cl
               </div>
 
               {/* Selector de Contacto de Abonado */}
-              {contactosActivos.length > 0 ? (
+              {!clienteFiltrado && !clientData ? (
+                <div className="text-[10px] italic text-blue-900 font-bold text-center bg-blue-100 border border-blue-300 py-3.5 px-2">
+                  🔍 Por favor, use el buscador superior para cargar los contactos de un abonado.
+                </div>
+              ) : contactosActivos.length > 0 ? (
                 <div className="flex flex-col gap-1">
                   <span className="text-[10px] font-bold text-gray-700">CONTACTOS DISPONIBLES:</span>
                   <select
@@ -338,8 +331,8 @@ export default function NotificacionesLlamadasSMSModal({ onClose, clientData, cl
                   </select>
                 </div>
               ) : (
-                <div className="text-[10px] italic text-red-700 font-bold text-center bg-red-100 border border-red-300 py-1.5">
-                  Este abonado no tiene contactos guardados en la base de datos.
+                <div className="text-[10px] italic text-red-700 font-bold text-center bg-red-100 border border-red-300 py-3.5 px-2">
+                  Este abonado no tiene contactos registrados en la base de datos.
                 </div>
               )}
 
@@ -380,19 +373,13 @@ export default function NotificacionesLlamadasSMSModal({ onClose, clientData, cl
                 </div>
 
                 {/* Dial Action Buttons */}
-                <div className="flex flex-col gap-2 h-full justify-center">
-                  <button
-                    onClick={handleDialCall}
-                    className="bg-[#008000] text-white hover:bg-green-700 border-2 border-t-white border-l-white border-b-gray-900 border-r-gray-900 py-3 font-bold text-[11px] cursor-pointer active:border-t-gray-900 active:border-l-gray-900 active:border-b-white active:border-r-white flex flex-col items-center justify-center gap-1 shadow-sm"
-                  >
-                    <span>📞 MARCAR</span>
-                    <span>LLAMADA</span>
-                  </button>
+                <div className="flex flex-col h-full justify-center">
                   <button
                     onClick={handleDialWhatsApp}
-                    className="bg-[#075e54] text-white hover:bg-teal-800 border-2 border-t-white border-l-white border-b-gray-900 border-r-gray-900 py-3 font-bold text-[11px] cursor-pointer active:border-t-gray-900 active:border-l-gray-900 active:border-b-white active:border-r-white flex flex-col items-center justify-center gap-1 shadow-sm"
+                    className="h-full bg-[#075e54] text-white hover:bg-teal-800 border-2 border-t-white border-l-white border-b-gray-900 border-r-gray-900 font-bold text-[11px] cursor-pointer active:border-t-gray-900 active:border-l-gray-900 active:border-b-white active:border-r-white flex flex-col items-center justify-center gap-2 shadow-sm p-2 text-center"
                   >
-                    <span>💬 ENVIAR</span>
+                    <span className="text-lg">💬</span>
+                    <span>ABRIR CHAT</span>
                     <span>WHATSAPP</span>
                   </button>
                 </div>
