@@ -173,6 +173,18 @@ def parsear_fecha(dia: str) -> datetime:
             continue
     return None
 
+def parsear_fecha_hora(dia_str: str, hora_str: str) -> datetime:
+    dt = parsear_fecha(dia_str)
+    if not dt:
+        return datetime.min
+    try:
+        partes = str(hora_str).strip().split(':')
+        if len(partes) == 3:
+            return dt.replace(hour=int(partes[0]), minute=int(partes[1]), second=int(partes[2]))
+    except Exception:
+        pass
+    return dt
+
 def normalizar_dia(dia: str) -> str:
     """Convierte cualquier formato de fecha a YYYY-MM-DD."""
     dt = parsear_fecha(dia)
@@ -649,24 +661,45 @@ def procesar_mdb(ruta_mdb, mdb_name, cache):
         try:
             conn = pyodbc.connect(conn_str)
             cursor = conn.cursor()
-            cursor.execute("SELECT * FROM EVENTOS ORDER BY HORA DESC")
+            cursor.execute("SELECT * FROM EVENTOS")
             rows = cursor.fetchall()
         except pyodbc.Error as odbc_err:
             print(f"[ERROR] {odbc_err}")
             sys.stdout.flush()
             return cache, 0
 
-        rows.reverse()
+        # Ordenar cronológicamente ascendente en memoria
+        def parse_row_datetime(r):
+            dia_str = str(r[0]).strip()
+            hora_str = str(r[1]).strip()
+            dt = parsear_fecha(dia_str)
+            if not dt:
+                return datetime.min
+            try:
+                partes = hora_str.split(':')
+                if len(partes) == 3:
+                    return dt.replace(hour=int(partes[0]), minute=int(partes[1]), second=int(partes[2]))
+            except Exception:
+                pass
+            return dt
+
+        rows_sorted = sorted(rows, key=parse_row_datetime)
 
         # Cargar cursor específico para este MDB
         cur_mdb, cur_dia, cur_hora = load_cursor(mdb_name)
-        salteando = bool(cur_dia and cur_hora and cur_mdb == mdb_name)
+        
+        if cur_dia and cur_hora and cur_mdb == mdb_name:
+            cur_datetime = parsear_fecha_hora(cur_dia, cur_hora)
+            salteando = True
+        else:
+            cur_datetime = datetime.min
+            salteando = False
 
         if cur_mdb and cur_mdb != mdb_name:
             print(f"  [CURSOR] Nuevo archivo MDB detectado ({mdb_name}), procesando todo...")
             sys.stdout.flush()
 
-        for row in rows:
+        for row in rows_sorted:
             dia     = str(row[0]).strip()
             hora    = str(row[1]).strip()
             cuenta  = str(row[2]).strip()
@@ -681,9 +714,10 @@ def procesar_mdb(ruta_mdb, mdb_name, cache):
                 if ev_fecha and ev_fecha < LIMITE_FECHA_EVENTOS:
                     continue
 
+            # Comparación cronológica con el cursor
             if salteando:
-                nd = normalizar_dia(dia)
-                if nd < cur_dia or (nd == cur_dia and hora <= cur_hora):
+                row_datetime = parsear_fecha_hora(dia, hora)
+                if row_datetime <= cur_datetime:
                     continue
                 salteando = False
 
@@ -725,8 +759,8 @@ def procesar_mdb(ruta_mdb, mdb_name, cache):
 
         # Guardar cursor de este MDB
         if nuevos > 0 or not cur_mdb:
-            if rows:
-                last = rows[-1]
+            if rows_sorted:
+                last = rows_sorted[-1]
                 save_cursor(mdb_name, str(last[0]).strip(), str(last[1]).strip())
 
         if nuevos:

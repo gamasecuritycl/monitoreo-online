@@ -32,11 +32,33 @@ for ruta in rutas_posibles:
             count = cursor.fetchone()[0]
             print(f"     Total de filas (EVENTOS): {count}")
             
-            cursor.execute("SELECT TOP 10 * FROM EVENTOS ORDER BY HORA DESC")
+            cursor.execute("SELECT * FROM EVENTOS")
             rows = cursor.fetchall()
+            
+            def parse_row_datetime(r):
+                dia_str = str(r[0]).strip()
+                hora_str = str(r[1]).strip()
+                dt = None
+                for fmt in ("%d-%m-%Y", "%Y-%m-%d"):
+                    try:
+                        dt = datetime.datetime.strptime(dia_str, fmt)
+                        break
+                    except ValueError:
+                        continue
+                if not dt:
+                    dt = datetime.datetime.min
+                try:
+                    partes = hora_str.split(':')
+                    if len(partes) == 3:
+                        dt = dt.replace(hour=int(partes[0]), minute=int(partes[1]), second=int(partes[2]))
+                except Exception:
+                    pass
+                return dt
+
+            rows_sorted = sorted(rows, key=parse_row_datetime, reverse=True)
             print("\n     ÚLTIMOS 10 REGISTROS ENCONTRADOS EN EL ARCHIVO:")
             print("     " + "-" * 55)
-            for row in rows:
+            for row in rows_sorted[:10]:
                 print(f"     Dia={str(row[0]).strip()} | Hora={str(row[1]).strip()} | Cuenta={str(row[2]).strip()} | Evento={str(row[4]).strip()}")
             print("     " + "-" * 55)
             
