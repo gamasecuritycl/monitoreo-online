@@ -171,7 +171,7 @@ export default function ScorpionDashboard() {
       let query = supabase
         .from('eventos_monitoreo')
         .select('*')
-        .not('cuenta', 'in', '(CLIENTES,CODIGOS,ZONAS,__SINCRONIZADOR__)')
+        .not('cuenta', 'in', ['CLIENTES', 'CODIGOS', 'ZONAS', '__SINCRONIZADOR__'])
         .order('fecha_hora', { ascending: false })
         .limit(50)
 
@@ -203,7 +203,7 @@ export default function ScorpionDashboard() {
         const { data } = await supabase
           .from('eventos_monitoreo')
           .select('*')
-          .not('cuenta', 'in', '(CLIENTES,CODIGOS,ZONAS,__SINCRONIZADOR__)')
+          .not('cuenta', 'in', ['CLIENTES', 'CODIGOS', 'ZONAS', '__SINCRONIZADOR__'])
           .order('fecha_hora', { ascending: false })
           .limit(50)
 
