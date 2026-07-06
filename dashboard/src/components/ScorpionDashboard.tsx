@@ -565,7 +565,35 @@ export default function ScorpionDashboard() {
                   setMostrarMenuReportes(!mostrarMenuReportes)
                   setMostrarMenuNotificaciones(false)
                 } else if (item.id === 'menu-configuracion') {
-                  setModalActivo('configuracion')
+                  setModalActivo('file-edit')
+                  setMostrarMenuNotificaciones(false)
+                  setMostrarMenuReportes(false)
+                } else if (item.id === 'menu-operadores') {
+                  setModalActivo('user-key')
+                  setMostrarMenuNotificaciones(false)
+                  setMostrarMenuReportes(false)
+                } else if (item.id === 'menu-usuarios') {
+                  setModalActivo('list-details')
+                  setMostrarMenuNotificaciones(false)
+                  setMostrarMenuReportes(false)
+                } else if (item.id === 'menu-marcador') {
+                  setModalActivo('notificaciones-llamadas-sms')
+                  setMostrarMenuNotificaciones(false)
+                  setMostrarMenuReportes(false)
+                } else if (item.id === 'menu-tablas') {
+                  setModalActivo('book')
+                  setMostrarMenuNotificaciones(false)
+                  setMostrarMenuReportes(false)
+                } else if (item.id === 'menu-utilidades') {
+                  setModalActivo('tools')
+                  setMostrarMenuNotificaciones(false)
+                  setMostrarMenuReportes(false)
+                } else if (item.id === 'menu-eventos') {
+                  setModalActivo('search')
+                  setMostrarMenuNotificaciones(false)
+                  setMostrarMenuReportes(false)
+                } else if (item.id === 'menu-ayuda') {
+                  setModalActivo('network')
                   setMostrarMenuNotificaciones(false)
                   setMostrarMenuReportes(false)
                 } else {
