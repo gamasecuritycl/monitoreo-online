@@ -6,7 +6,6 @@ setlocal enabledelayedexpansion
 :: ---- Auto-Elevacion a Administrador (UAC) ----
 >nul 2>&1 "%SYSTEMROOT%\system32\cacls.exe" "%SYSTEMROOT%\system32\config\system"
 if '%errorlevel%' NEQ '0' (
-    echo Solicitando permisos de administrador...
     goto UACPrompt
 ) else ( goto gotAdmin )
 
@@ -26,7 +25,7 @@ echo   GAMA COMMAND CENTER - Solucion Reinicio Silencioso
 echo ========================================================
 echo.
 
-:: 1. Detener y eliminar Tarea Programada (por si acaso estuviera corriendo)
+:: 1. Detener y eliminar Tarea Programada
 echo 1. Deteniendo y eliminando Tareas Programadas antiguas...
 schtasks /end /tn "GAMA_Sincronizador" >nul 2>&1
 schtasks /delete /tn "GAMA_Sincronizador" /f >nul 2>&1
@@ -35,45 +34,46 @@ echo.
 
 :: 2. Matar procesos colgados de forma forzada
 echo 2. Matando procesos de Python y WScript colgados...
-taskkill /f /im pythonw.exe /t
-taskkill /f /im python.exe /t
-taskkill /f /im wscript.exe /t
+taskkill /f /im pythonw.exe /t >nul 2>&1
+taskkill /f /im python.exe /t >nul 2>&1
+taskkill /f /im wscript.exe /t >nul 2>&1
+echo   Procesos limpiados.
 echo.
 
 :: 3. Determinar la ruta de pythonw.exe
 echo 3. Buscando instalacion de Python...
 set PYTHONW=
-if exist "%LOCALAPPDATA%\Programs\Python\Python313\pythonw.exe" set PYTHONW=%LOCALAPPDATA%\Programs\Python\Python313\pythonw.exe
-if not defined PYTHONW if exist "%LOCALAPPDATA%\Programs\Python\Python312\pythonw.exe" set PYTHONW=%LOCALAPPDATA%\Programs\Python\Python312\pythonw.exe
-if not defined PYTHONW if exist "%LOCALAPPDATA%\Programs\Python\Python311\pythonw.exe" set PYTHONW=%LOCALAPPDATA%\Programs\Python\Python311\pythonw.exe
-if not defined PYTHONW if exist "C:\Python313\pythonw.exe" set PYTHONW=C:\Python313\pythonw.exe
-if not defined PYTHONW if exist "C:\Python312\pythonw.exe" set PYTHONW=C:\Python312\pythonw.exe
-
-:: Si no se encuentra en las rutas comunes, usar where
-if not defined PYTHONW (
-    for /f "tokens=*" %%i in ('where pythonw 2^nul') do (
-        set PYTHONW=%%i
-        goto found_path
-    )
-)
-:found_path
-
+if exist "%LOCALAPPDATA%\Programs\Python\Python313\pythonw.exe" set PYTHONW="%LOCALAPPDATA%\Programs\Python\Python313\pythonw.exe"
+if not defined PYTHONW if exist "%LOCALAPPDATA%\Programs\Python\Python312\pythonw.exe" set PYTHONW="%LOCALAPPDATA%\Programs\Python\Python312\pythonw.exe"
+if not defined PYTHONW if exist "%LOCALAPPDATA%\Programs\Python\Python311\pythonw.exe" set PYTHONW="%LOCALAPPDATA%\Programs\Python\Python311\pythonw.exe"
+if not defined PYTHONW if exist "C:\Python313\pythonw.exe" set PYTHONW="C:\Python313\pythonw.exe"
+if not defined PYTHONW if exist "C:\Python312\pythonw.exe" set PYTHONW="C:\Python312\pythonw.exe"
 if not defined PYTHONW set PYTHONW=pythonw.exe
 
-echo   Pythonw detectado en: !PYTHONW!
+echo   Usando: %PYTHONW%
 echo.
 
 :: 4. Arrancar en segundo plano de forma silenciosa
-echo 4. Iniciando sincronizador de eventos de forma SILENCIOSA...
-start "" "!PYTHONW!" "sincronizador.py"
+echo 4. Iniciando sincronizador de eventos...
+start "" %PYTHONW% "%~dp0sincronizador.py"
+
+:: Esperar 3 segundos para que el script arranque y verifique el Mutex
+timeout /t 3 /nobreak >nul
+
+:: Verificar si el proceso pythonw.exe esta corriendo en el Tasklist
+tasklist /nh /fi "imagename eq pythonw.exe" | findstr /i "pythonw.exe" >nul
 if %ERRORLEVEL% EQU 0 (
     echo.
     echo ========================================================
-    echo   Sincronizador iniciado correctamente en segundo plano.
+    echo   [OK] Sincronizador iniciado y ejecutandose en segundo plano.
     echo   Esta ventana se cerrara en 5 segundos.
     echo ========================================================
 ) else (
-    echo [ERROR] Fallo al iniciar el sincronizador.
+    echo.
+    echo ========================================================
+    echo   [ERROR] El sincronizador no se pudo mantener activo.
+    echo   Verifica el log en: _gama_log.txt
+    echo ========================================================
     pause
 )
 
