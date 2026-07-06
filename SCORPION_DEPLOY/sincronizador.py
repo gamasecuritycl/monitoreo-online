@@ -231,6 +231,69 @@ def save_cache(cache):
     except Exception as e:
         print(f"[CACHE] Error guardando: {e}")
 
+def precargar_cache_desde_supabase(cache_set):
+    """Descarga los eventos de los últimos 90 días desde Supabase para poblar el caché local y evitar re-intentos de duplicados."""
+    print("[CACHE] Descargando eventos existentes en Supabase para optimizar sincronización...")
+    sys.stdout.flush()
+    
+    # Calcular fecha limite en formato ISO
+    limite_iso = LIMITE_FECHA_EVENTOS.isoformat()
+    
+    nuevos_keys = set()
+    offset = 0
+    limit = 2000
+    
+    while True:
+        try:
+            res = execute_supabase_with_retry(lambda: supabase.table("eventos_monitoreo") \
+                .select("fecha_hora, cuenta, evento, zona, usuario") \
+                .gte("fecha_hora", limite_iso) \
+                .range(offset, offset + limit - 1) \
+                .execute())
+                
+            data = res.data
+            if not data:
+                break
+                
+            for row in data:
+                dt_str = row.get("fecha_hora", "")
+                if not dt_str:
+                    continue
+                try:
+                    # Parsear fecha de Supabase (UTC)
+                    dt = datetime.fromisoformat(dt_str.replace('Z', '+00:00'))
+                    # Convertir a zona horaria local de Chile del PC
+                    dt_local = dt.astimezone()
+                    
+                    dia = dt_local.strftime("%d-%m-%Y")
+                    hora = dt_local.strftime("%H:%M:%S")
+                    cuenta = str(row.get("cuenta") or "").upper().strip()
+                    evento = str(row.get("evento") or "").upper().strip()
+                    zona = str(row.get("zona") or "").upper().strip()
+                    usuario = str(row.get("usuario") or "").upper().strip()
+                    
+                    event_key = f"{dia}_{hora}_{cuenta}_{evento}_{zona}_{usuario}"
+                    nuevos_keys.add(event_key)
+                except Exception as parse_err:
+                    pass
+            
+            print(f"  [CACHE] Cargados {len(nuevos_keys)} eventos...")
+            sys.stdout.flush()
+            
+            if len(data) < limit:
+                break
+            offset += limit
+        except Exception as e:
+            print(f"  [CACHE ERROR] Falló descarga de lote: {e}. Continuando...")
+            sys.stdout.flush()
+            break
+            
+    # Mezclar con el caché local anterior
+    cache_set.update(nuevos_keys)
+    save_cache(cache_set)
+    print(f"[CACHE SUCCESS] Sincronización de caché completada. Total en caché: {len(cache_set)} eventos.")
+    sys.stdout.flush()
+
 # Dias hacia atrás a procesar (0 = todos, 90 = últimos 3 meses)
 DIAS_PROCESAR = 90
 
@@ -756,6 +819,7 @@ if __name__ == "__main__":
         INTERVALO_ZONAS = 3600  # 1 hora
         
         cache = load_cache()
+        precargar_cache_desde_supabase(cache)
         
         # Diagnóstico: listar todos los MDB y su fecha de modificación
         log_flush("[+] Archivos MDB en carpeta EVENTOS:")
