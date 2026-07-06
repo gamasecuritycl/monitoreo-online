@@ -762,7 +762,27 @@ export default function ScorpionDashboard() {
                     <tr key={contact.prioridad} className="hover:bg-blue-100 font-bold text-gray-800">
                       <td className="p-1 text-center border-r border-gray-300">{contact.prioridad}</td>
                       <td className="p-1 border-r border-gray-300 truncate max-w-[120px]">{contact.nombre}</td>
-                      <td className="p-1 font-mono text-blue-800">{contact.telefono}</td>
+                      <td className="p-1 font-mono text-blue-800 flex items-center justify-between gap-1">
+                        <span className="truncate max-w-[90px]">{contact.telefono}</span>
+                        <div className="flex gap-0.5 shrink-0">
+                          <a
+                            href={`tel:${contact.telefono.replace(/[^0-9+]/g, '')}`}
+                            title="Llamar directamente"
+                            className="bg-[#c0c0c0] border border-t-white border-l-white border-b-gray-700 border-r-gray-700 px-0.5 hover:bg-[#d0d0d0] active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white text-[9px] cursor-pointer"
+                          >
+                            📞
+                          </a>
+                          <a
+                            href={`https://wa.me/${contact.telefono.replace(/[^0-9]/g, '')}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            title="Enviar WhatsApp"
+                            className="bg-[#c0c0c0] border border-t-white border-l-white border-b-gray-700 border-r-gray-700 px-0.5 hover:bg-[#d0d0d0] active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white text-[9px] cursor-pointer"
+                          >
+                            💬
+                          </a>
+                        </div>
+                      </td>
                     </tr>
                   ))}
                   {!clientData && (
@@ -886,6 +906,7 @@ export default function ScorpionDashboard() {
       {modalActivo === 'notificaciones-llamadas-sms' && (
         <NotificacionesLlamadasSMSModal
           onClose={() => setModalActivo(null)}
+          clientData={clientData}
         />
       )}
 
