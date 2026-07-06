@@ -546,7 +546,7 @@ export default function ScorpionDashboard() {
           { label: 'OPERADORES',     id: 'menu-operadores' },
           { label: 'USUARIOS',       id: 'menu-usuarios' },
           { label: 'CONFIGURACION',  id: 'menu-configuracion' },
-          { label: 'MARCADOR',       id: 'menu-marcador' },
+          { label: 'ENVIO MANUAL WA', id: 'menu-marcador' },
           { label: 'TABLAS',         id: 'menu-tablas' },
           { label: 'UTILIDADES',     id: 'menu-utilidades' },
           { label: 'NOTIFICACIONES', id: 'menu-notificaciones', hasDropdown: true },

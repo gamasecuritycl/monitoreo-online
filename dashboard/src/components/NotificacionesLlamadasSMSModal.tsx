@@ -234,7 +234,7 @@ export default function NotificacionesLlamadasSMSModal({ onClose, clientData, cl
         
         {/* Title bar */}
         <div className="bg-[#000080] text-white px-2 py-1 flex justify-between items-center shrink-0">
-          <div className="font-bold text-xs tracking-wide">MARCADOR SCORPION DIALER</div>
+          <div className="font-bold text-xs tracking-wide">ENVÍO MANUAL DE WHATSAPP</div>
           <button onClick={onClose} className="bg-[#c0c0c0] text-black font-bold border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 px-2 leading-none hover:bg-[#d0d0d0] cursor-pointer">X</button>
         </div>
 
@@ -248,7 +248,7 @@ export default function NotificacionesLlamadasSMSModal({ onClose, clientData, cl
                 : 'bg-[#b0b0b0] border-t-gray-500 border-x-gray-500 pb-0.5'
             }`}
           >
-            Marcador de Clientes
+            Envío Manual WA
           </button>
           <button
             onClick={() => setActiveTab('config')}
@@ -298,7 +298,7 @@ export default function NotificacionesLlamadasSMSModal({ onClose, clientData, cl
 
               {/* Información Abonado */}
               <div className="bg-[#d0d0d0] border border-gray-400 p-2 text-xs">
-                <div className="font-bold text-gray-700 mb-0.5">ABONADO CARGADO EN MARCADOR:</div>
+                <div className="font-bold text-gray-700 mb-0.5">ABONADO CARGADO EN WHATSAPP:</div>
                 <div className="bg-white border border-gray-500 p-1 font-bold text-blue-900 truncate">
                   {clienteFiltrado 
                     ? `[${clienteFiltrado.cuenta}] ${clienteFiltrado.nombre}`
