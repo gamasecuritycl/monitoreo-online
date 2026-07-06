@@ -66,12 +66,14 @@ if exist "%DESTINO%\sincronizador.py" (
 )
 if exist "%~dp0sincronizador.py" (
     copy /Y "%~dp0sincronizador.py" "%DESTINO%\sincronizador.py"
+    copy /Y "%~dp0sincronizador_diagnostico.py" "%DESTINO%\sincronizador_diagnostico.py"
+    copy /Y "%~dp03_DIAGNOSTICO.bat" "%DESTINO%\3_DIAGNOSTICO.bat"
     if %ERRORLEVEL% NEQ 0 (
         echo [ERROR] Fallo la copia local.
         pause
         exit /b 1
     )
-    echo   OK - copiado desde %~dp0sincronizador.py
+    echo   OK - copiado desde %~dp0
 ) else (
     echo   Sincronizador.py no encontrado localmente, descargando desde GitHub...
     powershell -Command "(New-Object System.Net.WebClient).DownloadFile('https://raw.githubusercontent.com/gamasecuritycl/monitoreo-online/main/SCORPION_DEPLOY/sincronizador.py', '%DESTINO%\sincronizador.py')"
