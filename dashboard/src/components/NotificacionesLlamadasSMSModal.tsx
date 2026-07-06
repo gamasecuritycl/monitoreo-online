@@ -149,7 +149,7 @@ export default function NotificacionesLlamadasSMSModal({ onClose }: Props) {
             <>
               {/* Explicación */}
               <div className="bg-blue-900/10 border border-blue-900/30 p-2.5 text-[11px] text-blue-900 leading-normal">
-                📍 Este número recibirá alertas automáticas mediante <strong>Llamadas de Voz</strong> y <strong>SMS</strong> en caso de que la central local Scorpion pierda conexión a internet por más de 5 minutos.
+                📍 Este número recibirá alertas automáticas mediante <strong>Llamadas de Voz por WhatsApp</strong> y <strong>Mensajes de WhatsApp</strong> en caso de que la central local Scorpion pierda conexión a internet por más de 5 minutos.
               </div>
 
               {/* Teléfono Input */}
@@ -181,14 +181,14 @@ export default function NotificacionesLlamadasSMSModal({ onClose }: Props) {
                   disabled={probando !== null}
                   className="bg-[#d0d0d0] hover:bg-[#e0e0e0] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 py-2 font-bold text-xs cursor-pointer text-center text-blue-900 active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white"
                 >
-                  {probando === 'call' ? '📞 LLAMANDO...' : '📞 PROBAR LLAMADA'}
+                  {probando === 'call' ? '📞 LLAMANDO...' : '📞 PROBAR LLAMADA WA'}
                 </button>
                 <button
                   onClick={() => handleProbar('sms')}
                   disabled={probando !== null}
-                  className="bg-[#d0d0d0] hover:bg-[#e0e0e0] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 py-2 font-bold text-xs cursor-pointer text-center text-yellow-900 active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white"
+                  className="bg-[#d0d0d0] hover:bg-[#e0e0e0] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 py-2 font-bold text-xs cursor-pointer text-center text-green-900 active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white"
                 >
-                  {probando === 'sms' ? '💬 ENVIANDO...' : '💬 PROBAR SMS'}
+                  {probando === 'sms' ? '💬 ENVIANDO...' : '💬 PROBAR TEXTO WA'}
                 </button>
               </div>
 

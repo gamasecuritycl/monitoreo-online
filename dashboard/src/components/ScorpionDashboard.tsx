@@ -624,7 +624,7 @@ export default function ScorpionDashboard() {
                   className="w-full text-left px-4 py-1.5 text-xs text-black font-bold hover:bg-[#000080] hover:text-white"
                   onClick={() => { setModalActivo('notificaciones-llamadas-sms'); setMostrarMenuNotificaciones(false); }}
                 >
-                  POR SMS / VOZ
+                  POR LLAMADA / WA
                 </button>
               </div>
             )}
