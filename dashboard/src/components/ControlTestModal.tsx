@@ -80,48 +80,54 @@ export default function ControlTestModal({ onClose, clientesMap = {} }: Props) {
         // Buscar el test más reciente de este abonado
         const ultimoEvento = testEvents.find(e => e.cuenta?.toUpperCase().trim() === cuenta.toUpperCase().trim())
         
+        if (!ultimoEvento) {
+          return null // Excluir si no hay test registrado
+        }
+
         let ultimoTest = 'Sin Registro'
         let desfaseMinutos: number | null = null
         let estado: 'OK' | 'Desfasado' | 'Incomunicado' = 'Incomunicado'
 
-        if (ultimoEvento) {
-          // Formatear fecha
-          const fechaTest = new Date(ultimoEvento.fecha_hora)
+        // Formatear fecha
+        const fechaTest = new Date(ultimoEvento.fecha_hora)
+        
+        // Ajustar formato legible
+        const yyyy = fechaTest.getFullYear()
+        const mm = String(fechaTest.getMonth() + 1).padStart(2, '0')
+        const dd = String(fechaTest.getDate()).padStart(2, '0')
+        const hh = String(fechaTest.getHours()).padStart(2, '0')
+        const min = String(fechaTest.getMinutes()).padStart(2, '0')
+        ultimoTest = `${yyyy}-${mm}-${dd} ${hh}:${min}`
+
+        // 4. Calcular diferencia de horas frente a la actual
+        const ahora = new Date()
+        const diferenciaHoras = (ahora.getTime() - fechaTest.getTime()) / (1000 * 60 * 60)
+
+        if (diferenciaHoras > 240) {
+          return null // Excluir si no ha reportado en los últimos 10 días
+        }
+
+        if (diferenciaHoras > 26) {
+          estado = 'Incomunicado'
+        } else {
+          // Calcular desfase con respecto a la hora programada en el mismo día del test
+          const [espHoras, espMin] = horaEsperada.split(':').map(Number)
+          const horaTestEnMinutos = fechaTest.getHours() * 60 + fechaTest.getMinutes()
+          const horaEsperadaEnMinutos = espHoras * 60 + espMin
           
-          // Ajustar formato legible
-          const yyyy = fechaTest.getFullYear()
-          const mm = String(fechaTest.getMonth() + 1).padStart(2, '0')
-          const dd = String(fechaTest.getDate()).padStart(2, '0')
-          const hh = String(fechaTest.getHours()).padStart(2, '0')
-          const min = String(fechaTest.getMinutes()).padStart(2, '0')
-          ultimoTest = `${yyyy}-${mm}-${dd} ${hh}:${min}`
+          // Diferencia absoluta en minutos
+          let diff = horaTestEnMinutos - horaEsperadaEnMinutos
+          
+          // Ajustar diferencia si cruza el límite de medianoche
+          if (diff > 720) diff -= 1440
+          if (diff < -720) diff += 1440
+          
+          desfaseMinutos = diff
 
-          // 4. Calcular diferencia de horas frente a la actual (para ver si pasaron más de 26 horas)
-          const ahora = new Date()
-          const diferenciaHoras = (ahora.getTime() - fechaTest.getTime()) / (1000 * 60 * 60)
-
-          if (diferenciaHoras > 26) {
-            estado = 'Incomunicado'
+          if (Math.abs(diff) > 60) {
+            estado = 'Desfasado'
           } else {
-            // Calcular desfase con respecto a la hora programada en el mismo día del test
-            const [espHoras, espMin] = horaEsperada.split(':').map(Number)
-            const horaTestEnMinutos = fechaTest.getHours() * 60 + fechaTest.getMinutes()
-            const horaEsperadaEnMinutos = espHoras * 60 + espMin
-            
-            // Diferencia absoluta en minutos
-            let diff = horaTestEnMinutos - horaEsperadaEnMinutos
-            
-            // Ajustar diferencia si cruza el límite de medianoche
-            if (diff > 720) diff -= 1440
-            if (diff < -720) diff += 1440
-            
-            desfaseMinutos = diff
-
-            if (Math.abs(diff) > 60) {
-              estado = 'Desfasado'
-            } else {
-              estado = 'OK'
-            }
+            estado = 'OK'
           }
         }
 
@@ -135,7 +141,7 @@ export default function ControlTestModal({ onClose, clientesMap = {} }: Props) {
         }
       })
 
-      setEstados(listaEstados)
+      setEstados(listaEstados.filter(Boolean) as TestStatus[])
     } catch (err) {
       console.error('Error al calcular estados de test:', err)
     } finally {
