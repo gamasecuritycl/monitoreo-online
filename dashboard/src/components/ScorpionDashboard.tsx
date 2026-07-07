@@ -98,7 +98,7 @@ export default function ScorpionDashboard() {
 
   const [operadores, setOperadores] = useState<Operator[]>(OPERADORES_FALLBACK)
   const [usuarioActivo, setUsuarioActivo] = useState<Operator>(OPERADORES_FALLBACK[0])
-  const [mostrarLogin, setMostrarLogin] = useState(false)
+  const [sesionIniciada, setSesionIniciada] = useState(false)
 
   // Cargar operadores desde Supabase ('CONFIG_OPERADORES')
   useEffect(() => {
@@ -567,6 +567,25 @@ export default function ScorpionDashboard() {
     : ''
   const mapUrl = direccionParaMapa ? `https://maps.google.com/maps?q=${encodeURIComponent(direccionParaMapa)}&t=&z=15&ie=UTF8&iwloc=&output=embed` : ''
 
+  if (!sesionIniciada) {
+    return (
+      <div className="h-[100dvh] bg-[#070b13] flex items-center justify-center relative font-mono select-none overflow-hidden">
+        {/* CRT Scanlines background */}
+        <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.4)_100%)] z-10" />
+        <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%)] bg-[size:100%_4px] z-10" />
+        
+        <LoginModal
+          onClose={() => {}}
+          onLoginSuccess={(op) => {
+            setUsuarioActivo(op)
+            setSesionIniciada(true)
+          }}
+          operadores={operadores}
+        />
+      </div>
+    )
+  }
+
   return (
     <div className="h-[100dvh] flex flex-col bg-[#070b13] text-slate-100 overflow-hidden select-none relative" style={{ fontFamily: "'Consolas', 'Courier New', monospace" }}>
       
@@ -600,7 +619,7 @@ export default function ScorpionDashboard() {
           <div className="flex items-center gap-1 bg-[#1e293b] px-2 py-0.5 rounded text-[10px] font-bold text-slate-300 border border-slate-700">
             <span>👤 {usuarioActivo.nombre} ({usuarioActivo.rol.toUpperCase()})</span>
             <button
-              onClick={() => setMostrarLogin(true)}
+              onClick={() => setSesionIniciada(false)}
               className="text-blue-400 hover:text-blue-300 ml-1.5 underline cursor-pointer"
             >
               Cambiar
@@ -1047,16 +1066,15 @@ export default function ScorpionDashboard() {
       )}
 
       {/* Login / Operator Switch Modal */}
-      {mostrarLogin && (
-        <LoginModal
-          onClose={() => setMostrarLogin(false)}
-          onLoginSuccess={(op) => setUsuarioActivo(op)}
-          operadores={operadores}
-        />
-      )}
+      {/* (No longer rendered inline since it is used as full-screen gate page) */}
 
       {/* Footer */}
       <FooterActions onModalOpen={(id) => {
+        if (id === 'key-shift') {
+          setSesionIniciada(false)
+          setModalActivo(null)
+          return
+        }
         if (id === 'bar-chart') {
           setExpedientePestana('telefonos')
         }
