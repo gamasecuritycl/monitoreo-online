@@ -74,7 +74,7 @@ export default function ControlTestModal({ onClose, clientesMap = {} }: Props) {
 
       // 3. Procesar para cada cliente
       const targetMap = Object.keys(clientesMap).length > 0 ? clientesMap : clientesGeneralFallback
-      const listaEstados: TestStatus[] = Object.entries(targetMap).map(([cuenta, c]) => {
+      const listaEstados = Object.entries(targetMap).map(([cuenta, c]) => {
         const horaEsperada = horasMap[cuenta] || '03:00'
         
         // Buscar el test más reciente de este abonado
