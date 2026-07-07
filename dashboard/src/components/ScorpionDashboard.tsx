@@ -15,6 +15,7 @@ import BitacoraModal from './BitacoraModal'
 import TodosLosEventosModal from './TodosLosEventosModal'
 import ServicioTecnicoModal from './ServicioTecnicoModal'
 import LoginModal from './LoginModal'
+import ControlTestModal from './ControlTestModal'
 import ReportesModal from './ReportesModal'
 import ConfigModal from './ConfigModal'
 import { lookupContactId } from '@/lib/contact_id_library'
@@ -645,6 +646,7 @@ export default function ScorpionDashboard() {
           { label: 'USUARIOS',       id: 'menu-usuarios' },
           { label: 'CONFIGURACION',  id: 'menu-configuracion' },
           { label: 'SERV. TECNICO',  id: 'menu-serv-tecnico' },
+          { label: 'CONTROL TEST',   id: 'menu-control-test' },
           { label: 'ENVIO MANUAL WA', id: 'menu-marcador' },
           { label: 'TABLAS',         id: 'menu-tablas' },
           { label: 'UTILIDADES',     id: 'menu-utilidades' },
@@ -656,6 +658,7 @@ export default function ScorpionDashboard() {
           if (item.id === 'menu-configuracion') return usuarioActivo.rol === 'Administrador'
           if (item.id === 'menu-operadores') return usuarioActivo.rol === 'Administrador' || usuarioActivo.rol === 'Supervisor'
           if (item.id === 'menu-serv-tecnico') return ['Administrador', 'Supervisor', 'Técnico'].includes(usuarioActivo.rol)
+          if (item.id === 'menu-control-test') return ['Administrador', 'Supervisor', 'Operadora'].includes(usuarioActivo.rol)
           return true
         }).map((item, idx) => (
           <div key={idx} className="relative">
@@ -674,6 +677,10 @@ export default function ScorpionDashboard() {
                   setMostrarMenuReportes(false)
                 } else if (item.id === 'menu-serv-tecnico') {
                   setModalActivo('servicio-tecnico')
+                  setMostrarMenuNotificaciones(false)
+                  setMostrarMenuReportes(false)
+                } else if (item.id === 'menu-control-test') {
+                  setModalActivo('control-test')
                   setMostrarMenuNotificaciones(false)
                   setMostrarMenuReportes(false)
                 } else if (item.id === 'menu-operadores') {
@@ -1044,6 +1051,14 @@ export default function ScorpionDashboard() {
           onClose={() => setModalActivo(null)} 
           clientesMap={clientesMap}
           usuarioActivo={usuarioActivo}
+        />
+      )}
+
+      {/* Control Test Modal */}
+      {modalActivo === 'control-test' && (
+        <ControlTestModal 
+          onClose={() => setModalActivo(null)} 
+          clientesMap={clientesMap}
         />
       )}
 
