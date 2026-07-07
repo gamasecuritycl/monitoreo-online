@@ -42,6 +42,41 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose }: Exp
   const [analizandoIA, setAnalizandoIA] = useState(false)
   const [resultadoIA, setResultadoIA] = useState<{ threat: boolean; confidence: number; text: string } | null>(null)
 
+  // Custom Cameras configuration states
+  const [todasLasCamaras, setTodasLasCamaras] = useState<Record<string, { cam01?: string; cam02?: string; cam03?: string }>>({})
+  const [editandoCamaras, setEditandoCamaras] = useState(false)
+  const [inputCam01, setInputCam01] = useState('')
+  const [inputCam02, setInputCam02] = useState('')
+  const [inputCam03, setInputCam03] = useState('')
+
+  // Load custom cameras config from Supabase
+  useEffect(() => {
+    const fetchCamaras = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('eventos_monitoreo')
+          .select('nombre_abonado')
+          .eq('cuenta', 'CAMARAS')
+          .limit(1)
+        if (data && data.length > 0 && !error) {
+          const parsed = JSON.parse(data[0].nombre_abonado || '{}')
+          setTodasLasCamaras(parsed)
+        }
+      } catch (err) {
+        console.warn('Error loading custom cameras list:', err)
+      }
+    }
+    fetchCamaras()
+  }, [])
+
+  const camarasActivas = todasLasCamaras[cuentaActiva] || { cam01: '', cam02: '', cam03: '' }
+
+  useEffect(() => {
+    setInputCam01(camarasActivas.cam01 || '')
+    setInputCam02(camarasActivas.cam02 || '')
+    setInputCam03(camarasActivas.cam03 || '')
+  }, [cuentaActiva, todasLasCamaras])
+
   // Cargar lista actualizada de abonados desde la fila especial CLIENTES en eventos_monitoreo
   useEffect(() => {
     const fetchClientes = async () => {
@@ -130,6 +165,37 @@ Responde en español.`
       })
     } finally {
       setAnalizandoIA(false)
+    }
+  }
+
+  const guardarCamaras = async () => {
+    const updated = {
+      ...todasLasCamaras,
+      [cuentaActiva]: {
+        cam01: inputCam01.trim(),
+        cam02: inputCam02.trim(),
+        cam03: inputCam03.trim()
+      }
+    }
+    
+    try {
+      const { error } = await supabase
+        .from('eventos_monitoreo')
+        .upsert({
+          cuenta: 'CAMARAS',
+          nombre_abonado: JSON.stringify(updated),
+          evento: 'CONFIGURACION',
+          fecha_hora: new Date().toISOString()
+        })
+      if (!error) {
+        setTodasLasCamaras(updated)
+        setEditandoCamaras(false)
+        alert('Cámaras guardadas exitosamente en la base de datos.')
+      } else {
+        throw error
+      }
+    } catch (err: any) {
+      alert('Error al guardar cámaras: ' + err.message)
     }
   }
 
@@ -386,11 +452,12 @@ Responde en español.`
                         <span className="text-gray-400 font-bold">SELECCIONAR CANAL:</span>
                         <select
                           value={activeCamera}
+                          disabled={editandoCamaras}
                           onChange={(e) => {
                             setActiveCamera(e.target.value as any)
                             setResultadoIA(null)
                           }}
-                          className="bg-[#222] text-white border border-gray-600 font-bold py-0.5 px-1 focus:outline-none text-[9px]"
+                          className="bg-[#222] text-white border border-gray-600 font-bold py-0.5 px-1 focus:outline-none text-[9px] disabled:opacity-50"
                         >
                           <option value="CAM-01">CAM-01 (Entrada Frontis)</option>
                           <option value="CAM-02">CAM-02 (Patio Lateral)</option>
@@ -398,109 +465,224 @@ Responde en español.`
                         </select>
                       </div>
 
-                      <button
-                        onClick={analizarConIA}
-                        disabled={analizandoIA}
-                        className="bg-green-700 hover:bg-green-600 disabled:bg-gray-800 text-white font-bold border border-green-500 px-2 py-0.5 rounded-xs transition-colors cursor-pointer text-[9px]"
-                      >
-                        {analizandoIA ? '⚡ ANALIZANDO CON IA...' : '🤖 ANALIZAR CON IA GEMINI'}
-                      </button>
+                      <div className="flex items-center gap-2">
+                        {!editandoCamaras && (
+                          <button
+                            onClick={() => setEditandoCamaras(true)}
+                            className="bg-gray-800 hover:bg-gray-700 text-gray-300 font-bold border border-gray-600 px-2 py-0.5 rounded-xs cursor-pointer text-[9px]"
+                          >
+                            ⚙️ CONFIGURAR CÁMARAS
+                          </button>
+                        )}
+                        <button
+                          onClick={analizarConIA}
+                          disabled={analizandoIA || editandoCamaras}
+                          className="bg-green-700 hover:bg-green-600 disabled:bg-gray-800 text-white font-bold border border-green-500 px-2 py-0.5 rounded-xs transition-colors cursor-pointer text-[9px]"
+                        >
+                          {analizandoIA ? '⚡ ANALIZANDO CON IA...' : '🤖 ANALIZAR CON IA GEMINI'}
+                        </button>
+                      </div>
                     </div>
 
                     {/* Viewport and AI Console Grid */}
                     <div className="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0">
                       
-                      {/* Video Player Box */}
-                      <div className="relative flex-1 bg-[#050505] overflow-hidden flex items-center justify-center border-b md:border-b-0 md:border-r border-gray-800 min-h-[140px] md:min-h-0">
-                        
-                        {/* CRT Screen Filter Scanlines */}
-                        <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.4)_100%)] z-10" />
-                        <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%)] bg-[size:100%_4px] z-10" />
+                      {editandoCamaras ? (
+                        <div className="flex-1 bg-[#12141c] p-3 text-xs space-y-3 overflow-y-auto flex flex-col justify-between">
+                          <div className="space-y-2">
+                            <div className="text-green-400 font-bold border-b border-gray-800 pb-1 uppercase tracking-wider text-[10px] flex items-center justify-between">
+                              <span>⚙️ GESTIÓN DE CÁMARAS (CTA: {cuentaActiva})</span>
+                            </div>
+                            <p className="text-[9px] text-gray-400 leading-tight">
+                              Asocia cámaras reales de este abonado para verlas en vivo. Admite URLs de imágenes (.png, .jpg), videos directos (.mp4, .webm) o enlaces web/embebidos de YouTube/CCTV.
+                            </p>
+                            <div className="space-y-2 pt-1">
+                              <div className="flex flex-col gap-0.5">
+                                <span className="font-bold text-gray-300 text-[10px]">CAM-01 URL (Entrada / Frontis):</span>
+                                <input
+                                  type="text"
+                                  value={inputCam01}
+                                  onChange={(e) => setInputCam01(e.target.value)}
+                                  placeholder="Ej: https://mi-camara.com/live/canal1.jpg o MP4"
+                                  className="bg-[#111] border border-gray-700 p-1 font-mono text-[10px] text-white focus:outline-none focus:border-green-500 w-full"
+                                />
+                              </div>
+                              <div className="flex flex-col gap-0.5">
+                                <span className="font-bold text-gray-300 text-[10px]">CAM-02 URL (Patio Lateral):</span>
+                                <input
+                                  type="text"
+                                  value={inputCam02}
+                                  onChange={(e) => setInputCam02(e.target.value)}
+                                  placeholder="Ej: https://mi-camara.com/live/canal2.mp4"
+                                  className="bg-[#111] border border-gray-700 p-1 font-mono text-[10px] text-white focus:outline-none focus:border-green-500 w-full"
+                                />
+                              </div>
+                              <div className="flex flex-col gap-0.5">
+                                <span className="font-bold text-gray-300 text-[10px]">CAM-03 URL (Bodega Interna):</span>
+                                <input
+                                  type="text"
+                                  value={inputCam03}
+                                  onChange={(e) => setInputCam03(e.target.value)}
+                                  placeholder="Ej: Enlace embebido de YouTube o stream público"
+                                  className="bg-[#111] border border-gray-700 p-1 font-mono text-[10px] text-white focus:outline-none focus:border-green-500 w-full"
+                                />
+                              </div>
+                            </div>
+                          </div>
 
-                        {/* Video Feed Source image */}
-                        <img
-                          src={activeCamera === 'CAM-01' ? '/cctv_intruder.png' : '/cctv_false_alarm.png'}
-                          alt="Video feed"
-                          className={`w-full h-full object-cover select-none ${
-                            activeCamera === 'CAM-03' ? 'grayscale hue-rotate-90 brightness-75' : 
-                            activeCamera === 'CAM-02' ? 'hue-rotate-180 brightness-90' : 'brightness-90'
-                          }`}
-                        />
-
-                        {/* Record overlay HUD */}
-                        <div className="absolute top-1 left-1.5 flex items-center gap-1 bg-black/60 px-1 py-0.5 rounded text-[8px] tracking-wider z-20">
-                          <div className="w-1.5 h-1.5 bg-red-600 rounded-full animate-ping" />
-                          <span>LIVE {activeCamera}</span>
+                          <div className="flex justify-end gap-2 border-t border-gray-800 pt-2 shrink-0">
+                            <button
+                              onClick={() => setEditandoCamaras(false)}
+                              className="bg-gray-800 hover:bg-gray-700 text-white font-bold border border-gray-600 px-4 py-1 text-[10px] cursor-pointer"
+                            >
+                              CANCELAR
+                            </button>
+                            <button
+                              onClick={guardarCamaras}
+                              className="bg-green-700 hover:bg-green-600 text-white font-bold border border-green-500 px-6 py-1 text-[10px] cursor-pointer"
+                            >
+                              GUARDAR CÁMARAS
+                            </button>
+                          </div>
                         </div>
-                        <div className="absolute top-1 right-1.5 bg-black/60 px-1 py-0.5 rounded text-[8px] z-20">
-                          {new Date().toISOString().slice(0, 19).replace('T', ' ')}
-                        </div>
+                      ) : (
+                        <>
+                          {/* Video Player Box */}
+                          <div className="relative flex-1 bg-[#050505] overflow-hidden flex items-center justify-center border-b md:border-b-0 md:border-r border-gray-800 min-h-[140px] md:min-h-0">
+                            
+                            {/* CRT Screen Filter Scanlines */}
+                            <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.4)_100%)] z-10" />
+                            <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%)] bg-[size:100%_4px] z-10" />
 
-                        {/* Bounding Box Visual Overlay if Threat is analyzed */}
-                        {resultadoIA && resultadoIA.threat && activeCamera === 'CAM-01' && (
-                          <div className="absolute top-[35%] left-[45%] w-[18%] h-[35%] border-2 border-red-600 bg-red-600/10 z-20 flex flex-col justify-start items-start animate-pulse">
-                            <span className="bg-red-600 text-white text-[7px] px-0.5 font-bold leading-none">INTRUSO {resultadoIA.confidence}%</span>
-                          </div>
-                        )}
-                        {resultadoIA && !resultadoIA.threat && activeCamera === 'CAM-02' && (
-                          <div className="absolute top-[20%] left-[30%] w-[30%] h-[40%] border-2 border-yellow-500 bg-yellow-500/10 z-20 flex flex-col justify-start items-start">
-                            <span className="bg-yellow-500 text-black text-[7px] px-0.5 font-bold leading-none">MOVIMIENTO VIENTO {resultadoIA.confidence}%</span>
-                          </div>
-                        )}
-                        {resultadoIA && !resultadoIA.threat && activeCamera === 'CAM-03' && (
-                          <div className="absolute top-[50%] left-[60%] w-[15%] h-[15%] border-2 border-green-500 bg-green-500/10 z-20 flex flex-col justify-start items-start">
-                            <span className="bg-green-500 text-black text-[7px] px-0.5 font-bold leading-none">FELINO {resultadoIA.confidence}%</span>
-                          </div>
-                        )}
-                      </div>
+                            {/* Video Feed Source dynamic render */}
+                            {(() => {
+                              const url = activeCamera === 'CAM-01' ? camarasActivas.cam01 : activeCamera === 'CAM-02' ? camarasActivas.cam02 : camarasActivas.cam03
+                              
+                              if (!url) {
+                                return (
+                                  <img
+                                    src={activeCamera === 'CAM-01' ? '/cctv_intruder.png' : '/cctv_false_alarm.png'}
+                                    alt="Video feed"
+                                    className={`w-full h-full object-cover select-none ${
+                                      activeCamera === 'CAM-03' ? 'grayscale hue-rotate-90 brightness-75' : 
+                                      activeCamera === 'CAM-02' ? 'hue-rotate-180 brightness-90' : 'brightness-90'
+                                    }`}
+                                  />
+                                )
+                              }
 
-                      {/* AI Report Console */}
-                      <div className="w-full md:w-[180px] shrink-0 bg-[#0d0f14] p-1.5 flex flex-col justify-between overflow-y-auto text-[9px] leading-tight border-t md:border-t-0 border-gray-800 font-mono">
-                        <div>
-                          <div className="text-green-500 border-b border-green-950 pb-1 mb-1 font-bold tracking-wider flex items-center justify-between">
-                            <span>🤖 SCORPION AI</span>
-                            {resultadoIA && (
-                              <span className={`px-1 py-0.2 rounded font-black text-[8px] ${
-                                resultadoIA.threat ? 'bg-red-950 text-red-400 border border-red-800' : 'bg-green-950 text-green-400 border border-green-800'
-                              }`}>
-                                {resultadoIA.threat ? 'PELIGRO' : 'SEGURO'}
-                              </span>
+                              const lowerUrl = url.toLowerCase()
+                              const isVideo = lowerUrl.includes('.mp4') || lowerUrl.includes('.webm') || lowerUrl.includes('.ogg') || lowerUrl.includes('.mov')
+                              const isImage = lowerUrl.includes('.jpg') || lowerUrl.includes('.jpeg') || lowerUrl.includes('.png') || lowerUrl.includes('.webp') || lowerUrl.includes('.gif')
+
+                              if (isVideo) {
+                                return (
+                                  <video
+                                    src={url}
+                                    autoPlay
+                                    loop
+                                    muted
+                                    playsInline
+                                    className="w-full h-full object-cover"
+                                  />
+                                )
+                              } else if (isImage) {
+                                return (
+                                  <img
+                                    src={url}
+                                    alt="Video feed"
+                                    className="w-full h-full object-cover"
+                                  />
+                                )
+                              } else {
+                                return (
+                                  <iframe
+                                    src={url}
+                                    title="Live Camera Feed"
+                                    className="w-full h-full border-0 bg-black"
+                                    allow="autoplay; encrypted-media"
+                                    allowFullScreen
+                                  />
+                                )
+                              }
+                            })()}
+
+                            {/* Record overlay HUD */}
+                            <div className="absolute top-1 left-1.5 flex items-center gap-1 bg-black/60 px-1 py-0.5 rounded text-[8px] tracking-wider z-20">
+                              <div className="w-1.5 h-1.5 bg-red-600 rounded-full animate-ping" />
+                              <span>LIVE {activeCamera}</span>
+                            </div>
+                            <div className="absolute top-1 right-1.5 bg-black/60 px-1 py-0.5 rounded text-[8px] z-20">
+                              {new Date().toISOString().slice(0, 19).replace('T', ' ')}
+                            </div>
+
+                            {/* Bounding Box Visual Overlay if Threat is analyzed */}
+                            {resultadoIA && resultadoIA.threat && activeCamera === 'CAM-01' && (
+                              <div className="absolute top-[35%] left-[45%] w-[18%] h-[35%] border-2 border-red-600 bg-red-600/10 z-20 flex flex-col justify-start items-start animate-pulse">
+                                <span className="bg-red-600 text-white text-[7px] px-0.5 font-bold leading-none">INTRUSO {resultadoIA.confidence}%</span>
+                              </div>
+                            )}
+                            {resultadoIA && !resultadoIA.threat && activeCamera === 'CAM-02' && (
+                              <div className="absolute top-[20%] left-[30%] w-[30%] h-[40%] border-2 border-yellow-500 bg-yellow-500/10 z-20 flex flex-col justify-start items-start">
+                                <span className="bg-yellow-500 text-black text-[7px] px-0.5 font-bold leading-none">MOVIMIENTO VIENTO {resultadoIA.confidence}%</span>
+                              </div>
+                            )}
+                            {resultadoIA && !resultadoIA.threat && activeCamera === 'CAM-03' && (
+                              <div className="absolute top-[50%] left-[60%] w-[15%] h-[15%] border-2 border-green-500 bg-green-500/10 z-20 flex flex-col justify-start items-start">
+                                <span className="bg-green-500 text-black text-[7px] px-0.5 font-bold leading-none">FELINO {resultadoIA.confidence}%</span>
+                              </div>
                             )}
                           </div>
 
-                          {analizandoIA ? (
-                            <div className="text-yellow-500 space-y-1 animate-pulse py-4 text-center">
-                              <div>[CONECTANDO APIS...]</div>
-                              <div>[ANALIZANDO FOTOGRAMAS...]</div>
-                              <div className="text-[7px] text-gray-500">Espere por favor</div>
-                            </div>
-                          ) : resultadoIA ? (
-                            <div className="space-y-1.5 text-gray-300">
-                              <p className="whitespace-pre-wrap leading-tight">{resultadoIA.text}</p>
-                              <div className="text-gray-500 text-[8px] pt-1 border-t border-gray-800">
-                                Confianza: {resultadoIA.confidence}% | Gemini-2.5-Flash
+                          {/* AI Report Console */}
+                          <div className="w-full md:w-[180px] shrink-0 bg-[#0d0f14] p-1.5 flex flex-col justify-between overflow-y-auto text-[9px] leading-tight border-t md:border-t-0 border-gray-800 font-mono">
+                            <div>
+                              <div className="text-green-500 border-b border-green-950 pb-1 mb-1 font-bold tracking-wider flex items-center justify-between">
+                                <span>🤖 SCORPION AI</span>
+                                {resultadoIA && (
+                                  <span className={`px-1 py-0.2 rounded font-black text-[8px] ${
+                                    resultadoIA.threat ? 'bg-red-950 text-red-400 border border-red-800' : 'bg-green-950 text-green-400 border border-green-800'
+                                  }`}>
+                                    {resultadoIA.threat ? 'PELIGRO' : 'SEGURO'}
+                                  </span>
+                                )}
                               </div>
-                            </div>
-                          ) : (
-                            <div className="text-gray-500 text-center py-6 italic">
-                              Cámara lista.<br />Haga clic en ANALIZAR para verificar la escena con IA.
-                            </div>
-                          )}
-                        </div>
 
-                        {resultadoIA && (
-                          <div className="mt-2 border-t border-gray-800 pt-1.5 flex justify-center shrink-0">
-                            <button
-                              onClick={() => {
-                                alert("Reporte de IA adjuntado a la bitácora del abonado.");
-                              }}
-                              className="w-full bg-[#1e293b] hover:bg-slate-700 text-slate-200 border border-slate-600 py-0.5 rounded-xs cursor-pointer text-[8px]"
-                            >
-                              ADJUNTAR A BITÁCORA
-                            </button>
+                              {analizandoIA ? (
+                                <div className="text-yellow-500 space-y-1 animate-pulse py-4 text-center">
+                                  <div>[CONECTANDO APIS...]</div>
+                                  <div>[ANALIZANDO FOTOGRAMAS...]</div>
+                                  <div className="text-[7px] text-gray-500">Espere por favor</div>
+                                </div>
+                              ) : resultadoIA ? (
+                                <div className="space-y-1.5 text-gray-300">
+                                  <p className="whitespace-pre-wrap leading-tight">{resultadoIA.text}</p>
+                                  <div className="text-gray-500 text-[8px] pt-1 border-t border-gray-800">
+                                    Confianza: {resultadoIA.confidence}% | Gemini-2.5-Flash
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="text-gray-500 text-center py-6 italic">
+                                  Cámara lista.<br />Haga clic en ANALIZAR para verificar la escena con IA.
+                                </div>
+                              )}
+                            </div>
+
+                            {resultadoIA && (
+                              <div className="mt-2 border-t border-gray-800 pt-1.5 flex justify-center shrink-0">
+                                <button
+                                  onClick={() => {
+                                    alert("Reporte de IA adjuntado a la bitácora del abonado.");
+                                  }}
+                                  className="w-full bg-[#1e293b] hover:bg-slate-700 text-slate-200 border border-slate-600 py-0.5 rounded-xs cursor-pointer text-[8px]"
+                                >
+                                  ADJUNTAR A BITÁCORA
+                                </button>
+                              </div>
+                            )}
                           </div>
-                        )}
-                      </div>
+                        </>
+                      )}
 
                     </div>
                   </div>
