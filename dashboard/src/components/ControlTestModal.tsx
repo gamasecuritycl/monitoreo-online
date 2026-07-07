@@ -64,7 +64,7 @@ export default function ControlTestModal({ onClose, clientesMap = {} }: Props) {
       const { data: eventosData, error: eventosError } = await supabase
         .from('eventos_monitoreo')
         .select('*')
-        .or('evento.ilike.%E602%,evento.ilike.%602%,evento.ilike.%test%,evento.evento.ilike.%autotet%')
+        .or('evento.ilike.%E602%,evento.ilike.%602%,evento.ilike.%test%,evento.ilike.%autotest%')
         .order('fecha_hora', { ascending: false })
         .limit(500)
 
