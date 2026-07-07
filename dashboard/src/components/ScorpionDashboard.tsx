@@ -13,6 +13,7 @@ import NotificacionesWhatsAppModal from './NotificacionesWhatsAppModal'
 import NotificacionesLlamadasSMSModal from './NotificacionesLlamadasSMSModal'
 import BitacoraModal from './BitacoraModal'
 import TodosLosEventosModal from './TodosLosEventosModal'
+import ServicioTecnicoModal from './ServicioTecnicoModal'
 import ReportesModal from './ReportesModal'
 import ConfigModal from './ConfigModal'
 import { lookupContactId } from '@/lib/contact_id_library'
@@ -548,6 +549,7 @@ export default function ScorpionDashboard() {
           { label: 'OPERADORES',     id: 'menu-operadores' },
           { label: 'USUARIOS',       id: 'menu-usuarios' },
           { label: 'CONFIGURACION',  id: 'menu-configuracion' },
+          { label: 'SERV. TECNICO',  id: 'menu-serv-tecnico' },
           { label: 'ENVIO MANUAL WA', id: 'menu-marcador' },
           { label: 'TABLAS',         id: 'menu-tablas' },
           { label: 'UTILIDADES',     id: 'menu-utilidades' },
@@ -568,6 +570,10 @@ export default function ScorpionDashboard() {
                   setMostrarMenuNotificaciones(false)
                 } else if (item.id === 'menu-configuracion') {
                   setModalActivo('file-edit')
+                  setMostrarMenuNotificaciones(false)
+                  setMostrarMenuReportes(false)
+                } else if (item.id === 'menu-serv-tecnico') {
+                  setModalActivo('servicio-tecnico')
                   setMostrarMenuNotificaciones(false)
                   setMostrarMenuReportes(false)
                 } else if (item.id === 'menu-operadores') {
@@ -927,6 +933,14 @@ export default function ScorpionDashboard() {
       {/* Todos los Eventos Modal */}
       {modalActivo === 'todos-los-eventos' && (
         <TodosLosEventosModal onClose={() => setModalActivo(null)} />
+      )}
+
+      {/* Servicio Técnico Modal */}
+      {modalActivo === 'servicio-tecnico' && (
+        <ServicioTecnicoModal 
+          onClose={() => setModalActivo(null)} 
+          clientesMap={clientesMap}
+        />
       )}
 
       {/* Bitácora Modal */}
