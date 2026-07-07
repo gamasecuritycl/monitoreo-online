@@ -18,12 +18,26 @@ interface OrdenTrabajo {
 interface Props {
   onClose: () => void
   clientesMap?: Record<string, Record<string, string>>
+  usuarioActivo?: {
+    codigo: string
+    nombre: string
+    rol: 'Administrador' | 'Supervisor' | 'Operadora' | 'Técnico'
+    clave: string
+  }
 }
 
 const TECNICOS = ['Juan Pérez', 'Diego Reyes', 'Mauricio Tapia', 'Cristian Muñoz']
 
-export default function ServicioTecnicoModal({ onClose, clientesMap = {} }: Props) {
+export default function ServicioTecnicoModal({ onClose, clientesMap = {}, usuarioActivo }: Props) {
   const [tabActive, setTabActive] = useState<'despacho' | 'tecnico_movil'>('despacho')
+
+  // Lock to mobile view if logged in as Technician
+  useEffect(() => {
+    if (usuarioActivo?.rol === 'Técnico') {
+      setTabActive('tecnico_movil')
+      setTecnicoSimulado(usuarioActivo.nombre)
+    }
+  }, [usuarioActivo])
   
   // Lista de órdenes
   const [ordenes, setOrdenes] = useState<OrdenTrabajo[]>([])
@@ -279,21 +293,23 @@ export default function ServicioTecnicoModal({ onClose, clientesMap = {} }: Prop
 
         {/* Windows Style Tabs Menu */}
         <div className="bg-[#c0c0c0] px-2 pt-1 flex gap-0.5 border-b-2 border-white shrink-0">
-          <button
-            onClick={() => setTabActive('despacho')}
-            className={`px-3 py-1 font-bold text-xs border-t-2 border-l-2 border-r-2 border-white rounded-t-sm cursor-pointer ${
-              tabActive === 'despacho' ? 'bg-[#d4d0c8] pb-1.5 -mb-0.5 z-10' : 'bg-[#b0b0b0] text-gray-700'
-            }`}
-          >
-            🖥️ DESPACHO Y ASIGNACIÓN (CENTRAL)
-          </button>
+          {usuarioActivo?.rol !== 'Técnico' && (
+            <button
+              onClick={() => setTabActive('despacho')}
+              className={`px-3 py-1 font-bold text-xs border-t-2 border-l-2 border-r-2 border-white rounded-t-sm cursor-pointer ${
+                tabActive === 'despacho' ? 'bg-[#d4d0c8] pb-1.5 -mb-0.5 z-10' : 'bg-[#b0b0b0] text-gray-700'
+              }`}
+            >
+              🖥️ DESPACHO Y ASIGNACIÓN (CENTRAL)
+            </button>
+          )}
           <button
             onClick={() => setTabActive('tecnico_movil')}
             className={`px-3 py-1 font-bold text-xs border-t-2 border-l-2 border-r-2 border-white rounded-t-sm cursor-pointer ${
               tabActive === 'tecnico_movil' ? 'bg-[#d4d0c8] pb-1.5 -mb-0.5 z-10' : 'bg-[#b0b0b0] text-gray-700'
             }`}
           >
-            📱 SIMULADOR PORTAL TÉCNICO (TERRENO)
+            {usuarioActivo?.rol === 'Técnico' ? '📱 PORTAL TÉCNICO EN TERRENO' : '📱 SIMULADOR PORTAL TÉCNICO (TERRENO)'}
           </button>
         </div>
 
@@ -454,19 +470,23 @@ export default function ServicioTecnicoModal({ onClose, clientesMap = {} }: Prop
                   
                   {/* Simulador Selector de Técnico */}
                   <div className="bg-[#8B0000] text-white p-1 text-[9px] font-bold flex justify-between items-center shrink-0">
-                    <span>📱 SIMULADOR TÉCNICO:</span>
-                    <select
-                      value={tecnicoSimulado}
-                      onChange={(e) => {
-                        setTecnicoSimulado(e.target.value)
-                        setOrdenSeleccionada(null)
-                      }}
-                      className="bg-black text-white font-bold p-0.5 text-[8px] focus:outline-none border-0"
-                    >
-                      {TECNICOS.map(t => (
-                        <option key={t} value={t}>{t}</option>
-                      ))}
-                    </select>
+                    <span>{usuarioActivo?.rol === 'Técnico' ? '📱 SESIÓN INICIADA:' : '📱 SIMULADOR TÉCNICO:'}</span>
+                    {usuarioActivo?.rol === 'Técnico' ? (
+                      <span className="font-bold text-[9px] uppercase pr-1">{usuarioActivo.nombre}</span>
+                    ) : (
+                      <select
+                        value={tecnicoSimulado}
+                        onChange={(e) => {
+                          setTecnicoSimulado(e.target.value)
+                          setOrdenSeleccionada(null)
+                        }}
+                        className="bg-black text-white font-bold p-0.5 text-[8px] focus:outline-none border-0"
+                      >
+                        {TECNICOS.map(t => (
+                          <option key={t} value={t}>{t}</option>
+                        ))}
+                      </select>
+                    )}
                   </div>
 
                   {ordenSeleccionada ? (

@@ -2,12 +2,26 @@
 
 import { useEffect, useState } from 'react'
 
+interface Operator {
+  codigo: string
+  nombre: string
+  rol: 'Administrador' | 'Supervisor' | 'Operadora' | 'Técnico'
+  clave: string
+}
+
 interface ToolModalProps {
   modalId: string
   onClose: () => void
+  operadores?: Operator[]
+  onUpdateOperadores?: (ops: Operator[]) => void
 }
 
-export default function ToolModal({ modalId, onClose }: ToolModalProps) {
+export default function ToolModal({ modalId, onClose, operadores = [], onUpdateOperadores }: ToolModalProps) {
+  // Form states for creating new operators
+  const [newNombre, setNewNombre] = useState('')
+  const [newRol, setNewRol] = useState<'Administrador' | 'Supervisor' | 'Operadora' | 'Técnico'>('Operadora')
+  const [newClave, setNewClave] = useState('')
+
   // Modal interaction states
   const [syncing, setSyncing] = useState(false)
   const [syncDone, setSyncDone] = useState(false)
@@ -181,45 +195,115 @@ export default function ToolModal({ modalId, onClose }: ToolModalProps) {
           </div>
         )
       case 'user-key':
+        const eliminarOperador = (codigo: string) => {
+          if (operadores.length <= 1) {
+            alert('Debe quedar al menos un operador en el sistema.')
+            return
+          }
+          if (confirm(`¿Está seguro de eliminar al operador con código ${codigo}?`)) {
+            const nuevos = operadores.filter(o => o.codigo !== codigo)
+            onUpdateOperadores?.(nuevos)
+          }
+        }
+
+        const agregarOperador = () => {
+          if (!newNombre.trim() || !newClave.trim()) {
+            alert('Por favor complete todos los campos.')
+            return
+          }
+          const maxCod = Math.max(...operadores.map(o => parseInt(o.codigo) || 0), 0)
+          const nextCod = String(maxCod + 1).padStart(2, '0')
+
+          const nuevoOp: Operator = {
+            codigo: nextCod,
+            nombre: newNombre.trim(),
+            rol: newRol,
+            clave: newClave.trim()
+          }
+          const nuevos = [...operadores, nuevoOp]
+          onUpdateOperadores?.(nuevos)
+          setNewNombre('')
+          setNewClave('')
+          alert('Operador creado exitosamente.')
+        }
+
         return (
           <div className="space-y-4">
-            <p className="text-xs text-slate-400 font-mono">USUARIOS DE LA CENTRAL DE MONITOREO</p>
-            <div className="overflow-x-auto border border-[#1a2340] rounded">
+            <p className="text-xs text-slate-400 font-mono uppercase font-bold">Gestión de Usuarios y Atribuciones de Acceso</p>
+            <div className="overflow-x-auto border border-[#1a2340] rounded max-h-[160px] overflow-y-auto">
               <table className="w-full text-left border-collapse text-xs font-mono">
                 <thead>
-                  <tr className="bg-[#111827] text-slate-400">
-                    <th className="p-2 border-b border-[#1a2340]">ID</th>
-                    <th className="p-2 border-b border-[#1a2340]">Usuario</th>
-                    <th className="p-2 border-b border-[#1a2340]">Rol</th>
+                  <tr className="bg-[#111827] text-slate-400 sticky top-0">
+                    <th className="p-2 border-b border-[#1a2340] w-12 text-center">CÓD</th>
+                    <th className="p-2 border-b border-[#1a2340]">Nombre Funcionario</th>
+                    <th className="p-2 border-b border-[#1a2340] w-24">Rol / Perfil</th>
+                    <th className="p-2 border-b border-[#1a2340] w-20 text-center">Clave</th>
+                    <th className="p-2 border-b border-[#1a2340] w-12 text-center">Eliminar</th>
                   </tr>
                 </thead>
                 <tbody className="text-slate-300 divide-y divide-[#131b30]">
-                  <tr className="border-b border-[#131b30]">
-                    <td className="p-2">01</td>
-                    <td className="p-2">Tomás Toro</td>
-                    <td className="p-2"><span className="text-xs px-2 py-0.5 rounded-full bg-red-900/40 text-red-400 border border-red-800">Supervisor</span></td>
-                  </tr>
-                  <tr className="border-b border-[#131b30]">
-                    <td className="p-2">02</td>
-                    <td className="p-2">Juan Pérez</td>
-                    <td className="p-2"><span className="text-xs px-2 py-0.5 rounded-full bg-blue-900/40 text-blue-400 border border-blue-800">Operador</span></td>
-                  </tr>
-                  <tr>
-                    <td className="p-2">03</td>
-                    <td className="p-2">María López</td>
-                    <td className="p-2"><span className="text-xs px-2 py-0.5 rounded-full bg-blue-900/40 text-blue-400 border border-blue-800">Operador</span></td>
-                  </tr>
+                  {operadores.map(op => (
+                    <tr key={op.codigo} className="border-b border-[#131b30] hover:bg-[#1a2340]/25">
+                      <td className="p-2 text-center font-bold">{op.codigo}</td>
+                      <td className="p-2 font-bold uppercase">{op.nombre}</td>
+                      <td className="p-2">
+                        <span className={`text-[9px] px-1.5 py-0.5 rounded font-black border ${
+                          op.rol === 'Administrador' ? 'bg-red-950 text-red-400 border-red-900' :
+                          op.rol === 'Supervisor' ? 'bg-yellow-950 text-yellow-400 border-yellow-900' :
+                          op.rol === 'Técnico' ? 'bg-green-950 text-green-400 border-green-900' :
+                          'bg-blue-950 text-blue-400 border-blue-900'
+                        }`}>
+                          {op.rol.toUpperCase()}
+                        </span>
+                      </td>
+                      <td className="p-2 text-center font-mono font-bold text-yellow-500">{op.clave}</td>
+                      <td className="p-2 text-center">
+                        <button
+                          onClick={() => eliminarOperador(op.codigo)}
+                          className="text-red-500 hover:text-red-400 font-bold px-1 cursor-pointer"
+                        >
+                          🗑️
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
+
             <div className="p-3 bg-[#0a0e1a] rounded border border-[#1a2340] space-y-2">
-              <span className="text-[10px] uppercase font-bold text-slate-500 block">Modificar Contraseña</span>
-              <div className="grid grid-cols-2 gap-2">
-                <input type="password" placeholder="Clave actual" className="bg-black border border-[#1a2340] rounded p-1.5 text-xs text-white" />
-                <input type="password" placeholder="Clave nueva" className="bg-black border border-[#1a2340] rounded p-1.5 text-xs text-white" />
+              <span className="text-[10px] uppercase font-bold text-slate-400 block border-b border-[#1a2340] pb-1">➕ Registrar Nuevo Operador / Técnico</span>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <input
+                  type="text"
+                  placeholder="Nombre completo"
+                  value={newNombre}
+                  onChange={(e) => setNewNombre(e.target.value)}
+                  className="bg-black border border-[#1a2340] rounded p-1.5 text-xs text-white placeholder-gray-600 focus:outline-none"
+                />
+                <select
+                  value={newRol}
+                  onChange={(e) => setNewRol(e.target.value as any)}
+                  className="bg-black border border-[#1a2340] rounded p-1.5 text-xs text-white focus:outline-none"
+                >
+                  <option value="Administrador">Administrador</option>
+                  <option value="Supervisor">Supervisor</option>
+                  <option value="Operadora">Operadora</option>
+                  <option value="Técnico">Técnico</option>
+                </select>
+                <input
+                  type="text"
+                  placeholder="Clave numérica"
+                  value={newClave}
+                  onChange={(e) => setNewClave(e.target.value)}
+                  className="bg-black border border-[#1a2340] rounded p-1.5 text-xs text-white placeholder-gray-600 focus:outline-none"
+                />
               </div>
-              <button className="w-full mt-1 py-1.5 bg-[#1e293b] hover:bg-[#334155] border border-slate-700 text-slate-200 text-xs font-semibold rounded cursor-pointer">
-                Actualizar Clave
+              <button
+                onClick={agregarOperador}
+                className="w-full mt-1 py-1.5 bg-green-900 hover:bg-green-800 border border-green-700 text-green-200 text-xs font-semibold rounded cursor-pointer"
+              >
+                REGISTRAR USUARIO
               </button>
             </div>
           </div>

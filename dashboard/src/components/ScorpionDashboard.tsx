@@ -14,6 +14,7 @@ import NotificacionesLlamadasSMSModal from './NotificacionesLlamadasSMSModal'
 import BitacoraModal from './BitacoraModal'
 import TodosLosEventosModal from './TodosLosEventosModal'
 import ServicioTecnicoModal from './ServicioTecnicoModal'
+import LoginModal from './LoginModal'
 import ReportesModal from './ReportesModal'
 import ConfigModal from './ConfigModal'
 import { lookupContactId } from '@/lib/contact_id_library'
@@ -79,6 +80,70 @@ export default function ScorpionDashboard() {
 
   // Mapa de zonificación por abonado desde ZONIFICACION MDB
   const [zonasMap, setZonasMap] = useState<Record<string, { numero: string; dispositivo: string; area: string }[]>>({})
+
+  // Gestión de Usuarios y Roles (RBAC)
+  interface Operator {
+    codigo: string
+    nombre: string
+    rol: 'Administrador' | 'Supervisor' | 'Operadora' | 'Técnico'
+    clave: string
+  }
+
+  const OPERADORES_FALLBACK: Operator[] = [
+    { codigo: '01', nombre: 'Tomás Toro', rol: 'Administrador', clave: '123' },
+    { codigo: '02', nombre: 'Mauricio Tapia', rol: 'Supervisor', clave: '123' },
+    { codigo: '03', nombre: 'Juan Pérez', rol: 'Operadora', clave: '123' },
+    { codigo: '04', nombre: 'Diego Reyes', rol: 'Técnico', clave: '123' }
+  ]
+
+  const [operadores, setOperadores] = useState<Operator[]>(OPERADORES_FALLBACK)
+  const [usuarioActivo, setUsuarioActivo] = useState<Operator>(OPERADORES_FALLBACK[0])
+  const [mostrarLogin, setMostrarLogin] = useState(false)
+
+  // Cargar operadores desde Supabase ('CONFIG_OPERADORES')
+  useEffect(() => {
+    const fetchOperadores = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('eventos_monitoreo')
+          .select('nombre_abonado')
+          .eq('cuenta', 'CONFIG_OPERADORES')
+          .limit(1)
+        if (data && data.length > 0 && !error) {
+          const parsed = JSON.parse(data[0].nombre_abonado || '[]')
+          if (parsed && parsed.length > 0) {
+            setOperadores(parsed)
+            // Ajustar el usuario activo
+            const match = parsed.find((o: any) => o.codigo === usuarioActivo.codigo)
+            if (match) {
+              setUsuarioActivo(match)
+            } else {
+              setUsuarioActivo(parsed[0])
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('Error loading operators list:', err)
+      }
+    }
+    fetchOperadores()
+  }, [])
+
+  const guardarOperadoresBase = async (listaNueva: Operator[]) => {
+    try {
+      await supabase
+        .from('eventos_monitoreo')
+        .upsert({
+          cuenta: 'CONFIG_OPERADORES',
+          nombre_abonado: JSON.stringify(listaNueva),
+          evento: 'CONFIGURACION',
+          fecha_hora: new Date().toISOString()
+        })
+      setOperadores(listaNueva)
+    } catch (err) {
+      console.error('Error guardando operadores:', err)
+    }
+  }
 
   // Heartbeat del sincronizador.py en PC Scorpion
   const [sincronizadorVivo, setSincronizadorVivo] = useState(true)
@@ -531,6 +596,17 @@ export default function ScorpionDashboard() {
               sincronizadorVivo ? 'text-green-400' : 'text-red-400'
             }`}>SINCR.</span>
           </div>
+
+          <div className="flex items-center gap-1 bg-[#1e293b] px-2 py-0.5 rounded text-[10px] font-bold text-slate-300 border border-slate-700">
+            <span>👤 {usuarioActivo.nombre} ({usuarioActivo.rol.toUpperCase()})</span>
+            <button
+              onClick={() => setMostrarLogin(true)}
+              className="text-blue-400 hover:text-blue-300 ml-1.5 underline cursor-pointer"
+            >
+              Cambiar
+            </button>
+          </div>
+
           <span className="text-slate-500 font-mono">BUFFER: {eventos.length}/50</span>
           <input
             type="text"
@@ -557,7 +633,12 @@ export default function ScorpionDashboard() {
           { label: 'REPORTES',       id: 'menu-reportes', hasDropdown: true },
           { label: 'EVENTOS',        id: 'menu-eventos' },
           { label: 'AYUDA',          id: 'menu-ayuda' },
-        ].map((item, idx) => (
+        ].filter(item => {
+          if (item.id === 'menu-configuracion') return usuarioActivo.rol === 'Administrador'
+          if (item.id === 'menu-operadores') return usuarioActivo.rol === 'Administrador' || usuarioActivo.rol === 'Supervisor'
+          if (item.id === 'menu-serv-tecnico') return ['Administrador', 'Supervisor', 'Técnico'].includes(usuarioActivo.rol)
+          return true
+        }).map((item, idx) => (
           <div key={idx} className="relative">
             <button
               id={item.id}
@@ -865,7 +946,7 @@ export default function ScorpionDashboard() {
 
           {/* Reloj y Fecha inferior de Scorpion */}
           <div className="flex justify-between items-center bg-[#d0d0d0] border border-gray-400 px-2 py-0.5 text-[10px] font-mono text-gray-700">
-            <span>Operador: MASTER SCORPION</span>
+            <span>Operador: {usuarioActivo.nombre} ({usuarioActivo.rol.toUpperCase()})</span>
             <span className="font-bold">{horaLocal}</span>
           </div>
 
@@ -877,6 +958,8 @@ export default function ScorpionDashboard() {
         <ToolModal
           modalId={modalActivo}
           onClose={() => setModalActivo(null)}
+          operadores={operadores}
+          onUpdateOperadores={(nuevosOps) => guardarOperadoresBase(nuevosOps)}
         />
       )}
 
@@ -886,6 +969,7 @@ export default function ScorpionDashboard() {
           evento={activeEvent}
           pestanaInicial={expedientePestana}
           onClose={() => setModalActivo(null)}
+          usuarioRol={usuarioActivo.rol}
         />
       )}
 
@@ -940,6 +1024,7 @@ export default function ScorpionDashboard() {
         <ServicioTecnicoModal 
           onClose={() => setModalActivo(null)} 
           clientesMap={clientesMap}
+          usuarioActivo={usuarioActivo}
         />
       )}
 
@@ -959,6 +1044,15 @@ export default function ScorpionDashboard() {
       {/* Configuración Modal */}
       {modalActivo === 'configuracion' && (
         <ConfigModal onClose={() => setModalActivo(null)} />
+      )}
+
+      {/* Login / Operator Switch Modal */}
+      {mostrarLogin && (
+        <LoginModal
+          onClose={() => setMostrarLogin(false)}
+          onLoginSuccess={(op) => setUsuarioActivo(op)}
+          operadores={operadores}
+        />
       )}
 
       {/* Footer */}
