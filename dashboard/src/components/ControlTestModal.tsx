@@ -75,23 +75,23 @@ export default function ControlTestModal({ onClose, clientesMap = {} }: Props) {
       // 3. Procesar para cada cliente
       const targetMap = Object.keys(clientesMap).length > 0 ? clientesMap : clientesGeneralFallback
       const listaEstados = Object.entries(targetMap).map(([cuenta, c]) => {
-        const horaEsperada = horasMap[cuenta] || '03:00'
+        // Filtrar todos los eventos de tipo test para este abonado
+        const eventsForClient = testEvents.filter(e => e.cuenta?.toUpperCase().trim() === cuenta.toUpperCase().trim())
         
-        // Buscar el test más reciente de este abonado
-        const ultimoEvento = testEvents.find(e => e.cuenta?.toUpperCase().trim() === cuenta.toUpperCase().trim())
-        
-        if (!ultimoEvento) {
-          return null // Excluir si no hay test registrado
+        if (eventsForClient.length === 0) {
+          return null // Excluir si no hay test registrado en los últimos 500
         }
 
+        const ultimoEvento = eventsForClient[0]
+        const eventoAnterior = eventsForClient[1]
+
         let ultimoTest = 'Sin Registro'
+        let horaEsperada = '03:00'
         let desfaseMinutos: number | null = null
         let estado: 'OK' | 'Desfasado' | 'Incomunicado' = 'Incomunicado'
 
-        // Formatear fecha
+        // Formatear fecha del último test
         const fechaTest = new Date(ultimoEvento.fecha_hora)
-        
-        // Ajustar formato legible
         const yyyy = fechaTest.getFullYear()
         const mm = String(fechaTest.getMonth() + 1).padStart(2, '0')
         const dd = String(fechaTest.getDate()).padStart(2, '0')
@@ -99,7 +99,7 @@ export default function ControlTestModal({ onClose, clientesMap = {} }: Props) {
         const min = String(fechaTest.getMinutes()).padStart(2, '0')
         ultimoTest = `${yyyy}-${mm}-${dd} ${hh}:${min}`
 
-        // 4. Calcular diferencia de horas frente a la actual
+        // Calcular diferencia de horas frente a la actual
         const ahora = new Date()
         const diferenciaHoras = (ahora.getTime() - fechaTest.getTime()) / (1000 * 60 * 60)
 
@@ -107,24 +107,30 @@ export default function ControlTestModal({ onClose, clientesMap = {} }: Props) {
           return null // Excluir si no ha reportado en los últimos 10 días
         }
 
+        // Obtener la referencia horaria del test anterior (ayer)
+        if (eventoAnterior) {
+          const fechaAnt = new Date(eventoAnterior.fecha_hora)
+          const hhAnt = String(fechaAnt.getHours()).padStart(2, '0')
+          const minAnt = String(fechaAnt.getMinutes()).padStart(2, '0')
+          horaEsperada = `${hhAnt}:${minAnt}` // Referencia del test del día anterior
+
+          // Calcular desfase en minutos con respecto al test anterior
+          const horaTestEnMinutos = fechaTest.getHours() * 60 + fechaTest.getMinutes()
+          const horaEsperadaEnMinutos = fechaAnt.getHours() * 60 + fechaAnt.getMinutes()
+          
+          let diff = horaTestEnMinutos - horaEsperadaEnMinutos
+          if (diff > 720) diff -= 1440
+          if (diff < -720) diff += 1440
+          desfaseMinutos = diff
+        } else {
+          // Si no hay test anterior, usar la configurada o fallback
+          horaEsperada = horasMap[cuenta] || '03:00'
+        }
+
         if (diferenciaHoras > 26) {
           estado = 'Incomunicado'
         } else {
-          // Calcular desfase con respecto a la hora programada en el mismo día del test
-          const [espHoras, espMin] = horaEsperada.split(':').map(Number)
-          const horaTestEnMinutos = fechaTest.getHours() * 60 + fechaTest.getMinutes()
-          const horaEsperadaEnMinutos = espHoras * 60 + espMin
-          
-          // Diferencia absoluta en minutos
-          let diff = horaTestEnMinutos - horaEsperadaEnMinutos
-          
-          // Ajustar diferencia si cruza el límite de medianoche
-          if (diff > 720) diff -= 1440
-          if (diff < -720) diff += 1440
-          
-          desfaseMinutos = diff
-
-          if (Math.abs(diff) > 60) {
+          if (desfaseMinutos !== null && Math.abs(desfaseMinutos) > 60) {
             estado = 'Desfasado'
           } else {
             estado = 'OK'
@@ -134,7 +140,7 @@ export default function ControlTestModal({ onClose, clientesMap = {} }: Props) {
         return {
           cuenta,
           nombre: c.nombre || 'Abonado Desconocido',
-          horaEsperada,
+          horaEsperada: `${horaEsperada} ${eventoAnterior ? '(Ref. Ayer)' : '(Fijo)'}`,
           ultimoTest,
           desfaseMinutos,
           estado
