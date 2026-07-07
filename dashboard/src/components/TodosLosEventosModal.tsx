@@ -91,7 +91,7 @@ export default function TodosLosEventosModal({ onClose }: Props) {
   const [fecha, setFecha] = useState(getChileLocalDate())
   const [eventos, setEventos] = useState<Evento[]>([])
   const [cargando, setCargando] = useState(false)
-  const [mensaje, setMensaje] = useState('Introduzca fecha y presione VER.')
+  const [mensaje, setMensaje] = useState('Seleccione una fecha y presione VER.')
 
   const cargarEventos = async () => {
     if (!fecha) {
@@ -127,14 +127,12 @@ export default function TodosLosEventosModal({ onClose }: Props) {
     }
   }
 
-  // Cargar eventos del día de hoy automáticamente al abrir el modal
-  useEffect(() => {
-    cargarEventos()
-  }, [])
+  // NO cargar automáticamente - esperar a que el usuario presione VER
+  // useEffect(() => { cargarEventos() }, [])
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-      <div className="bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 w-full max-w-6xl flex flex-col shadow-2xl font-mono text-black select-none">
+      <div className="bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 w-full max-w-4xl flex flex-col shadow-2xl font-mono text-black select-none">
         
         {/* Title bar */}
         <div className="bg-[#000080] text-white px-2 py-1 flex justify-between items-center shrink-0">
@@ -158,7 +156,7 @@ export default function TodosLosEventosModal({ onClose }: Props) {
           </div>
 
           {/* Table Container */}
-          <div className="flex-1 overflow-auto border-2 border-t-gray-700 border-l-gray-700 border-b-white border-r-white bg-white min-h-[300px] h-[400px]">
+          <div className="flex-1 overflow-auto border-2 border-t-gray-700 border-l-gray-700 border-b-white border-r-white bg-white min-h-[200px] h-[300px] max-h-[500px]">
             <table className="w-full text-left border-collapse text-[11px] leading-tight font-bold whitespace-nowrap">
               <thead>
                 <tr className="bg-[#d4d0c8] text-black sticky top-0 border-b border-gray-400 select-none z-10">
