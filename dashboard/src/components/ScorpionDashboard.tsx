@@ -856,7 +856,7 @@ export default function ScorpionDashboard() {
       </div>
 
       {/* Tool Modals */}
-      {modalActivo && modalActivo !== 'bar-chart' && modalActivo !== 'checklist' && (
+      {modalActivo && ['tools', 'user-key', 'file-edit', 'network', 'shield', 'book', 'grid-check', 'list-details', 'home', 'search', 'archive'].includes(modalActivo) && (
         <ToolModal
           modalId={modalActivo}
           onClose={() => setModalActivo(null)}
