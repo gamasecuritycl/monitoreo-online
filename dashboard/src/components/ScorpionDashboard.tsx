@@ -65,6 +65,7 @@ export default function ScorpionDashboard() {
   const [busqueda, setBusqueda] = useState('')
   const [eventoSeleccionado, setEventoSeleccionado] = useState<EventoMonitoreo | null>(null)
   const [modalActivo, setModalActivo] = useState<string | null>(null)
+  const [expedientePestana, setExpedientePestana] = useState<'telefonos' | 'horarios' | 'camara'>('telefonos')
   const [horaLocal, setHoraLocal] = useState('')
   const [mostrarMenuNotificaciones, setMostrarMenuNotificaciones] = useState(false)
   const [mostrarMenuReportes, setMostrarMenuReportes] = useState(false)
@@ -842,7 +843,17 @@ export default function ScorpionDashboard() {
           </div>
 
           {/* Botón de verificación de video inferior */}
-          <button className="w-full bg-[#d0d0d0] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 py-1.5 text-xs text-gray-800 font-bold hover:bg-[#e0e0e0] active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white cursor-pointer select-none">
+          <button 
+            onClick={() => {
+              if (activeEvent) {
+                setExpedientePestana('camara')
+                setModalActivo('bar-chart')
+              } else {
+                alert('Por favor seleccione un abonado en la grilla primero.')
+              }
+            }}
+            className="w-full bg-[#d0d0d0] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 py-1.5 text-xs text-gray-800 font-bold hover:bg-[#e0e0e0] active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white cursor-pointer select-none"
+          >
             🎥 Activar verificación por video
           </button>
 
@@ -867,6 +878,7 @@ export default function ScorpionDashboard() {
       {modalActivo === 'bar-chart' && activeEvent && (
         <ExpedienteModal
           evento={activeEvent}
+          pestanaInicial={expedientePestana}
           onClose={() => setModalActivo(null)}
         />
       )}
@@ -936,7 +948,12 @@ export default function ScorpionDashboard() {
       )}
 
       {/* Footer */}
-      <FooterActions onModalOpen={setModalActivo} />
+      <FooterActions onModalOpen={(id) => {
+        if (id === 'bar-chart') {
+          setExpedientePestana('telefonos')
+        }
+        setModalActivo(id)
+      }} />
     </div>
   )
 }

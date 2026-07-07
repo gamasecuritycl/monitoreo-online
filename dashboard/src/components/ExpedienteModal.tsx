@@ -11,10 +11,11 @@ const clientesGeneralFallback = clientesDataRaw as Record<string, Record<string,
 
 interface ExpedienteModalProps {
   evento: EventoMonitoreo
+  pestanaInicial?: 'telefonos' | 'horarios' | 'camara'
   onClose: () => void
 }
 
-export default function ExpedienteModal({ evento, onClose }: ExpedienteModalProps) {
+export default function ExpedienteModal({ evento, pestanaInicial, onClose }: ExpedienteModalProps) {
   const modalRef = useRef<HTMLDivElement>(null)
   
   // Cuenta activa seleccionada
@@ -25,7 +26,14 @@ export default function ExpedienteModal({ evento, onClose }: ExpedienteModalProp
   const [clientesMap, setClientesMap] = useState<Record<string, Record<string, string>>>(clientesGeneralFallback)
   
   // Control de pestañas
-  const [tabEmergentes, setTabEmergentes] = useState<'telefonos' | 'horarios' | 'camara'>('telefonos')
+  const [tabEmergentes, setTabEmergentes] = useState<'telefonos' | 'horarios' | 'camara'>(pestanaInicial || 'telefonos')
+  
+  useEffect(() => {
+    if (pestanaInicial) {
+      setTabEmergentes(pestanaInicial)
+    }
+  }, [pestanaInicial])
+
   const [tabInfo, setTabInfo] = useState<'caracteristicas' | 'referencias' | 'observaciones'>('caracteristicas')
   const [tabInstalacion, setTabInstalacion] = useState<'instalacion' | 'ucontrol'>('instalacion')
 
