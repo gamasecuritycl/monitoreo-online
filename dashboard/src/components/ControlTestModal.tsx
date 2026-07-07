@@ -2,6 +2,9 @@
 
 import React, { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
+import clientesDataRaw from '@/lib/clientes_general.json'
+
+const clientesGeneralFallback = clientesDataRaw as Record<string, Record<string, string>>
 
 interface EventoMonitoreo {
   id: number
@@ -69,8 +72,9 @@ export default function ControlTestModal({ onClose, clientesMap = {} }: Props) {
 
       const testEvents = (eventosData || []) as EventoMonitoreo[]
 
-      // 3. Procesar para cada cliente en clientesMap
-      const listaEstados: TestStatus[] = Object.entries(clientesMap).map(([cuenta, c]) => {
+      // 3. Procesar para cada cliente
+      const targetMap = Object.keys(clientesMap).length > 0 ? clientesMap : clientesGeneralFallback
+      const listaEstados: TestStatus[] = Object.entries(targetMap).map(([cuenta, c]) => {
         const horaEsperada = horasMap[cuenta] || '03:00'
         
         // Buscar el test más reciente de este abonado
