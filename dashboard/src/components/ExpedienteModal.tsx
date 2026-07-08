@@ -398,8 +398,6 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
                           disabled={editandoCamaras}
                           onChange={(e) => {
                             setActiveCamera(e.target.value as any)
-                            setResultadoIA(null)
-                            setDetecciones([])
                           }}
                           className="bg-[#222] text-white border border-gray-600 font-bold py-0.5 px-1 focus:outline-none text-[9px] disabled:opacity-50"
                         >
