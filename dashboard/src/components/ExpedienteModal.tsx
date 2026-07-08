@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, Fragment } from 'react'
 import type { EventoMonitoreo } from '@/lib/supabase'
 import { supabase } from '@/lib/supabase'
 
@@ -649,7 +649,7 @@ Responde en español.`
 
                             {/* Bounding Box Visual Overlay (Roboflow Supervision Style) */}
                             {detecciones.map((det, idx) => (
-                              <React.Fragment key={idx}>
+                              <Fragment key={idx}>
                                 {/* Bounding Box */}
                                 <div
                                   style={{
@@ -688,7 +688,7 @@ Responde en español.`
                                     ))}
                                   </svg>
                                 )}
-                              </React.Fragment>
+                              </Fragment>
                             ))}
                           </div>
 
