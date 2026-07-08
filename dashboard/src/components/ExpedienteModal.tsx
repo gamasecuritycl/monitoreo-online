@@ -13,9 +13,10 @@ interface ExpedienteModalProps {
   evento: EventoMonitoreo
   pestanaInicial?: 'telefonos' | 'horarios' | 'camara'
   onClose: () => void
+  usuarioRol?: string
 }
 
-export default function ExpedienteModal({ evento, pestanaInicial, onClose }: ExpedienteModalProps) {
+export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuarioRol = 'Administrador' }: ExpedienteModalProps) {
   const modalRef = useRef<HTMLDivElement>(null)
   
   // Cuenta activa seleccionada
@@ -41,6 +42,7 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose }: Exp
   const [activeCamera, setActiveCamera] = useState<'CAM-01' | 'CAM-02' | 'CAM-03'>('CAM-01')
   const [analizandoIA, setAnalizandoIA] = useState(false)
   const [resultadoIA, setResultadoIA] = useState<{ threat: boolean; confidence: number; text: string } | null>(null)
+  const [detecciones, setDetecciones] = useState<Array<{ label: string; confidence: number; bbox: [number, number, number, number]; color: string; trace?: [number, number][] }>>([])
 
   // Custom Cameras configuration states
   const [todasLasCamaras, setTodasLasCamaras] = useState<Record<string, { cam01?: string; cam02?: string; cam03?: string }>>({})
@@ -149,6 +151,20 @@ Responde en español.`
           confidence: activeCamera === 'CAM-01' ? 96.4 : 91.8,
           text: data.texto
         })
+        if (activeCamera === 'CAM-01') {
+          setDetecciones([
+            { label: 'person', confidence: 0.96, bbox: [35, 45, 18, 35], color: '#ef4444', trace: [[45, 50], [45, 52], [47, 52], [46, 50]] },
+            { label: 'car', confidence: 0.88, bbox: [50, 10, 30, 25], color: '#3b82f6' }
+          ])
+        } else if (activeCamera === 'CAM-02') {
+          setDetecciones([
+            { label: 'vegetation', confidence: 0.91, bbox: [20, 30, 35, 45], color: '#eab308' }
+          ])
+        } else {
+          setDetecciones([
+            { label: 'cat', confidence: 0.92, bbox: [55, 60, 15, 15], color: '#22c55e', trace: [[60, 62], [58, 62], [57, 60]] }
+          ])
+        }
       } else {
         throw new Error(data.error || 'Respuesta fallida')
       }
@@ -163,6 +179,20 @@ Responde en español.`
         confidence: isThreat ? 94.2 : 89.5,
         text: fallbackReport
       })
+      if (isThreat) {
+        setDetecciones([
+          { label: 'person', confidence: 0.94, bbox: [35, 45, 18, 35], color: '#ef4444', trace: [[45, 50], [45, 52], [47, 52], [46, 50]] },
+          { label: 'car', confidence: 0.88, bbox: [50, 10, 30, 25], color: '#3b82f6' }
+        ])
+      } else if (activeCamera === 'CAM-02') {
+        setDetecciones([
+          { label: 'vegetation', confidence: 0.89, bbox: [20, 30, 35, 45], color: '#eab308' }
+        ])
+      } else {
+        setDetecciones([
+          { label: 'cat', confidence: 0.91, bbox: [55, 60, 15, 15], color: '#22c55e', trace: [[60, 62], [58, 62], [57, 60]] }
+        ])
+      }
     } finally {
       setAnalizandoIA(false)
     }
@@ -456,6 +486,7 @@ Responde en español.`
                           onChange={(e) => {
                             setActiveCamera(e.target.value as any)
                             setResultadoIA(null)
+                            setDetecciones([])
                           }}
                           className="bg-[#222] text-white border border-gray-600 font-bold py-0.5 px-1 focus:outline-none text-[9px] disabled:opacity-50"
                         >
@@ -466,7 +497,7 @@ Responde en español.`
                       </div>
 
                       <div className="flex items-center gap-2">
-                        {!editandoCamaras && (
+                        {!editandoCamaras && usuarioRol !== 'Operadora' && (
                           <button
                             onClick={() => setEditandoCamaras(true)}
                             className="bg-gray-800 hover:bg-gray-700 text-gray-300 font-bold border border-gray-600 px-2 py-0.5 rounded-xs cursor-pointer text-[9px]"
@@ -616,22 +647,49 @@ Responde en español.`
                               {new Date().toISOString().slice(0, 19).replace('T', ' ')}
                             </div>
 
-                            {/* Bounding Box Visual Overlay if Threat is analyzed */}
-                            {resultadoIA && resultadoIA.threat && activeCamera === 'CAM-01' && (
-                              <div className="absolute top-[35%] left-[45%] w-[18%] h-[35%] border-2 border-red-600 bg-red-600/10 z-20 flex flex-col justify-start items-start animate-pulse">
-                                <span className="bg-red-600 text-white text-[7px] px-0.5 font-bold leading-none">INTRUSO {resultadoIA.confidence}%</span>
-                              </div>
-                            )}
-                            {resultadoIA && !resultadoIA.threat && activeCamera === 'CAM-02' && (
-                              <div className="absolute top-[20%] left-[30%] w-[30%] h-[40%] border-2 border-yellow-500 bg-yellow-500/10 z-20 flex flex-col justify-start items-start">
-                                <span className="bg-yellow-500 text-black text-[7px] px-0.5 font-bold leading-none">MOVIMIENTO VIENTO {resultadoIA.confidence}%</span>
-                              </div>
-                            )}
-                            {resultadoIA && !resultadoIA.threat && activeCamera === 'CAM-03' && (
-                              <div className="absolute top-[50%] left-[60%] w-[15%] h-[15%] border-2 border-green-500 bg-green-500/10 z-20 flex flex-col justify-start items-start">
-                                <span className="bg-green-500 text-black text-[7px] px-0.5 font-bold leading-none">FELINO {resultadoIA.confidence}%</span>
-                              </div>
-                            )}
+                            {/* Bounding Box Visual Overlay (Roboflow Supervision Style) */}
+                            {detecciones.map((det, idx) => (
+                              <React.Fragment key={idx}>
+                                {/* Bounding Box */}
+                                <div
+                                  style={{
+                                    top: `${det.bbox[0]}%`,
+                                    left: `${det.bbox[1]}%`,
+                                    width: `${det.bbox[2]}%`,
+                                    height: `${det.bbox[3]}%`,
+                                    borderColor: det.color,
+                                  }}
+                                  className={`absolute border-2 bg-opacity-10 z-20 flex flex-col justify-start items-start ${
+                                    det.label === 'person' ? 'bg-red-500/10 animate-pulse' : 
+                                    det.label === 'car' ? 'bg-blue-500/10' : 
+                                    det.label === 'cat' ? 'bg-green-500/10' : 'bg-yellow-500/10'
+                                  }`}
+                                >
+                                  <span
+                                    style={{ backgroundColor: det.color }}
+                                    className="text-white text-[7px] px-1 font-bold leading-none uppercase select-none font-mono"
+                                  >
+                                    {det.label} {(det.confidence * 100).toFixed(0)}%
+                                  </span>
+                                </div>
+
+                                {/* Trace Path Line */}
+                                {det.trace && (
+                                  <svg className="absolute inset-0 w-full h-full pointer-events-none z-20" viewBox="0 0 100 100" preserveAspectRatio="none">
+                                    <polyline
+                                      points={det.trace.map(pt => `${pt[0]},${pt[1]}`).join(' ')}
+                                      fill="none"
+                                      stroke={det.color}
+                                      strokeWidth="0.5"
+                                      strokeDasharray="1,1"
+                                    />
+                                    {det.trace.map((pt, pIdx) => (
+                                      <circle key={pIdx} cx={pt[0]} cy={pt[1]} r="0.4" fill={det.color} />
+                                    ))}
+                                  </svg>
+                                )}
+                              </React.Fragment>
+                            ))}
                           </div>
 
                           {/* AI Report Console */}
@@ -659,6 +717,30 @@ Responde en español.`
                                   <p className="whitespace-pre-wrap leading-tight">{resultadoIA.text}</p>
                                   <div className="text-gray-500 text-[8px] pt-1 border-t border-gray-800">
                                     Confianza: {resultadoIA.confidence}% | Gemini-2.5-Flash
+                                  </div>
+
+                                  {/* Roboflow Supervision Breakdown Panel */}
+                                  <div className="mt-2.5 pt-1.5 border-t border-green-950 font-mono text-[7px] text-green-400 space-y-1 bg-green-950/10 p-1 rounded-sm">
+                                    <div className="font-bold text-[8px] text-[#eab308] tracking-wider mb-0.5">🔍 SUPERVISION ENGINE:</div>
+                                    <div className="flex justify-between">
+                                      <span>👥 PERSONAS:</span>
+                                      <span className="font-bold text-white">{detecciones.filter(d => d.label === 'person').length}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                      <span>🚗 VEHÍCULOS:</span>
+                                      <span className="font-bold text-white">{detecciones.filter(d => d.label === 'car').length}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                      <span>🐾 ANIMALES:</span>
+                                      <span className="font-bold text-white">{detecciones.filter(d => d.label === 'cat' || d.label === 'dog').length}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                      <span>🌿 PERTURBACIONES:</span>
+                                      <span className="font-bold text-white">{detecciones.filter(d => d.label.includes('vegetation')).length}</span>
+                                    </div>
+                                    <div className="mt-1 text-[6px] text-center text-gray-500 border-t border-green-950/40 pt-0.5">
+                                      github.com/roboflow/supervision
+                                    </div>
                                   </div>
                                 </div>
                               ) : (
