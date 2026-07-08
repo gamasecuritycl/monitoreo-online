@@ -18,6 +18,7 @@ import LoginModal from './LoginModal'
 import ControlTestModal from './ControlTestModal'
 import ReportesModal from './ReportesModal'
 import ConfigModal from './ConfigModal'
+import VideoVerificacionModal from './VideoVerificacionModal'
 import { lookupContactId } from '@/lib/contact_id_library'
 import { sendMessage, generarMensajeAlerta, generarMensajeEnergia, detectarPatronEvento, type EventInfo } from '@/lib/whatsapp'
 
@@ -959,8 +960,7 @@ export default function ScorpionDashboard() {
           <button 
             onClick={() => {
               if (activeEvent) {
-                setExpedientePestana('camara')
-                setModalActivo('bar-chart')
+                setModalActivo('video-verificacion')
               } else {
                 alert('Por favor seleccione un abonado en la grilla primero.')
               }
@@ -1051,6 +1051,27 @@ export default function ScorpionDashboard() {
           onClose={() => setModalActivo(null)} 
           clientesMap={clientesMap}
           usuarioActivo={usuarioActivo}
+        />
+      )}
+
+      {/* Video Verification Modal */}
+      {modalActivo === 'video-verificacion' && activeEvent && (
+        <VideoVerificacionModal
+          onClose={() => setModalActivo(null)}
+          evento={activeEvent}
+          clientesMap={clientesMap}
+          esCierre={(() => {
+            const clientEvents = eventos.filter(e => e.cuenta?.toUpperCase().trim() === activeEvent.cuenta?.toUpperCase().trim())
+            const stateEvent = clientEvents.find(e => {
+              const ev = (e.evento || '').toLowerCase()
+              return ev.includes('cierre') || ev.includes('apertura') || ev.includes('armado') || ev.includes('desarmado')
+            })
+            if (stateEvent) {
+              const evName = (stateEvent.evento || '').toLowerCase()
+              return evName.includes('cierre') || evName.includes('armado')
+            }
+            return true // default to Cierre for safety
+          })()}
         />
       )}
 

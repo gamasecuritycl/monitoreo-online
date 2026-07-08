@@ -40,9 +40,6 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
 
   // Video-Verificación por IA States
   const [activeCamera, setActiveCamera] = useState<'CAM-01' | 'CAM-02' | 'CAM-03'>('CAM-01')
-  const [analizandoIA, setAnalizandoIA] = useState(false)
-  const [resultadoIA, setResultadoIA] = useState<{ threat: boolean; confidence: number; text: string } | null>(null)
-  const [detecciones, setDetecciones] = useState<Array<{ label: string; confidence: number; bbox: [number, number, number, number]; color: string; trace?: [number, number][] }>>([])
 
   // Custom Cameras configuration states
   const [todasLasCamaras, setTodasLasCamaras] = useState<Record<string, { cam01?: string; cam02?: string; cam03?: string }>>({})
@@ -112,91 +109,7 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
     return () => window.removeEventListener('keydown', handleEsc)
   }, [onClose])
 
-  const analizarConIA = async () => {
-    setAnalizandoIA(true)
-    setResultadoIA(null)
 
-    const cameraDesc = activeCamera === 'CAM-01'
-      ? 'Cámara 01 (Entrada Principal): Muestra una silueta humana de noche merodeando sospechosamente cerca de la puerta con abrigo oscuro y capucha, mirando hacia la cerradura.'
-      : activeCamera === 'CAM-02'
-      ? 'Cámara 02 (Patio Lateral): Muestra ramas de árboles oscilando fuertemente debido al viento nocturno. Las hojas secas vuelan por el suelo y la cámara se sacude un poco.'
-      : 'Cámara 03 (Bodega Interna): Muestra un gato negro pequeño cruzando rápidamente el pasillo de almacenamiento. No hay presencia de personas.';
-
-    const clientName = cliente?.nombre || 'Cliente Scorpion'
-    const eventDesc = evento.evento || 'ALARMA DE ROBO'
-
-    const prompt = `Actúas como el Analista de Seguridad IA (Scorpion Security AI Analyst) de la central de monitoreo de alarmas de Gama Seguridad.
-Por favor emite un reporte de análisis de video/imagen de circuito cerrado de televisión (CCTV) basado en los siguientes datos:
-Abonado: Cuenta ${cuentaActiva} (${clientName})
-Evento de Alarma Recibido: ${eventDesc}
-Cámara Analizada: ${cameraDesc}
-
-Instrucciones para la respuesta:
-1. Sé conciso, directo y profesional en tu redacción (estilo informe militar o despacho de central).
-2. Incluye obligatoriamente un veredicto claro: si se trata de una AMENAZA REAL (intrusión detectada) o una FALSA ALARMA (viento, animales, etc).
-3. Estima un porcentaje de confianza (ej. 92% confianza).
-4. Explica qué se observa en 2 líneas y da una recomendación operativa inmediata.
-Responde en español.`
-
-    try {
-      const res = await fetch('/api/gemini', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt }),
-      })
-      const data = await res.json()
-      if (data.ok && data.texto) {
-        setResultadoIA({
-          threat: activeCamera === 'CAM-01',
-          confidence: activeCamera === 'CAM-01' ? 96.4 : 91.8,
-          text: data.texto
-        })
-        if (activeCamera === 'CAM-01') {
-          setDetecciones([
-            { label: 'person', confidence: 0.96, bbox: [35, 45, 18, 35], color: '#ef4444', trace: [[45, 50], [45, 52], [47, 52], [46, 50]] },
-            { label: 'car', confidence: 0.88, bbox: [50, 10, 30, 25], color: '#3b82f6' }
-          ])
-        } else if (activeCamera === 'CAM-02') {
-          setDetecciones([
-            { label: 'vegetation', confidence: 0.91, bbox: [20, 30, 35, 45], color: '#eab308' }
-          ])
-        } else {
-          setDetecciones([
-            { label: 'cat', confidence: 0.92, bbox: [55, 60, 15, 15], color: '#22c55e', trace: [[60, 62], [58, 62], [57, 60]] }
-          ])
-        }
-      } else {
-        throw new Error(data.error || 'Respuesta fallida')
-      }
-    } catch (err: any) {
-      // Fallback local robusto
-      const isThreat = activeCamera === 'CAM-01';
-      const fallbackReport = isThreat
-        ? `[FALLBACK LOCAL - SCORPION ANALYST]\nVEREDICTO: AMENAZA REAL DETECTADA (94.2% confianza)\nDETALLE: Silueta humana merodeando junto al acceso principal. Se recomienda despachar patrulla policial o móvil de apoyo de inmediato.`
-        : `[FALLBACK LOCAL - SCORPION ANALYST]\nVEREDICTO: FALSA ALARMA (89.5% confianza)\nDETALLE: Sin presencia de personas. El sensor de movimiento fue gatillado por perturbación menor (${activeCamera === 'CAM-02' ? 'viento fuerte en las ramas' : 'felino pequeño en tránsito'}).`;
-      setResultadoIA({
-        threat: isThreat,
-        confidence: isThreat ? 94.2 : 89.5,
-        text: fallbackReport
-      })
-      if (isThreat) {
-        setDetecciones([
-          { label: 'person', confidence: 0.94, bbox: [35, 45, 18, 35], color: '#ef4444', trace: [[45, 50], [45, 52], [47, 52], [46, 50]] },
-          { label: 'car', confidence: 0.88, bbox: [50, 10, 30, 25], color: '#3b82f6' }
-        ])
-      } else if (activeCamera === 'CAM-02') {
-        setDetecciones([
-          { label: 'vegetation', confidence: 0.89, bbox: [20, 30, 35, 45], color: '#eab308' }
-        ])
-      } else {
-        setDetecciones([
-          { label: 'cat', confidence: 0.91, bbox: [55, 60, 15, 15], color: '#22c55e', trace: [[60, 62], [58, 62], [57, 60]] }
-        ])
-      }
-    } finally {
-      setAnalizandoIA(false)
-    }
-  }
 
   const guardarCamaras = async () => {
     const updated = {
@@ -505,13 +418,6 @@ Responde en español.`
                             ⚙️ CONFIGURAR CÁMARAS
                           </button>
                         )}
-                        <button
-                          onClick={analizarConIA}
-                          disabled={analizandoIA || editandoCamaras}
-                          className="bg-green-700 hover:bg-green-600 disabled:bg-gray-800 text-white font-bold border border-green-500 px-2 py-0.5 rounded-xs transition-colors cursor-pointer text-[9px]"
-                        >
-                          {analizandoIA ? '⚡ ANALIZANDO CON IA...' : '🤖 ANALIZAR CON IA GEMINI'}
-                        </button>
                       </div>
                     </div>
 
@@ -692,77 +598,7 @@ Responde en español.`
                             ))}
                           </div>
 
-                          {/* AI Report Console */}
-                          <div className="w-full md:w-[180px] shrink-0 bg-[#0d0f14] p-1.5 flex flex-col justify-between overflow-y-auto text-[9px] leading-tight border-t md:border-t-0 border-gray-800 font-mono">
-                            <div>
-                              <div className="text-green-500 border-b border-green-950 pb-1 mb-1 font-bold tracking-wider flex items-center justify-between">
-                                <span>🤖 SCORPION AI</span>
-                                {resultadoIA && (
-                                  <span className={`px-1 py-0.2 rounded font-black text-[8px] ${
-                                    resultadoIA.threat ? 'bg-red-950 text-red-400 border border-red-800' : 'bg-green-950 text-green-400 border border-green-800'
-                                  }`}>
-                                    {resultadoIA.threat ? 'PELIGRO' : 'SEGURO'}
-                                  </span>
-                                )}
-                              </div>
 
-                              {analizandoIA ? (
-                                <div className="text-yellow-500 space-y-1 animate-pulse py-4 text-center">
-                                  <div>[CONECTANDO APIS...]</div>
-                                  <div>[ANALIZANDO FOTOGRAMAS...]</div>
-                                  <div className="text-[7px] text-gray-500">Espere por favor</div>
-                                </div>
-                              ) : resultadoIA ? (
-                                <div className="space-y-1.5 text-gray-300">
-                                  <p className="whitespace-pre-wrap leading-tight">{resultadoIA.text}</p>
-                                  <div className="text-gray-500 text-[8px] pt-1 border-t border-gray-800">
-                                    Confianza: {resultadoIA.confidence}% | Gemini-2.5-Flash
-                                  </div>
-
-                                  {/* Roboflow Supervision Breakdown Panel */}
-                                  <div className="mt-2.5 pt-1.5 border-t border-green-950 font-mono text-[7px] text-green-400 space-y-1 bg-green-950/10 p-1 rounded-sm">
-                                    <div className="font-bold text-[8px] text-[#eab308] tracking-wider mb-0.5">🔍 SUPERVISION ENGINE:</div>
-                                    <div className="flex justify-between">
-                                      <span>👥 PERSONAS:</span>
-                                      <span className="font-bold text-white">{detecciones.filter(d => d.label === 'person').length}</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                      <span>🚗 VEHÍCULOS:</span>
-                                      <span className="font-bold text-white">{detecciones.filter(d => d.label === 'car').length}</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                      <span>🐾 ANIMALES:</span>
-                                      <span className="font-bold text-white">{detecciones.filter(d => d.label === 'cat' || d.label === 'dog').length}</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                      <span>🌿 PERTURBACIONES:</span>
-                                      <span className="font-bold text-white">{detecciones.filter(d => d.label.includes('vegetation')).length}</span>
-                                    </div>
-                                    <div className="mt-1 text-[6px] text-center text-gray-500 border-t border-green-950/40 pt-0.5">
-                                      github.com/roboflow/supervision
-                                    </div>
-                                  </div>
-                                </div>
-                              ) : (
-                                <div className="text-gray-500 text-center py-6 italic">
-                                  Cámara lista.<br />Haga clic en ANALIZAR para verificar la escena con IA.
-                                </div>
-                              )}
-                            </div>
-
-                            {resultadoIA && (
-                              <div className="mt-2 border-t border-gray-800 pt-1.5 flex justify-center shrink-0">
-                                <button
-                                  onClick={() => {
-                                    alert("Reporte de IA adjuntado a la bitácora del abonado.");
-                                  }}
-                                  className="w-full bg-[#1e293b] hover:bg-slate-700 text-slate-200 border border-slate-600 py-0.5 rounded-xs cursor-pointer text-[8px]"
-                                >
-                                  ADJUNTAR A BITÁCORA
-                                </button>
-                              </div>
-                            )}
-                          </div>
                         </>
                       )}
 
