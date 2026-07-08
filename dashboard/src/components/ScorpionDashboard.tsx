@@ -375,6 +375,7 @@ export default function ScorpionDashboard() {
               const waNotifEnergia = waConfig.notificar_energia !== undefined ? waConfig.notificar_energia : true
               const waNotifApertura = waConfig.notificar_apertura === true
               const waNotifCierre = waConfig.notificar_cierre === true
+              const waNotifVideo = waConfig.notificar_video === true
 
               if (isEnergia && !waNotifEnergia) { return }
               if (esApertura && !waNotifApertura) { return }
@@ -419,6 +420,28 @@ export default function ScorpionDashboard() {
                     respuesta_cliente: null,
                     created_at: ahora.toISOString(),
                   })
+
+                  // Enviar video-verificacion automatica si esta habilitado y hay alarma de robo
+                  if (waNotifVideo && !isEnergia && !esApertura && !esCierre) {
+                    try {
+                      const { data: camData } = await supabase
+                        .from('eventos_monitoreo')
+                        .select('nombre_abonado')
+                        .eq('cuenta', 'CAMARAS')
+                        .limit(1)
+                      if (camData && camData.length > 0) {
+                        const allCams = JSON.parse(camData[0].nombre_abonado || '{}')
+                        const clientCams = allCams[newEvent.cuenta]
+                        const targetVideo = clientCams?.cam01 || clientCams?.cam02 || clientCams?.cam03
+                        if (targetVideo) {
+                          const videoMsg = `🎥 *VERIFICACIÓN POR VIDEO AUTOMÁTICA*\n━━━━━━━━━━━━━━━━━━━━━\nSe ha detectado una alarma. Puedes revisar el video del evento en el siguiente enlace:\n🔗 ${targetVideo}`
+                          sendMessage(telefono, videoMsg).catch(() => {})
+                        }
+                      }
+                    } catch (camErr) {
+                      console.error('Error al enviar video-verificación automática:', camErr)
+                    }
+                  }
 
                   await supabase.from('notificaciones_whatsapp').upsert({
                     cuenta: newEvent.cuenta,

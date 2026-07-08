@@ -29,6 +29,7 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap }: Pr
   const [notificarEnergia, setNotificarEnergia] = useState(true)
   const [notificarApertura, setNotificarApertura] = useState(false)
   const [notificarCierre, setNotificarCierre] = useState(false)
+  const [notificarVideo, setNotificarVideo] = useState(false)
 
   const clientesFiltrados = Object.entries(clientesMap)
     .filter(([cuenta, datos]) => {
@@ -48,6 +49,7 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap }: Pr
       setNotificarEnergia(true)
       setNotificarApertura(false)
       setNotificarCierre(false)
+      setNotificarVideo(false)
       return
     }
     const cargar = async () => {
@@ -65,6 +67,7 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap }: Pr
         setNotificarEnergia(data.notificar_energia !== false)
         setNotificarApertura(data.notificar_apertura === true)
         setNotificarCierre(data.notificar_cierre === true)
+        setNotificarVideo(data.notificar_video === true)
       } else {
         setTelefono('')
         setActivo(true)
@@ -74,6 +77,7 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap }: Pr
         setNotificarEnergia(true)
         setNotificarApertura(false)
         setNotificarCierre(false)
+        setNotificarVideo(false)
       }
     }
     cargar()
@@ -100,6 +104,7 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap }: Pr
         payload.notificar_energia = notificarEnergia
         payload.notificar_apertura = notificarApertura
         payload.notificar_cierre = notificarCierre
+        payload.notificar_video = notificarVideo
         const { error } = await supabase.from('notificaciones_whatsapp').upsert(payload, { onConflict: 'cuenta' })
         if (error) throw error
       } catch {
@@ -107,6 +112,7 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap }: Pr
         delete payload.notificar_energia
         delete payload.notificar_apertura
         delete payload.notificar_cierre
+        delete payload.notificar_video
         const { error } = await supabase.from('notificaciones_whatsapp').upsert(payload, { onConflict: 'cuenta' })
         if (error) throw error
       }
@@ -251,6 +257,10 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap }: Pr
                         <label className="flex items-center gap-1.5 text-[10px] cursor-pointer">
                           <input type="checkbox" checked={notificarCierre} onChange={(e) => setNotificarCierre(e.target.checked)} className="accent-blue-600" />
                           <span className="text-blue-700 font-bold">🔒 Cierre</span>
+                        </label>
+                        <label className="flex items-center gap-1.5 text-[10px] cursor-pointer col-span-2 mt-1 border-t border-dashed border-gray-300 pt-1">
+                          <input type="checkbox" checked={notificarVideo} onChange={(e) => setNotificarVideo(e.target.checked)} className="accent-green-600" />
+                          <span className="text-green-700 font-bold">🎥 Enviar Video-Verificación Automática (Alarmas de Robo)</span>
                         </label>
                       </div>
                     </div>
