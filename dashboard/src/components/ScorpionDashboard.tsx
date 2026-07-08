@@ -434,7 +434,11 @@ export default function ScorpionDashboard() {
                         const clientCams = allCams[newEvent.cuenta]
                         const targetVideo = clientCams?.cam01 || clientCams?.cam02 || clientCams?.cam03
                         if (targetVideo) {
-                          const videoMsg = `🎥 *VERIFICACIÓN POR VIDEO AUTOMÁTICA*\n━━━━━━━━━━━━━━━━━━━━━\nSe ha detectado una alarma. Puedes revisar el video del evento en el siguiente enlace:\n🔗 ${targetVideo}`
+                          const isMediaMtx = targetVideo.toLowerCase().trim() === 'mediamtx' || (!targetVideo.startsWith('http') && !targetVideo.startsWith('https') && !targetVideo.startsWith('/'))
+                          const videoUrl = isMediaMtx
+                            ? `https://dashboard-eight-sable-51.vercel.app/live/${newEvent.cuenta.toLowerCase()}`
+                            : targetVideo
+                          const videoMsg = `🎥 *VERIFICACIÓN POR VIDEO AUTOMÁTICA*\n━━━━━━━━━━━━━━━━━━━━━\nSe ha detectado una alarma. Puedes revisar el video en el siguiente enlace:\n🔗 ${videoUrl}`
                           sendMessage(telefono, videoMsg).catch(() => {})
                         }
                       }

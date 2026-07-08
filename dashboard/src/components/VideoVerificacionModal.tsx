@@ -193,34 +193,46 @@ Instrucciones:
             <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%)] bg-[size:100%_4px] z-10" />
 
             {/* Video feed render */}
-            {(() => {
-              const url = activeCamera === 'CAM-01' ? camarasActivas.cam01 : activeCamera === 'CAM-02' ? camarasActivas.cam02 : camarasActivas.cam03
-              
-              if (!url) {
-                return (
-                  <img
-                    src={activeCamera === 'CAM-01' ? '/cctv_intruder.png' : '/cctv_false_alarm.png'}
-                    alt="CCTV"
-                    className={`w-full h-full object-cover select-none ${
-                      activeCamera === 'CAM-03' ? 'grayscale hue-rotate-90 brightness-75' : 
-                      activeCamera === 'CAM-02' ? 'hue-rotate-180 brightness-90' : 'brightness-90'
-                    }`}
-                  />
-                )
-              }
+             {(() => {
+               const url = activeCamera === 'CAM-01' ? camarasActivas.cam01 : activeCamera === 'CAM-02' ? camarasActivas.cam02 : camarasActivas.cam03
+               
+               if (!url) {
+                 return (
+                   <img
+                     src={activeCamera === 'CAM-01' ? '/cctv_intruder.png' : '/cctv_false_alarm.png'}
+                     alt="CCTV"
+                     className={`w-full h-full object-cover select-none ${
+                       activeCamera === 'CAM-03' ? 'grayscale hue-rotate-90 brightness-75' : 
+                       activeCamera === 'CAM-02' ? 'hue-rotate-180 brightness-90' : 'brightness-90'
+                     }`}
+                   />
+                 )
+               }
 
-              const lowerUrl = url.toLowerCase()
-              const isVideo = lowerUrl.includes('.mp4') || lowerUrl.includes('.webm') || lowerUrl.includes('.ogg') || lowerUrl.includes('.mov')
-              const isImage = lowerUrl.includes('.jpg') || lowerUrl.includes('.jpeg') || lowerUrl.includes('.png') || lowerUrl.includes('.webp') || lowerUrl.includes('.gif')
+               const lowerUrl = url.toLowerCase().trim()
+               if (lowerUrl === 'mediamtx' || (!lowerUrl.startsWith('http') && !lowerUrl.startsWith('https') && !lowerUrl.startsWith('/') && lowerUrl.length > 2)) {
+                 const streamId = activeCamera === 'CAM-01' ? cuentaActiva : activeCamera === 'CAM-02' ? `${cuentaActiva}-cam2` : `${cuentaActiva}-cam3`
+                 return (
+                   <iframe
+                     src={`http://cloud.gamasecurity.cl:8889/${streamId.toLowerCase()}`}
+                     className="w-full h-full border-0 bg-black absolute inset-0 z-0"
+                     allow="autoplay; encrypted-media; picture-in-picture"
+                     allowFullScreen
+                   />
+                 )
+               }
 
-              if (isVideo) {
-                return <video src={url} autoPlay loop muted playsInline className="w-full h-full object-cover" />
-              } else if (isImage) {
-                return <img src={url} alt="CCTV Feed" className="w-full h-full object-cover" />
-              } else {
-                return <iframe src={url} title="CCTV Embed" className="w-full h-full border-0 bg-black" allow="autoplay; encrypted-media" allowFullScreen />
-              }
-            })()}
+               const isVideo = lowerUrl.includes('.mp4') || lowerUrl.includes('.webm') || lowerUrl.includes('.ogg') || lowerUrl.includes('.mov')
+               const isImage = lowerUrl.includes('.jpg') || lowerUrl.includes('.jpeg') || lowerUrl.includes('.png') || lowerUrl.includes('.webp') || lowerUrl.includes('.gif')
+
+               if (isVideo) {
+                 return <video src={url} autoPlay loop muted playsInline className="w-full h-full object-cover" />
+               } else if (isImage) {
+                 return <img src={url} alt="CCTV Feed" className="w-full h-full object-cover" />
+               } else {
+                 return <iframe src={url} title="CCTV Embed" className="w-full h-full border-0 bg-black" allow="autoplay; encrypted-media" allowFullScreen />
+               }
+             })()}
 
             {/* Live indicator HUD */}
             <div className="absolute top-2 left-2.5 flex items-center gap-1 bg-black/60 px-1 py-0.5 rounded text-[8px] tracking-wider z-20 text-white">
