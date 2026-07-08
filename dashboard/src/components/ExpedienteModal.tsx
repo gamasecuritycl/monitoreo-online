@@ -551,49 +551,7 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
                               {new Date().toISOString().slice(0, 19).replace('T', ' ')}
                             </div>
 
-                            {/* Bounding Box Visual Overlay (Roboflow Supervision Style) */}
-                            {detecciones.map((det, idx) => (
-                              <Fragment key={idx}>
-                                {/* Bounding Box */}
-                                <div
-                                  style={{
-                                    top: `${det.bbox[0]}%`,
-                                    left: `${det.bbox[1]}%`,
-                                    width: `${det.bbox[2]}%`,
-                                    height: `${det.bbox[3]}%`,
-                                    borderColor: det.color,
-                                  }}
-                                  className={`absolute border-2 bg-opacity-10 z-20 flex flex-col justify-start items-start ${
-                                    det.label === 'person' ? 'bg-red-500/10 animate-pulse' : 
-                                    det.label === 'car' ? 'bg-blue-500/10' : 
-                                    det.label === 'cat' ? 'bg-green-500/10' : 'bg-yellow-500/10'
-                                  }`}
-                                >
-                                  <span
-                                    style={{ backgroundColor: det.color }}
-                                    className="text-white text-[7px] px-1 font-bold leading-none uppercase select-none font-mono"
-                                  >
-                                    {det.label} {(det.confidence * 100).toFixed(0)}%
-                                  </span>
-                                </div>
 
-                                {/* Trace Path Line */}
-                                {det.trace && (
-                                  <svg className="absolute inset-0 w-full h-full pointer-events-none z-20" viewBox="0 0 100 100" preserveAspectRatio="none">
-                                    <polyline
-                                      points={det.trace.map(pt => `${pt[0]},${pt[1]}`).join(' ')}
-                                      fill="none"
-                                      stroke={det.color}
-                                      strokeWidth="0.5"
-                                      strokeDasharray="1,1"
-                                    />
-                                    {det.trace.map((pt, pIdx) => (
-                                      <circle key={pIdx} cx={pt[0]} cy={pt[1]} r="0.4" fill={det.color} />
-                                    ))}
-                                  </svg>
-                                )}
-                              </Fragment>
-                            ))}
                           </div>
 
 
