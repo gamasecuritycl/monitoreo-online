@@ -100,6 +100,20 @@ export async function GET() {
   DROP POLICY IF EXISTS "Permitir todo en conversaciones_whatsapp" ON public.conversaciones_whatsapp;
   CREATE POLICY "Permitir todo en conversaciones_whatsapp" ON public.conversaciones_whatsapp
     FOR ALL USING (true) WITH CHECK (true);
+
+  -- Tabla de camaras por abonado
+  CREATE TABLE IF NOT EXISTS public.camaras_monitoreo (
+      cuenta VARCHAR(50) PRIMARY KEY,
+      cam_01_url TEXT DEFAULT '',
+      cam_02_url TEXT DEFAULT '',
+      cam_03_url TEXT DEFAULT '',
+      created_at TIMESTAMP DEFAULT NOW(),
+      updated_at TIMESTAMP DEFAULT NOW()
+  );
+  ALTER TABLE public.camaras_monitoreo ENABLE ROW LEVEL SECURITY;
+  DROP POLICY IF EXISTS "Permitir todo en camaras_monitoreo" ON public.camaras_monitoreo;
+  CREATE POLICY "Permitir todo en camaras_monitoreo" ON public.camaras_monitoreo
+    FOR ALL USING (true) WITH CHECK (true);
   `
 
   const client = new Client({
