@@ -1,11 +1,16 @@
-import time, pyodbc, shutil, os, json, sys, requests, ctypes
+import time, pyodbc, shutil, os, json, sys, requests, ctypes, threading, concurrent.futures
 from datetime import datetime, timezone, timedelta
 from supabase import create_client
 
 # Redirigir salida a log si se ejecuta en segundo plano con pythonw.exe
+_log_truncado = False
 if sys.executable.lower().endswith("pythonw.exe"):
     try:
         log_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "_gama_log.txt")
+        # Truncar log al inicio para evitar crecimiento infinito
+        with open(log_path, "w", encoding="utf-8") as _lf:
+            _lf.write(f"=== LOG INICIADO {datetime.now()} ===\n")
+        _log_truncado = True
         sys.stdout = open(log_path, "a", encoding="utf-8", buffering=1)
         sys.stderr = sys.stdout
     except Exception:
@@ -25,7 +30,7 @@ if ctypes.GetLastError() == 183:  # ERROR_ALREADY_EXISTS
 
 # ============================================================
 #  GAMA COMMAND CENTER - Sincronizador para PC Scorpion
-#  Versión: 5.3 (Heartbeat fijo, log flush, crash-safe)
+#  Versión: 5.4 (Watchdog + timeout MDB)
 # ============================================================
 
 SUPABASE_URL = "https://onxwyrwmpjxtwlmjrosr.supabase.co"
@@ -81,6 +86,24 @@ INTERVALO_SEG = 3
 
 # Inicializar Supabase con reintentos
 supabase = None
+
+# ── Watchdog: mata el proceso si no hay heartbeat en N segundos ──
+WATCHDOG_TIMEOUT = 300  # 5 minutos sin heartbeat = reinicio forzado
+_ultimo_heartbeat = time.time()
+
+def _watchdog_loop():
+    global _ultimo_heartbeat
+    while True:
+        time.sleep(30)
+        if time.time() - _ultimo_heartbeat > WATCHDOG_TIMEOUT:
+            log_flush(f"\n[WATCHDOG] {WATCHDOG_TIMEOUT}s sin heartbeat. Forzando reinicio...")
+            os._exit(1)
+
+threading.Thread(target=_watchdog_loop, daemon=True).start()
+
+# Tiempo máximo para procesar un solo archivo MDB (copia + conexión + consulta + subida)
+MDB_TIMEOUT = 120  # 2 minutos máximo por archivo
+
 def conectar_supabase():
     global supabase
     while True:
@@ -128,10 +151,11 @@ _heartbeat_counter = 0
 _errores_consecutivos = 0
 
 def enviar_heartbeat():
-    global _heartbeat_counter
+    global _heartbeat_counter, _ultimo_heartbeat
     _heartbeat_counter += 1
     if _heartbeat_counter % HEARTBEAT_CADENCIA != 0:
         return
+    _ultimo_heartbeat = time.time()
     try:
         ahora = datetime.now(timezone.utc).isoformat()
         execute_supabase_with_retry(lambda: supabase.table("eventos_monitoreo").insert({
@@ -817,6 +841,22 @@ def procesar_mdb(ruta_mdb, mdb_name, cache):
             except: pass
 
 
+def procesar_mdb_con_timeout(ruta_mdb, mdb_name, cache):
+    """Ejecuta procesar_mdb con timeout. Si excede MDB_TIMEOUT segundos, retorna (cache, 0)."""
+    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+        future = pool.submit(procesar_mdb, ruta_mdb, mdb_name, cache)
+        try:
+            return future.result(timeout=MDB_TIMEOUT)
+        except concurrent.futures.TimeoutError:
+            log_flush(f"  [TIMEOUT] {mdb_name} - superó {MDB_TIMEOUT}s, saltando...")
+            sys.stdout.flush()
+            return cache, 0
+        except Exception as e:
+            log_flush(f"  [ERROR] {mdb_name} - {e}")
+            sys.stdout.flush()
+            return cache, 0
+
+
 _mdb_last_mtimes = {}
 
 def sincronizar_eventos(cache):
@@ -850,7 +890,7 @@ def sincronizar_eventos(cache):
         print(f"[DB] {mdb_name} (modificado {mtime_str})")
         sys.stdout.flush()
         
-        cache, nuevos = procesar_mdb(ruta_mdb, mdb_name, cache)
+        cache, nuevos = procesar_mdb_con_timeout(ruta_mdb, mdb_name, cache)
         total_nuevos += nuevos
         
         # Guardar ultima modificacion procesada
@@ -868,12 +908,19 @@ def sincronizar_eventos(cache):
 
 if __name__ == "__main__":
     try:
+        # Truncar log al inicio para evitar crecimiento infinito
+        try:
+            log_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "_gama_log.txt")
+            with open(log_path, "w", encoding="utf-8") as f:
+                f.write(f"=== LOG INICIADO {datetime.now()} ===\n")
+        except:
+            pass
+        
         init_limite_fecha()
         log_flush("=" * 65)
-        log_flush("  GAMA COMMAND CENTER - Sincronizador v5.3")
-        log_flush(f"  Carpeta Eventos: {CARPETA_EVENTOS}")
-        log_flush(f"  Timezone: Chile ({get_chile_offset()})")
-        log_flush(f"  Heartbeat cada ~{HEARTBEAT_CADENCIA * INTERVALO_SEG}s en Supabase")
+        log_flush("  GAMA COMMAND CENTER - Sincronizador v5.4")
+        log_flush(f"  Watchdog: {WATCHDOG_TIMEOUT}s sin heartbeat = reinicio")
+        log_flush(f"  Timeout MDB: {MDB_TIMEOUT}s por archivo")
         log_flush("=" * 65)
         
         # Pequeña espera al inicio para evitar restart loops violentos

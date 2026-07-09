@@ -1,5 +1,5 @@
 @echo off
-title GAMA COMMAND CENTER - INSTALADOR UNICO v5.3
+title GAMA COMMAND CENTER - INSTALADOR UNICO v5.4
 color 0A
 setlocal enabledelayedexpansion
 
@@ -14,7 +14,7 @@ set BAT_URL=https://raw.githubusercontent.com/%GH_USER%/%GH_REPO%/%GH_BRANCH%/SC
 
 echo.
 echo ============================================================
-echo   GAMA COMMAND CENTER - INSTALADOR UNICO v5.3
+echo   GAMA COMMAND CENTER - INSTALADOR UNICO v5.4
 echo   (Ejecutar como Administrador - UNA SOLA VEZ)
 echo ============================================================
 echo.
@@ -124,16 +124,12 @@ if %ERRORLEVEL% EQU 0 ( echo   OK. ) else ( echo   [AVISO] Arrancara al boot/log
 
 echo.
 echo ============================================================
-echo   INSTALACION COMPLETADA - GAMA SYNC v5.3
+echo   INSTALACION COMPLETADA - GAMA SYNC v5.4
 echo ============================================================
 echo.
 echo Resumen:
-echo   - Procesa ULTIMOS 90 DIAS de archivos MDB (no 2006/2011)
-echo   - Cursor independiente por archivo (_sincronizador_cursors.json)
-echo   - Heartbeat cada ~30s (dashboard VERDE = vivo)
-echo   - Mutex Windows: cero duplicados
-echo   - Task Scheduler: boot + logon + restart 1min
-echo   - Sin VBS, sin lock files, sin ventanas
+echo   - Watchdog: reinicio forzado si no hay heartbeat en 5 min
+echo   - Timeout MDB: 120s max por archivo
 echo.
 echo Verificacion:
 echo   - Task Manager ^> pythonw.exe debe estar corriendo
