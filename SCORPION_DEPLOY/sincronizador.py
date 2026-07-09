@@ -30,7 +30,7 @@ if ctypes.GetLastError() == 183:  # ERROR_ALREADY_EXISTS
 
 # ============================================================
 #  GAMA COMMAND CENTER - Sincronizador para PC Scorpion
-#  Versión: 5.4 (Watchdog + timeout MDB)
+#  Versión: 5.5 (Heartbeat inmediato + por archivo, dashboard verde siempre)
 # ============================================================
 
 SUPABASE_URL = "https://onxwyrwmpjxtwlmjrosr.supabase.co"
@@ -866,6 +866,10 @@ def sincronizar_eventos(cache):
     # Inicializar/actualizar el límite de fecha antes de procesar los archivos MDB
     init_limite_fecha()
     
+    # Enviar heartbeat al INICIO del ciclo para que el dashboard sepa que estamos vivos
+    # aunque los MDB tarden en procesarse
+    enviar_heartbeat()
+    
     todos_mdb = get_todos_mdb()
     if not todos_mdb:
         return cache, INTERVALO_SEG
@@ -893,10 +897,11 @@ def sincronizar_eventos(cache):
         cache, nuevos = procesar_mdb_con_timeout(ruta_mdb, mdb_name, cache)
         total_nuevos += nuevos
         
+        # Heartbeat después de cada archivo (para que dashboard no se ponga rojo durante sincronización larga)
+        enviar_heartbeat()
+        
         # Guardar ultima modificacion procesada
         _mdb_last_mtimes[mdb_name] = mtime
-
-    enviar_heartbeat()
     _errores_consecutivos = 0
     
     if total_nuevos == 0 and un_cambio:
@@ -918,7 +923,7 @@ if __name__ == "__main__":
         
         init_limite_fecha()
         log_flush("=" * 65)
-        log_flush("  GAMA COMMAND CENTER - Sincronizador v5.4")
+        log_flush("  GAMA COMMAND CENTER - Sincronizador v5.5")
         log_flush(f"  Watchdog: {WATCHDOG_TIMEOUT}s sin heartbeat = reinicio")
         log_flush(f"  Timeout MDB: {MDB_TIMEOUT}s por archivo")
         log_flush("=" * 65)
@@ -966,6 +971,9 @@ if __name__ == "__main__":
         
         log_flush("[+] Sincronización inicial completa. Entrando en bucle principal de eventos...")
         sys.stdout.flush()
+        
+        # Enviar heartbeat inmediato para que el dashboard se ponga verde ya
+        enviar_heartbeat()
         
         # Bucle principal
         while True:

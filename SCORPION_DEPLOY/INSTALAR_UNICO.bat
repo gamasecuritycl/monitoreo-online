@@ -1,5 +1,5 @@
 @echo off
-title GAMA COMMAND CENTER - INSTALADOR UNICO v5.4
+title GAMA COMMAND CENTER - INSTALADOR UNICO v5.5
 color 0A
 setlocal enabledelayedexpansion
 
@@ -14,7 +14,7 @@ set BAT_URL=https://raw.githubusercontent.com/%GH_USER%/%GH_REPO%/%GH_BRANCH%/SC
 
 echo.
 echo ============================================================
-echo   GAMA COMMAND CENTER - INSTALADOR UNICO v5.4
+echo   GAMA COMMAND CENTER - INSTALADOR UNICO v5.5
 echo   (Ejecutar como Administrador - UNA SOLA VEZ)
 echo ============================================================
 echo.
@@ -124,7 +124,7 @@ if %ERRORLEVEL% EQU 0 ( echo   OK. ) else ( echo   [AVISO] Arrancara al boot/log
 
 echo.
 echo ============================================================
-echo   INSTALACION COMPLETADA - GAMA SYNC v5.4
+echo   INSTALACION COMPLETADA - GAMA SYNC v5.5
 echo ============================================================
 echo.
 echo Resumen:
