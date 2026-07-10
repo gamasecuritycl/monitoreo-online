@@ -102,7 +102,7 @@ def _watchdog_loop():
 threading.Thread(target=_watchdog_loop, daemon=True).start()
 
 # Tiempo máximo para procesar un solo archivo MDB (copia + conexión + consulta + subida)
-MDB_TIMEOUT = 120  # 2 minutos máximo por archivo
+MDB_TIMEOUT = 600  # 10 minutos máximo por archivo (files grandes con cientos de eventos)
 
 def conectar_supabase():
     global supabase
@@ -152,10 +152,11 @@ _errores_consecutivos = 0
 
 def enviar_heartbeat():
     global _heartbeat_counter, _ultimo_heartbeat
+    # Actualizar watchdog timer en cada llamada (aunque no se envíe el POST)
+    _ultimo_heartbeat = time.time()
     _heartbeat_counter += 1
     if _heartbeat_counter % HEARTBEAT_CADENCIA != 0:
         return
-    _ultimo_heartbeat = time.time()
     try:
         ahora = datetime.now(timezone.utc).isoformat()
         execute_supabase_with_retry(lambda: supabase.table("eventos_monitoreo").insert({
@@ -843,18 +844,21 @@ def procesar_mdb(ruta_mdb, mdb_name, cache):
 
 def procesar_mdb_con_timeout(ruta_mdb, mdb_name, cache):
     """Ejecuta procesar_mdb con timeout. Si excede MDB_TIMEOUT segundos, retorna (cache, 0)."""
-    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
-        future = pool.submit(procesar_mdb, ruta_mdb, mdb_name, cache)
-        try:
-            return future.result(timeout=MDB_TIMEOUT)
-        except concurrent.futures.TimeoutError:
-            log_flush(f"  [TIMEOUT] {mdb_name} - superó {MDB_TIMEOUT}s, saltando...")
-            sys.stdout.flush()
-            return cache, 0
-        except Exception as e:
-            log_flush(f"  [ERROR] {mdb_name} - {e}")
-            sys.stdout.flush()
-            return cache, 0
+    pool = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+    future = pool.submit(procesar_mdb, ruta_mdb, mdb_name, cache)
+    try:
+        return future.result(timeout=MDB_TIMEOUT)
+    except concurrent.futures.TimeoutError:
+        log_flush(f"  [TIMEOUT] {mdb_name} - superó {MDB_TIMEOUT}s, saltando...")
+        sys.stdout.flush()
+        future.cancel()
+        return cache, 0
+    except Exception as e:
+        log_flush(f"  [ERROR] {mdb_name} - {e}")
+        sys.stdout.flush()
+        return cache, 0
+    finally:
+        pool.shutdown(wait=False)
 
 
 _mdb_last_mtimes = {}

@@ -129,7 +129,8 @@ echo ============================================================
 echo.
 echo Resumen:
 echo   - Watchdog: reinicio forzado si no hay heartbeat en 5 min
-echo   - Timeout MDB: 120s max por archivo
+echo   - Timeout MDB: 600s max por archivo
+echo   - Heartbeat: al inicio y despues de cada archivo
 echo.
 echo Verificacion:
 echo   - Task Manager ^> pythonw.exe debe estar corriendo

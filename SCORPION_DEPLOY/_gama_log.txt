@@ -1,6 +1,6 @@
-=== LOG INICIADO 2026-07-09 18:55:10.545398 ===
+=== LOG INICIADO 2026-07-09 20:50:02.021254 ===
 =================================================================
-  GAMA COMMAND CENTER - Sincronizador v5.4
+  GAMA COMMAND CENTER - Sincronizador v5.5
   Watchdog: 300s sin heartbeat = reinicio
   Timeout MDB: 120s por archivo
 =================================================================
@@ -24,7 +24,7 @@
   [CACHE] Cargados 951 eventos...
 [CACHE SUCCESS] Sincronización de caché completada. Total en caché: 951 eventos.
 [+] Archivos MDB en carpeta EVENTOS:
-    2026-07-09.MDB  ->  modificado 2026-07-09 18:55:19
+    2026-07-09.MDB  ->  modificado 2026-07-09 20:43:59
     2026-07-08.MDB  ->  modificado 2026-07-08 23:53:56
     2026-07-07.MDB  ->  modificado 2026-07-07 23:52:31
     2026-07-06.MDB  ->  modificado 2026-07-06 23:56:50
@@ -5749,3 +5749,11 @@
 [DB] 2026-04-12.MDB (modificado 23:56:47)
   [2026-04-12.MDB] >>> 276 nuevo(s).
 [DB] 2026-04-13.MDB (modificado 23:51:00)
+  [2026-04-13.MDB] >>> 596 nuevo(s).
+[DB] 2026-04-14.MDB (modificado 23:58:44)
+  [2026-04-14.MDB] >>> 593 nuevo(s).
+[DB] 2026-04-15.MDB (modificado 23:55:28)
+  [2026-04-15.MDB] >>> 696 nuevo(s).
+[DB] 2026-04-16.MDB (modificado 23:55:21)
+
+[WATCHDOG] 300s sin heartbeat. Forzando reinicio...
