@@ -35,6 +35,7 @@ export default function Navbar() {
             <button onClick={() => scrollTo('inicio')} className="text-sm text-gray-300 hover:text-white transition-colors">Inicio</button>
             <button onClick={() => scrollTo('quienes-somos')} className="text-sm text-gray-300 hover:text-white transition-colors">Quiénes Somos</button>
             <button onClick={() => scrollTo('servicios')} className="text-sm text-gray-300 hover:text-white transition-colors">Servicios</button>
+            <button onClick={() => scrollTo('clientes')} className="text-sm text-gray-300 hover:text-white transition-colors">Clientes</button>
             <button onClick={() => scrollTo('contacto')} className="text-sm text-gray-300 hover:text-white transition-colors">Contacto</button>
             <Link
               href="/app"
@@ -62,6 +63,7 @@ export default function Navbar() {
             <button onClick={() => scrollTo('inicio')} className="block w-full text-left text-gray-300 hover:text-white py-2">Inicio</button>
             <button onClick={() => scrollTo('quienes-somos')} className="block w-full text-left text-gray-300 hover:text-white py-2">Quiénes Somos</button>
             <button onClick={() => scrollTo('servicios')} className="block w-full text-left text-gray-300 hover:text-white py-2">Servicios</button>
+            <button onClick={() => scrollTo('clientes')} className="block w-full text-left text-gray-300 hover:text-white py-2">Clientes</button>
             <button onClick={() => scrollTo('contacto')} className="block w-full text-left text-gray-300 hover:text-white py-2">Contacto</button>
             <Link href="/app" onClick={() => setMenuOpen(false)} className="block text-center bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold px-5 py-2 rounded-full">
               Acceso Personal

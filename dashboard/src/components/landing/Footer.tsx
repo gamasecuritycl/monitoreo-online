@@ -39,6 +39,7 @@ export default function Footer() {
               {[
                 { label: 'Inicio', href: '#inicio' },
                 { label: 'Quiénes Somos', href: '#quienes-somos' },
+                { label: 'Clientes', href: '#clientes' },
                 { label: 'Contacto', href: '#contacto' },
                 { label: 'Acceso Personal', href: '/app' },
               ].map((item) => (
