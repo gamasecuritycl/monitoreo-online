@@ -1,173 +1,132 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
-
-function useReveal() {
-  const ref = useRef<HTMLDivElement>(null)
-  useEffect(() => {
-    const el = ref.current
-    if (!el) return
-    const obs = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) { el.classList.add('visible'); obs.disconnect() } },
-      { threshold: 0.1 }
-    )
-    obs.observe(el)
-    return () => obs.disconnect()
-  }, [])
-  return ref
-}
+import { motion } from 'framer-motion'
 
 const PILLARS = [
   {
-    icon: (
-      <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-      </svg>
-    ),
-    accent: '#0ea5e9',
-    bg: 'bg-sky-400/8 border-sky-400/15',
-    title: 'Respuesta Inmediata',
-    desc: 'Protocolo de respuesta activado en menos de 2 minutos desde recibida la señal. Contacto con el cliente, verificación y despacho coordinado.',
+    icon: <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>,
+    title: 'Respuesta < 2 min',
+    desc: 'Protocolo activado en menos de 2 minutos ante cualquier señal de alarma. Operadores entrenados disponibles 24/7.',
+    color: '#f97316',
   },
   {
-    icon: (
-      <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-      </svg>
-    ),
-    accent: '#22c55e',
-    bg: 'bg-green-400/8 border-green-400/15',
-    title: 'Certificación OS-10',
-    desc: 'Habilitados por Carabineros de Chile para operar como empresa de seguridad privada, cumpliendo todos los estándares legales y técnicos exigidos.',
+    icon: <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>,
+    title: 'Certificados OS-10',
+    desc: 'Habilitados por Carabineros de Chile. Cumplimos todos los estándares exigidos por la normativa de seguridad privada.',
+    color: '#22c55e',
   },
   {
-    icon: (
-      <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-      </svg>
-    ),
-    accent: '#a855f7',
-    bg: 'bg-purple-400/8 border-purple-400/15',
-    title: 'Tecnología de Punta',
-    desc: 'Plataforma Scorpion, cámaras 4K con IA, comunicación IP y GPRS con redundancia. Siempre actualizados con la última tecnología disponible.',
+    icon: <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" /></svg>,
+    title: 'Sistema redundante',
+    desc: 'Central con sistemas de energía y comunicación redundantes. 99.9% uptime garantizado con monitoreo ininterrumpido.',
+    color: '#3b82f6',
   },
   {
-    icon: (
-      <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-      </svg>
-    ),
-    accent: '#f59e0b',
-    bg: 'bg-amber-400/8 border-amber-400/15',
-    title: 'Atención Personalizada',
-    desc: 'Un ejecutivo dedicado para cada cliente. Seguimiento post-instalación, mantenimiento preventivo y soporte técnico sin costo adicional.',
+    icon: <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" /></svg>,
+    title: 'Multi-canal',
+    desc: 'Notificaciones por WhatsApp, SMS, llamada y email. Tú decides cómo y cuándo quieres ser notificado.',
+    color: '#a855f7',
   },
 ]
 
-const COMPARISON = [
-  { feature: 'Monitoreo 24/7/365', gama: true, other: false },
-  { feature: 'Respuesta < 2 minutos', gama: true, other: false },
-  { feature: 'Certificación OS-10', gama: true, other: false },
-  { feature: 'App de monitoreo', gama: true, other: false },
-  { feature: 'Técnico dedicado', gama: true, other: false },
-  { feature: 'Plataforma Scorpion', gama: true, other: false },
-  { feature: 'Cobertura nacional', gama: true, other: false },
+const TABLE = [
+  { item: 'Monitoreo 24/7/365',     gama: true, otro: false },
+  { item: 'Plataforma Scorpion',    gama: true, otro: false },
+  { item: 'Certificación OS-10',    gama: true, otro: false },
+  { item: 'Respuesta < 2 min',      gama: true, otro: false },
+  { item: 'Notificación WhatsApp',  gama: true, otro: false },
+  { item: 'Soporte técnico 24/7',   gama: true, otro: false },
+  { item: 'Mantención preventiva',  gama: true, otro: false },
 ]
 
 export default function PorQueNosotros() {
-  const titleRef = useReveal()
-  const compRef = useReveal()
-
   return (
-    <section id="por-que" className="relative py-28 sm:py-36 overflow-hidden">
-      {/* Background */}
-      <div className="absolute inset-0 bg-gradient-to-b from-[#050810] via-[#08101f] to-[#050810]" />
-      <div className="absolute inset-0 tech-grid opacity-20" />
+    <section id="por-que-nosotros" className="relative py-28 sm:py-36 overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-b from-[#050d1a] via-[#0a1628] to-[#050d1a]" />
+      <div className="absolute top-0 left-0 right-0 h-px section-divider" />
+      <div className="absolute top-1/2 left-0 w-[400px] h-[400px] bg-[#1e3a5f]/20 blur-[100px] rounded-full pointer-events-none -translate-y-1/2" />
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
-        {/* Header */}
-        <div ref={titleRef} className="reveal text-center max-w-2xl mx-auto mb-20">
-          <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-400/8 border border-amber-400/15 text-amber-400 text-xs font-mono tracking-widest uppercase mb-5">
-            ¿Por qué elegirnos?
-          </span>
-          <h2 className="text-4xl sm:text-5xl font-black text-white leading-tight mb-5">
-            La diferencia que{' '}
-            <span className="gradient-text-amber">marca GAMA</span>
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          className="text-center max-w-2xl mx-auto mb-16"
+        >
+          <span className="section-label mb-5 inline-flex">¿Por qué elegirnos?</span>
+          <h2 className="text-4xl sm:text-5xl font-black text-white leading-tight mt-5 mb-5">
+            La diferencia{' '}
+            <span className="text-gradient-orange">GAMA SERVICIOS</span>
           </h2>
-          <p className="text-gray-400 text-base leading-relaxed">
-            No somos una empresa más de seguridad. Somos tu aliado estratégico para proteger
-            lo que más importa, con la tecnología y el equipo humano que marcan la diferencia.
+          <p className="text-slate-400 text-base leading-relaxed">
+            No todas las empresas de seguridad son iguales. Estos son los estándares
+            que nos distinguen en el mercado chileno.
           </p>
-        </div>
+        </motion.div>
 
-        {/* 4 pillars */}
+        {/* Pillars */}
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-20">
           {PILLARS.map((p, i) => (
-            <PillarCard key={p.title} pillar={p} delay={i * 100} />
+            <motion.div
+              key={p.title}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.1, duration: 0.5 }}
+              className="enterprise-card p-6 text-center"
+            >
+              <div
+                className="w-14 h-14 rounded-2xl mx-auto mb-4 flex items-center justify-center border"
+                style={{ color: p.color, background: `${p.color}15`, borderColor: `${p.color}30` }}
+              >
+                {p.icon}
+              </div>
+              <h3 className="text-white font-bold mb-2">{p.title}</h3>
+              <p className="text-slate-500 text-sm leading-relaxed">{p.desc}</p>
+            </motion.div>
           ))}
         </div>
 
         {/* Comparison table */}
-        <div ref={compRef} className="reveal">
-          <div className="max-w-2xl mx-auto">
-            <h3 className="text-center text-xl font-bold text-white mb-8">
-              GAMA vs. la competencia
-            </h3>
-            <div className="glass-card rounded-2xl overflow-hidden border border-white/[0.06]">
-              {/* Header */}
-              <div className="grid grid-cols-3 border-b border-white/[0.06]">
-                <div className="px-5 py-3.5 text-xs text-gray-500 font-mono uppercase tracking-wider">Característica</div>
-                <div className="px-5 py-3.5 text-center">
-                  <span className="text-xs font-bold text-sky-400 font-mono uppercase tracking-wider">GAMA Seguridad</span>
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          className="max-w-2xl mx-auto"
+        >
+          <h3 className="text-center text-white font-bold text-xl mb-8">GAMA vs. otras empresas</h3>
+          <div className="enterprise-card overflow-hidden">
+            <div className="grid grid-cols-3 bg-[#060d1a] border-b border-[#1e3a5f] px-6 py-3.5">
+              <div className="text-slate-500 text-xs font-mono uppercase">Característica</div>
+              <div className="text-center text-orange-400 text-xs font-bold uppercase font-mono">GAMA</div>
+              <div className="text-center text-slate-600 text-xs font-mono uppercase">Otros</div>
+            </div>
+            {TABLE.map((row, i) => (
+              <div
+                key={row.item}
+                className={`grid grid-cols-3 px-6 py-4 border-b border-[#1e3a5f]/40 ${i % 2 === 0 ? 'bg-[#0f2240]/30' : ''}`}
+              >
+                <div className="text-slate-400 text-sm">{row.item}</div>
+                <div className="flex justify-center">
+                  {row.gama
+                    ? <svg className="w-5 h-5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
+                    : <svg className="w-5 h-5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                  }
                 </div>
-                <div className="px-5 py-3.5 text-center">
-                  <span className="text-xs text-gray-600 font-mono uppercase tracking-wider">Promedio del mercado</span>
+                <div className="flex justify-center">
+                  {row.otro
+                    ? <svg className="w-5 h-5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
+                    : <svg className="w-5 h-5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                  }
                 </div>
               </div>
-              {COMPARISON.map((row, i) => (
-                <div
-                  key={row.feature}
-                  className={`grid grid-cols-3 border-b border-white/[0.04] hover:bg-white/[0.02] transition-colors ${i === COMPARISON.length - 1 ? 'border-b-0' : ''}`}
-                >
-                  <div className="px-5 py-3.5 text-sm text-gray-300">{row.feature}</div>
-                  <div className="px-5 py-3.5 flex justify-center items-center">
-                    <div className="w-5 h-5 rounded-full bg-green-400/15 border border-green-400/30 flex items-center justify-center">
-                      <svg className="w-3 h-3 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                      </svg>
-                    </div>
-                  </div>
-                  <div className="px-5 py-3.5 flex justify-center items-center">
-                    <div className="w-5 h-5 rounded-full bg-red-400/10 border border-red-400/20 flex items-center justify-center">
-                      <svg className="w-3 h-3 text-red-400/60" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+            ))}
           </div>
-        </div>
+        </motion.div>
       </div>
     </section>
-  )
-}
-
-function PillarCard({ pillar, delay }: { pillar: typeof PILLARS[0]; delay: number }) {
-  const ref = useReveal()
-  return (
-    <div
-      ref={ref}
-      className={`reveal group glass-card glass-card-hover rounded-2xl p-6 border ${pillar.bg} transition-all duration-400`}
-      style={{ transitionDelay: `${delay}ms` }}
-    >
-      <div className="mb-4 p-3 w-fit rounded-xl bg-white/5 border border-white/[0.06]" style={{ color: pillar.accent }}>
-        {pillar.icon}
-      </div>
-      <h3 className="text-white font-bold text-base mb-2.5">{pillar.title}</h3>
-      <p className="text-gray-400 text-sm leading-relaxed">{pillar.desc}</p>
-    </div>
   )
 }
