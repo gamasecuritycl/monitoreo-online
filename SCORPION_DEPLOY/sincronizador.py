@@ -147,7 +147,7 @@ def copiar_archivo_seguro(src, dst, max_retries=3, delay=0.5):
 
 # Heartbeat: cada N ciclos inserta un marker en Supabase para que el dashboard sepa que vivo
 HEARTBEAT_CADENCIA = 10
-_heartbeat_counter = 0
+_heartbeat_counter = HEARTBEAT_CADENCIA - 1  # Inicializar para que el primer heartbeat se envíe ya
 _errores_consecutivos = 0
 
 def enviar_heartbeat():
