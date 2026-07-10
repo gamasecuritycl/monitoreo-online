@@ -878,6 +878,10 @@ def sincronizar_eventos(cache):
     if not todos_mdb:
         return cache, INTERVALO_SEG
 
+    # Procesar archivos del más RECIENTE al más antiguo
+    # para que los eventos de hoy lleguen al dashboard lo antes posible
+    todos_mdb.reverse()
+
     total_nuevos = 0
     un_cambio = False
     
