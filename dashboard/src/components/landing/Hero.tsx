@@ -5,9 +5,9 @@ export default function Hero() {
     <section id="inicio" className="relative min-h-screen flex items-center justify-center overflow-hidden">
       {/* Aurora orbs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 -left-32 w-[600px] h-[600px] bg-blue-500/20 rounded-full blur-[120px] animate-[aurora_20s_ease-in-out_infinite]" />
-        <div className="absolute bottom-1/4 -right-32 w-[500px] h-[500px] bg-purple-500/15 rounded-full blur-[120px] animate-[aurora_25s_ease-in-out_infinite_reverse]" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-cyan-500/10 rounded-full blur-[150px] animate-[aurora_30s_ease-in-out_infinite]" />
+        <div className="aurora-orb absolute top-1/4 -left-32 w-[600px] h-[600px] bg-blue-500/20 rounded-full blur-[120px] animate-aurora1" />
+        <div className="aurora-orb absolute bottom-1/4 -right-32 w-[500px] h-[500px] bg-purple-500/15 rounded-full blur-[120px] animate-aurora2" />
+        <div className="aurora-orb absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-cyan-500/10 rounded-full blur-[150px] animate-aurora3" />
       </div>
 
       {/* Grid overlay */}
@@ -69,14 +69,6 @@ export default function Hero() {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
         </svg>
       </div>
-
-      <style jsx>{`
-        @keyframes aurora {
-          0%, 100% { transform: translate(0, 0) scale(1); }
-          33% { transform: translate(30px, -30px) scale(1.1); }
-          66% { transform: translate(-20px, 20px) scale(0.9); }
-        }
-      `}</style>
     </section>
   )
 }

@@ -15,6 +15,26 @@ body {
 ::-webkit-scrollbar-thumb { background: #1a2340; border-radius: 2px; }
 ::-webkit-scrollbar-thumb:hover { background: #2a3a5a; }
 
+/* ── Aurora animations ── */
+@keyframes aurora1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(40px, -40px) scale(1.1); }
+  66% { transform: translate(-20px, 20px) scale(0.9); }
+}
+@keyframes aurora2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(-30px, 30px) scale(1.15); }
+  66% { transform: translate(20px, -20px) scale(0.85); }
+}
+@keyframes aurora3 {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); }
+  33% { transform: translate(-50%, -50%) scale(1.2); }
+  66% { transform: translate(-50%, -50%) scale(0.8); }
+}
+.animate-aurora1 { animation: aurora1 20s ease-in-out infinite; }
+.animate-aurora2 { animation: aurora2 25s ease-in-out infinite reverse; }
+.animate-aurora3 { animation: aurora3 30s ease-in-out infinite; }
+
 /* ── LIVE indicator ── */
 @keyframes pulse-live {
   0%, 100% { opacity: 1; box-shadow: 0 0 6px #22c55e; }
