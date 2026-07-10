@@ -30,7 +30,7 @@ if ctypes.GetLastError() == 183:  # ERROR_ALREADY_EXISTS
 
 # ============================================================
 #  GAMA COMMAND CENTER - Sincronizador para PC Scorpion
-#  Versión: 5.5 (Heartbeat inmediato + por archivo, dashboard verde siempre)
+#  Versión: 5.5 (Watchdog + timeout + heartbeat por archivo + sin bloqueos)
 # ============================================================
 
 SUPABASE_URL = "https://onxwyrwmpjxtwlmjrosr.supabase.co"
