@@ -1,6 +1,7 @@
 import Navbar from '@/components/landing/Navbar'
 import Hero from '@/components/landing/Hero'
 import Servicios from '@/components/landing/Servicios'
+import Galeria from '@/components/landing/Galeria'
 import QuienesSomos from '@/components/landing/QuienesSomos'
 import Tecnologia from '@/components/landing/Tecnologia'
 import Testimonios from '@/components/landing/Testimonios'
@@ -20,6 +21,7 @@ export default function Home() {
       <Navbar />
       <Hero />
       <Servicios />
+      <Galeria />
       <QuienesSomos />
       <Tecnologia />
       <Testimonios />
