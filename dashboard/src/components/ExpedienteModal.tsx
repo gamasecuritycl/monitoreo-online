@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, Fragment } from 'react'
 import type { EventoMonitoreo } from '@/lib/supabase'
-import { supabase } from '@/lib/supabase'
+import { supabase, supabaseIA } from '@/lib/supabase'
 
 // Base de datos de fallback precargada
 import clientesDataRaw from '@/lib/clientes_general.json'
@@ -47,6 +47,13 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
   const [inputCam01, setInputCam01] = useState('')
   const [inputCam02, setInputCam02] = useState('')
   const [inputCam03, setInputCam03] = useState('')
+
+  // Estados de integración con BD IA
+  const [camarasIA, setCamarasIA] = useState<Array<{ id: string; nombre: string; rtsp_url?: string; activa: boolean }>>([])
+  const [clipsIA, setClipsIA] = useState<Array<{ id: string; camara_id: string; clip_path: string; fecha_hora: string; motivo?: string }>>([])
+  const [clipSeleccionado, setClipSeleccionado] = useState<string | null>(null)
+  const [cargandoIA, setCargandoIA] = useState(false)
+  const [selectedCamaraIAId, setSelectedCamaraIAId] = useState<string>('')
 
   // Load custom cameras config from Supabase
   useEffect(() => {
@@ -108,6 +115,62 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
     window.addEventListener('keydown', handleEsc)
     return () => window.removeEventListener('keydown', handleEsc)
   }, [onClose])
+
+  // Cargar cámaras e IA desde la BD de Analítica cuando cambia la cuenta
+  useEffect(() => {
+    const fetchCamarasIA = async () => {
+      if (!cuentaActiva) return
+      setCargandoIA(true)
+      setCamarasIA([])
+      setClipsIA([])
+      setClipSeleccionado(null)
+      setSelectedCamaraIAId('')
+      try {
+        // 1. Buscar cliente en BD IA cuyo campo 'empresa' coincide con el código de cuenta
+        const { data: clientes } = await supabaseIA
+          .from('clientes')
+          .select('id, nombre')
+          .eq('empresa', cuentaActiva)
+          .limit(5)
+
+        if (!clientes || clientes.length === 0) {
+          setCargandoIA(false)
+          return
+        }
+
+        const clienteIds = clientes.map((c: any) => c.id)
+
+        // 2. Obtener cámaras activas de esos clientes
+        const { data: cams } = await supabaseIA
+          .from('camaras')
+          .select('id, nombre, rtsp_url, activa')
+          .in('cliente_id', clienteIds)
+          .eq('activa', true)
+
+        const camarasList = cams || []
+        setCamarasIA(camarasList)
+        if (camarasList.length > 0) setSelectedCamaraIAId(camarasList[0].id)
+
+        // 3. Obtener alertas con clips de esas cámaras
+        if (camarasList.length > 0) {
+          const camIds = camarasList.map((c: any) => c.id)
+          const { data: alertas } = await supabaseIA
+            .from('alertas')
+            .select('id, camara_id, clip_path, fecha_hora, motivo')
+            .in('camara_id', camIds)
+            .not('clip_path', 'is', null)
+            .order('fecha_hora', { ascending: false })
+            .limit(20)
+          setClipsIA(alertas || [])
+        }
+      } catch (err) {
+        console.warn('[IA DB] Error al cargar cámaras de analítica:', err)
+      } finally {
+        setCargandoIA(false)
+      }
+    }
+    fetchCamarasIA()
+  }, [cuentaActiva])
 
 
 
@@ -392,169 +455,166 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
                     {/* Controls Row */}
                     <div className="flex items-center justify-between bg-[#111] p-1 border-b border-gray-700 text-[10px] shrink-0">
                       <div className="flex items-center gap-1.5">
-                        <span className="text-gray-400 font-bold">SELECCIONAR CANAL:</span>
-                        <select
-                          value={activeCamera}
-                          disabled={editandoCamaras}
-                          onChange={(e) => {
-                            setActiveCamera(e.target.value as any)
-                          }}
-                          className="bg-[#222] text-white border border-gray-600 font-bold py-0.5 px-1 focus:outline-none text-[9px] disabled:opacity-50"
-                        >
-                          <option value="CAM-01">CAM-01 (Entrada Frontis)</option>
-                          <option value="CAM-02">CAM-02 (Patio Lateral)</option>
-                          <option value="CAM-03">CAM-03 (Bodega Interna)</option>
-                        </select>
+                        <span className="text-gray-400 font-bold">CANAL:</span>
+                        {cargandoIA ? (
+                          <span className="text-yellow-400 text-[9px]">⏳ Cargando BD-IA...</span>
+                        ) : camarasIA.length > 0 ? (
+                          <select
+                            value={selectedCamaraIAId}
+                            onChange={(e) => { setSelectedCamaraIAId(e.target.value); setClipSeleccionado(null) }}
+                            className="bg-[#222] text-green-300 border border-green-800 font-bold py-0.5 px-1 focus:outline-none text-[9px]"
+                          >
+                            {camarasIA.map(c => <option key={c.id} value={c.id}>{c.nombre.toUpperCase()}</option>)}
+                          </select>
+                        ) : (
+                          <select
+                            value={activeCamera}
+                            disabled={editandoCamaras}
+                            onChange={(e) => setActiveCamera(e.target.value as any)}
+                            className="bg-[#222] text-white border border-gray-600 font-bold py-0.5 px-1 focus:outline-none text-[9px] disabled:opacity-50"
+                          >
+                            <option value="CAM-01">CAM-01 (Entrada Frontis)</option>
+                            <option value="CAM-02">CAM-02 (Patio Lateral)</option>
+                            <option value="CAM-03">CAM-03 (Bodega Interna)</option>
+                          </select>
+                        )}
+                        {camarasIA.length > 0 && <span className="text-green-500 text-[8px] font-bold">● IA REAL</span>}
                       </div>
 
                       <div className="flex items-center gap-2">
-                        {!editandoCamaras && usuarioRol !== 'Operadora' && (
+                        {camarasIA.length === 0 && !editandoCamaras && usuarioRol !== 'Operadora' && (
                           <button
                             onClick={() => setEditandoCamaras(true)}
                             className="bg-gray-800 hover:bg-gray-700 text-gray-300 font-bold border border-gray-600 px-2 py-0.5 rounded-xs cursor-pointer text-[9px]"
                           >
-                            ⚙️ CONFIGURAR CÁMARAS
+                            ⚙️ CONFIGURAR
                           </button>
                         )}
                       </div>
                     </div>
 
-                    {/* Viewport and AI Console Grid */}
+                    {/* Viewport + Clips Panel */}
                     <div className="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0">
                       
                       {editandoCamaras ? (
                         <div className="flex-1 bg-[#12141c] p-3 text-xs space-y-3 overflow-y-auto flex flex-col justify-between">
                           <div className="space-y-2">
-                            <div className="text-green-400 font-bold border-b border-gray-800 pb-1 uppercase tracking-wider text-[10px] flex items-center justify-between">
-                              <span>⚙️ GESTIÓN DE CÁMARAS (CTA: {cuentaActiva})</span>
+                            <div className="text-green-400 font-bold border-b border-gray-800 pb-1 uppercase tracking-wider text-[10px]">
+                              ⚙️ GESTIÓN DE CÁMARAS MANUALES (CTA: {cuentaActiva})
                             </div>
                             <p className="text-[9px] text-gray-400 leading-tight">
-                              Asocia cámaras reales de este abonado para verlas en vivo. Admite URLs de imágenes (.png, .jpg), videos directos (.mp4, .webm) o enlaces web/embebidos de YouTube/CCTV.
+                              Asocia cámaras manuales para verlas en vivo (URL de imagen, MP4 o iframe). Para cámaras IA con clips automáticos, use el módulo USUARIOS.
                             </p>
                             <div className="space-y-2 pt-1">
-                              <div className="flex flex-col gap-0.5">
-                                <span className="font-bold text-gray-300 text-[10px]">CAM-01 URL (Entrada / Frontis):</span>
-                                <input
-                                  type="text"
-                                  value={inputCam01}
-                                  onChange={(e) => setInputCam01(e.target.value)}
-                                  placeholder="Ej: https://mi-camara.com/live/canal1.jpg o MP4"
-                                  className="bg-[#111] border border-gray-700 p-1 font-mono text-[10px] text-white focus:outline-none focus:border-green-500 w-full"
-                                />
-                              </div>
-                              <div className="flex flex-col gap-0.5">
-                                <span className="font-bold text-gray-300 text-[10px]">CAM-02 URL (Patio Lateral):</span>
-                                <input
-                                  type="text"
-                                  value={inputCam02}
-                                  onChange={(e) => setInputCam02(e.target.value)}
-                                  placeholder="Ej: https://mi-camara.com/live/canal2.mp4"
-                                  className="bg-[#111] border border-gray-700 p-1 font-mono text-[10px] text-white focus:outline-none focus:border-green-500 w-full"
-                                />
-                              </div>
-                              <div className="flex flex-col gap-0.5">
-                                <span className="font-bold text-gray-300 text-[10px]">CAM-03 URL (Bodega Interna):</span>
-                                <input
-                                  type="text"
-                                  value={inputCam03}
-                                  onChange={(e) => setInputCam03(e.target.value)}
-                                  placeholder="Ej: Enlace embebido de YouTube o stream público"
-                                  className="bg-[#111] border border-gray-700 p-1 font-mono text-[10px] text-white focus:outline-none focus:border-green-500 w-full"
-                                />
-                              </div>
+                              {['CAM-01 (Entrada/Frontis)', 'CAM-02 (Patio Lateral)', 'CAM-03 (Bodega Interna)'].map((label, idx) => (
+                                <div key={idx} className="flex flex-col gap-0.5">
+                                  <span className="font-bold text-gray-300 text-[10px]">{label}:</span>
+                                  <input
+                                    type="text"
+                                    value={idx === 0 ? inputCam01 : idx === 1 ? inputCam02 : inputCam03}
+                                    onChange={(e) => idx === 0 ? setInputCam01(e.target.value) : idx === 1 ? setInputCam02(e.target.value) : setInputCam03(e.target.value)}
+                                    placeholder="URL de imagen, video MP4 o enlace CCTV..."
+                                    className="bg-[#111] border border-gray-700 p-1 font-mono text-[10px] text-white focus:outline-none focus:border-green-500 w-full"
+                                  />
+                                </div>
+                              ))}
                             </div>
                           </div>
-
                           <div className="flex justify-end gap-2 border-t border-gray-800 pt-2 shrink-0">
-                            <button
-                              onClick={() => setEditandoCamaras(false)}
-                              className="bg-gray-800 hover:bg-gray-700 text-white font-bold border border-gray-600 px-4 py-1 text-[10px] cursor-pointer"
-                            >
-                              CANCELAR
-                            </button>
-                            <button
-                              onClick={guardarCamaras}
-                              className="bg-green-700 hover:bg-green-600 text-white font-bold border border-green-500 px-6 py-1 text-[10px] cursor-pointer"
-                            >
-                              GUARDAR CÁMARAS
-                            </button>
+                            <button onClick={() => setEditandoCamaras(false)} className="bg-gray-800 hover:bg-gray-700 text-white font-bold border border-gray-600 px-4 py-1 text-[10px] cursor-pointer">CANCELAR</button>
+                            <button onClick={guardarCamaras} className="bg-green-700 hover:bg-green-600 text-white font-bold border border-green-500 px-6 py-1 text-[10px] cursor-pointer">GUARDAR</button>
                           </div>
                         </div>
                       ) : (
                         <>
                           {/* Video Player Box */}
-                          <div className="relative flex-1 bg-[#050505] overflow-hidden flex items-center justify-center border-b md:border-b-0 md:border-r border-gray-800 min-h-[140px] md:min-h-0">
-                            
-                            {/* CRT Screen Filter Scanlines */}
+                          <div className="relative flex-1 bg-[#050505] overflow-hidden flex items-center justify-center border-b md:border-b-0 md:border-r border-gray-800 min-h-[120px] md:min-h-0">
                             <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.4)_100%)] z-10" />
                             <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%)] bg-[size:100%_4px] z-10" />
 
-                            {/* Video Feed Source dynamic render */}
+                            {/* Renderizado del feed: clip IA > url manual > imagen demo */}
                             {(() => {
-                              const url = activeCamera === 'CAM-01' ? camarasActivas.cam01 : activeCamera === 'CAM-02' ? camarasActivas.cam02 : camarasActivas.cam03
-                              
-                              if (!url) {
+                              // Prioridad 1: Clip seleccionado de BD IA
+                              if (clipSeleccionado) {
                                 return (
+                                  <video
+                                    key={clipSeleccionado}
+                                    src={`https://usuzyqayiecsburbsipl.supabase.co/storage/v1/object/public/clips/${clipSeleccionado}`}
+                                    autoPlay
+                                    controls
+                                    playsInline
+                                    className="w-full h-full object-contain bg-black"
+                                  />
+                                )
+                              }
+                              // Prioridad 2: URL manual configurada
+                              const url = activeCamera === 'CAM-01' ? camarasActivas.cam01 : activeCamera === 'CAM-02' ? camarasActivas.cam02 : camarasActivas.cam03
+                              if (url) {
+                                const lowerUrl = url.toLowerCase()
+                                const isVideo = lowerUrl.includes('.mp4') || lowerUrl.includes('.webm') || lowerUrl.includes('.ogg')
+                                const isImage = lowerUrl.includes('.jpg') || lowerUrl.includes('.jpeg') || lowerUrl.includes('.png') || lowerUrl.includes('.webp')
+                                if (isVideo) return <video src={url} autoPlay loop muted playsInline className="w-full h-full object-cover" />
+                                if (isImage) return <img src={url} alt="feed" className="w-full h-full object-cover" />
+                                return <iframe src={url} title="cam" className="w-full h-full border-0 bg-black" allow="autoplay" allowFullScreen />
+                              }
+                              // Prioridad 3: Demo simulado
+                              return (
+                                <>
                                   <img
                                     src={activeCamera === 'CAM-01' ? '/cctv_intruder.png' : '/cctv_false_alarm.png'}
-                                    alt="Video feed"
+                                    alt="Demo"
                                     className={`w-full h-full object-cover select-none ${
-                                      activeCamera === 'CAM-03' ? 'grayscale hue-rotate-90 brightness-75' : 
+                                      activeCamera === 'CAM-03' ? 'grayscale hue-rotate-90 brightness-75' :
                                       activeCamera === 'CAM-02' ? 'hue-rotate-180 brightness-90' : 'brightness-90'
                                     }`}
                                   />
-                                )
-                              }
-
-                              const lowerUrl = url.toLowerCase()
-                              const isVideo = lowerUrl.includes('.mp4') || lowerUrl.includes('.webm') || lowerUrl.includes('.ogg') || lowerUrl.includes('.mov')
-                              const isImage = lowerUrl.includes('.jpg') || lowerUrl.includes('.jpeg') || lowerUrl.includes('.png') || lowerUrl.includes('.webp') || lowerUrl.includes('.gif')
-
-                              if (isVideo) {
-                                return (
-                                  <video
-                                    src={url}
-                                    autoPlay
-                                    loop
-                                    muted
-                                    playsInline
-                                    className="w-full h-full object-cover"
-                                  />
-                                )
-                              } else if (isImage) {
-                                return (
-                                  <img
-                                    src={url}
-                                    alt="Video feed"
-                                    className="w-full h-full object-cover"
-                                  />
-                                )
-                              } else {
-                                return (
-                                  <iframe
-                                    src={url}
-                                    title="Live Camera Feed"
-                                    className="w-full h-full border-0 bg-black"
-                                    allow="autoplay; encrypted-media"
-                                    allowFullScreen
-                                  />
-                                )
-                              }
+                                  <div className="absolute bottom-1 left-1.5 bg-yellow-700/90 text-white text-[7px] px-1 py-0.5 rounded font-bold z-20">
+                                    ⚠️ SIM — Sin cámaras IA vinculadas
+                                  </div>
+                                </>
+                              )
                             })()}
 
-                            {/* Record overlay HUD */}
-                            <div className="absolute top-1 left-1.5 flex items-center gap-1 bg-black/60 px-1 py-0.5 rounded text-[8px] tracking-wider z-20">
-                              <div className="w-1.5 h-1.5 bg-red-600 rounded-full animate-ping" />
-                              <span>LIVE {activeCamera}</span>
-                            </div>
+                            {/* HUD */}
+                            {!clipSeleccionado && (
+                              <div className="absolute top-1 left-1.5 flex items-center gap-1 bg-black/60 px-1 py-0.5 rounded text-[8px] tracking-wider z-20">
+                                <div className="w-1.5 h-1.5 bg-red-600 rounded-full animate-ping" />
+                                <span>{camarasIA.length > 0 ? (camarasIA.find(c => c.id === selectedCamaraIAId)?.nombre || 'CAM-IA') : activeCamera}</span>
+                              </div>
+                            )}
+                            {clipSeleccionado && (
+                              <div className="absolute top-1 left-1.5 flex items-center gap-1 bg-blue-900/80 px-1 py-0.5 rounded text-[8px] tracking-wider z-20">
+                                <span>📦 CLIP IA</span>
+                                <button onClick={() => setClipSeleccionado(null)} className="ml-1 text-red-400 font-bold cursor-pointer">✕</button>
+                              </div>
+                            )}
                             <div className="absolute top-1 right-1.5 bg-black/60 px-1 py-0.5 rounded text-[8px] z-20">
                               {new Date().toISOString().slice(0, 19).replace('T', ' ')}
                             </div>
-
-
                           </div>
 
-
+                          {/* Panel lateral: Clips IA */}
+                          {camarasIA.length > 0 && (
+                            <div className="w-full md:w-[140px] bg-[#0a0c14] border-t md:border-t-0 md:border-l border-gray-800 flex flex-col shrink-0">
+                              <div className="text-[8px] font-bold text-blue-400 px-1.5 py-1 border-b border-gray-800 uppercase tracking-wider">📦 Clips IA ({clipsIA.length})</div>
+                              <div className="flex-1 overflow-y-auto">
+                                {clipsIA.length === 0 ? (
+                                  <div className="text-[8px] text-gray-600 p-2 text-center italic">Sin clips grabados aún</div>
+                                ) : clipsIA.map((clip) => (
+                                  <button
+                                    key={clip.id}
+                                    onClick={() => setClipSeleccionado(clip.clip_path)}
+                                    className={`w-full text-left px-1.5 py-1 border-b border-gray-900 cursor-pointer text-[8px] hover:bg-blue-900/40 ${
+                                      clipSeleccionado === clip.clip_path ? 'bg-blue-800/60 text-white' : 'text-gray-400'
+                                    }`}
+                                  >
+                                    <div className="font-bold text-blue-300 truncate">{clip.clip_path?.split('/').pop() || 'clip'}</div>
+                                    <div className="text-gray-600">{clip.fecha_hora ? new Date(clip.fecha_hora).toLocaleString('es-CL') : ''}</div>
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                         </>
                       )}
 
