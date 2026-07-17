@@ -1,251 +1,160 @@
-import time, pyodbc, shutil, os, json, sys, requests, ctypes, threading, concurrent.futures
+import time, pyodbc, shutil, os, json, sys
 from datetime import datetime, timezone, timedelta
 from supabase import create_client
 
 # Redirigir salida a log si se ejecuta en segundo plano con pythonw.exe
-_log_truncado = False
 if sys.executable.lower().endswith("pythonw.exe"):
     try:
         log_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "_gama_log.txt")
-        # Truncar log al inicio para evitar crecimiento infinito
-        with open(log_path, "w", encoding="utf-8") as _lf:
-            _lf.write(f"=== LOG INICIADO {datetime.now()} ===\n")
-        _log_truncado = True
         sys.stdout = open(log_path, "a", encoding="utf-8", buffering=1)
         sys.stderr = sys.stdout
     except Exception:
         pass
 
-# ── Mutex de Windows (evita duplicados aunque se lance desde VBS, terminal o tarea programada) ──
-MUTEX_NAME = "Global\\GAMA_Sincronizador"
-kernel32 = ctypes.windll.kernel32
-mutex = kernel32.CreateMutexW(None, False, MUTEX_NAME)
-if not mutex:
-    print("[ERROR] No se pudo crear el mutex de sincronización.")
-    sys.exit(1)
-if ctypes.GetLastError() == 183:  # ERROR_ALREADY_EXISTS
-    print("[ERROR] El sincronizador ya está en ejecución. Saliendo...")
-    kernel32.CloseHandle(mutex)
+# Evitar múltiples instancias del sincronizador a la vez en el mismo PC
+LOCK_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "_sincronizador.lock")
+try:
+    if os.path.exists(LOCK_FILE):
+        os.remove(LOCK_FILE)
+except Exception:
+    print("[ERROR] El sincronizador ya esta en ejecucion en segundo plano. Saliendo...")
+    sys.exit(0)
+
+try:
+    # Mantener el archivo abierto para bloquearlo en Windows
+    lock_handle = open(LOCK_FILE, "w")
+    lock_handle.write(str(os.getpid()))
+    lock_handle.flush()
+except Exception:
+    print("[ERROR] No se pudo crear el archivo de bloqueo.")
     sys.exit(0)
 
 # ============================================================
 #  GAMA COMMAND CENTER - Sincronizador para PC Scorpion
-#  Versión: 5.5 (Watchdog + timeout + heartbeat por archivo + sin bloqueos)
+#  Versión: 2.2 - Rutas dinámicas y fix timezone Chile
 # ============================================================
 
 SUPABASE_URL = "https://onxwyrwmpjxtwlmjrosr.supabase.co"
 SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9ueHd5cndtcGp4dHdsbWpyb3NyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI4NTUxNDQsImV4cCI6MjA5ODQzMTE0NH0.8kJRf8hm3rHK8sygMcyBT0R83tyK8hIQCmnAQxannJs"
 
-# Rutas de base de datos de EVENTOS
-if os.path.exists(r'C:\SCORPION\BASES DE DATOS\EVENTOS'):
-    CARPETA_EVENTOS = r'C:\SCORPION\BASES DE DATOS\EVENTOS'
-    RUTA_COPIA_TEMP = r'C:\SCORPION\BASES DE DATOS\_EVENTOS_TEMP.MDB'
-    RUTA_CACHE      = r'C:\SCORPION\BASES DE DATOS\_sincronizador_cache.json'
-    RUTA_CURSOR_JSON = r'C:\SCORPION\BASES DE DATOS\_sincronizador_cursors.json'
+# Detectar rutas dinámicas
+script_dir = os.path.dirname(os.path.abspath(__file__))
+if os.path.basename(script_dir).upper() == "SCORPION_DEPLOY":
+    root_dir = os.path.dirname(script_dir)
 else:
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    if os.path.basename(base_dir).upper() == "SCORPION_DEPLOY":
-        root_dir = os.path.dirname(base_dir)
-    else:
-        root_dir = base_dir
-    
+    root_dir = script_dir
+
+# Lista ordenada de posibles directorios que contienen bases de datos de eventos .MDB
+candidatos_rutas = [
+    # Directorio relativo al script en desarrollo/producción
+    os.path.join(root_dir, 'BASES DE DATOS', 'EVENTOS'),
+    os.path.join(root_dir, 'EVENTOS'),
+    root_dir,
+    # Rutas estándar en PC Scorpion (unidad C:)
+    r'C:\SCORPION\BASES DE DATOS\EVENTOS',
+    r'C:\SCORPION\BASE DE DATOS\EVENTOS',
+    r'C:\SCORPION\BASES DE DATOS',
+    r'C:\SCORPION\BASE DE DATOS',
+    r'C:\SCORPION',
+    # Unidad E: (antigua, mantenida como fallback secundario)
+    r'E:\MONITOREO ONLINE\BASES DE DATOS\EVENTOS',
+]
+
+# Filtrar duplicados y normalizar
+rutas_unicas = []
+for p in candidatos_rutas:
+    p_norm = os.path.normpath(p)
+    if p_norm.lower() not in [r.lower() for r in rutas_unicas]:
+        rutas_unicas.append(p_norm)
+
+# Buscar el primer directorio que exista y contenga archivos .MDB reales
+CARPETA_EVENTOS = None
+for ruta in rutas_unicas:
+    if os.path.exists(ruta):
+        try:
+            # Comprobar si hay algún archivo .MDB (ignorando temporales)
+            if any(f.upper().endswith('.MDB') and not f.startswith('_') for f in os.listdir(ruta)):
+                CARPETA_EVENTOS = ruta
+                break
+        except Exception:
+            pass
+
+# Si no encontramos ningún directorio con archivos .MDB, tomamos el primero que exista
+if not CARPETA_EVENTOS:
+    for ruta in rutas_unicas:
+        if os.path.exists(ruta):
+            CARPETA_EVENTOS = ruta
+            break
+
+# Si nada de lo anterior existe, usar ruta por defecto en el root_dir
+if not CARPETA_EVENTOS:
     CARPETA_EVENTOS = os.path.join(root_dir, 'BASES DE DATOS', 'EVENTOS')
-    RUTA_COPIA_TEMP = os.path.join(root_dir, 'BASES DE DATOS', '_EVENTOS_TEMP.MDB')
-    RUTA_CACHE      = os.path.join(root_dir, 'BASES DE DATOS', '_sincronizador_cache.json')
-    RUTA_CURSOR_JSON = os.path.join(root_dir, 'BASES DE DATOS', '_sincronizador_cursors.json')
 
-# Rutas del archivo GENERAL.mdb (Clientes de Scorpion)
-RUTAS_GENERAL_MDB = [
-    r"C:\SCORPION\BASE DE DATOS\GENERAL.mdb",
-    r"E:\MONITOREO ONLINE\GENERAL.mdb",
-    os.path.join(os.path.dirname(CARPETA_EVENTOS), "BASE DE DATOS", "GENERAL.mdb"),
-    os.path.join(os.path.dirname(CARPETA_EVENTOS), "GENERAL.mdb")
-]
-PASSWORD_GENERAL = "SCORPION7"
-
-# Rutas del archivo CODIGOS.MDB (Mapeo de colores)
-RUTAS_CODIGOS_MDB = [
-    r"C:\SCORPION\BASES DE DATOS\CODIGOS.MDB",
-    r"E:\MONITOREO ONLINE\BASES DE DATOS\CODIGOS.MDB",
-    os.path.join(os.path.dirname(CARPETA_EVENTOS), "BASES DE DATOS", "CODIGOS.MDB"),
-    os.path.join(os.path.dirname(CARPETA_EVENTOS), "CODIGOS.MDB")
-]
-PASSWORD_CODIGOS = "SCORPION17"
-
-# Rutas de la carpeta ZONIFICACION (MDBs por abonado)
-RUTAS_ZONIFICACION_DIR = [
-    r"C:\SCORPION\BASES DE DATOS\ZONIFICACION",
-    r"E:\MONITOREO ONLINE\BASES DE DATOS\ZONIFICACION",
-    os.path.join(os.path.dirname(CARPETA_EVENTOS), "BASES DE DATOS", "ZONIFICACION"),
-    os.path.join(os.path.dirname(CARPETA_EVENTOS), "ZONIFICACION")
-]
-PASSWORD_ZONAS = "SCORPION29"
+# Los archivos de control (temp y cache) se guardan siempre en la carpeta del script (seguro para escritura)
+RUTA_COPIA_TEMP = os.path.join(script_dir, '_EVENTOS_TEMP.MDB')
+RUTA_CACHE      = os.path.join(script_dir, '_sincronizador_cache.json')
 
 DB_PASSWORD  = 'Administ'
 INTERVALO_SEG = 3
 
-# Inicializar Supabase con reintentos
-supabase = None
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-# ── Watchdog: mata el proceso si no hay heartbeat en N segundos ──
-WATCHDOG_TIMEOUT = 300  # 5 minutos sin heartbeat = reinicio forzado
-_ultimo_heartbeat = time.time()
-
-def _watchdog_loop():
-    global _ultimo_heartbeat
-    while True:
-        time.sleep(30)
-        if time.time() - _ultimo_heartbeat > WATCHDOG_TIMEOUT:
-            log_flush(f"\n[WATCHDOG] {WATCHDOG_TIMEOUT}s sin heartbeat. Forzando reinicio...")
-            os._exit(1)
-
-threading.Thread(target=_watchdog_loop, daemon=True).start()
-
-# Tiempo máximo para procesar un solo archivo MDB (copia + conexión + consulta + subida)
-MDB_TIMEOUT = 600  # 10 minutos máximo por archivo (files grandes con cientos de eventos)
-
-def conectar_supabase():
-    global supabase
-    while True:
-        try:
-            supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
-            break
-        except Exception as e:
-            print(f"[SUPABASE] Error de conexión inicial: {e}. Reintentando en 10s...")
-            time.sleep(10)
-
-conectar_supabase()
-
-def execute_supabase_with_retry(func, max_retries=5, delay=2):
-    """Ejecuta una llamada a Supabase con reintentos y retroceso exponencial ante fallas de red/conexión."""
-    for intento in range(1, max_retries + 1):
-        try:
-            return func()
-        except Exception as e:
-            err_str = str(e).lower()
-            if "duplicate" in err_str or "23505" in err_str or "already exists" in err_str:
-                raise e
-            print(f"[SUPABASE RETRY] Intento {intento}/{max_retries} falló: {e}")
-            sys.stdout.flush()
-            if intento == max_retries:
-                raise e
-            time.sleep(delay * (2 ** (intento - 1)))
-
-def copiar_archivo_seguro(src, dst, max_retries=3, delay=0.5):
-    """Copia un archivo reintentando si está bloqueado temporalmente por otro proceso."""
-    for intento in range(1, max_retries + 1):
-        try:
-            if os.path.exists(dst):
-                try: os.remove(dst)
-                except: pass
-            shutil.copy2(src, dst)
-            return True
-        except Exception as e:
-            if intento == max_retries:
-                raise e
-            time.sleep(delay)
-
-# Heartbeat: cada N ciclos inserta un marker en Supabase para que el dashboard sepa que vivo
-HEARTBEAT_CADENCIA = 10
-_heartbeat_counter = HEARTBEAT_CADENCIA - 1  # Inicializar para que el primer heartbeat se envíe ya
-_errores_consecutivos = 0
-
-def enviar_heartbeat():
-    global _heartbeat_counter, _ultimo_heartbeat
-    # Actualizar watchdog timer en cada llamada (aunque no se envíe el POST)
-    _ultimo_heartbeat = time.time()
-    _heartbeat_counter += 1
-    if _heartbeat_counter % HEARTBEAT_CADENCIA != 0:
-        return
+def check_for_updates():
+    """Busca actualizaciones en GitHub y se auto-actualiza si hay cambios."""
+    import urllib.request
+    
+    update_url = "https://raw.githubusercontent.com/gamasecuritycl/monitoreo-online/master/sincronizador.py"
+    print("--- Comprobando actualizaciones desde GitHub ---")
     try:
-        ahora = datetime.now(timezone.utc).isoformat()
-        execute_supabase_with_retry(lambda: supabase.table("eventos_monitoreo").insert({
-            "fecha_hora": ahora,
-            "cuenta": "__SINCRONIZADOR__",
-            "nombre_abonado": "",
-            "evento": "HEARTBEAT",
-            "zona": str(os.getpid()),
-            "usuario": "",
-        }).execute())
+        req = urllib.request.Request(
+            update_url, 
+            headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
+        )
+        with urllib.request.urlopen(req, timeout=10) as response:
+            new_code = response.read().decode('utf-8')
+            
+        # Validar que el código descargado sea un script de Python válido y compile correctamente
+        if "import pyodbc" in new_code and "SUPABASE_URL" in new_code:
+            try:
+                compile(new_code, "<string>", "exec")
+            except SyntaxError as se:
+                print(f"[UPDATE] Código descargado contiene errores de sintaxis: {se}")
+                return
+                
+            current_script = os.path.abspath(__file__)
+            with open(current_script, "r", encoding="utf-8") as f:
+                current_code = f.read()
+                
+            if new_code.strip() != current_code.strip():
+                print("[UPDATE] ¡Nueva versión detectada! Actualizando...")
+                # Escribir el nuevo código
+                with open(current_script, "w", encoding="utf-8") as f:
+                    f.write(new_code)
+                print("[UPDATE] Código actualizado con éxito. Reiniciando proceso...")
+                
+                # Cerrar handle de bloqueo
+                try:
+                    lock_handle.close()
+                except Exception:
+                    pass
+                
+                # Ejecutar la nueva versión reemplazando el proceso actual
+                os.execv(sys.executable, [sys.executable] + sys.argv)
+            else:
+                print("[UPDATE] El sincronizador está en la versión más reciente.")
+        else:
+            print("[UPDATE] Código descargado inválido (no pasó la validación de firmas).")
     except Exception as e:
-        print(f"[HEARTBEAT] Error: {e}")
+        print(f"[UPDATE] Error al comprobar actualizaciones: {e}")
 
 def get_chile_offset() -> str:
+    """Retorna el offset UTC de Chile (-04:00 invierno / -03:00 verano)."""
     if time.daylight and time.localtime().tm_isdst:
-        offset_hours = -3
+        offset_hours = -3   # CLST (horario verano)
     else:
-        offset_hours = -4
+        offset_hours = -4   # CLT  (horario invierno)
     sign = '+' if offset_hours >= 0 else '-'
     return f"{sign}{abs(offset_hours):02d}:00"
-
-def log_flush(*args, **kwargs):
-    print(*args, **kwargs)
-    sys.stdout.flush()
-
-# ── Sistema de cursor: trackea el archivo MDB + último evento para no reprocesar en reinicios ──
-RUTA_CURSOR_JSON = os.path.join(os.path.dirname(CARPETA_EVENTOS), '_sincronizador_cursors.json')
-
-def parsear_fecha(dia: str) -> datetime:
-    """Intenta parsear una fecha en formato YYYY-MM-DD o DD-MM-YYYY (con/sin hora o usando slashes)."""
-    if not dia:
-        return None
-    s = dia.strip().replace('/', '-')
-    s = s.split(' ')[0]
-    for fmt in ("%Y-%m-%d", "%d-%m-%Y"):
-        try:
-            return datetime.strptime(s, fmt)
-        except ValueError:
-            continue
-    return None
-
-def parsear_fecha_hora(dia_str: str, hora_str: str) -> datetime:
-    dt = parsear_fecha(dia_str)
-    if not dt:
-        return datetime.min
-    try:
-        partes = str(hora_str).strip().split(':')
-        if len(partes) == 3:
-            return dt.replace(hour=int(partes[0]), minute=int(partes[1]), second=int(partes[2]))
-    except Exception:
-        pass
-    return dt
-
-def normalizar_dia(dia: str) -> str:
-    """Convierte cualquier formato de fecha a YYYY-MM-DD."""
-    dt = parsear_fecha(dia)
-    if dt:
-        return dt.strftime("%Y-%m-%d")
-    partes = dia.split('-')
-    if len(partes) == 3 and len(partes[0]) <= 2:
-        return f"{partes[2]}-{partes[1]}-{partes[0]}"
-    return dia
-
-def load_cursors():
-    try:
-        with open(RUTA_CURSOR_JSON, 'r', encoding='utf-8') as f:
-            return json.load(f)
-    except:
-        return {}
-
-def save_cursors(cursors):
-    try:
-        temp = RUTA_CURSOR_JSON + ".tmp"
-        with open(temp, 'w', encoding='utf-8') as f:
-            json.dump(cursors, f, indent=2)
-        os.replace(temp, RUTA_CURSOR_JSON)
-    except Exception as e:
-        print(f"[CURSOR] Error guardando: {e}")
-
-def load_cursor(mdb_name):
-    cursors = load_cursors()
-    if mdb_name in cursors:
-        return mdb_name, cursors[mdb_name].get('dia', ''), cursors[mdb_name].get('hora', '')
-    return "", "", ""
-
-def save_cursor(mdb_name, dia, hora):
-    cursors = load_cursors()
-    cursors[mdb_name] = {'dia': normalizar_dia(dia), 'hora': hora}
-    save_cursors(cursors)
 
 def load_cache():
     if os.path.exists(RUTA_CACHE):
@@ -259,535 +168,112 @@ def load_cache():
 def save_cache(cache):
     try:
         cache_list = list(cache)
-        if len(cache_list) > 3000:
-            cache_list = cache_list[-2000:]
-        temp = RUTA_CACHE + ".tmp"
-        with open(temp, 'w', encoding='utf-8') as f:
+        if len(cache_list) > 2000:
+            cache_list = cache_list[-1500:]
+        with open(RUTA_CACHE, 'w', encoding='utf-8') as f:
             json.dump(cache_list, f, indent=2)
-        os.replace(temp, RUTA_CACHE)
     except Exception as e:
         print(f"[CACHE] Error guardando: {e}")
 
-def precargar_cache_desde_supabase(cache_set):
-    """Descarga los eventos de los últimos 90 días desde Supabase para poblar el caché local y evitar re-intentos de duplicados."""
-    print("[CACHE] Descargando eventos existentes en Supabase para optimizar sincronización...")
-    sys.stdout.flush()
-    
-    # Calcular fecha limite en formato ISO
-    limite_iso = LIMITE_FECHA_EVENTOS.isoformat()
-    
-    nuevos_keys = set()
-    offset = 0
-    limit = 2000
-    
-    while True:
-        try:
-            res = execute_supabase_with_retry(lambda: supabase.table("eventos_monitoreo") \
-                .select("fecha_hora, cuenta, evento, zona, usuario") \
-                .gte("fecha_hora", limite_iso) \
-                .range(offset, offset + limit - 1) \
-                .execute())
-                
-            data = res.data
-            if not data:
-                break
-                
-            for row in data:
-                dt_str = row.get("fecha_hora", "")
-                if not dt_str:
-                    continue
-                try:
-                    # Parsear fecha de Supabase (UTC)
-                    dt = datetime.fromisoformat(dt_str.replace('Z', '+00:00'))
-                    # Convertir a zona horaria local de Chile del PC
-                    dt_local = dt.astimezone()
-                    
-                    dia = dt_local.strftime("%d-%m-%Y")
-                    hora = dt_local.strftime("%H:%M:%S")
-                    cuenta = str(row.get("cuenta") or "").upper().strip()
-                    evento = str(row.get("evento") or "").upper().strip()
-                    zona = str(row.get("zona") or "").upper().strip()
-                    usuario = str(row.get("usuario") or "").upper().strip()
-                    
-                    event_key = f"{dia}_{hora}_{cuenta}_{evento}_{zona}_{usuario}"
-                    nuevos_keys.add(event_key)
-                except Exception as parse_err:
-                    pass
-            
-            print(f"  [CACHE] Cargados {len(nuevos_keys)} eventos...")
-            sys.stdout.flush()
-            
-            if len(data) < limit:
-                break
-            offset += limit
-        except Exception as e:
-            print(f"  [CACHE ERROR] Falló descarga de lote: {e}. Continuando...")
-            sys.stdout.flush()
-            break
-            
-    # Mezclar con el caché local anterior
-    cache_set.update(nuevos_keys)
-    save_cache(cache_set)
-    print(f"[CACHE SUCCESS] Sincronización de caché completada. Total en caché: {len(cache_set)} eventos.")
-    sys.stdout.flush()
-
-# Dias hacia atrás a procesar (0 = todos, 90 = últimos 3 meses)
-DIAS_PROCESAR = 90
-
-# Límite de fecha para eventos (solo sube eventos de los últimos DIAS_PROCESAR días)
-LIMITE_FECHA_EVENTOS = None
-
-def init_limite_fecha():
-    global LIMITE_FECHA_EVENTOS
-    if DIAS_PROCESAR > 0:
-        LIMITE_FECHA_EVENTOS = (datetime.now() - timedelta(days=DIAS_PROCESAR)).replace(hour=0, minute=0, second=0, microsecond=0)
-    else:
-        LIMITE_FECHA_EVENTOS = None
-
-def get_todos_mdb():
-    """Devuelve lista de archivos MDB de los últimos DIAS_PROCESAR días, ordenados cronológicamente."""
+def get_ultimo_mdb():
     try:
-        archivos = [f for f in os.listdir(CARPETA_EVENTOS) if f.upper().endswith('.MDB')]
+        # Filtrar archivos .MDB que no empiecen con guion bajo (_) para evitar leer el archivo temporal
+        archivos = [f for f in os.listdir(CARPETA_EVENTOS) if f.upper().endswith('.MDB') and not f.startswith('_')]
     except Exception as e:
         print(f"[ERROR] No se puede leer EVENTOS: {e}")
-        return []
+        return None
     if not archivos:
-        return []
-    
-    def sort_key(f):
-        nombre = os.path.splitext(f)[0]
-        try:
-            return datetime.strptime(nombre, "%Y-%m-%d")
-        except ValueError:
-            return datetime.fromtimestamp(os.path.getmtime(os.path.join(CARPETA_EVENTOS, f)))
-    
-    archivos.sort(key=sort_key)
-    
-    if DIAS_PROCESAR > 0:
-        if LIMITE_FECHA_EVENTOS is None:
-            init_limite_fecha()
-        filtrados = []
-        for f in archivos:
-            nombre = os.path.splitext(f)[0]
-            try:
-                f_fecha = datetime.strptime(nombre, "%Y-%m-%d")
-                if f_fecha >= LIMITE_FECHA_EVENTOS:
-                    filtrados.append(f)
-            except ValueError:
-                filtrados.append(f)  # si no se puede parsear, incluirlo por seguridad
-        archivos = filtrados
-    
-    return [os.path.join(CARPETA_EVENTOS, f) for f in archivos]
+        return None
+    archivos.sort(reverse=True)
+    return os.path.join(CARPETA_EVENTOS, archivos[0])
 
-# ============================================================
-#  FUNCIONES DE MONITORIZACIÓN Y SUBIDA DE CLIENTES (GENERAL.mdb)
-# ============================================================
+def sincronizar(cache):
+    print("--- Verificando nuevos eventos ---")
+    ruta_original = get_ultimo_mdb()
+    if not ruta_original:
+        print("[INFO] No hay archivos .MDB.")
+        return cache
 
-def buscar_general_mdb():
-    for ruta in RUTAS_GENERAL_MDB:
-        if os.path.exists(ruta):
-            return ruta
-    return None
-
-def formatear_telefono_chile(num_str):
-    if not num_str:
-        return ""
-    # Eliminar cualquier caracter que no sea digito o '+'
-    cleaned = ''.join(c for c in num_str if c.isdigit() or c == '+')
-    cleaned_digits = ''.join(c for c in cleaned if c.isdigit())
-    if not cleaned_digits:
-        return ""
-    
-    # Movil: 987654321 -> +56 9 8765 4321
-    if len(cleaned_digits) == 9 and cleaned_digits.startswith('9'):
-        return f"+56 9 {cleaned_digits[1:5]} {cleaned_digits[5:]}"
-    # Fijo Santiago: 22345678 -> +56 2 2345 6789
-    if len(cleaned_digits) == 8:
-        return f"+56 2 {cleaned_digits[0:4]} {cleaned_digits[4:]}"
-    # Movil internacionalizado: 56987654321
-    if len(cleaned_digits) == 11 and cleaned_digits.startswith('569'):
-        return f"+56 9 {cleaned_digits[3:7]} {cleaned_digits[7:]}"
-    # Fijo internacionalizado: 5622345678
-    if len(cleaned_digits) == 10 and cleaned_digits.startswith('562'):
-        return f"+56 2 {cleaned_digits[3:6]} {cleaned_digits[6:]}"
-    if cleaned.startswith('+'):
-        return cleaned
-    return num_str
-
-def sincronizar_clientes():
-    ruta_general = buscar_general_mdb()
-    if not ruta_general:
-        print("[MIGRACIÓN CLIENTES] Archivo GENERAL.mdb no encontrado. Omitiendo...")
-        return
-        
-    print(f"[MIGRACIÓN CLIENTES] Leyendo base de datos de clientes: {ruta_general}")
-    
-    # Copia de seguridad temporal para evitar bloqueo en caliente de Scorpion
-    temp_general = ruta_general + ".temp"
-    conn = None
-    cursor = None
-    try:
-        copiar_archivo_seguro(ruta_general, temp_general)
-        conn_str = (
-            f"DRIVER={{Microsoft Access Driver (*.mdb, *.accdb)}};"
-            f"DBQ={temp_general};PWD={PASSWORD_GENERAL};ReadOnly=1;"
-        )
-        conn = pyodbc.connect(conn_str)
-        cursor = conn.cursor()
-        
-        # Obtener columnas
-        columns = [row.column_name for row in cursor.columns(table='USUARIOS')]
-        
-        cursor.execute("SELECT * FROM USUARIOS")
-        rows = cursor.fetchall()
-        
-        clientes_map = {}
-        for row in rows:
-            doc = {}
-            for col, val in zip(columns, row):
-                if val is None:
-                    doc[col.lower()] = ""
-                else:
-                    doc[col.lower()] = str(val).strip()
-            
-            # Limpiar y formatear teléfonos t1 a t7 y telefono1 a telefono7
-            for i in range(1, 8):
-                for key_prefix in ["t", "telefono"]:
-                    key_t = f"{key_prefix}{i}"
-                    if key_t in doc and doc[key_t]:
-                        doc[key_t] = formatear_telefono_chile(doc[key_t])
-            
-            # Indexar por número de cuenta (en mayúsculas y sin espacios)
-            cuenta = doc.get("cuenta", "").upper().strip()
-            if cuenta:
-                clientes_map[cuenta] = doc
-                
-        cursor.close()
-        cursor = None
-        conn.close()
-        conn = None
-        
-        clientes_json = json.dumps(clientes_map, ensure_ascii=False)
-        
-        print(f"[MIGRACIÓN CLIENTES] Subiendo {len(clientes_map)} expedientes a Supabase en fila especial...")
-        
-        # 1. Borrar registro anterior para no duplicar datos
-        try:
-            execute_supabase_with_retry(lambda: supabase.table("eventos_monitoreo").delete().eq("cuenta", "CLIENTES").execute())
-        except Exception as del_err:
-            print(f"[MIGRACIÓN CLIENTES] Nota al borrar: {del_err}")
-            
-        # 2. Insertar el nuevo JSON completo en la columna 'nombre_abonado'
-        chile_tz = get_chile_offset()
-        now_iso = datetime.now().strftime("%Y-%m-%dT%H:%M:%S") + chile_tz
-        
-        data = {
-            "fecha_hora": now_iso,
-            "cuenta": "CLIENTES",
-            "nombre_abonado": clientes_json,
-            "evento": "SINCRONIZACION CLIENTES MDB",
-            "zona": "000",
-            "usuario": "SYSTEM"
-        }
-        
-        execute_supabase_with_retry(lambda: supabase.table("eventos_monitoreo").insert(data).execute())
-        print("[MIGRACIÓN CLIENTES SUCCESS] Base de datos de clientes sincronizada exitosamente en Supabase (eventos_monitoreo).")
-            
-    except Exception as e:
-        print(f"[MIGRACIÓN CLIENTES ERROR] Fallo durante la sincronización: {e}")
-    finally:
-        if cursor:
-            try: cursor.close()
-            except: pass
-        if conn:
-            try: conn.close()
-            except: pass
-        if os.path.exists(temp_general):
-            try: os.remove(temp_general)
-            except: pass
-
-
-
-def buscar_codigos_mdb():
-    for ruta in RUTAS_CODIGOS_MDB:
-        if os.path.exists(ruta):
-            return ruta
-    return None
-
-def buscar_zonificacion_dir():
-    for ruta in RUTAS_ZONIFICACION_DIR:
-        if os.path.exists(ruta) and os.path.isdir(ruta):
-            return ruta
-    return None
-
-def sincronizar_codigos():
-    ruta_codigos = buscar_codigos_mdb()
-    if not ruta_codigos:
-        print("[MIGRACIÓN CODIGOS] Archivo CODIGOS.MDB no encontrado. Omitiendo...")
-        return
-        
-    print(f"[MIGRACIÓN CODIGOS] Leyendo base de datos de codigos de color: {ruta_codigos}")
-    
-    # Copia de seguridad temporal
-    temp_codigos = ruta_codigos + ".temp"
-    conn = None
-    cursor = None
-    try:
-        copiar_archivo_seguro(ruta_codigos, temp_codigos)
-        conn_str = (
-            f"DRIVER={{Microsoft Access Driver (*.mdb, *.accdb)}};"
-            f"DBQ={temp_codigos};PWD={PASSWORD_CODIGOS};ReadOnly=1;"
-        )
-        conn = pyodbc.connect(conn_str)
-        cursor = conn.cursor()
-        
-        cursor.execute("SELECT CODIGO, DESCRIPCION, [ZN/US], COLORES FROM CODIGOS")
-        rows = cursor.fetchall()
-        
-        codigos_map = {}
-        for row in rows:
-            codigo = str(row[0]).strip().upper()
-            if codigo:
-                codigos_map[codigo] = {
-                    "descripcion": str(row[1]).strip().upper(),
-                    "zn_us": str(row[2]).strip().upper(),
-                    "color": str(row[3]).strip().upper()
-                }
-                
-        cursor.close()
-        cursor = None
-        conn.close()
-        conn = None
-        
-        codigos_json = json.dumps(codigos_map, ensure_ascii=False)
-        print(f"[MIGRACIÓN CODIGOS] Subiendo {len(codigos_map)} codigos a Supabase en fila especial...")
-        
-        try:
-            execute_supabase_with_retry(lambda: supabase.table("eventos_monitoreo").delete().eq("cuenta", "CODIGOS").execute())
-        except: pass
-        
-        chile_tz = get_chile_offset()
-        now_iso = datetime.now().strftime("%Y-%m-%dT%H:%M:%S") + chile_tz
-        
-        data = {
-            "fecha_hora": now_iso,
-            "cuenta": "CODIGOS",
-            "nombre_abonado": codigos_json,
-            "evento": "SINCRONIZACION CODIGOS COLORES MDB",
-            "zona": "000",
-            "usuario": "SYSTEM"
-        }
-        execute_supabase_with_retry(lambda: supabase.table("eventos_monitoreo").insert(data).execute())
-        print("[MIGRACIÓN CODIGOS SUCCESS] Tabla de colores sincronizada exitosamente en Supabase.")
-        
-    except Exception as e:
-        print(f"[MIGRACIÓN CODIGOS ERROR] Fallo: {e}")
-    finally:
-        if cursor:
-            try: cursor.close()
-            except: pass
-        if conn:
-            try: conn.close()
-            except: pass
-        if os.path.exists(temp_codigos):
-            try: os.remove(temp_codigos)
-            except: pass
-
-
-
-def sincronizar_zonas():
-    dir_zonas = buscar_zonificacion_dir()
-    if not dir_zonas:
-        print("[MIGRACIÓN ZONAS] Directorio ZONIFICACION no encontrado. Omitiendo...")
-        return
-        
-    print(f"[MIGRACIÓN ZONAS] Escaneando directorio de zonificacion: {dir_zonas}")
-    archivos = [f for f in os.listdir(dir_zonas) if f.upper().endswith('.MDB')]
-    
-    if not archivos:
-        print("[MIGRACIÓN ZONAS] No se encontraron archivos de zonificacion .MDB. Omitiendo...")
-        return
-        
-    print(f"[MIGRACIÓN ZONAS] Procesando {len(archivos)} archivos de abonados...")
-    
-    zonas_map = {}
-    for archivo in archivos:
-        cuenta = os.path.splitext(archivo)[0].upper().strip()
-        ruta_mdb = os.path.join(dir_zonas, archivo)
-        temp_zonas = ruta_mdb + ".temp"
-        
-        conn = None
-        cursor = None
-        try:
-            copiar_archivo_seguro(ruta_mdb, temp_zonas)
-            conn_str = (
-                f"DRIVER={{Microsoft Access Driver (*.mdb, *.accdb)}};"
-                f"DBQ={temp_zonas};PWD={PASSWORD_ZONAS};ReadOnly=1;"
-            )
-            conn = pyodbc.connect(conn_str)
-            cursor = conn.cursor()
-            
-            cursor.execute("SELECT NUMERO, DISPOSITIVOS, AREA FROM ZONAS")
-            rows = cursor.fetchall()
-            
-            lista_zonas = []
-            for row in rows:
-                num = str(row[0]).strip()
-                if num and num != 'None':
-                    lista_zonas.append({
-                        "numero": num.zfill(2) if num.isdigit() else num,
-                        "dispositivo": str(row[1]).strip() if row[1] is not None else "",
-                        "area": str(row[2]).strip() if row[2] is not None else ""
-                    })
-            
-            cursor.close()
-            cursor = None
-            conn.close()
-            conn = None
-            
-            if lista_zonas:
-                # Ordenar por número de zona numéricamente
-                try:
-                    lista_zonas.sort(key=lambda x: int(x['numero']) if x['numero'].isdigit() else 99)
-                except: pass
-                zonas_map[cuenta] = lista_zonas
-                
-        except Exception as file_err:
-            # Silenciar errores individuales por si hay algún archivo corrupto o abierto
-            pass
-        finally:
-            if cursor:
-                try: cursor.close()
-                except: pass
-            if conn:
-                try: conn.close()
-                except: pass
-            if os.path.exists(temp_zonas):
-                try: os.remove(temp_zonas)
-                except: pass
-                
-    if not zonas_map:
-        print("[MIGRACIÓN ZONAS] No se pudo leer la zonificación de ningún abonado. Omitiendo...")
-        return
-        
-    try:
-        zonas_json = json.dumps(zonas_map, ensure_ascii=False)
-        print(f"[MIGRACIÓN ZONAS] Subiendo zonificacion de {len(zonas_map)} abonados a Supabase en fila especial...")
-        
-        try:
-            execute_supabase_with_retry(lambda: supabase.table("eventos_monitoreo").delete().eq("cuenta", "ZONAS").execute())
-        except: pass
-        
-        chile_tz = get_chile_offset()
-        now_iso = datetime.now().strftime("%Y-%m-%dT%H:%M:%S") + chile_tz
-        
-        data = {
-            "fecha_hora": now_iso,
-            "cuenta": "ZONAS",
-            "nombre_abonado": zonas_json,
-            "evento": "SINCRONIZACION ZONAS MDB",
-            "zona": "000",
-            "usuario": "SYSTEM"
-        }
-        execute_supabase_with_retry(lambda: supabase.table("eventos_monitoreo").insert(data).execute())
-        print(f"[MIGRACIÓN ZONAS SUCCESS] Zonificación de {len(zonas_map)} abonados sincronizada exitosamente en Supabase.")
-        
-    except Exception as e:
-        print(f"[MIGRACIÓN ZONAS ERROR] Fallo al subir consolidado: {e}")
-
-
-# ============================================================
-#  BUCLE PRINCIPAL DE EVENTOS
-# ============================================================
-
-def procesar_mdb(ruta_mdb, mdb_name, cache):
+    print(f"[DB] {os.path.basename(ruta_original)}")
     chile_tz = get_chile_offset()
-    conn = None
-    cursor = None
-    nuevos = 0
-    cache_modificada = False
 
     try:
-        copiar_archivo_seguro(ruta_mdb, RUTA_COPIA_TEMP)
+        if os.path.exists(RUTA_COPIA_TEMP):
+            os.remove(RUTA_COPIA_TEMP)
+        shutil.copy2(ruta_original, RUTA_COPIA_TEMP)
 
         conn_str = (
             f'DRIVER={{Microsoft Access Driver (*.mdb, *.accdb)}};'
             f'DBQ={RUTA_COPIA_TEMP};PWD={DB_PASSWORD};ReadOnly=1;'
         )
+        conn = pyodbc.connect(conn_str)
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM EVENTOS ORDER BY HORA DESC")
+        rows = cursor.fetchall()
+        conn.close()
+
+        print(f"  [DEBUG] Filas en MDB: {len(rows)}")
+        if rows:
+            print(f"  [DEBUG] Más reciente: Dia={str(rows[0][0]).strip()} | Hora={str(rows[0][1]).strip()}")
+            print(f"  [DEBUG] Más antiguo: Dia={str(rows[-1][0]).strip()} | Hora={str(rows[-1][1]).strip()}")
+
+        # Mapear índices de columnas de forma dinámica y robusta
+        columns = [col[0].upper() for col in cursor.description]
         
-        try:
-            conn = pyodbc.connect(conn_str)
-            cursor = conn.cursor()
-            cursor.execute("SELECT * FROM EVENTOS")
-            rows = cursor.fetchall()
-        except pyodbc.Error as odbc_err:
-            print(f"[ERROR] {odbc_err}")
-            sys.stdout.flush()
-            return cache, 0
+        def get_val(r, col_names, default_idx):
+            for name in col_names:
+                if name in columns:
+                    idx = columns.index(name)
+                    return str(r[idx]).strip() if r[idx] is not None else ""
+            if default_idx < len(r):
+                return str(r[default_idx]).strip() if r[default_idx] is not None else ""
+            return ""
 
-        # Ordenar cronológicamente ascendente en memoria
-        def parse_row_datetime(r):
-            dia_str = str(r[0]).strip()
-            hora_str = str(r[1]).strip()
-            dt = parsear_fecha(dia_str)
-            if not dt:
-                return datetime.min
-            try:
-                partes = hora_str.split(':')
-                if len(partes) == 3:
-                    return dt.replace(hour=int(partes[0]), minute=int(partes[1]), second=int(partes[2]))
-            except Exception:
-                pass
-            return dt
+        rows.reverse()
+        nuevos = 0
+        cache_modificada = False
 
-        rows_sorted = sorted(rows, key=parse_row_datetime)
-
-        # Cargar cursor específico para este MDB
-        cur_mdb, cur_dia, cur_hora = load_cursor(mdb_name)
-        
-        if cur_dia and cur_hora and cur_mdb == mdb_name:
-            cur_datetime = parsear_fecha_hora(cur_dia, cur_hora)
-            salteando = True
-        else:
-            cur_datetime = datetime.min
-            salteando = False
-
-        if cur_mdb and cur_mdb != mdb_name:
-            print(f"  [CURSOR] Nuevo archivo MDB detectado ({mdb_name}), procesando todo...")
-            sys.stdout.flush()
-
-        for row in rows_sorted:
-            dia     = str(row[0]).strip()
-            hora    = str(row[1]).strip()
-            cuenta  = str(row[2]).strip()
-            nombre  = str(row[3]).strip()
-            evento  = str(row[4]).strip()
-            zona    = str(row[6]).strip()
-            usuario = str(row[7]).strip()
-
-            # Filtro por fecha: solo últimos DIAS_PROCESAR días
-            if LIMITE_FECHA_EVENTOS:
-                ev_fecha = parsear_fecha(dia)
-                if ev_fecha and ev_fecha < LIMITE_FECHA_EVENTOS:
-                    continue
-
-            # Comparación cronológica con el cursor
-            if salteando:
-                row_datetime = parsear_fecha_hora(dia, hora)
-                if row_datetime <= cur_datetime:
-                    continue
-                salteando = False
+        for row in rows:
+            dia     = get_val(row, ['DIA'], 0)
+            hora    = get_val(row, ['HORA'], 1)
+            cuenta  = get_val(row, ['CUENTA'], 2)
+            nombre  = get_val(row, ['NOMBRE', 'ABONADO', 'NOMBRE_ABONADO'], 3)
+            evento  = get_val(row, ['EVENTO'], 4)
+            zona    = get_val(row, ['ZONA'], 6)
+            usuario = get_val(row, ['USUARIO'], 7)
 
             event_key = f"{dia}_{hora}_{cuenta}_{evento}_{zona}_{usuario}"
             if event_key in cache:
                 continue
 
-            dia_norm = normalizar_dia(dia)
-            partes = dia_norm.split('-')
-            if len(partes) == 3:
-                fecha_hora = f'{partes[0]}-{partes[1]}-{partes[2]}T{hora}{chile_tz}'
+            # Sanitizar componentes de hora (ej: "0:8:26" -> "00:08:26")
+            partes_hora = hora.split(':')
+            if len(partes_hora) == 3:
+                hora_clean = f"{partes_hora[0].zfill(2)}:{partes_hora[1].zfill(2)}:{partes_hora[2].zfill(2)}"
             else:
-                fecha_hora = hora
+                hora_clean = hora
+
+            # Construir timestamp con offset Chile explícito
+            # Soportar separadores de fecha tanto '-' como '/'
+            dia_clean = dia.replace('/', '-')
+            partes_dia = dia_clean.split('-')
+            
+            fecha_hora = None
+            if len(partes_dia) == 3:
+                if len(partes_dia[0]) == 4:
+                    # Formato YYYY-MM-DD
+                    year, month, day = partes_dia[0], partes_dia[1], partes_dia[2]
+                else:
+                    # Formato DD-MM-YYYY (o MM-DD-YYYY, asumimos DD-MM-YYYY por Chile)
+                    day, month, year = partes_dia[0], partes_dia[1], partes_dia[2]
+                
+                # Formatear a estándar ISO con ceros a la izquierda
+                fecha_hora = f"{year}-{month.zfill(2)}-{day.zfill(2)}T{hora_clean}{chile_tz}"
+            
+            # Si no se pudo parsear, usar fecha actual para evitar errores en Supabase
+            if not fecha_hora:
+                hoy_iso = datetime.now().strftime('%Y-%m-%d')
+                fecha_hora = f"{hoy_iso}T{hora_clean}{chile_tz}"
 
             data = {
                 "fecha_hora":     fecha_hora,
@@ -799,239 +285,56 @@ def procesar_mdb(ruta_mdb, mdb_name, cache):
             }
 
             try:
-                execute_supabase_with_retry(lambda: supabase.table("eventos_monitoreo").insert(data).execute())
+                supabase.table("eventos_monitoreo").insert(data).execute()
+                print(f"  [+] {cuenta} | {nombre} | {evento} | Z:{zona}")
                 cache.add(event_key)
                 cache_modificada = True
                 nuevos += 1
             except Exception as e:
                 err_str = str(e).lower()
+                # 23505 es el código de violación de clave única en PostgreSQL (Supabase)
                 if "duplicate" in err_str or "23505" in err_str or "already exists" in err_str:
                     cache.add(event_key)
                     cache_modificada = True
                 else:
-                    raise
+                    print(f"  [ERROR] Fallo de red/conexión: {e}")
 
         if cache_modificada:
             save_cache(cache)
 
-        # Guardar cursor de este MDB
-        if nuevos > 0 or not cur_mdb:
-            if rows_sorted:
-                last = rows_sorted[-1]
-                save_cursor(mdb_name, str(last[0]).strip(), str(last[1]).strip())
-
-        if nuevos:
-            print(f"  [{mdb_name}] >>> {nuevos} nuevo(s).")
-            sys.stdout.flush()
-
-        return cache, nuevos
+        print(f"  >>> {nuevos} evento(s) nuevo(s) subidos." if nuevos > 0 else "  Sin eventos nuevos.")
 
     except Exception as e:
-        print(f"[ERROR CRITICO] {e}")
-        sys.stdout.flush()
-        return cache, 0
+        print(f"[ERROR] {e}")
     finally:
-        if cursor:
-            try: cursor.close()
-            except: pass
-        if conn:
-            try: conn.close()
-            except: pass
         if os.path.exists(RUTA_COPIA_TEMP):
-            try: os.remove(RUTA_COPIA_TEMP)
-            except: pass
+            try:
+                os.remove(RUTA_COPIA_TEMP)
+            except:
+                pass
 
-
-def procesar_mdb_con_timeout(ruta_mdb, mdb_name, cache):
-    """Ejecuta procesar_mdb con timeout. Si excede MDB_TIMEOUT segundos, retorna (cache, 0)."""
-    pool = concurrent.futures.ThreadPoolExecutor(max_workers=1)
-    future = pool.submit(procesar_mdb, ruta_mdb, mdb_name, cache)
-    try:
-        return future.result(timeout=MDB_TIMEOUT)
-    except concurrent.futures.TimeoutError:
-        log_flush(f"  [TIMEOUT] {mdb_name} - superó {MDB_TIMEOUT}s, saltando...")
-        sys.stdout.flush()
-        future.cancel()
-        return cache, 0
-    except Exception as e:
-        log_flush(f"  [ERROR] {mdb_name} - {e}")
-        sys.stdout.flush()
-        return cache, 0
-    finally:
-        pool.shutdown(wait=False)
-
-
-_mdb_last_mtimes = {}
-
-def sincronizar_eventos(cache):
-    global _errores_consecutivos, _mdb_last_mtimes
-    _errores_consecutivos = 0
-    
-    # Inicializar/actualizar el límite de fecha antes de procesar los archivos MDB
-    init_limite_fecha()
-    
-    # Enviar heartbeat al INICIO del ciclo para que el dashboard sepa que estamos vivos
-    # aunque los MDB tarden en procesarse
-    enviar_heartbeat()
-    
-    todos_mdb = get_todos_mdb()
-    if not todos_mdb:
-        return cache, INTERVALO_SEG
-
-    # Procesar archivos del más RECIENTE al más antiguo
-    # para que los eventos de hoy lleguen al dashboard lo antes posible
-    todos_mdb.reverse()
-
-    total_nuevos = 0
-    un_cambio = False
-    
-    for ruta_mdb in todos_mdb:
-        mdb_name = os.path.basename(ruta_mdb)
-        
-        try:
-            mtime = os.path.getmtime(ruta_mdb)
-        except Exception:
-            mtime = 0
-            
-        # Omitir si el archivo no ha cambiado desde el último ciclo
-        if mdb_name in _mdb_last_mtimes and _mdb_last_mtimes[mdb_name] == mtime:
-            continue
-            
-        un_cambio = True
-        mtime_str = datetime.fromtimestamp(mtime).strftime('%H:%M:%S')
-        print(f"[DB] {mdb_name} (modificado {mtime_str})")
-        sys.stdout.flush()
-        
-        cache, nuevos = procesar_mdb_con_timeout(ruta_mdb, mdb_name, cache)
-        total_nuevos += nuevos
-        
-        # Heartbeat después de cada archivo (para que dashboard no se ponga rojo durante sincronización larga)
-        enviar_heartbeat()
-        
-        # Guardar ultima modificacion procesada
-        _mdb_last_mtimes[mdb_name] = mtime
-    _errores_consecutivos = 0
-    
-    if total_nuevos == 0 and un_cambio:
-        print(f"  [OK] Sin eventos nuevos en {len(todos_mdb)} archivo(s) MDB")
-        sys.stdout.flush()
-    
-    return cache, INTERVALO_SEG
+    print(f"--- Esperando {INTERVALO_SEG}s ---\n")
+    return cache
 
 
 if __name__ == "__main__":
-    try:
-        # Truncar log al inicio para evitar crecimiento infinito
-        try:
-            log_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "_gama_log.txt")
-            with open(log_path, "w", encoding="utf-8") as f:
-                f.write(f"=== LOG INICIADO {datetime.now()} ===\n")
-        except:
-            pass
+    print("=" * 55)
+    print("  GAMA COMMAND CENTER - Sincronizador v3.0")
+    print(f"  Carpeta: {CARPETA_EVENTOS}")
+    print(f"  Timezone: Chile ({get_chile_offset()})")
+    print("=" * 55)
+    
+    # Comprobación inicial de actualizaciones al arrancar
+    check_for_updates()
+    last_update_check = time.time()
+    
+    cache = load_cache()
+    while True:
+        cache = sincronizar(cache)
         
-        init_limite_fecha()
-        log_flush("=" * 65)
-        log_flush("  GAMA COMMAND CENTER - Sincronizador v5.5")
-        log_flush(f"  Watchdog: {WATCHDOG_TIMEOUT}s sin heartbeat = reinicio")
-        log_flush(f"  Timeout MDB: {MDB_TIMEOUT}s por archivo")
-        log_flush("=" * 65)
-        
-        # Pequeña espera al inicio para evitar restart loops violentos
-        time.sleep(2)
-        
-        # 1. Sincronización inicial de clientes al arrancar
-        log_flush("\n[+] Iniciando sincronización inicial de clientes de GENERAL.mdb...")
-        sincronizar_clientes()
-        sys.stdout.flush()
-        
-        # 2. Sincronización inicial de códigos de color (CODIGOS.MDB)
-        log_flush("\n[+] Iniciando sincronización inicial de códigos de color (CODIGOS.MDB)...")
-        sincronizar_codigos()
-        sys.stdout.flush()
-        
-        # 3. Sincronización inicial de zonificación de abonados
-        log_flush("\n[+] Iniciando sincronización inicial de zonificación de abonados...")
-        sincronizar_zonas()
-        sys.stdout.flush()
-        
-        # 4. Control de tiempo de modificación de GENERAL.mdb
-        ruta_general = buscar_general_mdb()
-        last_mtime = os.path.getmtime(ruta_general) if (ruta_general and os.path.exists(ruta_general)) else 0
-        
-        # 5. Control de tiempo para resincronización periódica de zonas/códigos (cada 1 hora)
-        last_sync_zonas = time.time()
-        INTERVALO_ZONAS = 3600  # 1 hora
-        
-        cache = load_cache()
-        precargar_cache_desde_supabase(cache)
-        
-        # Diagnóstico: listar todos los MDB y su fecha de modificación
-        log_flush("[+] Archivos MDB en carpeta EVENTOS:")
-        sys.stdout.flush()
-        try:
-            for f in sorted(os.listdir(CARPETA_EVENTOS), key=lambda x: os.path.getmtime(os.path.join(CARPETA_EVENTOS, x)), reverse=True):
-                if f.upper().endswith('.MDB'):
-                    fm = datetime.fromtimestamp(os.path.getmtime(os.path.join(CARPETA_EVENTOS, f))).strftime('%Y-%m-%d %H:%M:%S')
-                    log_flush(f"    {f}  ->  modificado {fm}")
-        except Exception as diag_err:
-            log_flush(f"    [ERROR] {diag_err}")
-        sys.stdout.flush()
-        
-        log_flush("[+] Sincronización inicial completa. Entrando en bucle principal de eventos...")
-        sys.stdout.flush()
-        
-        # Enviar heartbeat inmediato para que el dashboard se ponga verde ya
-        enviar_heartbeat()
-        
-        # Bucle principal
-        while True:
-            try:
-                # Verificar si GENERAL.mdb ha cambiado para resincronizar clientes
-                ruta_general_current = buscar_general_mdb()
-                if ruta_general_current and os.path.exists(ruta_general_current):
-                    try:
-                        current_mtime = os.path.getmtime(ruta_general_current)
-                        if current_mtime != last_mtime:
-                            log_flush(f"\n[+] Se detecto cambio en GENERAL.mdb ({datetime.fromtimestamp(current_mtime).strftime('%H:%M:%S')})")
-                            sincronizar_clientes()
-                            last_mtime = current_mtime
-                    except Exception as ex:
-                        log_flush(f"[ERROR MTR] Fallo al monitorear GENERAL.mdb: {ex}")
-                
-                # Resincronización periódica de códigos y zonas (cada 1 hora)
-                ahora = time.time()
-                if ahora - last_sync_zonas >= INTERVALO_ZONAS:
-                    log_flush(f"\n[+] Resincronización periódica de códigos y zonas ({INTERVALO_ZONAS//60} min)...")
-                    sincronizar_codigos()
-                    sincronizar_zonas()
-                    last_sync_zonas = ahora
-                        
-                cache, sleep_time = sincronizar_eventos(cache)
-                time.sleep(sleep_time)
-            except Exception as loop_error:
-                log_flush(f"\n[ERROR BUCLE PRINCIPAL] Ocurrió un error en el ciclo: {loop_error}")
-                sys.stdout.flush()
-                # Re-conectar a Supabase por seguridad en caso de pérdida de socket/sesión
-                try:
-                    conectar_supabase()
-                except Exception as recon_err:
-                    log_flush(f"[RECONECTAR ERROR] No se pudo reestablecer Supabase: {recon_err}")
-                
-                # Esperar 10 segundos antes de continuar para no hacer bucles violentos
-                time.sleep(10)
-    except Exception as crash:
-        log_flush(f"\n{'='*60}")
-        log_flush(f"[CRASH FATAL] El sincronizador se detuvo inesperadamente:")
-        log_flush(f"  {crash}")
-        import traceback
-        traceback.print_exc()
-        sys.stdout.flush()
-        log_flush(f"{'='*60}")
-        log_flush(f"Task Scheduler reiniciará el proceso en 1 minuto.")
-        log_flush(f"{'='*60}")
-    finally:
-        try:
-            kernel32.CloseHandle(mutex)
-        except:
-            pass
-
+        # Comprobar actualizaciones cada 30 minutos (1800 segundos)
+        if time.time() - last_update_check > 1800:
+            check_for_updates()
+            last_update_check = time.time()
+            
+        time.sleep(INTERVALO_SEG)
