@@ -102,7 +102,7 @@ export default function VideoVerificacionModal({ onClose, evento, esCierre, clie
   useEffect(() => {
     if (!selectedRealCameraId) return
     
-    const apiHost = process.env.NEXT_PUBLIC_IA_API_URL || 'localhost:8000'
+    const apiHost = process.env.NEXT_PUBLIC_IA_API_URL || '10.99.0.1:8000'
     const wsProto = apiHost.startsWith('https') || apiHost.includes(':443') ? 'wss' : 'ws'
     const cleanHost = apiHost.replace(/^https?:\/\//, '')
     const wsUrl = `${wsProto}://${cleanHost}/ws/camara/${selectedRealCameraId}?token=admin`
