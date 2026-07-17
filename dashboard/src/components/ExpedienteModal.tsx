@@ -1,7 +1,6 @@
-'use client'
-
 import { useEffect, useRef, useState } from 'react'
 import type { EventoMonitoreo } from '@/lib/supabase'
+import { supabaseIA } from '@/lib/supabase'
 
 interface ExpedienteModalProps {
   evento: EventoMonitoreo
@@ -57,6 +56,112 @@ export default function ExpedienteModal({ evento, onClose }: ExpedienteModalProp
   // Dummy dynamic data based on client account
   const accountNum = evento.cuenta || '7015'
   const clientName = evento.nombre_abonado || 'GAMA SEGURIDAD'
+
+  // Estados para Video Verificación IA Real
+  const [camarasReal, setCamarasReal] = useState<any[]>([])
+  const [selectedCameraId, setSelectedCameraId] = useState<string | null>(null)
+  const [cargandoIA, setCargandoIA] = useState(true)
+  
+  // Estados de WebSocket para Stream en vivo
+  const [frameData, setFrameData] = useState<string | null>(null)
+  const [statusMsg, setStatusMsg] = useState<string>('Desconectado')
+  const wsRef = useRef<WebSocket | null>(null)
+
+  // 1. Obtener cámaras del cliente desde la base de datos de IA
+  useEffect(() => {
+    let isMounted = true
+    
+    async function fetchIAData() {
+      try {
+        setCargandoIA(true)
+        
+        // Buscar el cliente por cuenta (mapeada en el campo 'empresa') en la BD de IA
+        let { data: clientes } = await supabaseIA
+          .from('clientes')
+          .select('id')
+          .eq('empresa', accountNum)
+          
+        // Fallback: buscar por coincidencia de nombre si no hay por cuenta
+        if (!clientes || clientes.length === 0) {
+          const cleanedName = clientName.split(' ')[0]
+          const { data: fallbackClientes } = await supabaseIA
+            .from('clientes')
+            .select('id')
+            .ilike('nombre', `%${cleanedName}%`)
+          clientes = fallbackClientes
+        }
+        
+        if (!clientes || clientes.length === 0) {
+          if (isMounted) setCargandoIA(false)
+          return
+        }
+        
+        const clienteId = clientes[0].id
+        
+        // Obtener las cámaras activas del cliente
+        const { data: cams } = await supabaseIA
+          .from('camaras')
+          .select('*')
+          .eq('cliente_id', clienteId)
+          .eq('activa', true)
+          
+        if (isMounted) {
+          setCamarasReal(cams || [])
+          if (cams && cams.length > 0) {
+            setSelectedCameraId(cams[0].id)
+          }
+        }
+      } catch (err) {
+        console.error('Error cargando cámaras de IA:', err)
+      } finally {
+        if (isMounted) setCargandoIA(false)
+      }
+    }
+    
+    fetchIAData()
+    return () => { isMounted = false }
+  }, [accountNum, clientName])
+
+  // 2. Controlar la conexión WebSocket para streaming en tiempo real
+  useEffect(() => {
+    if (!selectedCameraId) return
+    
+    // Conectar al servicio de API del PC Scorpion (localhost:8000)
+    const wsUrl = `ws://localhost:8000/ws/camara/${selectedCameraId}?token=admin`
+    setStatusMsg('Conectando...')
+    
+    const ws = new WebSocket(wsUrl)
+    wsRef.current = ws
+    
+    ws.onmessage = (event) => {
+      try {
+        const msg = JSON.parse(event.data)
+        if (msg.type === 'frame') {
+          setFrameData(msg.data)
+          setStatusMsg('En vivo')
+        } else if (msg.type === 'status') {
+          setStatusMsg(msg.msg || msg.estado)
+        }
+      } catch (err) {
+        console.error('Error procesando frame WS:', err)
+      }
+    }
+    
+    ws.onclose = () => {
+      setStatusMsg('Desconectado')
+      setFrameData(null)
+    }
+    
+    ws.onerror = () => {
+      setStatusMsg('Fallo de stream')
+    }
+    
+    return () => {
+      if (wsRef.current) {
+        wsRef.current.close()
+      }
+    }
+  }, [selectedCameraId])
 
   return (
     <div
@@ -193,15 +298,63 @@ export default function ExpedienteModal({ evento, onClose }: ExpedienteModalProp
                 </table>
               </div>
 
-              {/* Simulated Camera Video Verification */}
-              <div className="relative border border-[#1e293b] bg-black rounded overflow-hidden flex flex-col justify-between items-center text-center p-4">
-                <div className="absolute top-2 left-2 flex items-center gap-1.5">
-                  <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-                  <span className="text-[8px] text-red-500 font-bold tracking-widest uppercase">REC CAM_03</span>
-                </div>
-                <div className="text-slate-700 text-3xl my-auto">🎥</div>
-                <p className="text-[8px] text-slate-500 uppercase tracking-wider">Simulación de Verificación por Video</p>
-                <p className="text-[9px] text-green-400 font-mono mt-1">Conexión RTSP Estable (30 FPS)</p>
+              {/* Camera Video Verification */}
+              <div className="relative border border-[#1e293b] bg-black rounded overflow-hidden flex flex-col justify-between items-center text-center p-3 h-full min-h-[220px]">
+                {cargandoIA ? (
+                  <div className="my-auto text-slate-500 text-xs animate-pulse">Consultando cámaras IA...</div>
+                ) : camarasReal.length > 0 ? (
+                  <div className="w-full flex flex-col justify-between h-full gap-2">
+                    {/* Header: Selector and status */}
+                    <div className="flex items-center justify-between gap-2">
+                      <select 
+                        value={selectedCameraId || ''} 
+                        onChange={(e) => {
+                          setSelectedCameraId(e.target.value);
+                          setFrameData(null);
+                        }}
+                        className="bg-black text-[10px] text-slate-300 border border-[#1e293b] rounded px-1.5 py-0.5 focus:outline-none focus:border-blue-500 font-mono max-w-[150px]"
+                      >
+                        {camarasReal.map((cam) => (
+                          <option key={cam.id} value={cam.id}>{cam.nombre.toUpperCase()}</option>
+                        ))}
+                      </select>
+                      
+                      <div className="flex items-center gap-1.5">
+                        <div className={`w-2 h-2 rounded-full ${statusMsg === 'En vivo' ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
+                        <span className={`text-[8px] font-bold tracking-widest uppercase ${statusMsg === 'En vivo' ? 'text-green-500' : 'text-red-400'}`}>
+                          {statusMsg}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    {/* Live Stream Viewport */}
+                    <div className="relative flex-1 bg-[#04060b] border border-[#131b30] rounded flex items-center justify-center overflow-hidden min-h-[140px]">
+                      {frameData ? (
+                        <img 
+                          src={`data:image/jpeg;base64,${frameData}`} 
+                          alt="Cámara en vivo" 
+                          className="w-full h-full object-contain"
+                        />
+                      ) : (
+                        <div className="flex flex-col items-center gap-2">
+                          <span className="text-2xl">🎥</span>
+                          <span className="text-[9px] text-slate-500 font-mono">{statusMsg}</span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Metadata information */}
+                    <div className="text-[8px] text-slate-500 font-mono">
+                      IP: {camarasReal.find(c => c.id === selectedCameraId)?.ip_local || 'Localhost'} | RTSP: {camarasReal.find(c => c.id === selectedCameraId)?.rtsp_url ? 'Configurado' : 'Discovery'}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="my-auto flex flex-col items-center gap-2">
+                    <span className="text-slate-600 text-3xl">🎦</span>
+                    <p className="text-[9px] text-slate-500 uppercase tracking-wider font-bold">Sin cámaras IA vinculadas</p>
+                    <p className="text-[8px] text-slate-600 font-mono">Agregue cámaras con cuenta '{accountNum}' en la BD de IA.</p>
+                  </div>
+                )}
               </div>
             </div>
           )}

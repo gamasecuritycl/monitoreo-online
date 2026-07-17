@@ -5,6 +5,12 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOi
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
+// Cliente para la base de datos de IA (RECOVERED_PROJECT)
+const supabaseIAUrl = 'https://usuzyqayiecsburbsipl.supabase.co'
+const supabaseIAServiceKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVzdXp5cWF5aWVjc2J1cmJzaXBsIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NDE0NTY0MCwiZXhwIjoyMDk5NzIxNjQwfQ.ZN2sw5R4K5EHuttLzDguKnsF1KBgqUKqOpipB7dGR1Y'
+
+export const supabaseIA = createClient(supabaseIAUrl, supabaseIAServiceKey)
+
 export interface EventoMonitoreo {
   id: number
   fecha_hora: string
