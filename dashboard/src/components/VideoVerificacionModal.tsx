@@ -46,6 +46,12 @@ export default function VideoVerificacionModal({ onClose, evento, esCierre, clie
   const [statusMsg, setStatusMsg] = useState<string>('Desconectado')
   const wsRef = useRef<WebSocket | null>(null)
 
+  // Estados de Verificación por Clips IA (Supabase Storage)
+  const [alertasReal, setAlertasReal] = useState<any[]>([])
+  const [viewMode, setViewMode] = useState<'live' | 'clip'>('live')
+  const [selectedClipUrl, setSelectedClipUrl] = useState<string | null>(null)
+  const [cargandoAlertas, setCargandoAlertas] = useState(false)
+
   // 1. Obtener la lista de cámaras reales desde la BD de analítica
   useEffect(() => {
     let isMounted = true
@@ -86,12 +92,28 @@ export default function VideoVerificacionModal({ onClose, evento, esCierre, clie
           setCamarasReal(cams || [])
           if (cams && cams.length > 0) {
             setSelectedRealCameraId(cams[0].id)
+            
+            // Buscar alertas recientes con clip de video
+            const camIds = cams.map(c => c.id)
+            setCargandoAlertas(true)
+            const { data: alerts } = await supabaseIA
+              .from('alertas')
+              .select('*')
+              .in('camara_id', camIds)
+              .not('clip_path', 'is', null)
+              .order('fecha_hora', { ascending: false })
+              .limit(5)
+            
+            if (isMounted) setAlertasReal(alerts || [])
           }
         }
       } catch (err) {
         console.error('Error cargando cámaras reales:', err)
       } finally {
-        if (isMounted) setCargandoIA(false)
+        if (isMounted) {
+          setCargandoIA(false)
+          setCargandoAlertas(false)
+        }
       }
     }
     fetchCams()
@@ -309,6 +331,19 @@ Instrucciones:
                    </div>
                  )
                }
+               if (viewMode === 'clip' && selectedClipUrl) {
+                 return (
+                   <video
+                     src={selectedClipUrl}
+                     controls
+                     autoPlay
+                     muted
+                     loop
+                     playsInline
+                     className="w-full h-full object-contain"
+                   />
+                 )
+               }
                if (frameData) {
                  return (
                    <img
@@ -380,43 +415,97 @@ Instrucciones:
             ))}
           </div>
 
-          {/* Right: AI analysis and Supervision Panel */}
-          <div className="w-full md:w-[220px] shrink-0 bg-[#0d0f14] p-2 flex flex-col justify-between overflow-y-auto border-t md:border-t-0 border-gray-800 text-white">
-            
-            {/* Top selectors & actions */}
-            <div className="space-y-3">
-              
-              {/* Select Camera Dropdown */}
-              <div className="flex flex-col gap-1">
-                <span className="text-gray-400 font-bold text-[9px] uppercase">Seleccionar Cámara:</span>
-                <select
-                  value={selectedRealCameraId || ''}
-                  onChange={(e) => {
-                    setSelectedRealCameraId(e.target.value)
-                    setFrameData(null)
-                  }}
-                  className="bg-[#1c1d22] text-white border border-gray-700 font-bold py-1 px-1.5 focus:outline-none text-[10px] w-full"
-                >
-                  {cargandoIA ? (
-                    <option>Cargando cámaras...</option>
-                  ) : camarasReal.length > 0 ? (
-                    camarasReal.map((cam) => (
-                      <option key={cam.id} value={cam.id}>{cam.nombre.toUpperCase()}</option>
-                    ))
-                  ) : (
-                    <option>Sin cámaras vinculadas</option>
-                  )}
-                </select>
-              </div>
+             {/* Top selectors & actions */}
+             <div className="space-y-3">
+               
+               {/* Selector de Modo de Vista */}
+               <div className="grid grid-cols-2 border border-gray-700 rounded overflow-hidden">
+                 <button
+                   onClick={() => setViewMode('live')}
+                   className={`py-1 text-[9px] font-bold tracking-wider cursor-pointer ${
+                     viewMode === 'live' ? 'bg-red-700 text-white' : 'bg-[#1c1d22] text-gray-400 hover:text-white'
+                   }`}
+                 >
+                   🔴 EN VIVO
+                 </button>
+                 <button
+                   onClick={() => setViewMode('clip')}
+                   className={`py-1 text-[9px] font-bold tracking-wider cursor-pointer ${
+                     viewMode === 'clip' ? 'bg-blue-700 text-white' : 'bg-[#1c1d22] text-gray-400 hover:text-white'
+                   }`}
+                 >
+                   📦 CLIPS IA
+                 </button>
+               </div>
 
-              {/* Analyze Button */}
-              <button
-                onClick={analizarConIA}
-                disabled={analizandoIA}
-                className="w-full bg-red-700 hover:bg-red-600 text-white font-bold border border-red-500 py-1.5 text-[10px] cursor-pointer text-center select-none"
-              >
-                {analizandoIA ? '🔄 ANALIZANDO ESCENA IA...' : '🤖 ANALIZAR CON IA GEMINI'}
-              </button>
+               {viewMode === 'live' ? (
+                 <div className="flex flex-col gap-1">
+                   <span className="text-gray-400 font-bold text-[9px] uppercase">Seleccionar Cámara:</span>
+                   <select
+                     value={selectedRealCameraId || ''}
+                     onChange={(e) => {
+                       setSelectedRealCameraId(e.target.value)
+                       setFrameData(null)
+                     }}
+                     className="bg-[#1c1d22] text-white border border-gray-700 font-bold py-1 px-1.5 focus:outline-none text-[10px] w-full"
+                   >
+                     {cargandoIA ? (
+                       <option>Cargando cámaras...</option>
+                     ) : camarasReal.length > 0 ? (
+                       camarasReal.map((cam) => (
+                         <option key={cam.id} value={cam.id}>{cam.nombre.toUpperCase()}</option>
+                       ))
+                     ) : (
+                       <option>Sin cámaras vinculadas</option>
+                     )}
+                   </select>
+                 </div>
+               ) : (
+                 <div className="flex flex-col gap-1.5">
+                   <span className="text-gray-400 font-bold text-[9px] uppercase">Clips Recientes de IA:</span>
+                   <div className="space-y-1 max-h-[120px] overflow-y-auto font-mono text-[9px]">
+                     {cargandoAlertas ? (
+                       <p className="text-slate-500 animate-pulse">[Buscando clips...]</p>
+                     ) : alertasReal.length > 0 ? (
+                       alertasReal.map((alert) => {
+                         const cleanPath = (alert.clip_path || '').replace(/\\/g, '/').replace(/^clips\//, '')
+                         const clipUrl = `https://usuzyqayiecsburbsipl.supabase.co/storage/v1/object/public/clips/${cleanPath}`
+                         const dateStr = alert.fecha_hora 
+                           ? new Date(alert.fecha_hora).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+                           : 'Grabación'
+                           
+                         return (
+                           <button
+                             key={alert.id}
+                             onClick={() => {
+                               setSelectedClipUrl(clipUrl)
+                               setViewMode('clip')
+                             }}
+                             className={`w-full text-left p-1 rounded-sm border transition-all ${
+                               selectedClipUrl === clipUrl && viewMode === 'clip'
+                                 ? 'bg-blue-950 text-blue-400 border-blue-800 font-bold'
+                                 : 'bg-[#1c1d22] text-slate-300 border-gray-800 hover:border-gray-700'
+                             }`}
+                           >
+                             🎥 {alert.tipo ? alert.tipo.toUpperCase() : 'ALERTA'} - {dateStr}
+                           </button>
+                         )
+                       })
+                     ) : (
+                       <p className="text-slate-500 italic">[No hay clips grabados]</p>
+                     )}
+                   </div>
+                 </div>
+               )}
+
+               {/* Analyze Button */}
+               <button
+                 onClick={analizarConIA}
+                 disabled={analizandoIA}
+                 className="w-full bg-red-700 hover:bg-red-600 text-white font-bold border border-red-500 py-1.5 text-[10px] cursor-pointer text-center select-none"
+               >
+                 {analizandoIA ? '🔄 ANALIZANDO ESCENA IA...' : '🤖 ANALIZAR CON IA GEMINI'}
+               </button>
 
               {/* Status report console */}
               <div className="border border-gray-800 bg-[#08090c] p-2 rounded min-h-[100px] font-mono text-[9px] leading-snug">
