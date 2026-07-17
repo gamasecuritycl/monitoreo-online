@@ -415,7 +415,9 @@ Instrucciones:
             ))}
           </div>
 
-             {/* Top selectors & actions */}
+          {/* Right: AI analysis and Supervision Panel */}
+          <div className="w-full md:w-[220px] shrink-0 bg-[#0d0f14] p-2 flex flex-col justify-between overflow-y-auto border-t md:border-t-0 border-gray-800 text-white">
+            {/* Top selectors & actions */}
              <div className="space-y-3">
                
                {/* Selector de Modo de Vista */}
