@@ -1,7 +1,7 @@
 'use client'
 
-import React, { useState, useEffect, Fragment } from 'react'
-import { supabase } from '@/lib/supabase'
+import React, { useState, useEffect, Fragment, useRef } from 'react'
+import { supabase, supabaseIA } from '@/lib/supabase'
 
 interface EventoMonitoreo {
   id: number
@@ -38,7 +38,110 @@ export default function VideoVerificacionModal({ onClose, evento, esCierre, clie
   const cuentaActiva = evento.cuenta
   const clientName = evento.nombre_abonado || 'Cliente Scorpion'
 
-  // Cargar lista de cámaras de Supabase
+  // Estados para Cámaras IA reales y Live Stream
+  const [camarasReal, setCamarasReal] = useState<any[]>([])
+  const [selectedRealCameraId, setSelectedRealCameraId] = useState<string | null>(null)
+  const [cargandoIA, setCargandoIA] = useState(true)
+  const [frameData, setFrameData] = useState<string | null>(null)
+  const [statusMsg, setStatusMsg] = useState<string>('Desconectado')
+  const wsRef = useRef<WebSocket | null>(null)
+
+  // 1. Obtener la lista de cámaras reales desde la BD de analítica
+  useEffect(() => {
+    let isMounted = true
+    async function fetchCams() {
+      try {
+        setCargandoIA(true)
+        // Buscar cliente en BD de IA por cuenta (columna empresa)
+        let { data: clientes } = await supabaseIA
+          .from('clientes')
+          .select('id')
+          .eq('empresa', cuentaActiva)
+          
+        if (!clientes || clientes.length === 0) {
+          // Fallback por primera palabra del nombre
+          const cleanName = clientName.split(' ')[0]
+          const { data: fallback } = await supabaseIA
+            .from('clientes')
+            .select('id')
+            .ilike('nombre', `%${cleanName}%`)
+          clientes = fallback
+        }
+        
+        if (!clientes || clientes.length === 0) {
+          if (isMounted) setCargandoIA(false)
+          return
+        }
+        
+        const clienteId = clientes[0].id
+        
+        // Buscar cámaras activas
+        const { data: cams } = await supabaseIA
+          .from('camaras')
+          .select('*')
+          .eq('cliente_id', clienteId)
+          .eq('activa', true)
+          
+        if (isMounted) {
+          setCamarasReal(cams || [])
+          if (cams && cams.length > 0) {
+            setSelectedRealCameraId(cams[0].id)
+          }
+        }
+      } catch (err) {
+        console.error('Error cargando cámaras reales:', err)
+      } finally {
+        if (isMounted) setCargandoIA(false)
+      }
+    }
+    fetchCams()
+    return () => { isMounted = false }
+  }, [cuentaActiva, clientName])
+
+  // 2. Control del ciclo de vida del WebSocket para streaming
+  useEffect(() => {
+    if (!selectedRealCameraId) return
+    
+    const apiHost = process.env.NEXT_PUBLIC_IA_API_URL || 'localhost:8000'
+    const wsProto = apiHost.startsWith('https') || apiHost.includes(':443') ? 'wss' : 'ws'
+    const cleanHost = apiHost.replace(/^https?:\/\//, '')
+    const wsUrl = `${wsProto}://${cleanHost}/ws/camara/${selectedRealCameraId}?token=admin`
+    
+    setStatusMsg('Conectando...')
+    const ws = new WebSocket(wsUrl)
+    wsRef.current = ws
+    
+    ws.onmessage = (event) => {
+      try {
+        const msg = JSON.parse(event.data)
+        if (msg.type === 'frame') {
+          setFrameData(msg.data)
+          setStatusMsg('En vivo')
+        } else if (msg.type === 'status') {
+          setStatusMsg(msg.msg || msg.estado)
+        }
+      } catch (err) {
+        console.error('Error procesando WS frame:', err)
+      }
+    }
+    
+    ws.onclose = () => {
+      setStatusMsg('Desconectado')
+      setFrameData(null)
+    }
+    
+    ws.onerror = () => {
+      setStatusMsg('Fallo de stream')
+    }
+    
+    return () => {
+      if (wsRef.current) {
+        wsRef.current.close()
+      }
+    }
+  }, [selectedRealCameraId])
+
+  // Cargar lista de cámaras de Supabase (mantenido por compatibilidad histórica)
   useEffect(() => {
     const fetchCamaras = async () => {
       try {
@@ -194,44 +297,33 @@ Instrucciones:
 
             {/* Video feed render */}
              {(() => {
-               const url = activeCamera === 'CAM-01' ? camarasActivas.cam01 : activeCamera === 'CAM-02' ? camarasActivas.cam02 : camarasActivas.cam03
-               
-               if (!url) {
+               if (cargandoIA) {
+                 return <div className="text-yellow-500 text-xs animate-pulse font-mono">[CARGANDO CONFIGURACIÓN DE CÁMARAS...]</div>
+               }
+               if (camarasReal.length === 0) {
+                 return (
+                   <div className="text-center text-slate-500 text-xs font-mono p-4">
+                     <span className="text-3xl block mb-2">🎦</span>
+                     [SIN CÁMARAS DE ANALÍTICA IA VINCULADAS PARA ESTA CUENTA]
+                     <p className="text-[10px] text-slate-600 mt-2">Vincule cámaras en la base de datos de IA con el código de abonado '{cuentaActiva}'</p>
+                   </div>
+                 )
+               }
+               if (frameData) {
                  return (
                    <img
-                     src={activeCamera === 'CAM-01' ? '/cctv_intruder.png' : '/cctv_false_alarm.png'}
-                     alt="CCTV"
-                     className={`w-full h-full object-cover select-none ${
-                       activeCamera === 'CAM-03' ? 'grayscale hue-rotate-90 brightness-75' : 
-                       activeCamera === 'CAM-02' ? 'hue-rotate-180 brightness-90' : 'brightness-90'
-                     }`}
+                     src={`data:image/jpeg;base64,${frameData}`}
+                     alt="CCTV Real-Time Feed"
+                     className="w-full h-full object-contain"
                    />
                  )
                }
-
-               const lowerUrl = url.toLowerCase().trim()
-               if (lowerUrl === 'mediamtx' || (!lowerUrl.startsWith('http') && !lowerUrl.startsWith('https') && !lowerUrl.startsWith('/') && lowerUrl.length > 2)) {
-                 const streamId = activeCamera === 'CAM-01' ? cuentaActiva : activeCamera === 'CAM-02' ? `${cuentaActiva}-cam2` : `${cuentaActiva}-cam3`
-                 return (
-                   <iframe
-                     src={`http://cloud.gamasecurity.cl:8889/${streamId.toLowerCase()}`}
-                     className="w-full h-full border-0 bg-black absolute inset-0 z-0"
-                     allow="autoplay; encrypted-media; picture-in-picture"
-                     allowFullScreen
-                   />
-                 )
-               }
-
-               const isVideo = lowerUrl.includes('.mp4') || lowerUrl.includes('.webm') || lowerUrl.includes('.ogg') || lowerUrl.includes('.mov')
-               const isImage = lowerUrl.includes('.jpg') || lowerUrl.includes('.jpeg') || lowerUrl.includes('.png') || lowerUrl.includes('.webp') || lowerUrl.includes('.gif')
-
-               if (isVideo) {
-                 return <video src={url} autoPlay loop muted playsInline className="w-full h-full object-cover" />
-               } else if (isImage) {
-                 return <img src={url} alt="CCTV Feed" className="w-full h-full object-cover" />
-               } else {
-                 return <iframe src={url} title="CCTV Embed" className="w-full h-full border-0 bg-black" allow="autoplay; encrypted-media" allowFullScreen />
-               }
+               return (
+                 <div className="flex flex-col items-center gap-2 text-slate-400 font-mono">
+                   <span className="text-3xl animate-bounce">🎥</span>
+                   <span className="text-[10px] uppercase font-bold">{statusMsg}</span>
+                 </div>
+               )
              })()}
 
             {/* Live indicator HUD */}
@@ -298,17 +390,22 @@ Instrucciones:
               <div className="flex flex-col gap-1">
                 <span className="text-gray-400 font-bold text-[9px] uppercase">Seleccionar Cámara:</span>
                 <select
-                  value={activeCamera}
+                  value={selectedRealCameraId || ''}
                   onChange={(e) => {
-                    setActiveCamera(e.target.value as any)
-                    setResultadoIA(null)
-                    setDetecciones([])
+                    setSelectedRealCameraId(e.target.value)
+                    setFrameData(null)
                   }}
-                  className="bg-[#1c1d22] text-white border border-gray-700 font-bold py-1 px-1.5 focus:outline-none text-[10px]"
+                  className="bg-[#1c1d22] text-white border border-gray-700 font-bold py-1 px-1.5 focus:outline-none text-[10px] w-full"
                 >
-                  <option value="CAM-01">CAM-01 (Entrada Frontis)</option>
-                  <option value="CAM-02">CAM-02 (Patio Lateral)</option>
-                  <option value="CAM-03">CAM-03 (Bodega Interna)</option>
+                  {cargandoIA ? (
+                    <option>Cargando cámaras...</option>
+                  ) : camarasReal.length > 0 ? (
+                    camarasReal.map((cam) => (
+                      <option key={cam.id} value={cam.id}>{cam.nombre.toUpperCase()}</option>
+                    ))
+                  ) : (
+                    <option>Sin cámaras vinculadas</option>
+                  )}
                 </select>
               </div>
 
