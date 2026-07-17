@@ -38,28 +38,114 @@ SUPABASE_URL = "https://onxwyrwmpjxtwlmjrosr.supabase.co"
 SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9ueHd5cndtcGp4dHdsbWpyb3NyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI4NTUxNDQsImV4cCI6MjA5ODQzMTE0NH0.8kJRf8hm3rHK8sygMcyBT0R83tyK8hIQCmnAQxannJs"
 
 # Detectar rutas dinámicas
-# Si existe el directorio de Scorpion en C:\, lo priorizamos (PC Scorpion).
-# De lo contrario, buscamos en el directorio local del proyecto.
-if os.path.exists(r'C:\SCORPION\BASES DE DATOS\EVENTOS'):
-    CARPETA_EVENTOS = r'C:\SCORPION\BASES DE DATOS\EVENTOS'
-    RUTA_COPIA_TEMP = r'C:\SCORPION\BASES DE DATOS\_EVENTOS_TEMP.MDB'
-    RUTA_CACHE      = r'C:\SCORPION\BASES DE DATOS\_sincronizador_cache.json'
+script_dir = os.path.dirname(os.path.abspath(__file__))
+if os.path.basename(script_dir).upper() == "SCORPION_DEPLOY":
+    root_dir = os.path.dirname(script_dir)
 else:
-    # Ruta relativa al directorio del script
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    if os.path.basename(base_dir).upper() == "SCORPION_DEPLOY":
-        root_dir = os.path.dirname(base_dir)
-    else:
-        root_dir = base_dir
-    
+    root_dir = script_dir
+
+# Lista ordenada de posibles directorios que contienen bases de datos de eventos .MDB
+candidatos_rutas = [
+    # Directorio relativo al script en desarrollo/producción
+    os.path.join(root_dir, 'BASES DE DATOS', 'EVENTOS'),
+    os.path.join(root_dir, 'EVENTOS'),
+    root_dir,
+    # Rutas estándar en PC Scorpion (unidad C:)
+    r'C:\SCORPION\BASES DE DATOS\EVENTOS',
+    r'C:\SCORPION\BASE DE DATOS\EVENTOS',
+    r'C:\SCORPION\BASES DE DATOS',
+    r'C:\SCORPION\BASE DE DATOS',
+    r'C:\SCORPION',
+    # Unidad E: (antigua, mantenida como fallback secundario)
+    r'E:\MONITOREO ONLINE\BASES DE DATOS\EVENTOS',
+]
+
+# Filtrar duplicados y normalizar
+rutas_unicas = []
+for p in candidatos_rutas:
+    p_norm = os.path.normpath(p)
+    if p_norm.lower() not in [r.lower() for r in rutas_unicas]:
+        rutas_unicas.append(p_norm)
+
+# Buscar el primer directorio que exista y contenga archivos .MDB reales
+CARPETA_EVENTOS = None
+for ruta in rutas_unicas:
+    if os.path.exists(ruta):
+        try:
+            # Comprobar si hay algún archivo .MDB (ignorando temporales)
+            if any(f.upper().endswith('.MDB') and not f.startswith('_') for f in os.listdir(ruta)):
+                CARPETA_EVENTOS = ruta
+                break
+        except Exception:
+            pass
+
+# Si no encontramos ningún directorio con archivos .MDB, tomamos el primero que exista
+if not CARPETA_EVENTOS:
+    for ruta in rutas_unicas:
+        if os.path.exists(ruta):
+            CARPETA_EVENTOS = ruta
+            break
+
+# Si nada de lo anterior existe, usar ruta por defecto en el root_dir
+if not CARPETA_EVENTOS:
     CARPETA_EVENTOS = os.path.join(root_dir, 'BASES DE DATOS', 'EVENTOS')
-    RUTA_COPIA_TEMP = os.path.join(root_dir, 'BASES DE DATOS', '_EVENTOS_TEMP.MDB')
-    RUTA_CACHE      = os.path.join(root_dir, 'BASES DE DATOS', '_sincronizador_cache.json')
+
+# Los archivos de control (temp y cache) se guardan siempre en la carpeta del script (seguro para escritura)
+RUTA_COPIA_TEMP = os.path.join(script_dir, '_EVENTOS_TEMP.MDB')
+RUTA_CACHE      = os.path.join(script_dir, '_sincronizador_cache.json')
 
 DB_PASSWORD  = 'Administ'
 INTERVALO_SEG = 3
 
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+def check_for_updates():
+    """Busca actualizaciones en GitHub y se auto-actualiza si hay cambios."""
+    import urllib.request
+    
+    update_url = "https://raw.githubusercontent.com/gamasecuritycl/monitoreo-online/master/sincronizador.py"
+    print("--- Comprobando actualizaciones desde GitHub ---")
+    try:
+        req = urllib.request.Request(
+            update_url, 
+            headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
+        )
+        with urllib.request.urlopen(req, timeout=10) as response:
+            new_code = response.read().decode('utf-8')
+            
+        # Validar que el código descargado sea un script de Python válido y compile correctamente
+        if "import pyodbc" in new_code and "SUPABASE_URL" in new_code:
+            try:
+                compile(new_code, "<string>", "exec")
+            except SyntaxError as se:
+                print(f"[UPDATE] Código descargado contiene errores de sintaxis: {se}")
+                return
+                
+            current_script = os.path.abspath(__file__)
+            with open(current_script, "r", encoding="utf-8") as f:
+                current_code = f.read()
+                
+            if new_code.strip() != current_code.strip():
+                print("[UPDATE] ¡Nueva versión detectada! Actualizando...")
+                # Escribir el nuevo código
+                with open(current_script, "w", encoding="utf-8") as f:
+                    f.write(new_code)
+                print("[UPDATE] Código actualizado con éxito. Reiniciando proceso...")
+                
+                # Cerrar handle de bloqueo
+                try:
+                    lock_handle.close()
+                except Exception:
+                    pass
+                
+                # Ejecutar la nueva versión reemplazando el proceso actual
+                os.execv(sys.executable, [sys.executable] + sys.argv)
+            else:
+                print("[UPDATE] El sincronizador está en la versión más reciente.")
+        else:
+            print("[UPDATE] Código descargado inválido (no pasó la validación de firmas).")
+    except Exception as e:
+        print(f"[UPDATE] Error al comprobar actualizaciones: {e}")
 
 def get_chile_offset() -> str:
     """Retorna el offset UTC de Chile (-04:00 invierno / -03:00 verano)."""
@@ -91,7 +177,8 @@ def save_cache(cache):
 
 def get_ultimo_mdb():
     try:
-        archivos = [f for f in os.listdir(CARPETA_EVENTOS) if f.upper().endswith('.MDB')]
+        # Filtrar archivos .MDB que no empiecen con guion bajo (_) para evitar leer el archivo temporal
+        archivos = [f for f in os.listdir(CARPETA_EVENTOS) if f.upper().endswith('.MDB') and not f.startswith('_')]
     except Exception as e:
         print(f"[ERROR] No se puede leer EVENTOS: {e}")
         return None
@@ -130,35 +217,63 @@ def sincronizar(cache):
             print(f"  [DEBUG] Más reciente: Dia={str(rows[0][0]).strip()} | Hora={str(rows[0][1]).strip()}")
             print(f"  [DEBUG] Más antiguo: Dia={str(rows[-1][0]).strip()} | Hora={str(rows[-1][1]).strip()}")
 
+        # Mapear índices de columnas de forma dinámica y robusta
+        columns = [col[0].upper() for col in cursor.description]
+        
+        def get_val(r, col_names, default_idx):
+            for name in col_names:
+                if name in columns:
+                    idx = columns.index(name)
+                    return str(r[idx]).strip() if r[idx] is not None else ""
+            if default_idx < len(r):
+                return str(r[default_idx]).strip() if r[default_idx] is not None else ""
+            return ""
+
         rows.reverse()
         nuevos = 0
         cache_modificada = False
 
         for row in rows:
-            dia     = str(row[0]).strip()
-            hora    = str(row[1]).strip()
-            cuenta  = str(row[2]).strip()
-            nombre  = str(row[3]).strip()
-            evento  = str(row[4]).strip()
-            zona    = str(row[6]).strip()
-            usuario = str(row[7]).strip()
+            dia     = get_val(row, ['DIA'], 0)
+            hora    = get_val(row, ['HORA'], 1)
+            cuenta  = get_val(row, ['CUENTA'], 2)
+            nombre  = get_val(row, ['NOMBRE', 'ABONADO', 'NOMBRE_ABONADO'], 3)
+            evento  = get_val(row, ['EVENTO'], 4)
+            zona    = get_val(row, ['ZONA'], 6)
+            usuario = get_val(row, ['USUARIO'], 7)
 
             event_key = f"{dia}_{hora}_{cuenta}_{evento}_{zona}_{usuario}"
             if event_key in cache:
                 continue
 
-            # Construir timestamp con offset Chile explícito
-            # El MDB puede guardar DD-MM-YYYY o YYYY-MM-DD
-            partes = dia.split('-')
-            if len(partes) == 3:
-                if len(partes[0]) == 4:
-                    # Formato YYYY-MM-DD
-                    fecha_hora = f'{partes[0]}-{partes[1]}-{partes[2]}T{hora}{chile_tz}'
-                else:
-                    # Formato DD-MM-YYYY
-                    fecha_hora = f'{partes[2]}-{partes[1]}-{partes[0]}T{hora}{chile_tz}'
+            # Sanitizar componentes de hora (ej: "0:8:26" -> "00:08:26")
+            partes_hora = hora.split(':')
+            if len(partes_hora) == 3:
+                hora_clean = f"{partes_hora[0].zfill(2)}:{partes_hora[1].zfill(2)}:{partes_hora[2].zfill(2)}"
             else:
-                fecha_hora = hora
+                hora_clean = hora
+
+            # Construir timestamp con offset Chile explícito
+            # Soportar separadores de fecha tanto '-' como '/'
+            dia_clean = dia.replace('/', '-')
+            partes_dia = dia_clean.split('-')
+            
+            fecha_hora = None
+            if len(partes_dia) == 3:
+                if len(partes_dia[0]) == 4:
+                    # Formato YYYY-MM-DD
+                    year, month, day = partes_dia[0], partes_dia[1], partes_dia[2]
+                else:
+                    # Formato DD-MM-YYYY (o MM-DD-YYYY, asumimos DD-MM-YYYY por Chile)
+                    day, month, year = partes_dia[0], partes_dia[1], partes_dia[2]
+                
+                # Formatear a estándar ISO con ceros a la izquierda
+                fecha_hora = f"{year}-{month.zfill(2)}-{day.zfill(2)}T{hora_clean}{chile_tz}"
+            
+            # Si no se pudo parsear, usar fecha actual para evitar errores en Supabase
+            if not fecha_hora:
+                hoy_iso = datetime.now().strftime('%Y-%m-%d')
+                fecha_hora = f"{hoy_iso}T{hora_clean}{chile_tz}"
 
             data = {
                 "fecha_hora":     fecha_hora,
@@ -204,11 +319,22 @@ def sincronizar(cache):
 
 if __name__ == "__main__":
     print("=" * 55)
-    print("  GAMA COMMAND CENTER - Sincronizador v2.2")
+    print("  GAMA COMMAND CENTER - Sincronizador v3.0")
     print(f"  Carpeta: {CARPETA_EVENTOS}")
     print(f"  Timezone: Chile ({get_chile_offset()})")
     print("=" * 55)
+    
+    # Comprobación inicial de actualizaciones al arrancar
+    check_for_updates()
+    last_update_check = time.time()
+    
     cache = load_cache()
     while True:
         cache = sincronizar(cache)
+        
+        # Comprobar actualizaciones cada 30 minutos (1800 segundos)
+        if time.time() - last_update_check > 1800:
+            check_for_updates()
+            last_update_check = time.time()
+            
         time.sleep(INTERVALO_SEG)
