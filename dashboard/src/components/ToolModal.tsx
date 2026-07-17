@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { supabaseIA } from '@/lib/supabase'
 
 interface Operator {
   codigo: string
@@ -34,6 +35,61 @@ export default function ToolModal({ modalId, onClose, operadores = [], onUpdateO
   const [contactIdQuery, setContactIdQuery] = useState('')
   const [searchAccount, setSearchAccount] = useState('')
   const [searchResults, setSearchResults] = useState<any[]>([])
+
+  // Estados para Asignación de Abonados de Video-Verificación IA
+  const [clientesReal, setClientesReal] = useState<any[]>([])
+  const [cargandoReal, setCargandoReal] = useState(false)
+  const [codigosAbonado, setCodigosAbonado] = useState<Record<string, string>>({})
+  const [editandoId, setEditandoId] = useState<string | null>(null)
+
+  // Cargar clientes de IA al abrir el panel de abonados
+  useEffect(() => {
+    if (modalId === 'list-details') {
+      const fetchClientes = async () => {
+        try {
+          setCargandoReal(true)
+          const { data } = await supabaseIA
+            .from('clientes')
+            .select('id, nombre, empresa, email')
+            .order('nombre', { ascending: true })
+          if (data) {
+            setClientesReal(data)
+            const dict: Record<string, string> = {}
+            data.forEach(c => {
+              dict[c.id] = c.empresa || ''
+            })
+            setCodigosAbonado(dict)
+          }
+        } catch (err) {
+          console.error('Error cargando abonados para asignación:', err)
+        } finally {
+          setCargandoReal(false)
+        }
+      }
+      fetchClientes()
+    }
+  }, [modalId])
+
+  // Guardar asignación de abonado en Supabase IA
+  const guardarCodigo = async (clienteId: string) => {
+    const val = codigosAbonado[clienteId] || ''
+    try {
+      const { error } = await supabaseIA
+        .from('clientes')
+        .update({ empresa: val.trim().toUpperCase() })
+        .eq('id', clienteId)
+      if (!error) {
+        alert('Código de abonado asociado correctamente.')
+        setEditandoId(null)
+        // Refrescar lista local
+        setClientesReal(prev => prev.map(c => c.id === clienteId ? { ...c, empresa: val.trim().toUpperCase() } : c))
+      } else {
+        alert('Error al asociar: ' + error.message)
+      }
+    } catch (err: any) {
+      alert('Error de conexión: ' + err.message)
+    }
+  }
 
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
@@ -458,29 +514,61 @@ export default function ToolModal({ modalId, onClose, operadores = [], onUpdateO
       case 'list-details':
         return (
           <div className="space-y-4">
-            <p className="text-xs text-slate-400">Buscador y directorio rápido de Abonados.</p>
-            <div className="space-y-2 font-mono text-xs">
-              <div className="p-2 bg-[#0a0e1a] border border-[#1a2340] rounded">
-                <div className="flex justify-between font-bold">
-                  <span className="text-slate-200">Abonado #7015</span>
-                  <span className="text-slate-500">GAMA SEGURIDAD</span>
-                </div>
-                <div className="text-[10px] text-slate-500 mt-1">Ubicación: Bodega Gama (Central) | Zonas: 4</div>
-              </div>
-              <div className="p-2 bg-[#0a0e1a] border border-[#1a2340] rounded">
-                <div className="flex justify-between font-bold">
-                  <span className="text-slate-200">Abonado #7016</span>
-                  <span className="text-slate-500">FARMACIA CRUZ VERDE</span>
-                </div>
-                <div className="text-[10px] text-slate-500 mt-1">Ubicación: Av. Providencia 1420 | Zonas: 8</div>
-              </div>
-              <div className="p-2 bg-[#0a0e1a] border border-[#1a2340] rounded">
-                <div className="flex justify-between font-bold">
-                  <span className="text-slate-200">Abonado #7017</span>
-                  <span className="text-slate-500">SUPERMERCADO UNIMARC</span>
-                </div>
-                <div className="text-[10px] text-slate-500 mt-1">Ubicación: Gran Avenida 4500 | Zonas: 12</div>
-              </div>
+            <p className="text-xs text-slate-400">Asigne y cruce abonados de alarmas con clientes de analítica IA.</p>
+            
+            <div className="space-y-2 max-h-[250px] overflow-y-auto pr-1">
+              {cargandoReal ? (
+                <div className="text-center py-8 text-xs text-yellow-500 animate-pulse font-mono">[CARGANDO CLIENTES IA...]</div>
+              ) : clientesReal.length > 0 ? (
+                clientesReal.map((c) => (
+                  <div key={c.id} className="p-2 bg-[#0a0e1a] border border-[#1a2340] rounded flex flex-col gap-1.5 text-xs font-mono">
+                    <div className="flex justify-between items-center border-b border-[#131b30] pb-1">
+                      <span className="font-bold text-slate-200 uppercase">👤 {c.nombre}</span>
+                      <span className="text-[9px] text-slate-500">{c.email || 'Sin email'}</span>
+                    </div>
+                    
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] text-slate-400">ABONADO ASOCIADO:</span>
+                      {editandoId === c.id ? (
+                        <div className="flex gap-1 items-center">
+                          <input
+                            type="text"
+                            value={codigosAbonado[c.id] || ''}
+                            onChange={(e) => setCodigosAbonado({ ...codigosAbonado, [c.id]: e.target.value })}
+                            className="bg-black border border-blue-900 rounded px-1.5 py-0.5 text-[10px] text-white focus:outline-none w-20 text-center font-bold uppercase font-mono"
+                            placeholder="EJ. C701"
+                            maxLength={10}
+                          />
+                          <button
+                            onClick={() => guardarCodigo(c.id)}
+                            className="bg-green-800 hover:bg-green-700 text-white font-bold px-2 py-0.5 rounded text-[9px] cursor-pointer"
+                          >
+                            ✓
+                          </button>
+                          <button
+                            onClick={() => setEditandoId(null)}
+                            className="bg-gray-800 hover:bg-gray-700 text-white font-bold px-2 py-0.5 rounded text-[9px] cursor-pointer"
+                          >
+                            X
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex gap-2 items-center">
+                          <span className="font-bold text-yellow-500">{c.empresa || '[SIN CÓDIGO]'}</span>
+                          <button
+                            onClick={() => setEditandoId(c.id)}
+                            className="text-blue-400 hover:text-blue-300 text-[10px] font-bold cursor-pointer"
+                          >
+                            ✏️ asociar
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-6 text-xs text-slate-500 italic">[No hay clientes registrados en la BD de IA]</div>
+              )}
             </div>
           </div>
         )
