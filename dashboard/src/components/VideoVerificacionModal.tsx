@@ -324,10 +324,18 @@ Instrucciones:
                }
                if (camarasReal.length === 0) {
                  return (
-                   <div className="text-center text-slate-500 text-xs font-mono p-4">
-                     <span className="text-3xl block mb-2">🎦</span>
-                     [SIN CÁMARAS DE ANALÍTICA IA VINCULADAS PARA ESTA CUENTA]
-                     <p className="text-[10px] text-slate-600 mt-2">Vincule cámaras en la base de datos de IA con el código de abonado '{cuentaActiva}'</p>
+                   <div className="relative w-full h-full flex items-center justify-center">
+                     <img
+                       src={activeCamera === 'CAM-01' ? '/cctv_intruder.png' : '/cctv_false_alarm.png'}
+                       alt="CCTV Demo View"
+                       className={`w-full h-full object-cover select-none ${
+                         activeCamera === 'CAM-03' ? 'grayscale hue-rotate-90 brightness-75' : 
+                         activeCamera === 'CAM-02' ? 'hue-rotate-180 brightness-90' : 'brightness-90'
+                       }`}
+                     />
+                     <div className="absolute bottom-2 left-2 bg-yellow-600/90 text-white text-[8px] px-1.5 py-0.5 rounded font-black font-mono tracking-wider z-20">
+                       ⚠️ DEMO: SIN CÁMARAS IA VINCULADAS (VINCÚLELAS EN UTILIDADES)
+                     </div>
                    </div>
                  )
                }
@@ -443,24 +451,36 @@ Instrucciones:
                {viewMode === 'live' ? (
                  <div className="flex flex-col gap-1">
                    <span className="text-gray-400 font-bold text-[9px] uppercase">Seleccionar Cámara:</span>
-                   <select
-                     value={selectedRealCameraId || ''}
-                     onChange={(e) => {
-                       setSelectedRealCameraId(e.target.value)
-                       setFrameData(null)
-                     }}
-                     className="bg-[#1c1d22] text-white border border-gray-700 font-bold py-1 px-1.5 focus:outline-none text-[10px] w-full"
-                   >
-                     {cargandoIA ? (
-                       <option>Cargando cámaras...</option>
-                     ) : camarasReal.length > 0 ? (
-                       camarasReal.map((cam) => (
-                         <option key={cam.id} value={cam.id}>{cam.nombre.toUpperCase()}</option>
-                       ))
-                     ) : (
-                       <option>Sin cámaras vinculadas</option>
-                     )}
-                   </select>
+                    {cargandoIA ? (
+                      <div className="text-[10px] text-gray-500 italic">Cargando cámaras...</div>
+                    ) : camarasReal.length > 0 ? (
+                      <select
+                        value={selectedRealCameraId || ''}
+                        onChange={(e) => {
+                          setSelectedRealCameraId(e.target.value)
+                          setFrameData(null)
+                        }}
+                        className="bg-[#1c1d22] text-white border border-gray-700 font-bold py-1 px-1.5 focus:outline-none text-[10px] w-full"
+                      >
+                        {camarasReal.map((cam) => (
+                          <option key={cam.id} value={cam.id}>{cam.nombre.toUpperCase()}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      <select
+                        value={activeCamera}
+                        onChange={(e) => {
+                          setActiveCamera(e.target.value as any)
+                          setResultadoIA(null)
+                          setDetecciones([])
+                        }}
+                        className="bg-[#1c1d22] text-white border border-gray-700 font-bold py-1 px-1.5 focus:outline-none text-[10px] w-full"
+                      >
+                        <option value="CAM-01">CAM-01 (Frontis Demo)</option>
+                        <option value="CAM-02">CAM-02 (Lateral Demo)</option>
+                        <option value="CAM-03">CAM-03 (Bodega Demo)</option>
+                      </select>
+                    )}
                  </div>
                ) : (
                  <div className="flex flex-col gap-1.5">
