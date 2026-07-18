@@ -144,10 +144,10 @@ function instalarMediaMTX(cameraIp) {
 
   const configContent = 
 `logLevel: warn
-rtspAddress: :8554
-rtmpAddress: :1935
-hlsAddress: :8888
-webrtcAddress: :8889
+rtspAddress: 0.0.0.0:8554
+rtmpAddress: 0.0.0.0:1935
+hlsAddress: 0.0.0.0:8888
+webrtcAddress: 0.0.0.0:8889
 
 paths:
   camgama:
