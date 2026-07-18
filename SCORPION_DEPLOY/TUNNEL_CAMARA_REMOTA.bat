@@ -1,54 +1,41 @@
 @echo off
-chcp 65001 >nul
-title GAMA SEGURIDAD — Tunnel Remoto de Camara (Cloudflare)
+title GAMA SEGURIDAD - Tunnel Remoto de Camara
 
+echo ====================================================
+echo GAMA SEGURIDAD - Acceso Remoto via Cloudflare Tunnel
+echo Sin configurar puertos en el router.
+echo ====================================================
 echo.
-echo ╔══════════════════════════════════════════════════════════╗
-echo ║   GAMA SEGURIDAD - Acceso Remoto via Cloudflare Tunnel   ║
-echo ║   Sin port forwarding. Sin IP publica. Sin router.       ║
-echo ╚══════════════════════════════════════════════════════════╝
-echo.
-echo REQUISITO: Primero ejecutar INSTALAR_CAMARA_REMOTA.bat
+echo Requisito: Primero correr INSTALAR_CAMARA_REMOTA.bat
 echo.
 
 set INSTALL_DIR=C:\GAMA_CAMARA
 set STREAM_ID=camgama
-set CF_VERSION=2024.8.3
 
-:: ────────────────────────────────────────────────────
-echo [1/3] Descargando Cloudflare Tunnel (cloudflared)...
-
+echo [1/3] Verificando cloudflared...
 if exist "%INSTALL_DIR%\cloudflared.exe" (
-    echo      OK cloudflared ya instalado.
+    echo cloudflared ya descargado.
 ) else (
-    set CF_URL=https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe
-    powershell -Command "Invoke-WebRequest -Uri 'https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe' -OutFile '%INSTALL_DIR%\cloudflared.exe' -UseBasicParsing"
+    echo Descargando cloudflared...
+    powershell -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri 'https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe' -OutFile '%INSTALL_DIR%\cloudflared.exe' -UseBasicParsing"
     if errorlevel 1 (
-        echo      ERROR descargando cloudflared.
-        pause & exit /b 1
+        echo ERROR: No se pudo descargar cloudflared.
+        pause
+        exit /b 1
     )
-    echo      OK cloudflared descargado.
 )
 
-:: ────────────────────────────────────────────────────
-echo [2/3] Iniciando tunnel temporal hacia el stream local...
+echo [2/3] Iniciando tunnel temporal...
+echo ----------------------------------------------------
+echo Busque una linea que diga:
 echo.
-echo El tunnel se iniciara en la siguiente ventana.
-echo Cuando aparezca una URL https://xxxx.trycloudflare.com
-echo COPIE ESA URL y configurela en el Dashboard como CAM-01
+echo   https://xxxx-xxxx-xxxx.trycloudflare.com
 echo.
-echo La URL sera del tipo:
-echo   https://xxxx.trycloudflare.com/%STREAM_ID%
-echo.
-echo Para un tunnel PERMANENTE (URL fija), necesita cuenta
-echo gratuita en https://cloudflare.com y correr:
-echo   cloudflared tunnel login
+echo Copie esa URL completa. Su camara estara en:
+echo   https://xxxx-xxxx-xxxx.trycloudflare.com/%STREAM_ID%
+echo ----------------------------------------------------
 echo.
 
-:: ────────────────────────────────────────────────────
-echo [3/3] Lanzando tunnel...
-echo.
-echo === GUARDANDO URL DEL TUNNEL ===
-start "Cloudflare Tunnel" /wait "%INSTALL_DIR%\cloudflared.exe" tunnel --url http://localhost:8889 --logfile "%INSTALL_DIR%\tunnel.log"
-
+cd /d "%INSTALL_DIR%"
+cloudflared.exe tunnel --url http://localhost:8889
 pause

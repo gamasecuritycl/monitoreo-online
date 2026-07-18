@@ -350,6 +350,19 @@ Instrucciones:
                  return <div className="text-yellow-500 text-xs animate-pulse font-mono">[CARGANDO CONFIGURACIÓN DE CÁMARAS...]</div>
                }
                if (camarasReal.length === 0) {
+                 if (camarasActivas.cam01) {
+                   const embedUrl = camarasActivas.cam01.endsWith('/') ? camarasActivas.cam01 : `${camarasActivas.cam01}/`
+                   return (
+                     <div className="relative w-full h-full bg-black">
+                       <iframe
+                         src={embedUrl}
+                         className="w-full h-full border-0 absolute inset-0 z-10"
+                         allow="autoplay; encrypted-media; picture-in-picture"
+                         title="Cámara Local en Vivo"
+                       />
+                     </div>
+                   )
+                 }
                  return (
                    <div className="relative w-full h-full flex items-center justify-center">
                      <img
