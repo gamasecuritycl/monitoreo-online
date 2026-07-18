@@ -322,9 +322,23 @@ export default function ScorpionDashboard() {
         })
         setEventoSeleccionado(newEvent)
 
-        // Verificación de Notificaciones (Apertura o Cierre)
+        // ── Notificación push del navegador para alarmas críticas ──
         const eventoUpper = (newEvent.evento || '').toUpperCase()
         const cidInfo = lookupContactId(eventoUpper)
+        const esAlarmaCritica = eventoUpper.includes('ALARMA') || eventoUpper.includes('PÁNICO') || eventoUpper.includes('PANICO') || eventoUpper.includes('INCENDIO')
+        if (esAlarmaCritica && typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+          try {
+            const notif = new Notification('🚨 ALARMA CRÍTICA — GAMA SEGURIDAD', {
+              body: `Cuenta: ${newEvent.cuenta} | ${newEvent.nombre_abonado}\nEvento: ${newEvent.evento}\nHora: ${new Date(newEvent.fecha_hora).toLocaleTimeString('es-CL')}`,
+              icon: '/favicon.ico',
+              requireInteraction: true,
+              tag: `alarma-${newEvent.cuenta}`,
+            })
+            notif.onclick = () => { window.focus(); notif.close() }
+          } catch {}
+        }
+
+        // Verificación de Notificaciones (Apertura o Cierre)
         const isAperturaCierre = eventoUpper.includes('APERTURA') || eventoUpper.includes('CIERRE') || (cidInfo && cidInfo.categoria === 'APERTURA')
         
         if (isAperturaCierre) {
@@ -571,6 +585,16 @@ export default function ScorpionDashboard() {
     return () => clearInterval(timer)
   }, [])
 
+  // ── Ítem 3: Solicitar permiso de notificaciones push del navegador al iniciar sesión ──
+  useEffect(() => {
+    if (!sesionIniciada) return
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      if (Notification.permission === 'default') {
+        Notification.requestPermission()
+      }
+    }
+  }, [sesionIniciada])
+
   // Trigger de chequeo del sincronizador caído en la nube para enviar alertas de WhatsApp
   useEffect(() => {
     const triggerHeartbeatAlertCheck = async () => {
@@ -665,6 +689,79 @@ export default function ScorpionDashboard() {
           />
         </div>
       </header>
+
+      {/* ── BARRA DE KPIs EN TIEMPO REAL ── */}
+      {(() => {
+        const hoy = new Date().toDateString()
+        const eventosFiltrados = eventos.filter(e => {
+          const cuentasEsp = ['CLIENTES','CODIGOS','ZONAS','__SINCRONIZADOR__','CAMARAS','CONFIG_OPERADORES']
+          return !cuentasEsp.includes((e.cuenta || '').toUpperCase().trim())
+        })
+        const alarmasCriticas = eventosFiltrados.filter(e => {
+          const ev = (e.evento || '').toUpperCase()
+          return ev.includes('ALARMA') || ev.includes('PÁNICO') || ev.includes('PANICO') || ev.includes('INCENDIO')
+        })
+        const aperturasHoy = eventosFiltrados.filter(e => {
+          const ev = (e.evento || '').toUpperCase()
+          return (ev.includes('APERTURA') || ev.includes('CIERRE')) && new Date(e.fecha_hora).toDateString() === hoy
+        })
+        // Abonado con más eventos
+        const conteo: Record<string, number> = {}
+        eventosFiltrados.forEach(e => {
+          const k = e.nombre_abonado || e.cuenta
+          conteo[k] = (conteo[k] || 0) + 1
+        })
+        const masActivo = Object.entries(conteo).sort((a, b) => b[1] - a[1])[0]
+        const ratio = eventosFiltrados.length > 0 ? Math.round((alarmasCriticas.length / eventosFiltrados.length) * 100) : 0
+
+        return (
+          <div className="hidden md:flex items-center gap-0 border-b border-[#1e293b] bg-[#0a0f1e] shrink-0 overflow-x-auto">
+            {[
+              {
+                icon: '🚨',
+                label: 'ALARMAS CRÍTICAS',
+                value: alarmasCriticas.length,
+                color: alarmasCriticas.length > 0 ? 'text-red-400' : 'text-slate-500',
+                bg: alarmasCriticas.length > 0 ? 'bg-red-950/30' : '',
+              },
+              {
+                icon: '🔒',
+                label: 'APERT./CIERRES HOY',
+                value: aperturasHoy.length,
+                color: 'text-blue-400',
+                bg: '',
+              },
+              {
+                icon: '📊',
+                label: 'BUFFER TOTAL',
+                value: eventosFiltrados.length,
+                color: 'text-slate-300',
+                bg: '',
+              },
+              {
+                icon: '⚡',
+                label: 'CRITICIDAD',
+                value: `${ratio}%`,
+                color: ratio > 20 ? 'text-orange-400' : 'text-green-400',
+                bg: ratio > 20 ? 'bg-orange-950/20' : '',
+              },
+              {
+                icon: '👁',
+                label: 'MÁS ACTIVO',
+                value: masActivo ? `${masActivo[0].slice(0, 16)} (${masActivo[1]})` : '—',
+                color: 'text-yellow-400',
+                bg: '',
+              },
+            ].map((kpi, i) => (
+              <div key={i} className={`flex items-center gap-2 px-4 py-1.5 border-r border-[#1e293b] font-mono text-[10px] whitespace-nowrap ${kpi.bg}`}>
+                <span>{kpi.icon}</span>
+                <span className="text-slate-600 tracking-wider">{kpi.label}:</span>
+                <span className={`font-black ${kpi.color}`}>{kpi.value}</span>
+              </div>
+            ))}
+          </div>
+        )
+      })()}
 
       {/* ── BARRA DE MENÚ ESTILO SCORPION (solo PC, oculto en responsive) ── */}
       <nav className="hidden md:flex items-center bg-[#8B0000] border-b border-[#600000] shrink-0 select-none" style={{ fontFamily: "'Arial', sans-serif" }}>

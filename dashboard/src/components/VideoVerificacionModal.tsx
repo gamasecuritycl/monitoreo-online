@@ -52,6 +52,14 @@ export default function VideoVerificacionModal({ onClose, evento, esCierre, clie
   const [selectedClipUrl, setSelectedClipUrl] = useState<string | null>(null)
   const [cargandoAlertas, setCargandoAlertas] = useState(false)
 
+  // ── Mejoras v2: Tiempo en escena + historial IA + despacho ──
+  const [tiempoEnEscena, setTiempoEnEscena] = useState(0)
+  const [historialIA, setHistorialIA] = useState<Array<{ cam: string; threat: boolean; confidence: number; hora: string }>>([]) 
+  const [despachando, setDespachando] = useState(false)
+  const [despachado, setDespachado] = useState(false)
+  const [guardandoBitacora, setGuardandoBitacora] = useState(false)
+  const [bitacoraGuardada, setBitacoraGuardada] = useState(false)
+
   // 1. Obtener la lista de cámaras reales desde la BD de analítica
   useEffect(() => {
     let isMounted = true
@@ -119,6 +127,18 @@ export default function VideoVerificacionModal({ onClose, evento, esCierre, clie
     fetchCams()
     return () => { isMounted = false }
   }, [cuentaActiva, clientName])
+
+  // Contador de tiempo en escena (segundos desde que se abrió el modal)
+  useEffect(() => {
+    const timer = setInterval(() => setTiempoEnEscena(s => s + 1), 1000)
+    return () => clearInterval(timer)
+  }, [])
+
+  const formatTiempoEscena = (s: number) => {
+    const m = Math.floor(s / 60).toString().padStart(2, '0')
+    const sec = (s % 60).toString().padStart(2, '0')
+    return `${m}:${sec}`
+  }
 
   // 2. Control del ciclo de vida del WebSocket para streaming
   useEffect(() => {
@@ -211,11 +231,13 @@ Instrucciones:
       if (data.ok && data.texto) {
         // La amenaza depende del estado de Cierre
         const isThreat = activeCamera === 'CAM-01' && esCierre
-        setResultadoIA({
+        const nuevoRes = {
           threat: isThreat,
           confidence: activeCamera === 'CAM-01' ? 96.4 : 91.8,
           text: data.texto
-        })
+        }
+        setResultadoIA(nuevoRes)
+        setHistorialIA(prev => [{ cam: activeCamera, threat: isThreat, confidence: nuevoRes.confidence, hora: new Date().toLocaleTimeString('es-CL') }, ...prev].slice(0, 5))
 
         // Supervision Overlays
         if (activeCamera === 'CAM-01') {
@@ -244,11 +266,13 @@ Instrucciones:
         ? `[FALLBACK IA - SCORPION DETECTOR]\nVEREDICTO: MOVIMIENTO NORMAL DETECTADO (92.5% confianza)\nDETALLE: Sistema en estado de APERTURA (desarmado). Se detecta persona transitando en horario laboral. Sin novedad de riesgo.`
         : `[FALLBACK IA - SCORPION DETECTOR]\nVEREDICTO: FALSA ALARMA / ACTIVIDAD MENOR (89.5% confianza)\nDETALLE: Sistema en estado de ${esCierre ? 'CIERRE' : 'APERTURA'}. Gatillado por perturbación menor (${activeCamera === 'CAM-02' ? 'viento en follaje' : 'felino pequeño'}).`;
       
-      setResultadoIA({
+      const fallbackRes = {
         threat: isThreat,
         confidence: isThreat ? 94.2 : 89.5,
         text: fallbackReport
-      })
+      }
+      setResultadoIA(fallbackRes)
+      setHistorialIA(prev => [{ cam: activeCamera, threat: isThreat, confidence: fallbackRes.confidence, hora: new Date().toLocaleTimeString('es-CL') }, ...prev].slice(0, 5))
 
       if (activeCamera === 'CAM-01') {
         setDetecciones([
@@ -276,7 +300,10 @@ Instrucciones:
         {/* Title Bar */}
         <div className="bg-[#8B0000] text-white px-2 py-1 flex justify-between items-center shrink-0">
           <div className="font-bold text-xs tracking-wide">
-            🎥 SCORPION - Módulo de Verificación de Video en Vivo - Cuenta {cuentaActiva}
+            🎥 SCORPION - Verificación de Video · CTA: {cuentaActiva}
+            <span className="ml-3 font-mono text-yellow-300 text-[9px] tracking-widest bg-black/30 px-1.5 py-0.5 rounded">
+              ⏱ T+{formatTiempoEscena(tiempoEnEscena)}
+            </span>
           </div>
           <button 
             onClick={onClose} 
@@ -581,14 +608,113 @@ Instrucciones:
 
             </div>
 
+            {/* Historial de análisis IA en la sesión */}
+            {historialIA.length > 0 && (
+              <div className="mt-2 border border-gray-800 bg-[#08090c] rounded p-1.5">
+                <div className="text-[8px] font-bold text-slate-500 uppercase tracking-wider mb-1">📋 HISTORIAL SESIÓN</div>
+                <div className="space-y-0.5">
+                  {historialIA.map((h, i) => (
+                    <div key={i} className={`flex items-center justify-between text-[8px] font-mono px-1 py-0.5 rounded ${
+                      h.threat ? 'bg-red-950/40 text-red-400' : 'bg-green-950/40 text-green-400'
+                    }`}>
+                      <span>{h.cam}</span>
+                      <span>{h.threat ? '🔴 AMENAZA' : '🟢 SEGURO'}</span>
+                      <span className="text-slate-500">{h.hora}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Bottom Actions */}
             {resultadoIA && (
               <div className="space-y-1.5 mt-2">
                 <button
-                  onClick={() => alert("Reporte de IA y Supervision adjuntado a la bitácora.")}
-                  className="w-full bg-[#1e293b] hover:bg-slate-700 text-slate-200 border border-slate-600 py-1 rounded-xs cursor-pointer text-[8px]"
+                  disabled={guardandoBitacora || bitacoraGuardada}
+                  onClick={async () => {
+                    if (bitacoraGuardada) return
+                    setGuardandoBitacora(true)
+                    try {
+                      const BITACORA_API = 'https://bitacora.gamasecurity.cl/api-bitacora.php'
+                      const res = await fetch(`${BITACORA_API}?action=abonados&q=${encodeURIComponent(cuentaActiva)}`)
+                      const abonados = await res.json()
+                      if (abonados.length > 0) {
+                        await fetch(`${BITACORA_API}?action=crear`, {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            id_abonado: abonados[0].id,
+                            comentario: `🤖 ANÁLISIS IA (T+${formatTiempoEscena(tiempoEnEscena)}) — ${resultadoIA.threat ? '🔴 AMENAZA DETECTADA' : '🟢 SIN AMENAZA'} — Confianza: ${resultadoIA.confidence}% — Cámara: ${activeCamera} — ${resultadoIA.text.slice(0, 200)}`,
+                            tipo_evento: resultadoIA.threat ? 1 : 3,
+                            id_responsable: 1,
+                          }),
+                        })
+                        setBitacoraGuardada(true)
+                      }
+                    } catch {
+                      alert('Error conectando con la bitácora. Inténtelo nuevamente.')
+                    } finally {
+                      setGuardandoBitacora(false)
+                    }
+                  }}
+                  className={`w-full border py-1 rounded-xs cursor-pointer text-[8px] font-bold transition-colors ${
+                    bitacoraGuardada
+                      ? 'bg-green-900 text-green-400 border-green-700 cursor-default'
+                      : guardandoBitacora
+                      ? 'bg-slate-800 text-slate-400 border-slate-700 cursor-wait animate-pulse'
+                      : 'bg-[#1e293b] hover:bg-slate-700 text-slate-200 border-slate-600'
+                  }`}
                 >
-                  📝 REGISTRAR EN BITÁCORA
+                  {bitacoraGuardada ? '✅ REGISTRADO EN BITÁCORA' : guardandoBitacora ? '⏳ REGISTRANDO...' : '📝 REGISTRAR EN BITÁCORA'}
+                </button>
+
+                <button
+                  disabled={despachando || despachado}
+                  onClick={async () => {
+                    if (despachado) return
+                    setDespachando(true)
+                    try {
+                      // 1. Registrar en bitácora
+                      const BITACORA_API = 'https://bitacora.gamasecurity.cl/api-bitacora.php'
+                      const res = await fetch(`${BITACORA_API}?action=abonados&q=${encodeURIComponent(cuentaActiva)}`)
+                      const abonados = await res.json()
+                      if (abonados.length > 0) {
+                        await fetch(`${BITACORA_API}?action=crear`, {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            id_abonado: abonados[0].id,
+                            comentario: `🚓 DESPACHO DE PATRULLA AUTORIZADO — T+${formatTiempoEscena(tiempoEnEscena)} — Cuenta: ${cuentaActiva} — ${clientName} — Motivo: verificación de video por IA`,
+                            tipo_evento: 1,
+                            id_responsable: 1,
+                          }),
+                        })
+                      }
+                      // 2. Enviar WhatsApp de confirmación
+                      await fetch('/api/whatsapp/send', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          cuenta: cuentaActiva,
+                          mensaje: `🚓 *DESPACHO DE PATRULLA*\n━━━━━━━━━━━━━━━━━━━━━\nCuenta: *${cuentaActiva}*\nAbonado: *${clientName}*\nEstado alarma: ${esCierre ? '🔒 ARMADO' : '🔓 DESARMADO'}\nAnálisis IA: ${resultadoIA?.threat ? '🔴 AMENAZA CONFIRMADA' : '⚠️ VERIFICACIÓN PREVENTIVA'}\nHora despacho: ${new Date().toLocaleTimeString('es-CL')}\nTiempo en escena: T+${formatTiempoEscena(tiempoEnEscena)}\n━━━━━━━━━━━━━━━━━━━━━\nUnidad despachada desde central GAMA SEGURIDAD.`,
+                        }),
+                      }).catch(() => {}) // no bloquear si WA falla
+                      setDespachado(true)
+                    } catch {
+                      alert('Error al despachar. Verifique conexión.')
+                    } finally {
+                      setDespachando(false)
+                    }
+                  }}
+                  className={`w-full border py-1.5 rounded-xs cursor-pointer text-[9px] font-black tracking-wider transition-all ${
+                    despachado
+                      ? 'bg-blue-900 text-blue-300 border-blue-700 cursor-default'
+                      : despachando
+                      ? 'bg-orange-900 text-orange-400 border-orange-700 animate-pulse cursor-wait'
+                      : 'bg-red-800 hover:bg-red-700 text-white border-red-600 shadow-[0_0_12px_rgba(239,68,68,0.4)]'
+                  }`}
+                >
+                  {despachado ? '✅ PATRULLA DESPACHADA' : despachando ? '📡 DESPACHANDO...' : '🚓 DESPACHAR PATRULLA'}
                 </button>
               </div>
             )}
