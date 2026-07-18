@@ -5,6 +5,7 @@ import { sendMessage } from '@/lib/whatsapp'
 interface Props {
   onClose: () => void
   clientesMap: Record<string, Record<string, string>>
+  cuentaInicial?: string
 }
 
 interface ContactoEscalamiento {
@@ -15,10 +16,15 @@ interface ContactoEscalamiento {
 
 type Tab = 'config' | 'alertas' | 'panico' | 'energia'
 
-export default function NotificacionesWhatsAppModal({ onClose, clientesMap }: Props) {
+export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuentaInicial }: Props) {
   const [activeTab, setActiveTab] = useState<Tab>('config')
   const [busqueda, setBusqueda] = useState('')
-  const [clienteSeleccionado, setClienteSeleccionado] = useState<{ cuenta: string; nombre: string } | null>(null)
+  const [clienteSeleccionado, setClienteSeleccionado] = useState<{ cuenta: string; nombre: string } | null>(() => {
+    if (cuentaInicial && clientesMap[cuentaInicial]) {
+      return { cuenta: cuentaInicial, nombre: clientesMap[cuentaInicial].nombre || '' }
+    }
+    return null
+  })
   const [telefono, setTelefono] = useState('')
   const [activo, setActivo] = useState(true)
   const [contactos, setContactos] = useState<ContactoEscalamiento[]>([])
@@ -69,7 +75,11 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap }: Pr
         setNotificarCierre(data.notificar_cierre === true)
         setNotificarVideo(data.notificar_video === true)
       } else {
-        setTelefono('')
+        const datosCliente = clientesMap[clienteSeleccionado.cuenta]
+        const telSugerido = datosCliente 
+          ? (datosCliente.t1 || datosCliente.telefono1 || datosCliente.telefono || datosCliente.t2 || '') 
+          : ''
+        setTelefono(telSugerido)
         setActivo(true)
         setContactos([])
         setSilenciaHasta('')

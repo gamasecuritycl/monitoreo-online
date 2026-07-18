@@ -654,10 +654,14 @@ export default function ScorpionDashboard() {
             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_#22c55e]" />
             <span className="text-green-400 font-bold text-[10px] tracking-wider">LIVE</span>
           </div>
-          <div className="flex items-center gap-1.5 ml-1">
+          <button
+            onClick={() => setModalActivo('notificaciones-whatsapp')}
+            className="flex items-center gap-1.5 ml-1 bg-transparent border-0 hover:opacity-85 cursor-pointer active:scale-95 transition-all text-left"
+            title="Abrir Notificaciones y Configuración de WhatsApp"
+          >
             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_#22c55e]" />
-            <span className="text-green-400 font-bold text-[10px] tracking-wider">WhatsApp</span>
-          </div>
+            <span className="text-green-400 font-bold text-[10px] tracking-wider hover:underline select-none">WhatsApp</span>
+          </button>
           <div className="flex items-center gap-1.5 ml-1" title={ultimoHeartbeat ? `Último heartbeat: ${ultimoHeartbeat}` : 'Sin heartbeat'}>
             <div className={`w-2 h-2 rounded-full animate-pulse shadow-[0_0_8px] ${
               sincronizadorVivo
@@ -779,6 +783,7 @@ export default function ScorpionDashboard() {
           { label: 'REPORTES',       id: 'menu-reportes', hasDropdown: true },
           { label: 'EVENTOS',        id: 'menu-eventos' },
           { label: 'AYUDA',          id: 'menu-ayuda' },
+          { label: '💬 WHATSAPP',    id: 'menu-whatsapp', isWhatsApp: true },
         ].filter(item => {
           if (item.id === 'menu-configuracion') return usuarioActivo.rol === 'Administrador'
           if (item.id === 'menu-operadores') return usuarioActivo.rol === 'Administrador' || usuarioActivo.rol === 'Supervisor'
@@ -836,12 +841,20 @@ export default function ScorpionDashboard() {
                   setModalActivo('network')
                   setMostrarMenuNotificaciones(false)
                   setMostrarMenuReportes(false)
+                } else if (item.id === 'menu-whatsapp') {
+                  setModalActivo('notificaciones-whatsapp')
+                  setMostrarMenuNotificaciones(false)
+                  setMostrarMenuReportes(false)
                 } else {
                   setMostrarMenuNotificaciones(false)
                   setMostrarMenuReportes(false)
                 }
               }}
-              className="px-4 py-1 text-[11px] font-bold text-white tracking-wider whitespace-nowrap border-r border-black/35 hover:bg-[#a00000] active:bg-[#700000] cursor-pointer transition-colors"
+              className={`px-4 py-1 text-[11px] font-bold text-white tracking-wider whitespace-nowrap border-r border-black/35 cursor-pointer transition-colors ${
+                item.isWhatsApp
+                  ? 'bg-[#25D366] hover:bg-[#20ba5a] active:bg-[#128C7E]'
+                  : 'hover:bg-[#a00000] active:bg-[#700000]'
+              }`}
               style={{ fontFamily: "'Arial', sans-serif", paddingLeft: '16px', paddingRight: '16px', paddingTop: '4px', paddingBottom: '4px' }}
             >
               {item.label}
@@ -1132,6 +1145,7 @@ export default function ScorpionDashboard() {
         <NotificacionesWhatsAppModal
           onClose={() => setModalActivo(null)}
           clientesMap={clientesMap}
+          cuentaInicial={activeEvent?.cuenta || undefined}
         />
       )}
 
