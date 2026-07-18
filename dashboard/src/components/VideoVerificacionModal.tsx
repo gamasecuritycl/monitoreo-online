@@ -59,6 +59,26 @@ export default function VideoVerificacionModal({ onClose, evento, esCierre, clie
   const [despachado, setDespachado] = useState(false)
   const [guardandoBitacora, setGuardandoBitacora] = useState(false)
   const [bitacoraGuardada, setBitacoraGuardada] = useState(false)
+  const [voceando, setVoceando] = useState(false)
+  const [alertaPTZ, setAlertaPTZ] = useState<string | null>(null)
+
+  // Función para simular/enviar comandos CGI de PTZ a la cámara
+  const enviarComandoPTZ = (direccion: string) => {
+    const dirMap: Record<string, string> = {
+      up: 'ARRIBA ▲',
+      down: 'ABAJO ▼',
+      left: 'IZQUIERDA ◀',
+      right: 'DERECHA ▶',
+      home: 'POSICIÓN INICIAL 🏠',
+      zoomIn: 'ZOOM + 🔍',
+      zoomOut: 'ZOOM - 🔍'
+    }
+    const msg = `Moviendo cámara Dahua: ${dirMap[direccion] || direccion}`
+    setAlertaPTZ(dirMap[direccion] || direccion)
+    console.log(msg)
+    // Autocerrar la alerta visual en 1.5 segundos
+    setTimeout(() => setAlertaPTZ(null), 1500)
+  }
 
   // 1. Obtener la lista de cámaras reales desde la BD de analítica
   useEffect(() => {
@@ -296,7 +316,7 @@ Instrucciones:
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 font-mono text-black">
-      <div className="bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 w-full max-w-6xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden">
+      <div className="bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 w-full max-w-6xl h-[550px] flex flex-col shadow-2xl overflow-hidden">
         
         {/* Title Bar */}
         <div className="bg-[#8B0000] text-white px-2 py-1 flex justify-between items-center shrink-0">
@@ -410,6 +430,14 @@ Instrucciones:
                )
              })()}
 
+             {/* Alerta de comando PTZ en pantalla */}
+             {alertaPTZ && (
+               <div className="absolute top-12 left-1/2 transform -translate-x-1/2 bg-blue-600/90 text-white font-bold font-mono text-[9px] px-3 py-1.5 rounded-sm border border-blue-400 shadow-lg tracking-wider z-30 animate-pulse uppercase flex items-center gap-1.5">
+                 <span className="animate-spin">⚙️</span>
+                 <span>PTZ: {alertaPTZ}</span>
+               </div>
+             )}
+
             {/* Live indicator HUD */}
             <div className="absolute top-2 left-2.5 flex items-center gap-1 bg-black/60 px-1 py-0.5 rounded text-[8px] tracking-wider z-20 text-white">
               <div className="w-1.5 h-1.5 bg-red-600 rounded-full animate-ping" />
@@ -490,40 +518,130 @@ Instrucciones:
                </div>
 
                {viewMode === 'live' ? (
-                 <div className="flex flex-col gap-1">
-                   <span className="text-gray-400 font-bold text-[9px] uppercase">Seleccionar Cámara:</span>
-                    {cargandoIA ? (
-                      <div className="text-[10px] text-gray-500 italic">Cargando cámaras...</div>
-                    ) : camarasReal.length > 0 ? (
-                      <select
-                        value={selectedRealCameraId || ''}
-                        onChange={(e) => {
-                          setSelectedRealCameraId(e.target.value)
-                          setFrameData(null)
-                        }}
-                        className="bg-[#1c1d22] text-white border border-gray-700 font-bold py-1 px-1.5 focus:outline-none text-[10px] w-full"
-                      >
-                        {camarasReal.map((cam) => (
-                          <option key={cam.id} value={cam.id}>{cam.nombre.toUpperCase()}</option>
-                        ))}
-                      </select>
-                    ) : (
-                      <select
-                        value={activeCamera}
-                        onChange={(e) => {
-                          setActiveCamera(e.target.value as any)
-                          setResultadoIA(null)
-                          setDetecciones([])
-                        }}
-                        className="bg-[#1c1d22] text-white border border-gray-700 font-bold py-1 px-1.5 focus:outline-none text-[10px] w-full"
-                      >
-                        <option value="CAM-01">CAM-01 (Frontis Demo)</option>
-                        <option value="CAM-02">CAM-02 (Lateral Demo)</option>
-                        <option value="CAM-03">CAM-03 (Bodega Demo)</option>
-                      </select>
-                    )}
-                 </div>
-               ) : (
+                 <>
+                   <div className="flex flex-col gap-1">
+                     <span className="text-gray-400 font-bold text-[9px] uppercase">Seleccionar Cámara:</span>
+                      {cargandoIA ? (
+                        <div className="text-[10px] text-gray-500 italic">Cargando cámaras...</div>
+                      ) : camarasReal.length > 0 ? (
+                        <select
+                          value={selectedRealCameraId || ''}
+                          onChange={(e) => {
+                            setSelectedRealCameraId(e.target.value)
+                            setFrameData(null)
+                          }}
+                          className="bg-[#1c1d22] text-white border border-gray-700 font-bold py-1 px-1.5 focus:outline-none text-[10px] w-full"
+                        >
+                          {camarasReal.map((cam) => (
+                            <option key={cam.id} value={cam.id}>{cam.nombre.toUpperCase()}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <select
+                          value={activeCamera}
+                          onChange={(e) => {
+                            setActiveCamera(e.target.value as any)
+                            setResultadoIA(null)
+                            setDetecciones([])
+                          }}
+                          className="bg-[#1c1d22] text-white border border-gray-700 font-bold py-1 px-1.5 focus:outline-none text-[10px] w-full"
+                        >
+                          <option value="CAM-01">CAM-01 (Frontis Demo)</option>
+                          <option value="CAM-02">CAM-02 (Lateral Demo)</option>
+                          <option value="CAM-03">CAM-03 (Bodega Demo)</option>
+                        </select>
+                      )}
+                    </div>
+                    
+                    <div className="border-t border-gray-800 pt-2 flex flex-col gap-1.5">
+                      <span className="text-gray-400 font-bold text-[9px] uppercase">Control PTZ:</span>
+                      
+                      {/* D-Pad de Control PTZ */}
+                      <div className="flex flex-col items-center bg-[#14151a] p-1.5 rounded border border-gray-800">
+                        <div className="grid grid-cols-3 gap-1 w-24 h-24">
+                          <div></div>
+                          <button
+                            onClick={() => enviarComandoPTZ('up')}
+                            className="bg-[#24252c] text-white border border-gray-700 hover:bg-[#34353d] active:bg-[#1a1b20] flex items-center justify-center rounded-sm font-bold text-[10px] cursor-pointer select-none"
+                            title="Mover Arriba"
+                          >
+                            ▲
+                          </button>
+                          <button
+                            onClick={() => enviarComandoPTZ('zoomIn')}
+                            className="bg-[#24252c] text-blue-400 border border-gray-700 hover:bg-[#34353d] active:bg-[#1a1b20] flex items-center justify-center rounded-sm font-bold text-[9px] cursor-pointer select-none"
+                            title="Zoom In"
+                          >
+                            ➕
+                          </button>
+
+                          <button
+                            onClick={() => enviarComandoPTZ('left')}
+                            className="bg-[#24252c] text-white border border-gray-700 hover:bg-[#34353d] active:bg-[#1a1b20] flex items-center justify-center rounded-sm font-bold text-[10px] cursor-pointer select-none"
+                            title="Mover Izquierda"
+                          >
+                            ◀
+                          </button>
+                          <button
+                            onClick={() => enviarComandoPTZ('home')}
+                            className="bg-[#3b82f6]/20 text-blue-400 border border-blue-700/50 hover:bg-[#3b82f6]/30 active:bg-blue-900/40 flex items-center justify-center rounded-sm font-bold text-[9px] cursor-pointer select-none"
+                            title="Posición de Inicio (Home)"
+                          >
+                            🏠
+                          </button>
+                          <button
+                            onClick={() => enviarComandoPTZ('right')}
+                            className="bg-[#24252c] text-white border border-gray-700 hover:bg-[#34353d] active:bg-[#1a1b20] flex items-center justify-center rounded-sm font-bold text-[10px] cursor-pointer select-none"
+                            title="Mover Derecha"
+                          >
+                            ▶
+                          </button>
+
+                          <div></div>
+                          <button
+                            onClick={() => enviarComandoPTZ('down')}
+                            className="bg-[#24252c] text-white border border-gray-700 hover:bg-[#34353d] active:bg-[#1a1b20] flex items-center justify-center rounded-sm font-bold text-[10px] cursor-pointer select-none"
+                            title="Mover Abajo"
+                          >
+                            ▼
+                          </button>
+                          <button
+                            onClick={() => enviarComandoPTZ('zoomOut')}
+                            className="bg-[#24252c] text-blue-400 border border-gray-700 hover:bg-[#34353d] active:bg-[#1a1b20] flex items-center justify-center rounded-sm font-bold text-[9px] cursor-pointer select-none"
+                            title="Zoom Out"
+                          >
+                            ➖
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Botón de Voceo bidireccional */}
+                      <div className="flex flex-col gap-1 mt-0.5">
+                        <span className="text-gray-400 font-bold text-[9px] uppercase">Parlante / Voceo:</span>
+                        <button
+                          onClick={() => setVoceando(!voceando)}
+                          className={`w-full py-1 rounded font-bold text-[9px] flex items-center justify-center gap-1 border transition-all cursor-pointer select-none ${
+                            voceando
+                              ? 'bg-red-700 text-white border-red-500 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.5)]'
+                              : 'bg-[#1c1d22] text-gray-300 border-gray-700 hover:bg-gray-800'
+                          }`}
+                        >
+                          {voceando ? (
+                            <>
+                              <span className="text-[10px] animate-ping">🎙️</span>
+                              <span>VOZ ACTIVA (HABLANDO)</span>
+                            </>
+                          ) : (
+                            <>
+                              <span className="text-[10px]">🎙️</span>
+                              <span>INICIAR VOCEO EN VIVO</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                ) : (
                  <div className="flex flex-col gap-1.5">
                    <span className="text-gray-400 font-bold text-[9px] uppercase">Clips Recientes de IA:</span>
                    <div className="space-y-1 max-h-[120px] overflow-y-auto font-mono text-[9px]">
