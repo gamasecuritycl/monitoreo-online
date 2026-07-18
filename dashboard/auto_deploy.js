@@ -22,6 +22,36 @@ if (fs.existsSync(envPath)) {
 
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
+// ── MODO BACKGROUND / OYENTE PTZ ──
+const args = process.argv.slice(2);
+if (args[0] === '--background') {
+  const cuenta = args[1];
+  const ipCamara = args[2];
+  
+  // Evitar procesos duplicados leyendo y matando el PID guardado anteriormente
+  const pidFile = path.join(INSTALL_DIR, 'ptz.pid');
+  if (fs.existsSync(pidFile)) {
+    try {
+      const oldPid = parseInt(fs.readFileSync(pidFile, 'utf8').trim(), 10);
+      if (oldPid) {
+        process.kill(oldPid);
+      }
+    } catch (e) {
+      // Ignorar si el proceso ya no estaba en ejecución
+    }
+  }
+  
+  try {
+    if (!fs.existsSync(INSTALL_DIR)) {
+      fs.mkdirSync(INSTALL_DIR, { recursive: true });
+    }
+    fs.writeFileSync(pidFile, process.pid.toString(), 'utf8');
+  } catch (err) {}
+
+  iniciarEscuchaPTZ(cuenta, ipCamara);
+  return; 
+}
+
 const rl = readline.createInterface({
   input: process.stdin,
   output: process.stdout
@@ -183,17 +213,19 @@ function iniciarTunnelCloudflare(cuenta, cameraIp) {
     execSync('schtasks /delete /tn "GamaTunnel" /f', { stdio: 'ignore' });
   } catch {}
 
-  // 2. Generar el script VBScript invisible definitivo para evitar errores de permisos UAC
+  // 2. Generar el script VBScript invisible definitivo
+  const currentScriptPath = __filename;
   const vbsContent = 
 `Set WshShell = CreateObject("WScript.Shell")
 WshShell.Run "cmd.exe /c C:\\GAMA_CAMARA\\mediamtx.exe C:\\GAMA_CAMARA\\mediamtx.yml", 0, false
 WshShell.Run "cmd.exe /c C:\\GAMA_CAMARA\\cloudflared.exe tunnel --url http://127.0.0.1:8889 --logfile C:\\GAMA_CAMARA\\tunnel.log", 0, false
+WshShell.Run "cmd.exe /c node ""${currentScriptPath}"" --background ${cuenta} ${cameraIp}", 0, false
 `;
   
   const vbsPath = path.join(INSTALL_DIR, 'iniciar.vbs');
   fs.writeFileSync(vbsPath, vbsContent);
 
-  // 3. Copiar a la carpeta de Inicio de Windows (Startup) para que corra automático sin UAC ni ventanas
+  // 3. Copiar a la carpeta de Inicio de Windows (Startup) para persistencia invisible
   const startupDir = path.join(process.env.APPDATA, 'Microsoft\\Windows\\Start Menu\\Programs\\Startup');
   const startupVbsPath = path.join(startupDir, 'GamaCamara.vbs');
   fs.writeFileSync(startupVbsPath, vbsContent);
@@ -276,15 +308,15 @@ async function guardarCamaraEnSupabase(cuenta, url, cameraIp) {
     console.log(' Se iniciarán solos si el PC del cliente se reinicia.');
     console.log('====================================================\n');
 
-    // Iniciar escucha de comandos PTZ en tiempo real para este abonado
-    iniciarEscuchaPTZ(cuenta, cameraIp);
-
   } catch (err) {
     console.error('\n❌ ERROR al guardar en Supabase:', err.message);
-    process.exit(1);
+  } finally {
+    rl.close();
+    // Cerramos el proceso del instalador para que la ventana de CMD se cierre sola de inmediato.
+    // Los procesos en segundo plano ya fueron lanzados por wscript y seguirán corriendo.
+    process.exit(0);
   }
 }
-
 
 // Función para escuchar peticiones de movimiento PTZ desde el Command Center
 function iniciarEscuchaPTZ(cuenta, ipCamara) {
@@ -303,7 +335,6 @@ function iniciarEscuchaPTZ(cuenta, ipCamara) {
     });
 
   // Mantener el proceso Node.js abierto para escuchar indefinidamente
-  // (schtasks o iniciar.vbs mantendrán este proceso corriendo en background)
 }
 
 function ejecutarComandoPTZLocal(direccion, ipCamara) {
@@ -360,4 +391,3 @@ function enviarPeticionDahua(urlStr, authHeader) {
     console.error(`Error en URL Dahua PTZ: ${err.message}`);
   }
 }
-
