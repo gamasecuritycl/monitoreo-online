@@ -67,12 +67,10 @@ rl.question('🔑 Ingrese Cuenta del Abonado (ej. C7C9): ', async (cuentaRaw) =>
 // Función para escanear la red local de forma asíncrona rápida
 function buscarCamaraLocal() {
   return new Promise((resolve) => {
-    // Obtener las subredes del PC
     const interfaces = os.networkInterfaces();
     const subnets = [];
     
     for (const name in interfaces) {
-      // Ignorar interfaces virtuales comunes de VPN / Docker
       if (name.toLowerCase().includes('wireguard') || name.toLowerCase().includes('docker') || name.toLowerCase().includes('virtual')) {
         continue;
       }
@@ -92,12 +90,10 @@ function buscarCamaraLocal() {
       return;
     }
 
-    const ports = [37777, 554]; // Puertos característicos de Dahua
+    const ports = [37777, 554];
     const timeout = 600;
     const promises = [];
     let foundIp = null;
-
-    console.log(`   Adaptadores locales activos detectados en subred: ${subnets.join(', ')}`);
 
     subnets.forEach(subnet => {
       for (let i = 1; i <= 254; i++) {
@@ -125,7 +121,6 @@ function buscarCamaraLocal() {
   });
 }
 
-// Función para descargar e instalar MediaMTX
 function instalarMediaMTX(cameraIp) {
   if (!fs.existsSync(INSTALL_DIR)) {
     fs.mkdirSync(INSTALL_DIR, { recursive: true });
@@ -147,7 +142,6 @@ function instalarMediaMTX(cameraIp) {
     console.log('   Descarga completa.');
   }
 
-  // Generar configuración mediamtx.yml apuntando a la IP correcta de la cámara
   const configContent = 
 `logLevel: warn
 rtspAddress: :8554
@@ -166,7 +160,6 @@ paths:
   console.log('   Configuración de MediaMTX generada con éxito.');
 }
 
-// Función para configurar e iniciar cloudflared en segundo plano
 function iniciarTunnelCloudflare(cuenta) {
   const exePath = path.join(INSTALL_DIR, 'cloudflared.exe');
   const logPath = path.join(INSTALL_DIR, 'tunnel.log');
@@ -178,37 +171,42 @@ function iniciarTunnelCloudflare(cuenta) {
     console.log('   Cloudflare Tunnel descargado.');
   }
 
-  // Limpiar log anterior si existe
   if (fs.existsSync(logPath)) {
     try { fs.unlinkSync(logPath); } catch {}
   }
 
   console.log('   Iniciando procesos de transmisión en segundo plano...');
 
-  // Crear Tareas Programadas de Windows invisibles para que corran en segundo plano sin ventana de consola
-  // y que se inicien automáticamente al iniciar el PC
+  // 1. Limpieza de tareas programadas obsoletas para no dejar basura
   try {
-    // 1. Eliminar tareas previas si existen
     execSync('schtasks /delete /tn "GamaMediaMTX" /f', { stdio: 'ignore' });
     execSync('schtasks /delete /tn "GamaTunnel" /f', { stdio: 'ignore' });
   } catch {}
 
-  // 2. Crear tareas para arrancar invisibles
-  // La tarea GamaMediaMTX arranca mediamtx.exe en background
-  execSync(`schtasks /create /tn "GamaMediaMTX" /tr "\"${path.join(INSTALL_DIR, 'mediamtx.exe')}\" \"${path.join(INSTALL_DIR, 'mediamtx.yml')}\"" /sc onlogon /ru "SYSTEM" /f`, { stdio: 'inherit' });
+  // 2. Generar el script VBScript invisible definitivo para evitar errores de permisos UAC
+  const vbsContent = 
+`Set WshShell = CreateObject("WScript.Shell")
+WshShell.Run "cmd.exe /c C:\\GAMA_CAMARA\\mediamtx.exe C:\\GAMA_CAMARA\\mediamtx.yml", 0, false
+WshShell.Run "cmd.exe /c C:\\GAMA_CAMARA\\cloudflared.exe tunnel --url http://127.0.0.1:8889 --logfile C:\\GAMA_CAMARA\\tunnel.log", 0, false
+`;
   
-  // La tarea GamaTunnel arranca cloudflared.exe en background y guarda el log
-  execSync(`schtasks /create /tn "GamaTunnel" /tr "\"${exePath}\" tunnel --url http://localhost:8889 --logfile \"${logPath}\"" /sc onlogon /ru "SYSTEM" /f`, { stdio: 'inherit' });
+  const vbsPath = path.join(INSTALL_DIR, 'iniciar.vbs');
+  fs.writeFileSync(vbsPath, vbsContent);
 
-  // 3. Ejecutar las tareas inmediatamente para que inicie la transmisión ahora
-  execSync('schtasks /run /tn "GamaMediaMTX"', { stdio: 'inherit' });
-  execSync('schtasks /run /tn "GamaTunnel"', { stdio: 'inherit' });
+  // 3. Copiar a la carpeta de Inicio de Windows (Startup) para que corra automático sin UAC ni ventanas
+  const startupDir = path.join(process.env.APPDATA, 'Microsoft\\Windows\\Start Menu\\Programs\\Startup');
+  const startupVbsPath = path.join(startupDir, 'GamaCamara.vbs');
+  fs.writeFileSync(startupVbsPath, vbsContent);
+  console.log('   Acceso directo invisible agregado al Inicio de Windows.');
+
+  // 4. Ejecutar el VBScript inmediatamente para iniciar la transmisión ahora mismo de forma invisible
+  exec(`wscript.exe "${vbsPath}"`);
 
   console.log('   Procesos en ejecución en background. Obteniendo la URL pública del túnel...');
 
-  // 4. Monitorear el archivo tunnel.log en busca de la URL generada por Cloudflare
+  // 5. Monitorear el archivo tunnel.log en busca de la URL generada por Cloudflare
   let checkAttempts = 0;
-  const maxAttempts = 30; // 30 segundos máximo de espera
+  const maxAttempts = 30;
   
   const checkLogInterval = setInterval(async () => {
     checkAttempts++;
@@ -234,7 +232,6 @@ function iniciarTunnelCloudflare(cuenta) {
   }, 1000);
 }
 
-// Guardar la URL en la base de datos de Supabase
 async function guardarCamaraEnSupabase(cuenta, url) {
   try {
     const { data, error: fetchErr } = await supabase
@@ -280,7 +277,6 @@ async function guardarCamaraEnSupabase(cuenta, url) {
     console.error('\n❌ ERROR al guardar en Supabase:', err.message);
   } finally {
     rl.close();
-    // Matar el proceso node actual de forma limpia
     process.exit(0);
   }
 }
