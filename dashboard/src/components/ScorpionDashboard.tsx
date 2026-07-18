@@ -841,8 +841,8 @@ export default function ScorpionDashboard() {
                   setMostrarMenuReportes(false)
                 }
               }}
-              className="px-3 py-0.5 text-[11px] font-bold text-white tracking-wider whitespace-nowrap border-r border-[#600000] hover:bg-[#a00000] active:bg-[#700000] cursor-pointer transition-colors"
-              style={{ fontFamily: "'Arial', sans-serif" }}
+              className="px-4 py-1 text-[11px] font-bold text-white tracking-wider whitespace-nowrap border-r border-black/35 hover:bg-[#a00000] active:bg-[#700000] cursor-pointer transition-colors"
+              style={{ fontFamily: "'Arial', sans-serif", paddingLeft: '16px', paddingRight: '16px', paddingTop: '4px', paddingBottom: '4px' }}
             >
               {item.label}
             </button>
