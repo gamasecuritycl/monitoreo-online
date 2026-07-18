@@ -904,94 +904,74 @@ export default function ScorpionDashboard() {
         </div>
 
         {/* Lado Derecho: Réplica Panel Scorpion (Oculto en móvil, visible en PC) */}
-        <div className="hidden md:flex flex-1 flex-col bg-[#c0c0c0] text-black overflow-y-auto border-l border-white p-2 gap-2 select-text">
+        <div className="hidden md:flex flex-1 flex-col bg-[#c0c0c0] text-black overflow-y-auto border-l border-white p-1 gap-1 select-text text-[11px]">
           
           {/* Fila 1: Logo GAMA / SCORPION + Estado en Negro */}
-          <div className="grid grid-cols-2 gap-2 shrink-0">
+          <div className="grid grid-cols-2 gap-1 shrink-0">
             {/* Box Izquierdo GAMA */}
-            <div className="bg-[#e0e0e0] border-2 border-t-white border-l-white border-b-gray-600 border-r-gray-600 p-2 flex items-center justify-center">
-              <span className="text-[#0a1a5c] font-black text-3xl tracking-wider" style={{ fontFamily: 'sans-serif' }}>GAMA</span>
+            <div className="bg-[#e0e0e0] border border-t-white border-l-white border-b-gray-600 border-r-gray-600 p-1 flex items-center justify-center">
+              <span className="text-[#0a1a5c] font-black text-2xl tracking-wider" style={{ fontFamily: 'sans-serif' }}>GAMA</span>
             </div>
             {/* Box Derecho SCORPION */}
-            <div className="bg-[#000080] border-2 border-t-white border-l-white border-b-gray-600 border-r-gray-600 p-2 flex flex-col items-center justify-center text-white">
-              <span className="font-bold text-sm tracking-wide" style={{ fontFamily: 'sans-serif' }}>SCORPION</span>
-              <span className="text-[9px] opacity-75">monitoring software</span>
+            <div className="bg-[#000080] border border-t-white border-l-white border-b-gray-600 border-r-gray-600 p-1 flex flex-col items-center justify-center text-white">
+              <span className="font-bold text-xs tracking-wide" style={{ fontFamily: 'sans-serif' }}>SCORPION</span>
+              <span className="text-[8px] opacity-75">monitoring software</span>
             </div>
           </div>
 
           {/* Visor de Señal Activa (Negro) */}
-          <div className="bg-black border-2 border-t-gray-600 border-l-gray-600 border-b-white border-r-white p-2 font-mono text-green-400 text-xs shrink-0 space-y-1">
-            <div className="flex justify-between font-bold text-sm border-b border-green-900 pb-1">
+          <div className="bg-black border border-t-gray-600 border-l-gray-600 border-b-white border-r-white p-1.5 font-mono text-green-400 text-[10px] shrink-0 space-y-0.5">
+            <div className="flex justify-between font-bold text-xs border-b border-green-900 pb-0.5">
               <span>CTA: {activeEvent?.cuenta || '-----'}</span>
               <span>GRP: 01</span>
               <span>ZN: {activeEvent?.zona || '--'}</span>
               <span>US: {activeEvent?.usuario || '---'}</span>
             </div>
             {/* Barra de progreso de señal verde */}
-            <div className="w-full bg-green-950 h-2.5 rounded-sm overflow-hidden my-1 flex gap-0.5">
+            <div className="w-full bg-green-950 h-2 rounded-sm overflow-hidden my-0.5 flex gap-0.5">
               {Array.from({ length: 15 }).map((_, i) => (
                 <div key={i} className="flex-1 bg-green-400 animate-pulse" style={{ animationDelay: `${i * 50}ms` }} />
               ))}
             </div>
-            <div className="text-[10px] text-green-500/80 truncate text-center">
+            <div className="text-[9px] text-green-500/80 truncate text-center">
               RAW: 5051 18{activeEvent?.cuenta || 'C000'}E{activeEvent?.zona || '000'}01{activeEvent?.usuario || '000'}
             </div>
           </div>
 
           {/* Box 2: INFORMACION BASICA */}
-          <div className="bg-[#e0e0e0] border-2 border-t-white border-l-white border-b-gray-600 border-r-gray-600 flex flex-col">
-            <div className="bg-[#000080] text-white text-[11px] font-bold px-2 py-0.5 tracking-wider uppercase">
+          <div className="bg-[#e0e0e0] border border-t-white border-l-white border-b-gray-600 border-r-gray-600 flex flex-col shrink-0">
+            <div className="bg-[#000080] text-white text-[10px] font-bold px-2 py-0.5 tracking-wider uppercase">
               Informacion Basica
             </div>
-            <div className="p-2 space-y-1 text-xs">
+            <div className="p-1 space-y-0.5 text-[11px]">
               <div className="grid grid-cols-4 gap-1">
                 <span className="font-bold text-gray-700">Abonado:</span>
                 <span className="col-span-3 bg-white px-1 border border-gray-400 font-bold">{activeEvent?.cuenta || '---'}</span>
               </div>
               <div className="grid grid-cols-4 gap-1">
                 <span className="font-bold text-gray-700">Nombre:</span>
-                <span className="col-span-3 bg-white px-1 border border-gray-400 font-bold truncate">{activeEvent?.nombre_abonado || '---'}</span>
+                <span className="col-span-3 bg-white px-1 border border-gray-400 truncate">{activeEvent?.nombre_abonado || '---'}</span>
               </div>
               <div className="grid grid-cols-4 gap-1">
                 <span className="font-bold text-gray-700">Dirección:</span>
-                <span className="col-span-3 bg-white px-1 border border-gray-400 font-bold truncate">{clientData?.direccion || '---'}</span>
+                <span className="col-span-3 bg-white px-1 border border-gray-400 truncate">{clientData?.direccion || '---'}</span>
               </div>
               <div className="grid grid-cols-4 gap-1">
                 <span className="font-bold text-gray-700">Comuna:</span>
-                <span className="col-span-3 bg-white px-1 border border-gray-400 font-bold">{clientData?.comuna || '---'}</span>
+                <span className="col-span-3 bg-white px-1 border border-gray-400 truncate">{clientData?.comuna || '---'}</span>
               </div>
             </div>
           </div>
 
-          {/* Mapa de Geo-Localización */}
-          {direccionParaMapa && (
-            <div className="bg-[#e0e0e0] border-2 border-t-white border-l-white border-b-gray-600 border-r-gray-600 flex flex-col shrink-0">
-              <div className="bg-[#000080] text-white text-[11px] font-bold px-2 py-0.5 tracking-wider uppercase flex justify-between items-center">
-                <span>📍 MAPA DE UBICACIÓN</span>
-              </div>
-              <div className="p-1 h-[140px] w-full bg-white border border-gray-400">
-                <iframe
-                  title="Mapa de Ubicación"
-                  width="100%"
-                  height="100%"
-                  style={{ border: 0 }}
-                  loading="lazy"
-                  allowFullScreen
-                  src={mapUrl}
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Box 3: PERSONAS AUTORIZADAS */}
-          <div className="bg-[#e0e0e0] border-2 border-t-white border-l-white border-b-gray-600 border-r-gray-600 flex flex-col flex-1 min-h-[120px]">
-            <div className="bg-[#000080] text-white text-[11px] font-bold px-2 py-0.5 tracking-wider uppercase">
+          {/* Box 3: CONTACTOS / PERSONAS AUTORIZADAS */}
+          <div className="bg-[#e0e0e0] border border-t-white border-l-white border-b-gray-600 border-r-gray-600 flex flex-col flex-1 min-h-[100px] max-h-[140px] overflow-hidden">
+            <div className="bg-[#000080] text-white text-[10px] font-bold px-2 py-0.5 tracking-wider uppercase">
               Personas Autorizadas
             </div>
-            <div className="p-1 flex-1 overflow-y-auto">
+            <div className="flex-1 overflow-y-auto">
               <table className="w-full border-collapse text-[10px] text-left bg-white">
-                <thead>
-                  <tr className="bg-[#d0d0d0] border-b border-gray-400">
+                <thead className="sticky top-0 bg-[#d0d0d0] border-b border-gray-400 z-10">
+                  <tr>
                     <th className="p-1 font-bold border-r border-gray-400 w-8 text-center">PR</th>
                     <th className="p-1 font-bold border-r border-gray-400">Nombre</th>
                     <th className="p-1 font-bold">Teléfono</th>
@@ -1000,15 +980,15 @@ export default function ScorpionDashboard() {
                 <tbody className="divide-y divide-gray-300">
                   {clientData?.contactos.map((contact) => (
                     <tr key={contact.prioridad} className="hover:bg-blue-100 font-bold text-gray-800">
-                      <td className="p-1 text-center border-r border-gray-300">{contact.prioridad}</td>
-                      <td className="p-1 border-r border-gray-300 truncate max-w-[120px]">{contact.nombre}</td>
-                      <td className="p-1 font-mono text-blue-800 flex items-center justify-between gap-1">
+                      <td className="p-0.5 text-center border-r border-gray-300">{contact.prioridad}</td>
+                      <td className="p-0.5 border-r border-gray-300 truncate max-w-[120px]">{contact.nombre}</td>
+                      <td className="p-0.5 font-mono text-blue-800 flex items-center justify-between gap-1">
                         <span className="truncate max-w-[90px]">{contact.telefono}</span>
                         <div className="flex gap-0.5 shrink-0">
                           <a
                             href={`tel:${contact.telefono.replace(/[^0-9+]/g, '')}`}
                             title="Llamar directamente"
-                            className="bg-[#c0c0c0] border border-t-white border-l-white border-b-gray-700 border-r-gray-700 px-0.5 hover:bg-[#d0d0d0] active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white text-[9px] cursor-pointer"
+                            className="bg-[#c0c0c0] border border-t-white border-l-white border-b-gray-700 border-r-gray-700 px-0.5 hover:bg-[#d0d0d0] active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white text-[8px] cursor-pointer"
                           >
                             📞
                           </a>
@@ -1017,7 +997,7 @@ export default function ScorpionDashboard() {
                             target="_blank"
                             rel="noopener noreferrer"
                             title="Enviar WhatsApp"
-                            className="bg-[#c0c0c0] border border-t-white border-l-white border-b-gray-700 border-r-gray-700 px-0.5 hover:bg-[#d0d0d0] active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white text-[9px] cursor-pointer"
+                            className="bg-[#c0c0c0] border border-t-white border-l-white border-b-gray-700 border-r-gray-700 px-0.5 hover:bg-[#d0d0d0] active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white text-[8px] cursor-pointer"
                           >
                             💬
                           </a>
@@ -1036,8 +1016,8 @@ export default function ScorpionDashboard() {
           </div>
 
           {/* Box 4: ZONIFICACION */}
-          <div className="bg-[#e0e0e0] border-2 border-t-white border-l-white border-b-gray-600 border-r-gray-600 flex flex-col flex-1 min-h-[120px]">
-            <div className="bg-[#000080] text-white text-[11px] font-bold px-2 py-0.5 tracking-wider uppercase">
+          <div className="bg-[#e0e0e0] border border-t-white border-l-white border-b-gray-600 border-r-gray-600 flex flex-col flex-1 min-h-[90px] max-h-[140px] overflow-hidden">
+            <div className="bg-[#000080] text-white text-[10px] font-bold px-2 py-0.5 tracking-wider uppercase">
               Zonificacion
             </div>
             <div className="flex-1 overflow-y-auto">
@@ -1045,21 +1025,21 @@ export default function ScorpionDashboard() {
                 const zonasAbonado = cuentaKey ? (zonasMap[cuentaKey] || []) : []
                 if (!activeEvent) {
                   return (
-                    <div className="p-2 text-center text-gray-400 text-[10px] italic">Seleccione un abonado</div>
+                    <div className="p-1 text-center text-gray-400 text-[10px] italic">Seleccione un abonado</div>
                   )
                 }
                 if (zonasAbonado.length === 0) {
                   return (
-                    <div className="p-2 text-center text-[10px]">
+                    <div className="p-1 text-center text-[10px]">
                       <div className="text-gray-500 italic font-bold">Sin información</div>
                       <div className="text-blue-700 font-bold mt-0.5 cursor-pointer hover:underline">Solicitar</div>
                     </div>
                   )
                 }
                 return (
-                  <table className="w-full border-collapse text-[10px] text-left bg-white">
-                    <thead>
-                      <tr className="bg-[#d0d0d0] border-b border-gray-400 sticky top-0">
+                  <table className="w-full border-collapse text-[9px] text-left bg-white">
+                    <thead className="sticky top-0 bg-[#d0d0d0] border-b border-gray-400 z-10">
+                      <tr>
                         <th className="p-1 font-bold border-r border-gray-400 w-8 text-center">ZN</th>
                         <th className="p-1 font-bold border-r border-gray-400">Dispositivos</th>
                         <th className="p-1 font-bold">Area Cubierta</th>
@@ -1068,9 +1048,9 @@ export default function ScorpionDashboard() {
                     <tbody className="divide-y divide-gray-300">
                       {zonasAbonado.map((zona, idx) => (
                         <tr key={idx} className="hover:bg-blue-100 font-bold text-gray-800">
-                          <td className="p-1 text-center border-r border-gray-300 text-yellow-700">{zona.numero}</td>
-                          <td className="p-1 border-r border-gray-300 truncate max-w-[100px] capitalize">{(zona.dispositivo || '').toLowerCase()}</td>
-                          <td className="p-1 truncate max-w-[100px] capitalize">{(zona.area || '').toLowerCase()}</td>
+                          <td className="p-0.5 text-center border-r border-gray-300 text-yellow-700">{zona.numero}</td>
+                          <td className="p-0.5 border-r border-gray-300 truncate max-w-[100px] capitalize">{(zona.dispositivo || '').toLowerCase()}</td>
+                          <td className="p-0.5 truncate max-w-[100px] capitalize">{(zona.area || '').toLowerCase()}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -1089,13 +1069,13 @@ export default function ScorpionDashboard() {
                 alert('Por favor seleccione un abonado en la grilla primero.')
               }
             }}
-            className="w-full bg-[#d0d0d0] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 py-1.5 text-xs text-gray-800 font-bold hover:bg-[#e0e0e0] active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white cursor-pointer select-none"
+            className="w-full bg-[#d0d0d0] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 py-1 text-xs text-gray-800 font-bold hover:bg-[#e0e0e0] active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white cursor-pointer select-none shrink-0"
           >
             🎥 Activar verificación por video
           </button>
 
           {/* Reloj y Fecha inferior de Scorpion */}
-          <div className="flex justify-between items-center bg-[#d0d0d0] border border-gray-400 px-2 py-0.5 text-[10px] font-mono text-gray-700">
+          <div className="flex justify-between items-center bg-[#d0d0d0] border border-gray-400 px-2 py-0.5 text-[9px] font-mono text-gray-700 shrink-0">
             <span>Operador: {usuarioActivo.nombre} ({usuarioActivo.rol.toUpperCase()})</span>
             <span className="font-bold">{horaLocal}</span>
           </div>
