@@ -149,7 +149,7 @@ export default function EventosPorUsuarioModal({ onClose, eventoInicial }: Event
     try {
       const d = new Date(iso)
       const pad = (n: number) => n.toString().padStart(2, '0')
-      return `${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())}`
+      return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
     } catch {
       const partes = iso.split('T')
       if (partes.length === 2) {
