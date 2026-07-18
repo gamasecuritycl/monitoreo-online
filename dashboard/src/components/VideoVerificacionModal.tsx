@@ -62,7 +62,23 @@ export default function VideoVerificacionModal({ onClose, evento, esCierre, clie
   const [voceando, setVoceando] = useState(false)
   const [alertaPTZ, setAlertaPTZ] = useState<string | null>(null)
 
-  // Función para simular/enviar comandos CGI de PTZ a la cámara
+  const channelRef = useRef<any>(null)
+
+  // Suscribirse al canal Realtime de Supabase para comandos PTZ
+  useEffect(() => {
+    const channelName = `ptz-${cuentaActiva}`
+    const ch = supabase.channel(channelName)
+    ch.subscribe((status) => {
+      console.log(`Supabase PTZ Broadcast status: ${status}`)
+    })
+    channelRef.current = ch
+
+    return () => {
+      ch.unsubscribe()
+    }
+  }, [cuentaActiva])
+
+  // Función para enviar comandos CGI de PTZ a la cámara mediante Supabase
   const enviarComandoPTZ = (direccion: string) => {
     const dirMap: Record<string, string> = {
       up: 'ARRIBA ▲',
@@ -73,7 +89,16 @@ export default function VideoVerificacionModal({ onClose, evento, esCierre, clie
       zoomIn: 'ZOOM + 🔍',
       zoomOut: 'ZOOM - 🔍'
     }
-    const msg = `Moviendo cámara Dahua: ${dirMap[direccion] || direccion}`
+
+    if (channelRef.current) {
+      channelRef.current.send({
+        type: 'broadcast',
+        event: 'mover',
+        payload: { direccion }
+      })
+    }
+
+    const msg = `Enviando comando PTZ: ${dirMap[direccion] || direccion}`
     setAlertaPTZ(dirMap[direccion] || direccion)
     console.log(msg)
     // Autocerrar la alerta visual en 1.5 segundos

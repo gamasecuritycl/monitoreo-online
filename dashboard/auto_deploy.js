@@ -61,7 +61,7 @@ rl.question('🔑 Ingrese Cuenta del Abonado (ej. C7C9): ', async (cuentaRaw) =>
   instalarMediaMTX(cameraIp);
 
   console.log('\n🌐 Paso 3: Configurando e iniciando Túnel Cloudflare en background...');
-  iniciarTunnelCloudflare(cuenta);
+  iniciarTunnelCloudflare(cuenta, cameraIp);
 });
 
 // Función para escanear la red local de forma asíncrona rápida
@@ -160,7 +160,7 @@ paths:
   console.log('   Configuración de MediaMTX generada con éxito.');
 }
 
-function iniciarTunnelCloudflare(cuenta) {
+function iniciarTunnelCloudflare(cuenta, cameraIp) {
   const exePath = path.join(INSTALL_DIR, 'cloudflared.exe');
   const logPath = path.join(INSTALL_DIR, 'tunnel.log');
 
@@ -219,7 +219,7 @@ WshShell.Run "cmd.exe /c C:\\GAMA_CAMARA\\cloudflared.exe tunnel --url http://12
         const cloudflareUrl = urlMatch[0];
         console.log(`\n🔗 URL pública de Cloudflare detectada: ${cloudflareUrl}`);
         
-        await guardarCamaraEnSupabase(cuenta, `${cloudflareUrl}/camgama`);
+        await guardarCamaraEnSupabase(cuenta, `${cloudflareUrl}/camgama`, cameraIp);
       }
     }
     
@@ -232,7 +232,9 @@ WshShell.Run "cmd.exe /c C:\\GAMA_CAMARA\\cloudflared.exe tunnel --url http://12
   }, 1000);
 }
 
-async function guardarCamaraEnSupabase(cuenta, url) {
+const http = require('http');
+
+async function guardarCamaraEnSupabase(cuenta, url, cameraIp) {
   try {
     const { data, error: fetchErr } = await supabase
       .from('eventos_monitoreo')
@@ -274,10 +276,88 @@ async function guardarCamaraEnSupabase(cuenta, url) {
     console.log(' Se iniciarán solos si el PC del cliente se reinicia.');
     console.log('====================================================\n');
 
+    // Iniciar escucha de comandos PTZ en tiempo real para este abonado
+    iniciarEscuchaPTZ(cuenta, cameraIp);
+
   } catch (err) {
     console.error('\n❌ ERROR al guardar en Supabase:', err.message);
-  } finally {
-    rl.close();
-    process.exit(0);
+    process.exit(1);
   }
 }
+
+
+// Función para escuchar peticiones de movimiento PTZ desde el Command Center
+function iniciarEscuchaPTZ(cuenta, ipCamara) {
+  console.log(`📡 Iniciando receptor de comandos PTZ para Cuenta: ${cuenta} (IP Cámara: ${ipCamara})...`);
+  
+  const channel = supabase.channel(`ptz-${cuenta}`)
+    .on('broadcast', { event: 'mover' }, ({ payload }) => {
+      const { direccion } = payload;
+      console.log(`🎮 Comando PTZ recibido: ${direccion}`);
+      ejecutarComandoPTZLocal(direccion, ipCamara);
+    })
+    .subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        console.log('📶 Conectado al WebSocket de Supabase. Escuchando comandos en vivo.');
+      }
+    });
+
+  // Mantener el proceso Node.js abierto para escuchar indefinidamente
+  // (schtasks o iniciar.vbs mantendrán este proceso corriendo en background)
+}
+
+function ejecutarComandoPTZLocal(direccion, ipCamara) {
+  const dirMap = {
+    up: 'Up',
+    down: 'Down',
+    left: 'Left',
+    right: 'Right',
+    zoomIn: 'ZoomTele',
+    zoomOut: 'ZoomWide',
+    home: 'GotoPreset'
+  };
+
+  const code = dirMap[direccion];
+  if (!code) return;
+
+  const authHeader = 'Basic YWRtaW46TDJENTU0MTM='; // admin:L2D55413 en Base64
+
+  if (direccion === 'home') {
+    const urlHome = `http://${ipCamara}/cgi-bin/ptz.cgi?action=start&code=GotoPreset&channel=1&arg1=0&arg2=1`;
+    enviarPeticionDahua(urlHome, authHeader);
+    return;
+  }
+
+  const urlStart = `http://${ipCamara}/cgi-bin/ptz.cgi?action=start&code=${code}&channel=1&arg1=0&arg2=5`;
+  const urlStop = `http://${ipCamara}/cgi-bin/ptz.cgi?action=stop&code=${code}&channel=1`;
+
+  // Iniciar movimiento
+  enviarPeticionDahua(urlStart, authHeader);
+
+  // Detener después de 500ms para hacer un movimiento de toque discreto
+  setTimeout(() => {
+    enviarPeticionDahua(urlStop, authHeader);
+  }, 500);
+}
+
+function enviarPeticionDahua(urlStr, authHeader) {
+  try {
+    const url = new URL(urlStr);
+    const req = http.get({
+      hostname: url.hostname,
+      port: url.port || 80,
+      path: url.pathname + url.search,
+      headers: {
+        'Authorization': authHeader
+      }
+    }, (res) => {
+      res.resume();
+    });
+    req.on('error', (e) => {
+      console.error(`Error enviando comando a Dahua local: ${e.message}`);
+    });
+  } catch (err) {
+    console.error(`Error en URL Dahua PTZ: ${err.message}`);
+  }
+}
+
