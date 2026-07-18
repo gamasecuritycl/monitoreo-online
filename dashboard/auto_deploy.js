@@ -238,6 +238,7 @@ async function guardarCamaraEnSupabase(cuenta, url) {
       .from('eventos_monitoreo')
       .select('nombre_abonado')
       .eq('cuenta', 'CAMARAS')
+      .order('fecha_hora', { ascending: false })
       .limit(1);
 
     if (fetchErr) throw fetchErr;

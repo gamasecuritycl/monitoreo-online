@@ -63,6 +63,7 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
           .from('eventos_monitoreo')
           .select('nombre_abonado')
           .eq('cuenta', 'CAMARAS')
+          .order('fecha_hora', { ascending: false })
           .limit(1)
         if (data && data.length > 0 && !error) {
           const parsed = JSON.parse(data[0].nombre_abonado || '{}')
