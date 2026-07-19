@@ -1,0 +1,75 @@
+# ═══════════════════════════════════════════════════════════
+#   GAMA SEGURIDAD - SERVIDOR WHATSAPP v3.0 (Baileys Edition)
+#   PC Scorpion — Guía de Instalación
+# ═══════════════════════════════════════════════════════════
+
+## NOVEDADES v3.0
+  - Motor: Baileys WebSocket (sin Chrome, sin Puppeteer)
+  - Consume ~50MB de RAM (antes ~700MB)
+  - Reconexión automática con backoff exponencial
+  - Cola de mensajes: si cae la conexión, los mensajes se encolan
+    y se envían cuando vuelve la conexión
+  - Heartbeat / Watchdog: detecta conexiones zombi
+  - QR disponible en pantalla y en el dashboard web
+  - Pairing Code: vincula sin escanear QR físico
+
+## REQUISITO PREVIO
+  - Node.js instalado (https://nodejs.org/ → versión LTS)
+  - NO necesita Chrome ni Edge para funcionar
+
+## PASOS DE INSTALACIÓN
+
+### Paso 1: Copiar esta carpeta
+  Copia la carpeta WHATSAPP_SERVER/ al PC Scorpion.
+  Por ejemplo: C:\GAMA_WHATSAPP\
+
+### Paso 2: Instalar dependencias (solo 1 vez)
+  Haz doble clic en: 1_INSTALAR.bat
+  Tarda ~2 minutos. Espera hasta ver "COMPLETADA".
+
+### Paso 3: Primera ejecución (vincular WhatsApp)
+  Haz doble clic en: INICIAR_WHATSAPP.bat
+  
+  OPCIÓN A — QR en pantalla:
+    - Aparecerá un código QR en la consola
+    - Ábrelo también en http://localhost:3015
+    - Escanéalo desde WhatsApp → Dispositivos vinculados → Vincular QR
+  
+  OPCIÓN B — Pairing Code (sin cámara):
+    - Espera que diga "Iniciando conexión Baileys..."
+    - Abre el dashboard → Tab "📡 Estado Servidor"
+    - Ingresa el número +56948855190 y haz clic en "Obtener Código"
+    - Copia el código de 8 caracteres
+    - En WhatsApp → Dispositivos vinculados → Vincular número → ingresa el código
+
+### Paso 4: Inicio automático con Windows
+  Haz doble clic en: AUTOSTART_WINDOWS.bat
+  El servidor arrancará automáticamente con cada reinicio del PC.
+
+## ARCHIVOS
+
+  whatsapp_server.js   → Motor principal v3.0 (Baileys)
+  package.json         → Dependencias del proyecto
+  1_INSTALAR.bat       → Instala dependencias (solo 1 vez)
+  INICIAR_WHATSAPP.bat → Inicia con consola visible (para ver QR)
+  INICIAR_SILENCIOSO.vbs → Inicia en segundo plano sin ventana
+  AUTOSTART_WINDOWS.bat → Configura inicio automático con Windows
+
+## API ENDPOINTS
+
+  GET  /               → Panel web de estado
+  GET  /api/status     → Estado JSON del servidor
+  GET  /api/qr         → QR actual (JSON con base64)
+  GET  /api/qr-image   → QR como imagen PNG
+  POST /api/pair       → Solicitar pairing code {"phone": "56948855190"}
+  POST /api/send       → Enviar mensaje {"phone": "56912345678", "text": "..."}
+  POST /api/logout     → Cerrar sesión (borra archivos de sesión)
+  GET  /api/messages   → Últimos mensajes recibidos (desde Supabase)
+
+## NOTAS IMPORTANTES
+
+  - El servidor escucha en el puerto 3015 (igual que antes)
+  - Se conecta automáticamente a Supabase Realtime
+  - Los mensajes del dashboard llegan por canal broadcast
+  - Si el número es baneado, se deberá usar uno nuevo
+  - Mantener mensajes razonables para no activar el anti-spam de Meta

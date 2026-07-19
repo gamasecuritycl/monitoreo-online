@@ -1,7 +1,10 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { sendMessage } from '@/lib/whatsapp'
 
+// ──────────────────────────────────────────────
+//  INTERFACES
+// ──────────────────────────────────────────────
 interface Props {
   onClose: () => void
   clientesMap: Record<string, Record<string, string>>
@@ -25,10 +28,71 @@ interface ChatLogItem {
   esRespuestaCliente?: boolean
 }
 
-type Tab = 'web' | 'manual' | 'config' | 'alertas' | 'panico' | 'energia'
+interface WaStatus {
+  ready: boolean
+  estado: string
+  usuario: string | null
+  hasQR: boolean
+  cola: number
+  uptime: number
+  reintentos: number
+}
 
+interface QRData {
+  status: 'connected' | 'waiting_qr' | 'connecting' | 'offline'
+  qrImage: string | null
+  usuario: string | null
+}
+
+type Tab = 'chat' | 'notificaciones' | 'config' | 'servidor'
+
+// ──────────────────────────────────────────────
+//  NORMALIZAR TELÉFONO (con soporte + internacional)
+// ──────────────────────────────────────────────
+function normalizarTelefono(raw: string): string {
+  // Conservar el + si viene al inicio
+  const tieneplus = raw.trim().startsWith('+')
+  const digits = raw.replace(/[^0-9]/g, '')
+  if (!digits) return ''
+  // Chile 9 dígitos: 9xxxxxxxx → 569xxxxxxxx
+  if (digits.length === 9 && digits.startsWith('9')) return '56' + digits
+  // Chile 8 dígitos: xxxxxxxx → 569xxxxxxxx
+  if (digits.length === 8) return '569' + digits
+  // Con código de país explícito
+  return digits
+}
+
+function formatearNumeroDisplay(num: string): string {
+  const d = num.replace(/[^0-9]/g, '')
+  if (!d) return num
+  if (d.startsWith('56') && d.length >= 11) return `+${d.slice(0, 2)} 9 ${d.slice(3)}`
+  return `+${d}`
+}
+
+// ──────────────────────────────────────────────
+//  COMPONENTE PRINCIPAL
+// ──────────────────────────────────────────────
 export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuentaInicial }: Props) {
-  const [activeTab, setActiveTab] = useState<Tab>('web')
+  const [activeTab, setActiveTab] = useState<Tab>('chat')
+
+  // ── Estado servidor WhatsApp ──
+  const [waStatus, setWaStatus] = useState<WaStatus>({ ready: false, estado: 'CARGANDO', usuario: null, hasQR: false, cola: 0, uptime: 0, reintentos: 0 })
+  const [qrData, setQrData] = useState<QRData>({ status: 'connecting', qrImage: null, usuario: null })
+  const [pairingCode, setPairingCode] = useState('')
+  const [pairingInput, setPairingInput] = useState('')
+  const [loadingPair, setLoadingPair] = useState(false)
+  const [loadingLogout, setLoadingLogout] = useState(false)
+  const [serverMsg, setServerMsg] = useState('')
+
+  // ── Tab Chat en vivo ──
+  const [busquedaChat, setBusquedaChat] = useState('')
+  const [chatActivo, setChatActivo] = useState<string | null>(null)
+  const [todosLosChats, setTodosLosChats] = useState<any[]>([])
+  const [textoChat, setTextoChat] = useState('')
+  const [enviandoChat, setEnviandoChat] = useState(false)
+  const chatEndRef = useRef<HTMLDivElement>(null)
+
+  // ── Tab Notificaciones ──
   const [busqueda, setBusqueda] = useState('')
   const [clienteSeleccionado, setClienteSeleccionado] = useState<{ cuenta: string; nombre: string } | null>(() => {
     if (cuentaInicial && clientesMap[cuentaInicial]) {
@@ -36,13 +100,20 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
     }
     return null
   })
+  // Número de destino actual — permite edición libre
+  const [telefonoDestino, setTelefonoDestino] = useState('')
+  const [telefonoManual, setTelefonoManual] = useState('')
+  const [textoNotif, setTextoNotif] = useState('')
+  const [enviandoNotif, setEnviandoNotif] = useState(false)
+  const [statusNotif, setStatusNotif] = useState('')
+  const [chatLogs, setChatLogs] = useState<ChatLogItem[]>([])
 
-  // Estados de Configuración
+  // ── Tab Config ──
   const [telefono, setTelefono] = useState('')
   const [activo, setActivo] = useState(true)
   const [contactos, setContactos] = useState<ContactoEscalamiento[]>([])
   const [guardando, setGuardando] = useState(false)
-  const [mensaje, setMensaje] = useState('')
+  const [mensajeConfig, setMensajeConfig] = useState('')
   const [silenciaHasta, setSilenciaHasta] = useState('')
   const [notificarAlarma, setNotificarAlarma] = useState(true)
   const [notificarEnergia, setNotificarEnergia] = useState(true)
@@ -50,158 +121,134 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
   const [notificarCierre, setNotificarCierre] = useState(false)
   const [notificarVideo, setNotificarVideo] = useState(false)
 
-  // Estados del Chat Libre General Embebido (Tab 1)
-  const [busquedaChatLibre, setBusquedaChatLibre] = useState('')
-  const [chatLibreActivo, setChatLibreActivo] = useState<string | null>(null)
-  const [textoChatLibre, setTextoChatLibre] = useState('')
-  const [todosLosChats, setTodosLosChats] = useState<any[]>([])
-
-  // Cargar todos los chats globales de WhatsApp en tiempo real
+  // ══════════════════════════════════════════════
+  //  POLLING DEL ESTADO DEL SERVIDOR
+  // ══════════════════════════════════════════════
   useEffect(() => {
-    const cargarChatsGlobales = async () => {
+    const poll = async () => {
+      try {
+        const res = await fetch('/api/whatsapp/status', { cache: 'no-store' })
+        const data = await res.json()
+        setWaStatus(data)
+      } catch {}
+    }
+    poll()
+    const t = setInterval(poll, 6000)
+    return () => clearInterval(t)
+  }, [])
+
+  // Polling del QR (solo cuando el tab es 'servidor')
+  useEffect(() => {
+    if (activeTab !== 'servidor') return
+    const pollQR = async () => {
+      try {
+        const res = await fetch('/api/whatsapp/qr', { cache: 'no-store' })
+        const data = await res.json()
+        setQrData(data)
+      } catch {}
+    }
+    pollQR()
+    const t = setInterval(pollQR, 7000)
+    return () => clearInterval(t)
+  }, [activeTab])
+
+  // ══════════════════════════════════════════════
+  //  CHAT EN VIVO - Cargar mensajes
+  // ══════════════════════════════════════════════
+  useEffect(() => {
+    const cargar = async () => {
       try {
         const { data } = await supabase
           .from('conversaciones_whatsapp')
           .select('*')
           .order('created_at', { ascending: false })
-          .limit(100)
-
+          .limit(200)
         if (data && data.length > 0) {
           setTodosLosChats(data)
-          if (!chatLibreActivo && data[0].numero) {
-            setChatLibreActivo(data[0].numero)
-          }
+          if (!chatActivo && data[0]?.numero) setChatActivo(data[0].numero)
         }
-      } catch (err) {
-        console.warn('[SUPABASE GLOBAL CHATS]:', err)
-      }
+      } catch {}
     }
-    cargarChatsGlobales()
+    cargar()
 
-    const subGlobal = supabase
-      .channel('chat_global_realtime')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'conversaciones_whatsapp' },
-        (payload: any) => {
-          if (payload.new) {
-            setTodosLosChats((prev) => [payload.new, ...prev])
-          }
-        }
-      )
+    const sub = supabase
+      .channel('chat_global_v3')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'conversaciones_whatsapp' }, (payload: any) => {
+        if (payload.new) setTodosLosChats(prev => [payload.new, ...prev])
+      })
       .subscribe()
 
-    return () => {
-      supabase.removeChannel(subGlobal)
-    }
-  }, [chatLibreActivo])
+    return () => { supabase.removeChannel(sub) }
+  }, [])
 
-  // Enviar mensaje libre desde el chat embebido
-  const enviarMensajeChatLibre = async () => {
-    if (!chatLibreActivo || !textoChatLibre.trim()) return
-    const texto = textoChatLibre.trim()
-    setTextoChatLibre('')
+  useEffect(() => {
+    if (chatEndRef.current) chatEndRef.current.scrollIntoView({ behavior: 'smooth' })
+  }, [chatActivo, todosLosChats])
 
-    try {
-      await sendMessage(chatLibreActivo, texto)
-    } catch (err) {
-      console.error('Error enviando chat libre:', err)
-    }
-  }
+  // ══════════════════════════════════════════════
+  //  CHAT: construir lista de contactos con nombres
+  // ══════════════════════════════════════════════
+  const chatsMap = new Map<string, { numero: string; ultimoMsg: string; hora: string; nombre: string }>()
 
-  // Agrupar abonados del sistema y chats únicos por número de teléfono
-  const chatsMap = new Map<string, { numero: string; ultimoMensaje: string; hora: string; nombreAbonado?: string }>()
-
-  // 1. Agregar abonados registrados de la central
+  // 1. Abonados registrados
   Object.entries(clientesMap).forEach(([cuenta, cliente]) => {
-    const telRaw = cliente.t1 || cliente.telefono1 || cliente.telefono || cliente.t2 || ''
-    const tel = telRaw.replace(/[^0-9]/g, '')
-    if (tel && tel.length >= 8) {
-      chatsMap.set(tel, {
-        numero: tel,
-        ultimoMensaje: `Contacto registrado`,
-        hora: 'Gama',
-        nombreAbonado: cliente.nombre ? `${cuenta} - ${cliente.nombre}` : `Abonado ${cuenta}`
-      })
-    }
-  })
-
-  // 2. Actualizar con mensajes de chat reales en tiempo real
-  todosLosChats.forEach((item) => {
-    const num = (item.numero || item.telefono || '').replace(/[^0-9]/g, '')
-    if (!num) return
-    const prevNom = chatsMap.get(num)?.nombreAbonado
-    const nom = prevNom || (item.cuenta ? `${item.cuenta} - ${clientesMap[item.cuenta]?.nombre || ''}` : `+${num}`)
-    chatsMap.set(num, {
-      numero: num,
-      ultimoMensaje: item.respuesta_recibida || item.respuesta_cliente || item.mensaje_enviado || '',
-      hora: new Date(item.created_at).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }),
-      nombreAbonado: nom
-    })
-  })
-
-  const listaChatsGlobales = Array.from(chatsMap.values()).filter((c) => {
-    if (!busquedaChatLibre.trim()) return true
-    const q = busquedaChatLibre.toLowerCase()
-    return c.numero.includes(q) || (c.nombreAbonado || '').toLowerCase().includes(q)
-  })
-
-  const mensajesDelChatActivo = todosLosChats
-    .filter((m) => (m.numero || m.telefono) === chatLibreActivo)
-    .reverse()
-
-  // Estados del Panel de Envíos Manuales & Chat por Abonado (Tab 2)
-  const [telefonoEnvio, setTelefonoEnvio] = useState('')
-  const [textoMensaje, setTextoMensaje] = useState('')
-  const [enviandoManual, setEnviandoManual] = useState(false)
-  const [mensajeStatus, setMensajeStatus] = useState('')
-  const [chatLogs, setChatLogs] = useState<ChatLogItem[]>([])
-
-  const obtenerListaContactos = (cuenta: string) => {
-    const cliente = clientesMap[cuenta]
-    if (!cliente) return []
-    const lista: { etiqueta: string; telefono: string; nombre: string }[] = []
-
-    if (cliente.t1 || cliente.telefono1 || cliente.telefono) {
-      lista.push({
-        etiqueta: 'Principal',
-        telefono: cliente.t1 || cliente.telefono1 || cliente.telefono || '',
-        nombre: cliente.nombre1 || cliente.nombre || 'Principal'
-      })
-    }
-
-    if (cliente.t2 || cliente.telefono2) {
-      lista.push({
-        etiqueta: 'Contacto 2',
-        telefono: cliente.t2 || cliente.telefono2 || '',
-        nombre: cliente.nombre2 || 'Contacto 2'
-      })
-    }
-
-    const conf = contactos
-    conf.forEach((c, idx) => {
-      if (c.telefono) {
-        lista.push({
-          etiqueta: `Escalamiento ${idx + 1}: ${c.nombre || 'Contacto'}`,
-          telefono: c.telefono,
-          nombre: c.nombre || `Escalamiento ${idx + 1}`
-        })
+    const tels = [
+      cliente.t1 || '', cliente.telefono1 || '', cliente.telefono || '', cliente.t2 || ''
+    ].map(t => t.replace(/[^0-9]/g, '')).filter(t => t.length >= 8)
+    tels.forEach(tel => {
+      if (!chatsMap.has(tel)) {
+        chatsMap.set(tel, { numero: tel, ultimoMsg: 'Abonado registrado', hora: '', nombre: `${cuenta} - ${cliente.nombre || ''}` })
       }
     })
+  })
 
-    return lista
+  // 2. Mensajes de la BD (sobrescriben con datos reales)
+  todosLosChats.forEach(item => {
+    const num = (item.numero || item.telefono || '').replace(/[^0-9]/g, '')
+    if (!num) return
+    const nombre = chatsMap.get(num)?.nombre
+      || (item.cuenta ? `${item.cuenta} - ${clientesMap[item.cuenta]?.nombre || ''}` : `+${num}`)
+    chatsMap.set(num, {
+      numero: num,
+      ultimoMsg: item.respuesta_recibida || item.respuesta_cliente || item.mensaje_enviado || '',
+      hora: item.created_at ? new Date(item.created_at).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }) : '',
+      nombre,
+    })
+  })
+
+  const listaChats = Array.from(chatsMap.values()).filter(c => {
+    if (!busquedaChat.trim()) return true
+    const q = busquedaChat.toLowerCase()
+    return c.numero.includes(q) || c.nombre.toLowerCase().includes(q)
+  })
+
+  const mensajesActivos = todosLosChats
+    .filter(m => (m.numero || m.telefono) === chatActivo)
+    .reverse()
+
+  const enviarChat = async () => {
+    if (!chatActivo || !textoChat.trim() || enviandoChat) return
+    const texto = textoChat.trim()
+    setTextoChat('')
+    setEnviandoChat(true)
+    try {
+      await sendMessage(chatActivo, texto)
+    } catch {}
+    setEnviandoChat(false)
   }
 
+  // ══════════════════════════════════════════════
+  //  NOTIFICACIONES - Cargar historial por cliente
+  // ══════════════════════════════════════════════
   useEffect(() => {
     if (!clienteSeleccionado) {
       setTelefono('')
-      setTelefonoEnvio('')
+      setTelefonoDestino('')
       setActivo(true)
       setContactos([])
       setSilenciaHasta('')
       return
     }
-
     const cargar = async () => {
       const { data } = await supabase
         .from('notificaciones_whatsapp')
@@ -210,7 +257,6 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
         .single()
       if (data) {
         setTelefono(data.telefono || '')
-        setTelefonoEnvio(data.telefono || '')
         setActivo(data.activo !== false)
         setContactos((data.contactos_escalamiento as ContactoEscalamiento[]) || [])
         setSilenciaHasta(data.silencio_hasta || '')
@@ -221,254 +267,198 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
         setNotificarVideo(data.notificar_video === true)
       } else {
         const datosCliente = clientesMap[clienteSeleccionado.cuenta]
-        const telSugerido = datosCliente 
-          ? (datosCliente.t1 || datosCliente.telefono1 || datosCliente.telefono || datosCliente.t2 || '') 
+        const telSugerido = datosCliente
+          ? (datosCliente.t1 || datosCliente.telefono1 || datosCliente.telefono || datosCliente.t2 || '')
           : ''
         setTelefono(telSugerido)
-        setTelefonoEnvio(telSugerido)
         setActivo(true)
         setContactos([])
         setSilenciaHasta('')
-        setNotificarAlarma(true)
-        setNotificarEnergia(true)
-        setNotificarApertura(false)
-        setNotificarCierre(false)
-        setNotificarVideo(false)
+        setNotificarAlarma(true); setNotificarEnergia(true)
+        setNotificarApertura(false); setNotificarCierre(false); setNotificarVideo(false)
       }
     }
     cargar()
 
-    const cargarHistorialBD = async () => {
+    // Cargar historial del abonado
+    const cargarHistorial = async () => {
       try {
         const { data } = await supabase
           .from('conversaciones_whatsapp')
           .select('*')
-          .or(`cuenta.eq.${clienteSeleccionado.cuenta},numero.eq.${(telefonoEnvio || telefono).replace(/[^0-9]/g, '')}`)
+          .eq('cuenta', clienteSeleccionado.cuenta)
           .order('created_at', { ascending: false })
-          .limit(30)
-
+          .limit(40)
         if (data && data.length > 0) {
           const items: ChatLogItem[] = []
           data.forEach((row: any) => {
             if (row.mensaje_enviado) {
-              items.push({
-                id: Math.random(),
-                cuenta: row.cuenta || clienteSeleccionado.cuenta,
-                telefono: row.numero || '',
-                texto: row.mensaje_enviado,
-                fecha: new Date(row.created_at).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }),
-                exito: true,
-                esRespuestaCliente: false
-              })
+              items.push({ id: Math.random(), cuenta: row.cuenta || clienteSeleccionado.cuenta, telefono: row.numero || '', texto: row.mensaje_enviado, fecha: new Date(row.created_at).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }), exito: true, esRespuestaCliente: false })
             }
             if (row.respuesta_recibida || row.respuesta_cliente) {
-              items.push({
-                id: Math.random(),
-                cuenta: row.cuenta || clienteSeleccionado.cuenta,
-                telefono: row.numero || '',
-                texto: row.respuesta_recibida || row.respuesta_cliente,
-                fecha: row.responded_at ? new Date(row.responded_at).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }) : new Date(row.created_at).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }),
-                exito: true,
-                esRespuestaCliente: true
-              })
+              items.push({ id: Math.random(), cuenta: row.cuenta || clienteSeleccionado.cuenta, telefono: row.numero || '', texto: row.respuesta_recibida || row.respuesta_cliente, fecha: new Date(row.created_at).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }), exito: true, esRespuestaCliente: true })
             }
           })
           setChatLogs(items)
+        } else {
+          setChatLogs([])
         }
-      } catch (err) {
-        console.warn('[WHATSAPP BD CHARLA ERROR]:', err)
-      }
+      } catch {}
     }
-    cargarHistorialBD()
+    cargarHistorial()
 
-    const channel = supabase
-      .channel(`chat_realtime_${clienteSeleccionado.cuenta}`)
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'conversaciones_whatsapp' },
-        (payload: any) => {
-          const row = payload.new
-          if (row) {
-            const esCliente = !!(row.respuesta_recibida || row.respuesta_cliente)
-            const nuevoItem: ChatLogItem = {
-              id: Date.now(),
-              cuenta: row.cuenta || clienteSeleccionado.cuenta,
-              telefono: row.numero || '',
-              texto: esCliente ? (row.respuesta_recibida || row.respuesta_cliente) : (row.mensaje_enviado || ''),
-              fecha: new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }),
-              exito: true,
-              esRespuestaCliente: esCliente
-            }
-            setChatLogs(prev => [nuevoItem, ...prev])
-          }
+    const ch = supabase
+      .channel(`notif_rt_${clienteSeleccionado.cuenta}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'conversaciones_whatsapp' }, (payload: any) => {
+        const row = payload.new
+        if (!row) return
+        const esCliente = !!(row.respuesta_recibida || row.respuesta_cliente)
+        const nuevoItem: ChatLogItem = {
+          id: Date.now(), cuenta: row.cuenta || clienteSeleccionado.cuenta, telefono: row.numero || '',
+          texto: esCliente ? (row.respuesta_recibida || row.respuesta_cliente) : (row.mensaje_enviado || ''),
+          fecha: new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }), exito: true, esRespuestaCliente: esCliente
         }
-      )
+        setChatLogs(prev => [nuevoItem, ...prev])
+      })
       .subscribe()
+    return () => { supabase.removeChannel(ch) }
+  }, [clienteSeleccionado, clientesMap])
 
-    return () => {
-      supabase.removeChannel(channel)
+  // Obtener lista de contactos del abonado seleccionado
+  const obtenerContactos = useCallback(() => {
+    if (!clienteSeleccionado) return []
+    const cliente = clientesMap[clienteSeleccionado.cuenta]
+    if (!cliente) return []
+    const lista: { etiqueta: string; telefono: string; nombre: string }[] = []
+    const campos = [
+      { t: cliente.t1 || cliente.telefono1 || cliente.telefono, n: cliente.nombre1 || cliente.nombre || 'Principal', e: '📱 Principal' },
+      { t: cliente.t2 || cliente.telefono2, n: cliente.nombre2 || 'Contacto 2', e: '📱 Contacto 2' },
+      { t: cliente.t3 || cliente.telefono3, n: cliente.nombre3 || 'Contacto 3', e: '📱 Contacto 3' },
+      { t: cliente.t4 || cliente.telefono4, n: cliente.nombre4 || 'Contacto 4', e: '📱 Contacto 4' },
+    ]
+    campos.forEach(({ t, n, e }) => {
+      if (t && t.replace(/[^0-9]/g, '').length >= 8) lista.push({ etiqueta: e, telefono: t, nombre: n })
+    })
+    contactos.forEach((c, idx) => {
+      if (c.telefono?.replace(/[^0-9]/g, '').length >= 8) {
+        lista.push({ etiqueta: `🔗 Escalamiento ${idx + 1}: ${c.nombre || ''}`, telefono: c.telefono, nombre: c.nombre || `Escal. ${idx + 1}` })
+      }
+    })
+    return lista
+  }, [clienteSeleccionado, clientesMap, contactos])
+
+  const enviarNotificacion = async () => {
+    const destFinal = telefonoManual.trim() || telefonoDestino
+    if (!destFinal) { setStatusNotif('❌ Selecciona o ingresa un número de destino'); return }
+    if (!textoNotif.trim()) { setStatusNotif('❌ Escribe el mensaje'); return }
+
+    let telNorm = normalizarTelefono(destFinal)
+    if (!telNorm || telNorm.length < 8) { setStatusNotif('❌ Número inválido (mín 8 dígitos)'); return }
+
+    let mensajeFinal = textoNotif.trim()
+    const preTexto = 'GAMA SEGURIDAD INFORMA: '
+    if (!mensajeFinal.toUpperCase().startsWith('GAMA SEGURIDAD INFORMA:')) {
+      mensajeFinal = `${preTexto}${mensajeFinal}`
     }
-  }, [clienteSeleccionado, clientesMap, telefono, telefonoEnvio])
+    if (!mensajeFinal.includes('NO responder')) {
+      mensajeFinal += '\n\n🚫 *Por favor, NO responder a este mensaje. Es una notificación automática.*'
+    }
 
-  const autoGuardarSiNoExiste = async (cuenta: string, telLimpio: string) => {
+    setEnviandoNotif(true)
+    setStatusNotif('⏳ Enviando...')
     try {
-      const { data } = await supabase
-        .from('notificaciones_whatsapp')
-        .select('id')
-        .eq('cuenta', cuenta)
-        .limit(1)
-
-      if (!data || data.length === 0) {
-        await supabase.from('notificaciones_whatsapp').insert({
-          cuenta: cuenta,
-          telefono: telLimpio,
-          activo: true,
-          created_at: new Date().toISOString()
-        })
-      }
-    } catch (err) {
-      console.warn('[WHATSAPP] Error en auto-guardado:', err)
-    }
-  }
-
-  const guardar = async () => {
-    if (!clienteSeleccionado) return
-    const telLimpio = telefono.replace(/[^0-9]/g, '')
-    if (!telLimpio) { setMensaje('Debe ingresar un teléfono válido'); return }
-    setGuardando(true)
-    setMensaje('')
-    try {
-      const payload: any = {
-        cuenta: clienteSeleccionado.cuenta,
-        telefono: telLimpio,
-        activo,
-        contactos_escalamiento: contactos,
-        silencio_hasta: null,
-        updated_at: new Date().toISOString(),
-      }
-      try {
-        payload.notificar_alarma = notificarAlarma
-        payload.notificar_energia = notificarEnergia
-        payload.notificar_apertura = notificarApertura
-        payload.notificar_cierre = notificarCierre
-        payload.notificar_video = notificarVideo
-        const { error } = await supabase.from('notificaciones_whatsapp').upsert(payload, { onConflict: 'cuenta' })
-        if (error) throw error
-      } catch {
-        delete payload.notificar_alarma
-        delete payload.notificar_energia
-        delete payload.notificar_apertura
-        delete payload.notificar_cierre
-        delete payload.notificar_video
-        const { error } = await supabase.from('notificaciones_whatsapp').upsert(payload, { onConflict: 'cuenta' })
-        if (error) throw error
-      }
-      setMensaje('✅ Guardado OK')
-      setTimeout(() => setMensaje(''), 3000)
-    } catch (err: any) {
-      setMensaje('Error: ' + err.message)
-    } finally {
-      setGuardando(false)
-    }
-  }
-
-  const agregarContacto = () => setContactos([...contactos, { nombre: '', telefono: '', parentesco: '' }])
-  const actualizarContacto = (i: number, campo: keyof ContactoEscalamiento, valor: string) => {
-    const copia = [...contactos]; copia[i] = { ...copia[i], [campo]: valor }; setContactos(copia)
-  }
-  const eliminarContacto = (i: number) => setContactos(contactos.filter((_, idx) => idx !== i))
-
-  const enviarMensajeManual = async (esChatDirecto: boolean = false) => {
-    if (!clienteSeleccionado) {
-      alert('Por favor seleccione un abonado en la lista izquierda primero.')
-      return
-    }
-    if (!telefonoEnvio) {
-      alert('Por favor ingrese un número de teléfono de destino.')
-      return
-    }
-
-    let telLimpio = telefonoEnvio.replace(/[^0-9]/g, '')
-    if (telLimpio.length === 9 && telLimpio.startsWith('9')) {
-      telLimpio = '56' + telLimpio
-    } else if (telLimpio.length === 8) {
-      telLimpio = '569' + telLimpio
-    }
-
-    if (!telLimpio || telLimpio.length < 8) {
-      alert('Debe ingresar un teléfono válido (ej: +56991016912).')
-      return
-    }
-
-    let mensajeFinal = textoMensaje.trim()
-    if (!mensajeFinal) {
-      alert('Ingrese el cuerpo del mensaje antes de enviar.')
-      return
-    }
-
-    if (!esChatDirecto) {
-      const preTexto = 'GAMA SEGURIDAD INFORMA: '
-      if (!mensajeFinal.toUpperCase().startsWith('GAMA SEGURIDAD INFORMA:')) {
-        mensajeFinal = `${preTexto}${mensajeFinal}`
-      }
-      const notaNoResponder = '\n\n🚫 *Por favor, NO responder a este mensaje. Es una notificación automática.*'
-      if (!mensajeFinal.includes('NO responder')) {
-        mensajeFinal = `${mensajeFinal}${notaNoResponder}`
-      }
-    }
-
-    setEnviandoManual(true)
-    setMensajeStatus('Enviando mensaje...')
-
-    try {
-      const resultado = await sendMessage(telLimpio, mensajeFinal)
-      await autoGuardarSiNoExiste(clienteSeleccionado.cuenta, telLimpio)
+      const resultado = await sendMessage(telNorm, mensajeFinal)
       const logItem: ChatLogItem = {
-        id: Date.now(),
-        cuenta: clienteSeleccionado.cuenta,
-        telefono: telLimpio,
-        texto: mensajeFinal,
-        fecha: new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }),
-        exito: resultado.ok,
-        errorMsg: resultado.ok ? null : (resultado.debug || 'Error al conectar con WhatsApp'),
-        esRespuestaCliente: false
+        id: Date.now(), cuenta: clienteSeleccionado?.cuenta || 'MANUAL', telefono: telNorm,
+        texto: mensajeFinal, fecha: new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }),
+        exito: resultado.ok, errorMsg: resultado.ok ? null : (resultado.debug || 'Error'), esRespuestaCliente: false
       }
-
       setChatLogs(prev => [logItem, ...prev])
-
       if (resultado.ok) {
-        setTextoMensaje('')
-        setMensajeStatus('✅ Mensaje enviado exitosamente')
+        setTextoNotif('')
+        setStatusNotif(`✅ Enviado a +${telNorm}`)
+        setTelefonoManual('')
       } else {
-        setMensajeStatus('❌ Error: ' + (resultado.debug || 'No fue posible entregar'))
+        setStatusNotif('❌ Error: ' + (resultado.debug || 'No fue posible entregar'))
       }
     } catch (err: any) {
-      setMensajeStatus('❌ Error al enviar mensaje: ' + err.message)
+      setStatusNotif('❌ ' + err.message)
     } finally {
-      setEnviandoManual(false)
+      setEnviandoNotif(false)
+      setTimeout(() => setStatusNotif(''), 5000)
     }
   }
 
   const aplicarPlantilla = (tipo: string) => {
-    if (!clienteSeleccionado) return
-    const cuenta = clienteSeleccionado.cuenta
+    const cuenta = clienteSeleccionado?.cuenta || '???'
     const plantillas: Record<string, string> = {
-      intrusión: `Se ha detectado una ALARMA DE ROBO / INTRUSIÓN en su propiedad (Cuenta: ${cuenta}). Por favor confirmar estado urgentemente.`,
-      energia: `Se registra CORTE DE ENERGÍA ELÉCTRICA en su propiedad (Cuenta: ${cuenta}). Su sistema opera con batería de respaldo.`,
-      apertura: `Se ha registrado una APERTURA no programada fuera de horario (Cuenta: ${cuenta}). Confirmar si es personal autorizado.`,
-      cierre: `Confirmación de CIERRE DE INSTALACIÓN recibido correctamente (Cuenta: ${cuenta}). Sistema armado.`,
-      video: `Transmisión de video-verificación en vivo activada para la propiedad (Cuenta: ${cuenta}).`
+      intrusión: `Se ha detectado una ALARMA DE ROBO / INTRUSIÓN en su propiedad. Por favor confirmar estado urgentemente.`,
+      energia: `Se registra CORTE DE ENERGÍA ELÉCTRICA en su propiedad. Su sistema opera con batería de respaldo (72h aprox.).`,
+      apertura: `Se ha registrado una APERTURA no programada fuera de horario en su propiedad. Confirmar si es personal autorizado.`,
+      cierre: `Confirmación de CIERRE DE INSTALACIÓN recibido correctamente. Sistema armado.`,
+      video: `Transmisión de video-verificación en vivo activada para su propiedad.`,
+      panico: `⚠️ SEÑAL DE PÁNICO RECIBIDA desde su propiedad. Personal de emergencia en camino. Responda OK si está seguro.`,
     }
-    setTextoMensaje(plantillas[tipo] || '')
+    setTextoNotif(plantillas[tipo] || '')
   }
 
-  const tabs: { id: Tab; label: string }[] = [
-    { id: 'web', label: '💬 Chats En Vivo (WhatsApp Embebido)' },
-    { id: 'manual', label: '📢 Envíos Manuales & Plantillas de Emergencia' },
-    { id: 'config', label: '⚙️ Configuración & Notificaciones Automáticas' },
-  ]
+  const guardarConfig = async () => {
+    if (!clienteSeleccionado) return
+    const telLimpio = telefono.replace(/[^0-9]/g, '')
+    if (!telLimpio) { setMensajeConfig('Ingresa un teléfono válido'); return }
+    setGuardando(true); setMensajeConfig('')
+    try {
+      const payload: any = {
+        cuenta: clienteSeleccionado.cuenta, telefono: telLimpio, activo,
+        contactos_escalamiento: contactos, silencio_hasta: null,
+        updated_at: new Date().toISOString(),
+        notificar_alarma: notificarAlarma, notificar_energia: notificarEnergia,
+        notificar_apertura: notificarApertura, notificar_cierre: notificarCierre,
+        notificar_video: notificarVideo,
+      }
+      const { error } = await supabase.from('notificaciones_whatsapp').upsert(payload, { onConflict: 'cuenta' })
+      if (error) throw error
+      setMensajeConfig('✅ Guardado correctamente')
+    } catch (err: any) {
+      setMensajeConfig('Error: ' + err.message)
+    } finally {
+      setGuardando(false)
+      setTimeout(() => setMensajeConfig(''), 3000)
+    }
+  }
 
-  const listaContactosAutorizados = clienteSeleccionado ? obtenerListaContactos(clienteSeleccionado.cuenta) : []
+  // Pairing Code
+  const solicitarPairingCode = async () => {
+    setLoadingPair(true); setServerMsg('')
+    try {
+      const phone = pairingInput.replace(/[^0-9]/g, '') || '56948855190'
+      const res = await fetch('/api/whatsapp/qr', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone }),
+      })
+      const data = await res.json()
+      if (data.ok && data.code) {
+        setPairingCode(data.code)
+        setServerMsg(`✅ Código generado: ${data.code}`)
+      } else {
+        setServerMsg('⚠️ ' + (data.error || 'Error al generar código'))
+      }
+    } catch (err: any) {
+      setServerMsg('❌ ' + err.message)
+    } finally {
+      setLoadingPair(false)
+    }
+  }
+
+  const logout = async () => {
+    if (!confirm('¿Cerrar sesión de WhatsApp? Deberás volver a vincular.')) return
+    setLoadingLogout(true)
+    try {
+      await fetch('/api/whatsapp/logout', { method: 'POST' })
+      setServerMsg('🔴 Sesión cerrada. El servidor reiniciará en segundos...')
+    } catch {}
+    setLoadingLogout(false)
+  }
 
   const clientesFiltrados = Object.entries(clientesMap).filter(([cuenta, datos]) => {
     if (!busqueda.trim()) return true
@@ -476,22 +466,46 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
     return cuenta.toLowerCase().includes(q) || (datos.nombre || '').toLowerCase().includes(q)
   })
 
+  const contactosAbonado = obtenerContactos()
+
+  // Indicador de estado del servidor
+  const statusColor = waStatus.ready ? '#22c55e' : waStatus.estado === 'ESPERANDO_QR' ? '#f59e0b' : '#ef4444'
+  const statusLabel = waStatus.ready ? `✅ Conectado (${waStatus.usuario || ''})` : waStatus.estado === 'SERVIDOR_APAGADO' ? '🔴 Servidor apagado' : waStatus.hasQR ? '🟡 Esperando QR' : '🔵 Conectando...'
+
+  const tabs: { id: Tab; label: string }[] = [
+    { id: 'chat',          label: '💬 Chat en Vivo' },
+    { id: 'notificaciones',label: '📢 Enviar Notificaciones' },
+    { id: 'config',        label: '⚙️ Configuración' },
+    { id: 'servidor',      label: '📡 Estado Servidor' },
+  ]
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 font-mono">
-      <div className="bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 w-full max-w-5xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden">
-        
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-2 font-mono">
+      <div className="bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 w-full max-w-6xl h-[92vh] flex flex-col shadow-2xl overflow-hidden">
+
         {/* Header */}
-        <div className="bg-[#000080] text-white px-2 py-1 flex justify-between items-center shrink-0">
+        <div className="bg-[#000080] text-white px-3 py-1 flex justify-between items-center shrink-0">
           <div className="font-bold text-sm tracking-wide flex items-center gap-2">
             <span>💬</span>
-            <span>CENTRO DE MENSAJERÍA Y CHAT WHATSAPP - GAMA SEGURIDAD</span>
+            <span>CENTRO DE MENSAJERÍA WHATSAPP — GAMA SEGURIDAD v3.0</span>
           </div>
-          <button onClick={onClose} className="bg-[#c0c0c0] text-black font-bold border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 px-2 leading-none hover:bg-[#d0d0d0] cursor-pointer">X</button>
+          <div className="flex items-center gap-3">
+            {/* Indicador de estado compacto */}
+            <span className="text-[11px] font-bold px-2 py-0.5 rounded-full" style={{ background: statusColor, color: '#000' }}>
+              {statusLabel}
+            </span>
+            {waStatus.cola > 0 && (
+              <span className="text-[10px] bg-yellow-400 text-black px-2 py-0.5 rounded-full font-bold">
+                📥 {waStatus.cola} en cola
+              </span>
+            )}
+            <button onClick={onClose} className="bg-[#c0c0c0] text-black font-bold border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 w-6 h-6 flex items-center justify-center hover:bg-red-200 cursor-pointer text-xs">✕</button>
+          </div>
         </div>
 
-        {/* Pestañas de Navegación */}
+        {/* Tabs */}
         <div className="flex border-b border-gray-600 shrink-0 bg-[#b0b0b0]">
-          {tabs.map((t) => (
+          {tabs.map(t => (
             <button
               key={t.id}
               onClick={() => setActiveTab(t.id)}
@@ -506,175 +520,169 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
           ))}
         </div>
 
-        {/* Contenido Principal */}
+        {/* Contenido */}
         <div className="flex-1 overflow-hidden">
-          
-          {/* ═══ TAB 1: CHAT GENERAL EN VIVO DE WHATSAPP (NATIVO EMBEBIDO) ═══ */}
-          {activeTab === 'web' && (
-            <div className="flex h-[520px] bg-[#111b21] text-white overflow-hidden font-sans">
-              
-              {/* Columna Izquierda: Todos los Chats Activos */}
-              <div className="w-80 border-r border-[#222d34] bg-[#111b21] flex flex-col shrink-0">
-                {/* Header */}
+
+          {/* ══════════════════════════════════════════
+              TAB 1: CHAT EN VIVO
+          ══════════════════════════════════════════ */}
+          {activeTab === 'chat' && (
+            <div className="flex h-full bg-[#111b21] text-white overflow-hidden font-sans">
+
+              {/* Sidebar: Lista de chats */}
+              <div className="w-72 border-r border-[#222d34] bg-[#111b21] flex flex-col shrink-0">
+                {/* Header sidebar */}
                 <div className="p-3 bg-[#202c33] border-b border-[#222d34] flex justify-between items-center shrink-0">
                   <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-full bg-[#00a884] flex items-center justify-center font-bold text-white text-xs shadow">
-                      GS
+                    <div className="w-8 h-8 rounded-full bg-[#00a884] flex items-center justify-center font-bold text-white text-xs shadow">GS</div>
+                    <div>
+                      <div className="font-bold text-xs text-white">WHATSAPP CENTRAL</div>
+                      <div className="text-[9px] text-[#00a884]">Gama Seguridad</div>
                     </div>
-                    <span className="font-bold text-xs text-white">WHATSAPP CENTRAL EN VIVO</span>
                   </div>
-                  <span className="text-[10px] bg-[#00a884] text-black px-2 py-0.5 rounded-full font-bold">ONLINE</span>
+                  <span className="text-[9px] px-2 py-0.5 rounded-full font-bold" style={{ background: statusColor, color: '#000' }}>
+                    {waStatus.ready ? 'EN LÍNEA' : 'OFFLINE'}
+                  </span>
                 </div>
 
-                {/* Buscador de Chats */}
+                {/* Buscador */}
                 <div className="p-2 bg-[#111b21] border-b border-[#222d34]">
                   <input
                     type="text"
                     placeholder="🔍 Buscar contacto o número..."
                     className="w-full bg-[#202c33] text-gray-200 border border-[#2a3942] rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-[#00a884]"
-                    value={busquedaChatLibre}
-                    onChange={(e) => setBusquedaChatLibre(e.target.value)}
+                    value={busquedaChat}
+                    onChange={e => setBusquedaChat(e.target.value)}
                   />
                 </div>
 
-                {/* Lista de Chats recientes */}
+                {/* Lista de chats */}
                 <div className="flex-1 overflow-y-auto divide-y divide-[#222d34]">
-                  {listaChatsGlobales.map((chat) => (
+                  {listaChats.length === 0 && (
+                    <div className="p-4 text-center text-[#8696a0] text-xs">Sin conversaciones aún</div>
+                  )}
+                  {listaChats.map(chat => (
                     <div
                       key={chat.numero}
-                      onClick={() => setChatLibreActivo(chat.numero)}
-                      className={`p-3 flex items-center gap-3 cursor-pointer transition-colors ${
-                        chatLibreActivo === chat.numero ? 'bg-[#2a3942]' : 'hover:bg-[#202c33]'
-                      }`}
+                      onClick={() => setChatActivo(chat.numero)}
+                      className={`p-3 flex items-center gap-3 cursor-pointer transition-colors ${chatActivo === chat.numero ? 'bg-[#2a3942]' : 'hover:bg-[#202c33]'}`}
                     >
-                      <div className="w-10 h-10 rounded-full bg-[#005c4b] border border-[#00a884] flex items-center justify-center font-bold text-white text-xs shrink-0 shadow">
-                        📱
+                      <div className="w-10 h-10 rounded-full bg-[#005c4b] border border-[#00a884] flex items-center justify-center font-bold text-white text-xs shrink-0 shadow uppercase">
+                        {chat.nombre.charAt(0) || '?'}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex justify-between items-baseline mb-0.5">
-                          <span className="font-bold text-xs text-white truncate max-w-[130px]">
-                            {chat.nombreAbonado || `+${chat.numero}`}
-                          </span>
-                          <span className="text-[9px] text-[#8696a0]">{chat.hora}</span>
+                          <span className="font-bold text-xs text-white truncate max-w-[130px]">{chat.nombre}</span>
+                          <span className="text-[9px] text-[#8696a0] shrink-0 ml-1">{chat.hora}</span>
                         </div>
-                        <div className="text-[10px] text-[#8696a0] truncate font-sans">
-                          {chat.ultimoMensaje}
-                        </div>
+                        <div className="text-[10px] text-[#8696a0] truncate font-sans">{chat.ultimoMsg || formatearNumeroDisplay(chat.numero)}</div>
                       </div>
                     </div>
                   ))}
                 </div>
               </div>
 
-              {/* Columna Derecha: Hilo del Chat Activo */}
+              {/* Panel de chat */}
               <div className="flex-1 flex flex-col bg-[#0b141a] relative">
-                {!chatLibreActivo ? (
+                {!chatActivo ? (
                   <div className="flex-1 flex flex-col items-center justify-center text-[#8696a0] p-6 text-center">
-                    <div className="w-16 h-16 rounded-full bg-[#202c33] flex items-center justify-center text-3xl mb-3">💬</div>
-                    <span className="font-bold text-sm text-white mb-1">GAMA SEGURIDAD - WHATSAPP LIVE CHAT</span>
-                    <span className="text-xs">Selecciona un chat de la izquierda para interactuar en tiempo real.</span>
+                    <div className="w-20 h-20 rounded-full bg-[#202c33] flex items-center justify-center text-4xl mb-4">💬</div>
+                    <span className="font-bold text-sm text-white mb-2">GAMA SEGURIDAD — CHAT EN VIVO</span>
+                    <span className="text-xs">Selecciona una conversación de la lista.</span>
                   </div>
                 ) : (
                   <>
-                    {/* Header del Chat */}
-                    <div className="p-3 bg-[#202c33] border-b border-[#222d34] flex items-center justify-between shrink-0 shadow">
+                    {/* Header del chat */}
+                    <div className="p-3 bg-[#202c33] border-b border-[#222d34] flex items-center justify-between shrink-0">
                       <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-full bg-[#00a884] flex items-center justify-center font-bold text-white text-xs">
-                          📱
+                        <div className="w-9 h-9 rounded-full bg-[#00a884] flex items-center justify-center font-bold text-white text-sm uppercase">
+                          {(chatsMap.get(chatActivo)?.nombre || '+').charAt(0)}
                         </div>
                         <div>
-                          <div className="font-bold text-xs text-white">
-                            +{chatLibreActivo}
-                          </div>
-                          <div className="text-[10px] text-[#00a884] flex items-center gap-1 font-mono">
-                            <span className="w-1.5 h-1.5 rounded-full bg-[#00a884] animate-pulse"></span>
-                            <span>Conectado en tiempo real</span>
-                          </div>
+                          <div className="font-bold text-xs text-white">{chatsMap.get(chatActivo)?.nombre || `+${chatActivo}`}</div>
+                          <div className="text-[10px] text-[#8696a0] font-mono">{formatearNumeroDisplay(chatActivo)}</div>
                         </div>
                       </div>
+                      <button
+                        onClick={() => { setTelefonoManual(chatActivo); setActiveTab('notificaciones') }}
+                        className="text-[10px] bg-[#005c4b] text-[#00a884] border border-[#00a884] px-3 py-1 rounded-full hover:bg-[#00a884] hover:text-black transition-colors cursor-pointer font-bold"
+                      >
+                        📢 Enviar Notificación
+                      </button>
                     </div>
 
-                    {/* Lienzo del Hilo de Chat */}
+                    {/* Mensajes */}
                     <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-[#0b141a]">
-                      {mensajesDelChatActivo.map((msg) => {
+                      {mensajesActivos.length === 0 && (
+                        <div className="text-center text-[#8696a0] text-xs py-8">Sin mensajes aún en esta conversación</div>
+                      )}
+                      {mensajesActivos.map((msg, i) => {
                         const esCliente = !!(msg.respuesta_recibida || msg.respuesta_cliente)
+                        const texto = esCliente ? (msg.respuesta_recibida || msg.respuesta_cliente) : msg.mensaje_enviado
+                        if (!texto) return null
                         return (
-                          <div
-                            key={msg.id}
-                            className={`flex flex-col ${esCliente ? 'items-start' : 'items-end'}`}
-                          >
-                            <div
-                              className={`max-w-[75%] p-2.5 rounded-lg text-xs font-sans shadow-md break-words ${
-                                esCliente
-                                  ? 'bg-[#202c33] text-white rounded-tl-none border-l-4 border-l-[#38bdf8]'
-                                  : 'bg-[#005c4b] text-white rounded-tr-none'
-                              }`}
-                            >
-                              <div className="text-[9px] font-bold opacity-75 mb-1 font-mono flex justify-between gap-4">
-                                <span>{esCliente ? `📩 CLIENTE (+${msg.numero})` : `🛡️ GAMA SEGURIDAD`}</span>
-                                <span>{new Date(msg.created_at).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}</span>
+                          <div key={msg.id || i} className={`flex flex-col ${esCliente ? 'items-start' : 'items-end'}`}>
+                            <div className={`max-w-[75%] p-2.5 rounded-lg text-xs font-sans shadow-md break-words ${esCliente ? 'bg-[#202c33] text-white rounded-tl-none border-l-4 border-l-[#38bdf8]' : 'bg-[#005c4b] text-white rounded-tr-none'}`}>
+                              <div className="text-[9px] font-bold opacity-70 mb-1 flex justify-between gap-4">
+                                <span>{esCliente ? `📩 CLIENTE` : `🛡️ GAMA SEGURIDAD`}</span>
+                                <span>{msg.created_at ? new Date(msg.created_at).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }) : ''}</span>
                               </div>
-                              <div className="leading-relaxed font-medium">
-                                {esCliente ? (msg.respuesta_recibida || msg.respuesta_cliente) : msg.mensaje_enviado}
-                              </div>
+                              <div className="leading-relaxed">{texto}</div>
                             </div>
                           </div>
                         )
                       })}
+                      <div ref={chatEndRef} />
                     </div>
 
-                    {/* Caja Inferior de Enviar Mensaje */}
-                    <div className="p-3 bg-[#202c33] border-t border-[#222d34] flex gap-2 items-center shrink-0">
+                    {/* Input de respuesta */}
+                    <div className="p-3 bg-[#202c33] border-t border-[#222d34] flex gap-2 items-end shrink-0">
                       <textarea
                         rows={2}
-                        placeholder="Escribe un mensaje de respuesta aquí..."
+                        placeholder="Escribe una respuesta directa..."
                         className="flex-1 bg-[#2a3942] text-white p-2 text-xs font-sans rounded-lg border border-[#374248] focus:outline-none focus:border-[#00a884] resize-none"
-                        value={textoChatLibre}
-                        onChange={(e) => setTextoChatLibre(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' && !e.shiftKey) {
-                            e.preventDefault()
-                            enviarMensajeChatLibre()
-                          }
-                        }}
+                        value={textoChat}
+                        onChange={e => setTextoChat(e.target.value)}
+                        onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviarChat() } }}
                       />
                       <button
-                        onClick={enviarMensajeChatLibre}
-                        disabled={!textoChatLibre.trim()}
-                        className="bg-[#00a884] hover:bg-[#029676] text-black font-bold text-xs px-4 py-2.5 rounded-lg disabled:opacity-50 cursor-pointer shadow"
+                        onClick={enviarChat}
+                        disabled={!textoChat.trim() || enviandoChat}
+                        className="bg-[#00a884] hover:bg-[#029676] text-black font-bold text-xs px-4 py-2 rounded-lg disabled:opacity-50 cursor-pointer shadow h-10"
                       >
-                        💬 ENVIAR
+                        {enviandoChat ? '⏳' : '💬'}
                       </button>
                     </div>
                   </>
                 )}
               </div>
-
             </div>
           )}
 
-          {/* ═══ TAB 2: ENVÍOS MANUALES POR ABONADO & PLANTILLAS DE EMERGENCIA ═══ */}
-          {activeTab === 'manual' && (
-            <div className="p-3 flex gap-3 h-[520px] bg-[#c0c0c0]">
-              
-              {/* Columna Izquierda: Buscador y Lista de Abonados */}
-              <div className="w-64 border-2 border-gray-700 bg-black text-green-400 flex flex-col font-mono text-[11px] shrink-0">
+          {/* ══════════════════════════════════════════
+              TAB 2: ENVIAR NOTIFICACIONES
+          ══════════════════════════════════════════ */}
+          {activeTab === 'notificaciones' && (
+            <div className="flex gap-2 h-full bg-[#c0c0c0] p-2 overflow-hidden">
+
+              {/* Columna Izquierda: Lista de Abonados */}
+              <div className="w-56 border-2 border-gray-700 bg-black text-green-400 flex flex-col font-mono text-[11px] shrink-0">
                 <div className="p-1.5 border-b border-gray-800 bg-gray-900 shrink-0">
-                  <span className="text-[10px] text-gray-400 font-bold block mb-1 uppercase">Buscar Abonado:</span>
+                  <span className="text-[10px] text-gray-400 font-bold block mb-1">ABONADOS:</span>
                   <input
                     type="text"
-                    placeholder="BUSCAR ABONADO O CUENTA..."
+                    placeholder="BUSCAR..."
                     className="w-full bg-black text-green-400 border border-green-800 px-2 py-1 focus:outline-none focus:border-green-400 text-[10px]"
                     value={busqueda}
-                    onChange={(e) => setBusqueda(e.target.value)}
+                    onChange={e => setBusqueda(e.target.value)}
                   />
                 </div>
                 <div className="flex-1 overflow-y-auto">
                   <table className="w-full text-left border-collapse">
                     <thead>
                       <tr className="bg-gray-800 text-green-200 text-[10px]">
-                        <th className="p-1 border-b border-gray-700 w-14">CTA</th>
-                        <th className="p-1 border-b border-gray-700">ABONADO</th>
+                        <th className="p-1 border-b border-gray-700 w-12">CTA</th>
+                        <th className="p-1 border-b border-gray-700">NOMBRE</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-900">
@@ -682,10 +690,14 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
                         <tr
                           key={cuenta}
                           className={`cursor-pointer hover:bg-green-900/60 ${clienteSeleccionado?.cuenta === cuenta ? 'bg-green-900 text-white font-bold' : ''}`}
-                          onClick={() => setClienteSeleccionado({ cuenta, nombre: datos.nombre || '' })}
+                          onClick={() => {
+                            setClienteSeleccionado({ cuenta, nombre: datos.nombre || '' })
+                            setTelefonoManual('')
+                            setTelefonoDestino('')
+                          }}
                         >
                           <td className="p-1 border-r border-gray-800 font-bold">{cuenta}</td>
-                          <td className="p-1 truncate max-w-[140px] text-[10px]">{datos.nombre}</td>
+                          <td className="p-1 truncate max-w-[110px] text-[10px]">{datos.nombre}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -693,217 +705,177 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
                 </div>
               </div>
 
-              {/* Columna Central: Redacción de Mensaje e Ingesta Directa */}
-              <div className="flex-1 border-2 border-t-gray-700 border-l-gray-700 border-b-white border-r-white bg-[#e0e0e0] flex flex-col p-3 text-black overflow-y-auto">
-                <div className="text-[#000080] font-bold text-xs border-b border-gray-400 pb-1 mb-2 flex justify-between items-center">
-                  <span>ENVÍO MANUAL DE EMERGENCIAS</span>
-                  {clienteSeleccionado && (
-                    <span className="bg-[#000080] text-white px-2 py-0.5 text-[10px] rounded font-mono">
-                      CTA: {clienteSeleccionado.cuenta}
-                    </span>
+              {/* Columna Central: Redacción */}
+              <div className="flex-1 border-2 border-t-gray-700 border-l-gray-700 border-b-white border-r-white bg-[#e0e0e0] flex flex-col p-2 text-black overflow-y-auto gap-2">
+                <div className="text-[#000080] font-bold text-xs border-b border-gray-400 pb-1 flex justify-between items-center shrink-0">
+                  <span>📢 ENVÍO DE NOTIFICACIÓN WHATSAPP</span>
+                  {clienteSeleccionado && <span className="bg-[#000080] text-white px-2 py-0.5 text-[10px] rounded font-mono">CTA: {clienteSeleccionado.cuenta}</span>}
+                </div>
+
+                {/* PASO 1: Selector de número destino */}
+                <div className="bg-white border border-gray-300 p-2 rounded">
+                  <div className="text-[10px] font-bold text-gray-700 mb-1.5">1. SELECCIONAR NÚMERO DE DESTINO:</div>
+
+                  {/* Contactos del abonado */}
+                  {clienteSeleccionado && contactosAbonado.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mb-2">
+                      {contactosAbonado.map((c, idx) => {
+                        const telNorm = normalizarTelefono(c.telefono)
+                        const isSelected = telefonoDestino === c.telefono && !telefonoManual
+                        return (
+                          <button
+                            key={idx}
+                            onClick={() => { setTelefonoDestino(c.telefono); setTelefonoManual('') }}
+                            className={`text-left px-2 py-1 rounded border text-[10px] cursor-pointer transition-all ${
+                              isSelected
+                                ? 'bg-green-700 text-white border-green-900 font-bold shadow-inner'
+                                : 'bg-white text-gray-800 border-gray-400 hover:bg-green-50 hover:border-green-600'
+                            }`}
+                          >
+                            {c.etiqueta}<br />
+                            <span className="font-mono text-[9px] opacity-80">{formatearNumeroDisplay(c.telefono)}</span>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  )}
+
+                  {!clienteSeleccionado && (
+                    <div className="text-[10px] text-gray-400 italic mb-1">[Selecciona un abonado de la lista, o ingresa un número manual abajo]</div>
+                  )}
+
+                  {/* Campo manual (SIEMPRE visible, soporta +) */}
+                  <div className="flex items-center gap-1.5 mt-1">
+                    <span className="text-[10px] font-bold text-gray-700 shrink-0">Número manual:</span>
+                    <input
+                      type="text"
+                      placeholder="+56912345678  ó  56912345678  ó  912345678"
+                      className={`flex-1 bg-white border px-2 py-1 text-xs font-mono text-black font-bold focus:outline-none focus:border-blue-700 ${telefonoManual ? 'border-blue-500 bg-blue-50' : 'border-gray-500'}`}
+                      value={telefonoManual}
+                      onChange={e => {
+                        // Permite +, dígitos y espacios
+                        const v = e.target.value.replace(/[^0-9+\s\-()]/g, '')
+                        setTelefonoManual(v)
+                        if (v) setTelefonoDestino('')
+                      }}
+                    />
+                    {telefonoManual && (
+                      <span className="text-[9px] text-blue-700 font-bold shrink-0">
+                        → {formatearNumeroDisplay(normalizarTelefono(telefonoManual))}
+                      </span>
+                    )}
+                  </div>
+                  {(telefonoManual || telefonoDestino) && (
+                    <div className="text-[9px] text-green-700 font-bold mt-1">
+                      ✓ DESTINO ACTIVO: {formatearNumeroDisplay(normalizarTelefono(telefonoManual || telefonoDestino))}
+                    </div>
                   )}
                 </div>
 
-                {!clienteSeleccionado ? (
-                  <div className="flex-1 flex items-center justify-center text-gray-500 font-bold text-xs text-center p-4">
-                    SELECCIONE UN ABONADO EN LA LISTA IZQUIERDA<br />PARA ENVIAR NOTIFICACIONES WHATSAPP
+                {/* PASO 2: Plantillas */}
+                <div className="shrink-0">
+                  <div className="text-[10px] font-bold text-gray-700 mb-1">2. PLANTILLA RÁPIDA:</div>
+                  <div className="flex flex-wrap gap-1">
+                    {[
+                      { tipo: 'intrusión', color: 'bg-red-700', label: '🚨 ROBO/INTRUSIÓN' },
+                      { tipo: 'energia',   color: 'bg-yellow-600', label: '⚡ CORTE ENERGÍA' },
+                      { tipo: 'apertura',  color: 'bg-blue-700', label: '🔓 APERTURA' },
+                      { tipo: 'cierre',    color: 'bg-blue-900', label: '🔒 CIERRE' },
+                      { tipo: 'video',     color: 'bg-green-800', label: '📹 VIDEO' },
+                      { tipo: 'panico',    color: 'bg-orange-700', label: '🆘 PÁNICO' },
+                    ].map(p => (
+                      <button
+                        key={p.tipo}
+                        onClick={() => aplicarPlantilla(p.tipo)}
+                        className={`${p.color} text-white text-[9px] font-bold px-2 py-1 rounded hover:opacity-80 cursor-pointer`}
+                      >
+                        {p.label}
+                      </button>
+                    ))}
                   </div>
-                ) : (
-                  <div className="flex flex-col flex-1 gap-2.5">
-                    
-                    {/* Ficha Cliente Activo */}
-                    <div className="bg-white border border-gray-400 p-2 rounded text-[11px]">
-                      <div className="font-bold text-blue-900 truncate">
-                        {clienteSeleccionado.cuenta} - {clienteSeleccionado.nombre}
-                      </div>
-                    </div>
+                </div>
 
-                    {/* Selector de Contactos Autorizados */}
-                    <div>
-                      <span className="text-[10px] font-bold text-gray-700 block mb-1">
-                        1. SELECCIONAR CONTACTO DE DESTINO DE ESTE ABONADO:
-                      </span>
-                      {listaContactosAutorizados.length > 0 ? (
-                        <div className="grid grid-cols-2 gap-1 mb-1">
-                          {listaContactosAutorizados.map((c, idx) => (
-                            <button
-                              key={idx}
-                              onClick={() => setTelefonoEnvio(c.telefono)}
-                              className={`text-left p-1 rounded border text-[10px] truncate cursor-pointer transition-colors ${
-                                telefonoEnvio.replace(/[^0-9]/g, '') === c.telefono.replace(/[^0-9]/g, '') && telefonoEnvio !== ''
-                                  ? 'bg-green-700 text-white border-green-900 font-bold'
-                                  : 'bg-white text-gray-800 border-gray-400 hover:bg-gray-100'
-                              }`}
-                            >
-                              📞 {c.etiqueta}: <span className="font-mono">{c.telefono}</span>
-                            </button>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="text-[10px] text-gray-500 italic mb-1">[Sin contactos guardados en ficha general]</div>
-                      )}
-                      
-                      <div className="flex items-center gap-1.5 mt-1">
-                        <span className="text-[10px] font-bold text-gray-700 shrink-0">Teléfono manual:</span>
-                        <input
-                          type="text"
-                          placeholder="+56991016912"
-                          className="flex-1 bg-white border border-gray-500 px-2 py-1 text-xs font-mono text-black font-bold focus:outline-none focus:border-blue-700"
-                          value={telefonoEnvio}
-                          onChange={(e) => setTelefonoEnvio(e.target.value.replace(/[^0-9+]/g, ''))}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Plantillas Rápidas de Emergencia */}
-                    <div>
-                      <span className="text-[10px] font-bold text-gray-700 block mb-1">
-                        2. PLANTILLAS DE EMERGENCIA RÁPIDAS:
-                      </span>
-                      <div className="flex flex-wrap gap-1">
-                        <button
-                          onClick={() => aplicarPlantilla('intrusión')}
-                          className="bg-red-700 text-white text-[9px] font-bold px-2 py-1 rounded hover:bg-red-800 cursor-pointer"
-                        >
-                          🚨 ROBO / INTRUSIÓN
-                        </button>
-                        <button
-                          onClick={() => aplicarPlantilla('energia')}
-                          className="bg-yellow-700 text-white text-[9px] font-bold px-2 py-1 rounded hover:bg-yellow-800 cursor-pointer"
-                        >
-                          ⚡ CORTE ENERGÍA
-                        </button>
-                        <button
-                          onClick={() => aplicarPlantilla('apertura')}
-                          className="bg-blue-700 text-white text-[9px] font-bold px-2 py-1 rounded hover:bg-blue-800 cursor-pointer"
-                        >
-                          🔓 APERTURA
-                        </button>
-                        <button
-                          onClick={() => aplicarPlantilla('cierre')}
-                          className="bg-blue-900 text-white text-[9px] font-bold px-2 py-1 rounded hover:bg-blue-950 cursor-pointer"
-                        >
-                          🔒 CIERRE
-                        </button>
-                        <button
-                          onClick={() => aplicarPlantilla('video')}
-                          className="bg-green-800 text-white text-[9px] font-bold px-2 py-1 rounded hover:bg-green-900 cursor-pointer"
-                        >
-                          📹 VIDEO VERIFICACIÓN
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Campo de Redacción de Mensaje */}
-                    <div className="flex-1 flex flex-col gap-1">
-                      <span className="text-[10px] font-bold text-gray-700">
-                        3. MENSAJE A TRANSMITIR (INCLUYE PRE-TEXTO OBLIGATORIO):
-                      </span>
-                      
-                      {/* Pre-texto fijo */}
-                      <div className="bg-blue-950 text-blue-200 px-2 py-1 rounded-t text-[11px] font-bold tracking-wider font-mono border border-blue-900">
-                        🔒 PRE-TEXTO FIJO: GAMA SEGURIDAD INFORMA:
-                      </div>
-                      
-                      <textarea
-                        rows={4}
-                        placeholder="Redacte el cuerpo de la notificación de emergencia aquí..."
-                        className="w-full bg-white border border-gray-500 p-2 text-xs text-black font-mono focus:outline-none focus:border-blue-700 rounded-b resize-none flex-1"
-                        value={textoMensaje}
-                        onChange={(e) => setTextoMensaje(e.target.value)}
-                      />
-                    </div>
-
-                    {/* Botones de Enviar: Notificación Automática o Responder / Chat Directo */}
-                    <div className="flex items-center justify-between pt-1 border-t border-gray-400 gap-2">
-                      <span className="text-[10px] font-bold text-blue-900 truncate max-w-[140px]">{mensajeStatus}</span>
-                      
-                      <div className="flex gap-1.5 shrink-0">
-                        <button
-                          onClick={() => enviarMensajeManual(false)}
-                          disabled={enviandoManual || !telefonoEnvio || !textoMensaje}
-                          className="bg-[#25D366] text-white font-bold text-[10px] px-3 py-1.5 rounded border border-green-700 hover:bg-[#20ba5a] active:bg-[#128C7E] disabled:opacity-50 cursor-pointer flex items-center gap-1 shadow"
-                          title="Envía la notificación con la cabecera fija Gama Seguridad Informa"
-                        >
-                          {enviandoManual ? <span>⌛ Enviando...</span> : <span>📢 ENVIAR NOTIFICACIÓN WHATSAPP</span>}
-                        </button>
-                      </div>
-                    </div>
-
+                {/* PASO 3: Mensaje */}
+                <div className="flex-1 flex flex-col gap-1">
+                  <div className="text-[10px] font-bold text-gray-700">3. MENSAJE A ENVIAR:</div>
+                  <div className="bg-blue-950 text-blue-200 px-2 py-0.5 text-[10px] font-bold font-mono rounded-t border border-blue-900">
+                    🔒 PRE-TEXTO: GAMA SEGURIDAD INFORMA:
                   </div>
-                )}
+                  <textarea
+                    rows={5}
+                    placeholder="Redacta el cuerpo de la notificación..."
+                    className="w-full bg-white border border-gray-500 p-2 text-xs text-black font-mono focus:outline-none focus:border-blue-700 rounded-b resize-none flex-1"
+                    value={textoNotif}
+                    onChange={e => setTextoNotif(e.target.value)}
+                  />
+                </div>
+
+                {/* Botón Enviar */}
+                <div className="flex items-center justify-between pt-1 border-t border-gray-400 shrink-0">
+                  <span className={`text-[11px] font-bold truncate max-w-xs ${statusNotif.startsWith('✅') ? 'text-green-700' : statusNotif.startsWith('❌') ? 'text-red-700' : 'text-blue-900'}`}>
+                    {statusNotif}
+                  </span>
+                  <button
+                    onClick={enviarNotificacion}
+                    disabled={enviandoNotif || (!telefonoManual && !telefonoDestino) || !textoNotif.trim()}
+                    className="bg-[#25D366] text-white font-bold text-[10px] px-4 py-2 rounded border border-green-700 hover:bg-[#20ba5a] disabled:opacity-50 cursor-pointer flex items-center gap-1.5 shadow"
+                  >
+                    {enviandoNotif ? '⌛ Enviando...' : '📢 ENVIAR WHATSAPP'}
+                  </button>
+                </div>
               </div>
 
-              {/* Columna Derecha: Historial de Chats y Envíos Registrados */}
-              <div className="w-72 border-2 border-gray-700 bg-[#0b141a] text-white flex flex-col font-mono shrink-0 rounded-r overflow-hidden">
+              {/* Columna Derecha: Historial */}
+              <div className="w-64 border-2 border-gray-700 bg-[#0b141a] text-white flex flex-col font-mono shrink-0">
                 <div className="p-2 border-b border-gray-800 bg-[#1f2c34] flex justify-between items-center">
-                  <span className="text-[10px] font-bold text-green-400 uppercase tracking-wider">💬 HISTORIAL DE CHAT / ENVÍOS</span>
+                  <span className="text-[10px] font-bold text-green-400 uppercase">💬 HISTORIAL</span>
                   <span className="text-[9px] bg-green-900 text-green-200 px-1.5 py-0.5 rounded font-bold">{chatLogs.length}</span>
                 </div>
-                
-                <div className="flex-1 overflow-y-auto p-2 space-y-2 text-[10px]">
-                  {chatLogs.length > 0 ? (
-                    chatLogs.map((log) => (
-                      <div
-                        key={log.id}
-                        className={`p-2 rounded border transition-all ${
-                          log.esRespuestaCliente
-                            ? 'bg-[#202c33] border-blue-500 text-blue-100 shadow-md ml-1 border-l-4 border-l-blue-400'
-                            : log.exito
-                            ? 'bg-[#005c4b] border-green-600 text-white mr-1'
-                            : 'bg-red-950 border-red-700 text-red-200'
-                        }`}
-                      >
-                        <div className="flex justify-between items-center border-b border-white/20 pb-1 mb-1 font-bold text-[9px]">
-                          <span>{log.esRespuestaCliente ? '📩 RESPUESTA DE CLIENTE' : `CTA: ${log.cuenta}`}</span>
-                          <span>{log.fecha}</span>
-                        </div>
-                        <div className="text-[9px] opacity-90 mb-1 font-mono">
-                          {log.esRespuestaCliente ? `De: ${log.telefono}` : `Destino: ${log.telefono}`}
-                        </div>
-                        <div className="leading-tight break-words text-[10px] font-sans font-medium">
-                          {log.texto}
-                        </div>
-                        <div className="mt-1 text-right text-[8px] italic opacity-80">
-                          {log.esRespuestaCliente ? '👤 Respuesta recibida en central' : log.exito ? '✓✓ Entregado vía WhatsApp Oficial' : `❌ ${log.errorMsg}`}
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="flex flex-col items-center justify-center h-full text-gray-500 italic text-center p-4 text-[10px]">
-                      <span>💬</span>
-                      <span>Los mensajes enviados aparecerán registrados aquí en tiempo real.</span>
+                <div className="flex-1 overflow-y-auto p-1.5 space-y-1.5 text-[10px]">
+                  {chatLogs.length === 0 && (
+                    <div className="flex items-center justify-center h-full text-gray-500 italic text-center text-[10px] p-4">
+                      Los envíos aparecerán aquí
                     </div>
                   )}
+                  {chatLogs.map(log => (
+                    <div
+                      key={log.id}
+                      className={`p-1.5 rounded border ${log.esRespuestaCliente ? 'bg-[#202c33] border-l-4 border-l-blue-400 text-blue-100' : log.exito ? 'bg-[#005c4b] border-green-700 text-white' : 'bg-red-950 border-red-700 text-red-200'}`}
+                    >
+                      <div className="flex justify-between items-center border-b border-white/20 pb-0.5 mb-0.5 font-bold text-[9px]">
+                        <span>{log.esRespuestaCliente ? '📩 RESP.CLIENTE' : `CTA: ${log.cuenta}`}</span>
+                        <span>{log.fecha}</span>
+                      </div>
+                      <div className="text-[9px] opacity-80 mb-0.5 font-mono">{log.esRespuestaCliente ? `De: ${formatearNumeroDisplay(log.telefono)}` : `→ ${formatearNumeroDisplay(log.telefono)}`}</div>
+                      <div className="break-words leading-tight font-sans">{log.texto.slice(0, 80)}{log.texto.length > 80 ? '…' : ''}</div>
+                      <div className="text-right text-[8px] italic opacity-70 mt-0.5">
+                        {log.esRespuestaCliente ? '👤 Recibido' : log.exito ? '✓✓ Enviado' : `❌ ${log.errorMsg}`}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
-
             </div>
           )}
 
-          {/* ═══ TAB 2: CONFIGURACIÓN ═══ */}
+          {/* ══════════════════════════════════════════
+              TAB 3: CONFIGURACIÓN
+          ══════════════════════════════════════════ */}
           {activeTab === 'config' && (
-            <div className="p-4 flex gap-4 h-[480px]">
-              {/* Lista de clientes */}
-              <div className="flex-1 border-2 border-gray-600 bg-black text-green-400 flex flex-col font-mono text-[11px]">
+            <div className="p-3 flex gap-3 h-full bg-[#c0c0c0] overflow-hidden">
+              {/* Lista */}
+              <div className="w-64 border-2 border-gray-700 bg-black text-green-400 flex flex-col font-mono text-[11px] shrink-0">
                 <div className="p-1 border-b border-gray-700 bg-gray-900 shrink-0">
-                  <input type="text" placeholder="BUSCAR ABONADO O CUENTA..."
-                    className="w-full bg-black text-green-400 border border-green-800 px-2 py-1 focus:outline-none focus:border-green-400"
-                    value={busqueda} onChange={(e) => setBusqueda(e.target.value)} />
+                  <input type="text" placeholder="BUSCAR ABONADO..." className="w-full bg-black text-green-400 border border-green-800 px-2 py-1 focus:outline-none text-[10px]" value={busqueda} onChange={e => setBusqueda(e.target.value)} />
                 </div>
                 <div className="flex-1 overflow-y-auto">
                   <table className="w-full text-left border-collapse">
-                    <thead><tr className="bg-gray-800 text-green-200">
-                      <th className="p-1 border-b border-gray-700 w-16">CTA</th>
-                      <th className="p-1 border-b border-gray-700">NOMBRE ABONADO</th>
-                    </tr></thead>
-                    <tbody className="divide-y divide-gray-800">
+                    <thead><tr className="bg-gray-800 text-green-200"><th className="p-1 border-b border-gray-700 w-14">CTA</th><th className="p-1 border-b border-gray-700">NOMBRE</th></tr></thead>
+                    <tbody className="divide-y divide-gray-900">
                       {clientesFiltrados.map(([cuenta, datos]) => (
-                        <tr key={cuenta}
-                          className={`cursor-pointer hover:bg-green-900 ${clienteSeleccionado?.cuenta === cuenta ? 'bg-green-800 text-white' : ''}`}
-                          onClick={() => setClienteSeleccionado({ cuenta, nombre: datos.nombre || '' })}>
+                        <tr key={cuenta} className={`cursor-pointer hover:bg-green-900/60 ${clienteSeleccionado?.cuenta === cuenta ? 'bg-green-900 text-white font-bold' : ''}`} onClick={() => setClienteSeleccionado({ cuenta, nombre: datos.nombre || '' })}>
                           <td className="p-1 border-r border-gray-800 font-bold">{cuenta}</td>
-                          <td className="p-1 truncate max-w-[200px]">{datos.nombre}</td>
+                          <td className="p-1 truncate max-w-[150px] text-[10px]">{datos.nombre}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -911,87 +883,71 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
                 </div>
               </div>
 
-              {/* Config del cliente */}
-              <div className="w-96 border-2 border-t-gray-700 border-l-gray-700 border-b-white border-r-white bg-[#e0e0e0] flex flex-col p-3 overflow-y-auto text-black">
-                <div className="text-[#000080] font-bold text-sm border-b border-gray-400 pb-1 mb-3">CONFIGURACIÓN BASE DE DATOS</div>
+              {/* Config detallada */}
+              <div className="flex-1 border-2 border-t-gray-700 border-l-gray-700 border-b-white border-r-white bg-[#e0e0e0] flex flex-col p-3 overflow-y-auto text-black">
+                <div className="text-[#000080] font-bold text-xs border-b border-gray-400 pb-1 mb-3">CONFIGURACIÓN DE NOTIFICACIONES POR ABONADO</div>
                 {!clienteSeleccionado ? (
-                  <div className="flex-1 flex items-center justify-center text-gray-500 font-bold text-xs text-center p-4">
-                    SELECCIONE UN ABONADO EN LA LISTA IZQUIERDA
+                  <div className="flex-1 flex items-center justify-center text-gray-500 font-bold text-xs text-center">
+                    Selecciona un abonado de la lista izquierda
                   </div>
                 ) : (
-                  <div className="flex flex-col flex-1 gap-3">
+                  <div className="flex flex-col gap-3">
+                    <div className="bg-white border border-gray-400 p-2 text-xs font-bold text-blue-900">{clienteSeleccionado.cuenta} — {clienteSeleccionado.nombre}</div>
                     <div>
-                      <div className="text-[10px] font-bold text-gray-800 mb-1">Abonado:</div>
-                      <div className="bg-white border border-gray-400 px-2 py-1 font-bold text-xs text-gray-800 truncate">
-                        {clienteSeleccionado.cuenta} - {clienteSeleccionado.nombre}
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-[10px] font-bold text-gray-800 mb-1">Teléfono Principal WhatsApp:</div>
-                      <input type="tel" className="w-full border border-gray-500 px-2 text-xs py-1 text-gray-800 font-mono"
-                        placeholder="+56912345678" value={telefono} onChange={(e) => setTelefono(e.target.value)} />
+                      <div className="text-[10px] font-bold text-gray-800 mb-1">Teléfono Principal WhatsApp (con código país):</div>
+                      <input type="tel" className="w-full border border-gray-500 px-2 py-1 text-xs text-gray-800 font-mono focus:outline-none focus:border-blue-600" placeholder="+56912345678" value={telefono} onChange={e => setTelefono(e.target.value)} />
                     </div>
                     <div className="flex items-center gap-2">
-                      <label className="text-[10px] font-bold text-gray-800">Notificaciones automáticas activas:</label>
-                      <input type="checkbox" checked={activo} onChange={(e) => setActivo(e.target.checked)} className="accent-[#000080]" />
+                      <label className="text-[10px] font-bold text-gray-800">Notificaciones activas:</label>
+                      <input type="checkbox" checked={activo} onChange={e => setActivo(e.target.checked)} className="accent-[#000080]" />
                       {silenciaHasta && new Date(silenciaHasta) > new Date() && (
-                        <span className="text-[10px] text-orange-600 font-bold ml-2">
-                          SILENCIADO HASTA {new Date(silenciaHasta).toLocaleTimeString()}
-                        </span>
+                        <span className="text-[10px] text-orange-600 font-bold ml-2">SILENCIADO HASTA {new Date(silenciaHasta).toLocaleTimeString()}</span>
                       )}
                     </div>
                     <div className="border-t border-gray-400 pt-2">
                       <div className="text-[10px] font-bold text-gray-800 mb-1">Eventos a Notificar:</div>
-                      <div className="grid grid-cols-2 gap-x-3 gap-y-1">
-                        <label className="flex items-center gap-1.5 text-[10px] cursor-pointer">
-                          <input type="checkbox" checked={notificarAlarma} onChange={(e) => setNotificarAlarma(e.target.checked)} className="accent-red-600" />
-                          <span className="text-red-700 font-bold">🚨 Alarmas</span>
-                        </label>
-                        <label className="flex items-center gap-1.5 text-[10px] cursor-pointer">
-                          <input type="checkbox" checked={notificarEnergia} onChange={(e) => setNotificarEnergia(e.target.checked)} className="accent-yellow-600" />
-                          <span className="text-yellow-700 font-bold">⚡ Corte energía</span>
-                        </label>
-                        <label className="flex items-center gap-1.5 text-[10px] cursor-pointer">
-                          <input type="checkbox" checked={notificarApertura} onChange={(e) => setNotificarApertura(e.target.checked)} className="accent-blue-600" />
-                          <span className="text-blue-700 font-bold">🔓 Apertura</span>
-                        </label>
-                        <label className="flex items-center gap-1.5 text-[10px] cursor-pointer">
-                          <input type="checkbox" checked={notificarCierre} onChange={(e) => setNotificarCierre(e.target.checked)} className="accent-blue-600" />
-                          <span className="text-blue-700 font-bold">🔒 Cierre</span>
-                        </label>
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+                        {[
+                          { label: '🚨 Alarmas', val: notificarAlarma, set: setNotificarAlarma, color: 'accent-red-600' },
+                          { label: '⚡ Corte Energía', val: notificarEnergia, set: setNotificarEnergia, color: 'accent-yellow-600' },
+                          { label: '🔓 Apertura', val: notificarApertura, set: setNotificarApertura, color: 'accent-blue-600' },
+                          { label: '🔒 Cierre', val: notificarCierre, set: setNotificarCierre, color: 'accent-blue-600' },
+                        ].map(({ label, val, set, color }) => (
+                          <label key={label} className="flex items-center gap-1.5 text-[10px] cursor-pointer">
+                            <input type="checkbox" checked={val} onChange={e => set(e.target.checked)} className={color} />
+                            <span className="font-bold text-gray-700">{label}</span>
+                          </label>
+                        ))}
                         <label className="flex items-center gap-1.5 text-[10px] cursor-pointer col-span-2 mt-1 border-t border-dashed border-gray-300 pt-1">
-                          <input type="checkbox" checked={notificarVideo} onChange={(e) => setNotificarVideo(e.target.checked)} className="accent-green-600" />
-                          <span className="text-green-700 font-bold">🎥 Enviar Video-Verificación Automática</span>
+                          <input type="checkbox" checked={notificarVideo} onChange={e => setNotificarVideo(e.target.checked)} className="accent-green-600" />
+                          <span className="font-bold text-green-700">🎥 Video-Verificación Automática</span>
                         </label>
                       </div>
                     </div>
                     <div className="border-t border-gray-400 pt-2">
                       <div className="flex justify-between items-center mb-1">
                         <span className="text-[10px] font-bold text-gray-800">Contactos de Escalamiento:</span>
-                        <button onClick={agregarContacto} className="text-xs text-[#000080] font-bold hover:underline cursor-pointer">+ Agregar</button>
+                        <button onClick={() => setContactos([...contactos, { nombre: '', telefono: '', parentesco: '' }])} className="text-xs text-[#000080] font-bold hover:underline cursor-pointer">+ Agregar</button>
                       </div>
-                      <div className="max-h-32 overflow-y-auto space-y-1">
+                      <div className="max-h-36 overflow-y-auto space-y-1">
                         {contactos.map((c, i) => (
                           <div key={i} className="bg-white border border-gray-400 p-1 text-[10px]">
                             <div className="flex gap-1 mb-1">
-                              <input className="flex-1 border border-gray-300 px-1 py-0.5 text-gray-800" placeholder="Nombre" value={c.nombre} onChange={(e) => actualizarContacto(i, 'nombre', e.target.value)} />
-                              <button onClick={() => eliminarContacto(i)} className="text-red-600 font-bold px-1 cursor-pointer">X</button>
+                              <input className="flex-1 border border-gray-300 px-1 py-0.5 text-gray-800" placeholder="Nombre" value={c.nombre} onChange={e => { const copia = [...contactos]; copia[i] = { ...copia[i], nombre: e.target.value }; setContactos(copia) }} />
+                              <button onClick={() => setContactos(contactos.filter((_, idx) => idx !== i))} className="text-red-600 font-bold px-1 cursor-pointer">✕</button>
                             </div>
                             <div className="flex gap-1">
-                              <input className="flex-1 border border-gray-300 px-1 py-0.5 text-gray-800 font-mono" placeholder="Teléfono" value={c.telefono} onChange={(e) => actualizarContacto(i, 'telefono', e.target.value)} />
-                              <input className="w-16 border border-gray-300 px-1 py-0.5 text-gray-800" placeholder="Parent." value={c.parentesco} onChange={(e) => actualizarContacto(i, 'parentesco', e.target.value)} />
+                              <input className="flex-1 border border-gray-300 px-1 py-0.5 text-gray-800 font-mono" placeholder="+56912345678" value={c.telefono} onChange={e => { const copia = [...contactos]; copia[i] = { ...copia[i], telefono: e.target.value }; setContactos(copia) }} />
+                              <input className="w-20 border border-gray-300 px-1 py-0.5 text-gray-800" placeholder="Parent." value={c.parentesco} onChange={e => { const copia = [...contactos]; copia[i] = { ...copia[i], parentesco: e.target.value }; setContactos(copia) }} />
                             </div>
                           </div>
                         ))}
                         {contactos.length === 0 && <div className="text-gray-400 italic text-[10px] text-center py-2">Sin contactos de escalamiento</div>}
                       </div>
                     </div>
-                    <div className="mt-auto flex gap-2 justify-between items-center h-8">
-                      <div className="text-[11px] font-bold text-[#000080]">{guardando ? 'Guardando...' : mensaje}</div>
-                      <div className="flex gap-1">
-                        <button onClick={guardar}
-                          className="bg-[#c0c0c0] text-[11px] font-bold border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 px-3 py-1 hover:bg-[#d0d0d0] cursor-pointer">GUARDAR BD</button>
-                      </div>
+                    <div className="flex gap-2 justify-between items-center mt-2 border-t border-gray-400 pt-2">
+                      <span className="text-[11px] font-bold text-[#000080]">{guardando ? 'Guardando...' : mensajeConfig}</span>
+                      <button onClick={guardarConfig} className="bg-[#c0c0c0] text-[11px] font-bold border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 px-4 py-1.5 hover:bg-[#d0d0d0] cursor-pointer">GUARDAR EN BD</button>
                     </div>
                   </div>
                 )}
@@ -999,6 +955,155 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
             </div>
           )}
 
+          {/* ══════════════════════════════════════════
+              TAB 4: ESTADO DEL SERVIDOR
+          ══════════════════════════════════════════ */}
+          {activeTab === 'servidor' && (
+            <div className="h-full overflow-y-auto bg-[#0f172a] p-4 flex gap-4 text-white font-sans">
+
+              {/* Card principal */}
+              <div className="flex-1 flex flex-col gap-4">
+
+                {/* Estado */}
+                <div className="bg-[#1e293b] border border-[#334155] rounded-xl p-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h2 className="text-base font-bold text-white">🛡️ WhatsApp Corporativo Gama v3.0</h2>
+                      <p className="text-xs text-[#94a3b8] mt-0.5">Puerto 3015 — Motor Baileys (sin Chromium)</p>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-sm font-bold px-3 py-1.5 rounded-full" style={{ background: statusColor, color: '#000' }}>
+                        {waStatus.ready ? '✅ CONECTADO' : waStatus.estado}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-4 gap-3">
+                    {[
+                      { label: 'Usuario', val: waStatus.usuario || '—' },
+                      { label: 'Uptime', val: waStatus.uptime ? `${Math.round(waStatus.uptime / 60)} min` : '—' },
+                      { label: 'Cola', val: String(waStatus.cola || 0) + ' msg' },
+                      { label: 'Reintentos', val: String(waStatus.reintentos || 0) },
+                    ].map(({ label, val }) => (
+                      <div key={label} className="bg-[#0f172a] rounded-lg p-3 text-center border border-[#1e293b]">
+                        <div className="text-[10px] text-[#64748b] mb-1 uppercase tracking-wide">{label}</div>
+                        <div className="text-sm font-bold text-white truncate">{val}</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="mt-3 flex gap-2">
+                    <button
+                      onClick={logout}
+                      disabled={loadingLogout}
+                      className="text-xs bg-red-900 hover:bg-red-700 text-white px-4 py-1.5 rounded-lg font-bold cursor-pointer disabled:opacity-50 border border-red-700"
+                    >
+                      {loadingLogout ? '⏳ Cerrando...' : '🔴 Cerrar Sesión'}
+                    </button>
+                    <button
+                      onClick={() => { setWaStatus(prev => ({ ...prev })) }}
+                      className="text-xs bg-[#334155] hover:bg-[#475569] text-white px-4 py-1.5 rounded-lg font-bold cursor-pointer border border-[#475569]"
+                    >
+                      🔄 Actualizar Estado
+                    </button>
+                  </div>
+
+                  {serverMsg && (
+                    <div className="mt-3 text-xs font-bold p-2 rounded bg-[#0f172a] border border-[#334155] text-[#94a3b8]">{serverMsg}</div>
+                  )}
+                </div>
+
+                {/* QR / Pairing Code */}
+                {!waStatus.ready && (
+                  <div className="bg-[#1e293b] border border-[#334155] rounded-xl p-4">
+                    <h3 className="text-sm font-bold text-white mb-3">📲 Vincular WhatsApp</h3>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      {/* QR */}
+                      <div>
+                        <div className="text-xs font-bold text-[#94a3b8] mb-2">Opción A: Escanear QR</div>
+                        {qrData.qrImage ? (
+                          <div className="bg-white p-3 rounded-xl inline-block">
+                            <img src={qrData.qrImage} alt="QR WhatsApp" width={200} height={200} />
+                          </div>
+                        ) : (
+                          <div className="bg-[#0f172a] border border-[#334155] rounded-xl w-[216px] h-[216px] flex items-center justify-center text-center text-[#64748b] text-xs">
+                            {qrData.status === 'connected' ? '✅ Ya conectado' : '⏳ Generando QR...'}
+                          </div>
+                        )}
+                        <p className="text-[10px] text-[#64748b] mt-2">Abre WhatsApp → Dispositivos Vinculados → Escanear QR</p>
+                      </div>
+
+                      {/* Pairing Code */}
+                      <div>
+                        <div className="text-xs font-bold text-[#94a3b8] mb-2">Opción B: Código de Vinculación</div>
+                        <div className="text-[10px] text-[#64748b] mb-2">Sin necesidad de cámara. Ingresa tu número y copia el código en WhatsApp.</div>
+
+                        <div className="flex gap-1 mb-2">
+                          <input
+                            type="tel"
+                            value={pairingInput}
+                            onChange={e => setPairingInput(e.target.value.replace(/[^0-9+]/g, ''))}
+                            placeholder="+56948855190"
+                            className="flex-1 bg-[#0f172a] border border-[#334155] rounded-lg px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-[#38bdf8]"
+                          />
+                          <button
+                            onClick={solicitarPairingCode}
+                            disabled={loadingPair}
+                            className="bg-[#0ea5e9] hover:bg-[#0284c7] text-white text-xs px-3 py-2 rounded-lg font-bold cursor-pointer disabled:opacity-50"
+                          >
+                            {loadingPair ? '⏳' : '🔑 Obtener'}
+                          </button>
+                        </div>
+
+                        {pairingCode && (
+                          <div className="bg-[#0f172a] border-2 border-[#0ea5e9] rounded-xl p-4 text-center">
+                            <div className="text-[10px] text-[#94a3b8] mb-1">Ingresa este código en WhatsApp:</div>
+                            <div className="text-3xl font-black text-[#0ea5e9] tracking-[0.3em] font-mono">{pairingCode}</div>
+                            <div className="text-[9px] text-[#64748b] mt-2">WhatsApp → Dispositivos Vinculados → Vincular con número → Ingresa el código</div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Conectado */}
+                {waStatus.ready && (
+                  <div className="bg-[#052e16] border border-[#166534] rounded-xl p-4 text-center">
+                    <div className="text-5xl mb-3">✅</div>
+                    <div className="text-lg font-bold text-[#4ade80]">WhatsApp Corporativo Activo</div>
+                    <div className="text-sm text-[#86efac] mt-1">{waStatus.usuario}</div>
+                    <div className="text-xs text-[#4ade80]/70 mt-2">Mensajes siendo procesados en tiempo real · Canal Supabase activo</div>
+                  </div>
+                )}
+              </div>
+
+              {/* Info lateral */}
+              <div className="w-56 flex flex-col gap-3">
+                <div className="bg-[#1e293b] border border-[#334155] rounded-xl p-3">
+                  <div className="text-xs font-bold text-[#94a3b8] mb-2 uppercase tracking-wide">ℹ️ Información</div>
+                  <div className="space-y-2 text-[11px] text-[#64748b]">
+                    <div><span className="text-white font-bold">Motor:</span> Baileys WebSocket</div>
+                    <div><span className="text-white font-bold">RAM:</span> ~50MB (sin Chrome)</div>
+                    <div><span className="text-white font-bold">Puerto:</span> 3015</div>
+                    <div><span className="text-white font-bold">Reconexión:</span> Automática</div>
+                    <div><span className="text-white font-bold">Cola:</span> {waStatus.cola} mensajes</div>
+                  </div>
+                </div>
+                <div className="bg-[#1e293b] border border-[#334155] rounded-xl p-3">
+                  <div className="text-xs font-bold text-[#f59e0b] mb-2">⚠️ Instrucciones Scorpion</div>
+                  <div className="text-[10px] text-[#64748b] leading-relaxed space-y-1">
+                    <p>1. Copia <code className="text-[#94a3b8]">WHATSAPP_SERVER/</code> al PC Scorpion</p>
+                    <p>2. Ejecuta <code className="text-[#94a3b8]">1_INSTALAR.bat</code></p>
+                    <p>3. Ejecuta <code className="text-[#94a3b8]">INICIAR_WHATSAPP.bat</code></p>
+                    <p>4. Escanea QR o usa Pairing Code</p>
+                    <p>5. Configura <code className="text-[#94a3b8]">AUTOSTART_WINDOWS.bat</code></p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

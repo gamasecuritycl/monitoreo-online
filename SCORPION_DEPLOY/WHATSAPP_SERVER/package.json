@@ -1,0 +1,18 @@
+{
+  "name": "gama-whatsapp-server",
+  "version": "3.0.0",
+  "description": "GAMA SEGURIDAD - Servidor WhatsApp Corporativo v3.0 (Baileys, sin Chromium)",
+  "main": "whatsapp_server.js",
+  "scripts": {
+    "start": "node whatsapp_server.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.110.7",
+    "@whiskeysockets/baileys": "^6.7.18",
+    "cors": "^2.8.5",
+    "express": "^4.22.2",
+    "pino": "^9.6.0",
+    "qrcode": "^1.5.4",
+    "qrcode-terminal": "^0.12.0"
+  }
+}
