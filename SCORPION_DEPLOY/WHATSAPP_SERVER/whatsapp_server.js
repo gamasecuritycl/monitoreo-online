@@ -75,9 +75,12 @@ const { spawn } = require('child_process')
 let cloudflaredProcess = null
 
 function iniciarCloudflareTunnel() {
-  const exePath = 'C:\\Program Files (x86)\\cloudflared\\cloudflared.exe'
+  let exePath = 'C:\\GAMA_CAMARA\\cloudflared.exe'
   if (!fs.existsSync(exePath)) {
-    log('⚠️  No se encontro cloudflared.exe en la ruta por defecto. No se creara el tunel publico.', 'WARN')
+    exePath = 'C:\\Program Files (x86)\\cloudflared\\cloudflared.exe'
+  }
+  if (!fs.existsSync(exePath)) {
+    log('⚠️  No se encontro cloudflared.exe en C:\\GAMA_CAMARA o Program Files. No se creara el tunel publico.', 'WARN')
     return
   }
 
