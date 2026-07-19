@@ -28,7 +28,7 @@ interface ChatLogItem {
 type Tab = 'web' | 'manual' | 'config' | 'alertas' | 'panico' | 'energia'
 
 export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuentaInicial }: Props) {
-  const [activeTab, setActiveTab] = useState<Tab>('manual')
+  const [activeTab, setActiveTab] = useState<Tab>('web')
   const [busqueda, setBusqueda] = useState('')
   const [clienteSeleccionado, setClienteSeleccionado] = useState<{ cuenta: string; nombre: string } | null>(() => {
     if (cuentaInicial && clientesMap[cuentaInicial]) {
@@ -50,7 +50,92 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
   const [notificarCierre, setNotificarCierre] = useState(false)
   const [notificarVideo, setNotificarVideo] = useState(false)
 
-  // Estados del Panel de Envíos Manuales & Chat
+  // Estados del Chat Libre General Embebido (Tab 1)
+  const [busquedaChatLibre, setBusquedaChatLibre] = useState('')
+  const [chatLibreActivo, setChatLibreActivo] = useState<string | null>(null)
+  const [textoChatLibre, setTextoChatLibre] = useState('')
+  const [todosLosChats, setTodosLosChats] = useState<any[]>([])
+
+  // Cargar todos los chats globales de WhatsApp en tiempo real
+  useEffect(() => {
+    const cargarChatsGlobales = async () => {
+      try {
+        const { data } = await supabase
+          .from('conversaciones_whatsapp')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(100)
+
+        if (data && data.length > 0) {
+          setTodosLosChats(data)
+          if (!chatLibreActivo && data[0].numero) {
+            setChatLibreActivo(data[0].numero)
+          }
+        }
+      } catch (err) {
+        console.warn('[SUPABASE GLOBAL CHATS]:', err)
+      }
+    }
+    cargarChatsGlobales()
+
+    const subGlobal = supabase
+      .channel('chat_global_realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'conversaciones_whatsapp' },
+        (payload: any) => {
+          if (payload.new) {
+            setTodosLosChats((prev) => [payload.new, ...prev])
+          }
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(subGlobal)
+    }
+  }, [chatLibreActivo])
+
+  // Enviar mensaje libre desde el chat embebido
+  const enviarMensajeChatLibre = async () => {
+    if (!chatLibreActivo || !textoChatLibre.trim()) return
+    const texto = textoChatLibre.trim()
+    setTextoChatLibre('')
+
+    try {
+      await sendMessage(chatLibreActivo, texto)
+    } catch (err) {
+      console.error('Error enviando chat libre:', err)
+    }
+  }
+
+  // Agrupar chats únicos por número de teléfono
+  const chatsMap = new Map<string, { numero: string; ultimoMensaje: string; hora: string; nombreAbonado?: string }>()
+  todosLosChats.forEach((item) => {
+    const num = item.numero || item.telefono
+    if (!num) return
+    if (!chatsMap.has(num)) {
+      let nom = item.cuenta ? (clientesMap[item.cuenta]?.nombre || `Abonado ${item.cuenta}`) : undefined
+      chatsMap.set(num, {
+        numero: num,
+        ultimoMensaje: item.respuesta_recibida || item.respuesta_cliente || item.mensaje_enviado || '',
+        hora: new Date(item.created_at).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }),
+        nombreAbonado: nom
+      })
+    }
+  })
+
+  const listaChatsGlobales = Array.from(chatsMap.values()).filter((c) => {
+    if (!busquedaChatLibre.trim()) return true
+    const q = busquedaChatLibre.toLowerCase()
+    return c.numero.includes(q) || (c.nombreAbonado || '').toLowerCase().includes(q)
+  })
+
+  const mensajesDelChatActivo = todosLosChats
+    .filter((m) => (m.numero || m.telefono) === chatLibreActivo)
+    .reverse()
+
+  // Estados del Panel de Envíos Manuales & Chat por Abonado (Tab 2)
   const [telefonoEnvio, setTelefonoEnvio] = useState('')
   const [textoMensaje, setTextoMensaje] = useState('')
   const [enviandoManual, setEnviandoManual] = useState(false)
@@ -363,8 +448,8 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
   }
 
   const tabs: { id: Tab; label: string }[] = [
-    { id: 'manual', label: '📢 Envíos Manuales & Chats por Abonado' },
-    { id: 'web', label: '💬 Servidor WhatsApp Central' },
+    { id: 'web', label: '💬 Chats En Vivo (WhatsApp Embebido)' },
+    { id: 'manual', label: '📢 Envíos Manuales & Plantillas de Emergencia' },
     { id: 'config', label: '⚙️ Configuración & Notificaciones Automáticas' },
   ]
 
@@ -409,41 +494,147 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
         {/* Contenido Principal */}
         <div className="flex-1 overflow-hidden">
           
-          {/* ═══ TAB 1: WHATSAPP WEB / SERVIDOR CENTRAL LOCAL ═══ */}
+          {/* ═══ TAB 1: CHAT GENERAL EN VIVO DE WHATSAPP (NATIVO EMBEBIDO) ═══ */}
           {activeTab === 'web' && (
-            <div className="p-4 bg-[#111b21] text-white flex flex-col h-[520px] items-center justify-center font-sans">
-              <div className="bg-[#202c33] border border-[#2a3942] rounded-xl p-6 max-w-xl text-center shadow-2xl flex flex-col items-center">
-                <div className="w-16 h-16 rounded-full bg-[#00a884] flex items-center justify-center text-3xl mb-3 shadow-lg">
-                  💬
-                </div>
-                <h2 className="font-bold text-base text-white mb-2 tracking-wide font-mono">SERVIDOR WHATSAPP CENTRAL (PUERTO 3015)</h2>
-                <p className="text-xs text-[#8696a0] mb-5 leading-relaxed">
-                  El servidor local escucha las notificaciones de emergencia y las transmite en tiempo real usando tu cuenta corporativa oficial de Gama Seguridad.
-                </p>
-
-                <div className="flex flex-col gap-2.5 w-full max-w-md">
-                  <button
-                    onClick={() => window.open('http://localhost:3015', '_blank')}
-                    className="bg-[#00a884] hover:bg-[#029676] text-black font-bold text-xs py-2.5 px-4 rounded-lg shadow flex items-center justify-center gap-2 cursor-pointer transition-all"
-                  >
-                    <span>🖥️</span>
-                    <span>ABRIR PANEL DE ESTADO LOCAL (HTTP 3015)</span>
-                  </button>
-
-                  <button
-                    onClick={() => window.open('https://web.whatsapp.com', '_blank')}
-                    className="bg-[#2a3942] hover:bg-[#374248] text-white font-bold text-xs py-2.5 px-4 rounded-lg border border-gray-600 flex items-center justify-center gap-2 cursor-pointer"
-                  >
-                    <span>🌐</span>
-                    <span>ABRIR WEB.WHATSAPP.COM EN OTRA PESTAÑA</span>
-                  </button>
+            <div className="flex h-[520px] bg-[#111b21] text-white overflow-hidden font-sans">
+              
+              {/* Columna Izquierda: Todos los Chats Activos */}
+              <div className="w-80 border-r border-[#222d34] bg-[#111b21] flex flex-col shrink-0">
+                {/* Header */}
+                <div className="p-3 bg-[#202c33] border-b border-[#222d34] flex justify-between items-center shrink-0">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full bg-[#00a884] flex items-center justify-center font-bold text-white text-xs shadow">
+                      GS
+                    </div>
+                    <span className="font-bold text-xs text-white">WHATSAPP CENTRAL EN VIVO</span>
+                  </div>
+                  <span className="text-[10px] bg-[#00a884] text-black px-2 py-0.5 rounded-full font-bold">ONLINE</span>
                 </div>
 
-                <div className="mt-5 pt-3 border-t border-[#2a3942] w-full text-[10px] text-[#8696a0] flex justify-between font-mono">
-                  <span>ESTADO: 🟢 ACTIVO VIA SUPABASE REALTIME</span>
-                  <span>PUERTO: 3015</span>
+                {/* Buscador de Chats */}
+                <div className="p-2 bg-[#111b21] border-b border-[#222d34]">
+                  <input
+                    type="text"
+                    placeholder="🔍 Buscar contacto o número..."
+                    className="w-full bg-[#202c33] text-gray-200 border border-[#2a3942] rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-[#00a884]"
+                    value={busquedaChatLibre}
+                    onChange={(e) => setBusquedaChatLibre(e.target.value)}
+                  />
+                </div>
+
+                {/* Lista de Chats recientes */}
+                <div className="flex-1 overflow-y-auto divide-y divide-[#222d34]">
+                  {listaChatsGlobales.map((chat) => (
+                    <div
+                      key={chat.numero}
+                      onClick={() => setChatLibreActivo(chat.numero)}
+                      className={`p-3 flex items-center gap-3 cursor-pointer transition-colors ${
+                        chatLibreActivo === chat.numero ? 'bg-[#2a3942]' : 'hover:bg-[#202c33]'
+                      }`}
+                    >
+                      <div className="w-10 h-10 rounded-full bg-[#005c4b] border border-[#00a884] flex items-center justify-center font-bold text-white text-xs shrink-0 shadow">
+                        📱
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex justify-between items-baseline mb-0.5">
+                          <span className="font-bold text-xs text-white truncate max-w-[130px]">
+                            {chat.nombreAbonado || `+${chat.numero}`}
+                          </span>
+                          <span className="text-[9px] text-[#8696a0]">{chat.hora}</span>
+                        </div>
+                        <div className="text-[10px] text-[#8696a0] truncate font-sans">
+                          {chat.ultimoMensaje}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
+
+              {/* Columna Derecha: Hilo del Chat Activo */}
+              <div className="flex-1 flex flex-col bg-[#0b141a] relative">
+                {!chatLibreActivo ? (
+                  <div className="flex-1 flex flex-col items-center justify-center text-[#8696a0] p-6 text-center">
+                    <div className="w-16 h-16 rounded-full bg-[#202c33] flex items-center justify-center text-3xl mb-3">💬</div>
+                    <span className="font-bold text-sm text-white mb-1">GAMA SEGURIDAD - WHATSAPP LIVE CHAT</span>
+                    <span className="text-xs">Selecciona un chat de la izquierda para interactuar en tiempo real.</span>
+                  </div>
+                ) : (
+                  <>
+                    {/* Header del Chat */}
+                    <div className="p-3 bg-[#202c33] border-b border-[#222d34] flex items-center justify-between shrink-0 shadow">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-full bg-[#00a884] flex items-center justify-center font-bold text-white text-xs">
+                          📱
+                        </div>
+                        <div>
+                          <div className="font-bold text-xs text-white">
+                            +{chatLibreActivo}
+                          </div>
+                          <div className="text-[10px] text-[#00a884] flex items-center gap-1 font-mono">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#00a884] animate-pulse"></span>
+                            <span>Conectado en tiempo real</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Lienzo del Hilo de Chat */}
+                    <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-[#0b141a]">
+                      {mensajesDelChatActivo.map((msg) => {
+                        const esCliente = !!(msg.respuesta_recibida || msg.respuesta_cliente)
+                        return (
+                          <div
+                            key={msg.id}
+                            className={`flex flex-col ${esCliente ? 'items-start' : 'items-end'}`}
+                          >
+                            <div
+                              className={`max-w-[75%] p-2.5 rounded-lg text-xs font-sans shadow-md break-words ${
+                                esCliente
+                                  ? 'bg-[#202c33] text-white rounded-tl-none border-l-4 border-l-[#38bdf8]'
+                                  : 'bg-[#005c4b] text-white rounded-tr-none'
+                              }`}
+                            >
+                              <div className="text-[9px] font-bold opacity-75 mb-1 font-mono flex justify-between gap-4">
+                                <span>{esCliente ? `📩 CLIENTE (+${msg.numero})` : `🛡️ GAMA SEGURIDAD`}</span>
+                                <span>{new Date(msg.created_at).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}</span>
+                              </div>
+                              <div className="leading-relaxed font-medium">
+                                {esCliente ? (msg.respuesta_recibida || msg.respuesta_cliente) : msg.mensaje_enviado}
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+
+                    {/* Caja Inferior de Enviar Mensaje */}
+                    <div className="p-3 bg-[#202c33] border-t border-[#222d34] flex gap-2 items-center shrink-0">
+                      <textarea
+                        rows={2}
+                        placeholder="Escribe un mensaje de respuesta aquí..."
+                        className="flex-1 bg-[#2a3942] text-white p-2 text-xs font-sans rounded-lg border border-[#374248] focus:outline-none focus:border-[#00a884] resize-none"
+                        value={textoChatLibre}
+                        onChange={(e) => setTextoChatLibre(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault()
+                            enviarMensajeChatLibre()
+                          }
+                        }}
+                      />
+                      <button
+                        onClick={enviarMensajeChatLibre}
+                        disabled={!textoChatLibre.trim()}
+                        className="bg-[#00a884] hover:bg-[#029676] text-black font-bold text-xs px-4 py-2.5 rounded-lg disabled:opacity-50 cursor-pointer shadow"
+                      >
+                        💬 ENVIAR
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+
             </div>
           )}
 
