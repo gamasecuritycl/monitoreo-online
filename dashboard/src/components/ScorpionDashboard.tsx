@@ -101,6 +101,37 @@ export default function ScorpionDashboard() {
   const [operadores, setOperadores] = useState<Operator[]>(OPERADORES_FALLBACK)
   const [usuarioActivo, setUsuarioActivo] = useState<Operator>(OPERADORES_FALLBACK[0])
   const [sesionIniciada, setSesionIniciada] = useState(false)
+  const [unreadWhatsAppCount, setUnreadWhatsAppCount] = useState(0)
+
+  // Suscripción Realtime a mensajes entrantes de WhatsApp
+  useEffect(() => {
+    const channel = supabase
+      .channel('whatsapp_inbound_realtime')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'conversaciones_whatsapp' },
+        () => {
+          setUnreadWhatsAppCount((prev) => prev + 1)
+          try {
+            const ctx = new (window.AudioContext || (window as any).webkitAudioContext)()
+            const osc = ctx.createOscillator()
+            const gain = ctx.createGain()
+            osc.type = 'sine'
+            osc.frequency.setValueAtTime(880, ctx.currentTime)
+            gain.gain.setValueAtTime(0.12, ctx.currentTime)
+            osc.connect(gain)
+            gain.connect(ctx.destination)
+            osc.start()
+            osc.stop(ctx.currentTime + 0.15)
+          } catch {}
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [])
 
   // Cargar operadores desde Supabase ('CONFIG_OPERADORES')
   useEffect(() => {
@@ -655,12 +686,21 @@ export default function ScorpionDashboard() {
             <span className="text-green-400 font-bold text-[10px] tracking-wider">LIVE</span>
           </div>
           <button
-            onClick={() => setModalActivo('notificaciones-whatsapp')}
-            className="flex items-center gap-1.5 ml-1 bg-transparent border-0 hover:opacity-85 cursor-pointer active:scale-95 transition-all text-left"
-            title="Abrir Notificaciones y Configuración de WhatsApp"
+            onClick={() => {
+              setUnreadWhatsAppCount(0)
+              setModalActivo('notificaciones-whatsapp')
+            }}
+            className="flex items-center gap-1.5 ml-1 bg-transparent border-0 hover:opacity-85 cursor-pointer active:scale-95 transition-all text-left relative"
+            title="Abrir Centro de Mensajería y Chat de WhatsApp"
           >
-            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_#22c55e]" />
-            <span className="text-green-400 font-bold text-[10px] tracking-wider hover:underline select-none">WhatsApp</span>
+            <div className={`w-2 h-2 rounded-full animate-pulse shadow-[0_0_8px] ${
+              unreadWhatsAppCount > 0 ? 'bg-red-500 shadow-[#ef4444]' : 'bg-green-500 shadow-[#22c55e]'
+            }`} />
+            <span className={`font-bold text-[10px] tracking-wider hover:underline select-none ${
+              unreadWhatsAppCount > 0 ? 'text-red-400 font-extrabold' : 'text-green-400'
+            }`}>
+              WhatsApp {unreadWhatsAppCount > 0 ? `(${unreadWhatsAppCount} NUEVO)` : ''}
+            </span>
           </button>
           <div className="flex items-center gap-1.5 ml-1" title={ultimoHeartbeat ? `Último heartbeat: ${ultimoHeartbeat}` : 'Sin heartbeat'}>
             <div className={`w-2 h-2 rounded-full animate-pulse shadow-[0_0_8px] ${
@@ -1218,17 +1258,23 @@ export default function ScorpionDashboard() {
       {/* (No longer rendered inline since it is used as full-screen gate page) */}
 
       {/* Footer */}
-      <FooterActions onModalOpen={(id) => {
-        if (id === 'key-shift') {
-          setSesionIniciada(false)
-          setModalActivo(null)
-          return
-        }
-        if (id === 'bar-chart') {
-          setExpedientePestana('telefonos')
-        }
-        setModalActivo(id)
-      }} />
+      <FooterActions
+        unreadWhatsAppCount={unreadWhatsAppCount}
+        onModalOpen={(id) => {
+          if (id === 'notificaciones-whatsapp') {
+            setUnreadWhatsAppCount(0)
+          }
+          if (id === 'key-shift') {
+            setSesionIniciada(false)
+            setModalActivo(null)
+            return
+          }
+          if (id === 'bar-chart') {
+            setExpedientePestana('telefonos')
+          }
+          setModalActivo(id)
+        }}
+      />
     </div>
   )
 }

@@ -9,6 +9,7 @@ import { useState } from 'react'
 
 interface FooterActionsProps {
   onModalOpen: (modalId: string) => void
+  unreadWhatsAppCount?: number
 }
 
 interface BotonRetro {
@@ -190,7 +191,7 @@ const BOTONES_RETRO: BotonRetro[] = [
   }
 ]
 
-export default function FooterActions({ onModalOpen }: FooterActionsProps) {
+export default function FooterActions({ onModalOpen, unreadWhatsAppCount }: FooterActionsProps) {
   const [isOpen, setIsOpen] = useState(false)
 
   return (
@@ -217,11 +218,18 @@ export default function FooterActions({ onModalOpen }: FooterActionsProps) {
               key={btn.id}
               onClick={() => onModalOpen(btn.id)}
               title={btn.title}
-              className="w-13 h-13 bg-[#d4d0c8] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 flex items-center justify-center cursor-pointer select-none hover:bg-gray-200 active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white shadow-sm"
+              className="relative w-13 h-13 bg-[#d4d0c8] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 flex items-center justify-center cursor-pointer select-none hover:bg-gray-200 active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white shadow-sm"
             >
               <div className="w-8 h-8 flex items-center justify-center">
                 {btn.renderSVG()}
               </div>
+
+              {/* BURBUJA DE NOTIFICACIÓN WHATSAPP DE MENSAJE ENTRANTE */}
+              {btn.id === 'notificaciones-whatsapp' && unreadWhatsAppCount && unreadWhatsAppCount > 0 ? (
+                <div className="absolute -top-2 -right-2 bg-red-600 text-white font-bold text-[10px] min-w-[20px] h-[20px] px-1 rounded-full flex items-center justify-center border-2 border-white shadow-lg animate-bounce z-20 font-mono">
+                  {unreadWhatsAppCount > 9 ? '9+' : unreadWhatsAppCount}
+                </div>
+              ) : null}
             </button>
           ))}
         </div>
