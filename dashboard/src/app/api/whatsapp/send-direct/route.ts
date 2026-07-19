@@ -22,17 +22,17 @@ export async function POST(req: Request) {
       telLimpio = '569' + telLimpio
     }
 
-    // 1. Intentar HTTP directo si está en la misma red local (puerto 3015)
+    // 1. Intentar HTTP directo al servidor de WhatsApp en la Nube
     try {
-      const openwaRes = await fetch('http://localhost:3015/api/send', {
+      const openwaRes = await fetch('https://wa-server-gamasecurity.koyeb.app/api/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone: telLimpio, text: texto }),
-        signal: AbortSignal.timeout(1500)
+        signal: AbortSignal.timeout(4000)
       })
       const openwaData = await openwaRes.json()
       if (openwaData?.ok) {
-        return NextResponse.json({ ok: true, proveedor: 'whatsapp_corporativo_local' })
+        return NextResponse.json({ ok: true, proveedor: 'whatsapp_corporativo_nube' })
       }
     } catch {}
 
