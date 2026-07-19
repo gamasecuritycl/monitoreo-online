@@ -835,7 +835,6 @@ export default function ScorpionDashboard() {
           { label: 'CONFIGURACION',  id: 'menu-configuracion' },
           { label: 'SERV. TECNICO',  id: 'menu-serv-tecnico' },
           { label: 'CONTROL TEST',   id: 'menu-control-test' },
-          { label: 'ENVIO MANUAL WA', id: 'menu-marcador' },
           { label: 'TABLAS',         id: 'menu-tablas' },
           { label: 'UTILIDADES',     id: 'menu-utilidades' },
           { label: 'NOTIFICACIONES', id: 'menu-notificaciones', hasDropdown: true },
@@ -920,12 +919,6 @@ export default function ScorpionDashboard() {
                   onClick={() => { setModalActivo('notificaciones-mail'); setMostrarMenuNotificaciones(false); }}
                 >
                   POR MAIL
-                </button>
-                <button
-                  className="w-full text-left px-4 py-1.5 text-xs text-black font-bold hover:bg-[#000080] hover:text-white"
-                  onClick={() => { setModalActivo('notificaciones-whatsapp'); setMostrarMenuNotificaciones(false); }}
-                >
-                  POR WHATSAPP
                 </button>
                 <button
                   className="w-full text-left px-4 py-1.5 text-xs text-black font-bold hover:bg-[#000080] hover:text-white"
