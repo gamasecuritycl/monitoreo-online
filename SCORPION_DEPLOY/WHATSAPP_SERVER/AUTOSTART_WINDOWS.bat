@@ -34,4 +34,7 @@ if exist "%SHORTCUT%" (
 )
 
 echo.
-pause
+echo  Cerrando ventana de forma automatica en 3 segundos...
+timeout /t 3 >nul
+exit
+
