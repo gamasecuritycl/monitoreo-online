@@ -9,6 +9,7 @@ interface Props {
   onClose: () => void
   clientesMap: Record<string, Record<string, string>>
   cuentaInicial?: string
+  telefonoInicial?: string
 }
 
 interface ContactoEscalamiento {
@@ -72,7 +73,7 @@ function formatearNumeroDisplay(num: string): string {
 // ──────────────────────────────────────────────
 //  COMPONENTE PRINCIPAL
 // ──────────────────────────────────────────────
-export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuentaInicial }: Props) {
+export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuentaInicial, telefonoInicial }: Props) {
   const [activeTab, setActiveTab] = useState<Tab>('chat')
 
   // ── Estado servidor WhatsApp ──
@@ -91,6 +92,14 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
   const [textoChat, setTextoChat] = useState('')
   const [enviandoChat, setEnviandoChat] = useState(false)
   const chatEndRef = useRef<HTMLDivElement>(null)
+
+  // Asignar chatActivo inicial si viene por prop
+  useEffect(() => {
+    if (telefonoInicial) {
+      const limpio = telefonoInicial.replace(/[^0-9]/g, '')
+      setChatActivo(limpio)
+    }
+  }, [telefonoInicial])
 
   // ── Tab Notificaciones ──
   const [busqueda, setBusqueda] = useState('')
