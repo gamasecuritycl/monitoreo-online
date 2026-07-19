@@ -1,11 +1,15 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════
- *  GAMA SEGURIDAD - SERVIDOR OPEN-WA / WHATSAPP OFICIAL DE LA CENTRAL v1.0
+ *  GAMA SEGURIDAD - SERVIDOR WHATSAPP OFICIAL DE LA CENTRAL v2.0
  * ═══════════════════════════════════════════════════════════════════════════
+ *  Servidor de alta disponibilidad usando whatsapp-web.js y Supabase Realtime.
  */
 
 const express = require('express')
 const { createClient } = require('@supabase/supabase-js')
+const { Client, LocalAuth } = require('whatsapp-web.js')
+const qrcodeTerminal = require('qrcode-terminal')
+const QRCode = require('qrcode')
 const fs = require('fs')
 
 const SUPABASE_URL = 'https://onxwyrwmpjxtwlmjrosr.supabase.co'
@@ -17,11 +21,11 @@ const app = express()
 app.use(express.json())
 
 let clientWA = null
-let estadoConexion = 'INICIANDO_GATEWAY'
-let ultimoMensajeStatus = 'Servidor activo en puerto 3015 y Supabase Realtime'
+let estadoConexion = 'ESPERANDO_ESCANEO_QR'
+let qrDataURL = null
 
 console.log('=====================================================')
-console.log('  GAMA SEGURIDAD - SERVIDOR WHATSAPP OFICIAL v1.0')
+console.log('  GAMA SEGURIDAD - SERVIDOR WHATSAPP OFICIAL v2.0')
 console.log('=====================================================')
 
 // Iniciar servidor HTTP Express inmediatamente
@@ -30,10 +34,9 @@ const server = app.listen(PORT, () => {
   console.log(`📡 [SUPABASE REALTIME] Conectado a canal whatsapp_outbound`)
 })
 
-// Manejo de errores de puerto en uso
 server.on('error', (err) => {
   if (err.code === 'EADDRINUSE') {
-    console.warn(`[PUERTO] El puerto ${PORT} ya está ocupado por otra instancia activa de Gama Seguridad.`)
+    console.warn(`[PUERTO] El puerto ${PORT} ya está ocupado por otra instancia.`)
   }
 })
 
@@ -42,7 +45,7 @@ try {
   const channel = supabase.channel('whatsapp_outbound')
   channel.on('broadcast', { event: 'send_whatsapp' }, async ({ payload }) => {
     if (payload && payload.phone && payload.text) {
-      console.log(`📩 [BROADCAST REALTIME RECIBIDO] Para: ${payload.phone}`)
+      console.log(`📩 [BROADCAST RECIBIDO] Para: ${payload.phone}`)
       await despacharMensaje(payload.phone, payload.text)
     }
   }).subscribe((status) => {
@@ -52,7 +55,7 @@ try {
   console.warn('[SUPABASE ERROR]:', err.message)
 }
 
-// Buscar ejecutable de Chrome en el sistema Windows del usuario
+// Buscar ejecutable de Chrome/Edge local
 function buscarRutaChrome() {
   const rutas = [
     'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
@@ -66,58 +69,75 @@ function buscarRutaChrome() {
   return undefined
 }
 
-// Cargar motor OpenWA
-async function iniciarMotorWhatsApp() {
-  try {
-    const wa = require('@open-wa/wa-automate')
-    console.log('[OPEN-WA] Iniciando cliente de WhatsApp con Chrome del sistema...')
-    
-    const chromePath = buscarRutaChrome()
-    const options = {
-      sessionId: "GAMA_SEGURIDAD_SESSION",
-      multiDevice: true,
-      authTimeout: 0,
-      blockCrashLogs: true,
-      disableSpins: true,
-      headless: false,
-      popup: true,
-      qrTimeout: 0,
-      useChrome: true
+// Iniciar whatsapp-web.js
+function iniciarWhatsAppWeb() {
+  const chromePath = buscarRutaChrome()
+  console.log(`[WHATSAPP WEB] Iniciando motor de mensajería...`)
+  if (chromePath) {
+    console.log(`[CHROME] Usando navegador: ${chromePath}`)
+  }
+
+  const clientOptions = {
+    authStrategy: new LocalAuth({ dataPath: './.gama_whatsapp_session' }),
+    puppeteer: {
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
     }
+  }
 
-    if (chromePath) {
-      options.executablePath = chromePath
-      console.log(`[CHROME] Usando navegador local: ${chromePath}`)
-    }
+  if (chromePath) {
+    clientOptions.puppeteer.executablePath = chromePath
+  }
 
-    const client = await wa.create(options)
+  const client = new Client(clientOptions)
 
+  // Evento QR Code
+  client.on('qr', (qr) => {
+    estadoConexion = 'ESPERANDO_ESCANEO_QR'
+    console.log('\n=====================================================')
+    console.log(' 📲 ESCANEA ESTE CÓDIGO QR CON TU WHATSAPP CORPORATIVO')
+    console.log('=====================================================\n')
+    qrcodeTerminal.generate(qr, { small: true })
+    console.log('\nO abre http://localhost:3015 en tu navegador para ver el QR en pantalla grande.\n')
+
+    QRCode.toDataURL(qr, (err, url) => {
+      if (!err) qrDataURL = url
+    })
+  })
+
+  // Evento Autenticado & Listo
+  client.on('ready', () => {
     clientWA = client
     estadoConexion = 'CONECTADO_WHATSAPP_OFICIAL'
-    console.log('✅ [OPEN-WA] ¡WhatsApp Oficial de Gama Seguridad Conectado!')
+    qrDataURL = null
+    console.log('✅ [WHATSAPP-WEB] ¡Sesión de WhatsApp Oficial Gama Seguridad lista y conectada!')
+  })
 
-    client.onMessage(async (message) => {
-      try {
-        console.log(`💬 [WHATSAPP RECIBIDO] De: ${message.from} -> ${message.body}`)
-        const numero = message.from.replace(/[^0-9]/g, '')
-        await supabase.from('conversaciones_whatsapp').insert({
-          numero: numero,
-          tipo_evento: 'mensaje_entrante',
-          estado: 'pendiente',
-          mensaje_enviado: message.body,
-          created_at: new Date().toISOString()
-        })
-      } catch (e) {}
-    })
+  // Evento Mensaje Entrante
+  client.on('message', async (msg) => {
+    try {
+      console.log(`💬 [MENSAJE RECIBIDO] De: ${msg.from} -> ${msg.body}`)
+      const numero = msg.from.replace(/[^0-9]/g, '')
+      await supabase.from('conversaciones_whatsapp').insert({
+        numero: numero,
+        tipo_evento: 'mensaje_entrante',
+        estado: 'pendiente',
+        mensaje_enviado: msg.body,
+        created_at: new Date().toISOString()
+      })
+    } catch (e) {}
+  })
 
-  } catch (err) {
-    estadoConexion = 'GATEWAY_REALTIME_ACTIVO'
-    ultimoMensajeStatus = 'Gateway HTTP / Supabase Realtime activo. ' + (err.message || '')
-    console.log('[INFO] Servidor operando en modo Gateway Realtime seguro.')
-  }
+  client.on('disconnected', (reason) => {
+    console.warn('[WHATSAPP-WEB] Cliente desconectado:', reason)
+    clientWA = null
+    estadoConexion = 'DESCONECTADO'
+  })
+
+  client.initialize()
 }
 
-// Despacho de mensajes por WhatsApp
+// Despacho de Mensajes
 async function despacharMensaje(phone, text) {
   const telLimpio = phone.replace(/[^0-9]/g, '')
   const formattedPhone = telLimpio.includes('@c.us') ? telLimpio : `${telLimpio}@c.us`
@@ -126,18 +146,18 @@ async function despacharMensaje(phone, text) {
 
   if (clientWA) {
     try {
-      await clientWA.sendText(formattedPhone, text)
+      await clientWA.sendMessage(formattedPhone, text)
       console.log(`✅ [ENTREGADO] Mensaje enviado a ${telLimpio}`)
       return true
     } catch (err) {
-      console.error('❌ [ERROR ENVÍO OPEN-WA]:', err.message)
+      console.error('❌ [ERROR ENVÍO]:', err.message)
     }
   }
 
   return true
 }
 
-// Rutas HTTP Express
+// Rutas API Express
 app.post('/api/send', async (req, res) => {
   const { phone, text } = req.body
   if (!phone || !text) {
@@ -148,7 +168,7 @@ app.post('/api/send', async (req, res) => {
 })
 
 app.get('/api/status', (req, res) => {
-  res.json({ ready: true, estado: estadoConexion, statusText: ultimoMensajeStatus })
+  res.json({ ready: !!clientWA, estado: estadoConexion, hasQR: !!qrDataURL })
 })
 
 app.get('/', (req, res) => {
@@ -156,27 +176,49 @@ app.get('/', (req, res) => {
     <!DOCTYPE html>
     <html>
       <head>
-        <title>Gama Seguridad - WhatsApp Official Server</title>
+        <title>Gama Seguridad - WhatsApp Central</title>
         <meta charset="utf-8">
+        <meta http-equiv="refresh" content="5">
         <style>
-          body { font-family: monospace; background: #0f172a; color: #38bdf8; padding: 20px; text-align: center; }
-          .card { background: #1e293b; border: 2px solid #334155; padding: 25px; max-width: 550px; margin: 0 auto; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
-          h1 { color: #22c55e; margin-bottom: 5px; }
-          .badge { background: #22c55e; color: black; padding: 4px 12px; font-weight: bold; border-radius: 4px; display: inline-block; margin: 10px 0; }
+          body { font-family: sans-serif; background: #0f172a; color: #38bdf8; padding: 20px; text-align: center; }
+          .card { background: #1e293b; border: 2px solid #334155; padding: 25px; max-width: 550px; margin: 0 auto; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+          h1 { color: #22c55e; margin-bottom: 5px; font-size: 24px; }
+          .badge { background: #22c55e; color: black; padding: 6px 14px; font-weight: bold; border-radius: 6px; display: inline-block; margin: 10px 0; font-size: 14px; }
+          .badge-wait { background: #f59e0b; color: black; }
+          .qr-img { background: white; padding: 12px; border-radius: 8px; margin: 15px auto; display: block; max-width: 250px; }
         </style>
       </head>
       <body>
         <div class="card">
           <h1>🛡️ GAMA SEGURIDAD</h1>
-          <h3>SERVIDOR WHATSAPP CENTRAL v1.0</h3>
-          <p>Estado de Conexión: <br/><span class="badge">${estadoConexion}</span></p>
-          <p>📡 Escuchando canal Supabase Realtime: <strong>whatsapp_outbound</strong></p>
-          <p>🌐 Puerto HTTP API Local: <strong>3015</strong></p>
+          <h3>SERVIDOR DE WHATSAPP CENTRAL v2.0</h3>
+          
+          <p>Estado de Conexión:<br/>
+            <span class="badge ${estadoConexion.includes('ESPERANDO') ? 'badge-wait' : ''}">
+              ${estadoConexion}
+            </span>
+          </p>
+
+          ${qrDataURL ? `
+            <div style="margin-top: 15px;">
+              <p style="color: #fef08a; font-weight: bold;">📲 ESCANEA EL CÓDIGO QR CON TU WHATSAPP CORPORATIVO:</p>
+              <img src="${qrDataURL}" class="qr-img" alt="QR WhatsApp" />
+            </div>
+          ` : ''}
+
+          ${estadoConexion === 'CONECTADO_WHATSAPP_OFICIAL' ? `
+            <div style="margin-top: 15px; color: #4ade80; font-weight: bold;">
+              ✅ Dispositivo Vinculado Exitosamente. Mensajes activos sin publicidad.
+            </div>
+          ` : ''}
+
+          <p style="font-size: 12px; color: #94a3b8; margin-top: 20px;">
+            📡 Canal Supabase Realtime: <strong>whatsapp_outbound</strong> | Puerto HTTP: <strong>3015</strong>
+          </p>
         </div>
       </body>
     </html>
   `)
 })
 
-// Iniciar motor de WhatsApp
-iniciarMotorWhatsApp()
+iniciarWhatsAppWeb()
