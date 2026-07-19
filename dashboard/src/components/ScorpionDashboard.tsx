@@ -1052,13 +1052,6 @@ export default function ScorpionDashboard() {
                       <td className="p-0.5 font-mono text-blue-800 flex items-center justify-between gap-1">
                         <span className="truncate max-w-[90px]">{contact.telefono}</span>
                         <div className="flex gap-0.5 shrink-0">
-                          <a
-                            href={`tel:${contact.telefono.replace(/[^0-9+]/g, '')}`}
-                            title="Llamar directamente"
-                            className="bg-[#c0c0c0] border border-t-white border-l-white border-b-gray-700 border-r-gray-700 px-0.5 hover:bg-[#d0d0d0] active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white text-[8px] cursor-pointer"
-                          >
-                            📞
-                          </a>
                           <button
                             onClick={() => {
                               const telLimpio = contact.telefono.replace(/[^0-9]/g, '')
