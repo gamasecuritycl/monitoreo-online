@@ -22,6 +22,7 @@ interface ChatLogItem {
   fecha: string
   exito: boolean
   errorMsg?: string | null
+  esRespuestaCliente?: boolean
 }
 
 type Tab = 'manual' | 'config' | 'alertas' | 'panico' | 'energia'
@@ -152,7 +153,80 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
       }
     }
     cargar()
-  }, [clienteSeleccionado, clientesMap])
+
+    // Cargar historial de conversaciones guardadas en Supabase
+    const cargarHistorialBD = async () => {
+      try {
+        const { data } = await supabase
+          .from('conversaciones_whatsapp')
+          .select('*')
+          .or(`cuenta.eq.${clienteSeleccionado.cuenta},numero.eq.${(telefonoEnvio || telefono).replace(/[^0-9]/g, '')}`)
+          .order('created_at', { ascending: false })
+          .limit(30)
+
+        if (data && data.length > 0) {
+          const items: ChatLogItem[] = []
+          data.forEach((row: any) => {
+            if (row.mensaje_enviado) {
+              items.push({
+                id: Math.random(),
+                cuenta: row.cuenta || clienteSeleccionado.cuenta,
+                telefono: row.numero || '',
+                texto: row.mensaje_enviado,
+                fecha: new Date(row.created_at).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }),
+                exito: true,
+                esRespuestaCliente: false
+              })
+            }
+            if (row.respuesta_recibida || row.respuesta_cliente) {
+              items.push({
+                id: Math.random(),
+                cuenta: row.cuenta || clienteSeleccionado.cuenta,
+                telefono: row.numero || '',
+                texto: row.respuesta_recibida || row.respuesta_cliente,
+                fecha: row.responded_at ? new Date(row.responded_at).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }) : new Date(row.created_at).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }),
+                exito: true,
+                esRespuestaCliente: true
+              })
+            }
+          })
+          setChatLogs(items)
+        }
+      } catch (err) {
+        console.warn('[WHATSAPP BD CHARLA ERROR]:', err)
+      }
+    }
+    cargarHistorialBD()
+
+    // Suscripción Realtime a mensajes entrantes del cliente
+    const channel = supabase
+      .channel(`chat_realtime_${clienteSeleccionado.cuenta}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'conversaciones_whatsapp' },
+        (payload: any) => {
+          const row = payload.new
+          if (row) {
+            const esCliente = !!(row.respuesta_recibida || row.respuesta_cliente)
+            const nuevoItem: ChatLogItem = {
+              id: Date.now(),
+              cuenta: row.cuenta || clienteSeleccionado.cuenta,
+              telefono: row.numero || '',
+              texto: esCliente ? (row.respuesta_recibida || row.respuesta_cliente) : (row.mensaje_enviado || ''),
+              fecha: new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }),
+              exito: true,
+              esRespuestaCliente: esCliente
+            }
+            setChatLogs(prev => [nuevoItem, ...prev])
+          }
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [clienteSeleccionado, clientesMap, telefono, telefonoEnvio])
 
   // Función para auto-guardar abonado en Supabase si no estaba creado
   const autoGuardarSiNoExiste = async (cuenta: string, telLimpio: string) => {
@@ -549,23 +623,25 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
                       <div
                         key={log.id}
                         className={`p-2 rounded border transition-all ${
-                          log.exito
-                            ? 'bg-[#005c4b] border-green-600 text-white'
+                          log.esRespuestaCliente
+                            ? 'bg-[#202c33] border-blue-500 text-blue-100 shadow-md ml-1 border-l-4 border-l-blue-400'
+                            : log.exito
+                            ? 'bg-[#005c4b] border-green-600 text-white mr-1'
                             : 'bg-red-950 border-red-700 text-red-200'
                         }`}
                       >
                         <div className="flex justify-between items-center border-b border-white/20 pb-1 mb-1 font-bold text-[9px]">
-                          <span>CTA: {log.cuenta}</span>
+                          <span>{log.esRespuestaCliente ? '📩 RESPUESTA DE CLIENTE' : `CTA: ${log.cuenta}`}</span>
                           <span>{log.fecha}</span>
                         </div>
-                        <div className="text-[9px] text-green-200 mb-1 font-mono">
-                          Destino: {log.telefono}
+                        <div className="text-[9px] opacity-90 mb-1 font-mono">
+                          {log.esRespuestaCliente ? `De: ${log.telefono}` : `Destino: ${log.telefono}`}
                         </div>
-                        <div className="leading-tight break-words text-[10px] font-sans">
+                        <div className="leading-tight break-words text-[10px] font-sans font-medium">
                           {log.texto}
                         </div>
                         <div className="mt-1 text-right text-[8px] italic opacity-80">
-                          {log.exito ? '✓✓ Entregado en tiempo real' : `❌ ${log.errorMsg}`}
+                          {log.esRespuestaCliente ? '👤 Respuesta recibida en central' : log.exito ? '✓✓ Entregado vía WhatsApp Oficial' : `❌ ${log.errorMsg}`}
                         </div>
                       </div>
                     ))

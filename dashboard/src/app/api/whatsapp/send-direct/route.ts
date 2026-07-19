@@ -39,11 +39,12 @@ export async function POST(req: Request) {
         event: 'send_whatsapp',
         payload: { phone: telLimpio, text: texto, timestamp: Date.now() }
       })
+      return NextResponse.json({ ok: true, proveedor: 'whatsapp_oficial_realtime' })
     } catch (err) {
       console.warn('[WHATSAPP BROADCAST ERROR]:', err)
     }
 
-    // 3. Cloud Gateway Fallback (CallMeBot Server-Side) para entrega garantizada
+    // 3. Cloud Gateway Fallback solo si falló la central
     const params = new URLSearchParams({
       phone: telLimpio,
       text: texto,
@@ -54,7 +55,7 @@ export async function POST(req: Request) {
     const callmeData = await callmeRes.text()
     const ok = callmeRes.ok && (callmeData.includes('Message queued') || callmeData.includes('success'))
 
-    return NextResponse.json({ ok: true, proveedor: 'whatsapp_server_hybrid', debug: callmeData.slice(0, 100) })
+    return NextResponse.json({ ok: true, proveedor: 'whatsapp_fallback', debug: callmeData.slice(0, 100) })
   } catch (err: any) {
     return NextResponse.json({ ok: false, error: err.message }, { status: 500 })
   }
