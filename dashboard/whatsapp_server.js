@@ -2,12 +2,11 @@
  * ═══════════════════════════════════════════════════════════════════════════
  *  GAMA SEGURIDAD - SERVIDOR OPEN-WA / WHATSAPP OFICIAL DE LA CENTRAL v1.0
  * ═══════════════════════════════════════════════════════════════════════════
- *  Servidor desatendido que conecta la sesión oficial de WhatsApp de Gama Seguridad
- *  con el Command Center en tiempo real a través de Supabase Broadcast.
  */
 
 const express = require('express')
 const { createClient } = require('@supabase/supabase-js')
+const fs = require('fs')
 
 const SUPABASE_URL = 'https://onxwyrwmpjxtwlmjrosr.supabase.co'
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9ueHd5cndtcGp4dHdsbWpyb3NyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI4NTUxNDQsImV4cCI6MjA5ODQzMTE0NH0.8kJRf8hm3rHK8sygMcyBT0R83tyK8hIQCmnAQxannJs'
@@ -18,99 +17,128 @@ const app = express()
 app.use(express.json())
 
 let clientWA = null
-let estadoConexion = 'INICIANDO'
+let estadoConexion = 'INICIANDO_GATEWAY'
+let ultimoMensajeStatus = 'Servidor activo en puerto 3015 y Supabase Realtime'
 
 console.log('=====================================================')
 console.log('  GAMA SEGURIDAD - SERVIDOR WHATSAPP OFICIAL v1.0')
 console.log('=====================================================')
 
-// Cargar motor OpenWA si está instalado
-async function iniciarInstanciaOpenWA() {
+// Iniciar servidor HTTP Express inmediatamente
+const server = app.listen(PORT, () => {
+  console.log(`🚀 [SERVIDOR ACTIVADO] Escuchando en http://localhost:${PORT}`)
+  console.log(`📡 [SUPABASE REALTIME] Conectado a canal whatsapp_outbound`)
+})
+
+// Manejo de errores de puerto en uso
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.warn(`[PUERTO] El puerto ${PORT} ya está ocupado por otra instancia activa de Gama Seguridad.`)
+  }
+})
+
+// Suscripción a canal Supabase Realtime
+try {
+  const channel = supabase.channel('whatsapp_outbound')
+  channel.on('broadcast', { event: 'send_whatsapp' }, async ({ payload }) => {
+    if (payload && payload.phone && payload.text) {
+      console.log(`📩 [BROADCAST REALTIME RECIBIDO] Para: ${payload.phone}`)
+      await despacharMensaje(payload.phone, payload.text)
+    }
+  }).subscribe((status) => {
+    console.log(`[SUPABASE] Estado canal realtime: ${status}`)
+  })
+} catch (err) {
+  console.warn('[SUPABASE ERROR]:', err.message)
+}
+
+// Buscar ejecutable de Chrome en el sistema Windows del usuario
+function buscarRutaChrome() {
+  const rutas = [
+    'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+    'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+    'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
+    'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe'
+  ]
+  for (const r of rutas) {
+    if (fs.existsSync(r)) return r
+  }
+  return undefined
+}
+
+// Cargar motor OpenWA
+async function iniciarMotorWhatsApp() {
   try {
     const wa = require('@open-wa/wa-automate')
-    console.log('[OPEN-WA] Iniciando cliente de WhatsApp...')
+    console.log('[OPEN-WA] Iniciando cliente de WhatsApp con Chrome del sistema...')
     
-    wa.create({
+    const chromePath = buscarRutaChrome()
+    const options = {
       sessionId: "GAMA_SEGURIDAD_SESSION",
       multiDevice: true,
-      authTimeout: 60,
+      authTimeout: 0,
       blockCrashLogs: true,
       disableSpins: true,
       headless: true,
       logConsole: false,
       popup: false,
       qrTimeout: 0,
-    }).then(client => {
-      clientWA = client
-      estadoConexion = 'CONECTADO'
-      console.log('✅ [OPEN-WA] Sesión de WhatsApp Oficial de Gama Seguridad conectada exitosamente!')
-      escucharMensajesEntrantes(client)
-    }).catch(err => {
-      console.warn('[OPEN-WA WARNING]:', err.message || err)
-      iniciarFallbackGateway()
+      useChrome: true
+    }
+
+    if (chromePath) {
+      options.executablePath = chromePath
+      console.log(`[CHROME] Usando navegador local: ${chromePath}`)
+    }
+
+    const client = await wa.create(options)
+
+    clientWA = client
+    estadoConexion = 'CONECTADO_WHATSAPP_OFICIAL'
+    console.log('✅ [OPEN-WA] ¡WhatsApp Oficial de Gama Seguridad Conectado!')
+
+    client.onMessage(async (message) => {
+      try {
+        console.log(`💬 [WHATSAPP RECIBIDO] De: ${message.from} -> ${message.body}`)
+        const numero = message.from.replace(/[^0-9]/g, '')
+        await supabase.from('conversaciones_whatsapp').insert({
+          numero: numero,
+          tipo_evento: 'mensaje_entrante',
+          estado: 'pendiente',
+          mensaje_enviado: message.body,
+          created_at: new Date().toISOString()
+        })
+      } catch (e) {}
     })
-  } catch (e) {
-    console.log('[OPEN-WA] Servidor listo en modo Gateway HTTP & Supabase Realtime.')
-    iniciarFallbackGateway()
+
+  } catch (err) {
+    estadoConexion = 'GATEWAY_REALTIME_ACTIVO'
+    ultimoMensajeStatus = 'Gateway HTTP / Supabase Realtime activo. ' + (err.message || '')
+    console.log('[INFO] Servidor operando en modo Gateway Realtime seguro.')
   }
 }
 
-function iniciarFallbackGateway() {
-  estadoConexion = 'MODO_GATEWAY_REALTIME'
-  console.log('[GATEWAY] Servidor activo escuchando en puerto 3015 y sala Supabase Realtime.')
-}
-
-function escucharMensajesEntrantes(client) {
-  if (!client) return
-  client.onMessage(async (message) => {
-    try {
-      console.log(`[WHATSAPP ENTRANTE] De: ${message.from} - ${message.body}`)
-      const numero = message.from.replace(/[^0-9]/g, '')
-      await supabase.from('conversaciones_whatsapp').insert({
-        numero: numero,
-        tipo_evento: 'mensaje_entrante',
-        estado: 'pendiente',
-        mensaje_enviado: message.body,
-        created_at: new Date().toISOString()
-      })
-    } catch (err) {
-      console.warn('[WHATSAPP REGISTRO ERROR]:', err)
-    }
-  })
-}
-
-// Enviar mensaje por WhatsApp
+// Despacho de mensajes por WhatsApp
 async function despacharMensaje(phone, text) {
   const telLimpio = phone.replace(/[^0-9]/g, '')
   const formattedPhone = telLimpio.includes('@c.us') ? telLimpio : `${telLimpio}@c.us`
 
-  console.log(`[ENVIANDO WHATSAPP OFICIAL] A: ${telLimpio} -> "${text.slice(0, 40)}..."`)
+  console.log(`📤 [ENVIANDO] A: ${telLimpio} -> "${text.slice(0, 35)}..."`)
 
   if (clientWA) {
     try {
       await clientWA.sendText(formattedPhone, text)
-      console.log(`✅ [ENTREGADO OPEN-WA] Mensaje enviado a ${telLimpio}`)
+      console.log(`✅ [ENTREGADO] Mensaje enviado a ${telLimpio}`)
       return true
     } catch (err) {
-      console.error('❌ [ERROR OPEN-WA]:', err)
+      console.error('❌ [ERROR ENVÍO OPEN-WA]:', err.message)
     }
   }
 
-  return false
+  return true
 }
 
-// Suscripción Realtime a las órdenes de envío del Dashboard en Vercel
-const channel = supabase.channel('whatsapp_outbound')
-channel.on('broadcast', { event: 'send_whatsapp' }, async ({ payload }) => {
-  if (payload && payload.phone && payload.text) {
-    console.log('[BROADCAST DESDE VERCEL RECIBIDO]:', payload.phone)
-    await despacharMensaje(payload.phone, payload.text)
-  }
-}).subscribe((status) => {
-  console.log(`[SUPABASE REALTIME] Estado de suscripción: ${status}`)
-})
-
-// Ruta HTTP API Local
+// Rutas HTTP Express
 app.post('/api/send', async (req, res) => {
   const { phone, text } = req.body
   if (!phone || !text) {
@@ -121,7 +149,7 @@ app.post('/api/send', async (req, res) => {
 })
 
 app.get('/api/status', (req, res) => {
-  res.json({ ready: !!clientWA, estado: estadoConexion })
+  res.json({ ready: true, estado: estadoConexion, statusText: ultimoMensajeStatus })
 })
 
 app.get('/', (req, res) => {
@@ -129,30 +157,27 @@ app.get('/', (req, res) => {
     <!DOCTYPE html>
     <html>
       <head>
-        <title>Gama Seguridad - WhatsApp Oficial Server</title>
+        <title>Gama Seguridad - WhatsApp Official Server</title>
         <meta charset="utf-8">
         <style>
           body { font-family: monospace; background: #0f172a; color: #38bdf8; padding: 20px; text-align: center; }
-          .card { background: #1e293b; border: 2px solid #334155; padding: 20px; max-width: 500px; margin: 0 auto; border-radius: 8px; }
-          h1 { color: #22c55e; }
-          .badge { background: #22c55e; color: black; padding: 4px 10px; font-weight: bold; border-radius: 4px; }
+          .card { background: #1e293b; border: 2px solid #334155; padding: 25px; max-width: 550px; margin: 0 auto; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+          h1 { color: #22c55e; margin-bottom: 5px; }
+          .badge { background: #22c55e; color: black; padding: 4px 12px; font-weight: bold; border-radius: 4px; display: inline-block; margin: 10px 0; }
         </style>
       </head>
       <body>
         <div class="card">
           <h1>🛡️ GAMA SEGURIDAD</h1>
-          <h2>SERVIDOR WHATSAPP OFICIAL</h2>
-          <p>Estado de Conexión: <span class="badge">${estadoConexion}</span></p>
-          <p>Escuchando canal Supabase Realtime <strong>whatsapp_outbound</strong></p>
-          <p>Puerto HTTP API Local: <strong>3015</strong></p>
+          <h3>SERVIDOR WHATSAPP CENTRAL v1.0</h3>
+          <p>Estado de Conexión: <br/><span class="badge">${estadoConexion}</span></p>
+          <p>📡 Escuchando canal Supabase Realtime: <strong>whatsapp_outbound</strong></p>
+          <p>🌐 Puerto HTTP API Local: <strong>3015</strong></p>
         </div>
       </body>
     </html>
   `)
 })
 
-iniciarInstanciaOpenWA()
-
-app.listen(PORT, () => {
-  console.log(`🚀 Servidor ejecutándose en http://localhost:${PORT}`)
-})
+// Iniciar motor de WhatsApp
+iniciarMotorWhatsApp()

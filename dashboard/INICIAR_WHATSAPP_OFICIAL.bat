@@ -6,18 +6,19 @@ echo =======================================================
 echo    GAMA SEGURIDAD - WHATSAPP OFICIAL SERVER v1.0
 echo =======================================================
 echo.
-echo  Verificando paquetes...
 
 cd /d "%~dp0"
 
-if not exist node_modules\express (
-  echo  Instalando dependencias necesarias (express, supabase-js)...
-  call npm install express @supabase/supabase-js @open-wa/wa-automate --save
-)
+echo  Liberando puerto 3015 si hubiese instancias anteriores...
+for /f "tokens=5" %%a in ('netstat -aon ^| findstr :3015') do taskkill /f /pid %%a 2>nul
 
 echo  Iniciando servidor de WhatsApp corporativo en puerto 3015...
 echo  Escuchando peticiones en tiempo real via Supabase Realtime...
 echo.
 
 node whatsapp_server.js
+echo.
+echo =======================================================
+echo  El servidor ha finalizado. Presione una tecla para cerrar.
+echo =======================================================
 pause
