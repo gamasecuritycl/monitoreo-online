@@ -28,7 +28,7 @@ interface ChatLogItem {
 type Tab = 'web' | 'manual' | 'config' | 'alertas' | 'panico' | 'energia'
 
 export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuentaInicial }: Props) {
-  const [activeTab, setActiveTab] = useState<Tab>('web')
+  const [activeTab, setActiveTab] = useState<Tab>('manual')
   const [busqueda, setBusqueda] = useState('')
   const [clienteSeleccionado, setClienteSeleccionado] = useState<{ cuenta: string; nombre: string } | null>(() => {
     if (cuentaInicial && clientesMap[cuentaInicial]) {
@@ -51,53 +51,36 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
   const [notificarVideo, setNotificarVideo] = useState(false)
 
   // Estados del Panel de Envíos Manuales & Chat
-  const [iframeSrc, setIframeSrc] = useState('http://localhost:3015')
   const [telefonoEnvio, setTelefonoEnvio] = useState('')
   const [textoMensaje, setTextoMensaje] = useState('')
   const [enviandoManual, setEnviandoManual] = useState(false)
   const [mensajeStatus, setMensajeStatus] = useState('')
   const [chatLogs, setChatLogs] = useState<ChatLogItem[]>([])
 
-  const clientesFiltrados = Object.entries(clientesMap)
-    .filter(([cuenta, datos]) => {
-      const b = busqueda.toLowerCase().trim()
-      if (!b) return true
-      return cuenta.toLowerCase().includes(b) || (datos.nombre || '').toLowerCase().includes(b)
-    })
-    .slice(0, 50)
-
-  // Extraer lista de contactos autorizados de un abonado
   const obtenerListaContactos = (cuenta: string) => {
-    const datos = clientesMap[cuenta]
+    const cliente = clientesMap[cuenta]
+    if (!cliente) return []
     const lista: { etiqueta: string; telefono: string; nombre: string }[] = []
-    if (!datos) return lista
 
-    // Teléfono principal
-    const telPrincipal = datos.t1 || datos.telefono1 || datos.telefono || ''
-    if (telPrincipal) {
+    if (cliente.t1 || cliente.telefono1 || cliente.telefono) {
       lista.push({
-        etiqueta: `Principal (${datos.nombre1 || 'Titular'})`,
-        telefono: telPrincipal,
-        nombre: datos.nombre1 || 'Titular'
+        etiqueta: 'Principal',
+        telefono: cliente.t1 || cliente.telefono1 || cliente.telefono || '',
+        nombre: cliente.nombre1 || cliente.nombre || 'Principal'
       })
     }
 
-    // Contactos secundarios (2 al 7)
-    for (let i = 2; i <= 7; i++) {
-      const nom = datos[`nombre${i}`]
-      const tel = datos[`t${i}`] || datos[`telefono${i}`]
-      if (tel) {
-        lista.push({
-          etiqueta: `Contacto ${i}: ${nom || 'Autorizado'}`,
-          telefono: tel,
-          nombre: nom || `Contacto ${i}`
-        })
-      }
+    if (cliente.t2 || cliente.telefono2) {
+      lista.push({
+        etiqueta: 'Contacto 2',
+        telefono: cliente.t2 || cliente.telefono2 || '',
+        nombre: cliente.nombre2 || 'Contacto 2'
+      })
     }
 
-    // Contactos de escalamiento guardados
-    contactos.forEach((c, idx) => {
-      if (c.telefono && !lista.some(l => l.telefono === c.telefono)) {
+    const conf = contactos
+    conf.forEach((c, idx) => {
+      if (c.telefono) {
         lista.push({
           etiqueta: `Escalamiento ${idx + 1}: ${c.nombre || 'Contacto'}`,
           telefono: c.telefono,
@@ -155,7 +138,6 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
     }
     cargar()
 
-    // Cargar historial de conversaciones guardadas en Supabase
     const cargarHistorialBD = async () => {
       try {
         const { data } = await supabase
@@ -199,7 +181,6 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
     }
     cargarHistorialBD()
 
-    // Suscripción Realtime a mensajes entrantes del cliente
     const channel = supabase
       .channel(`chat_realtime_${clienteSeleccionado.cuenta}`)
       .on(
@@ -229,7 +210,6 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
     }
   }, [clienteSeleccionado, clientesMap, telefono, telefonoEnvio])
 
-  // Función para auto-guardar abonado en Supabase si no estaba creado
   const autoGuardarSiNoExiste = async (cuenta: string, telLimpio: string) => {
     try {
       const { data } = await supabase
@@ -240,20 +220,17 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
 
       if (!data || data.length === 0) {
         await supabase.from('notificaciones_whatsapp').insert({
-          cuenta,
+          cuenta: cuenta,
           telefono: telLimpio,
           activo: true,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          created_at: new Date().toISOString()
         })
-        console.log(`[WHATSAPP] Auto-guardado exitoso para abonado ${cuenta} con teléfono ${telLimpio}`)
       }
     } catch (err) {
       console.warn('[WHATSAPP] Error en auto-guardado:', err)
     }
   }
 
-  // Handler para guardar manualmente
   const guardar = async () => {
     if (!clienteSeleccionado) return
     const telLimpio = telefono.replace(/[^0-9]/g, '')
@@ -301,7 +278,6 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
   }
   const eliminarContacto = (i: number) => setContactos(contactos.filter((_, idx) => idx !== i))
 
-  // Función para enviar mensaje manual por WhatsApp (Notificación o Chat Directo)
   const enviarMensajeManual = async (esChatDirecto: boolean = false) => {
     if (!clienteSeleccionado) {
       alert('Por favor seleccione un abonado en la lista izquierda primero.')
@@ -345,38 +321,34 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
     setMensajeStatus('Enviando mensaje...')
 
     try {
-      // 1. Enviar mensaje por API de WhatsApp
       const resultado = await sendMessage(telLimpio, mensajeFinal)
-
-      // 2. Auto-guardar abonado si no estaba en la base de datos
       await autoGuardarSiNoExiste(clienteSeleccionado.cuenta, telLimpio)
-
-      // 3. Agregar mensaje al historial de chat
       const logItem: ChatLogItem = {
         id: Date.now(),
         cuenta: clienteSeleccionado.cuenta,
         telefono: telLimpio,
         texto: mensajeFinal,
-        fecha: new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+        fecha: new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }),
         exito: resultado.ok,
-        errorMsg: resultado.ok ? null : (resultado.debug || 'Error al enviar')
+        errorMsg: resultado.ok ? null : (resultado.debug || 'Error al conectar con WhatsApp'),
+        esRespuestaCliente: false
       }
 
       setChatLogs(prev => [logItem, ...prev])
-      setMensajeStatus(resultado.ok ? '✅ ¡Mensaje enviado y registrado!' : '❌ Error: ' + (resultado.debug || ''))
 
       if (resultado.ok) {
         setTextoMensaje('')
+        setMensajeStatus('✅ Mensaje enviado exitosamente')
+      } else {
+        setMensajeStatus('❌ Error: ' + (resultado.debug || 'No fue posible entregar'))
       }
     } catch (err: any) {
       setMensajeStatus('❌ Error al enviar mensaje: ' + err.message)
     } finally {
       setEnviandoManual(false)
-      setTimeout(() => setMensajeStatus(''), 4000)
     }
   }
 
-  // Plantillas rápidas de emergencias
   const aplicarPlantilla = (tipo: string) => {
     if (!clienteSeleccionado) return
     const cuenta = clienteSeleccionado.cuenta
@@ -391,12 +363,18 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
   }
 
   const tabs: { id: Tab; label: string }[] = [
-    { id: 'manual', label: '💬 Chats & Conversaciones (App PC)' },
-    { id: 'config', label: '⚙️ Notificaciones Automáticas & Fichas' },
-    { id: 'alertas', label: '🚨 Reglas por Tipo de Evento' },
+    { id: 'manual', label: '📢 Envíos Manuales & Chats por Abonado' },
+    { id: 'web', label: '💬 Servidor WhatsApp Central' },
+    { id: 'config', label: '⚙️ Configuración & Notificaciones Automáticas' },
   ]
 
   const listaContactosAutorizados = clienteSeleccionado ? obtenerListaContactos(clienteSeleccionado.cuenta) : []
+
+  const clientesFiltrados = Object.entries(clientesMap).filter(([cuenta, datos]) => {
+    if (!busqueda.trim()) return true
+    const q = busqueda.toLowerCase()
+    return cuenta.toLowerCase().includes(q) || (datos.nombre || '').toLowerCase().includes(q)
+  })
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 font-mono">
@@ -431,37 +409,40 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
         {/* Contenido Principal */}
         <div className="flex-1 overflow-hidden">
           
-          {/* ═══ TAB 1: WHATSAPP WEB OFICIAL (EMBEBIDO AHÍ MISMO EN LA VENTANA) ═══ */}
+          {/* ═══ TAB 1: WHATSAPP WEB / SERVIDOR CENTRAL LOCAL ═══ */}
           {activeTab === 'web' && (
-            <div className="w-full h-[520px] bg-[#111b21] flex flex-col relative overflow-hidden">
-              <div className="p-2 bg-[#202c33] border-b border-[#222d34] flex justify-between items-center text-xs shrink-0">
-                <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#00a884] animate-pulse"></span>
-                  <span className="font-bold text-white font-mono text-[11px]">WHATSAPP WEB EMBEBIDO DENTRO DEL MODAL (MISMA SESIÓN DE PC)</span>
+            <div className="p-4 bg-[#111b21] text-white flex flex-col h-[520px] items-center justify-center font-sans">
+              <div className="bg-[#202c33] border border-[#2a3942] rounded-xl p-6 max-w-xl text-center shadow-2xl flex flex-col items-center">
+                <div className="w-16 h-16 rounded-full bg-[#00a884] flex items-center justify-center text-3xl mb-3 shadow-lg">
+                  💬
                 </div>
-                <div className="flex items-center gap-2 font-mono">
+                <h2 className="font-bold text-base text-white mb-2 tracking-wide font-mono">SERVIDOR WHATSAPP CENTRAL (PUERTO 3015)</h2>
+                <p className="text-xs text-[#8696a0] mb-5 leading-relaxed">
+                  El servidor local escucha las notificaciones de emergencia y las transmite en tiempo real usando tu cuenta corporativa oficial de Gama Seguridad.
+                </p>
+
+                <div className="flex flex-col gap-2.5 w-full max-w-md">
                   <button
-                    onClick={() => setIframeSrc('http://localhost:3015')}
-                    className={`px-2.5 py-0.5 rounded text-[10px] font-bold cursor-pointer transition-colors ${iframeSrc.includes('3015') ? 'bg-[#00a884] text-black' : 'bg-[#111b21] text-gray-300 hover:bg-[#2a3942]'}`}
+                    onClick={() => window.open('http://localhost:3015', '_blank')}
+                    className="bg-[#00a884] hover:bg-[#029676] text-black font-bold text-xs py-2.5 px-4 rounded-lg shadow flex items-center justify-center gap-2 cursor-pointer transition-all"
                   >
-                    Servidor Central Local (3015)
+                    <span>🖥️</span>
+                    <span>ABRIR PANEL DE ESTADO LOCAL (HTTP 3015)</span>
                   </button>
+
                   <button
-                    onClick={() => setIframeSrc('https://web.whatsapp.com')}
-                    className={`px-2.5 py-0.5 rounded text-[10px] font-bold cursor-pointer transition-colors ${iframeSrc.includes('whatsapp.com') ? 'bg-[#00a884] text-black' : 'bg-[#111b21] text-gray-300 hover:bg-[#2a3942]'}`}
+                    onClick={() => window.open('https://web.whatsapp.com', '_blank')}
+                    className="bg-[#2a3942] hover:bg-[#374248] text-white font-bold text-xs py-2.5 px-4 rounded-lg border border-gray-600 flex items-center justify-center gap-2 cursor-pointer"
                   >
-                    web.whatsapp.com
+                    <span>🌐</span>
+                    <span>ABRIR WEB.WHATSAPP.COM EN OTRA PESTAÑA</span>
                   </button>
                 </div>
-              </div>
-              
-              <div className="flex-1 w-full h-full bg-[#0b141a] relative">
-                <iframe
-                  src={iframeSrc}
-                  className="w-full h-full border-0"
-                  title="WhatsApp Web Oficial Embebido"
-                  allow="camera; microphone; clipboard-read; clipboard-write;"
-                />
+
+                <div className="mt-5 pt-3 border-t border-[#2a3942] w-full text-[10px] text-[#8696a0] flex justify-between font-mono">
+                  <span>ESTADO: 🟢 ACTIVO VIA SUPABASE REALTIME</span>
+                  <span>PUERTO: 3015</span>
+                </div>
               </div>
             </div>
           )}
@@ -808,51 +789,6 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
                     </div>
                   </div>
                 )}
-              </div>
-            </div>
-          )}
-
-          {/* ═══ TAB 3: ALERTAS ═══ */}
-          {activeTab === 'alertas' && (
-            <div className="p-4 overflow-y-auto h-[480px] text-xs text-black font-bold leading-relaxed">
-              <div className="bg-[#e0e0e0] border border-gray-400 p-3 mb-3">
-                <div className="text-[#000080] text-sm font-bold mb-2">COMO FUNCIONA</div>
-                <p className="mb-2">Al detectarse una alarma en Scorpion, se envía WhatsApp automático al cliente registrado.</p>
-                <p>El sistema analiza el patrón de eventos para determinar la severidad:</p>
-              </div>
-              <div className="bg-green-50 border border-green-300 p-3 mb-3">
-                <div className="text-green-800 font-bold mb-1">INFORMATIVO (1 zona, 1 evento)</div>
-                <p>Sola activación en una zona. Respuesta: AYUDA si necesita asistencia.</p>
-              </div>
-              <div className="bg-red-50 border border-red-300 p-3 mb-3">
-                <div className="text-red-800 font-bold mb-1">CRÍTICO (múltiples zonas o eventos)</div>
-                <p>2+ activaciones o múltiples zonas. Se informa: "SE DESPACHARÁ UNIDAD DE EMERGENCIA".</p>
-              </div>
-            </div>
-          )}
-
-          {/* ═══ TAB 4: PÁNICO ═══ */}
-          {activeTab === 'panico' && (
-            <div className="p-4 overflow-y-auto h-[480px] text-xs text-black font-bold leading-relaxed">
-              <div className="bg-red-50 border-2 border-red-400 p-3 mb-3">
-                <div className="text-red-800 text-sm font-bold mb-2">PROTOCOLO DE EMERGENCIA</div>
-                <p>El cliente envía un mensaje de WhatsApp con cualquiera de estas palabras:</p>
-                <div className="flex gap-2 mt-2 flex-wrap">
-                  <span className="bg-red-600 text-white px-2 py-1 rounded">SOCORRO</span>
-                  <span className="bg-red-600 text-white px-2 py-1 rounded">PÁNICO</span>
-                  <span className="bg-red-600 text-white px-2 py-1 rounded">SOS</span>
-                  <span className="bg-red-600 text-white px-2 py-1 rounded">EMERGENCIA</span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* ═══ TAB 5: ENERGÍA ═══ */}
-          {activeTab === 'energia' && (
-            <div className="p-4 overflow-y-auto h-[480px] text-xs text-black font-bold leading-relaxed">
-              <div className="bg-yellow-50 border-2 border-yellow-400 p-3 mb-3">
-                <div className="text-yellow-800 text-sm font-bold mb-2">DETECCIÓN AUTOMÁTICA DE CORTE DE LUZ</div>
-                <p>Al detectar FALLA DE ENERGÍA ELÉCTRICA en Scorpion, se envía WhatsApp automático al cliente.</p>
               </div>
             </div>
           )}
