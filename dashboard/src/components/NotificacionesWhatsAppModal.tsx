@@ -254,6 +254,11 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
       mensajeFinal = `${preTexto}${mensajeFinal}`
     }
 
+    const notaNoResponder = '\n\n🚫 *Por favor, NO responder a este mensaje. Es una notificación automática.*'
+    if (!mensajeFinal.includes('NO responder')) {
+      mensajeFinal = `${mensajeFinal}${notaNoResponder}`
+    }
+
     setEnviandoManual(true)
     setMensajeStatus('Enviando mensaje...')
 

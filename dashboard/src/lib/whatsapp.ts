@@ -23,18 +23,18 @@ const PANICO_KEYWORDS = ['SOCORRO', 'PÁNICO', 'PANICO', 'EMERGENCIA', 'AYUDA YA
 const ENERGIA_KEYWORDS = ['ENERGÍA', 'ENERGIA', 'CORTE', 'LUZ', 'RESTABLECIDO']
 
 export async function sendMessage(telefono: string, texto: string): Promise<{ ok: boolean; debug?: string }> {
-  // Intento 1: OpenWA (localhost)
+  // Intento 1: API Server-Side de Next.js (Evita CORS y Mixed Content Block HTTPS -> HTTP)
   try {
-    const res = await fetch(`${OPENWA_URL}/api/send`, {
+    const res = await fetch('/api/whatsapp/send-direct', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phone: telefono, text: texto }),
+      body: JSON.stringify({ telefono, texto }),
     })
     const data = await res.json()
-    if (data.ok) return { ok: true, debug: 'openwa: ' + JSON.stringify(data) }
+    if (data.ok) return { ok: true, debug: `${data.proveedor}: OK` }
   } catch {}
 
-  // Intento 2: CallMeBot directo desde el navegador
+  // Intento 2: Fallback CallMeBot directo
   try {
     const params = new URLSearchParams({
       phone: telefono,
@@ -43,7 +43,7 @@ export async function sendMessage(telefono: string, texto: string): Promise<{ ok
     })
     const res = await fetch(`${CALLMEBOT_API}?${params.toString()}`)
     const data = await res.text()
-    const ok = data.includes('Message queued')
+    const ok = data.includes('Message queued') || data.includes('success')
     return { ok, debug: `callmebot: status=${res.status}` }
   } catch (err: any) {
     return { ok: false, debug: `error=${err.message}` }
