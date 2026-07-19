@@ -726,13 +726,19 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
                           <button
                             key={idx}
                             onClick={() => { setTelefonoDestino(c.telefono); setTelefonoManual('') }}
-                            className={`text-left px-2 py-1 rounded border text-[10px] cursor-pointer transition-all ${
+                            className={`text-left px-2 py-1 rounded border text-[10px] cursor-pointer transition-all flex flex-col gap-0.5 ${
                               isSelected
                                 ? 'bg-green-700 text-white border-green-900 font-bold shadow-inner'
                                 : 'bg-white text-gray-800 border-gray-400 hover:bg-green-50 hover:border-green-600'
                             }`}
                           >
-                            {c.etiqueta}<br />
+                            <span className="flex items-center gap-1.5 font-bold">
+                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path fillRule="evenodd" clipRule="evenodd" d="M12.004 2C6.48 2 2 6.48 2 12.004c0 1.912.54 3.704 1.476 5.23L2 22l4.908-1.28c1.472.8 3.14 1.284 4.936 1.284 5.52 0 10-4.48 10-10.004C21.844 6.48 17.524 2 12.004 2z" fill="#25D366"/>
+                                <path d="M8.7 7.15c-.23-.5-.47-.5-.69-.5h-.58c-.2 0-.52.08-.8.38-.27.3-1.04 1.01-1.04 2.47s1.06 2.87 1.2 3.08c.15.2 2.09 3.2 5.07 4.49.7.3 1.26.49 1.68.62.7.22 1.34.19 1.84.11.57-.08 1.74-.71 1.98-1.4.24-.68.24-1.27.17-1.4-.07-.12-.27-.2-.58-.35s-1.84-.9-2.12-1-.54-.15-.77.19c-.23.34-.89 1.1-.1 1.1.2 1.22.4 1.45.68 1.6.28.15.6.23.92.15.42-.1.7.07 1.01-.08s.1-.3.02-.45c-.07-.15-.7-1.72-.96-2.35-.25-.62-.5-.54-.69-.55l-.59-.01c-.2 0-.52.07-.79.37-.27.3-1.03 1-1.03 2.44s1.05 2.84 1.2 3.05c.14.2 2.06 3.15 5 4.42.7.3 1.24.48 1.66.61.7.22 1.32.19 1.81.11.55-.08 1.7-.7 1.94-1.37.24-.67.24-1.25.17-1.37-.07-.12-.27-.2-.57-.35z" fill="white"/>
+                              </svg>
+                              {c.etiqueta}
+                            </span>
                             <span className="font-mono text-[9px] opacity-80">{formatearNumeroDisplay(c.telefono)}</span>
                           </button>
                         )
