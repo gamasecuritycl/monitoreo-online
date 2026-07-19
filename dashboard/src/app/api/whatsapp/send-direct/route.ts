@@ -22,10 +22,9 @@ export async function POST(req: Request) {
       telLimpio = '569' + telLimpio
     }
 
-    // 1. Intentar HTTP directo al servidor de WhatsApp en la Nube / Tunel
+    // 1. Intentar HTTP directo al servidor de WhatsApp en la Nube
     try {
-      const waServerUrl = await getWhatsAppServerUrl()
-      const openwaRes = await fetch(`${waServerUrl}/api/send`, {
+      const openwaRes = await fetch('https://gama-whatsapp.zeabur.app/api/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone: telLimpio, text: texto }),
@@ -33,7 +32,7 @@ export async function POST(req: Request) {
       })
       const openwaData = await openwaRes.json()
       if (openwaData?.ok) {
-        return NextResponse.json({ ok: true, proveedor: 'whatsapp_corporativo_tunel' })
+        return NextResponse.json({ ok: true, proveedor: 'whatsapp_corporativo_nube' })
       }
     } catch {}
 
