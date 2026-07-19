@@ -24,7 +24,7 @@ export async function POST(req: Request) {
 
     // 1. Intentar HTTP directo al servidor de WhatsApp en la Nube
     try {
-      const openwaRes = await fetch('https://wa-server-gamasecurity.koyeb.app/api/send', {
+      const openwaRes = await fetch('https://gama-whatsapp.zeabur.app/api/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone: telLimpio, text: texto }),
