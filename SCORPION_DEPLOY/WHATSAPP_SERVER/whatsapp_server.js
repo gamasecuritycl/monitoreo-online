@@ -69,53 +69,34 @@ app.use(cors())
 app.use(express.json())
 
 // ──────────────────────────────────────────────
-//  TÚNEL CLOUDFLARE AUTOMÁTICO
+//  TÚNEL NGROK AUTOMÁTICO (Serverless Bridge)
 // ──────────────────────────────────────────────
-const { spawn } = require('child_process')
-let cloudflaredProcess = null
+async function iniciarNgrokTunnel() {
+  try {
+    log('🌐 Iniciando Tunel de Ngrok en puerto 3015...')
+    // Usar la librería oficial ngrok para levantar el túnel en caliente
+    const ngrok = require('ngrok')
+    const url = await ngrok.connect({
+      proto: 'http',
+      addr: PORT,
+    })
 
-function iniciarCloudflareTunnel() {
-  let exePath = 'C:\\GAMA_CAMARA\\cloudflared.exe'
-  if (!fs.existsSync(exePath)) {
-    exePath = 'C:\\Program Files (x86)\\cloudflared\\cloudflared.exe'
+    log(`🔗 Tunel Ngrok activo: ${url}`)
+    
+    // Guardar URL en Supabase
+    await supabase
+      .from('eventos_monitoreo')
+      .upsert({
+        cuenta: 'CONFIG_WHATSAPP_URL',
+        nombre_abonado: url,
+        evento: 'TUNNEL_URL',
+        fecha_hora: new Date().toISOString()
+      }, { onConflict: 'cuenta' })
+    log('✅ URL del tunel Ngrok sincronizada en Supabase con exito.')
+
+  } catch (err) {
+    log(`⚠️  Error al levantar Ngrok: ${err.message}`, 'WARN')
   }
-  if (!fs.existsSync(exePath)) {
-    log('⚠️  No se encontro cloudflared.exe en C:\\GAMA_CAMARA o Program Files. No se creara el tunel publico.', 'WARN')
-    return
-  }
-
-  log('🌐 Iniciando Tunel de Cloudflare...')
-  cloudflaredProcess = spawn(exePath, ['tunnel', '--url', `http://localhost:${PORT}`])
-
-  cloudflaredProcess.stderr.on('data', async data => {
-    const output = data.toString()
-    // Buscar la URL del túnel en la salida de error (donde cloudflared loguea)
-    const match = output.match(/https:\/\/[a-z0-9\-]+\.trycloudflare\.com/)
-    if (match) {
-      const url = match[0]
-      log(`🔗 Tunel Cloudflare activo: ${url}`)
-      
-      // Guardar URL en Supabase
-      try {
-        await supabase
-          .from('eventos_monitoreo')
-          .upsert({
-            cuenta: 'CONFIG_WHATSAPP_URL',
-            nombre_abonado: url,
-            evento: 'TUNNEL_URL',
-            fecha_hora: new Date().toISOString()
-          }, { onConflict: 'cuenta' })
-        log('✅ URL del tunel sincronizada en Supabase con exito.')
-      } catch (err) {
-        log(`Error guardando URL en Supabase: ${err.message}`, 'ERROR')
-      }
-    }
-  })
-
-  cloudflaredProcess.on('close', code => {
-    log(`🌐 Tunel de Cloudflare cerrado (codigo: ${code}). Reintentando en 10s...`, 'WARN')
-    setTimeout(iniciarCloudflareTunnel, 10000)
-  })
 }
 
 const server = app.listen(PORT, () => {
@@ -123,7 +104,7 @@ const server = app.listen(PORT, () => {
   log(`📁 Sesión guardada en: ${SESSION_DIR}`)
   conectar()
   suscribirSupabaseRealtime()
-  iniciarCloudflareTunnel()
+  iniciarNgrokTunnel()
 })
 
 server.on('error', err => {
