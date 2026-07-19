@@ -116,16 +116,18 @@ function iniciarWhatsAppWeb() {
   // Evento Mensaje Entrante
   client.on('message', async (msg) => {
     try {
-      console.log(`💬 [MENSAJE RECIBIDO] De: ${msg.from} -> ${msg.body}`)
+      console.log(`💬 [MENSAJE RECIBIDO DE CLIENTE] De: ${msg.from} -> ${msg.body}`)
       const numero = msg.from.replace(/[^0-9]/g, '')
       await supabase.from('conversaciones_whatsapp').insert({
         numero: numero,
         tipo_evento: 'mensaje_entrante',
         estado: 'pendiente',
-        mensaje_enviado: msg.body,
+        respuesta_recibida: msg.body,
         created_at: new Date().toISOString()
       })
-    } catch (e) {}
+    } catch (e) {
+      console.error('[ERROR GUARDAR MENSAJE ENTRANTE]:', e)
+    }
   })
 
   client.on('disconnected', (reason) => {

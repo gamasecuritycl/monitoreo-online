@@ -390,11 +390,9 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
   }
 
   const tabs: { id: Tab; label: string }[] = [
-    { id: 'manual', label: '💬 Envío Manual & Chats' },
-    { id: 'config', label: '⚙️ Configuración' },
-    { id: 'alertas', label: '🚨 Alertas' },
-    { id: 'panico', label: '🆘 Pánico' },
-    { id: 'energia', label: '⚡ Energía' },
+    { id: 'manual', label: '💬 Chats & Conversaciones (App PC)' },
+    { id: 'config', label: '⚙️ Notificaciones Automáticas & Fichas' },
+    { id: 'alertas', label: '🚨 Reglas por Tipo de Evento' },
   ]
 
   const listaContactosAutorizados = clienteSeleccionado ? obtenerListaContactos(clienteSeleccionado.cuenta) : []
@@ -432,238 +430,207 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
         {/* Contenido Principal */}
         <div className="flex-1 overflow-hidden">
           
-          {/* ═══ TAB 1: ENVÍO MANUAL & CHATS ═══ */}
+          {/* ═══ TAB 1: CHATS Y CONVERSACIONES (WHATSAPP WEB PC APP STYLE) ═══ */}
           {activeTab === 'manual' && (
-            <div className="p-3 flex gap-3 h-[500px]">
+            <div className="flex h-[520px] bg-[#111b21] text-white overflow-hidden">
               
-              {/* Columna Izquierda: Buscador y Lista de Abonados */}
-              <div className="w-64 border-2 border-gray-700 bg-black text-green-400 flex flex-col font-mono text-[11px] shrink-0">
-                <div className="p-1.5 border-b border-gray-800 bg-gray-900 shrink-0">
-                  <span className="text-[10px] text-gray-400 font-bold block mb-1 uppercase">Buscar Abonado:</span>
+              {/* Columna Izquierda: Lista de Chats y Contactos (Estilo WhatsApp PC) */}
+              <div className="w-80 border-r border-[#222d34] bg-[#111b21] flex flex-col shrink-0 font-sans">
+                {/* Header de Lista de Chats */}
+                <div className="p-3 bg-[#202c33] border-b border-[#222d34] flex justify-between items-center shrink-0">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full bg-[#00a884] flex items-center justify-center font-bold text-white text-xs shadow">
+                      GS
+                    </div>
+                    <span className="font-bold text-xs text-white">CHATS Y CONVERSACIONES</span>
+                  </div>
+                  <span className="text-[10px] bg-[#00a884] text-black px-2 py-0.5 rounded-full font-bold">OFICIAL</span>
+                </div>
+
+                {/* Buscador de Chats */}
+                <div className="p-2 bg-[#111b21] border-b border-[#222d34]">
                   <input
                     type="text"
-                    placeholder="BUSCAR ABONADO O CUENTA..."
-                    className="w-full bg-black text-green-400 border border-green-800 px-2 py-1 focus:outline-none focus:border-green-400 text-[10px]"
+                    placeholder="🔍 Buscar o iniciar un nuevo chat..."
+                    className="w-full bg-[#202c33] text-gray-200 border border-[#2a3942] rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-[#00a884]"
                     value={busqueda}
                     onChange={(e) => setBusqueda(e.target.value)}
                   />
                 </div>
-                <div className="flex-1 overflow-y-auto">
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="bg-gray-800 text-green-200 text-[10px]">
-                        <th className="p-1 border-b border-gray-700 w-14">CTA</th>
-                        <th className="p-1 border-b border-gray-700">ABONADO</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-900">
-                      {clientesFiltrados.map(([cuenta, datos]) => (
-                        <tr
-                          key={cuenta}
-                          className={`cursor-pointer hover:bg-green-900/60 ${clienteSeleccionado?.cuenta === cuenta ? 'bg-green-900 text-white font-bold' : ''}`}
-                          onClick={() => setClienteSeleccionado({ cuenta, nombre: datos.nombre || '' })}
-                        >
-                          <td className="p-1 border-r border-gray-800 font-bold">{cuenta}</td>
-                          <td className="p-1 truncate max-w-[140px] text-[10px]">{datos.nombre}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+
+                {/* Lista de Conversaciones por Abonado */}
+                <div className="flex-1 overflow-y-auto divide-y divide-[#222d34]">
+                  {clientesFiltrados.map(([cuenta, datos]) => {
+                    const esSeleccionado = clienteSeleccionado?.cuenta === cuenta
+                    return (
+                      <div
+                        key={cuenta}
+                        onClick={() => setClienteSeleccionado({ cuenta, nombre: datos.nombre || '' })}
+                        className={`p-3 flex items-center gap-3 cursor-pointer transition-colors ${
+                          esSeleccionado ? 'bg-[#2a3942]' : 'hover:bg-[#202c33]'
+                        }`}
+                      >
+                        {/* Avatar */}
+                        <div className="w-10 h-10 rounded-full bg-[#005c4b] border border-[#00a884] flex items-center justify-center font-bold text-white text-xs shrink-0 shadow">
+                          {cuenta.slice(-2)}
+                        </div>
+
+                        {/* Info Contacto */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex justify-between items-baseline mb-0.5">
+                            <span className="font-bold text-xs text-white truncate max-w-[130px]">
+                              {datos.nombre || `Abonado ${cuenta}`}
+                            </span>
+                            <span className="text-[9px] text-[#8696a0] font-mono">CTA: {cuenta}</span>
+                          </div>
+                          <div className="text-[10px] text-[#8696a0] truncate font-sans">
+                            {datos.t1 || datos.telefono1 || datos.telefono || 'Sin teléfono guardado'}
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
 
-              {/* Columna Central: Redacción de Mensaje e Ingesta Directa */}
-              <div className="flex-1 border-2 border-t-gray-700 border-l-gray-700 border-b-white border-r-white bg-[#e0e0e0] flex flex-col p-3 text-black overflow-y-auto">
-                <div className="text-[#000080] font-bold text-xs border-b border-gray-400 pb-1 mb-2 flex justify-between items-center">
-                  <span>ENVÍO MANUAL DE EMERGENCIAS</span>
-                  {clienteSeleccionado && (
-                    <span className="bg-[#000080] text-white px-2 py-0.5 text-[10px] rounded font-mono">
-                      CTA: {clienteSeleccionado.cuenta}
-                    </span>
-                  )}
-                </div>
-
+              {/* Columna Derecha: Lienzo del Chat Activo (WhatsApp Web Style) */}
+              <div className="flex-1 flex flex-col bg-[#0b141a] relative">
+                
                 {!clienteSeleccionado ? (
-                  <div className="flex-1 flex items-center justify-center text-gray-500 font-bold text-xs text-center p-4">
-                    SELECCIONE UN ABONADO EN LA LISTA IZQUIERDA<br />PARA ENVIAR NOTIFICACIONES WHATSAPP
+                  <div className="flex-1 flex flex-col items-center justify-center text-[#8696a0] p-6 text-center">
+                    <div className="w-16 h-16 rounded-full bg-[#202c33] flex items-center justify-center text-2xl mb-3">💬</div>
+                    <span className="font-bold text-sm text-white mb-1">GAMA SEGURIDAD - WHATSAPP COMMAND CENTER</span>
+                    <span className="text-xs">Selecciona un abonado o conversación de la lista izquierda para interactuar en tiempo real.</span>
                   </div>
                 ) : (
-                  <div className="flex flex-col flex-1 gap-2.5">
-                    
-                    {/* Ficha Cliente Activo */}
-                    <div className="bg-white border border-gray-400 p-2 rounded text-[11px]">
-                      <div className="font-bold text-blue-900 truncate">
-                        {clienteSeleccionado.cuenta} - {clienteSeleccionado.nombre}
+                  <>
+                    {/* Header del Chat Activo */}
+                    <div className="p-2.5 bg-[#202c33] border-b border-[#222d34] flex items-center justify-between shrink-0 shadow">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-full bg-[#00a884] flex items-center justify-center font-bold text-white text-xs">
+                          {clienteSeleccionado.cuenta.slice(-2)}
+                        </div>
+                        <div>
+                          <div className="font-bold text-xs text-white">
+                            {clienteSeleccionado.cuenta} - {clienteSeleccionado.nombre}
+                          </div>
+                          <div className="text-[10px] text-[#00a884] flex items-center gap-1 font-mono">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#00a884] animate-pulse"></span>
+                            <span>WhatsApp Oficial Gama Seguridad Conectado</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Contactos Autorizados del Abonado */}
+                      <div className="flex items-center gap-1">
+                        {listaContactosAutorizados.map((c, i) => (
+                          <button
+                            key={i}
+                            onClick={() => setTelefonoEnvio(c.telefono)}
+                            className="bg-[#111b21] hover:bg-[#2a3942] border border-[#2a3942] text-[10px] text-gray-200 px-2 py-0.5 rounded font-mono"
+                          >
+                            📞 {c.nombre}: {c.telefono}
+                          </button>
+                        ))}
                       </div>
                     </div>
 
-                    {/* Selector de Contactos Autorizados */}
-                    <div>
-                      <span className="text-[10px] font-bold text-gray-700 block mb-1">
-                        1. SELECCIONAR CONTACTO DE DESTINO DE ESTE ABONADO:
-                      </span>
-                      {listaContactosAutorizados.length > 0 ? (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 mb-1">
-                          {listaContactosAutorizados.map((c, i) => (
-                            <button
-                              key={i}
-                              onClick={() => setTelefonoEnvio(c.telefono)}
-                              className={`text-left p-1 rounded border text-[10px] truncate cursor-pointer transition-colors ${
-                                telefonoEnvio.replace(/[^0-9]/g, '') === c.telefono.replace(/[^0-9]/g, '') && telefonoEnvio !== ''
-                                  ? 'bg-green-700 text-white border-green-900 font-bold'
-                                  : 'bg-white text-gray-800 border-gray-400 hover:bg-gray-100'
+                    {/* Lienzo de Mensajes (Chat History) */}
+                    <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-[#0b141a]">
+                      {chatLogs.length > 0 ? (
+                        chatLogs.map((log) => (
+                          <div
+                            key={log.id}
+                            className={`flex flex-col ${log.esRespuestaCliente ? 'items-start' : 'items-end'}`}
+                          >
+                            <div
+                              className={`max-w-[75%] p-2.5 rounded-lg text-xs font-sans shadow-md break-words ${
+                                log.esRespuestaCliente
+                                  ? 'bg-[#202c33] text-white rounded-tl-none border-l-4 border-l-[#38bdf8]'
+                                  : 'bg-[#005c4b] text-white rounded-tr-none'
                               }`}
                             >
-                              📞 {c.etiqueta}: <span className="font-mono">{c.telefono}</span>
-                            </button>
-                          ))}
-                        </div>
+                              <div className="text-[9px] font-bold opacity-75 mb-1 font-mono flex justify-between gap-4">
+                                <span>{log.esRespuestaCliente ? `📩 CLIENTE (${log.telefono})` : `🛡️ GAMA SEGURIDAD`}</span>
+                                <span>{log.fecha}</span>
+                              </div>
+                              <div className="leading-relaxed font-medium">{log.texto}</div>
+                              <div className="text-[8px] text-right opacity-60 mt-1 italic">
+                                {log.esRespuestaCliente ? 'Recibido en Central' : '✓✓ Entregado por WhatsApp Oficial'}
+                              </div>
+                            </div>
+                          </div>
+                        ))
                       ) : (
-                        <div className="text-[10px] text-gray-500 italic mb-1">[Sin contactos guardados en ficha general]</div>
+                        <div className="flex items-center justify-center h-full text-[#8696a0] text-xs italic">
+                          No hay mensajes previos en este chat. Escribe un mensaje abajo para iniciar la conversación.
+                        </div>
                       )}
-                      
-                      <div className="flex items-center gap-1.5 mt-1">
-                        <span className="text-[10px] font-bold text-gray-700 shrink-0">Teléfono manual:</span>
-                        <input
-                          type="tel"
-                          placeholder="+56912345678"
-                          className="flex-1 bg-white border border-gray-500 px-2 py-1 text-xs font-mono text-black font-bold focus:outline-none focus:border-blue-700"
-                          value={telefonoEnvio}
-                          onChange={(e) => setTelefonoEnvio(e.target.value)}
-                        />
-                      </div>
                     </div>
 
                     {/* Plantillas Rápidas de Emergencia */}
-                    <div>
-                      <span className="text-[10px] font-bold text-gray-700 block mb-1">
-                        2. PLANTILLAS DE EMERGENCIA RÁPIDAS:
-                      </span>
-                      <div className="flex flex-wrap gap-1">
-                        <button
-                          onClick={() => aplicarPlantilla('intrusión')}
-                          className="bg-red-700 text-white text-[9px] font-bold px-2 py-1 rounded hover:bg-red-800 cursor-pointer"
-                        >
-                          🚨 ROBO / INTRUSIÓN
-                        </button>
-                        <button
-                          onClick={() => aplicarPlantilla('energia')}
-                          className="bg-yellow-700 text-white text-[9px] font-bold px-2 py-1 rounded hover:bg-yellow-800 cursor-pointer"
-                        >
-                          ⚡ CORTE ENERGÍA
-                        </button>
-                        <button
-                          onClick={() => aplicarPlantilla('apertura')}
-                          className="bg-blue-700 text-white text-[9px] font-bold px-2 py-1 rounded hover:bg-blue-800 cursor-pointer"
-                        >
-                          🔓 APERTURA
-                        </button>
-                        <button
-                          onClick={() => aplicarPlantilla('cierre')}
-                          className="bg-blue-900 text-white text-[9px] font-bold px-2 py-1 rounded hover:bg-blue-950 cursor-pointer"
-                        >
-                          🔒 CIERRE
-                        </button>
-                        <button
-                          onClick={() => aplicarPlantilla('video')}
-                          className="bg-green-700 text-white text-[9px] font-bold px-2 py-1 rounded hover:bg-green-800 cursor-pointer"
-                        >
-                          🎥 VIDEO VERIFICACIÓN
-                        </button>
-                      </div>
+                    <div className="px-3 py-1.5 bg-[#111b21] border-t border-[#222d34] flex items-center gap-1 overflow-x-auto text-[10px]">
+                      <span className="text-[#8696a0] font-bold shrink-0">PLANTILLAS RÁPIDAS:</span>
+                      <button onClick={() => aplicarPlantilla('intrusión')} className="bg-red-800 hover:bg-red-700 text-white px-2 py-0.5 rounded shrink-0">🚨 INTRUSIÓN</button>
+                      <button onClick={() => aplicarPlantilla('energia')} className="bg-amber-700 hover:bg-amber-600 text-white px-2 py-0.5 rounded shrink-0">⚡ CORTE ENERGÍA</button>
+                      <button onClick={() => aplicarPlantilla('apertura')} className="bg-blue-800 hover:bg-blue-700 text-white px-2 py-0.5 rounded shrink-0">🔓 APERTURA</button>
+                      <button onClick={() => aplicarPlantilla('cierre')} className="bg-indigo-800 hover:bg-indigo-700 text-white px-2 py-0.5 rounded shrink-0">🔒 CIERRE</button>
                     </div>
 
-                    {/* Área de Redacción con Pre-texto Obligatorio Inamovible */}
-                    <div className="flex-1 flex flex-col gap-1">
-                      <span className="text-[10px] font-bold text-gray-700">
-                        3. MENSAJE A TRANSMITIR (INCLUYE PRE-TEXTO OBLIGATORIO):
-                      </span>
+                    {/* Barra Inferior de Escribir Mensaje y Responder */}
+                    <div className="p-3 bg-[#202c33] border-t border-[#222d34] flex flex-col gap-2 shrink-0">
                       
-                      {/* Pre-texto fijo */}
-                      <div className="bg-blue-950 text-blue-200 px-2 py-1 rounded-t text-[11px] font-bold tracking-wider font-mono border border-blue-900">
-                        🔒 PRE-TEXTO FIJO: GAMA SEGURIDAD INFORMA:
+                      {/* Campo de Número Telefónico de Envío (Permite signo +) */}
+                      <div className="flex items-center gap-2 bg-[#111b21] px-3 py-1 rounded border border-[#2a3942]">
+                        <span className="text-[10px] text-[#8696a0] font-bold shrink-0">📱 DESTINATARIO:</span>
+                        <input
+                          type="text"
+                          placeholder="+56991016912"
+                          className="flex-1 bg-transparent text-xs text-white font-mono font-bold focus:outline-none"
+                          value={telefonoEnvio}
+                          onChange={(e) => setTelefonoEnvio(e.target.value.replace(/[^0-9+]/g, ''))}
+                        />
+                        <span className="text-[9px] text-gray-400 font-mono">Formato libre: +56 9 XXXXXXXX</span>
                       </div>
-                      
-                      <textarea
-                        rows={4}
-                        placeholder="Redacte el cuerpo de la notificación de emergencia aquí..."
-                        className="w-full bg-white border border-gray-500 p-2 text-xs text-black font-mono focus:outline-none focus:border-blue-700 rounded-b resize-none flex-1"
-                        value={textoMensaje}
-                        onChange={(e) => setTextoMensaje(e.target.value)}
-                      />
-                    </div>
 
-                    {/* Botones de Enviar: Notificación Automática o Responder / Chat Directo */}
-                    <div className="flex items-center justify-between pt-1 border-t border-gray-400 gap-2">
-                      <span className="text-[10px] font-bold text-blue-900 truncate max-w-[140px]">{mensajeStatus}</span>
-                      
-                      <div className="flex gap-1.5 shrink-0">
-                        <button
-                          onClick={() => enviarMensajeManual(false)}
-                          disabled={enviandoManual || !telefonoEnvio || !textoMensaje}
-                          className="bg-blue-800 text-white font-bold text-[10px] px-2.5 py-1.5 rounded border border-blue-900 hover:bg-blue-900 active:bg-blue-950 disabled:opacity-50 cursor-pointer flex items-center gap-1 shadow"
-                          title="Envía con la cabecera fija Gama Seguridad Informa"
-                        >
-                          {enviandoManual ? <span>⌛ Enviando...</span> : <span>📢 NOTIFICACIÓN OFICIAL</span>}
-                        </button>
+                      {/* Input de Mensaje de Texto */}
+                      <div className="flex gap-2 items-center">
+                        <textarea
+                          rows={2}
+                          placeholder="Escribe un mensaje de respuesta aquí..."
+                          className="flex-1 bg-[#2a3942] text-white p-2 text-xs font-sans rounded-lg border border-[#374248] focus:outline-none focus:border-[#00a884] resize-none"
+                          value={textoMensaje}
+                          onChange={(e) => setTextoMensaje(e.target.value)}
+                        />
 
-                        <button
-                          onClick={() => enviarMensajeManual(true)}
-                          disabled={enviandoManual || !telefonoEnvio || !textoMensaje}
-                          className="bg-[#25D366] text-white font-bold text-[10px] px-3 py-1.5 rounded border border-green-700 hover:bg-[#20ba5a] active:bg-[#128C7E] disabled:opacity-50 cursor-pointer flex items-center gap-1 shadow"
-                          title="Envía respuesta libre en vivo directamente al chat del cliente"
-                        >
-                          {enviandoManual ? <span>⌛ Enviando...</span> : <span>💬 RESPONDER A CLIENTE</span>}
-                        </button>
+                        {/* Botones de Envío */}
+                        <div className="flex flex-col gap-1 shrink-0">
+                          <button
+                            onClick={() => enviarMensajeManual(true)}
+                            disabled={enviandoManual || !telefonoEnvio || !textoMensaje}
+                            className="bg-[#00a884] hover:bg-[#029676] text-black font-bold text-xs px-4 py-1.5 rounded-lg disabled:opacity-50 cursor-pointer shadow flex items-center justify-center gap-1"
+                            title="Envía una respuesta directa en vivo sin pre-texto"
+                          >
+                            {enviandoManual ? <span>⌛ Enviando...</span> : <span>💬 RESPONDER</span>}
+                          </button>
+
+                          <button
+                            onClick={() => enviarMensajeManual(false)}
+                            disabled={enviandoManual || !telefonoEnvio || !textoMensaje}
+                            className="bg-[#202c33] hover:bg-[#2a3942] text-white border border-gray-600 font-bold text-[9px] px-2 py-1 rounded disabled:opacity-50 cursor-pointer"
+                            title="Envía con la cabecera fija Gama Seguridad Informa"
+                          >
+                            📢 NOTIFICACIÓN FORMAL
+                          </button>
+                        </div>
                       </div>
-                    </div>
 
-                  </div>
+                      {mensajeStatus && (
+                        <div className="text-[10px] font-bold text-[#00a884] font-mono">{mensajeStatus}</div>
+                      )}
+                    </div>
+                  </>
                 )}
-              </div>
-
-              {/* Columna Derecha: Historial de Chats y Envíos Registrados */}
-              <div className="w-72 border-2 border-gray-700 bg-[#0b141a] text-white flex flex-col font-mono shrink-0 rounded-r overflow-hidden">
-                <div className="p-2 border-b border-gray-800 bg-[#1f2c34] flex justify-between items-center">
-                  <span className="text-[10px] font-bold text-green-400 uppercase tracking-wider">💬 HISTORIAL DE CHAT / ENVÍOS</span>
-                  <span className="text-[9px] bg-green-900 text-green-200 px-1.5 py-0.5 rounded font-bold">{chatLogs.length}</span>
-                </div>
-                
-                <div className="flex-1 overflow-y-auto p-2 space-y-2 text-[10px]">
-                  {chatLogs.length > 0 ? (
-                    chatLogs.map((log) => (
-                      <div
-                        key={log.id}
-                        className={`p-2 rounded border transition-all ${
-                          log.esRespuestaCliente
-                            ? 'bg-[#202c33] border-blue-500 text-blue-100 shadow-md ml-1 border-l-4 border-l-blue-400'
-                            : log.exito
-                            ? 'bg-[#005c4b] border-green-600 text-white mr-1'
-                            : 'bg-red-950 border-red-700 text-red-200'
-                        }`}
-                      >
-                        <div className="flex justify-between items-center border-b border-white/20 pb-1 mb-1 font-bold text-[9px]">
-                          <span>{log.esRespuestaCliente ? '📩 RESPUESTA DE CLIENTE' : `CTA: ${log.cuenta}`}</span>
-                          <span>{log.fecha}</span>
-                        </div>
-                        <div className="text-[9px] opacity-90 mb-1 font-mono">
-                          {log.esRespuestaCliente ? `De: ${log.telefono}` : `Destino: ${log.telefono}`}
-                        </div>
-                        <div className="leading-tight break-words text-[10px] font-sans font-medium">
-                          {log.texto}
-                        </div>
-                        <div className="mt-1 text-right text-[8px] italic opacity-80">
-                          {log.esRespuestaCliente ? '👤 Respuesta recibida en central' : log.exito ? '✓✓ Entregado vía WhatsApp Oficial' : `❌ ${log.errorMsg}`}
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="flex flex-col items-center justify-center h-full text-gray-500 italic text-center p-4 text-[10px]">
-                      <span>💬</span>
-                      <span>Los mensajes enviados aparecerán registrados aquí en tiempo real.</span>
-                    </div>
-                  )}
-                </div>
               </div>
 
             </div>

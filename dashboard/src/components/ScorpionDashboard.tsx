@@ -254,6 +254,24 @@ export default function ScorpionDashboard() {
     fetchZonas()
   }, [])
 
+  // Suscripción Realtime a mensajes entrantes de WhatsApp para el badge rojo
+  useEffect(() => {
+    const fetchUnread = async () => {
+      try {
+        const { count } = await supabase
+          .from('conversaciones_whatsapp')
+          .select('id', { count: 'exact', head: true })
+          .eq('estado', 'pendiente')
+          .not('respuesta_recibida', 'is', null)
+
+        if (count !== null) setUnreadWhatsAppCount(count)
+      } catch (err) {
+        console.warn('[SUPABASE UNREAD] Error contando unread:', err)
+      }
+    }
+    fetchUnread()
+  }, [])
+
   // Reloj digital inferior igual a Scorpion
   useEffect(() => {
     const tick = () => {
