@@ -35,47 +35,77 @@ function getTurnoInfo() {
 }
 
 export default function BitacoraModal({ onClose, cuentaDefault }: { onClose: () => void; cuentaDefault?: string }) {
-  const [abonados, setAbonados] = useState<Abonado[]>([])
+  // --- Estados de filtros (Iguales a la web real) ---
+  const [buscarTexto, setBuscarTexto] = useState('')
+  const [filtroAbonadoInput, setFiltroAbonadoInput] = useState('')
+  const [abonadoSugerencias, setAbonadoSugerencias] = useState<Abonado[]>([])
   const [abonadoSel, setAbonadoSel] = useState<Abonado | null>(null)
-  const [busqueda, setBusqueda] = useState('')
+  
+  const [responsables, setResponsables] = useState<string[]>([])
+  const [responsableSel, setResponsableSel] = useState('')
+  const [tipoSel, setTipoSel] = useState('')
+  const [filtroId, setFiltroId] = useState('')
+
   const ultimos7 = getUltimos7Dias()
+  const [desde, setDesde] = useState(ultimos7.desde)
+  const [hasta, setHasta] = useState(ultimos7.hasta)
+  const [modoFecha, setModoFecha] = useState<'turno' | 'semana' | 'personalizado'>('semana')
+
+  // --- Datos ---
   const [eventos, setEventos] = useState<Evento[]>([])
   const [tipos, setTipos] = useState<TipoEvento[]>([])
+  
+  // --- Formulario Nuevo Evento ---
+  const [mostrarNuevoForm, setMostrarNuevoForm] = useState(false)
   const [comentario, setComentario] = useState('')
   const [tipoEvento, setTipoEvento] = useState('1')
   const [enviando, setEnviando] = useState(false)
   const [mensaje, setMensaje] = useState('')
-  const [desde, setDesde] = useState(ultimos7.desde)
-  const [hasta, setHasta] = useState(ultimos7.hasta)
-  const [modoFecha, setModoFecha] = useState<'turno' | 'semana' | 'personalizado'>('semana')
+
+  // --- Edición ---
   const [editandoId, setEditandoId] = useState<number | null>(null)
   const [editComentario, setEditComentario] = useState('')
   const [editTipo, setEditTipo] = useState('')
+
+  // --- Archivos ---
   const [archivos, setArchivos] = useState<Record<number, Archivo[]>>({})
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [subiendoArchivo, setSubiendoArchivo] = useState(false)
 
+  // --- Sugerencias de abonados ---
   useEffect(() => {
-    if (busqueda.length < 1) { setAbonados([]); return }
+    if (filtroAbonadoInput.length < 1) { setAbonadoSugerencias([]); return }
     const t = setTimeout(async () => {
       try {
-        const r = await fetch(`${API_URL}?action=abonados&q=${encodeURIComponent(busqueda)}`)
-        if (r.ok) setAbonados(await r.json())
+        const r = await fetch(`${API_URL}?action=abonados&q=${encodeURIComponent(filtroAbonadoInput)}`)
+        if (r.ok) setAbonadoSugerencias(await r.json())
       } catch {}
     }, 300)
     return () => clearTimeout(t)
-  }, [busqueda])
+  }, [filtroAbonadoInput])
 
+  // --- Inicialización ---
   useEffect(() => {
     fetch(`${API_URL}?action=tipos`).then(r => r.ok && r.json()).then(d => d && setTipos(d)).catch(() => {})
-
-    // Cargar eventos de los últimos 7 días (para que siempre muestre algo)
-    const d = getUltimos7Dias()
-    const url = `${API_URL}?action=eventos&desde=${encodeURIComponent(d.desde)}&hasta=${encodeURIComponent(d.hasta)}`
-    fetch(url).then(r => r.ok && r.json()).then(ev => ev && setEventos(ev)).catch(() => {})
+    cargarTodosLosEventos(desde, hasta)
   }, [])
 
-  const cargarEventos = async (id: number) => {
+  // Extraer lista única de responsables de los eventos cargados
+  useEffect(() => {
+    const list = Array.from(new Set(eventos.map(e => e.responsable_nombre).filter(Boolean)))
+    setResponsables(list)
+  }, [eventos])
+
+  // --- Cargar Eventos ---
+  const cargarTodosLosEventos = async (dMin: string, dMax: string) => {
+    try {
+      const url = `${API_URL}?action=eventos&desde=${encodeURIComponent(dMin)}&hasta=${encodeURIComponent(dMax)}`
+      const r = await fetch(url)
+      if (r.ok) setEventos(await r.json())
+    } catch {}
+  };
+
+  const cargarEventosAbonado = async (id: number) => {
     try {
       let url = `${API_URL}?action=eventos&id=${id}`
       if (desde) url += `&desde=${encodeURIComponent(desde)}`
@@ -95,11 +125,26 @@ export default function BitacoraModal({ onClose, cuentaDefault }: { onClose: () 
     } catch {}
   }
 
-  const seleccionar = (a: Abonado) => {
+  // --- Acciones de Formulario ---
+  const seleccionarAbonadoFiltro = (a: Abonado) => {
     setAbonadoSel(a)
-    setBusqueda(`${a.cod} - ${a.nombre}`)
-    setAbonados([])
-    cargarEventos(a.id)
+    setFiltroAbonadoInput(`${a.cod} - ${a.nombre}`)
+    setAbonadoSugerencias([])
+    cargarEventosAbonado(a.id)
+  }
+
+  const limpiarFiltros = () => {
+    setAbonadoSel(null)
+    setFiltroAbonadoInput('')
+    setResponsableSel('')
+    setTipoSel('')
+    setBuscarTexto('')
+    setFiltroId('')
+    const d = getUltimos7Dias()
+    setDesde(d.desde)
+    setHasta(d.hasta)
+    setModoFecha('semana')
+    cargarTodosLosEventos(d.desde, d.hasta)
   }
 
   const crearEvento = async () => {
@@ -119,9 +164,11 @@ export default function BitacoraModal({ onClose, cuentaDefault }: { onClose: () 
       })
       const d = await r.json()
       if (d.ok) {
-        setMensaje('✅ Evento registrado')
+        setMensaje('✅ Registro creado correctamente')
         setComentario('')
-        cargarEventos(abonadoSel.id)
+        setMostrarNuevoForm(false)
+        if (abonadoSel) cargarEventosAbonado(abonadoSel.id)
+        else cargarTodosLosEventos(desde, hasta)
       } else {
         setMensaje('❌ Error: ' + (d.error || ''))
       }
@@ -149,7 +196,8 @@ export default function BitacoraModal({ onClose, cuentaDefault }: { onClose: () 
       const d = await r.json()
       if (d.ok) {
         setEditandoId(null)
-        if (abonadoSel) cargarEventos(abonadoSel.id)
+        if (abonadoSel) cargarEventosAbonado(abonadoSel.id)
+        else cargarTodosLosEventos(desde, hasta)
       }
     } catch {}
   }
@@ -193,224 +241,416 @@ export default function BitacoraModal({ onClose, cuentaDefault }: { onClose: () 
     return (bytes / 1024).toFixed(1) + ' KB'
   }
 
-  const volverTurno = () => {
+  const filtrarPorTurno = () => {
     const t = getTurnoInfo()
     setDesde(t.desde)
     setHasta(t.hasta)
     setModoFecha('turno')
-    setAbonadoSel(null)
-    setBusqueda('')
-    fetch(`${API_URL}?action=eventos&desde=${encodeURIComponent(t.desde)}&hasta=${encodeURIComponent(t.hasta)}`).then(r => r.ok && r.json()).then(ev => ev && setEventos(ev)).catch(() => {})
+    cargarTodosLosEventos(t.desde, t.hasta)
   }
 
+  const aplicarFiltroManual = () => {
+    if (abonadoSel) {
+      cargarEventosAbonado(abonadoSel.id)
+    } else {
+      cargarTodosLosEventos(desde, hasta)
+    }
+  }
+
+  // --- Lógica de filtrado en el cliente ---
+  const eventosFiltrados = eventos.filter(e => {
+    // 1. Filtro responsable
+    if (responsableSel && e.responsable_nombre !== responsableSel) return false
+    // 2. Filtro Tipo de evento
+    if (tipoSel && String(e.tipo_evento) !== tipoSel) return false
+    // 3. Filtro ID de registro
+    if (filtroId && String(e.id) !== filtroId.trim()) return false
+    // 4. Filtro Texto/Comentario libre
+    if (buscarTexto.trim()) {
+      const q = buscarTexto.toLowerCase()
+      const inComentario = (e.comentario || '').toLowerCase().includes(q)
+      const inAbonado = (e.abonado_nombre || '').toLowerCase().includes(q)
+      const inCod = (e.abonado_cod || '').toLowerCase().includes(q)
+      if (!inComentario && !inAbonado && !inCod) return false
+    }
+    return true
+  })
+
+  // --- Exportadores ---
   const exportarExcel = () => {
-    if (eventos.length === 0) return
+    if (eventosFiltrados.length === 0) return
     const cod = abonadoSel?.cod || 'TODOS'
-    const data = eventos.map(e => ({
+    const data = eventosFiltrados.map(e => ({
+      ID: e.id,
       Fecha: new Date(e.created_at).toLocaleDateString('es-CL'),
       Hora: new Date(e.created_at).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }),
-      ...(cod === 'TODOS' ? { Abonado: e.abonado_cod || '' } : {}),
-      Tipo: tipos.find(t => t.id === e.tipo_evento)?.name || '',
+      Abonado: `${e.abonado_cod || ''} - ${e.abonado_nombre || ''}`,
+      Tipo: e.tipo_nombre || '',
       Responsable: e.responsable_nombre,
       Comentario: e.comentario || '',
     }))
     const wb = XLSX.utils.book_new()
     const ws = XLSX.utils.json_to_sheet(data)
-    XLSX.utils.book_append_sheet(wb, ws, `Bitácora ${cod}`)
-    XLSX.writeFile(wb, `bitacora_${cod}.xlsx`)
+    XLSX.utils.book_append_sheet(wb, ws, `Registros`)
+    XLSX.writeFile(wb, `bitacora_registros.xlsx`)
   }
 
   const exportarPDF = () => {
-    if (eventos.length === 0) return
-    const cod = abonadoSel?.cod || 'TODOS'
-    const nom = abonadoSel?.nombre || ''
-    const turno = getTurnoInfo().nombre
-    const filas = eventos.map(e => {
+    if (eventosFiltrados.length === 0) return
+    const filas = eventosFiltrados.map(e => {
       const d = new Date(e.created_at)
       const fecha = d.toLocaleDateString('es-CL')
       const hora = d.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })
-      const tipo = tipos.find(t => t.id === e.tipo_evento)?.name || ''
-      return `<tr><td>${fecha}</td><td>${hora}</td><td>${e.abonado_cod || ''}</td><td>${tipo}</td><td>${e.responsable_nombre}</td><td>${e.comentario || ''}</td></tr>`
+      return `<tr>
+        <td>#${e.id}</td>
+        <td>${fecha} ${hora}</td>
+        <td><strong>${e.abonado_cod || ''}</strong> - ${e.abonado_nombre || ''}</td>
+        <td>${e.tipo_nombre}</td>
+        <td>${e.responsable_nombre}</td>
+        <td>${e.comentario || ''}</td>
+      </tr>`
     }).join('')
     const win = window.open('', '_blank')
     if (!win) return
-    win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Bitácora - ${cod}</title>
+    win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Bitácora</title>
 <style>
 body{font-family:Calibri,sans-serif;font-size:10pt;padding:20px}
-h1{font-size:14pt;color:#1e293b;border-bottom:2px solid #1e293b;padding-bottom:5px}
-h2{font-size:10pt;color:#666;font-weight:normal;margin-top:-5px}
-table{width:100%;border-collapse:collapse;margin-top:10px}
-th{background:#1e293b;color:#fff;padding:5px 8px;text-align:left;font-size:9pt}
-td{padding:4px 8px;border-bottom:1px solid #ddd;font-size:9pt}
+h1{font-size:14pt;color:#1e293b;border-bottom:2px solid #1e293b;padding-bottom:5px;margin-bottom:2px}
+table{width:100%;border-collapse:collapse;margin-top:15px}
+th{background:#1e293b;color:#fff;padding:6px 10px;text-align:left;font-size:9pt}
+td{padding:6px 10px;border-bottom:1px solid #ddd;font-size:9pt}
 tr:nth-child(even){background:#f8f8f8}
 @media print{@page{size:landscape;margin:15mm}}
 </style></head><body>
-<h1>BITÁCORA VIRTUAL — ${cod} ${nom}</h1>
-<h2>${turno} | ${eventos.length} eventos</h2>
-<table><thead><tr><th>Fecha</th><th>Hora</th><th>Abonado</th><th>Tipo</th><th>Responsable</th><th>Comentario</th></tr></thead><tbody>${filas}</tbody></table>
+<h1>GAMA SEGURIDAD — REPORTE DE BITÁCORA</h1>
+<p style="font-size:9pt;color:#666;">Fecha emisión: ${new Date().toLocaleString('es-CL')} | Total registros: ${eventosFiltrados.length}</p>
+<table><thead><tr><th>ID</th><th>Fecha/Hora</th><th>Abonado</th><th>Tipo</th><th>Responsable</th><th>Comentario</th></tr></thead><tbody>${filas}</tbody></table>
 <script>window.print()</script></body></html>`)
     win.document.close()
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/70 p-2 pt-[5vh] overflow-y-auto" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="w-full md:w-[1200px] h-[95vh] bg-[#0f172a] border border-[#1e293b] rounded-lg shadow-2xl flex flex-col overflow-hidden">
-
-        {/* Header */}
-        <div className="bg-[#1e293b] flex justify-between items-center px-4 py-2 shrink-0 border-b border-[#334155]">
+    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/60 p-2 pt-[3vh] overflow-y-auto" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="w-full max-w-6xl h-[94vh] bg-[#f8fafc] text-[#1e293b] flex flex-col shadow-2xl overflow-hidden border border-slate-300 rounded-lg">
+        
+        {/* Header estilo Bootstrap limpio */}
+        <div className="bg-white border-b border-slate-200 px-5 py-3.5 flex justify-between items-center shrink-0">
           <div className="flex items-center gap-3">
-            <span className="text-slate-100 font-bold text-base tracking-wide">📋 BITÁCORA VIRTUAL</span>
-            {abonadoSel && (
-              <span className="bg-[#334155] text-cyan-300 text-xs font-bold px-2 py-0.5 rounded">{abonadoSel.cod} — {abonadoSel.nombre}</span>
-            )}
+            <span className="text-xl font-bold text-slate-800 tracking-tight">📖 Registros ({eventosFiltrados.length})</span>
+            <button
+              onClick={() => setMostrarNuevoForm(!mostrarNuevoForm)}
+              className="bg-[#007bff] hover:bg-[#0069d9] text-white text-xs font-bold px-3 py-1.5 rounded transition-colors shadow-sm cursor-pointer"
+            >
+              {mostrarNuevoForm ? '✕ Cerrar formulario' : '＋ Crear registro'}
+            </button>
           </div>
           <div className="flex items-center gap-2">
-            {eventos.length > 0 && (
-              <>
-                <button onClick={exportarExcel} className="text-xs text-slate-400 hover:text-white font-bold px-2 py-0.5 rounded hover:bg-slate-700 transition-colors" title="Exportar Excel XML">📊 XLS</button>
-                <button onClick={exportarPDF} className="text-xs text-slate-400 hover:text-white font-bold px-2 py-0.5 rounded hover:bg-slate-700 transition-colors" title="Ver PDF para imprimir">📄 PDF</button>
-              </>
-            )}
-            <button onClick={onClose} className="text-slate-400 hover:text-white text-lg font-bold px-1.5 leading-none hover:bg-slate-700 rounded">&times;</button>
+            <button onClick={exportarExcel} className="bg-[#28a745] hover:bg-[#218838] text-white text-xs font-bold px-3 py-1.5 rounded shadow-sm transition-colors cursor-pointer">
+              Exportar para Excel
+            </button>
+            <button onClick={exportarPDF} className="bg-[#dc3545] hover:bg-[#c82333] text-white text-xs font-bold px-3 py-1.5 rounded shadow-sm transition-colors cursor-pointer">
+              Exportar para PDF
+            </button>
+            <button onClick={onClose} className="text-slate-400 hover:text-slate-600 text-2xl font-bold px-2 leading-none cursor-pointer">&times;</button>
           </div>
         </div>
 
-        <div className="flex-1 flex flex-col p-4 gap-3 overflow-hidden">
-          {/* Buscador */}
-          <div className="relative">
-            <input className="w-full bg-[#1e293b] border border-[#334155] rounded px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-500"
-              placeholder="Buscar abonado (cuenta o nombre)..."
-              value={busqueda} onChange={e => { setBusqueda(e.target.value); setAbonadoSel(null); setEventos([]) }} />
-            {abonados.length > 0 && !abonadoSel && (
-              <div className="absolute top-full left-0 right-0 bg-[#1e293b] border border-[#334155] rounded mt-1 z-10 max-h-52 overflow-y-auto shadow-lg">
-                {abonados.map(a => (
-                  <div key={a.id} className="px-3 py-2 text-sm text-slate-200 hover:bg-cyan-900/40 cursor-pointer border-b border-[#334155]"
-                    onClick={() => seleccionar(a)}>
-                    <span className="text-cyan-400 font-bold">{a.cod}</span> — {a.nombre} {a.direccion ? `(${a.direccion})` : ''}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          
+          {/* Formulario de Nuevo Registro (Expandible superior) */}
+          {mostrarNuevoForm && (
+            <div className="bg-[#f1f5f9] border-b border-slate-200 p-4 shrink-0 animate-slide-in">
+              <div className="max-w-4xl mx-auto bg-white border border-slate-200 rounded-lg p-4 shadow-sm">
+                <h3 className="text-xs font-black text-slate-500 uppercase tracking-wider mb-3">Crear Nuevo Registro en Bitácora</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+                  <div className="relative">
+                    <label className="text-[10px] font-bold text-slate-500 block mb-1">Abonado *</label>
+                    <input
+                      type="text"
+                      placeholder="Buscar abonado..."
+                      className="w-full border border-slate-300 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:border-[#007bff]"
+                      value={filtroAbonadoInput}
+                      onChange={e => { setFiltroAbonadoInput(e.target.value); setAbonadoSel(null) }}
+                    />
+                    {abonadoSugerencias.length > 0 && !abonadoSel && (
+                      <div className="absolute top-full left-0 right-0 bg-white border border-slate-200 rounded mt-1 z-20 max-h-40 overflow-y-auto shadow-lg">
+                        {abonadoSugerencias.map(a => (
+                          <div key={a.id} className="px-3 py-1.5 text-xs hover:bg-slate-100 cursor-pointer border-b border-slate-100" onClick={() => seleccionarAbonadoFiltro(a)}>
+                            <span className="text-[#007bff] font-bold">{a.cod}</span> — {a.nombre}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                ))}
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-500 block mb-1">Tipo de Evento *</label>
+                    <select
+                      className="w-full bg-white border border-slate-300 rounded px-2 py-1.5 text-xs focus:outline-none focus:border-[#007bff]"
+                      value={tipoEvento}
+                      onChange={e => setTipoEvento(e.target.value)}
+                    >
+                      {tipos.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-500 block mb-1">Operador Responsable</label>
+                    <div className="w-full bg-slate-100 border border-slate-200 rounded px-2.5 py-1.5 text-xs font-bold text-slate-600">
+                      Administrador (ID: 1)
+                    </div>
+                  </div>
+                </div>
+                <div className="mb-3">
+                  <label className="text-[10px] font-bold text-slate-500 block mb-1">Comentario / Detalle de la Novedad *</label>
+                  <textarea
+                    rows={2}
+                    className="w-full border border-slate-300 rounded p-2 text-xs focus:outline-none focus:border-[#007bff] resize-none"
+                    placeholder="Escribe el comentario del evento..."
+                    value={comentario}
+                    onChange={e => setComentario(e.target.value)}
+                  />
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-[11px] font-bold text-[#007bff]">{mensaje}</span>
+                  <div className="flex gap-2">
+                    <button onClick={() => setMostrarNuevoForm(false)} className="bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold px-4 py-2 rounded transition-colors cursor-pointer">
+                      Cancelar
+                    </button>
+                    <button
+                      onClick={crearEvento}
+                      disabled={enviando || !abonadoSel || !comentario.trim()}
+                      className="bg-[#28a745] hover:bg-[#218838] text-white text-xs font-bold px-4 py-2 rounded transition-colors disabled:opacity-50 cursor-pointer shadow-sm"
+                    >
+                      {enviando ? 'Guardando...' : 'Guardar Registro'}
+                    </button>
+                  </div>
+                </div>
               </div>
-            )}
-          </div>
+            </div>
+          )}
 
-          <div className="flex-1 flex gap-3 overflow-hidden">
-            {/* Eventos */}
-            <div className="flex-1 flex flex-col overflow-hidden">
-              <div className="flex gap-2 mb-2 shrink-0 items-center">
-                  <input type="date" className="bg-[#1e293b] border border-[#334155] rounded px-2 py-1 text-sm text-slate-100 focus:outline-none focus:border-cyan-500"
-                    value={desde.split(' ')[0]} onChange={e => { setDesde(e.target.value + ' 00:00'); setModoFecha('personalizado') }} />
-                  <span className="text-slate-500 text-sm">→</span>
-                  <input type="date" className="bg-[#1e293b] border border-[#334155] rounded px-2 py-1 text-sm text-slate-100 focus:outline-none focus:border-cyan-500"
-                    value={hasta.split(' ')[0]} onChange={e => { setHasta(e.target.value + ' 23:59'); setModoFecha('personalizado') }} />
-                  <button className="bg-cyan-700 hover:bg-cyan-600 text-white text-sm font-bold px-3 py-1 rounded transition-colors"
-                    onClick={() => abonadoSel ? cargarEventos(abonadoSel.id) : fetch(`${API_URL}?action=eventos&desde=${encodeURIComponent(desde)}&hasta=${encodeURIComponent(hasta)}`).then(r => r.ok && r.json()).then(ev => ev && setEventos(ev)).catch(() => {})}>FILTRAR</button>
-                  <button className="bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm font-bold px-3 py-1 rounded transition-colors"
-                    onClick={volverTurno}>TURNO</button>
-                  {modoFecha !== 'semana' && (
-                    <button className="bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm font-bold px-3 py-1 rounded transition-colors"
-                      onClick={() => { const d = getUltimos7Dias(); setDesde(d.desde); setHasta(d.hasta); setModoFecha('semana'); if (abonadoSel) cargarEventos(abonadoSel.id); else fetch(`${API_URL}?action=eventos&desde=${encodeURIComponent(d.desde)}&hasta=${encodeURIComponent(d.hasta)}`).then(r => r.ok && r.json()).then(ev => ev && setEventos(ev)).catch(() => {}) }}>7 DÍAS</button>
+          {/* Panel de Filtros Multivariable (Idéntico a bitacora.gamasecurity.cl) */}
+          <div className="bg-white border-b border-slate-200 p-4 shrink-0">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-3.5">
+              
+              {/* Abonado */}
+              <div>
+                <label className="text-[10.5px] font-bold text-slate-600 block mb-1">Abonado:</label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Escribe código o nombre..."
+                    className="w-full border border-slate-300 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:border-[#007bff]"
+                    value={filtroAbonadoInput}
+                    onChange={e => { setFiltroAbonadoInput(e.target.value); setAbonadoSel(null) }}
+                  />
+                  {abonadoSugerencias.length > 0 && !abonadoSel && (
+                    <div className="absolute top-full left-0 right-0 bg-white border border-slate-200 rounded mt-1 z-20 max-h-40 overflow-y-auto shadow-lg">
+                      {abonadoSugerencias.map(a => (
+                        <div key={a.id} className="px-3 py-1.5 text-xs hover:bg-slate-100 cursor-pointer border-b border-slate-100" onClick={() => seleccionarAbonadoFiltro(a)}>
+                          <span className="text-[#007bff] font-bold">{a.cod}</span> — {a.nombre}
+                        </div>
+                      ))}
+                    </div>
                   )}
                 </div>
-              <div className="flex-1 bg-[#0f172a] border border-[#1e293b] rounded-lg flex flex-col overflow-hidden">
-                <div className="bg-[#1e293b] text-slate-200 text-sm font-bold px-4 py-1.5 shrink-0 flex justify-between items-center">
-                  <span>HISTORIAL <span className="text-slate-500">({eventos.length})</span></span>
+              </div>
+
+              {/* Responsable */}
+              <div>
+                <label className="text-[10.5px] font-bold text-slate-600 block mb-1">Responsable:</label>
+                <select
+                  className="w-full bg-white border border-slate-300 rounded px-2 py-1.5 text-xs focus:outline-none focus:border-[#007bff]"
+                  value={responsableSel}
+                  onChange={e => setResponsableSel(e.target.value)}
+                >
+                  <option value="">Seleccionar responsable</option>
+                  {responsables.map(r => <option key={r} value={r}>{r}</option>)}
+                </select>
+              </div>
+
+              {/* Tipo */}
+              <div>
+                <label className="text-[10.5px] font-bold text-slate-600 block mb-1">Tipo:</label>
+                <select
+                  className="w-full bg-white border border-slate-300 rounded px-2 py-1.5 text-xs focus:outline-none focus:border-[#007bff]"
+                  value={tipoSel}
+                  onChange={e => setTipoSel(e.target.value)}
+                >
+                  <option value="">Seleccionar tipo</option>
+                  {tipos.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                </select>
+              </div>
+
+              {/* Texto / Palabra */}
+              <div>
+                <label className="text-[10.5px] font-bold text-slate-600 block mb-1">Texto / Palabra:</label>
+                <input
+                  type="text"
+                  placeholder="Texto del comentario..."
+                  className="w-full border border-slate-300 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:border-[#007bff]"
+                  value={buscarTexto}
+                  onChange={e => setBuscarTexto(e.target.value)}
+                />
+              </div>
+
+              {/* Rango de Fechas */}
+              <div className="md:col-span-2 bg-slate-50 border border-slate-200 rounded p-2.5 flex items-center gap-3">
+                <div>
+                  <label className="text-[9.5px] font-bold text-slate-500 block mb-0.5">Desde:</label>
+                  <input
+                    type="date"
+                    className="bg-white border border-slate-300 rounded px-2 py-1 text-xs focus:outline-none focus:border-[#007bff]"
+                    value={desde.split(' ')[0]}
+                    onChange={e => { setDesde(e.target.value + ' 00:00'); setModoFecha('personalizado') }}
+                  />
                 </div>
-                <div className="flex-1 overflow-y-auto">
-                  {eventos.length === 0 && <div className="text-slate-600 text-sm text-center mt-16">Sin eventos en este turno o selecciona un abonado</div>}
-                  {eventos.map((e, i) => {
-                    const color = tipos.find(t => t.id === e.tipo_evento)?.color || '#666'
-                    return (
-                      <div key={e.id}>
-                        {i > 0 && <hr className="border-t border-[#1e293b] mx-4" />}
-                        <div className="py-3 px-4 group hover:bg-slate-800/40 transition-colors">
-                          <div className="flex items-start gap-3">
-                            <span className="w-2.5 h-2.5 rounded-full inline-block shrink-0 mt-1.5" style={{ backgroundColor: color }} />
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 text-sm flex-wrap">
-                                <span className="font-semibold text-slate-400">{new Date(e.created_at).toLocaleString('es-CL')}</span>
-                                {editandoId === e.id ? (
-                                  <select className="text-sm font-semibold bg-slate-800 border border-slate-600 rounded px-1 py-0.5 text-slate-200"
-                                    value={editTipo} onChange={e2 => setEditTipo(e2.target.value)}>
-                                    {tipos.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                                  </select>
-                                ) : (
-                                  <span className="font-semibold" style={{ color }}>{e.tipo_nombre}</span>
-                                )}
-                                <span className="text-slate-600">— {e.responsable_nombre}</span>
-                                <span className="text-cyan-600 text-xs ml-2">{e.abonado_cod}</span>
-                                <span className="ml-auto flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                  <button className="text-sm text-cyan-400 hover:text-cyan-300"
-                                    onClick={() => iniciarEdicion(e)} title="Editar">✏️</button>
-                                  <button className="text-sm text-slate-500 hover:text-slate-300"
-                                    onClick={() => toggleArchivos(e.id)} title="Archivos">📎</button>
-                                </span>
-                              </div>
-                              {editandoId === e.id ? (
-                                <div className="mt-2 flex gap-1">
-                                  <textarea className="flex-1 bg-slate-800 border border-slate-600 rounded text-sm text-slate-200 p-1.5 resize-none"
-                                    value={editComentario} onChange={e2 => setEditComentario(e2.target.value)} rows={2} />
-                                  <div className="flex flex-col gap-0.5">
-                                    <button className="bg-cyan-700 hover:bg-cyan-600 text-white text-sm font-bold px-2 py-0.5 rounded" onClick={guardarEdicion}>💾</button>
-                                    <button className="bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm font-bold px-2 py-0.5 rounded" onClick={() => setEditandoId(null)}>✕</button>
-                                  </div>
-                                </div>
-                              ) : (
-                                <div className="text-sm mt-1 text-slate-300 whitespace-pre-wrap">{e.comentario}</div>
-                              )}
-                              {archivos[e.id] && (
-                                <div className="mt-2 flex flex-wrap gap-1">
-                                  {archivos[e.id].map(a => (
-                                    <div key={a.id} className="flex items-center gap-1 bg-slate-800 border border-slate-700 rounded px-2 py-0.5 text-sm">
-                                      <a href={API_URL.replace('/api-bitacora.php', '') + '/' + a.url} target="_blank" className="text-cyan-400 hover:text-cyan-300 truncate max-w-[160px]">
-                                        {a.nombre_original}
-                                      </a>
-                                      <span className="text-slate-500">({formatBytes(a.tamanio)})</span>
-                                      <button className="text-red-400 hover:text-red-300 font-bold"
-                                        onClick={() => eliminarArchivo(a.id, e.id)}>✕</button>
-                                    </div>
-                                  ))}
-                                  <label className="text-sm text-cyan-400 cursor-pointer hover:text-cyan-300">
-                                    + Archivo
-                                    <input type="file" className="hidden" ref={fileInputRef}
-                                      onChange={() => handleFileChange(e.id)} disabled={subiendoArchivo} />
-                                  </label>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )
-                  })}
+                <span className="text-slate-400 font-bold self-end mb-1">→</span>
+                <div>
+                  <label className="text-[9.5px] font-bold text-slate-500 block mb-0.5">Hasta:</label>
+                  <input
+                    type="date"
+                    className="bg-white border border-slate-300 rounded px-2 py-1 text-xs focus:outline-none focus:border-[#007bff]"
+                    value={hasta.split(' ')[0]}
+                    onChange={e => { setHasta(e.target.value + ' 23:59'); setModoFecha('personalizado') }}
+                  />
                 </div>
               </div>
-            </div>
 
-            {/* Panel nuevo evento */}
-            <div className="w-72 bg-[#1e293b] border border-[#334155] rounded-lg flex flex-col p-4 shrink-0">
-              <div className="text-slate-200 font-bold text-sm border-b border-[#334155] pb-2 mb-3">NUEVO EVENTO</div>
-              {!abonadoSel ? (
-                <div className="flex-1 flex items-center justify-center text-slate-600 text-sm text-center p-3">Selecciona un abonado primero</div>
-              ) : (
-                <>
-                  <div className="text-sm font-semibold text-slate-300 mb-2">{abonadoSel.cod} — {abonadoSel.nombre}</div>
-                  <label className="text-sm font-semibold text-slate-400 mb-1">Tipo</label>
-                  <select className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1.5 text-sm text-slate-200 focus:outline-none focus:border-cyan-500 mb-3"
-                    value={tipoEvento} onChange={e => setTipoEvento(e.target.value)}>
-                    {tipos.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                  </select>
-                  <label className="text-sm font-semibold text-slate-400 mb-1">Comentario</label>
-                  <textarea className="w-full flex-1 bg-slate-800 border border-slate-700 rounded p-2 text-sm text-slate-200 resize-none focus:outline-none focus:border-cyan-500 placeholder-slate-600"
-                    placeholder="Escribe el evento..." value={comentario} onChange={e => setComentario(e.target.value)} />
-                  {mensaje && <div className="text-sm font-semibold mt-2 text-center text-cyan-300">{mensaje}</div>}
-                  <button className="mt-3 bg-cyan-700 hover:bg-cyan-600 text-white font-bold text-sm py-2 rounded transition-colors disabled:opacity-50"
-                    disabled={enviando || !comentario.trim()} onClick={crearEvento}>
-                    {enviando ? 'ENVIANDO...' : 'REGISTRAR EVENTO'}
-                  </button>
-                </>
-              )}
+              {/* ID de Registro */}
+              <div>
+                <label className="text-[10.5px] font-bold text-slate-600 block mb-1">ID:</label>
+                <input
+                  type="text"
+                  placeholder="0000"
+                  className="w-full border border-slate-300 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:border-[#007bff] font-mono"
+                  value={filtroId}
+                  onChange={e => setFiltroId(e.target.value.replace(/[^0-9]/g, ''))}
+                />
+              </div>
+
+              {/* Botones de acción */}
+              <div className="flex gap-2 items-end">
+                <button
+                  onClick={aplicarFiltroManual}
+                  className="flex-1 bg-[#28a745] hover:bg-[#218838] text-white text-xs font-bold py-2 rounded transition-colors cursor-pointer shadow-sm"
+                >
+                  🔍 Filtrar
+                </button>
+                <button
+                  onClick={filtrarPorTurno}
+                  className="bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold px-3 py-2 rounded transition-colors cursor-pointer"
+                  title="Filtrar eventos del turno actual"
+                >
+                  ⏱️ Turno
+                </button>
+                <button
+                  onClick={limpiarFiltros}
+                  className="bg-[#ffc107] hover:bg-[#e0a800] text-black text-xs font-bold py-2 px-3.5 rounded transition-colors cursor-pointer shadow-sm"
+                >
+                  ✕ Limpiar
+                </button>
+              </div>
+
             </div>
           </div>
+
+          {/* Lienzo del Historial (Diseño de Tarjetas Bootstrap de bitacora.gamasecurity.cl) */}
+          <div className="flex-1 overflow-y-auto bg-slate-100 p-4 space-y-3.5">
+            {eventosFiltrados.length === 0 && (
+              <div className="text-center text-slate-500 text-sm py-16 bg-white border border-slate-200 rounded-lg">
+                Ningún registro coincide con los filtros aplicados.
+              </div>
+            )}
+            {eventosFiltrados.map(e => {
+              const color = tipos.find(t => t.id === e.tipo_evento)?.color || '#6c757d'
+              return (
+                <div key={e.id} className="bg-white border border-slate-200 rounded-lg shadow-sm hover:shadow-md transition-shadow overflow-hidden">
+                  
+                  {/* Cabecera de la tarjeta */}
+                  <div className="bg-slate-50 border-b border-slate-100 px-4 py-2.5 flex flex-wrap justify-between items-center gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="bg-[#007bff] text-white text-[10.5px] font-black px-2.5 py-0.5 rounded font-mono">
+                        #{e.abonado_cod}
+                      </span>
+                      <span className="text-xs font-bold text-slate-700">
+                        {e.abonado_nombre}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3 text-xs text-slate-500 font-mono">
+                      <span>ID: <strong>{e.id}</strong></span>
+                      <span>📅 {new Date(e.created_at).toLocaleString('es-CL')}</span>
+                      <span>👤 {e.responsable_nombre}</span>
+                    </div>
+                  </div>
+
+                  {/* Cuerpo de la tarjeta */}
+                  <div className="p-4">
+                    <div className="mb-2">
+                      <span className="text-[10px] uppercase font-black px-2 py-0.5 rounded-full border tracking-wide" style={{ backgroundColor: color + '15', color: color, borderColor: color + '40' }}>
+                        Tipo: {e.tipo_nombre}
+                      </span>
+                    </div>
+                    
+                    {editandoId === e.id ? (
+                      <div className="mt-2 flex flex-col md:flex-row gap-2">
+                        <textarea
+                          className="flex-1 border border-slate-300 rounded text-xs p-2 focus:outline-none focus:border-[#007bff] resize-none"
+                          value={editComentario}
+                          onChange={e2 => setEditComentario(e2.target.value)}
+                          rows={2}
+                        />
+                        <div className="flex md:flex-col gap-1.5 justify-end">
+                          <button className="bg-[#28a745] hover:bg-[#218838] text-white text-xs font-bold px-3 py-1.5 rounded cursor-pointer" onClick={guardarEdicion}>💾 Guardar</button>
+                          <button className="bg-slate-300 hover:bg-slate-400 text-slate-700 text-xs font-bold px-3 py-1.5 rounded cursor-pointer" onClick={() => setEditandoId(null)}>✕ Cancelar</button>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed font-medium bg-slate-50 border border-slate-100 rounded-md p-3">
+                        {e.comentario}
+                      </p>
+                    )}
+
+                    {/* Archivos adjuntos */}
+                    {archivos[e.id] && (
+                      <div className="mt-3 flex flex-wrap gap-2 pt-2 border-t border-dashed border-slate-200">
+                        {archivos[e.id].map(a => (
+                          <div key={a.id} className="flex items-center gap-1.5 bg-slate-100 border border-slate-200 rounded px-2.5 py-1 text-xs">
+                            <a href={API_URL.replace('/api-bitacora.php', '') + '/' + a.url} target="_blank" className="text-[#007bff] hover:underline font-bold truncate max-w-[180px]">
+                              📎 {a.nombre_original}
+                            </a>
+                            <span className="text-[10px] text-slate-500">({formatBytes(a.tamanio)})</span>
+                            <button className="text-red-500 hover:text-red-700 font-bold ml-1 cursor-pointer" onClick={() => eliminarArchivo(a.id, e.id)}>✕</button>
+                          </div>
+                        ))}
+                        <label className="text-xs text-[#007bff] cursor-pointer hover:underline flex items-center font-bold">
+                          ＋ Adjuntar archivo
+                          <input type="file" className="hidden" ref={fileInputRef} onChange={() => handleFileChange(e.id)} disabled={subiendoArchivo} />
+                        </label>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Footer de la tarjeta */}
+                  <div className="bg-white border-t border-slate-100 px-4 py-2 flex justify-end gap-2.5">
+                    <button
+                      onClick={() => toggleArchivos(e.id)}
+                      className="text-xs text-slate-500 hover:text-slate-800 flex items-center gap-1 font-bold cursor-pointer"
+                    >
+                      📎 {archivos[e.id] ? 'Ocultar archivos' : 'Ver archivos / Adjuntar'}
+                    </button>
+                    <button
+                      onClick={() => iniciarEdicion(e)}
+                      className="text-xs text-[#007bff] hover:text-[#0056b3] flex items-center gap-1 font-bold cursor-pointer"
+                    >
+                      ✏️ Editar comentario
+                    </button>
+                  </div>
+
+                </div>
+              )
+            })}
+          </div>
+
         </div>
       </div>
     </div>
