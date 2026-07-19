@@ -68,11 +68,59 @@ const app = express()
 app.use(cors())
 app.use(express.json())
 
+// ──────────────────────────────────────────────
+//  TÚNEL CLOUDFLARE AUTOMÁTICO
+// ──────────────────────────────────────────────
+const { spawn } = require('child_process')
+let cloudflaredProcess = null
+
+function iniciarCloudflareTunnel() {
+  const exePath = 'C:\\Program Files (x86)\\cloudflared\\cloudflared.exe'
+  if (!fs.existsSync(exePath)) {
+    log('⚠️  No se encontro cloudflared.exe en la ruta por defecto. No se creara el tunel publico.', 'WARN')
+    return
+  }
+
+  log('🌐 Iniciando Tunel de Cloudflare...')
+  cloudflaredProcess = spawn(exePath, ['tunnel', '--url', `http://localhost:${PORT}`])
+
+  cloudflaredProcess.stderr.on('data', async data => {
+    const output = data.toString()
+    // Buscar la URL del túnel en la salida de error (donde cloudflared loguea)
+    const match = output.match(/https:\/\/[a-z0-9\-]+\.trycloudflare\.com/)
+    if (match) {
+      const url = match[0]
+      log(`🔗 Tunel Cloudflare activo: ${url}`)
+      
+      // Guardar URL en Supabase
+      try {
+        await supabase
+          .from('eventos_monitoreo')
+          .upsert({
+            cuenta: 'CONFIG_WHATSAPP_URL',
+            nombre_abonado: url,
+            evento: 'TUNNEL_URL',
+            fecha_hora: new Date().toISOString()
+          }, { onConflict: 'cuenta' })
+        log('✅ URL del tunel sincronizada en Supabase con exito.')
+      } catch (err) {
+        log(`Error guardando URL en Supabase: ${err.message}`, 'ERROR')
+      }
+    }
+  })
+
+  cloudflaredProcess.on('close', code => {
+    log(`🌐 Tunel de Cloudflare cerrado (codigo: ${code}). Reintentando en 10s...`, 'WARN')
+    setTimeout(iniciarCloudflareTunnel, 10000)
+  })
+}
+
 const server = app.listen(PORT, () => {
   log(`🚀 Servidor GAMA WhatsApp v3.0 escuchando en http://localhost:${PORT}`)
   log(`📁 Sesión guardada en: ${SESSION_DIR}`)
   conectar()
   suscribirSupabaseRealtime()
+  iniciarCloudflareTunnel()
 })
 
 server.on('error', err => {

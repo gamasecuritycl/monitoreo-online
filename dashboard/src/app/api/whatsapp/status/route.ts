@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server'
-
-const WA_SERVER = 'http://localhost:3015'
+import { getWhatsAppServerUrl } from '@/lib/supabase'
 
 // Proxy del estado del servidor WhatsApp (evita CORS desde el browser)
 export async function GET() {
   try {
-    const res = await fetch(`${WA_SERVER}/api/status`, {
+    const waServerUrl = await getWhatsAppServerUrl()
+    const res = await fetch(`${waServerUrl}/api/status`, {
       signal: AbortSignal.timeout(4000),
       cache: 'no-store',
     })

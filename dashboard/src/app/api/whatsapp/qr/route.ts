@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server'
-
-const WA_SERVER = 'http://localhost:3015'
+import { getWhatsAppServerUrl } from '@/lib/supabase'
 
 // Proxy del QR del servidor WhatsApp
 export async function GET() {
   try {
-    const res = await fetch(`${WA_SERVER}/api/qr`, {
+    const waServerUrl = await getWhatsAppServerUrl()
+    const res = await fetch(`${waServerUrl}/api/qr`, {
       signal: AbortSignal.timeout(4000),
       cache: 'no-store',
     })
@@ -21,7 +21,8 @@ export async function POST(req: Request) {
   try {
     const body = await req.json()
     const phone = body?.phone || '56948855190'
-    const res = await fetch(`${WA_SERVER}/api/pair`, {
+    const waServerUrl = await getWhatsAppServerUrl()
+    const res = await fetch(`${waServerUrl}/api/pair`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ phone }),

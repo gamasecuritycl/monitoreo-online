@@ -55,3 +55,19 @@ export interface EventoMonitoreo {
   zona: string
   usuario: string
 }
+
+export async function getWhatsAppServerUrl(): Promise<string> {
+  try {
+    const { data } = await supabase
+      .from('eventos_monitoreo')
+      .select('nombre_abonado')
+      .eq('cuenta', 'CONFIG_WHATSAPP_URL')
+      .limit(1)
+    if (data && data.length > 0 && data[0].nombre_abonado) {
+      return data[0].nombre_abonado.trim()
+    }
+  } catch (err) {
+    console.error('Error al resolver la URL de WhatsApp en Supabase:', err)
+  }
+  return 'http://localhost:3015'
+}
