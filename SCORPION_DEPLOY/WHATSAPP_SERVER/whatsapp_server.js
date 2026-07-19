@@ -72,6 +72,10 @@ app.use(express.json())
 //  TÚNEL NGROK AUTOMÁTICO (Serverless Bridge)
 // ──────────────────────────────────────────────
 async function iniciarNgrokTunnel() {
+  if (!process.env.LOCAL_DEV) {
+    log('🌐 Servidor en la nube detectado. Omitiendo Ngrok y operando en modo directo 100% Supabase-Realtime.')
+    return
+  }
   try {
     log('🌐 Iniciando Tunel de Ngrok en puerto 3015...')
     // Usar la librería oficial ngrok para levantar el túnel en caliente
@@ -254,6 +258,55 @@ async function saveSessionToSupabase() {
 }
 
 // ──────────────────────────────────────────────
+//  SINCRONIZAR ESTADO Y QR A SUPABASE
+// ──────────────────────────────────────────────
+let currentPairingCode = null
+
+async function sincronizarEstadoASupabase() {
+  try {
+    const estadoObj = {
+      ready:      isReady,
+      estado:     isReady ? 'CONECTADO' : (currentQR ? 'ESPERANDO_QR' : 'CONECTANDO'),
+      usuario:    userName,
+      hasQR:      !!currentQR,
+      cola:       messageQueue.length,
+      uptime:     Math.round((Date.now() - startTime) / 1000),
+      reintentos: retryCount,
+      pairingCode: currentPairingCode,
+      version:    '3.0',
+    }
+
+    await supabase
+      .from('eventos_monitoreo')
+      .upsert({
+        cuenta: 'CONFIG_WHATSAPP_STATE',
+        nombre_abonado: JSON.stringify(estadoObj),
+        evento: 'CONFIG_STATE',
+        fecha_hora: new Date().toISOString()
+      }, { onConflict: 'cuenta' })
+
+    const qrObj = {
+      status: isReady ? 'connected' : (currentQR ? 'waiting_qr' : 'connecting'),
+      qr: currentQR,
+      qrImage: currentQRImage,
+      usuario: userName
+    }
+
+    await supabase
+      .from('eventos_monitoreo')
+      .upsert({
+        cuenta: 'CONFIG_WHATSAPP_QR',
+        nombre_abonado: JSON.stringify(qrObj),
+        evento: 'CONFIG_QR',
+        fecha_hora: new Date().toISOString()
+      }, { onConflict: 'cuenta' })
+
+  } catch (err) {
+    log(`⚠️  Error sincronizando estado a Supabase: ${err.message}`, 'WARN')
+  }
+}
+
+// ──────────────────────────────────────────────
 //  CONEXIÓN PRINCIPAL
 // ──────────────────────────────────────────────
 async function conectar() {
@@ -311,6 +364,8 @@ async function conectar() {
         try {
           currentQRImage = await QRCode.toDataURL(qr, { width: 300, margin: 2, color: { dark: '#000000', light: '#ffffff' } })
         } catch {}
+        
+        await sincronizarEstadoASupabase()
       }
 
       if (connection === 'open') {
@@ -319,9 +374,11 @@ async function conectar() {
         currentQRImage = null
         retryCount    = 0
         pairingRequested = false
+        currentPairingCode = null
         userName      = sock.user?.name || sock.user?.id?.split(':')[0] || 'desconocido'
         log(`✅ ¡WhatsApp CONECTADO! Usuario: ${userName}`)
         iniciarHeartbeat()
+        await sincronizarEstadoASupabase()
         // Despachar mensajes en cola
         setTimeout(despacharCola, 2_000)
       }
@@ -333,6 +390,7 @@ async function conectar() {
         const reason     = lastDisconnect?.error?.message || 'desconocido'
 
         log(`🔌 Desconectado. Código: ${statusCode}, Razón: ${reason}`, 'WARN')
+        await sincronizarEstadoASupabase()
 
         if (statusCode === DisconnectReason.loggedOut) {
           log('🔴 Sesión cerrada (logout). Borrando sesión y esperando nuevo QR...', 'WARN')
@@ -488,10 +546,11 @@ async function borrarSesion() {
 }
 
 // ──────────────────────────────────────────────
-//  SUPABASE REALTIME (canal broadcast)
+//  SUPABASE REALTIME (canal broadcast y tablas)
 // ──────────────────────────────────────────────
 function suscribirSupabaseRealtime() {
   try {
+    // 1. Canal de envío rápido (broadcast)
     supabase.channel('whatsapp_outbound')
       .on('broadcast', { event: 'send_whatsapp' }, async ({ payload }) => {
         if (payload?.phone && payload?.text) {
@@ -504,8 +563,55 @@ function suscribirSupabaseRealtime() {
         }
       })
       .subscribe(status => {
-        log(`Supabase Realtime: ${status}`)
+        log(`Supabase Realtime (outbound): ${status}`)
       })
+
+    // 2. Canal de comandos del dashboard (escucha de tabla)
+    supabase.channel('whatsapp_commands')
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'eventos_monitoreo',
+        filter: 'cuenta=eq.CONFIG_WHATSAPP_COMMAND'
+      }, async payload => {
+        const cmd = payload.new?.nombre_abonado || ''
+        log(`📡 Comando recibido por Supabase: "${cmd}"`)
+
+        if (cmd === 'LOGOUT') {
+          log('🔴 Ejecutando comando LOGOUT...')
+          try {
+            if (sock) await sock.logout().catch(() => {})
+          } catch {}
+          await borrarSesion()
+          retryCount = 0
+          pairingRequested = false
+          currentPairingCode = null
+          if (reconnectTimer) clearTimeout(reconnectTimer)
+          reconnectTimer = setTimeout(conectar, 2000)
+          await sincronizarEstadoASupabase()
+        }
+        else if (cmd.startsWith('PAIR:')) {
+          const phone = cmd.split(':')[1]?.replace(/[^0-9]/g, '')
+          log(`🔑 Ejecutando comando PAIR para: ${phone}`)
+          if (!sock || isReady) return
+          try {
+            pairingRequested = true
+            const code = await sock.requestPairingCode(phone)
+            currentPairingCode = code
+            log(`🔑 Pairing Code generado exitosamente: ${code}`)
+            await sincronizarEstadoASupabase()
+          } catch (err) {
+            log(`Error al solicitar pairing code: ${err.message}`, 'ERROR')
+            pairingRequested = false
+            currentPairingCode = null
+            await sincronizarEstadoASupabase()
+          }
+        }
+      })
+      .subscribe(status => {
+        log(`Supabase Realtime (commands): ${status}`)
+      })
+
   } catch (err) {
     log(`Supabase Realtime no disponible: ${err.message}`, 'WARN')
   }

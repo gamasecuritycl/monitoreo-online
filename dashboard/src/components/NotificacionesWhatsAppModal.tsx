@@ -131,35 +131,42 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
   const [notificarVideo, setNotificarVideo] = useState(false)
 
   // ══════════════════════════════════════════════
-  //  POLLING DEL ESTADO DEL SERVIDOR
+  //  POLLING DEL ESTADO Y QR DE WHATSAPP DIRECTO DESDE SUPABASE
   // ══════════════════════════════════════════════
   useEffect(() => {
-    const poll = async () => {
+    const fetchStatusAndQR = async () => {
       try {
-        const res = await fetch('/api/whatsapp/status', { cache: 'no-store' })
-        const data = await res.json()
-        setWaStatus(data)
-      } catch {}
+        const { data, error } = await supabase
+          .from('eventos_monitoreo')
+          .select('cuenta, nombre_abonado')
+          .in('cuenta', ['CONFIG_WHATSAPP_STATE', 'CONFIG_WHATSAPP_QR'])
+
+        if (error || !data) return
+
+        const statusRow = data.find(r => r.cuenta === 'CONFIG_WHATSAPP_STATE')
+        const qrRow = data.find(r => r.cuenta === 'CONFIG_WHATSAPP_QR')
+
+        if (statusRow?.nombre_abonado) {
+          const parsed = JSON.parse(statusRow.nombre_abonado)
+          setWaStatus(parsed)
+          if (parsed.pairingCode) {
+            setPairingCode(parsed.pairingCode)
+          }
+        }
+
+        if (qrRow?.nombre_abonado) {
+          const parsedQR = JSON.parse(qrRow.nombre_abonado)
+          setQrData(parsedQR)
+        }
+      } catch (err) {
+        console.error('Error cargando estado de WhatsApp desde Supabase:', err)
+      }
     }
-    poll()
-    const t = setInterval(poll, 6000)
+
+    fetchStatusAndQR()
+    const t = setInterval(fetchStatusAndQR, 5000)
     return () => clearInterval(t)
   }, [])
-
-  // Polling del QR (solo cuando el tab es 'servidor')
-  useEffect(() => {
-    if (activeTab !== 'servidor') return
-    const pollQR = async () => {
-      try {
-        const res = await fetch('/api/whatsapp/qr', { cache: 'no-store' })
-        const data = await res.json()
-        setQrData(data)
-      } catch {}
-    }
-    pollQR()
-    const t = setInterval(pollQR, 7000)
-    return () => clearInterval(t)
-  }, [activeTab])
 
   // ══════════════════════════════════════════════
   //  CHAT EN VIVO - Cargar mensajes
@@ -441,19 +448,17 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
     setLoadingPair(true); setServerMsg('')
     try {
       const phone = pairingInput.replace(/[^0-9]/g, '') || '56948855190'
-      const res = await fetch('/api/whatsapp/qr', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone }),
-      })
-      const data = await res.json()
-      if (data.ok && data.code) {
-        setPairingCode(data.code)
-        setServerMsg(`✅ Código generado: ${data.code}`)
-      } else {
-        setServerMsg('⚠️ ' + (data.error || 'Error al generar código'))
-      }
+      await supabase
+        .from('eventos_monitoreo')
+        .upsert({
+          cuenta: 'CONFIG_WHATSAPP_COMMAND',
+          nombre_abonado: `PAIR:${phone}`,
+          evento: 'COMMAND',
+          fecha_hora: new Date().toISOString()
+        }, { onConflict: 'cuenta' })
+      setServerMsg('⏳ Solicitud de Pairing Code enviada a la nube. El codigo aparecera aqui en breve...')
     } catch (err: any) {
-      setServerMsg('❌ ' + err.message)
+      setServerMsg('❌ Error: ' + err.message)
     } finally {
       setLoadingPair(false)
     }
@@ -463,9 +468,18 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
     if (!confirm('¿Cerrar sesión de WhatsApp? Deberás volver a vincular.')) return
     setLoadingLogout(true)
     try {
-      await fetch('/api/whatsapp/logout', { method: 'POST' })
-      setServerMsg('🔴 Sesión cerrada. El servidor reiniciará en segundos...')
-    } catch {}
+      await supabase
+        .from('eventos_monitoreo')
+        .upsert({
+          cuenta: 'CONFIG_WHATSAPP_COMMAND',
+          nombre_abonado: 'LOGOUT',
+          evento: 'COMMAND',
+          fecha_hora: new Date().toISOString()
+        }, { onConflict: 'cuenta' })
+      setServerMsg('🔴 Solicitud de cierre de sesión enviada a la nube...')
+    } catch (err: any) {
+      setServerMsg('❌ Error al solicitar logout: ' + err.message)
+    }
     setLoadingLogout(false)
   }
 
