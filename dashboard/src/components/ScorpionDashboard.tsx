@@ -783,7 +783,6 @@ export default function ScorpionDashboard() {
           { label: 'REPORTES',       id: 'menu-reportes', hasDropdown: true },
           { label: 'EVENTOS',        id: 'menu-eventos' },
           { label: 'AYUDA',          id: 'menu-ayuda' },
-          { label: '💬 WHATSAPP',    id: 'menu-whatsapp', isWhatsApp: true },
         ].filter(item => {
           if (item.id === 'menu-configuracion') return usuarioActivo.rol === 'Administrador'
           if (item.id === 'menu-operadores') return usuarioActivo.rol === 'Administrador' || usuarioActivo.rol === 'Supervisor'
@@ -850,11 +849,7 @@ export default function ScorpionDashboard() {
                   setMostrarMenuReportes(false)
                 }
               }}
-              className={`px-4 py-1 text-[11px] font-bold text-white tracking-wider whitespace-nowrap border-r border-black/35 cursor-pointer transition-colors ${
-                item.isWhatsApp
-                  ? 'bg-[#25D366] hover:bg-[#20ba5a] active:bg-[#128C7E]'
-                  : 'hover:bg-[#a00000] active:bg-[#700000]'
-              }`}
+              className="px-4 py-1 text-[11px] font-bold text-white tracking-wider whitespace-nowrap border-r border-black/35 cursor-pointer transition-colors hover:bg-[#a00000] active:bg-[#700000]"
               style={{ fontFamily: "'Arial', sans-serif", paddingLeft: '16px', paddingRight: '16px', paddingTop: '4px', paddingBottom: '4px' }}
             >
               {item.label}
