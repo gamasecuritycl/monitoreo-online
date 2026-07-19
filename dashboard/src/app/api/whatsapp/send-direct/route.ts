@@ -32,7 +32,7 @@ export async function POST(req: Request) {
       })
       const openwaData = await openwaRes.json()
       if (openwaData?.ok) {
-        return NextResponse.json({ ok: true, proveedor: 'openwa_local_http' })
+        return NextResponse.json({ ok: true, proveedor: 'whatsapp_corporativo_local' })
       }
     } catch {}
 
@@ -45,7 +45,7 @@ export async function POST(req: Request) {
         payload: { phone: telLimpio, text: texto, timestamp: Date.now() }
       })
 
-      // Registrar también en conversaciones_whatsapp
+      // Registrar en conversaciones_whatsapp para seguimiento del chat
       await supabase.from('conversaciones_whatsapp').insert({
         numero: telLimpio,
         mensaje_enviado: texto,
@@ -53,25 +53,10 @@ export async function POST(req: Request) {
         created_at: new Date().toISOString()
       }).select()
 
-    } catch (err) {
+      return NextResponse.json({ ok: true, proveedor: 'whatsapp_corporativo_realtime' })
+    } catch (err: any) {
       console.warn('[WHATSAPP BROADCAST ERROR]:', err)
-    }
-
-    // 3. Gateway de Respaldo Garantizado (CallMeBot) para asegurar entrega inmediata 100%
-    try {
-      const params = new URLSearchParams({
-        phone: telLimpio,
-        text: texto,
-        apikey: CALLMEBOT_APIKEY
-      })
-
-      const callmeRes = await fetch(`${CALLMEBOT_API}?${params.toString()}`, { signal: AbortSignal.timeout(4000) })
-      const callmeData = await callmeRes.text()
-      const ok = callmeRes.ok && (callmeData.includes('Message queued') || callmeData.includes('success'))
-
-      return NextResponse.json({ ok: true, proveedor: 'whatsapp_garantizado', debug: callmeData.slice(0, 100) })
-    } catch {
-      return NextResponse.json({ ok: true, proveedor: 'whatsapp_realtime_broadcast' })
+      return NextResponse.json({ ok: false, error: 'Error transmitiendo por canal de WhatsApp oficial' }, { status: 500 })
     }
   } catch (err: any) {
     return NextResponse.json({ ok: false, error: err.message }, { status: 500 })
