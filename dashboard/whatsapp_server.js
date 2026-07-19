@@ -137,21 +137,34 @@ function iniciarWhatsAppWeb() {
   client.initialize()
 }
 
+function normalizarNumeroWhatsApp(phone) {
+  if (!phone) return ''
+  let digits = phone.toString().replace(/[^0-9]/g, '')
+  if (digits.length === 9 && digits.startsWith('9')) {
+    digits = '56' + digits
+  } else if (digits.length === 8) {
+    digits = '569' + digits
+  }
+  return digits.endsWith('@c.us') ? digits : `${digits}@c.us`
+}
+
 // Despacho de Mensajes
 async function despacharMensaje(phone, text) {
-  const telLimpio = phone.replace(/[^0-9]/g, '')
-  const formattedPhone = telLimpio.includes('@c.us') ? telLimpio : `${telLimpio}@c.us`
+  const formattedPhone = normalizarNumeroWhatsApp(phone)
+  const telLimpio = formattedPhone.replace('@c.us', '')
 
-  console.log(`📤 [ENVIANDO] A: ${telLimpio} -> "${text.slice(0, 35)}..."`)
+  console.log(`📤 [ENVIANDO WHATSAPP OFICIAL] A: ${formattedPhone} -> "${text.slice(0, 35)}..."`)
 
   if (clientWA) {
     try {
       await clientWA.sendMessage(formattedPhone, text)
-      console.log(`✅ [ENTREGADO] Mensaje enviado a ${telLimpio}`)
+      console.log(`✅ [ENTREGADO EN LÍNEA VIA WHATSAPP-WEB] Mensaje enviado con éxito a ${formattedPhone}`)
       return true
     } catch (err) {
-      console.error('❌ [ERROR ENVÍO]:', err.message)
+      console.error('❌ [ERROR ENVÍO WHATSAPP-WEB]:', err.message)
     }
+  } else {
+    console.warn('⚠️ [CLIENTE NO CONECTADO] WhatsApp Web aún no ha iniciado sesión.')
   }
 
   return true

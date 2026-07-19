@@ -15,7 +15,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: 'Faltan parámetros de envío' }, { status: 400 })
     }
 
-    const telLimpio = telefono.replace(/[^0-9]/g, '')
+    let telLimpio = telefono.replace(/[^0-9]/g, '')
+    if (telLimpio.length === 9 && telLimpio.startsWith('9')) {
+      telLimpio = '56' + telLimpio
+    } else if (telLimpio.length === 8) {
+      telLimpio = '569' + telLimpio
+    }
 
     // 1. Intentar HTTP directo si está en la misma red local (puerto 3015)
     try {

@@ -300,8 +300,8 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
   }
   const eliminarContacto = (i: number) => setContactos(contactos.filter((_, idx) => idx !== i))
 
-  // Función para enviar mensaje manual por WhatsApp con pre-texto obligatorio
-  const enviarMensajeManual = async () => {
+  // Función para enviar mensaje manual por WhatsApp (Notificación o Chat Directo)
+  const enviarMensajeManual = async (esChatDirecto: boolean = false) => {
     if (!clienteSeleccionado) {
       alert('Por favor seleccione un abonado en la lista izquierda primero.')
       return
@@ -311,26 +311,33 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
       return
     }
 
-    const telLimpio = telefonoEnvio.replace(/[^0-9]/g, '')
-    if (!telLimpio) {
-      alert('Debe ingresar un teléfono válido.')
+    let telLimpio = telefonoEnvio.replace(/[^0-9]/g, '')
+    if (telLimpio.length === 9 && telLimpio.startsWith('9')) {
+      telLimpio = '56' + telLimpio
+    } else if (telLimpio.length === 8) {
+      telLimpio = '569' + telLimpio
+    }
+
+    if (!telLimpio || telLimpio.length < 8) {
+      alert('Debe ingresar un teléfono válido (ej: +56991016912).')
       return
     }
 
-    const preTexto = 'GAMA SEGURIDAD INFORMA: '
     let mensajeFinal = textoMensaje.trim()
     if (!mensajeFinal) {
       alert('Ingrese el cuerpo del mensaje antes de enviar.')
       return
     }
 
-    if (!mensajeFinal.toUpperCase().startsWith('GAMA SEGURIDAD INFORMA:')) {
-      mensajeFinal = `${preTexto}${mensajeFinal}`
-    }
-
-    const notaNoResponder = '\n\n🚫 *Por favor, NO responder a este mensaje. Es una notificación automática.*'
-    if (!mensajeFinal.includes('NO responder')) {
-      mensajeFinal = `${mensajeFinal}${notaNoResponder}`
+    if (!esChatDirecto) {
+      const preTexto = 'GAMA SEGURIDAD INFORMA: '
+      if (!mensajeFinal.toUpperCase().startsWith('GAMA SEGURIDAD INFORMA:')) {
+        mensajeFinal = `${preTexto}${mensajeFinal}`
+      }
+      const notaNoResponder = '\n\n🚫 *Por favor, NO responder a este mensaje. Es una notificación automática.*'
+      if (!mensajeFinal.includes('NO responder')) {
+        mensajeFinal = `${mensajeFinal}${notaNoResponder}`
+      }
     }
 
     setEnviandoManual(true)
@@ -586,24 +593,29 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
                       />
                     </div>
 
-                    {/* Botón de Enviar e Ingesta Automática */}
-                    <div className="flex items-center justify-between pt-1 border-t border-gray-400">
-                      <span className="text-[10px] font-bold text-blue-900">{mensajeStatus}</span>
+                    {/* Botones de Enviar: Notificación Automática o Responder / Chat Directo */}
+                    <div className="flex items-center justify-between pt-1 border-t border-gray-400 gap-2">
+                      <span className="text-[10px] font-bold text-blue-900 truncate max-w-[140px]">{mensajeStatus}</span>
                       
-                      <button
-                        onClick={enviarMensajeManual}
-                        disabled={enviandoManual || !telefonoEnvio || !textoMensaje}
-                        className="bg-[#25D366] text-white font-bold text-xs px-4 py-1.5 rounded border border-green-700 hover:bg-[#20ba5a] active:bg-[#128C7E] disabled:opacity-50 cursor-pointer flex items-center gap-1.5 shadow"
-                      >
-                        {enviandoManual ? (
-                          <span>⌛ Enviando...</span>
-                        ) : (
-                          <>
-                            <span>💬</span>
-                            <span>ENVIAR NOTIFICACIÓN WHATSAPP</span>
-                          </>
-                        )}
-                      </button>
+                      <div className="flex gap-1.5 shrink-0">
+                        <button
+                          onClick={() => enviarMensajeManual(false)}
+                          disabled={enviandoManual || !telefonoEnvio || !textoMensaje}
+                          className="bg-blue-800 text-white font-bold text-[10px] px-2.5 py-1.5 rounded border border-blue-900 hover:bg-blue-900 active:bg-blue-950 disabled:opacity-50 cursor-pointer flex items-center gap-1 shadow"
+                          title="Envía con la cabecera fija Gama Seguridad Informa"
+                        >
+                          {enviandoManual ? <span>⌛ Enviando...</span> : <span>📢 NOTIFICACIÓN OFICIAL</span>}
+                        </button>
+
+                        <button
+                          onClick={() => enviarMensajeManual(true)}
+                          disabled={enviandoManual || !telefonoEnvio || !textoMensaje}
+                          className="bg-[#25D366] text-white font-bold text-[10px] px-3 py-1.5 rounded border border-green-700 hover:bg-[#20ba5a] active:bg-[#128C7E] disabled:opacity-50 cursor-pointer flex items-center gap-1 shadow"
+                          title="Envía respuesta libre en vivo directamente al chat del cliente"
+                        >
+                          {enviandoManual ? <span>⌛ Enviando...</span> : <span>💬 RESPONDER A CLIENTE</span>}
+                        </button>
+                      </div>
                     </div>
 
                   </div>
