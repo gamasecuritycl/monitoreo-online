@@ -79,9 +79,8 @@ async function iniciarMotorWhatsApp() {
       authTimeout: 0,
       blockCrashLogs: true,
       disableSpins: true,
-      headless: true,
-      logConsole: false,
-      popup: false,
+      headless: false,
+      popup: true,
       qrTimeout: 0,
       useChrome: true
     }
