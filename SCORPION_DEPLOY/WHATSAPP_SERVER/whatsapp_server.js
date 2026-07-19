@@ -106,20 +106,48 @@ function normalizarJID(phone) {
 }
 
 // ──────────────────────────────────────────────
-//  HEARTBEAT: detectar conexión zombi
+//  HEARTBEAT: detectar conexión zombi y forzar reinicio (Watchdog Nuclear)
 // ──────────────────────────────────────────────
+let watchdogFailures = 0
+
 function iniciarHeartbeat() {
   detenerHeartbeat()
+  watchdogFailures = 0
   heartbeatTimer = setInterval(async () => {
-    if (!sock || !isReady) return
+    if (!sock) return
+    
+    // Si la cola crece demasiado, el socket está bloqueado/congelado. Forzar autoreinicio.
+    if (messageQueue.length > 20) {
+      log(`🚨 WATCHDOG: Cola saturada con ${messageQueue.length} mensajes. Reiniciando servidor...`, 'ERROR')
+      process.exit(1)
+    }
+
+    if (!isReady) return
+
     try {
       // Verificar que la sesión sigue viva consultando el estado
       const state = await Promise.race([
         sock.query({ tag: 'iq', attrs: { to: '@s.whatsapp.net', type: 'get', xmlns: 'w:p' }, content: [] }),
-        new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 10_000))
+        new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 15_000))
       ]).catch(() => null)
-      // Si falla silenciosamente no hacemos nada, baileys lo detectará
-    } catch {}
+
+      if (!state) {
+        watchdogFailures++
+        log(`⚠️  WATCHDOG: Chequeo de conexión fallido (${watchdogFailures}/4)`, 'WARN')
+        if (watchdogFailures >= 4) {
+          log('🚨 WATCHDOG: Conexión congelada detectada por 120s. Forzando reinicio...', 'ERROR')
+          process.exit(1)
+        }
+      } else {
+        watchdogFailures = 0
+      }
+    } catch {
+      watchdogFailures++
+      if (watchdogFailures >= 4) {
+        log('🚨 WATCHDOG: Conexión en error detectada por 120s. Forzando reinicio...', 'ERROR')
+        process.exit(1)
+      }
+    }
   }, HEARTBEAT_MS)
 }
 
