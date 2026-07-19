@@ -109,20 +109,35 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
     }
   }
 
-  // Agrupar chats únicos por número de teléfono
+  // Agrupar abonados del sistema y chats únicos por número de teléfono
   const chatsMap = new Map<string, { numero: string; ultimoMensaje: string; hora: string; nombreAbonado?: string }>()
-  todosLosChats.forEach((item) => {
-    const num = item.numero || item.telefono
-    if (!num) return
-    if (!chatsMap.has(num)) {
-      let nom = item.cuenta ? (clientesMap[item.cuenta]?.nombre || `Abonado ${item.cuenta}`) : undefined
-      chatsMap.set(num, {
-        numero: num,
-        ultimoMensaje: item.respuesta_recibida || item.respuesta_cliente || item.mensaje_enviado || '',
-        hora: new Date(item.created_at).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }),
-        nombreAbonado: nom
+
+  // 1. Agregar abonados registrados de la central
+  Object.entries(clientesMap).forEach(([cuenta, cliente]) => {
+    const telRaw = cliente.t1 || cliente.telefono1 || cliente.telefono || cliente.t2 || ''
+    const tel = telRaw.replace(/[^0-9]/g, '')
+    if (tel && tel.length >= 8) {
+      chatsMap.set(tel, {
+        numero: tel,
+        ultimoMensaje: `Contacto registrado`,
+        hora: 'Gama',
+        nombreAbonado: cliente.nombre ? `${cuenta} - ${cliente.nombre}` : `Abonado ${cuenta}`
       })
     }
+  })
+
+  // 2. Actualizar con mensajes de chat reales en tiempo real
+  todosLosChats.forEach((item) => {
+    const num = (item.numero || item.telefono || '').replace(/[^0-9]/g, '')
+    if (!num) return
+    const prevNom = chatsMap.get(num)?.nombreAbonado
+    const nom = prevNom || (item.cuenta ? `${item.cuenta} - ${clientesMap[item.cuenta]?.nombre || ''}` : `+${num}`)
+    chatsMap.set(num, {
+      numero: num,
+      ultimoMensaje: item.respuesta_recibida || item.respuesta_cliente || item.mensaje_enviado || '',
+      hora: new Date(item.created_at).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }),
+      nombreAbonado: nom
+    })
   })
 
   const listaChatsGlobales = Array.from(chatsMap.values()).filter((c) => {
