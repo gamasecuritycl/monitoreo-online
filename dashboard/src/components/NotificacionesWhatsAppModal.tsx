@@ -51,6 +51,7 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
   const [notificarVideo, setNotificarVideo] = useState(false)
 
   // Estados del Panel de Envíos Manuales & Chat
+  const [iframeSrc, setIframeSrc] = useState('http://localhost:3015')
   const [telefonoEnvio, setTelefonoEnvio] = useState('')
   const [textoMensaje, setTextoMensaje] = useState('')
   const [enviandoManual, setEnviandoManual] = useState(false)
@@ -430,40 +431,37 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
         {/* Contenido Principal */}
         <div className="flex-1 overflow-hidden">
           
-          {/* ═══ TAB 1: WHATSAPP WEB OFICIAL (CHAT LIBRE COMPLETO) ═══ */}
+          {/* ═══ TAB 1: WHATSAPP WEB OFICIAL (EMBEBIDO AHÍ MISMO EN LA VENTANA) ═══ */}
           {activeTab === 'web' && (
-            <div className="p-4 bg-[#111b21] text-white flex flex-col h-[520px] items-center justify-center font-sans">
-              <div className="bg-[#202c33] border border-[#2a3942] rounded-xl p-6 max-w-xl text-center shadow-2xl flex flex-col items-center">
-                <div className="w-20 h-20 rounded-full bg-[#00a884] flex items-center justify-center text-4xl mb-4 shadow-lg animate-pulse">
-                  💬
+            <div className="w-full h-[520px] bg-[#111b21] flex flex-col relative overflow-hidden">
+              <div className="p-2 bg-[#202c33] border-b border-[#222d34] flex justify-between items-center text-xs shrink-0">
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#00a884] animate-pulse"></span>
+                  <span className="font-bold text-white font-mono text-[11px]">WHATSAPP WEB EMBEBIDO DENTRO DEL MODAL (MISMA SESIÓN DE PC)</span>
                 </div>
-                <h2 className="font-bold text-lg text-white mb-2 tracking-wide">GAMA SEGURIDAD - WHATSAPP WEB OFICIAL</h2>
-                <p className="text-xs text-[#8696a0] mb-6 leading-relaxed">
-                  Abre la aplicación oficial de WhatsApp Web en una pestaña dedicada del navegador para interactuar libremente con todos tus contactos corporativos, ver imágenes, audios e historial sin restricciones.
-                </p>
-
-                <div className="flex flex-col gap-3 w-full max-w-md">
+                <div className="flex items-center gap-2 font-mono">
                   <button
-                    onClick={() => window.open('https://web.whatsapp.com', '_blank')}
-                    className="bg-[#00a884] hover:bg-[#029676] text-black font-bold text-sm py-3 px-6 rounded-lg shadow-lg flex items-center justify-center gap-2 cursor-pointer transition-all transform hover:scale-105"
+                    onClick={() => setIframeSrc('http://localhost:3015')}
+                    className={`px-2.5 py-0.5 rounded text-[10px] font-bold cursor-pointer transition-colors ${iframeSrc.includes('3015') ? 'bg-[#00a884] text-black' : 'bg-[#111b21] text-gray-300 hover:bg-[#2a3942]'}`}
                   >
-                    <span>🌐</span>
-                    <span>ABRIR WHATSAPP WEB COMPLETO EN PESTAÑA DEDICADA</span>
+                    Servidor Central Local (3015)
                   </button>
-
                   <button
-                    onClick={() => window.open('http://localhost:3015', '_blank')}
-                    className="bg-[#2a3942] hover:bg-[#374248] text-white font-bold text-xs py-2 px-4 rounded-lg border border-gray-600 flex items-center justify-center gap-2 cursor-pointer"
+                    onClick={() => setIframeSrc('https://web.whatsapp.com')}
+                    className={`px-2.5 py-0.5 rounded text-[10px] font-bold cursor-pointer transition-colors ${iframeSrc.includes('whatsapp.com') ? 'bg-[#00a884] text-black' : 'bg-[#111b21] text-gray-300 hover:bg-[#2a3942]'}`}
                   >
-                    <span>🖥️</span>
-                    <span>VER SERVIDOR LOCAL DE LA CENTRAL (HTTP 3015)</span>
+                    web.whatsapp.com
                   </button>
                 </div>
-
-                <div className="mt-6 pt-4 border-t border-[#2a3942] w-full text-[10px] text-[#8696a0] flex justify-between font-mono">
-                  <span>ESTADO: 🟢 CONECTADO</span>
-                  <span>SESIÓN: GAMA SEGURIDAD CENTRAL</span>
-                </div>
+              </div>
+              
+              <div className="flex-1 w-full h-full bg-[#0b141a] relative">
+                <iframe
+                  src={iframeSrc}
+                  className="w-full h-full border-0"
+                  title="WhatsApp Web Oficial Embebido"
+                  allow="camera; microphone; clipboard-read; clipboard-write;"
+                />
               </div>
             </div>
           )}
