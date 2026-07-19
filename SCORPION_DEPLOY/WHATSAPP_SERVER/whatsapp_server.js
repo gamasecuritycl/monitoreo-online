@@ -156,6 +156,72 @@ function detenerHeartbeat() {
 }
 
 // ──────────────────────────────────────────────
+//  PERSISTENCIA DE SESIÓN EN SUPABASE (Serverless-ready)
+// ──────────────────────────────────────────────
+async function loadSessionFromSupabase() {
+  try {
+    log('📥 Buscando credenciales de sesión en Supabase...')
+    const { data, error } = await supabase
+      .from('eventos_monitoreo')
+      .select('nombre_abonado')
+      .eq('cuenta', 'CONFIG_WHATSAPP_SESSION')
+      .limit(1)
+    
+    if (error || !data || data.length === 0) {
+      log('ℹ️  No se encontraron credenciales previas en Supabase. Se iniciará sesión limpia.')
+      return
+    }
+
+    const sessionData = JSON.parse(data[0].nombre_abonado || '{}')
+    if (!fs.existsSync(SESSION_DIR)) {
+      fs.mkdirSync(SESSION_DIR, { recursive: true })
+    }
+
+    // Reconstruir archivos de sesión
+    Object.entries(sessionData).forEach(([fileName, content]) => {
+      const filePath = path.join(SESSION_DIR, fileName)
+      fs.writeFileSync(filePath, JSON.stringify(content))
+    })
+    log('✅ Credenciales de sesión descargadas y reconstruidas localmente.')
+  } catch (err) {
+    log(`⚠️  Error al cargar credenciales de Supabase: ${err.message}`, 'WARN')
+  }
+}
+
+async function saveSessionToSupabase() {
+  try {
+    if (!fs.existsSync(SESSION_DIR)) return
+
+    const files = fs.readdirSync(SESSION_DIR)
+    const sessionData = {}
+
+    files.forEach(file => {
+      // Guardamos creds.json y archivos de clave criptográfica (pre-keys, etc)
+      if (file.endsWith('.json')) {
+        try {
+          const content = fs.readFileSync(path.join(SESSION_DIR, file), 'utf-8')
+          sessionData[file] = JSON.parse(content)
+        } catch {}
+      }
+    })
+
+    if (Object.keys(sessionData).length === 0) return
+
+    await supabase
+      .from('eventos_monitoreo')
+      .upsert({
+        cuenta: 'CONFIG_WHATSAPP_SESSION',
+        nombre_abonado: JSON.stringify(sessionData),
+        evento: 'CONFIG_SESSION',
+        fecha_hora: new Date().toISOString()
+      }, { onConflict: 'cuenta' })
+
+  } catch (err) {
+    log(`⚠️  Error al sincronizar credenciales a Supabase: ${err.message}`, 'WARN')
+  }
+}
+
+// ──────────────────────────────────────────────
 //  CONEXIÓN PRINCIPAL
 // ──────────────────────────────────────────────
 async function conectar() {
@@ -164,6 +230,9 @@ async function conectar() {
   detenerHeartbeat()
 
   try {
+    // 1. Descargar credenciales desde Supabase si existen
+    await loadSessionFromSupabase()
+
     log(`🔌 Iniciando conexión Baileys... (intento ${retryCount + 1})`)
 
     const { state, saveCreds } = await useMultiFileAuthState(SESSION_DIR)
@@ -185,8 +254,11 @@ async function conectar() {
       browser:                  ['Gama Seguridad', 'Chrome', '124.0.0'],
     })
 
-    // ── Guardar credenciales ──
-    sock.ev.on('creds.update', saveCreds)
+    // ── Guardar credenciales y sincronizar a Supabase ──
+    sock.ev.on('creds.update', async () => {
+      await saveCreds()
+      await saveSessionToSupabase()
+    })
 
     // ── Actualización de conexión ──
     sock.ev.on('connection.update', async update => {
@@ -356,15 +428,27 @@ async function enviarMensaje(phone, text) {
 // ──────────────────────────────────────────────
 //  BORRAR SESIÓN
 // ──────────────────────────────────────────────
-function borrarSesion() {
+async function borrarSesion() {
   try {
     if (fs.existsSync(SESSION_DIR)) {
       fs.rmSync(SESSION_DIR, { recursive: true, force: true })
-      log(`🗑️  Sesión borrada: ${SESSION_DIR}`)
+      log(`🗑️  Sesión borrada localmente: ${SESSION_DIR}`)
     }
   } catch (err) {
-    log(`Error borrando sesión: ${err.message}`, 'WARN')
+    log(`Error borrando sesión local: ${err.message}`, 'WARN')
   }
+  
+  // Borrar también de Supabase
+  try {
+    await supabase
+      .from('eventos_monitoreo')
+      .delete()
+      .eq('cuenta', 'CONFIG_WHATSAPP_SESSION')
+    log('🗑️  Sesión borrada en Supabase.')
+  } catch (err) {
+    log(`Error borrando sesión en Supabase: ${err.message}`, 'WARN')
+  }
+
   currentQR      = null
   currentQRImage = null
   isReady        = false
