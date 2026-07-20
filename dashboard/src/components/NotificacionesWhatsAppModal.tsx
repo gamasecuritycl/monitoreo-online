@@ -116,10 +116,17 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
   const [todosLosChats, setTodosLosChats] = useState<any[]>([])
   const [textoChat, setTextoChat] = useState('')
   const [enviandoChat, setEnviandoChat] = useState(false)
-  const [modoSidebar, setModoSidebar] = useState<'abonados' | 'grupos'>('abonados')
+  const [modoSidebar, setModoSidebar] = useState<'recientes' | 'abonados' | 'grupos'>('recientes')
   const [cuentasExpandidas, setCuentasExpandidas] = useState<Record<string, boolean>>({})
   const [whatsappGrupos, setWhatsappGrupos] = useState<any[]>([])
   const chatEndRef = useRef<HTMLDivElement>(null)
+
+  // Solicitar permiso de notificaciones del navegador al montar
+  useEffect(() => {
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission().catch(() => {})
+    }
+  }, [])
 
   // Asignar chatActivo inicial si viene por prop
   useEffect(() => {
@@ -270,7 +277,25 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
     const sub = supabase
       .channel('chat_global_v3')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'conversaciones_whatsapp' }, (payload: any) => {
-        if (payload.new) setTodosLosChats(prev => [payload.new, ...prev])
+        if (payload.new) {
+          setTodosLosChats(prev => [payload.new, ...prev])
+
+          // Si es un mensaje entrante de un cliente, emitir alerta de sonido y notificación de escritorio
+          if (payload.new.respuesta_recibida || payload.new.respuesta_cliente || payload.new.tipo_evento === 'mensaje_entrante' || payload.new.estado === 'requiere_atencion_humana') {
+            try {
+              const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3')
+              audio.play().catch(() => {})
+            } catch (e) {}
+
+            if ('Notification' in window && Notification.permission === 'granted') {
+              const txt = payload.new.respuesta_recibida || payload.new.respuesta_cliente || payload.new.mensaje_enviado || 'Nuevo mensaje entrante'
+              new Notification('🛡️ GAMA SEGURIDAD - WhatsApp Entrante', {
+                body: `De: ${payload.new.numero}\n"${txt.slice(0, 70)}"`,
+                icon: '/favicon.ico'
+              })
+            }
+          }
+        }
       })
       .subscribe()
 
@@ -332,6 +357,62 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
     if (!busquedaChat.trim()) return true
     const q = busquedaChat.toLowerCase()
     return a.cuenta.toLowerCase().includes(q) || a.nombre.toLowerCase().includes(q) || a.contactos.some(c => c.nombre.toLowerCase().includes(q) || c.telefono.includes(q))
+  })
+
+  // ── 📥 BANDEJA DE ENTRADA RECIENTE (Agrupación dinámica por número) ──
+  const recientesMap = new Map<string, {
+    numero: string
+    nombreDisplay: string
+    cuenta?: string
+    ultimoMsg: string
+    hora: string
+    esEntrante: boolean
+    requiereHumano: boolean
+  }>()
+
+  todosLosChats.forEach(m => {
+    if (!m.numero) return
+    const numClean = m.numero.replace(/[^0-9]/g, '')
+    if (!numClean || numClean.length < 6 || m.numero.includes('g.us')) return
+
+    if (!recientesMap.has(numClean)) {
+      let ctaFound = m.cuenta && m.cuenta !== 'CENTRAL' && m.cuenta !== 'MANUAL' && m.cuenta !== 'GRUPO' ? m.cuenta : ''
+      let nombreDisplay = `📱 ${formatearNumeroDisplay(numClean)}`
+
+      if (!ctaFound) {
+        for (const [cta, datos] of Object.entries(clientesMap)) {
+          const str = JSON.stringify(datos)
+          if (str.includes(numClean)) {
+            ctaFound = cta
+            nombreDisplay = `[${cta}] ${datos.nombre || 'Abonado'}`
+            break
+          }
+        }
+      } else if (clientesMap[ctaFound]) {
+        nombreDisplay = `[${ctaFound}] ${clientesMap[ctaFound].nombre || 'Abonado'}`
+      }
+
+      const txt = m.respuesta_recibida || m.respuesta_cliente || m.mensaje_enviado || 'Sin texto'
+      const hora = m.created_at ? new Date(m.created_at).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }) : ''
+      const esEntrante = !!(m.respuesta_recibida || m.respuesta_cliente || m.tipo_evento === 'mensaje_entrante')
+      const requiereHumano = m.estado === 'requiere_atencion_humana' || m.tipo_evento === 'solicitud_humana'
+
+      recientesMap.set(numClean, {
+        numero: numClean,
+        nombreDisplay,
+        cuenta: ctaFound,
+        ultimoMsg: txt,
+        hora,
+        esEntrante,
+        requiereHumano
+      })
+    }
+  })
+
+  const listaRecientes = Array.from(recientesMap.values()).filter(r => {
+    if (!busquedaChat.trim()) return true
+    const q = busquedaChat.toLowerCase()
+    return r.numero.includes(q) || r.nombreDisplay.toLowerCase().includes(q) || r.ultimoMsg.toLowerCase().includes(q)
   })
 
   // ── Grupos de WhatsApp ──
@@ -863,11 +944,21 @@ Responde directamente el mensaje para WhatsApp al cliente, en un tono 100% verí
                   </span>
                 </div>
 
-                {/* Selector de Modo: Abonados vs Grupos */}
+                {/* Selector de Modo Sidebar: Recientes vs Abonados vs Grupos */}
                 <div className="flex border-b border-gray-300 bg-[#f0f2f5] shrink-0">
                   <button
+                    onClick={() => setModoSidebar('recientes')}
+                    className={`flex-1 py-2 text-[11px] font-bold transition-all cursor-pointer border-b-2 ${
+                      modoSidebar === 'recientes'
+                        ? 'border-[#00a884] text-[#00a884] bg-white shadow-sm'
+                        : 'border-transparent text-[#54656f] hover:text-[#111b21]'
+                    }`}
+                  >
+                    📥 Recientes ({listaRecientes.length})
+                  </button>
+                  <button
                     onClick={() => setModoSidebar('abonados')}
-                    className={`flex-1 py-2 text-xs font-bold transition-all cursor-pointer border-b-2 ${
+                    className={`flex-1 py-2 text-[11px] font-bold transition-all cursor-pointer border-b-2 ${
                       modoSidebar === 'abonados'
                         ? 'border-[#00a884] text-[#00a884] bg-white shadow-sm'
                         : 'border-transparent text-[#54656f] hover:text-[#111b21]'
@@ -877,7 +968,7 @@ Responde directamente el mensaje para WhatsApp al cliente, en un tono 100% verí
                   </button>
                   <button
                     onClick={() => setModoSidebar('grupos')}
-                    className={`flex-1 py-2 text-xs font-bold transition-all cursor-pointer border-b-2 ${
+                    className={`flex-1 py-2 text-[11px] font-bold transition-all cursor-pointer border-b-2 ${
                       modoSidebar === 'grupos'
                         ? 'border-[#00a884] text-[#00a884] bg-white shadow-sm'
                         : 'border-transparent text-[#54656f] hover:text-[#111b21]'
@@ -891,15 +982,62 @@ Responde directamente el mensaje para WhatsApp al cliente, en un tono 100% verí
                 <div className="p-2.5 bg-[#f0f2f5] border-b border-gray-300 shrink-0">
                   <input
                     type="text"
-                    placeholder={modoSidebar === 'abonados' ? "🔍 Buscar abonado o número..." : "🔍 Buscar grupo de WhatsApp..."}
+                    placeholder={modoSidebar === 'recientes' ? "🔍 Buscar chats recientes..." : modoSidebar === 'abonados' ? "🔍 Buscar abonado o número..." : "🔍 Buscar grupo de WhatsApp..."}
                     className="w-full bg-white text-[#111b21] border border-gray-300 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-[#00a884] shadow-sm"
                     value={busquedaChat}
                     onChange={e => setBusquedaChat(e.target.value)}
                   />
                 </div>
 
-                {/* Lista de chats (Modo Abonados con Acordeón) */}
-                {modoSidebar === 'abonados' ? (
+                {/* Lista de chats */}
+                {modoSidebar === 'recientes' ? (
+                  /* Modo Bandeja de Entrada Recientes */
+                  <div className="flex-1 overflow-y-auto divide-y divide-gray-200 bg-white">
+                    {listaRecientes.length === 0 && (
+                      <div className="p-4 text-center text-[#54656f] text-xs">No hay conversaciones recientes en la bandeja</div>
+                    )}
+                    {listaRecientes.map(chat => {
+                      const isSelected = chatActivo === chat.numero
+                      return (
+                        <div
+                          key={chat.numero}
+                          onClick={() => {
+                            setChatActivo(chat.numero)
+                            if (chat.cuenta && clientesMap[chat.cuenta]) {
+                              setClienteSeleccionado({ cuenta: chat.cuenta, nombre: clientesMap[chat.cuenta].nombre || '' })
+                            }
+                          }}
+                          className={`p-3 flex items-center justify-between cursor-pointer hover:bg-[#f5f6f6] transition-colors ${
+                            isSelected ? 'bg-[#e9edef] border-l-4 border-l-[#00a884]' : ''
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                            <div className={`w-9 h-9 rounded-full text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-sm ${
+                              chat.requiereHumano ? 'bg-red-600 animate-pulse' : 'bg-[#00a884]'
+                            }`}>
+                              {chat.requiereHumano ? '⚠️' : '📱'}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex justify-between items-baseline mb-0.5">
+                                <span className="font-bold text-xs text-[#111b21] truncate max-w-[130px]">
+                                  {chat.nombreDisplay}
+                                </span>
+                                <span className="text-[9px] text-[#54656f] shrink-0 ml-1 font-mono">{chat.hora}</span>
+                              </div>
+                              <div className="text-[10px] text-[#54656f] truncate font-sans">
+                                {chat.requiereHumano ? (
+                                  <span className="text-red-600 font-bold">⚠️ REQUIERE OPERADOR HUMANO</span>
+                                ) : (
+                                  chat.ultimoMsg
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                ) : modoSidebar === 'abonados' ? (
                   <div className="flex-1 overflow-y-auto divide-y divide-gray-200 bg-white">
                     {listaAbonadosAgrupada.length === 0 && (
                       <div className="p-4 text-center text-[#54656f] text-xs">Sin abonados registrados</div>

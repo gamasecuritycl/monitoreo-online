@@ -526,8 +526,11 @@ async function conectar() {
         }
 
         // 🤖 BOT AUTO-RESPONDER 24/7: Si el mensaje no viene de mí, evaluar respuesta automática
-        if (!msg.key.fromMe && body) {
+        if (!msg.key.fromMe && body && !isGroup) {
           try {
+            let autoRespEnabled = true
+            let promptText = ''
+
             const { data: configRow } = await supabase
               .from('eventos_monitoreo')
               .select('nombre_abonado')
@@ -536,13 +539,19 @@ async function conectar() {
 
             if (configRow?.nombre_abonado) {
               const config = JSON.parse(configRow.nombre_abonado)
-              if (config.autoResponder && !isGroup) {
-                log(`🤖 [BOT IA 24/7] Generando respuesta automática para ${nombre} (+${numero})...`)
-                responderConIA(sock, rawJid, numero, body, config.prompt, nombre)
-              }
+              if (config.autoResponder === false) autoRespEnabled = false
+              if (config.prompt) promptText = config.prompt
+            }
+
+            if (autoRespEnabled) {
+              log(`🤖 [BOT IA 24/7] Procesando mensaje de ${nombre} (+${numero}): "${body}"`)
+              responderConIA(sock, rawJid, numero, body, promptText, nombre)
+            } else {
+              log(`ℹ️ [BOT IA 24/7] Auto-Responder desactivado en configuración.`)
             }
           } catch (e) {
             log(`⚠️ Error evaluando Auto-Responder IA: ${e.message}`, 'WARN')
+            responderConIA(sock, rawJid, numero, body, '', nombre)
           }
         }
       }
@@ -993,7 +1002,16 @@ async function responderConIA(sock, jid, numero, bodyCliente, promptMaestro, nom
     }
 
     // Saludo inicial o palabra de inicio: Entregar Menú Principal
-    else if (textClean === 'hola' || textClean === 'buenas' || textClean === 'menu' || textClean === 'inicio' || textClean === 'ayuda') {
+    else if (
+      textClean === 'hola' ||
+      textClean === 'buenas' ||
+      textClean.includes('hola') ||
+      textClean.includes('buenas') ||
+      textClean.includes('prueba') ||
+      textClean.includes('menu') ||
+      textClean.includes('inicio') ||
+      textClean.includes('ayuda')
+    ) {
       respuestaDirecta = `Hola, te comunicas con el Asistente Virtual de Gama Seguridad 24/7.\nPor favor responde con el NÚMERO de la opción deseada:\n\n1️⃣ 🚨 CONSULTA DE MI ALARMA Y BITÁCORA (3 DÍAS)\n2️⃣ 🛠️ SOPORTE TÉCNICO & GUÍA DE TECLADO (DSC / VETTI)\n3️⃣ 💼 CONSULTAS COMERCIALES\n4️⃣ 👤 HABLAR CON UN OPERADOR / ESPECIALISTA EN VIVO`
     }
 
