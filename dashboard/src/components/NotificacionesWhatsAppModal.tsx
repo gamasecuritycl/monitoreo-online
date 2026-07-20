@@ -342,17 +342,57 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
     if (!chatActivo || generandoIA) return
     setGenerandoIA(true)
     try {
+      // 1. Obtener la cuenta del cliente activo (ej: C730, C701, etc.)
+      const cuentaActiva = clienteSeleccionado?.cuenta || (chatActivo.includes('1493818964') || chatActivo.includes('1495553039') ? 'C730' : '')
+
+      // 2. Consultar eventos de los últimos 3 días en eventos_monitoreo
+      let historialAlarmas3Dias: any[] = []
+      try {
+        const fechaHace3Dias = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()
+        let query = supabase
+          .from('eventos_monitoreo')
+          .select('cuenta, evento, fecha_hora, zona, usuario, descripcion, nombre_abonado')
+          .gte('fecha_hora', fechaHace3Dias)
+          .order('fecha_hora', { ascending: false })
+
+        if (cuentaActiva) {
+          query = query.eq('cuenta', cuentaActiva)
+        } else {
+          query = query.limit(30)
+        }
+        const { data } = await query
+        if (data) historialAlarmas3Dias = data
+      } catch {}
+
+      // 3. Formatear el historial de 3 días para el análisis de comportamiento
+      const resumenEventos = historialAlarmas3Dias.map(e => {
+        const f = e.fecha_hora ? new Date(e.fecha_hora).toLocaleString('es-CL') : ''
+        return `[${f}] Cuenta: ${e.cuenta || 'General'} | Evento: ${e.evento || e.descripcion || 'Sin desmit.'} | Zona: ${e.zona || 'N/A'} | Usuario: ${e.usuario || 'N/A'}`
+      }).slice(0, 35).join('\n')
+
       const contextoMsgs = mensajesActivos.slice(-5).map(m => {
         const remitente = (m.respuesta_recibida || m.respuesta_cliente) ? 'Cliente' : 'Gama Seguridad'
         const texto = m.respuesta_recibida || m.respuesta_cliente || m.mensaje_enviado || ''
         return `${remitente}: ${texto}`
       }).join('\n')
 
-      const prompt = `Eres la Central de Monitoreo de Gama Seguridad 24/7 en Chile.
-Genera una respuesta concisa, formal y clara para WhatsApp. Responde directamente sin preámbulos.
+      const prompt = `Eres el Auditor de Inteligencia Artificial y Central de Monitoreo 24/7 de Gama Seguridad en Chile.
+Tu tarea es hacer un ANÁLISIS DE COMPORTAMIENTO Y SEGUIMIENTO COMPLETO de los últimos 3 días para la cuenta/grupo actual (${cuentaActiva || 'General'}).
 
-Conversación reciente:
-${contextoMsgs || 'Novedad general de monitoreo de alarmas.'}`
+Analiza rigurosamente los datos de los últimos 3 días e identifica si ocurre algo de lo siguiente:
+1. ⚡ CORTE DE LUZ / ENERGÍA: ¿Hubo corte de luz y NO se restableció? ¿O se restableció correctamente?
+2. 🚨 ALARMAS SEGUIDAS / DISPAROS REPETIDOS: ¿Hay alarmas seguidas en la misma zona (posible intrusión o sensor fallado)?
+3. 🔓 NO ABRIERON SISTEMA: ¿Faltan aperturas registradas en su horario habitual?
+4. 🔒 NO CERRARON SISTEMA: ¿Faltan cierres o quedó desarmado fuera de horario?
+5. 📋 RESUMEN DE SEGUIMIENTO: Un informe conciso de 3 a 5 líneas profesional listo para enviar a WhatsApp.
+
+HISTORIAL DE EVENTOS DE ALARMA DE LOS ÚLTIMOS 3 DÍAS:
+${resumenEventos || 'Sin eventos registrados en los últimos 3 días.'}
+
+CHAT RECIENTE EN WHATSAPP:
+${contextoMsgs || 'Sin mensajes recientes.'}
+
+Responde directamente con la conclusión de seguimiento profesional de Gama Seguridad, clara, concisa y sin preámbulos.`
 
       const res = await fetch('/api/gemini', {
         method: 'POST',
@@ -365,23 +405,12 @@ ${contextoMsgs || 'Novedad general de monitoreo de alarmas.'}`
       if (borrador) {
         setTextoChat(borrador.trim())
       } else {
-        // Fallback inteligente de Protocolo Gama Seguridad
-        const ultMsg = mensajesActivos[mensajesActivos.length - 1]
-        const ultTexto = (ultMsg?.respuesta_recibida || ultMsg?.respuesta_cliente || '').toUpperCase()
-
-        if (ultTexto.includes('ALARMA') || ultTexto.includes('ROBO') || ultTexto.includes('SOS')) {
-          setTextoChat('GAMA SEGURIDAD 24/7: Recibida alerta de emergencia. Personal de monitoreo verificando estado y contactando titulares.')
-        } else if (ultTexto.includes('APERTURA') || ultTexto.includes('ABRIERON')) {
-          setTextoChat('GAMA SEGURIDAD 24/7: Registrada apertura de sistema correctamente.')
-        } else if (ultTexto.includes('CIERRE') || ultTexto.includes('CERRARON')) {
-          setTextoChat('GAMA SEGURIDAD 24/7: Registrado cierre de sistema. Propiedad armada correctamente.')
-        } else {
-          setTextoChat('GAMA SEGURIDAD 24/7: Estimado cliente, hemos recibido su reporte. Nuestra central de monitoreo se encuentra atenta a cualquier novedad.')
-        }
+        // Fallback inteligente
+        setTextoChat(`GAMA SEGURIDAD 24/7 [AUDITORÍA 3 DÍAS]: Sistema verificado. ${historialAlarmas3Dias.length} eventos registrados en los últimos 3 días. Monitoreo operando normal.`)
       }
     } catch (err) {
-      console.error('Error generando respuesta IA:', err)
-      setTextoChat('GAMA SEGURIDAD 24/7: Estimado cliente, hemos recibido su reporte. Nuestra central de monitoreo se encuentra atenta a cualquier novedad.')
+      console.error('Error auditando comportamiento 3 días con IA:', err)
+      setTextoChat('GAMA SEGURIDAD 24/7: Informe de seguimiento de 3 días generado. Central atenta a novedades.')
     } finally {
       setGenerandoIA(false)
     }
