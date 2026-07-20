@@ -306,9 +306,25 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
   const mensajesActivos = todosLosChats
     .filter(m => {
       if (!chatActivo) return false
-      const num = (m.numero || m.telefono || '').replace('@s.whatsapp.net', '').trim()
-      const active = chatActivo.replace('@s.whatsapp.net', '').trim()
-      return num === active || num === active.replace('@g.us', '') || num + '@g.us' === active || active.includes(num) || num.includes(active)
+      const num = (m.numero || m.telefono || '').replace('@s.whatsapp.net', '').trim().toLowerCase()
+      const active = chatActivo.replace('@s.whatsapp.net', '').trim().toLowerCase()
+      const cuenta = (m.cuenta || '').trim().toLowerCase()
+      const grupoNombre = (m.nombre_grupo || '').trim().toLowerCase()
+
+      // Match exact JID or phone number
+      if (num && (num === active || num === active.replace('@g.us', '') || num + '@g.us' === active || active.includes(num) || num.includes(active))) {
+        return true
+      }
+      // Match group by name or cuenta
+      if (active.includes('@g.us') || active.includes('-')) {
+        const grupo = gruposMap.get(chatActivo)
+        if (grupo) {
+          const gNombre = grupo.nombre.toLowerCase()
+          if (grupoNombre && (grupoNombre.includes(gNombre) || gNombre.includes(grupoNombre))) return true
+          if (cuenta && (cuenta.includes(gNombre) || gNombre.includes(cuenta))) return true
+        }
+      }
+      return false
     })
     .reverse()
 
@@ -318,9 +334,22 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
     setTextoChat('')
     setEnviandoChat(true)
     try {
-      await sendMessage(chatActivo, texto)
-    } catch {}
-    setEnviandoChat(false)
+      const res = await sendMessage(chatActivo, texto)
+      if (res.ok) {
+        const nuevoMsg = {
+          id: Date.now(),
+          numero: chatActivo,
+          mensaje_enviado: texto,
+          estado: 'pendiente',
+          created_at: new Date().toISOString()
+        }
+        setTodosLosChats(prev => [nuevoMsg, ...prev])
+      }
+    } catch (err: any) {
+      console.error('Error enviando chat:', err)
+    } finally {
+      setEnviandoChat(false)
+    }
   }
 
   const toggleCuentaExpandida = (cuenta: string) => {
@@ -459,17 +488,8 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
     setEnviandoNotif(true)
     setStatusNotif('⏳ Enviando...')
     try {
-      const { error } = await supabase
-        .from('conversaciones_whatsapp')
-        .insert({
-          cuenta: clienteSeleccionado?.cuenta || 'MANUAL',
-          numero: telNorm,
-          mensaje_enviado: mensajeFinal,
-          estado: 'pendiente',
-          created_at: new Date().toISOString()
-        })
-
-      if (error) throw error
+      const res = await sendMessage(telNorm, mensajeFinal)
+      if (!res.ok) throw new Error(res.debug || 'Error enviando mensaje')
 
       const logItem: ChatLogItem = {
         id: Date.now(), cuenta: clienteSeleccionado?.cuenta || 'MANUAL', telefono: telNorm,
