@@ -524,6 +524,27 @@ async function conectar() {
         } catch (err) {
           log(`⚠️ Error guardando mensaje en Supabase: ${err.message}`, 'WARN')
         }
+
+        // 🤖 BOT AUTO-RESPONDER 24/7: Si el mensaje no viene de mí, evaluar respuesta automática
+        if (!msg.key.fromMe && body) {
+          try {
+            const { data: configRow } = await supabase
+              .from('eventos_monitoreo')
+              .select('nombre_abonado')
+              .eq('cuenta', 'CONFIG_WHATSAPP_AI_PROMPT')
+              .single()
+
+            if (configRow?.nombre_abonado) {
+              const config = JSON.parse(configRow.nombre_abonado)
+              if (config.autoResponder && !isGroup) {
+                log(`🤖 [BOT IA 24/7] Generando respuesta automática para ${nombre} (+${numero})...`)
+                responderConIA(sock, rawJid, numero, body, config.prompt, nombre)
+              }
+            }
+          } catch (e) {
+            log(`⚠️ Error evaluando Auto-Responder IA: ${e.message}`, 'WARN')
+          }
+        }
       }
     })
 
@@ -910,3 +931,156 @@ app.get('/', (req, res) => {
 log('═══════════════════════════════════════════')
 log('  GAMA SEGURIDAD - WhatsApp Server v3.0   ')
 log('═══════════════════════════════════════════')
+
+// ──────────────────────────────────────────────
+//  FUNCIÓN DE RESPUESTA AUTOMÁTICA CON GEMINI IA & MENÚ INTERACTIVO (DISPARADORES)
+// ──────────────────────────────────────────────
+async function responderConIA(sock, jid, numero, bodyCliente, promptMaestro, nombreCliente) {
+  try {
+    const textClean = bodyCliente.trim().toLowerCase()
+    let cuentaActiva = ''
+    const numLimpio = numero.replace(/[^0-9]/g, '')
+
+    // 1. Identificar abonado por coincidencia en eventos_monitoreo
+    const { data: clienteMatch } = await supabase
+      .from('eventos_monitoreo')
+      .select('cuenta')
+      .ilike('nombre_abonado', `%${numLimpio}%`)
+      .limit(1)
+
+    if (clienteMatch && clienteMatch.length > 0) {
+      cuentaActiva = clienteMatch[0].cuenta
+    }
+
+    // 2. DISPARADORES Y MENÚ INTERACTIVO POR OPCIONES (1, 2, 3, 4)
+    let respuestaDirecta = ''
+
+    // Opción 3: CONSULTAS COMERCIALES (Módulo en desarrollo)
+    if (textClean === '3' || textClean.includes('comercial') || textClean.includes('cotiza')) {
+      respuestaDirecta = `💼 *CONSULTAS COMERCIALES — GAMA SEGURIDAD 24/7*\n\nEstimado cliente, le informamos que el módulo de Consultas Comerciales se encuentra actualmente en desarrollo.\n\nSi requiere atención o cotizaciones, por favor responda con el número *4* o presione el enlace para comunicarse con un especialista.`
+    }
+
+    // Opción 4: TRANSFERENCIA A OPERADOR HUMANO (Con enlace directo de chat)
+    else if (textClean === '4' || textClean.includes('humano') || textClean.includes('operador') || textClean.includes('especialista')) {
+      respuestaDirecta = `👤 *ATENCIÓN DIRECTA CON ESPECIALISTA EN VIVO*\n\nUn especialista de nuestra Central de Monitoreo Gama Seguridad 24/7 está disponible para atenderle directamente.\n\n👉 *Presione el siguiente enlace para abrir el chat directo:* \nhttps://wa.me/56991016912`
+
+      // Marcar en Supabase para alertar al operador en la pantalla web
+      try {
+        await supabase.from('conversaciones_whatsapp').insert({
+          numero: numero,
+          tipo_evento: 'solicitud_humana',
+          estado: 'requiere_atencion_humana',
+          respuesta_recibida: '⚠️ CLIENTE SOLICITA ATENCIÓN HUMANA EN VIVO',
+          cuenta: cuentaActiva || 'ESPECIALISTA',
+          created_at: new Date().toISOString()
+        })
+      } catch (e) {}
+    }
+
+    // Opción 2A: Soporte Teclado DSC
+    else if (textClean === '2a' || textClean.includes('dsc') || textClean.includes('teclado')) {
+      respuestaDirecta = `📘 *SOPORTE TÉCNICO TECLADO DSC*\n\nPara revisar las fallas de su sistema DSC:\n1. Diríjase al teclado de su propiedad.\n2. Presione [*][2].\n3. Verifique el número de luz encendido (1: Batería baja, 2: Falta de energía AC, 3: Línea telefónica, 4: Comunicación, 5: Zona, 8: Hora).\n\nSi necesita asistencia adicional, responda *4*.`
+    }
+
+    // Opción 2B: Soporte VETTI & Click App
+    else if (textClean === '2b' || textClean.includes('vetti') || textClean.includes('click')) {
+      respuestaDirecta = `📲 *SOPORTE TÉCNICO ALARMA VETTI & CLICK APP*\n\nPara verificar su alarma VETTI:\n1. Abra la aplicación *Click App* en su smartphone.\n2. Ingrese al historial de eventos recientes.\n3. Presione el botón de *Armado Total* para reconectar.\n\nSi requiere asistencia adicional, responda *4*.`
+    }
+
+    // Opción 2: Menú Soporte Técnico
+    else if (textClean === '2' || textClean.includes('soporte') || textClean.includes('tecnico')) {
+      respuestaDirecta = `🛠️ *SOPORTE TÉCNICO GAMA SEGURIDAD 24/7*\n\nPor favor responde con la opción de tu sistema:\n\n*2A* - Teclado DSC (Diagnóstico de fallas con [*][2])\n*2B* - Alarma VETTI & Click App\n*4* - Hablar con un Especialista Técnico`
+    }
+
+    // Saludo inicial o palabra de inicio: Entregar Menú Principal
+    else if (textClean === 'hola' || textClean === 'buenas' || textClean === 'menu' || textClean === 'inicio' || textClean === 'ayuda') {
+      respuestaDirecta = `Hola, te comunicas con el Asistente Virtual de Gama Seguridad 24/7.\nPor favor responde con el NÚMERO de la opción deseada:\n\n1️⃣ 🚨 CONSULTA DE MI ALARMA Y BITÁCORA (3 DÍAS)\n2️⃣ 🛠️ SOPORTE TÉCNICO & GUÍA DE TECLADO (DSC / VETTI)\n3️⃣ 💼 CONSULTAS COMERCIALES\n4️⃣ 👤 HABLAR CON UN OPERADOR / ESPECIALISTA EN VIVO`
+    }
+
+    // Si hubo una respuesta directa del menú interactivo, enviarla sin llamar a Gemini
+    if (respuestaDirecta) {
+      await sock.sendMessage(jid, { text: respuestaDirecta })
+      log(`🤖 ✅ [BOT MENU INTERACTIVO] Respuesta directa enviada a ${nombreCliente}`)
+
+      await supabase.from('conversaciones_whatsapp').insert({
+        numero: numero,
+        tipo_evento: 'mensaje_enviado',
+        estado: 'enviado',
+        mensaje_enviado: respuestaDirecta,
+        cuenta: cuentaActiva || 'BOT_MENU',
+        created_at: new Date().toISOString()
+      })
+      return
+    }
+
+    // 3. Si es opción 1 o consulta abierta: Traer Bitácora de 3 días y llamar a Gemini AI
+    let resumenEventos = 'Sin eventos de alarma registrados en los últimos 3 días.'
+    if (cuentaActiva) {
+      const fechaHace3Dias = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()
+      const { data: eventos } = await supabase
+        .from('eventos_monitoreo')
+        .select('cuenta, evento, fecha_hora, zona, usuario, descripcion')
+        .eq('cuenta', cuentaActiva)
+        .gte('fecha_hora', fechaHace3Dias)
+        .order('fecha_hora', { ascending: false })
+        .limit(30)
+
+      if (eventos && eventos.length > 0) {
+        resumenEventos = eventos.map(e => {
+          const f = e.fecha_hora ? new Date(e.fecha_hora).toLocaleString('es-CL') : ''
+          return `[${f}] Cuenta: ${e.cuenta} | Evento: ${e.evento || e.descripcion || 'Sin desmit.'} | Zona: ${e.zona || 'N/A'}`
+        }).join('\n')
+      }
+    }
+
+    // 4. Consultar Gemini API
+    const GEMINI_KEY = process.env.GEMINI_API_KEY || 'AIzaSyA'
+    const fullPrompt = `${promptMaestro || 'Eres el Asistente Virtual de Gama Seguridad 24/7.'}
+
+MENÚ INTERACTIVO Y REGLAS DE ATENCIÓN:
+- Opción 1: Consulta Bitácora 3 días.
+- Opción 2: Soporte Técnico.
+- Opción 3: Consultas Comerciales (Módulo en desarrollo).
+- Opción 4: Derivación a Especialista con enlace directo https://wa.me/56991016912.
+
+IDENTIFICACIÓN Y CONTEXTO DEL CLIENTE:
+- Nombre Cliente: ${nombreCliente || 'Cliente'}
+- Cuenta de Abonado: ${cuentaActiva || 'No identificada aún'}
+
+EVENTOS DE BITÁCORA Y TELEMETRÍA (ÚLTIMOS 3 DÍAS):
+${resumenEventos}
+
+MENSAJE RECIBIDO DEL CLIENTE:
+"${bodyCliente}"
+
+Responde directamente el mensaje a enviar al cliente por WhatsApp.`
+
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_KEY}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: fullPrompt }] }]
+      })
+    })
+
+    const resData = await res.json()
+    const respuestaIA = resData?.candidates?.[0]?.content?.parts?.[0]?.text
+
+    if (respuestaIA && respuestaIA.trim()) {
+      const textoFinal = respuestaIA.trim()
+      await sock.sendMessage(jid, { text: textoFinal })
+      log(`🤖 ✅ [BOT IA 24/7] Respuesta enviada a ${nombreCliente}: "${textoFinal.slice(0, 60)}..."`)
+
+      await supabase.from('conversaciones_whatsapp').insert({
+        numero: numero,
+        tipo_evento: 'mensaje_enviado',
+        estado: 'enviado',
+        mensaje_enviado: textoFinal,
+        cuenta: cuentaActiva || 'BOT_IA',
+        created_at: new Date().toISOString()
+      })
+    }
+  } catch (err) {
+    log(`⚠️ Error enviando respuesta automática IA: ${err.message}`, 'WARN')
+  }
+}

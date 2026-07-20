@@ -71,41 +71,29 @@ function formatearNumeroDisplay(num: string): string {
 }
 
 const PROMPT_AI_DEFAULT = `Eres el Asistente Virtual Oficial de Gama Seguridad 24/7 en Chile.
-Tu función es atender a los clientes que escriban por WhatsApp, responder sus dudas con máxima precisión, cortesía y profesionalismo, sin inventar jamás información no verificada.
+Tu función es atender a los clientes por WhatsApp, guiarlos a través del Menú Interactivo de Opciones y responder sus dudas con máxima precisión, cortesía y profesionalismo, sin inventar jamás información no verificada.
 
-REGLAS MANDATORIAS DE ATENCIÓN:
-1. SALUDO INICIAL OBLIGATORIO:
-   Toda primera interacción con un cliente debe comenzar con:
-   "Hola, te comunicas con el Asistente Virtual de Gama Seguridad 24/7."
+REGLAS MANDATORIAS Y MENÚ DE DISPARADORES:
+1. SALUDO INICIAL E INTERACTIVO:
+   Toda interacción inicial debe ofrecer el menú oficial:
+   "Hola, te comunicas con el Asistente Virtual de Gama Seguridad 24/7. Por favor responde con el número de la opción deseada:
+   1️⃣ 🚨 CONSULTA DE MI ALARMA Y BITÁCORA (3 DÍAS)
+   2️⃣ 🛠️ SOPORTE TÉCNICO & GUÍA DE TECLADO (DSC / VETTI)
+   3️⃣ 💼 CONSULTAS COMERCIALES
+   4️⃣ 👤 HABLAR CON UN OPERADOR / ESPECIALISTA EN VIVO"
 
-2. CRUZAMIENTO DE SEÑALES Y AUDITORÍA DE ALARMA (ÚLTIMOS 3 DÍAS):
-   - Revisa las señales reales de la bitácora (Apertura, Cierre, Corte de Energía, Pánico, Faltas de Test).
-   - Si el abonado no ha enviado señales hace varios días, indícale consultar:
-     a) Si cuenta con servicio telefónico/celular activo y puede efectuar llamadas.
-     b) Si dispone de energía eléctrica en su propiedad.
-     c) Si han llegado los test periódicos de comunicación.
+2. RAMAL 1 — CONSULTA DE BITÁCORA Y SEÑALES (ÚLTIMOS 3 DÍAS):
+   - Revisa la telemetría real (Cortes de Luz, Armados, Desarmados, Alarmas).
+   - Confirma de inmediato los cierres/aperturas recibidos.
 
-3. GUÍA DE SOPORTE TÉCNICO DE SISTEMAS DE ALARMA:
-   - SISTEMAS DSC (Teclado):
-     Instruye al cliente a dirigirse a su teclado y presionar [*][2] para ver la lista de fallos:
-     [1] Batería Baja / Servicio
-     [2] Corte de Energía Eléctrica (Falta AC)
-     [3] Falla de Línea Telefónica
-     [4] Falla de Comunicación
-     [5] Falla de Zona
-     [6] Tamper / Sabotaje de Zona
-     [7] Batería de Dispositivo Inalámbrico Baja
-     [8] Pérdida de Hora del Sistema
+3. RAMAL 2 — SOPORTE TÉCNICO:
+   - Ofrece submenú 2A (Teclado DSC con [*][2]) y 2B (Alarma VETTI & Click App).
 
-   - SISTEMAS VETTI (App Click):
-     Instruye al cliente a abrir su aplicación "Click App", ir al menú de últimos eventos, verificar el estado y presionar el botón de Armado Total para intentar la conexión.
+4. RAMAL 3 — CONSULTAS COMERCIALES:
+   - Informa amablemente: "Estimado cliente, le informamos que el módulo de Consultas Comerciales se encuentra actualmente en desarrollo. Si requiere atención comercial o cotizaciones, por favor presione el número 4 para ser derivado con un especialista."
 
-4. DERIVACIÓN Y CONTACTO DIRECTO CON ESPECIALISTA:
-   Si no puedes resolver una consulta o la información requiere atención humana inmediata, deriva al cliente al área especialista:
-   📲 Contactar a Especialista de Gama Seguridad: https://wa.me/56991016912 (+56 9 91016912)
-
-5. VERACIDAD ABSOLUTA:
-   Nunca inventes datos, fechas u horas de eventos que no figuren en la telemetría real.`
+5. RAMAL 4 — ATENCIÓN DIRECTA CON ESPECIALISTA:
+   - Entrega el enlace de chat directo a WhatsApp: https://wa.me/56991016912 (+56 9 91016912).`
 
 // ──────────────────────────────────────────────
 //  COMPONENTE PRINCIPAL
@@ -1049,12 +1037,19 @@ Responde directamente el mensaje para WhatsApp al cliente, en un tono 100% verí
                           </div>
                         </div>
                       </div>
-                      <button
-                        onClick={() => { setTelefonoManual(chatActivo); setActiveTab('notificaciones') }}
-                        className="text-[10px] bg-[#00a884] text-white border border-[#00a884] px-3.5 py-1.5 rounded-full hover:bg-[#029676] transition-colors cursor-pointer font-bold shadow-sm"
-                      >
-                        📢 Enviar Notificación
-                      </button>
+                      <div className="flex items-center gap-2">
+                        {mensajesActivos.some(m => m.estado === 'requiere_atencion_humana' || m.tipo_evento === 'solicitud_humana' || (m.respuesta_recibida || '').includes('SOLICITA ATENCIÓN HUMANA')) && (
+                          <span className="bg-red-600 text-white font-bold text-[10px] px-3 py-1 rounded-full animate-pulse shadow flex items-center gap-1">
+                            ⚠️ REQUIERE ATENCIÓN HUMANA EN VIVO
+                          </span>
+                        )}
+                        <button
+                          onClick={() => { setTelefonoManual(chatActivo); setActiveTab('notificaciones') }}
+                          className="text-[10px] bg-[#00a884] text-white border border-[#00a884] px-3.5 py-1.5 rounded-full hover:bg-[#029676] transition-colors cursor-pointer font-bold shadow-sm"
+                        >
+                          📢 Enviar Notificación
+                        </button>
+                      </div>
                     </div>
 
                     {/* Mensajes (Wallpaper WhatsApp Beige #efeae2) */}
@@ -1548,6 +1543,46 @@ Responde directamente el mensaje para WhatsApp al cliente, en un tono 100% verí
                   >
                     {botAutoResponder ? '🟢 ACTIVADO' : '🔴 DESACTIVADO'}
                   </button>
+                </div>
+              </div>
+
+              {/* Constructor de Flujos y Menú Interactivo */}
+              <div className="bg-white border border-gray-300 rounded-xl p-4 shadow-sm flex flex-col gap-3">
+                <div className="font-bold text-xs text-[#0f172a] uppercase tracking-wider border-b border-gray-200 pb-2 flex items-center justify-between">
+                  <span>⚙️ CONSTRUCTOR DE FLUJOS Y DISPARADORES CONVERSACIONALES</span>
+                  <span className="text-[10px] bg-purple-100 text-purple-800 px-2 py-0.5 rounded font-bold">4 RAMALES ACTIVOS</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+                  {/* Opción 1 */}
+                  <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 flex flex-col gap-1.5 shadow-xs">
+                    <span className="font-bold text-red-700 flex items-center gap-1">1️⃣ ESTADO DE ALARMA</span>
+                    <p className="text-[11px] text-gray-600 leading-snug">Consulta eventos de la bitácora de los últimos 3 días (Cortes de Luz, Armados, Desarmados, Alarmas).</p>
+                    <span className="text-[10px] font-bold text-slate-500 mt-auto pt-1 border-t border-slate-200">🔍 Telemetría Supabase</span>
+                  </div>
+
+                  {/* Opción 2 */}
+                  <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 flex flex-col gap-1.5 shadow-xs">
+                    <span className="font-bold text-blue-700 flex items-center gap-1">2️⃣ SOPORTE TÉCNICO</span>
+                    <p className="text-[11px] text-gray-600 leading-snug">Despliega submenú 2A (Teclado DSC *2) y 2B (Alarma VETTI & Click App).</p>
+                    <span className="text-[10px] font-bold text-slate-500 mt-auto pt-1 border-t border-slate-200">🛠️ Guías 2A / 2B</span>
+                  </div>
+
+                  {/* Opción 3 */}
+                  <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 flex flex-col gap-1.5 shadow-xs">
+                    <span className="font-bold text-amber-700 flex items-center gap-1">3️⃣ CONSULTAS COMERCIALES</span>
+                    <p className="text-[11px] text-gray-600 leading-snug">Informa que el módulo está en desarrollo y ofrece derivar con un ejecutivo.</p>
+                    <span className="text-[10px] font-bold text-amber-600 mt-auto pt-1 border-t border-slate-200">🚧 En Desarrollo</span>
+                  </div>
+
+                  {/* Opción 4 */}
+                  <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 flex flex-col gap-1.5 shadow-xs">
+                    <span className="font-bold text-green-700 flex items-center gap-1">4️⃣ ATENCIÓN HUMANA</span>
+                    <p className="text-[11px] text-gray-600 leading-snug">Deriva al especialista entregando botón con enlace directo a WhatsApp.</p>
+                    <a href="https://wa.me/56991016912" target="_blank" rel="noreferrer" className="text-[10px] font-bold text-green-700 hover:underline mt-auto pt-1 border-t border-slate-200 flex items-center gap-1">
+                      💬 https://wa.me/56991016912
+                    </a>
+                  </div>
                 </div>
               </div>
 
