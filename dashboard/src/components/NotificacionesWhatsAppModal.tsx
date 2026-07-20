@@ -423,10 +423,41 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
     if (!chatActivo || generandoIA) return
     setGenerandoIA(true)
     try {
-      // 1. Obtener la cuenta del cliente activo (ej: C730, C701, etc.)
-      const cuentaActiva = clienteSeleccionado?.cuenta || (chatActivo.includes('1493818964') || chatActivo.includes('1495553039') ? 'C730' : '')
+      // 1. Identificar automáticamente la cuenta del abonado (por cliente seleccionado, por grupo, o por búsqueda inversa de teléfono)
+      let cuentaActiva = clienteSeleccionado?.cuenta || ''
 
-      // 2. Consultar eventos de los últimos 3 días en eventos_monitoreo
+      if (!cuentaActiva && chatActivo) {
+        const numLimpio = chatActivo.replace(/[^0-9]/g, '')
+        // a) Si es el grupo 24/7 o Acceso
+        if (chatActivo.includes('1493818964') || chatActivo.includes('1495553039')) {
+          cuentaActiva = 'C730'
+        } else {
+          // b) Búsqueda inversa en la base de datos de clientes por teléfono
+          for (const [cta, datos] of Object.entries(clientesMap)) {
+            const strDatos = JSON.stringify(datos)
+            if (strDatos.includes(numLimpio)) {
+              cuentaActiva = cta
+              break
+            }
+          }
+        }
+      }
+
+      // c) Buscar menciones explícitas de código de abonado en los mensajes recientes (ej: C701, C730, C7BE)
+      const contextoMsgs = mensajesActivos.slice(-5).map(m => {
+        const remitente = (m.respuesta_recibida || m.respuesta_cliente) ? 'Cliente' : 'Gama Seguridad'
+        const texto = m.respuesta_recibida || m.respuesta_cliente || m.mensaje_enviado || ''
+        return `${remitente}: ${texto}`
+      }).join('\n')
+
+      if (!cuentaActiva) {
+        const matchCod = contextoMsgs.match(/\b(C\d{3,4}[A-Z]?)\b/i)
+        if (matchCod && matchCod[1]) {
+          cuentaActiva = matchCod[1].toUpperCase()
+        }
+      }
+
+      // 2. Consultar Bitácora y Señales de la Cuenta en los últimos 3 días en eventos_monitoreo
       let historialAlarmas3Dias: any[] = []
       try {
         const fechaHace3Dias = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()
@@ -445,33 +476,31 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
         if (data) historialAlarmas3Dias = data
       } catch {}
 
-      // 3. Formatear el historial de 3 días para el análisis de comportamiento
+      // 3. Formatear la Bitácora y Eventos para que la IA los analice
       const resumenEventos = historialAlarmas3Dias.map(e => {
         const f = e.fecha_hora ? new Date(e.fecha_hora).toLocaleString('es-CL') : ''
         return `[${f}] Cuenta: ${e.cuenta || 'General'} | Evento: ${e.evento || e.descripcion || 'Sin desmit.'} | Zona: ${e.zona || 'N/A'} | Usuario: ${e.usuario || 'N/A'}`
       }).slice(0, 35).join('\n')
 
-      const contextoMsgs = mensajesActivos.slice(-5).map(m => {
-        const remitente = (m.respuesta_recibida || m.respuesta_cliente) ? 'Cliente' : 'Gama Seguridad'
-        const texto = m.respuesta_recibida || m.respuesta_cliente || m.mensaje_enviado || ''
-        return `${remitente}: ${texto}`
-      }).join('\n')
-
       const prompt = `${masterPrompt}
 
-INSTRUCCIÓN ESPECÍFICA PARA LA CONSULTA ACTUAL DE ATENCIÓN Y SEGUIMIENTO (Cuenta: ${cuentaActiva || 'General'}):
-1. Si es la primera interacción o el cliente envió una duda, saluda con: "Hola, te comunicas con el Asistente Virtual de Gama Seguridad 24/7."
-2. Analiza los eventos de los últimos 3 días (Corte de Luz, Alarmas seguidas, Falta de aperturas/cierres) y cruzalo con el mensaje del cliente.
-3. Si requiere soporte de alarma DSC, guíalo a presionar [*][2] en el teclado. Si es VETTI, a la Click App.
-4. Si la consulta supera el nivel de auto-atención, incluye el enlace al Especialista: https://wa.me/56991016912 (+56 9 91016912).
+IDENTIFICACIÓN DE ABONADO Y CONSULTA DE BITÁCORA EN TIEMPO REAL:
+- Código de Abonado Detectado: ${cuentaActiva ? `${cuentaActiva} (${clientesMap[cuentaActiva]?.nombre || 'Titular Registrado'})` : 'NO IDENTIFICADO AÚN'}
+- Si el Abonado NO está identificado en el chat, solicita amablemente al cliente indicar su Código de Abonado (ej: C701) o RUT para consultar su bitácora.
 
-TELEMETRÍA Y EVENTOS DE ALARMA DE LOS ÚLTIMOS 3 DÍAS:
-${resumenEventos || 'Sin eventos de alarma registrados en los últimos 3 días.'}
+INSTRUCCIONES DE ATENCIÓN CON BITÁCORA Y SEÑALES (Cuenta: ${cuentaActiva || 'General'}):
+1. Saluda con: "Hola, te comunicas con el Asistente Virtual de Gama Seguridad 24/7."
+2. Cruza los eventos reales de la bitácora de los últimos 3 días (Cortes de Luz, Disparos, Cierres/Aperturas) con lo que pregunta el cliente.
+3. Si aplica soporte técnico, entrega guía de Teclado DSC [*][2] o App Click de VETTI.
+4. Para emergencias o soporte avanzado, entrega link al Especialista: https://wa.me/56991016912 (+56 9 91016912).
 
-CHAT RECIENTE EN WHATSAPP:
+EVENTOS Y REGISTROS DE BITÁCORA DE LOS ÚLTIMOS 3 DÍAS:
+${resumenEventos || 'Sin eventos registrados en los últimos 3 días para esta cuenta.'}
+
+HISTORIAL RECIENTE DE CHAT WHATSAPP:
 ${contextoMsgs || 'Sin mensajes recientes.'}
 
-Responde directamente el mensaje a enviar por WhatsApp al cliente, en un tono 100% verídico, profesional, directo y amable.`
+Responde directamente el mensaje para WhatsApp al cliente, en un tono 100% verídico, profesional y claro.`
 
       const res = await fetch('/api/gemini', {
         method: 'POST',
