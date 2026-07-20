@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 
-const WA_SERVER = 'https://gama-whatsapp.zeabur.app'
+const WA_SERVER = 'https://gama-whatsapp-production.up.railway.app'
 
 // Desconectar sesión WhatsApp y reiniciar
 export async function POST() {
