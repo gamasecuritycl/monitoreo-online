@@ -612,6 +612,40 @@ function suscribirSupabaseRealtime() {
         log(`Supabase Realtime (commands): ${status}`)
       })
 
+    // 3. Canal de despacho de notificaciones pendientes (escucha de tabla)
+    supabase.channel('whatsapp_pending_dispatches')
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'conversaciones_whatsapp',
+        filter: 'estado=eq.pendiente'
+      }, async payload => {
+        const row = payload.new
+        if (!row || !row.numero || !row.mensaje_enviado) return
+        log(`📡 Notificación pendiente detectada para +${row.numero} (ID: ${row.id})`)
+
+        try {
+          // Despachar a WhatsApp
+          await enviarMensaje(row.numero, row.mensaje_enviado)
+          
+          // Actualizar estado a enviado en Supabase
+          await supabase
+            .from('conversaciones_whatsapp')
+            .update({ estado: 'enviado' })
+            .eq('id', row.id)
+          log(`✅ Fila ID: ${row.id} despachada y actualizada a 'enviado'.`)
+        } catch (err) {
+          log(`❌ Error despachando fila ID: ${row.id} - ${err.message}`, 'ERROR')
+          await supabase
+            .from('conversaciones_whatsapp')
+            .update({ estado: 'error', error_msg: err.message })
+            .eq('id', row.id)
+        }
+      })
+      .subscribe(status => {
+        log(`Supabase Realtime (dispatches): ${status}`)
+      })
+
   } catch (err) {
     log(`Supabase Realtime no disponible: ${err.message}`, 'WARN')
   }

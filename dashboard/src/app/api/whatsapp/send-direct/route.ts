@@ -22,42 +22,21 @@ export async function POST(req: Request) {
       telLimpio = '569' + telLimpio
     }
 
-    // 1. Intentar HTTP directo al servidor de WhatsApp en la Nube
-    try {
-      const openwaRes = await fetch('https://gama-whatsapp-production.up.railway.app/api/send', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: telLimpio, text: texto }),
-        signal: AbortSignal.timeout(4000)
-      })
-      const openwaData = await openwaRes.json()
-      if (openwaData?.ok) {
-        return NextResponse.json({ ok: true, proveedor: 'whatsapp_corporativo_nube' })
-      }
-    } catch {}
+    // Insertar en conversaciones_whatsapp con estado pendiente
+    // El servidor en la nube escuchará este insert y lo despachará al instante
+    const { error } = await supabase.from('conversaciones_whatsapp').insert({
+      numero: telLimpio,
+      mensaje_enviado: texto,
+      estado: 'pendiente',
+      created_at: new Date().toISOString()
+    })
 
-    // 2. Broadcast vía Supabase Realtime a la central local (whatsapp_outbound)
-    try {
-      const channel = supabase.channel('whatsapp_outbound')
-      await channel.send({
-        type: 'broadcast',
-        event: 'send_whatsapp',
-        payload: { phone: telLimpio, text: texto, timestamp: Date.now() }
-      })
-
-      // Registrar en conversaciones_whatsapp para seguimiento del chat
-      await supabase.from('conversaciones_whatsapp').insert({
-        numero: telLimpio,
-        mensaje_enviado: texto,
-        estado: 'enviado',
-        created_at: new Date().toISOString()
-      }).select()
-
-      return NextResponse.json({ ok: true, proveedor: 'whatsapp_corporativo_realtime' })
-    } catch (err: any) {
-      console.warn('[WHATSAPP BROADCAST ERROR]:', err)
-      return NextResponse.json({ ok: false, error: 'Error transmitiendo por canal de WhatsApp oficial' }, { status: 500 })
+    if (error) {
+      console.error('[SUPABASE INSERT ERROR]:', error.message)
+      return NextResponse.json({ ok: false, error: error.message }, { status: 500 })
     }
+
+    return NextResponse.json({ ok: true, proveedor: 'whatsapp_database_bridge' })
   } catch (err: any) {
     return NextResponse.json({ ok: false, error: err.message }, { status: 500 })
   }
