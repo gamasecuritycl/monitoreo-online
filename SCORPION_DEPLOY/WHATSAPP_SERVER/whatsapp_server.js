@@ -1113,19 +1113,29 @@ async function responderConIA(sock, jid, numero, bodyCliente, promptMaestro, nom
       } catch (e) {}
     }
 
-    // Opción 2A: Soporte Teclado DSC
-    else if (textClean === '2a' || textClean.includes('dsc') || textClean.includes('teclado')) {
-      respuestaDirecta = `Soporte técnico teclado DSC\n\nPara revisar las fallas de su sistema DSC:\n1. Diríjase al teclado de su propiedad.\n2. Presione [*][2].\n3. Verifique el número de luz encendido:\n   - Luz 1: Batería baja / servicio\n   - Luz 2: Falta de energía eléctrica (corte AC)\n   - Luz 3: Falla de línea telefónica\n   - Luz 4: Falla de comunicación\n   - Luz 5: Falla de zona\n   - Luz 8: Pérdida de hora del sistema\n\n¿Tienes alguna otra duda o consulta?\n• Responde 4 para hablar con un especialista técnico\n• O escribe "menú" para volver al menú principal.`
+    // Opción 2A: Soporte Teclado DSC (Diagnóstico *2)
+    else if (textClean === '2a' || textClean.includes('falla') || (textClean.includes('luz') && textClean.includes('amarilla'))) {
+      respuestaDirecta = `Soporte técnico - Teclado DSC (Diagnóstico *2)\n\nSi el teclado mantiene un doble pitido cada 10 segundos y la luz amarilla o triángulo de SISTEMA encendido:\n\n1. Diríjase al teclado de su propiedad.\n2. Presione [*][2].\n3. Verifique el número iluminado:\n   - Luz 1: Batería baja (revisión si persiste >24h tras corte de luz).\n   - Luz 2: Falta de energía eléctrica CA (verifique transformador o enchufe).\n   - Luz 3: Falla en línea telefónica o internet.\n   - Luz 4: Falla de comunicación con la central (requiere revisión técnica).\n   - Luz 5: Falla de zona o cableado en sensor.\n   - Luz 7: Memoria de alarma (presione # para borrar aviso).\n   - Luz 8: Pérdida de hora del reloj (responda 2d para reprogramar).\n\n¿Tienes alguna otra duda o consulta?\n• Responde 2b, 2c, 2d o 4\n• O escribe "menú" para volver al menú principal.`
     }
 
-    // Opción 2B: Soporte VETTI & Click App
-    else if (textClean === '2b' || textClean.includes('vetti') || textClean.includes('click')) {
-      respuestaDirecta = `Soporte técnico alarma VETTI y Click App\n\nPara verificar su alarma VETTI:\n1. Abra la aplicación Click App en su teléfono.\n2. Ingrese al historial de eventos recientes.\n3. Presione el botón de Armado Total para reconectar.\n\n¿Tienes alguna otra duda o consulta?\n• Responde 4 para hablar con un especialista técnico\n• O escribe "menú" para volver al menú principal.`
+    // Opción 2B: Zona Abierta (Luz verde apagada)
+    else if (textClean === '2b' || textClean.includes('verde') || textClean.includes('abierta')) {
+      respuestaDirecta = `Soporte técnico - Zona Abierta (Luz verde apagada)\n\nSi el indicador verde (Luz o Ticket Verde) está apagado, el sistema detecta que hay un sensor, puerta o ventana abierta.\n\n¿Qué hacer?\n1. Recorra su propiedad y asegúrese de que todas las puertas y ventanas estén bien cerradas.\n2. Si realizó trabajos recientes, verifique que no se hayan cortado los cables de los sensores.\n3. Al cerrar todo correctamente, el indicador verde ("LISTO") se encenderá automáticamente para permitir armar.\n\nSi un sensor o ventana está en mal estado y no cierra, puede anularlo temporalmente respondiendo 2c.\n\n¿Tienes alguna otra duda o consulta?\n• Responde 2c para ver cómo anular el sensor dañado\n• O escribe "menú" para volver al inicio.`
     }
 
-    // Opción 2: Menú Soporte Técnico
-    else if (textClean === '2' || textClean.includes('soporte') || textClean.includes('tecnico')) {
-      respuestaDirecta = `Soporte técnico - Gama Seguridad 24/7\n\nPor favor responde con la letra de tu sistema:\n\n2a. Teclado DSC (diagnóstico de fallas con *2)\n2b. Alarma VETTI y Click App\n4. Hablar con un especialista técnico`
+    // Opción 2C: Exclusión / Anulación de Zona (*1)
+    else if (textClean === '2c' || textClean.includes('exclusion') || textClean.includes('exclusión') || textClean.includes('anular')) {
+      respuestaDirecta = `Soporte técnico - Anulación de Zona Dañada (*1)\n\nSi un sensor está dañado o una puerta no cierra y necesita armar la alarma para pasar la noche, puede anular esa zona temporalmente:\n\nInstrucción de anulación:\n1. Presione [*][1].\n2. Ingrese el número de la zona a 2 dígitos (ejemplo: 03 para Zona 3, o 12 para Zona 12).\n3. Presione [#].\n\nEjemplo Zona 3: *1 03 #\nEjemplo Zona 12: *1 12 #\n\nLa luz verde ("LISTO") se encenderá y podrá armar su alarma normalmente.\n*Nota: La anulación dura solo para ese armado. Al desarmar el sistema, la zona vuelve a su estado normal.\n\n¿Tienes alguna otra duda o consulta?\n• Responde "menú" para volver al inicio.`
+    }
+
+    // Opción 2D: Programación de Hora (*6)
+    else if (textClean === '2d' || textClean.includes('hora') || textClean.includes('fecha') || textClean.includes('reloj')) {
+      respuestaDirecta = `Soporte técnico - Programación de Hora y Fecha (*6)\n\nSi su teclado indica Luz 8 (Pérdida de hora del reloj), siga estos pasos:\n\n1. Presione [*][6].\n2. Ingrese su Clave Maestra de 4 dígitos (ejemplo: 1234).\n3. Presione [1].\n4. Ingrese la hora y fecha en formato: HHMM MMDDAA\n   (HH: Hora 24h | MM: Minutos | MM: Mes | DD: Día | AA: Año)\n\nEjemplo (28 de Mayo de 2026 a las 13:04 hrs con clave 1234):\nPresione: *6 1234 1 1304 05 28 26\n\nEl teclado emitirá un doble pitido de confirmación y la luz amarilla de sistema se apagará.\n\n¿Tienes alguna otra duda o consulta?\n• Responde "menú" para volver al inicio.`
+    }
+
+    // Opción 2: Menú Soporte Técnico DSC
+    else if (textClean === '2' || textClean.includes('soporte') || textClean.includes('tecnico') || textClean.includes('técnico')) {
+      respuestaDirecta = `Soporte técnico y guía de teclado DSC - Gama Seguridad 24/7\n\nPor favor responde con la letra de la opción deseada:\n\n2a. Teclado pita o tiene luz amarilla (Diagnóstico *2)\n2b. No puedo armar / Luz verde apagada (Zona abierta)\n2c. Exclusión / Anulación de sensor dañado (*1)\n2d. Programar hora y fecha del teclado (*6)\n4. Hablar con un especialista técnico`
     }
 
     // Saludo inicial o palabra de inicio: Entregar Menú Principal Limpio
@@ -1140,7 +1150,7 @@ async function responderConIA(sock, jid, numero, bodyCliente, promptMaestro, nom
       textClean.includes('inicio') ||
       textClean.includes('ayuda')
     ) {
-      respuestaDirecta = `Hola, te comunicas con el Asistente Virtual de Gama Seguridad 24/7.\nPor favor responde con el número de la opción deseada:\n\n1. Consulta de mi alarma y bitácora\n2. Soporte técnico y guía de teclado (DSC / VETTI)\n3. Consultas comerciales\n4. Hablar con un operador o especialista en vivo`
+      respuestaDirecta = `Hola, te comunicas con el Asistente Virtual de Gama Seguridad 24/7.\nPor favor responde con el número de la opción deseada:\n\n1. Consulta de mi alarma y bitácora\n2. Soporte técnico y guía de teclado DSC\n3. Consultas comerciales\n4. Hablar con un operador o especialista en vivo`
     }
 
     // Si hubo una respuesta directa del menú interactivo, enviarla sin llamar a Gemini
