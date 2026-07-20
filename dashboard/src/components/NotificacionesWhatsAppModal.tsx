@@ -91,6 +91,9 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
   const [todosLosChats, setTodosLosChats] = useState<any[]>([])
   const [textoChat, setTextoChat] = useState('')
   const [enviandoChat, setEnviandoChat] = useState(false)
+  const [modoSidebar, setModoSidebar] = useState<'abonados' | 'grupos'>('abonados')
+  const [cuentasExpandidas, setCuentasExpandidas] = useState<Record<string, boolean>>({})
+  const [whatsappGrupos, setWhatsappGrupos] = useState<any[]>([])
   const chatEndRef = useRef<HTMLDivElement>(null)
 
   // Asignar chatActivo inicial si viene por prop
@@ -139,12 +142,13 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
         const { data, error } = await supabase
           .from('eventos_monitoreo')
           .select('cuenta, nombre_abonado')
-          .in('cuenta', ['CONFIG_WHATSAPP_STATE', 'CONFIG_WHATSAPP_QR'])
+          .in('cuenta', ['CONFIG_WHATSAPP_STATE', 'CONFIG_WHATSAPP_QR', 'CONFIG_WHATSAPP_GROUPS'])
 
         if (error || !data) return
 
         const statusRow = data.find(r => r.cuenta === 'CONFIG_WHATSAPP_STATE')
         const qrRow = data.find(r => r.cuenta === 'CONFIG_WHATSAPP_QR')
+        const groupsRow = data.find(r => r.cuenta === 'CONFIG_WHATSAPP_GROUPS')
 
         if (statusRow?.nombre_abonado) {
           const parsed = JSON.parse(statusRow.nombre_abonado)
@@ -157,6 +161,13 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
         if (qrRow?.nombre_abonado) {
           const parsedQR = JSON.parse(qrRow.nombre_abonado)
           setQrData(parsedQR)
+        }
+
+        if (groupsRow?.nombre_abonado) {
+          try {
+            const parsedG = JSON.parse(groupsRow.nombre_abonado)
+            if (Array.isArray(parsedG)) setWhatsappGrupos(parsedG)
+          } catch {}
         }
       } catch (err) {
         console.error('Error cargando estado de WhatsApp desde Supabase:', err)
@@ -202,40 +213,94 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
   }, [chatActivo, todosLosChats])
 
   // ══════════════════════════════════════════════
-  //  CHAT: construir lista de contactos con nombres
+  //  CHAT: Construir lista de Abonados agrupados (Acordeón) y Grupos
   // ══════════════════════════════════════════════
-  const chatsMap = new Map<string, { numero: string; ultimoMsg: string; hora: string; nombre: string }>()
+  const abonadosAgrupadosMap = new Map<string, {
+    cuenta: string
+    nombre: string
+    contactos: { nombre: string; telefono: string; rol: string }[]
+    ultimoMsg?: string
+    hora?: string
+  }>()
 
-  // 1. Abonados registrados
   Object.entries(clientesMap).forEach(([cuenta, cliente]) => {
-    const tels = [
-      cliente.t1 || '', cliente.telefono1 || '', cliente.telefono || '', cliente.t2 || ''
-    ].map(t => t.replace(/[^0-9]/g, '')).filter(t => t.length >= 8)
-    tels.forEach(tel => {
-      if (!chatsMap.has(tel)) {
-        chatsMap.set(tel, { numero: tel, ultimoMsg: 'Abonado registrado', hora: '', nombre: `${cuenta} - ${cliente.nombre || ''}` })
+    const contactosAbonado: { nombre: string; telefono: string; rol: string }[] = []
+    const campos = [
+      { t: cliente.t1 || cliente.telefono1 || cliente.telefono, n: cliente.nombre1 || cliente.nombre || 'Titular Principal', r: 'Titular' },
+      { t: cliente.t2 || cliente.telefono2, n: cliente.nombre2 || 'Contacto 2', r: 'Contacto 2' },
+      { t: cliente.t3 || cliente.telefono3, n: cliente.nombre3 || 'Contacto 3', r: 'Contacto 3' },
+      { t: cliente.t4 || cliente.telefono4, n: cliente.nombre4 || 'Contacto 4', r: 'Contacto 4' },
+    ]
+    campos.forEach(({ t, n, r }) => {
+      if (t) {
+        const num = t.replace(/[^0-9]/g, '')
+        if (num.length >= 8 && !contactosAbonado.some(c => c.telefono === num)) {
+          contactosAbonado.push({ nombre: n, telefono: num, rol: r })
+        }
       }
     })
-  })
 
-  // 2. Mensajes de la BD (sobrescriben con datos reales)
-  todosLosChats.forEach(item => {
-    const num = (item.numero || item.telefono || '').replace(/[^0-9]/g, '')
-    if (!num) return
-    const nombre = chatsMap.get(num)?.nombre
-      || (item.cuenta ? `${item.cuenta} - ${clientesMap[item.cuenta]?.nombre || ''}` : `+${num}`)
-    chatsMap.set(num, {
-      numero: num,
-      ultimoMsg: item.respuesta_recibida || item.respuesta_cliente || item.mensaje_enviado || '',
-      hora: item.created_at ? new Date(item.created_at).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }) : '',
-      nombre,
+    let ultimoMsg = 'Abonado registrado'
+    let hora = ''
+    const msgAbonado = todosLosChats.find(m => m.cuenta === cuenta)
+    if (msgAbonado) {
+      ultimoMsg = msgAbonado.respuesta_recibida || msgAbonado.respuesta_cliente || msgAbonado.mensaje_enviado || ultimoMsg
+      if (msgAbonado.created_at) {
+        hora = new Date(msgAbonado.created_at).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })
+      }
+    }
+
+    abonadosAgrupadosMap.set(cuenta, {
+      cuenta,
+      nombre: cliente.nombre || 'Sin nombre',
+      contactos: contactosAbonado,
+      ultimoMsg,
+      hora
     })
   })
 
-  const listaChats = Array.from(chatsMap.values()).filter(c => {
+  const listaAbonadosAgrupada = Array.from(abonadosAgrupadosMap.values()).filter(a => {
     if (!busquedaChat.trim()) return true
     const q = busquedaChat.toLowerCase()
-    return c.numero.includes(q) || c.nombre.toLowerCase().includes(q)
+    return a.cuenta.toLowerCase().includes(q) || a.nombre.toLowerCase().includes(q) || a.contactos.some(c => c.nombre.toLowerCase().includes(q) || c.telefono.includes(q))
+  })
+
+  // ── Grupos de WhatsApp ──
+  const gruposMap = new Map<string, { id: string; nombre: string; miembros: number; ultimoMsg?: string; hora?: string }>()
+  
+  // Agregar grupos desde Supabase
+  whatsappGrupos.forEach((g: any) => {
+    if (g.id) {
+      gruposMap.set(g.id, {
+        id: g.id,
+        nombre: g.subject || 'Grupo de WhatsApp',
+        miembros: g.participantsCount || 0,
+        ultimoMsg: 'Grupo de clientes'
+      })
+    }
+  })
+
+  // Detectar mensajes de grupos en BD (@g.us o guión de grupo)
+  todosLosChats.forEach(item => {
+    const num = (item.numero || item.telefono || '')
+    if (num.includes('@g.us') || num.includes('-')) {
+      const exist = gruposMap.get(num)
+      const nombreGrupo = exist?.nombre || item.nombre_grupo || item.cuenta || `Grupo ${num.slice(0, 15)}...`
+      const horaMsg = item.created_at ? new Date(item.created_at).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }) : ''
+      gruposMap.set(num, {
+        id: num,
+        nombre: nombreGrupo,
+        miembros: exist?.miembros || 0,
+        ultimoMsg: item.respuesta_recibida || item.respuesta_cliente || item.mensaje_enviado || '',
+        hora: horaMsg
+      })
+    }
+  })
+
+  const listaGrupos = Array.from(gruposMap.values()).filter(g => {
+    if (!busquedaChat.trim()) return true
+    const q = busquedaChat.toLowerCase()
+    return g.nombre.toLowerCase().includes(q) || g.id.includes(q)
   })
 
   const mensajesActivos = todosLosChats
@@ -251,6 +316,10 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
       await sendMessage(chatActivo, texto)
     } catch {}
     setEnviandoChat(false)
+  }
+
+  const toggleCuentaExpandida = (cuenta: string) => {
+    setCuentasExpandidas(prev => ({ ...prev, [cuenta]: !prev[cuenta] }))
   }
 
   // ══════════════════════════════════════════════
@@ -340,24 +409,26 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
     return () => { supabase.removeChannel(ch) }
   }, [clienteSeleccionado, clientesMap])
 
-  // Obtener lista de contactos del abonado seleccionado
+  // Obtener lista de contactos del abonado seleccionado con Nombre + Rol + Teléfono
   const obtenerContactos = useCallback(() => {
     if (!clienteSeleccionado) return []
     const cliente = clientesMap[clienteSeleccionado.cuenta]
     if (!cliente) return []
     const lista: { etiqueta: string; telefono: string; nombre: string }[] = []
     const campos = [
-      { t: cliente.t1 || cliente.telefono1 || cliente.telefono, n: cliente.nombre1 || cliente.nombre || 'Principal', e: '📱 Principal' },
-      { t: cliente.t2 || cliente.telefono2, n: cliente.nombre2 || 'Contacto 2', e: '📱 Contacto 2' },
-      { t: cliente.t3 || cliente.telefono3, n: cliente.nombre3 || 'Contacto 3', e: '📱 Contacto 3' },
-      { t: cliente.t4 || cliente.telefono4, n: cliente.nombre4 || 'Contacto 4', e: '📱 Contacto 4' },
+      { t: cliente.t1 || cliente.telefono1 || cliente.telefono, n: cliente.nombre1 || cliente.nombre || 'Titular Principal', e: 'Titular' },
+      { t: cliente.t2 || cliente.telefono2, n: cliente.nombre2 || 'Contacto 2', e: 'Contacto 2' },
+      { t: cliente.t3 || cliente.telefono3, n: cliente.nombre3 || 'Contacto 3', e: 'Contacto 3' },
+      { t: cliente.t4 || cliente.telefono4, n: cliente.nombre4 || 'Contacto 4', e: 'Contacto 4' },
     ]
     campos.forEach(({ t, n, e }) => {
-      if (t && t.replace(/[^0-9]/g, '').length >= 8) lista.push({ etiqueta: e, telefono: t, nombre: n })
+      if (t && t.replace(/[^0-9]/g, '').length >= 8) {
+        lista.push({ etiqueta: `👤 ${n} (${e}) — ${formatearNumeroDisplay(t)}`, telefono: t, nombre: n })
+      }
     })
     contactos.forEach((c, idx) => {
       if (c.telefono?.replace(/[^0-9]/g, '').length >= 8) {
-        lista.push({ etiqueta: `🔗 Escalamiento ${idx + 1}: ${c.nombre || ''}`, telefono: c.telefono, nombre: c.nombre || `Escal. ${idx + 1}` })
+        lista.push({ etiqueta: `🔗 ${c.nombre || 'Escalamiento'} (${c.parentesco || `Escal. ${idx + 1}`}) — ${formatearNumeroDisplay(c.telefono)}`, telefono: c.telefono, nombre: c.nombre || `Escal. ${idx + 1}` })
       }
     })
     return lista
@@ -417,7 +488,7 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
     const plantillas: Record<string, string> = {
       intrusión: `Se ha detectado una ALARMA DE ROBO / INTRUSIÓN en su propiedad. Por favor confirmar estado urgentemente.`,
       energia: `Se registra CORTE DE ENERGÍA ELÉCTRICA en su propiedad. Su sistema opera con batería de respaldo (72h aprox.).`,
-      apertura: `Se ha registrado una APERTURA no programada fuera de horario en su propiedad. Confirmar si es personal autorizado.`,
+      apertura: `Se registra APERTURA DE SISTEMA en su propiedad.`,
       cierre: `Confirmación de CIERRE DE INSTALACIÓN recibido correctamente. Sistema armado.`,
       video: `Transmisión de video-verificación en vivo activada para su propiedad.`,
       panico: `⚠️ SEÑAL DE PÁNICO RECIBIDA desde su propiedad. Personal de emergencia en camino. Responda OK si está seguro.`,
@@ -575,41 +646,144 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
                   </span>
                 </div>
 
+                {/* Selector de Modo: Abonados vs Grupos */}
+                <div className="flex border-b border-[#222d34] bg-[#111b21] shrink-0">
+                  <button
+                    onClick={() => setModoSidebar('abonados')}
+                    className={`flex-1 py-1.5 text-[11px] font-bold transition-colors cursor-pointer border-b-2 ${
+                      modoSidebar === 'abonados'
+                        ? 'border-[#00a884] text-[#00a884] bg-[#202c33]'
+                        : 'border-transparent text-[#8696a0] hover:text-white'
+                    }`}
+                  >
+                    🏢 Abonados ({listaAbonadosAgrupada.length})
+                  </button>
+                  <button
+                    onClick={() => setModoSidebar('grupos')}
+                    className={`flex-1 py-1.5 text-[11px] font-bold transition-colors cursor-pointer border-b-2 ${
+                      modoSidebar === 'grupos'
+                        ? 'border-[#00a884] text-[#00a884] bg-[#202c33]'
+                        : 'border-transparent text-[#8696a0] hover:text-white'
+                    }`}
+                  >
+                    👥 Grupos ({listaGrupos.length})
+                  </button>
+                </div>
+
                 {/* Buscador */}
-                <div className="p-2 bg-[#111b21] border-b border-[#222d34]">
+                <div className="p-2 bg-[#111b21] border-b border-[#222d34] shrink-0">
                   <input
                     type="text"
-                    placeholder="🔍 Buscar contacto o número..."
+                    placeholder={modoSidebar === 'abonados' ? "🔍 Buscar abonado o número..." : "🔍 Buscar grupo de WhatsApp..."}
                     className="w-full bg-[#202c33] text-gray-200 border border-[#2a3942] rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-[#00a884]"
                     value={busquedaChat}
                     onChange={e => setBusquedaChat(e.target.value)}
                   />
                 </div>
 
-                {/* Lista de chats */}
-                <div className="flex-1 overflow-y-auto divide-y divide-[#222d34]">
-                  {listaChats.length === 0 && (
-                    <div className="p-4 text-center text-[#8696a0] text-xs">Sin conversaciones aún</div>
-                  )}
-                  {listaChats.map(chat => (
-                    <div
-                      key={chat.numero}
-                      onClick={() => setChatActivo(chat.numero)}
-                      className={`p-3 flex items-center gap-3 cursor-pointer transition-colors ${chatActivo === chat.numero ? 'bg-[#2a3942]' : 'hover:bg-[#202c33]'}`}
-                    >
-                      <div className="w-10 h-10 rounded-full bg-[#005c4b] border border-[#00a884] flex items-center justify-center font-bold text-white text-xs shrink-0 shadow uppercase">
-                        {chat.nombre.charAt(0) || '?'}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex justify-between items-baseline mb-0.5">
-                          <span className="font-bold text-xs text-white truncate max-w-[130px]">{chat.nombre}</span>
-                          <span className="text-[9px] text-[#8696a0] shrink-0 ml-1">{chat.hora}</span>
+                {/* Lista de chats (Modo Abonados con Acordeón) */}
+                {modoSidebar === 'abonados' ? (
+                  <div className="flex-1 overflow-y-auto divide-y divide-[#222d34]">
+                    {listaAbonadosAgrupada.length === 0 && (
+                      <div className="p-4 text-center text-[#8696a0] text-xs">Sin abonados registrados</div>
+                    )}
+                    {listaAbonadosAgrupada.map(abonado => {
+                      const isExpanded = !!cuentasExpandidas[abonado.cuenta]
+                      return (
+                        <div key={abonado.cuenta} className="bg-[#111b21]">
+                          {/* Item del Abonado Header */}
+                          <div
+                            onClick={() => toggleCuentaExpandida(abonado.cuenta)}
+                            className="p-2.5 flex items-center justify-between cursor-pointer hover:bg-[#202c33] transition-colors select-none"
+                          >
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <div className="w-8 h-8 rounded-full bg-[#005c4b] border border-[#00a884] flex items-center justify-center font-bold text-white text-xs shrink-0 shadow">
+                                {abonado.cuenta.slice(0, 2)}
+                              </div>
+                              <div className="min-w-0">
+                                <div className="font-bold text-xs text-white truncate max-w-[150px]">
+                                  {abonado.cuenta} — {abonado.nombre}
+                                </div>
+                                <div className="text-[10px] text-[#8696a0]">
+                                  {abonado.contactos.length} contacto(s)
+                                </div>
+                              </div>
+                            </div>
+                            <span className="text-xs text-[#00a884] font-bold px-1">
+                              {isExpanded ? '▲' : '▼'}
+                            </span>
+                          </div>
+
+                          {/* Acordeón de Contactos desplegable */}
+                          {isExpanded && (
+                            <div className="bg-[#0b141a] pl-4 divide-y divide-[#1e2a30]">
+                              {abonado.contactos.length === 0 ? (
+                                <div className="p-2 text-[10px] text-[#8696a0]">Sin números registrados</div>
+                              ) : (
+                                abonado.contactos.map((contacto, idx) => {
+                                  const isSelected = chatActivo === contacto.telefono
+                                  return (
+                                    <div
+                                      key={idx}
+                                      onClick={() => {
+                                        setChatActivo(contacto.telefono)
+                                        const cli = clientesMap[abonado.cuenta]
+                                        if (cli) {
+                                          setClienteSeleccionado({ cuenta: abonado.cuenta, nombre: cli.nombre || '' })
+                                        }
+                                      }}
+                                      className={`p-2 flex items-center justify-between cursor-pointer hover:bg-[#202c33] transition-colors ${isSelected ? 'bg-[#2a3942] border-l-2 border-l-[#00a884]' : ''}`}
+                                    >
+                                      <div className="min-w-0">
+                                        <div className="font-bold text-[11px] text-[#e9edef] truncate">
+                                          👤 {contacto.nombre}
+                                        </div>
+                                        <div className="text-[9px] text-[#8696a0]">
+                                          {contacto.rol} · {formatearNumeroDisplay(contacto.telefono)}
+                                        </div>
+                                      </div>
+                                      <span className="text-[10px] text-[#00a884] font-bold">💬 Chat</span>
+                                    </div>
+                                  )
+                                })
+                              )}
+                            </div>
+                          )}
                         </div>
-                        <div className="text-[10px] text-[#8696a0] truncate font-sans">{chat.ultimoMsg || formatearNumeroDisplay(chat.numero)}</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                      )
+                    })}
+                  </div>
+                ) : (
+                  /* Modo Grupos de WhatsApp */
+                  <div className="flex-1 overflow-y-auto divide-y divide-[#222d34]">
+                    {listaGrupos.length === 0 && (
+                      <div className="p-4 text-center text-[#8696a0] text-xs">No se han detectado grupos aún</div>
+                    )}
+                    {listaGrupos.map(grupo => {
+                      const isSelected = chatActivo === grupo.id
+                      return (
+                        <div
+                          key={grupo.id}
+                          onClick={() => setChatActivo(grupo.id)}
+                          className={`p-3 flex items-center gap-3 cursor-pointer transition-colors ${isSelected ? 'bg-[#2a3942]' : 'hover:bg-[#202c33]'}`}
+                        >
+                          <div className="w-9 h-9 rounded-full bg-[#075e54] border border-[#25d366] flex items-center justify-center font-bold text-white text-xs shrink-0 shadow">
+                            👥
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex justify-between items-baseline mb-0.5">
+                              <span className="font-bold text-xs text-white truncate max-w-[130px]">{grupo.nombre}</span>
+                              <span className="text-[9px] text-[#8696a0] shrink-0 ml-1">{grupo.hora}</span>
+                            </div>
+                            <div className="text-[10px] text-[#8696a0] truncate font-sans">
+                              {grupo.miembros > 0 ? `${grupo.miembros} miembros` : grupo.ultimoMsg}
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
               </div>
 
               {/* Panel de chat */}
@@ -626,11 +800,24 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
                     <div className="p-3 bg-[#202c33] border-b border-[#222d34] flex items-center justify-between shrink-0">
                       <div className="flex items-center gap-3">
                         <div className="w-9 h-9 rounded-full bg-[#00a884] flex items-center justify-center font-bold text-white text-sm uppercase">
-                          {(chatsMap.get(chatActivo)?.nombre || '+').charAt(0)}
+                          {chatActivo.includes('@g.us') || chatActivo.includes('-') ? '👥' : '👤'}
                         </div>
                         <div>
-                          <div className="font-bold text-xs text-white">{chatsMap.get(chatActivo)?.nombre || `+${chatActivo}`}</div>
-                          <div className="text-[10px] text-[#8696a0] font-mono">{formatearNumeroDisplay(chatActivo)}</div>
+                          <div className="font-bold text-xs text-white">
+                            {(() => {
+                              if (chatActivo.includes('@g.us') || chatActivo.includes('-')) {
+                                return gruposMap.get(chatActivo)?.nombre || `Grupo WhatsApp`
+                              }
+                              for (const ab of abonadosAgrupadosMap.values()) {
+                                const c = ab.contactos.find(x => x.telefono === chatActivo)
+                                if (c) return `[${ab.cuenta}] ${ab.nombre} — ${c.nombre} (${c.rol})`
+                              }
+                              return `+${chatActivo}`
+                            })()}
+                          </div>
+                          <div className="text-[10px] text-[#8696a0] font-mono">
+                            {chatActivo.includes('@g.us') || chatActivo.includes('-') ? 'Canal Grupal WhatsApp' : formatearNumeroDisplay(chatActivo)}
+                          </div>
                         </div>
                       </div>
                       <button

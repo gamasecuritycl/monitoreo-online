@@ -311,6 +311,25 @@ async function sincronizarEstadoASupabase() {
   }
 }
 
+async function sincronizarGruposASupabase() {
+  if (!sock || !isReady) return
+  try {
+    const groups = await sock.groupFetchAllParticipating()
+    const groupList = Object.values(groups).map(g => ({
+      id: g.id,
+      subject: g.subject || 'Grupo WhatsApp',
+      creation: g.creation,
+      owner: g.owner,
+      participantsCount: g.participants?.length || 0,
+    }))
+
+    log(`👥 ${groupList.length} Grupo(s) de WhatsApp detectados y sincronizados a Supabase.`)
+    await guardarConfigSupabase('CONFIG_WHATSAPP_GROUPS', JSON.stringify(groupList), 'CONFIG_GROUPS')
+  } catch (err) {
+    log(`⚠️ Error al obtener grupos de WhatsApp: ${err.message}`, 'WARN')
+  }
+}
+
 // ──────────────────────────────────────────────
 //  CONEXIÓN PRINCIPAL
 // ──────────────────────────────────────────────
@@ -335,11 +354,11 @@ async function conectar() {
       auth:                     state,
       logger:                   pino({ level: 'silent' }),
       printQRInTerminal:        false,
-      markOnlineOnConnect:      false,
+      mobile:                   false,
+      browser:                  ['GAMA Seguridad', 'Chrome', '12.0'],
       connectTimeoutMs:         60_000,
+      defaultQueryTimeoutMs:    60_000,
       keepAliveIntervalMs:      25_000,
-      emitOwnEvents:            false,
-      generateHighQualityLinkPreview: false,
       syncFullHistory:          false,
       browser:                  ['Gama Seguridad', 'Chrome', '124.0.0'],
     })
