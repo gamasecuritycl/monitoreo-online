@@ -386,6 +386,7 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
       const { error } = await supabase
         .from('conversaciones_whatsapp')
         .insert({
+          cuenta: clienteSeleccionado?.cuenta || 'MANUAL',
           numero: telNorm,
           mensaje_enviado: mensajeFinal,
           estado: 'pendiente',
