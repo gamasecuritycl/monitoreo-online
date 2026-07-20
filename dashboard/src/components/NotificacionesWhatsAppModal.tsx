@@ -45,7 +45,7 @@ interface QRData {
   usuario: string | null
 }
 
-type Tab = 'chat' | 'notificaciones' | 'config' | 'servidor'
+type Tab = 'chat' | 'notificaciones' | 'ia_whatsapp' | 'config' | 'servidor'
 
 // ──────────────────────────────────────────────
 //  NORMALIZAR TELÉFONO (con soporte + internacional)
@@ -69,6 +69,43 @@ function formatearNumeroDisplay(num: string): string {
   if (d.startsWith('56') && d.length >= 11) return `+${d.slice(0, 2)} 9 ${d.slice(3)}`
   return `+${d}`
 }
+
+const PROMPT_AI_DEFAULT = `Eres el Asistente Virtual Oficial de Gama Seguridad 24/7 en Chile.
+Tu función es atender a los clientes que escriban por WhatsApp, responder sus dudas con máxima precisión, cortesía y profesionalismo, sin inventar jamás información no verificada.
+
+REGLAS MANDATORIAS DE ATENCIÓN:
+1. SALUDO INICIAL OBLIGATORIO:
+   Toda primera interacción con un cliente debe comenzar con:
+   "Hola, te comunicas con el Asistente Virtual de Gama Seguridad 24/7."
+
+2. CRUZAMIENTO DE SEÑALES Y AUDITORÍA DE ALARMA (ÚLTIMOS 3 DÍAS):
+   - Revisa las señales reales de la bitácora (Apertura, Cierre, Corte de Energía, Pánico, Faltas de Test).
+   - Si el abonado no ha enviado señales hace varios días, indícale consultar:
+     a) Si cuenta con servicio telefónico/celular activo y puede efectuar llamadas.
+     b) Si dispone de energía eléctrica en su propiedad.
+     c) Si han llegado los test periódicos de comunicación.
+
+3. GUÍA DE SOPORTE TÉCNICO DE SISTEMAS DE ALARMA:
+   - SISTEMAS DSC (Teclado):
+     Instruye al cliente a dirigirse a su teclado y presionar [*][2] para ver la lista de fallos:
+     [1] Batería Baja / Servicio
+     [2] Corte de Energía Eléctrica (Falta AC)
+     [3] Falla de Línea Telefónica
+     [4] Falla de Comunicación
+     [5] Falla de Zona
+     [6] Tamper / Sabotaje de Zona
+     [7] Batería de Dispositivo Inalámbrico Baja
+     [8] Pérdida de Hora del Sistema
+
+   - SISTEMAS VETTI (App Click):
+     Instruye al cliente a abrir su aplicación "Click App", ir al menú de últimos eventos, verificar el estado y presionar el botón de Armado Total para intentar la conexión.
+
+4. DERIVACIÓN Y CONTACTO DIRECTO CON ESPECIALISTA:
+   Si no puedes resolver una consulta o la información requiere atención humana inmediata, deriva al cliente al área especialista:
+   📲 Contactar a Especialista de Gama Seguridad: https://wa.me/56991016912 (+56 9 91016912)
+
+5. VERACIDAD ABSOLUTA:
+   Nunca inventes datos, fechas u horas de eventos que no figuren en la telemetría real.`
 
 // ──────────────────────────────────────────────
 //  COMPONENTE PRINCIPAL
@@ -132,6 +169,50 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
   const [notificarApertura, setNotificarApertura] = useState(false)
   const [notificarCierre, setNotificarCierre] = useState(false)
   const [notificarVideo, setNotificarVideo] = useState(false)
+
+  // ── Tab IA WhatsApp ──
+  const [masterPrompt, setMasterPrompt] = useState(PROMPT_AI_DEFAULT)
+  const [botAutoResponder, setBotAutoResponder] = useState(true)
+  const [guardandoPrompt, setGuardandoPrompt] = useState(false)
+  const [promptMsgStatus, setPromptMsgStatus] = useState('')
+
+  useEffect(() => {
+    const cargarPromptMaestro = async () => {
+      try {
+        const { data } = await supabase
+          .from('eventos_monitoreo')
+          .select('nombre_abonado')
+          .eq('cuenta', 'CONFIG_WHATSAPP_AI_PROMPT')
+          .single()
+        if (data?.nombre_abonado) {
+          const parsed = JSON.parse(data.nombre_abonado)
+          if (parsed.prompt) setMasterPrompt(parsed.prompt)
+          if (parsed.autoResponder !== undefined) setBotAutoResponder(parsed.autoResponder)
+        }
+      } catch {}
+    }
+    cargarPromptMaestro()
+  }, [])
+
+  const guardarPromptMaestro = async () => {
+    setGuardandoPrompt(true); setPromptMsgStatus('')
+    try {
+      await supabase
+        .from('eventos_monitoreo')
+        .upsert({
+          cuenta: 'CONFIG_WHATSAPP_AI_PROMPT',
+          nombre_abonado: JSON.stringify({ prompt: masterPrompt, autoResponder: botAutoResponder }),
+          evento: 'CONFIG_AI',
+          fecha_hora: new Date().toISOString()
+        }, { onConflict: 'cuenta' })
+      setPromptMsgStatus('✅ Prompt Maestro y Configuración guardados en Supabase!')
+    } catch (err: any) {
+      setPromptMsgStatus('❌ Error guardando: ' + err.message)
+    } finally {
+      setGuardandoPrompt(false)
+      setTimeout(() => setPromptMsgStatus(''), 4000)
+    }
+  }
 
   // ══════════════════════════════════════════════
   //  POLLING DEL ESTADO Y QR DE WHATSAPP DIRECTO DESDE SUPABASE
@@ -376,23 +457,21 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
         return `${remitente}: ${texto}`
       }).join('\n')
 
-      const prompt = `Eres el Auditor de Inteligencia Artificial y Central de Monitoreo 24/7 de Gama Seguridad en Chile.
-Tu tarea es hacer un ANÁLISIS DE COMPORTAMIENTO Y SEGUIMIENTO COMPLETO de los últimos 3 días para la cuenta/grupo actual (${cuentaActiva || 'General'}).
+      const prompt = `${masterPrompt}
 
-Analiza rigurosamente los datos de los últimos 3 días e identifica si ocurre algo de lo siguiente:
-1. ⚡ CORTE DE LUZ / ENERGÍA: ¿Hubo corte de luz y NO se restableció? ¿O se restableció correctamente?
-2. 🚨 ALARMAS SEGUIDAS / DISPAROS REPETIDOS: ¿Hay alarmas seguidas en la misma zona (posible intrusión o sensor fallado)?
-3. 🔓 NO ABRIERON SISTEMA: ¿Faltan aperturas registradas en su horario habitual?
-4. 🔒 NO CERRARON SISTEMA: ¿Faltan cierres o quedó desarmado fuera de horario?
-5. 📋 RESUMEN DE SEGUIMIENTO: Un informe conciso de 3 a 5 líneas profesional listo para enviar a WhatsApp.
+INSTRUCCIÓN ESPECÍFICA PARA LA CONSULTA ACTUAL DE ATENCIÓN Y SEGUIMIENTO (Cuenta: ${cuentaActiva || 'General'}):
+1. Si es la primera interacción o el cliente envió una duda, saluda con: "Hola, te comunicas con el Asistente Virtual de Gama Seguridad 24/7."
+2. Analiza los eventos de los últimos 3 días (Corte de Luz, Alarmas seguidas, Falta de aperturas/cierres) y cruzalo con el mensaje del cliente.
+3. Si requiere soporte de alarma DSC, guíalo a presionar [*][2] en el teclado. Si es VETTI, a la Click App.
+4. Si la consulta supera el nivel de auto-atención, incluye el enlace al Especialista: https://wa.me/56991016912 (+56 9 91016912).
 
-HISTORIAL DE EVENTOS DE ALARMA DE LOS ÚLTIMOS 3 DÍAS:
-${resumenEventos || 'Sin eventos registrados en los últimos 3 días.'}
+TELEMETRÍA Y EVENTOS DE ALARMA DE LOS ÚLTIMOS 3 DÍAS:
+${resumenEventos || 'Sin eventos de alarma registrados en los últimos 3 días.'}
 
 CHAT RECIENTE EN WHATSAPP:
 ${contextoMsgs || 'Sin mensajes recientes.'}
 
-Responde directamente con la conclusión de seguimiento profesional de Gama Seguridad, clara, concisa y sin preámbulos.`
+Responde directamente el mensaje a enviar por WhatsApp al cliente, en un tono 100% verídico, profesional, directo y amable.`
 
       const res = await fetch('/api/gemini', {
         method: 'POST',
@@ -690,10 +769,11 @@ Responde directamente con la conclusión de seguimiento profesional de Gama Segu
   const statusLabel = waStatus.ready ? `✅ Conectado (${waStatus.usuario || ''})` : waStatus.estado === 'SERVIDOR_APAGADO' ? '🔴 Servidor apagado' : waStatus.hasQR ? '🟡 Esperando QR' : '🔵 Conectando...'
 
   const tabs: { id: Tab; label: string }[] = [
-    { id: 'chat',          label: '💬 Chat en Vivo' },
-    { id: 'notificaciones',label: '📢 Enviar Notificaciones' },
-    { id: 'config',        label: '⚙️ Configuración' },
-    { id: 'servidor',      label: '📡 Estado Servidor' },
+    { id: 'chat',           label: '💬 Chat en Vivo' },
+    { id: 'notificaciones', label: '📢 Enviar Notificaciones' },
+    { id: 'ia_whatsapp',    label: '🤖 IA WHATSAPP' },
+    { id: 'config',         label: '⚙️ Configuración' },
+    { id: 'servidor',       label: '📡 Estado Servidor' },
   ]
 
   return (
@@ -1413,6 +1493,122 @@ Responde directamente con la conclusión de seguimiento profesional de Gama Segu
                   </div>
                 )}
               </div>
+            </div>
+          )}
+
+          {/* ══════════════════════════════════════════
+              TAB 3: IA WHATSAPP — EDITOR & MANUALES
+          ══════════════════════════════════════════ */}
+          {activeTab === 'ia_whatsapp' && (
+            <div className="h-full overflow-y-auto bg-[#f8fafc] p-4 text-[#1e293b] font-sans flex flex-col gap-4">
+
+              {/* Header Tab IA */}
+              <div className="bg-white border border-gray-300 rounded-xl p-4 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-purple-600 text-white flex items-center justify-center text-xl font-bold shadow">
+                    🤖
+                  </div>
+                  <div>
+                    <h2 className="text-sm font-bold text-[#0f172a]">IA WHATSAPP — ASISTENTE VIRTUAL GAMA 24/7</h2>
+                    <p className="text-xs text-gray-500">Configuración del Prompt Maestro, Auto-Responder y Manuales de Diagnóstico</p>
+                  </div>
+                </div>
+
+                {/* Control Auto-Responder */}
+                <div className="flex items-center gap-2 bg-[#f1f5f9] p-2 rounded-lg border border-gray-300">
+                  <span className="text-xs font-bold text-gray-700">Bot Auto-Responder:</span>
+                  <button
+                    onClick={() => setBotAutoResponder(!botAutoResponder)}
+                    className={`text-xs px-3 py-1 rounded-full font-bold transition-colors cursor-pointer ${
+                      botAutoResponder
+                        ? 'bg-green-600 text-white shadow-sm'
+                        : 'bg-gray-400 text-white'
+                    }`}
+                  >
+                    {botAutoResponder ? '🟢 ACTIVADO' : '🔴 DESACTIVADO'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Editor de Prompt Maestro */}
+              <div className="bg-white border border-gray-300 rounded-xl p-4 shadow-sm flex flex-col gap-3">
+                <div className="flex justify-between items-center border-b border-gray-200 pb-2">
+                  <span className="font-bold text-xs text-[#0f172a] uppercase tracking-wider flex items-center gap-2">
+                    ✍️ Prompt Maestro de la IA (Modificable en Tiempo Real)
+                  </span>
+                  <button
+                    onClick={() => setMasterPrompt(PROMPT_AI_DEFAULT)}
+                    className="text-[10px] text-purple-600 font-bold hover:underline cursor-pointer"
+                  >
+                    🔄 Restaurar Predeterminado
+                  </button>
+                </div>
+
+                <textarea
+                  rows={10}
+                  className="w-full bg-[#f8fafc] text-[#0f172a] p-3 text-xs font-mono rounded-lg border border-gray-300 focus:outline-none focus:border-purple-600 leading-relaxed resize-y shadow-inner"
+                  value={masterPrompt}
+                  onChange={e => setMasterPrompt(e.target.value)}
+                />
+
+                <div className="flex justify-between items-center pt-2">
+                  <span className="text-xs font-bold text-green-700">{promptMsgStatus}</span>
+                  <button
+                    onClick={guardarPromptMaestro}
+                    disabled={guardandoPrompt}
+                    className="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs px-5 py-2 rounded-lg cursor-pointer shadow transition-colors"
+                  >
+                    {guardandoPrompt ? '💾 Guardando...' : '💾 Guardar Prompt Maestro'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Manuales Inyectados & Enlace a Especialista */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                {/* Manual Teclado DSC */}
+                <div className="bg-white border border-gray-300 rounded-xl p-4 shadow-sm flex flex-col gap-2">
+                  <div className="font-bold text-xs text-blue-900 flex items-center gap-2 border-b border-gray-200 pb-2">
+                    📘 SOPORTE TÉCNICO: TECLADO DSC ([*][2])
+                  </div>
+                  <p className="text-[11px] text-gray-600">
+                    Instrucción al cliente: Ir al teclado de su propiedad y presionar <code className="bg-gray-100 text-purple-700 px-1 py-0.5 rounded font-bold">[*][2]</code> para diagnosticar:
+                  </p>
+                  <div className="grid grid-cols-2 gap-1 text-[10px] bg-slate-50 p-2 rounded border border-gray-200 font-mono">
+                    <div>[1] Batería Baja / Servicio</div>
+                    <div>[2] Corte Energía (Falta AC)</div>
+                    <div>[3] Falla Línea Telefónica</div>
+                    <div>[4] Falla Comunicación</div>
+                    <div>[5] Falla de Zona</div>
+                    <div>[6] Tamper Sabotaje</div>
+                    <div>[7] Batería Inalámbrica</div>
+                    <div>[8] Pérdida de Hora</div>
+                  </div>
+                </div>
+
+                {/* Manual Alarma VETTI & Click App */}
+                <div className="bg-white border border-gray-300 rounded-xl p-4 shadow-sm flex flex-col gap-2">
+                  <div className="font-bold text-xs text-blue-900 flex items-center gap-2 border-b border-gray-200 pb-2">
+                    📲 SOPORTE TÉCNICO: ALARMA VETTI & CLICK APP
+                  </div>
+                  <p className="text-[11px] text-gray-600">
+                    Instrucción al cliente: Abrir la aplicación <strong className="text-gray-800">Click App</strong>, revisar el historial de eventos recientes y presionar <strong className="text-green-700">Armado Total</strong> para reintentar la conexión.
+                  </p>
+                  <div className="mt-auto pt-2 border-t border-gray-200 flex items-center justify-between">
+                    <span className="text-[10px] font-bold text-gray-700">📞 Especialista Humano:</span>
+                    <a
+                      href="https://wa.me/56991016912"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="bg-green-600 hover:bg-green-700 text-white text-[10px] font-bold px-3 py-1.5 rounded-full shadow transition-colors flex items-center gap-1"
+                    >
+                      💬 Contactar Especialista +56991016912
+                    </a>
+                  </div>
+                </div>
+
+              </div>
+
             </div>
           )}
 
