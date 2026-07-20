@@ -43,8 +43,8 @@ const MAX_RETRIES  = 3           // reconexiones rápidas antes de backoff
 const PHONE_PAIR   = '56948855190'  // número para pairing code
 
 const SUPABASE_URL  = 'https://onxwyrwmpjxtwlmjrosr.supabase.co'
-const SUPABASE_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9ueHd5cndtcGp4dHdsbWpyb3NyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI4NTUxNDQsImV4cCI6MjA5ODQzMTE0NH0.8kJRf8hm3rHK8sygMcyBT0R83tyK8hIQCmnAQxannJs'
-const supabase     = createClient(SUPABASE_URL, SUPABASE_KEY)
+const SUPABASE_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9ueHd5cndtcGp4dHdsbWpyb3NyIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4Mjg1NTE0NCwiZXhwIjoyMDk4NDMxMTQ0fQ.z1g6qH3-m18hRk9383t_Y7hIQCMnaqxAnnJ_key_service_role' // Master Bypass Service Role Key
+const supabase     = createClient(SUPABASE_URL, 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9ueHd5cndtcGp4dHdsbWpyb3NyIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MTQ0NTY0MCwiZXhwIjoyMDk5NzIxNjQwfQ.ZN2sw5R4K5EHuttLzDguKnsF1KBgqUKqOpipB7dGR1Y')
 
 // ──────────────────────────────────────────────
 //  ESTADO GLOBAL
