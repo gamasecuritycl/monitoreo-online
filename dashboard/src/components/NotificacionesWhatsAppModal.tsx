@@ -328,6 +328,49 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
     })
     .reverse()
 
+  const [generandoIA, setGenerandoIA] = useState(false)
+
+  const renderStatusCheck = (estado?: string) => {
+    if (!estado || estado === 'pendiente') return <span className="text-gray-400 text-[10px]" title="Pendiente">⏳</span>
+    if (estado === 'enviado') return <span className="text-gray-500 font-bold text-[11px]" title="Enviado">✓</span>
+    if (estado === 'entregado') return <span className="text-gray-500 font-bold text-[11px]" title="Entregado">✓✓</span>
+    if (estado === 'leido') return <span className="text-[#53bdeb] font-bold text-[11px]" title="Leído">✓✓</span>
+    return <span className="text-gray-500 font-bold text-[11px]">✓</span>
+  }
+
+  const generarRespuestaIA = async () => {
+    if (!chatActivo || generandoIA) return
+    setGenerandoIA(true)
+    try {
+      const contextoMsgs = mensajesActivos.slice(-5).map(m => {
+        const remitente = (m.respuesta_recibida || m.respuesta_cliente) ? 'Cliente' : 'Gama Seguridad'
+        const texto = m.respuesta_recibida || m.respuesta_cliente || m.mensaje_enviado || ''
+        return `${remitente}: ${texto}`
+      }).join('\n')
+
+      const prompt = `Eres la Central de Monitoreo de Gama Seguridad 24/7 en Chile.
+Genera una respuesta muy concisa, formal y clara en español chileno profesional para la siguiente conversación reciente de WhatsApp.
+Si hay una alarma o consulta del cliente, responde con el protocolo oficial de Gama Seguridad. No agregues saludos largos ni introducciones, responde directamente el texto a enviar por WhatsApp.
+
+Conversación reciente:
+${contextoMsgs || 'Novedad general de monitoreo de alarmas.'}`
+
+      const res = await fetch('/api/gemini', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt }),
+      })
+      const data = await res.json()
+      if (data.text) {
+        setTextoChat(data.text.trim())
+      }
+    } catch (err) {
+      console.error('Error generando IA:', err)
+    } finally {
+      setGenerandoIA(false)
+    }
+  }
+
   const enviarChat = async () => {
     if (!chatActivo || !textoChat.trim() || enviandoChat) return
     const texto = textoChat.trim()
@@ -881,9 +924,12 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
                         return (
                           <div key={msg.id || i} className={`flex flex-col ${esCliente ? 'items-start' : 'items-end'}`}>
                             <div className={`max-w-[75%] p-3 rounded-lg text-xs font-sans shadow break-words ${esCliente ? 'bg-white text-[#111b21] rounded-tl-none border border-gray-200' : 'bg-[#d9fdd3] text-[#111b21] rounded-tr-none border border-green-200'}`}>
-                              <div className="text-[9px] font-bold opacity-70 mb-1 flex justify-between gap-4">
+                              <div className="text-[9px] font-bold opacity-70 mb-1 flex justify-between gap-4 items-center">
                                 <span className={esCliente ? 'text-[#00a884]' : 'text-[#075e54]'}>{esCliente ? `📩 CLIENTE` : `🛡️ GAMA SEGURIDAD`}</span>
-                                <span className="text-[#667781]">{msg.created_at ? new Date(msg.created_at).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }) : ''}</span>
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-[#667781]">{msg.created_at ? new Date(msg.created_at).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }) : ''}</span>
+                                  {!esCliente && renderStatusCheck(msg.estado)}
+                                </div>
                               </div>
                               <div className="leading-relaxed text-[#111b21]">{texto}</div>
                             </div>
@@ -999,9 +1045,17 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
                         onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviarChat() } }}
                       />
                       <button
+                        onClick={generarRespuestaIA}
+                        disabled={generandoIA}
+                        title="Generar respuesta inteligente con Gemini IA basada en los últimos mensajes"
+                        className="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs px-3 py-2.5 rounded-lg disabled:opacity-50 cursor-pointer shadow h-10 transition-colors flex items-center gap-1.5 shrink-0"
+                      >
+                        {generandoIA ? '✨ Pensando...' : '🤖 Asistente IA'}
+                      </button>
+                      <button
                         onClick={enviarChat}
                         disabled={!textoChat.trim() || enviandoChat}
-                        className="bg-[#00a884] hover:bg-[#029676] text-white font-bold text-xs px-4 py-2.5 rounded-lg disabled:opacity-50 cursor-pointer shadow h-10 transition-colors"
+                        className="bg-[#00a884] hover:bg-[#029676] text-white font-bold text-xs px-4 py-2.5 rounded-lg disabled:opacity-50 cursor-pointer shadow h-10 transition-colors shrink-0"
                       >
                         {enviandoChat ? '⏳' : '💬 Send'}
                       </button>

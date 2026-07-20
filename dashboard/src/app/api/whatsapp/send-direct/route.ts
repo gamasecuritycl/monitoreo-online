@@ -5,9 +5,6 @@ const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://onxwyrwmpj
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9ueHd5cndtcGp4dHdsbWpyb3NyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI4NTUxNDQsImV4cCI6MjA5ODQzMTE0NH0.8kJRf8hm3rHK8sygMcyBT0R83tyK8hIQCmnAQxannJs'
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
-const CALLMEBOT_API = 'https://api.callmebot.com/whatsapp.php'
-const CALLMEBOT_APIKEY = '4238719'
-
 export async function POST(req: Request) {
   try {
     const { telefono, texto } = await req.json()
@@ -15,15 +12,23 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: 'Faltan parámetros de envío' }, { status: 400 })
     }
 
-    let telLimpio = telefono.replace(/[^0-9]/g, '')
-    if (telLimpio.length === 9 && telLimpio.startsWith('9')) {
-      telLimpio = '56' + telLimpio
-    } else if (telLimpio.length === 8) {
-      telLimpio = '569' + telLimpio
+    let telLimpio = String(telefono).trim()
+    if (telLimpio.includes('@g.us') || telLimpio.includes('-')) {
+      if (!telLimpio.endsWith('@g.us') && telLimpio.includes('-')) {
+        telLimpio = telLimpio + '@g.us'
+      }
+    } else {
+      const digitos = telLimpio.replace(/[^0-9]/g, '')
+      if (digitos.length === 9 && digitos.startsWith('9')) {
+        telLimpio = '56' + digitos
+      } else if (digitos.length === 8) {
+        telLimpio = '569' + digitos
+      } else if (digitos.length > 0) {
+        telLimpio = digitos
+      }
     }
 
     // Insertar en conversaciones_whatsapp con estado pendiente
-    // El servidor 24/7 en la nube (Oracle VM) despachará esta notificación en < 3 segundos
     const { error } = await supabase.from('conversaciones_whatsapp').insert({
       numero: telLimpio,
       mensaje_enviado: texto,
@@ -38,6 +43,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ ok: true, proveedor: 'whatsapp_database_bridge' })
   } catch (err: any) {
+    console.error('[SEND-DIRECT API ERROR]:', err.message)
     return NextResponse.json({ ok: false, error: err.message }, { status: 500 })
   }
 }

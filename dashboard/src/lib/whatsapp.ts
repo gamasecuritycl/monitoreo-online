@@ -23,7 +23,6 @@ const PANICO_KEYWORDS = ['SOCORRO', 'PÁNICO', 'PANICO', 'EMERGENCIA', 'AYUDA YA
 const ENERGIA_KEYWORDS = ['ENERGÍA', 'ENERGIA', 'CORTE', 'LUZ', 'RESTABLECIDO']
 
 export async function sendMessage(telefono: string, texto: string): Promise<{ ok: boolean; debug?: string }> {
-  // Intento 1: API Server-Side de Next.js (Evita CORS y Mixed Content Block HTTPS -> HTTP)
   try {
     const res = await fetch('/api/whatsapp/send-direct', {
       method: 'POST',
@@ -31,22 +30,13 @@ export async function sendMessage(telefono: string, texto: string): Promise<{ ok
       body: JSON.stringify({ telefono, texto }),
     })
     const data = await res.json()
-    if (data.ok) return { ok: true, debug: `${data.proveedor}: OK` }
-  } catch {}
-
-  // Intento 2: Fallback CallMeBot directo
-  try {
-    const params = new URLSearchParams({
-      phone: telefono,
-      text: texto,
-      apikey: CALLMEBOT_APIKEY,
-    })
-    const res = await fetch(`${CALLMEBOT_API}?${params.toString()}`)
-    const data = await res.text()
-    const ok = data.includes('Message queued') || data.includes('success')
-    return { ok, debug: `callmebot: status=${res.status}` }
+    if (res.ok && data.ok) {
+      return { ok: true, debug: 'OK' }
+    } else {
+      return { ok: false, debug: data.error || `Error ${res.status}` }
+    }
   } catch (err: any) {
-    return { ok: false, debug: `error=${err.message}` }
+    return { ok: false, debug: `Error de red: ${err.message}` }
   }
 }
 
