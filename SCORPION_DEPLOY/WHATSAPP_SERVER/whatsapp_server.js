@@ -311,6 +311,19 @@ async function sincronizarEstadoASupabase() {
   }
 }
 
+function normalizarJID(raw) {
+  if (!raw) return ''
+  const str = String(raw).trim()
+  if (str.endsWith('@g.us') || str.endsWith('@s.whatsapp.net')) return str
+  if (str.includes('-') || str.startsWith('120') || str.includes('@g')) {
+    return str.replace('@s.whatsapp.net', '') + '@g.us'
+  }
+  let digits = str.replace(/[^0-9]/g, '')
+  if (digits.length === 9 && digits.startsWith('9')) digits = '56' + digits
+  else if (digits.length === 8) digits = '569' + digits
+  return `${digits}@s.whatsapp.net`
+}
+
 async function sincronizarGruposASupabase() {
   if (!sock || !isReady) return
   try {
@@ -323,7 +336,9 @@ async function sincronizarGruposASupabase() {
       participantsCount: g.participants?.length || 0,
     }))
 
-    log(`👥 ${groupList.length} Grupo(s) de WhatsApp detectados y sincronizados a Supabase.`)
+    log(`👥 ${groupList.length} Grupo(s) de WhatsApp detectados:`)
+    groupList.forEach(g => log(`   📌 Grupo: "${g.subject}" (ID: ${g.id})`))
+
     await guardarConfigSupabase('CONFIG_WHATSAPP_GROUPS', JSON.stringify(groupList), 'CONFIG_GROUPS')
   } catch (err) {
     log(`⚠️ Error al obtener grupos de WhatsApp: ${err.message}`, 'WARN')
@@ -359,14 +374,44 @@ async function conectar() {
       connectTimeoutMs:         60_000,
       defaultQueryTimeoutMs:    60_000,
       keepAliveIntervalMs:      25_000,
-      syncFullHistory:          false,
-      browser:                  ['Gama Seguridad', 'Chrome', '124.0.0'],
+      syncFullHistory:          true,
+      markOnlineOnConnect:      true,
     })
 
     // ── Guardar credenciales y sincronizar a Supabase ──
     sock.ev.on('creds.update', async () => {
       await saveCreds()
       await saveSessionToSupabase()
+    })
+
+    // ── Sincronizar Historial de Mensajes Pasados (3-7 días) ──
+    sock.ev.on('messaging-history.set', async ({ messages }) => {
+      if (!messages || messages.length === 0) return
+      log(`📜 Recibido historial de WhatsApp: ${messages.length} mensaje(s). Sincronizando a Supabase...`)
+      for (const msg of messages) {
+        if (isJidBroadcast(msg.key.remoteJid || '')) continue
+        const body = msg.message?.conversation
+          || msg.message?.extendedTextMessage?.text
+          || msg.message?.imageMessage?.caption
+          || ''
+        if (!body) continue
+
+        const jid = msg.key.remoteJid || ''
+        const numero = jid.replace('@s.whatsapp.net', '')
+        const fechaMsg = msg.messageTimestamp ? new Date(msg.messageTimestamp * 1000).toISOString() : new Date().toISOString()
+
+        try {
+          await supabase.from('conversaciones_whatsapp').insert({
+            numero,
+            tipo_evento: msg.key.fromMe ? 'mensaje_enviado' : 'mensaje_entrante',
+            estado: 'enviado',
+            respuesta_recibida: msg.key.fromMe ? null : body,
+            mensaje_enviado: msg.key.fromMe ? body : null,
+            created_at: fechaMsg,
+          })
+        } catch {}
+      }
+      log(`✅ Sincronización de historial de ${messages.length} mensaje(s) completada.`)
     })
 
     // ── Actualización de conexión ──
@@ -403,6 +448,9 @@ async function conectar() {
         log(`✅ ¡WhatsApp CONECTADO! Usuario: ${userName}`)
         iniciarHeartbeat()
         await sincronizarEstadoASupabase()
+        setTimeout(sincronizarGruposASupabase, 5_000)
+        // Sincronizar grupos cada 60s
+        setInterval(sincronizarGruposASupabase, 60_000)
         // Despachar mensajes en cola
         setTimeout(despacharCola, 2_000)
       }

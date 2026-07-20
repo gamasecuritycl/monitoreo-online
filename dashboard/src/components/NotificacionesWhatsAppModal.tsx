@@ -852,6 +852,71 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
                       <div ref={chatEndRef} />
                     </div>
 
+                    {/* Toolbar de Mensajes Pregrabados / Novedades C730 & Grupo 24/7 */}
+                    <div className="bg-[#182229] border-t border-[#222d34] p-2 flex flex-wrap gap-1.5 items-center shrink-0">
+                      <span className="text-[10px] font-bold text-[#00a884] uppercase tracking-wider mr-1">
+                        ⚡ PREGRABADOS (24/7 & C730):
+                      </span>
+
+                      {/* Botón C730 Apertura */}
+                      <button
+                        onClick={() => setTextoChat('GAMA SEGURIDAD 24/7: Se registra APERTURA DE SISTEMA en Abonado C730.')}
+                        className="text-[10px] bg-[#202c33] hover:bg-[#2a3942] text-green-400 border border-[#00a884] px-2 py-1 rounded cursor-pointer transition-colors font-bold"
+                      >
+                        🟢 Apertura C730
+                      </button>
+
+                      {/* Botón C730 Cierre */}
+                      <button
+                        onClick={() => setTextoChat('GAMA SEGURIDAD 24/7: Se registra CIERRE DE SISTEMA en Abonado C730. Sistema armado.')}
+                        className="text-[10px] bg-[#202c33] hover:bg-[#2a3942] text-blue-400 border border-[#38bdf8] px-2 py-1 rounded cursor-pointer transition-colors font-bold"
+                      >
+                        🔵 Cierre C730
+                      </button>
+
+                      {/* Botón C730 Alarma Zona */}
+                      <button
+                        onClick={() => {
+                          const zona = prompt('Ingrese el número de Zona con alarma (ej: 02, 05, 12):', '01')
+                          if (zona) {
+                            setTextoChat(`GAMA SEGURIDAD 24/7: 🚨 ALARMA DE ROBO / INTRUSIÓN en Abonado C730 — ZONA ${zona}. Confirmar estado con personal.`)
+                          }
+                        }}
+                        className="text-[10px] bg-[#202c33] hover:bg-[#2a3942] text-red-400 border border-[#ef4444] px-2 py-1 rounded cursor-pointer transition-colors font-bold"
+                      >
+                        🚨 Alarma Zona C730
+                      </button>
+
+                      {/* Botón C730 Corte Energía */}
+                      <button
+                        onClick={() => setTextoChat('GAMA SEGURIDAD 24/7: ⚡ CORTE DE ENERGÍA ELÉCTRICA en Abonado C730. Su sistema opera con batería de respaldo.')}
+                        className="text-[10px] bg-[#202c33] hover:bg-[#2a3942] text-yellow-400 border border-[#f59e0b] px-2 py-1 rounded cursor-pointer transition-colors font-bold"
+                      >
+                        ⚡ Corte Energía C730
+                      </button>
+
+                      {/* Generador Rápido de Novedad para cualquier Abonado */}
+                      <button
+                        onClick={() => {
+                          const cuent = prompt('Ingrese Cuenta del Abonado (ej: C730, 1001, C798):', 'C730')?.toUpperCase()
+                          if (!cuent) return
+                          const tipo = prompt('Tipo de novedad (1=Apertura, 2=Cierre, 3=Alarma, 4=Energía):', '1')
+                          const z = tipo === '3' ? prompt('Número de zona:', '01') : ''
+
+                          let msg = `GAMA SEGURIDAD: Novedad sobre Abonado ${cuent}.`
+                          if (tipo === '1') msg = `GAMA SEGURIDAD 24/7: Se registra APERTURA DE SISTEMA en Abonado ${cuent}.`
+                          else if (tipo === '2') msg = `GAMA SEGURIDAD 24/7: Se registra CIERRE DE SISTEMA en Abonado ${cuent}. Sistema armado.`
+                          else if (tipo === '3') msg = `GAMA SEGURIDAD 24/7: 🚨 ALARMA DE INTRUSIÓN en Abonado ${cuent} — ZONA ${z || '01'}.`
+                          else if (tipo === '4') msg = `GAMA SEGURIDAD 24/7: ⚡ CORTE DE ENERGÍA en Abonado ${cuent}. Operando con batería de respaldo.`
+
+                          setTextoChat(msg)
+                        }}
+                        className="text-[10px] bg-[#005c4b] hover:bg-[#00a884] text-white px-2 py-1 rounded cursor-pointer font-bold ml-auto"
+                      >
+                        ➕ Crear Novedad Abonado
+                      </button>
+                    </div>
+
                     {/* Input de respuesta */}
                     <div className="p-3 bg-[#202c33] border-t border-[#222d34] flex gap-2 items-end shrink-0">
                       <textarea
