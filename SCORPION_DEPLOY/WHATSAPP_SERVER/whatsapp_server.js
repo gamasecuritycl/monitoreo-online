@@ -941,8 +941,38 @@ log('═════════════════════════
 log('  GAMA SEGURIDAD - WhatsApp Server v3.0   ')
 log('═══════════════════════════════════════════')
 
-// Memoria de autenticación de clientes por nombre/dirección
+// Memoria de autenticación de clientes y temporizadores de inactividad de 5 min
 const userAuthSessions = {}
+const inactivityTimers = {}
+
+function reiniciarTemporizadorInactividad(sock, jid, numero) {
+  if (inactivityTimers[numero]) {
+    clearTimeout(inactivityTimers[numero])
+  }
+
+  inactivityTimers[numero] = setTimeout(async () => {
+    try {
+      const msjCierre = `Estimado cliente, por inactividad de 5 minutos daremos por finalizada esta atención.\n\nAgradecemos su tiempo y quedamos atentos a cualquier futura consulta. Gama Seguridad 24/7.`
+
+      await sock.sendMessage(jid, { text: msjCierre })
+
+      await supabase.from('conversaciones_whatsapp').insert({
+        numero: numero,
+        tipo_evento: 'mensaje_enviado',
+        estado: 'enviado',
+        mensaje_enviado: msjCierre,
+        cuenta: userAuthSessions[numero]?.cuenta || 'BOT_TIMEOUT',
+        created_at: new Date().toISOString()
+      })
+
+      delete userAuthSessions[numero]
+      delete inactivityTimers[numero]
+      log(`⏳ [INACTIVIDAD 5 MIN] Sesión finalizada automáticamente para ${numero}`)
+    } catch (e) {
+      log(`⚠️ Error en timeout de inactividad: ${e.message}`)
+    }
+  }, 5 * 60 * 1000) // 5 minutos exactos
+}
 
 // ──────────────────────────────────────────────
 //  FUNCIÓN DE RESPUESTA AUTOMÁTICA CON GEMINI IA & MENÚ INTERACTIVO (DISPARADORES)
@@ -952,6 +982,9 @@ async function responderConIA(sock, jid, numero, bodyCliente, promptMaestro, nom
     const textClean = bodyCliente.trim().toLowerCase()
     let cuentaActiva = ''
     const numLimpio = numero.replace(/[^0-9]/g, '')
+
+    // Reiniciar temporizador de inactividad de 5 minutos
+    reiniciarTemporizadorInactividad(sock, jid, numero)
 
     // 1. Identificar abonado por coincidencia en eventos_monitoreo
     const { data: clienteMatch } = await supabase
@@ -970,8 +1003,36 @@ async function responderConIA(sock, jid, numero, bodyCliente, promptMaestro, nom
     let respuestaDirecta = ''
     const authSession = userAuthSessions[numero]
 
-    if (authSession?.state === 'AWAITING_NAME_OR_ADDRESS') {
-      // El cliente ingresó un nombre o dirección para verificar
+    // Cierre o despedida del cliente
+    if (
+      textClean === 'no' ||
+      textClean === 'gracias' ||
+      textClean === 'muchas gracias' ||
+      textClean.includes('chao') ||
+      textClean.includes('adios') ||
+      textClean.includes('adiós') ||
+      textClean.includes('todo bien') ||
+      textClean.includes('ninguna')
+    ) {
+      respuestaDirecta = `Muchas gracias por comunicarse con el Asistente Virtual de Gama Seguridad 24/7.\n\nQuedamos a su entera disposición ante cualquier requerimiento. ¡Que tenga un excelente día!`
+      if (inactivityTimers[numero]) clearTimeout(inactivityTimers[numero])
+      delete userAuthSessions[numero]
+      delete inactivityTimers[numero]
+    }
+
+    // Re-mostrar menú ante "sí", "más dudas", "menú"
+    else if (
+      textClean === 'si' ||
+      textClean === 'sí' ||
+      textClean.includes('mas dudas') ||
+      textClean.includes('más dudas') ||
+      textClean.includes('otra duda') ||
+      textClean.includes('otra consulta')
+    ) {
+      respuestaDirecta = `Con gusto le asistimos nuevamente.\nPor favor responde con el número de la opción deseada:\n\n1. Consulta de mi alarma y bitácora\n2. Soporte técnico y guía de teclado (DSC / VETTI)\n3. Consultas comerciales\n4. Hablar con un operador o especialista en vivo`
+    }
+
+    else if (authSession?.state === 'AWAITING_NAME_OR_ADDRESS') {
       const { data: matches } = await supabase
         .from('eventos_monitoreo')
         .select('cuenta, nombre_abonado')
@@ -1023,7 +1084,7 @@ async function responderConIA(sock, jid, numero, bodyCliente, promptMaestro, nom
           }
         } catch (e) {}
 
-        respuestaDirecta = `Consulta de bitácora y estado de alarma:\n\nCuenta: ${cuentaActiva}\nEstado general: Sistema operando normal.\n\nÚltimos eventos registrados:\n${eventosTxt || '• Se confirma recepción de señales de comunicación normales en la central.'}\n\nSi necesitas asistencia técnica adicional, por favor responde 2 o 4.`
+        respuestaDirecta = `Consulta de bitácora y estado de alarma:\n\nCuenta: ${cuentaActiva}\nEstado general: Sistema operando normal.\n\nÚltimos eventos registrados:\n${eventosTxt || '• Se confirma recepción de señales de comunicación normales en la central.'}\n\n¿Tienes alguna otra duda o consulta?\n• Responde el número de otra opción (1, 2, 3, 4)\n• O escribe "menú" para volver al menú principal.`
       } else {
         userAuthSessions[numero] = { state: 'AWAITING_NAME_OR_ADDRESS' }
         respuestaDirecta = `Consulta de bitácora y estado de alarma:\n\nPor seguridad de tus datos, por favor indícanos el nombre y apellido del titular registrado (o la dirección de la propiedad) para verificar tu sistema.`
@@ -1032,7 +1093,7 @@ async function responderConIA(sock, jid, numero, bodyCliente, promptMaestro, nom
 
     // Opción 3: CONSULTAS COMERCIALES (Módulo en desarrollo)
     else if (textClean === '3' || textClean.includes('comercial') || textClean.includes('cotiza')) {
-      respuestaDirecta = `Consultas comerciales - Gama Seguridad 24/7\n\nEstimado cliente, le informamos que el módulo de consultas comerciales se encuentra actualmente en desarrollo.\n\nSi requiere atención o cotizaciones, por favor responde con el número 4 o presiona el enlace para comunicarse con un especialista.`
+      respuestaDirecta = `Consultas comerciales - Gama Seguridad 24/7\n\nEstimado cliente, le informamos que el módulo de consultas comerciales se encuentra actualmente en desarrollo.\n\nSi requiere atención o cotizaciones, por favor responde con el número 4 o presiona el enlace para comunicarse con un especialista.\n\n¿Tienes alguna otra duda o consulta?\n• Escribe "menú" para volver al menú principal.`
     }
 
     // Opción 4: TRANSFERENCIA A OPERADOR HUMANO (Con enlace directo de chat)
@@ -1054,12 +1115,12 @@ async function responderConIA(sock, jid, numero, bodyCliente, promptMaestro, nom
 
     // Opción 2A: Soporte Teclado DSC
     else if (textClean === '2a' || textClean.includes('dsc') || textClean.includes('teclado')) {
-      respuestaDirecta = `Soporte técnico teclado DSC\n\nPara revisar las fallas de su sistema DSC:\n1. Diríjase al teclado de su propiedad.\n2. Presione [*][2].\n3. Verifique el número de luz encendido:\n   - Luz 1: Batería baja / servicio\n   - Luz 2: Falta de energía eléctrica (corte AC)\n   - Luz 3: Falla de línea telefónica\n   - Luz 4: Falla de comunicación\n   - Luz 5: Falla de zona\n   - Luz 8: Pérdida de hora del sistema\n\nSi requiere asistencia adicional, por favor responde 4.`
+      respuestaDirecta = `Soporte técnico teclado DSC\n\nPara revisar las fallas de su sistema DSC:\n1. Diríjase al teclado de su propiedad.\n2. Presione [*][2].\n3. Verifique el número de luz encendido:\n   - Luz 1: Batería baja / servicio\n   - Luz 2: Falta de energía eléctrica (corte AC)\n   - Luz 3: Falla de línea telefónica\n   - Luz 4: Falla de comunicación\n   - Luz 5: Falla de zona\n   - Luz 8: Pérdida de hora del sistema\n\n¿Tienes alguna otra duda o consulta?\n• Responde 4 para hablar con un especialista técnico\n• O escribe "menú" para volver al menú principal.`
     }
 
     // Opción 2B: Soporte VETTI & Click App
     else if (textClean === '2b' || textClean.includes('vetti') || textClean.includes('click')) {
-      respuestaDirecta = `Soporte técnico alarma VETTI y Click App\n\nPara verificar su alarma VETTI:\n1. Abra la aplicación Click App en su teléfono.\n2. Ingrese al historial de eventos recientes.\n3. Presione el botón de Armado Total para reconectar.\n\nSi requiere asistencia adicional, por favor responde 4.`
+      respuestaDirecta = `Soporte técnico alarma VETTI y Click App\n\nPara verificar su alarma VETTI:\n1. Abra la aplicación Click App en su teléfono.\n2. Ingrese al historial de eventos recientes.\n3. Presione el botón de Armado Total para reconectar.\n\n¿Tienes alguna otra duda o consulta?\n• Responde 4 para hablar con un especialista técnico\n• O escribe "menú" para volver al menú principal.`
     }
 
     // Opción 2: Menú Soporte Técnico
@@ -1075,6 +1136,7 @@ async function responderConIA(sock, jid, numero, bodyCliente, promptMaestro, nom
       textClean.includes('buenas') ||
       textClean.includes('prueba') ||
       textClean.includes('menu') ||
+      textClean.includes('menú') ||
       textClean.includes('inicio') ||
       textClean.includes('ayuda')
     ) {
