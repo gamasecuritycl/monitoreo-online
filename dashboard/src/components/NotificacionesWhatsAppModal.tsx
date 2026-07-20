@@ -423,19 +423,25 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
     if (!chatActivo || generandoIA) return
     setGenerandoIA(true)
     try {
-      // 1. Identificar automáticamente la cuenta del abonado (por cliente seleccionado, por grupo, o por búsqueda inversa de teléfono)
-      let cuentaActiva = clienteSeleccionado?.cuenta || ''
+      // 1. Identificación rigurosa del abonado activo en el chat actual
+      let cuentaActiva = ''
 
+      // a) Si chatActivo es un código de cliente directo (ej: "1001", "C701", "C730")
+      if (clientesMap[chatActivo]) {
+        cuentaActiva = chatActivo
+      } else if (clienteSeleccionado?.cuenta) {
+        cuentaActiva = clienteSeleccionado.cuenta
+      }
+
+      // b) Si no, intentar extraer de chatActivo o grupos
       if (!cuentaActiva && chatActivo) {
         const numLimpio = chatActivo.replace(/[^0-9]/g, '')
-        // a) Si es el grupo 24/7 o Acceso
         if (chatActivo.includes('1493818964') || chatActivo.includes('1495553039')) {
           cuentaActiva = 'C730'
         } else {
-          // b) Búsqueda inversa en la base de datos de clientes por teléfono
           for (const [cta, datos] of Object.entries(clientesMap)) {
             const strDatos = JSON.stringify(datos)
-            if (strDatos.includes(numLimpio)) {
+            if (cta === chatActivo || (numLimpio && numLimpio.length >= 8 && strDatos.includes(numLimpio))) {
               cuentaActiva = cta
               break
             }
@@ -443,7 +449,7 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
         }
       }
 
-      // c) Buscar menciones explícitas de código de abonado en los mensajes recientes (ej: C701, C730, C7BE)
+      // c) Extraer de mensajes recientes
       const contextoMsgs = mensajesActivos.slice(-5).map(m => {
         const remitente = (m.respuesta_recibida || m.respuesta_cliente) ? 'Cliente' : 'Gama Seguridad'
         const texto = m.respuesta_recibida || m.respuesta_cliente || m.mensaje_enviado || ''
@@ -451,32 +457,29 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
       }).join('\n')
 
       if (!cuentaActiva) {
-        const matchCod = contextoMsgs.match(/\b(C\d{3,4}[A-Z]?)\b/i)
+        const matchCod = (contextoMsgs + ' ' + (chatActivo || '')).match(/\b([C]\d{3,4}|\d{4})\b/i)
         if (matchCod && matchCod[1]) {
           cuentaActiva = matchCod[1].toUpperCase()
         }
       }
 
-      // 2. Consultar Bitácora y Señales de la Cuenta en los últimos 3 días en eventos_monitoreo
+      // 2. Consultar Bitácora EXCLUSIVAMENTE para la cuenta de este abonado (nunca traer cuentas ajenas)
       let historialAlarmas3Dias: any[] = []
-      try {
-        const fechaHace3Dias = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()
-        let query = supabase
-          .from('eventos_monitoreo')
-          .select('cuenta, evento, fecha_hora, zona, usuario, descripcion, nombre_abonado')
-          .gte('fecha_hora', fechaHace3Dias)
-          .order('fecha_hora', { ascending: false })
+      if (cuentaActiva) {
+        try {
+          const fechaHace3Dias = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()
+          const { data } = await supabase
+            .from('eventos_monitoreo')
+            .select('cuenta, evento, fecha_hora, zona, usuario, descripcion, nombre_abonado')
+            .eq('cuenta', cuentaActiva)
+            .gte('fecha_hora', fechaHace3Dias)
+            .order('fecha_hora', { ascending: false })
+            .limit(40)
+          if (data) historialAlarmas3Dias = data
+        } catch {}
+      }
 
-        if (cuentaActiva) {
-          query = query.eq('cuenta', cuentaActiva)
-        } else {
-          query = query.limit(30)
-        }
-        const { data } = await query
-        if (data) historialAlarmas3Dias = data
-      } catch {}
-
-      // 3. Formatear la Bitácora y Eventos para que la IA los analice
+      // 3. Formatear los registros de Bitácora para la IA
       const resumenEventos = historialAlarmas3Dias.map(e => {
         const f = e.fecha_hora ? new Date(e.fecha_hora).toLocaleString('es-CL') : ''
         return `[${f}] Cuenta: ${e.cuenta || 'General'} | Evento: ${e.evento || e.descripcion || 'Sin desmit.'} | Zona: ${e.zona || 'N/A'} | Usuario: ${e.usuario || 'N/A'}`
@@ -485,19 +488,6 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
       const prompt = `${masterPrompt}
 
 IDENTIFICACIÓN DE ABONADO Y CONSULTA DE BITÁCORA EN TIEMPO REAL:
-- Código de Abonado Detectado: ${cuentaActiva ? `${cuentaActiva} (${clientesMap[cuentaActiva]?.nombre || 'Titular Registrado'})` : 'NO IDENTIFICADO AÚN'}
-- Si el Abonado NO está identificado en el chat, solicita amablemente al cliente indicar su Código de Abonado (ej: C701) o RUT para consultar su bitácora.
-
-INSTRUCCIONES DE ATENCIÓN CON BITÁCORA Y SEÑALES (Cuenta: ${cuentaActiva || 'General'}):
-1. Saluda con: "Hola, te comunicas con el Asistente Virtual de Gama Seguridad 24/7."
-2. Cruza los eventos reales de la bitácora de los últimos 3 días (Cortes de Luz, Disparos, Cierres/Aperturas) con lo que pregunta el cliente.
-3. Si aplica soporte técnico, entrega guía de Teclado DSC [*][2] o App Click de VETTI.
-4. Para emergencias o soporte avanzado, entrega link al Especialista: https://wa.me/56991016912 (+56 9 91016912).
-
-EVENTOS Y REGISTROS DE BITÁCORA DE LOS ÚLTIMOS 3 DÍAS:
-${resumenEventos || 'Sin eventos registrados en los últimos 3 días para esta cuenta.'}
-
-HISTORIAL RECIENTE DE CHAT WHATSAPP:
 ${contextoMsgs || 'Sin mensajes recientes.'}
 
 Responde directamente el mensaje para WhatsApp al cliente, en un tono 100% verídico, profesional y claro.`
@@ -1191,31 +1181,33 @@ Responde directamente el mensaje para WhatsApp al cliente, en un tono 100% verí
                       </button>
                     </div>
 
-                    {/* Input de respuesta */}
+                    {/* Input de respuesta más alto */}
                     <div className="p-3 bg-[#f0f2f5] border-t border-gray-300 flex gap-2 items-end shrink-0 shadow-sm">
                       <textarea
-                        rows={2}
-                        placeholder="Escribe un mensaje..."
-                        className="flex-1 bg-white text-[#111b21] p-2.5 text-xs font-sans rounded-lg border border-gray-300 focus:outline-none focus:border-[#00a884] resize-none shadow-sm"
+                        rows={4}
+                        placeholder="Escribe un mensaje o presiona 🤖 Asistente IA para redactar..."
+                        className="flex-1 bg-white text-[#111b21] p-3 text-xs font-sans rounded-lg border border-gray-300 focus:outline-none focus:border-[#00a884] resize-y min-h-[85px] max-h-[160px] shadow-sm leading-relaxed"
                         value={textoChat}
                         onChange={e => setTextoChat(e.target.value)}
                         onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviarChat() } }}
                       />
-                      <button
-                        onClick={generarRespuestaIA}
-                        disabled={generandoIA}
-                        title="Generar respuesta inteligente con Gemini IA basada en los últimos mensajes"
-                        className="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs px-3 py-2.5 rounded-lg disabled:opacity-50 cursor-pointer shadow h-10 transition-colors flex items-center gap-1.5 shrink-0"
-                      >
-                        {generandoIA ? '✨ Pensando...' : '🤖 Asistente IA'}
-                      </button>
-                      <button
-                        onClick={enviarChat}
-                        disabled={!textoChat.trim() || enviandoChat}
-                        className="bg-[#00a884] hover:bg-[#029676] text-white font-bold text-xs px-4 py-2.5 rounded-lg disabled:opacity-50 cursor-pointer shadow h-10 transition-colors shrink-0"
-                      >
-                        {enviandoChat ? '⏳' : '💬 Send'}
-                      </button>
+                      <div className="flex flex-col gap-2 shrink-0">
+                        <button
+                          onClick={generarRespuestaIA}
+                          disabled={generandoIA}
+                          title="Generar respuesta inteligente con Gemini IA basada en los últimos mensajes y bitácora"
+                          className="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs px-3.5 py-2.5 rounded-lg disabled:opacity-50 cursor-pointer shadow transition-colors flex items-center justify-center gap-1.5"
+                        >
+                          {generandoIA ? '✨ Pensando...' : '🤖 Asistente IA'}
+                        </button>
+                        <button
+                          onClick={enviarChat}
+                          disabled={!textoChat.trim() || enviandoChat}
+                          className="bg-[#00a884] hover:bg-[#029676] text-white font-bold text-xs px-4 py-2.5 rounded-lg disabled:opacity-50 cursor-pointer shadow transition-colors flex items-center justify-center gap-1"
+                        >
+                          {enviandoChat ? '⏳' : '💬 Send'}
+                        </button>
+                      </div>
                     </div>
                   </>
                 )}
