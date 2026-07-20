@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 
-const WA_SERVER = 'https://gama-whatsapp-production.up.railway.app'
+const WA_SERVER = 'https://gama-whatsapp-koyeb.koyeb.app'
 
 // Proxy del QR del servidor WhatsApp
 export async function GET() {

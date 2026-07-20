@@ -22,6 +22,19 @@ export async function POST(req: Request) {
       telLimpio = '569' + telLimpio
     }
 
+    // 1. Intentar HTTP directo al servidor de WhatsApp en la Nube
+    try {
+      const openwaRes = await fetch('https://gama-whatsapp-koyeb.koyeb.app/api/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: telLimpio, text: texto }),
+        signal: AbortSignal.timeout(4000)
+      })
+      if (openwaRes.ok) return NextResponse.json({ ok: true, proveedor: 'koyeb_direct' })
+    } catch (e) {
+      console.error('Direct send failed, falling back to database:', e)
+    }
+
     // Insertar en conversaciones_whatsapp con estado pendiente
     // El servidor en la nube escuchará este insert y lo despachará al instante
     const { error } = await supabase.from('conversaciones_whatsapp').insert({
