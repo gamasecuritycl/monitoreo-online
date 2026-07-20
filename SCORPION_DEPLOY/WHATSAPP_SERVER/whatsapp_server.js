@@ -224,6 +224,20 @@ async function loadSessionFromSupabase() {
   }
 }
 
+async function guardarConfigSupabase(cuenta, nombre_abonado, evento) {
+  try {
+    await supabase.from('eventos_monitoreo').delete().eq('cuenta', cuenta)
+    await supabase.from('eventos_monitoreo').insert({
+      cuenta,
+      nombre_abonado,
+      evento,
+      fecha_hora: new Date().toISOString()
+    })
+  } catch (e) {
+    log(`⚠️ Error guardando config ${cuenta} en Supabase: ${e.message}`, 'WARN')
+  }
+}
+
 async function saveSessionToSupabase() {
   try {
     if (!fs.existsSync(SESSION_DIR)) return
@@ -243,14 +257,11 @@ async function saveSessionToSupabase() {
 
     if (Object.keys(sessionData).length === 0) return
 
-    await supabase
-      .from('eventos_monitoreo')
-      .upsert({
-        cuenta: 'CONFIG_WHATSAPP_SESSION',
-        nombre_abonado: JSON.stringify(sessionData),
-        evento: 'CONFIG_SESSION',
-        fecha_hora: new Date().toISOString()
-      }, { onConflict: 'cuenta' })
+    await guardarConfigSupabase(
+      'CONFIG_WHATSAPP_SESSION',
+      JSON.stringify(sessionData),
+      'CONFIG_SESSION'
+    )
 
   } catch (err) {
     log(`⚠️  Error al sincronizar credenciales a Supabase: ${err.message}`, 'WARN')
@@ -276,14 +287,11 @@ async function sincronizarEstadoASupabase() {
       version:    '3.0',
     }
 
-    await supabase
-      .from('eventos_monitoreo')
-      .upsert({
-        cuenta: 'CONFIG_WHATSAPP_STATE',
-        nombre_abonado: JSON.stringify(estadoObj),
-        evento: 'CONFIG_STATE',
-        fecha_hora: new Date().toISOString()
-      }, { onConflict: 'cuenta' })
+    await guardarConfigSupabase(
+      'CONFIG_WHATSAPP_STATE',
+      JSON.stringify(estadoObj),
+      'CONFIG_STATE'
+    )
 
     const qrObj = {
       status: isReady ? 'connected' : (currentQR ? 'waiting_qr' : 'connecting'),
@@ -292,14 +300,11 @@ async function sincronizarEstadoASupabase() {
       usuario: userName
     }
 
-    await supabase
-      .from('eventos_monitoreo')
-      .upsert({
-        cuenta: 'CONFIG_WHATSAPP_QR',
-        nombre_abonado: JSON.stringify(qrObj),
-        evento: 'CONFIG_QR',
-        fecha_hora: new Date().toISOString()
-      }, { onConflict: 'cuenta' })
+    await guardarConfigSupabase(
+      'CONFIG_WHATSAPP_QR',
+      JSON.stringify(qrObj),
+      'CONFIG_QR'
+    )
 
   } catch (err) {
     log(`⚠️  Error sincronizando estado a Supabase: ${err.message}`, 'WARN')
