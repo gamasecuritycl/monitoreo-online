@@ -383,20 +383,26 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
     setEnviandoNotif(true)
     setStatusNotif('⏳ Enviando...')
     try {
-      const resultado = await sendMessage(telNorm, mensajeFinal)
+      const { error } = await supabase
+        .from('conversaciones_whatsapp')
+        .insert({
+          numero: telNorm,
+          mensaje_enviado: mensajeFinal,
+          estado: 'pendiente',
+          created_at: new Date().toISOString()
+        })
+
+      if (error) throw error
+
       const logItem: ChatLogItem = {
         id: Date.now(), cuenta: clienteSeleccionado?.cuenta || 'MANUAL', telefono: telNorm,
         texto: mensajeFinal, fecha: new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }),
-        exito: resultado.ok, errorMsg: resultado.ok ? null : (resultado.debug || 'Error'), esRespuestaCliente: false
+        exito: true, errorMsg: null, esRespuestaCliente: false
       }
       setChatLogs(prev => [logItem, ...prev])
-      if (resultado.ok) {
-        setTextoNotif('')
-        setStatusNotif(`✅ Enviado a +${telNorm}`)
-        setTelefonoManual('')
-      } else {
-        setStatusNotif('❌ Error: ' + (resultado.debug || 'No fue posible entregar'))
-      }
+      setTextoNotif('')
+      setStatusNotif(`✅ Enviado a +${telNorm}`)
+      setTelefonoManual('')
     } catch (err: any) {
       setStatusNotif('❌ ' + err.message)
     } finally {
