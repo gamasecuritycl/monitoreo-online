@@ -586,37 +586,37 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
   ]
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-2 sm:p-4 font-sans backdrop-blur-sm">
-      <div className="bg-[#111b21] border border-[#222d34] rounded-xl w-full max-w-6xl h-[94vh] flex flex-col shadow-2xl overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-2 sm:p-4 font-sans backdrop-blur-sm">
+      <div className="bg-[#f0f2f5] border border-gray-300 rounded-xl w-full max-w-6xl h-[94vh] flex flex-col shadow-2xl overflow-hidden">
 
-        {/* Header WhatsApp Web Style */}
-        <div className="bg-[#202c33] text-white px-4 py-2.5 flex justify-between items-center shrink-0 border-b border-[#222d34]">
+        {/* Header WhatsApp Web Official Green Style */}
+        <div className="bg-[#00a884] text-white px-4 py-2.5 flex justify-between items-center shrink-0 shadow-md">
           <div className="font-bold text-sm tracking-wide flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-full bg-[#00a884] flex items-center justify-center text-white text-sm shadow font-bold">
+            <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-white text-sm shadow font-bold">
               💬
             </div>
             <div>
               <div className="text-xs font-bold text-white flex items-center gap-2">
                 CENTRO DE MENSAJERÍA WHATSAPP
-                <span className="text-[10px] bg-[#00a884]/20 text-[#00a884] border border-[#00a884]/40 px-1.5 py-0.5 rounded font-mono">v3.0</span>
+                <span className="text-[10px] bg-white/20 text-white border border-white/40 px-1.5 py-0.5 rounded font-mono">v3.0</span>
               </div>
-              <div className="text-[10px] text-[#8696a0]">Gama Seguridad — Monitoreo 24/7</div>
+              <div className="text-[10px] text-white/80">Gama Seguridad — Monitoreo 24/7</div>
             </div>
           </div>
           <div className="flex items-center gap-3">
             {/* Indicador de estado compacto */}
-            <span className="text-[11px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1.5" style={{ background: statusColor, color: '#000' }}>
-              <span className="w-2 h-2 rounded-full bg-black/40 animate-pulse" />
+            <span className="text-[11px] font-bold px-3 py-1 rounded-full flex items-center gap-1.5 bg-white text-black shadow-sm">
+              <span className="w-2.5 h-2.5 rounded-full" style={{ background: statusColor }} />
               {statusLabel}
             </span>
             {waStatus.cola > 0 && (
-              <span className="text-[10px] bg-yellow-400 text-black px-2 py-0.5 rounded-full font-bold">
+              <span className="text-[10px] bg-yellow-400 text-black px-2 py-0.5 rounded-full font-bold shadow">
                 📥 {waStatus.cola} en cola
               </span>
             )}
             <button
               onClick={onClose}
-              className="bg-[#111b21] text-[#8696a0] hover:text-white hover:bg-red-500/20 font-bold border border-[#2a3942] w-7 h-7 rounded-lg flex items-center justify-center transition-colors cursor-pointer text-xs"
+              className="bg-white/20 text-white hover:bg-red-600 hover:text-white font-bold w-7 h-7 rounded-lg flex items-center justify-center transition-colors cursor-pointer text-xs shadow-sm"
             >
               ✕
             </button>
@@ -624,15 +624,15 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
         </div>
 
         {/* Tabs WhatsApp Web Style */}
-        <div className="flex border-b border-[#222d34] shrink-0 bg-[#111b21]">
+        <div className="flex border-b border-gray-300 shrink-0 bg-[#f0f2f5]">
           {tabs.map(t => (
             <button
               key={t.id}
               onClick={() => setActiveTab(t.id)}
               className={`px-5 py-2 text-xs font-bold tracking-wide transition-all cursor-pointer border-b-2 ${
                 activeTab === t.id
-                  ? 'bg-[#202c33] text-[#00a884] border-b-[#00a884]'
-                  : 'text-[#8696a0] hover:text-white border-b-transparent hover:bg-[#202c33]/50'
+                  ? 'bg-white text-[#00a884] border-b-[#00a884] shadow-sm'
+                  : 'text-[#54656f] hover:text-[#111b21] border-b-transparent hover:bg-white/50'
               }`}
             >
               {t.label}
@@ -647,42 +647,42 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
               TAB 1: CHAT EN VIVO
           ══════════════════════════════════════════ */}
           {activeTab === 'chat' && (
-            <div className="flex h-full bg-[#111b21] text-white overflow-hidden font-sans">
+            <div className="flex h-full bg-[#f0f2f5] text-[#111b21] overflow-hidden font-sans">
 
               {/* Sidebar: Lista de chats */}
-              <div className="w-72 border-r border-[#222d34] bg-[#111b21] flex flex-col shrink-0">
+              <div className="w-80 border-r border-gray-300 bg-[#ffffff] flex flex-col shrink-0">
                 {/* Header sidebar */}
-                <div className="p-3 bg-[#202c33] border-b border-[#222d34] flex justify-between items-center shrink-0">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-full bg-[#00a884] flex items-center justify-center font-bold text-white text-xs shadow">GS</div>
+                <div className="p-3 bg-[#f0f2f5] border-b border-gray-300 flex justify-between items-center shrink-0">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-9 h-9 rounded-full bg-[#00a884] flex items-center justify-center font-bold text-white text-xs shadow">GS</div>
                     <div>
-                      <div className="font-bold text-xs text-white">WHATSAPP CENTRAL</div>
-                      <div className="text-[9px] text-[#00a884]">Gama Seguridad</div>
+                      <div className="font-bold text-xs text-[#111b21]">WHATSAPP CENTRAL</div>
+                      <div className="text-[10px] text-[#00a884] font-bold">Gama Seguridad</div>
                     </div>
                   </div>
-                  <span className="text-[9px] px-2 py-0.5 rounded-full font-bold" style={{ background: statusColor, color: '#000' }}>
+                  <span className="text-[10px] px-2.5 py-0.5 rounded-full font-bold shadow-sm" style={{ background: statusColor, color: '#000' }}>
                     {waStatus.ready ? 'EN LÍNEA' : 'OFFLINE'}
                   </span>
                 </div>
 
                 {/* Selector de Modo: Abonados vs Grupos */}
-                <div className="flex border-b border-[#222d34] bg-[#111b21] shrink-0">
+                <div className="flex border-b border-gray-300 bg-[#f0f2f5] shrink-0">
                   <button
                     onClick={() => setModoSidebar('abonados')}
-                    className={`flex-1 py-1.5 text-[11px] font-bold transition-colors cursor-pointer border-b-2 ${
+                    className={`flex-1 py-2 text-xs font-bold transition-all cursor-pointer border-b-2 ${
                       modoSidebar === 'abonados'
-                        ? 'border-[#00a884] text-[#00a884] bg-[#202c33]'
-                        : 'border-transparent text-[#8696a0] hover:text-white'
+                        ? 'border-[#00a884] text-[#00a884] bg-white shadow-sm'
+                        : 'border-transparent text-[#54656f] hover:text-[#111b21]'
                     }`}
                   >
                     🏢 Abonados ({listaAbonadosAgrupada.length})
                   </button>
                   <button
                     onClick={() => setModoSidebar('grupos')}
-                    className={`flex-1 py-1.5 text-[11px] font-bold transition-colors cursor-pointer border-b-2 ${
+                    className={`flex-1 py-2 text-xs font-bold transition-all cursor-pointer border-b-2 ${
                       modoSidebar === 'grupos'
-                        ? 'border-[#00a884] text-[#00a884] bg-[#202c33]'
-                        : 'border-transparent text-[#8696a0] hover:text-white'
+                        ? 'border-[#00a884] text-[#00a884] bg-white shadow-sm'
+                        : 'border-transparent text-[#54656f] hover:text-[#111b21]'
                     }`}
                   >
                     👥 Grupos ({listaGrupos.length})
@@ -690,11 +690,11 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
                 </div>
 
                 {/* Buscador */}
-                <div className="p-2 bg-[#111b21] border-b border-[#222d34] shrink-0">
+                <div className="p-2.5 bg-[#f0f2f5] border-b border-gray-300 shrink-0">
                   <input
                     type="text"
                     placeholder={modoSidebar === 'abonados' ? "🔍 Buscar abonado o número..." : "🔍 Buscar grupo de WhatsApp..."}
-                    className="w-full bg-[#202c33] text-gray-200 border border-[#2a3942] rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-[#00a884]"
+                    className="w-full bg-white text-[#111b21] border border-gray-300 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-[#00a884] shadow-sm"
                     value={busquedaChat}
                     onChange={e => setBusquedaChat(e.target.value)}
                   />
@@ -702,28 +702,28 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
 
                 {/* Lista de chats (Modo Abonados con Acordeón) */}
                 {modoSidebar === 'abonados' ? (
-                  <div className="flex-1 overflow-y-auto divide-y divide-[#222d34]">
+                  <div className="flex-1 overflow-y-auto divide-y divide-gray-200 bg-white">
                     {listaAbonadosAgrupada.length === 0 && (
-                      <div className="p-4 text-center text-[#8696a0] text-xs">Sin abonados registrados</div>
+                      <div className="p-4 text-center text-[#54656f] text-xs">Sin abonados registrados</div>
                     )}
                     {listaAbonadosAgrupada.map(abonado => {
                       const isExpanded = !!cuentasExpandidas[abonado.cuenta]
                       return (
-                        <div key={abonado.cuenta} className="bg-[#111b21]">
+                        <div key={abonado.cuenta} className="bg-white">
                           {/* Item del Abonado Header */}
                           <div
                             onClick={() => toggleCuentaExpandida(abonado.cuenta)}
-                            className="p-2.5 flex items-center justify-between cursor-pointer hover:bg-[#202c33] transition-colors select-none"
+                            className="p-3 flex items-center justify-between cursor-pointer hover:bg-[#f5f6f6] transition-colors select-none"
                           >
-                            <div className="flex items-center gap-2.5 min-w-0">
-                              <div className="w-8 h-8 rounded-full bg-[#005c4b] border border-[#00a884] flex items-center justify-center font-bold text-white text-xs shrink-0 shadow">
-                                {abonado.cuenta.slice(0, 2)}
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className="w-9 h-9 rounded-full bg-[#00a884] text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-sm">
+                                {abonado.cuenta.slice(0, 3)}
                               </div>
                               <div className="min-w-0">
-                                <div className="font-bold text-xs text-white truncate max-w-[150px]">
+                                <div className="font-bold text-xs text-[#111b21] truncate max-w-[160px]">
                                   {abonado.cuenta} — {abonado.nombre}
                                 </div>
-                                <div className="text-[10px] text-[#8696a0]">
+                                <div className="text-[10px] text-[#54656f]">
                                   {abonado.contactos.length} contacto(s)
                                 </div>
                               </div>
@@ -735,9 +735,9 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
 
                           {/* Acordeón de Contactos desplegable */}
                           {isExpanded && (
-                            <div className="bg-[#0b141a] pl-4 divide-y divide-[#1e2a30]">
+                            <div className="bg-[#f5f6f6] pl-4 divide-y divide-gray-200">
                               {abonado.contactos.length === 0 ? (
-                                <div className="p-2 text-[10px] text-[#8696a0]">Sin números registrados</div>
+                                <div className="p-2 text-[10px] text-[#54656f]">Sin números registrados</div>
                               ) : (
                                 abonado.contactos.map((contacto, idx) => {
                                   const isSelected = chatActivo === contacto.telefono
@@ -751,13 +751,13 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
                                           setClienteSeleccionado({ cuenta: abonado.cuenta, nombre: cli.nombre || '' })
                                         }
                                       }}
-                                      className={`p-2 flex items-center justify-between cursor-pointer hover:bg-[#202c33] transition-colors ${isSelected ? 'bg-[#2a3942] border-l-2 border-l-[#00a884]' : ''}`}
+                                      className={`p-2.5 flex items-center justify-between cursor-pointer hover:bg-[#e9edef] transition-colors ${isSelected ? 'bg-[#e9edef] border-l-4 border-l-[#00a884]' : ''}`}
                                     >
                                       <div className="min-w-0">
-                                        <div className="font-bold text-[11px] text-[#e9edef] truncate">
+                                        <div className="font-bold text-[11px] text-[#111b21] truncate">
                                           👤 {contacto.nombre}
                                         </div>
-                                        <div className="text-[9px] text-[#8696a0]">
+                                        <div className="text-[9px] text-[#54656f]">
                                           {contacto.rol} · {formatearNumeroDisplay(contacto.telefono)}
                                         </div>
                                       </div>
@@ -774,9 +774,9 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
                   </div>
                 ) : (
                   /* Modo Grupos de WhatsApp */
-                  <div className="flex-1 overflow-y-auto divide-y divide-[#222d34]">
+                  <div className="flex-1 overflow-y-auto divide-y divide-gray-200 bg-white">
                     {listaGrupos.length === 0 && (
-                      <div className="p-4 text-center text-[#8696a0] text-xs">No se han detectado grupos aún</div>
+                      <div className="p-4 text-center text-[#54656f] text-xs">No se han detectado grupos aún</div>
                     )}
                     {listaGrupos.map(grupo => {
                       const isSelected = chatActivo === grupo.id
@@ -784,17 +784,17 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
                         <div
                           key={grupo.id}
                           onClick={() => setChatActivo(grupo.id)}
-                          className={`p-3 flex items-center gap-3 cursor-pointer transition-colors ${isSelected ? 'bg-[#2a3942]' : 'hover:bg-[#202c33]'}`}
+                          className={`p-3 flex items-center gap-3 cursor-pointer transition-colors ${isSelected ? 'bg-[#e9edef] border-l-4 border-l-[#00a884]' : 'hover:bg-[#f5f6f6]'}`}
                         >
-                          <div className="w-9 h-9 rounded-full bg-[#075e54] border border-[#25d366] flex items-center justify-center font-bold text-white text-xs shrink-0 shadow">
+                          <div className="w-10 h-10 rounded-full bg-[#25d366] text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-sm">
                             👥
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex justify-between items-baseline mb-0.5">
-                              <span className="font-bold text-xs text-white truncate max-w-[130px]">{grupo.nombre}</span>
-                              <span className="text-[9px] text-[#8696a0] shrink-0 ml-1">{grupo.hora}</span>
+                              <span className="font-bold text-xs text-[#111b21] truncate max-w-[140px]">{grupo.nombre}</span>
+                              <span className="text-[9px] text-[#54656f] shrink-0 ml-1">{grupo.hora}</span>
                             </div>
-                            <div className="text-[10px] text-[#8696a0] truncate font-sans">
+                            <div className="text-[10px] text-[#54656f] truncate font-sans">
                               {grupo.miembros > 0 ? `${grupo.miembros} miembros` : grupo.ultimoMsg}
                             </div>
                           </div>
@@ -806,23 +806,23 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
               </div>
 
               {/* Panel de chat */}
-              <div className="flex-1 flex flex-col bg-[#0b141a] relative">
+              <div className="flex-1 flex flex-col bg-[#efeae2] relative">
                 {!chatActivo ? (
-                  <div className="flex-1 flex flex-col items-center justify-center text-[#8696a0] p-6 text-center">
-                    <div className="w-20 h-20 rounded-full bg-[#202c33] flex items-center justify-center text-4xl mb-4">💬</div>
-                    <span className="font-bold text-sm text-white mb-2">GAMA SEGURIDAD — CHAT EN VIVO</span>
-                    <span className="text-xs">Selecciona una conversación de la lista.</span>
+                  <div className="flex-1 flex flex-col items-center justify-center text-[#54656f] p-6 text-center bg-[#f0f2f5]">
+                    <div className="w-20 h-20 rounded-full bg-[#00a884]/10 border border-[#00a884]/30 flex items-center justify-center text-4xl mb-4">💬</div>
+                    <span className="font-bold text-sm text-[#111b21] mb-2">GAMA SEGURIDAD — CHAT EN VIVO</span>
+                    <span className="text-xs">Selecciona un abonado o grupo de la lista para conversar.</span>
                   </div>
                 ) : (
                   <>
                     {/* Header del chat */}
-                    <div className="p-3 bg-[#202c33] border-b border-[#222d34] flex items-center justify-between shrink-0">
+                    <div className="p-3 bg-[#f0f2f5] border-b border-gray-300 flex items-center justify-between shrink-0 shadow-sm">
                       <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-full bg-[#00a884] flex items-center justify-center font-bold text-white text-sm uppercase">
+                        <div className="w-10 h-10 rounded-full bg-[#00a884] flex items-center justify-center font-bold text-white text-base uppercase shadow-sm">
                           {chatActivo.includes('@g.us') || chatActivo.includes('-') ? '👥' : '👤'}
                         </div>
                         <div>
-                          <div className="font-bold text-xs text-white">
+                          <div className="font-bold text-xs text-[#111b21]">
                             {(() => {
                               if (chatActivo.includes('@g.us') || chatActivo.includes('-')) {
                                 return gruposMap.get(chatActivo)?.nombre || `Grupo WhatsApp`
@@ -834,23 +834,25 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
                               return `+${chatActivo}`
                             })()}
                           </div>
-                          <div className="text-[10px] text-[#8696a0] font-mono">
+                          <div className="text-[10px] text-[#54656f] font-mono">
                             {chatActivo.includes('@g.us') || chatActivo.includes('-') ? 'Canal Grupal WhatsApp' : formatearNumeroDisplay(chatActivo)}
                           </div>
                         </div>
                       </div>
                       <button
                         onClick={() => { setTelefonoManual(chatActivo); setActiveTab('notificaciones') }}
-                        className="text-[10px] bg-[#005c4b] text-[#00a884] border border-[#00a884] px-3 py-1 rounded-full hover:bg-[#00a884] hover:text-black transition-colors cursor-pointer font-bold"
+                        className="text-[10px] bg-[#00a884] text-white border border-[#00a884] px-3.5 py-1.5 rounded-full hover:bg-[#029676] transition-colors cursor-pointer font-bold shadow-sm"
                       >
                         📢 Enviar Notificación
                       </button>
                     </div>
 
-                    {/* Mensajes */}
-                    <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-[#0b141a]">
+                    {/* Mensajes (Wallpaper WhatsApp Beige #efeae2) */}
+                    <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-[#efeae2]">
                       {mensajesActivos.length === 0 && (
-                        <div className="text-center text-[#8696a0] text-xs py-8">Sin mensajes aún en esta conversación</div>
+                        <div className="text-center text-[#54656f] text-xs py-8 bg-white/70 backdrop-blur-sm rounded-lg border border-gray-300/50 max-w-sm mx-auto shadow-sm">
+                          Sin mensajes registrados aún en esta conversación
+                        </div>
                       )}
                       {mensajesActivos.map((msg, i) => {
                         const esCliente = !!(msg.respuesta_recibida || msg.respuesta_cliente)
@@ -858,12 +860,12 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
                         if (!texto) return null
                         return (
                           <div key={msg.id || i} className={`flex flex-col ${esCliente ? 'items-start' : 'items-end'}`}>
-                            <div className={`max-w-[75%] p-2.5 rounded-lg text-xs font-sans shadow-md break-words ${esCliente ? 'bg-[#202c33] text-white rounded-tl-none border-l-4 border-l-[#38bdf8]' : 'bg-[#005c4b] text-white rounded-tr-none'}`}>
+                            <div className={`max-w-[75%] p-3 rounded-lg text-xs font-sans shadow break-words ${esCliente ? 'bg-white text-[#111b21] rounded-tl-none border border-gray-200' : 'bg-[#d9fdd3] text-[#111b21] rounded-tr-none border border-green-200'}`}>
                               <div className="text-[9px] font-bold opacity-70 mb-1 flex justify-between gap-4">
-                                <span>{esCliente ? `📩 CLIENTE` : `🛡️ GAMA SEGURIDAD`}</span>
-                                <span>{msg.created_at ? new Date(msg.created_at).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }) : ''}</span>
+                                <span className={esCliente ? 'text-[#00a884]' : 'text-[#075e54]'}>{esCliente ? `📩 CLIENTE` : `🛡️ GAMA SEGURIDAD`}</span>
+                                <span className="text-[#667781]">{msg.created_at ? new Date(msg.created_at).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }) : ''}</span>
                               </div>
-                              <div className="leading-relaxed">{texto}</div>
+                              <div className="leading-relaxed text-[#111b21]">{texto}</div>
                             </div>
                           </div>
                         )
@@ -872,7 +874,7 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
                     </div>
 
                     {/* Toolbar de Mensajes Pregrabados / Novedades por Código de Abonado */}
-                    <div className="bg-[#182229] border-t border-[#222d34] p-2 flex flex-wrap gap-1.5 items-center shrink-0">
+                    <div className="bg-[#f0f2f5] border-t border-gray-300 p-2 flex flex-wrap gap-1.5 items-center shrink-0">
                       <span className="text-[10px] font-bold text-[#00a884] uppercase tracking-wider mr-1">
                         ⚡ PREGRABADOS C730 (24/7 & INTEGRA):
                       </span>
@@ -880,7 +882,7 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
                       {/* Botón C730 Apertura */}
                       <button
                         onClick={() => setTextoChat('GAMA SEGURIDAD 24/7: Se registra APERTURA DE SISTEMA en Abonado C730.')}
-                        className="text-[10px] bg-[#202c33] hover:bg-[#2a3942] text-green-400 border border-[#00a884] px-2 py-1 rounded cursor-pointer transition-colors font-bold"
+                        className="text-[10px] bg-white hover:bg-green-50 text-green-700 border border-green-500 px-2.5 py-1 rounded cursor-pointer transition-colors font-bold shadow-sm"
                       >
                         🟢 Apertura C730
                       </button>
@@ -888,7 +890,7 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
                       {/* Botón C730 Cierre */}
                       <button
                         onClick={() => setTextoChat('GAMA SEGURIDAD 24/7: Se registra CIERRE DE SISTEMA en Abonado C730. Sistema armado.')}
-                        className="text-[10px] bg-[#202c33] hover:bg-[#2a3942] text-blue-400 border border-[#38bdf8] px-2 py-1 rounded cursor-pointer transition-colors font-bold"
+                        className="text-[10px] bg-white hover:bg-blue-50 text-blue-700 border border-blue-500 px-2.5 py-1 rounded cursor-pointer transition-colors font-bold shadow-sm"
                       >
                         🔵 Cierre C730
                       </button>
@@ -901,7 +903,7 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
                             setTextoChat(`GAMA SEGURIDAD 24/7: 🚨 ALARMA DE ROBO / INTRUSIÓN en Abonado C730 — ZONA ${zona}. Confirmar estado con personal.`)
                           }
                         }}
-                        className="text-[10px] bg-[#202c33] hover:bg-[#2a3942] text-red-400 border border-[#ef4444] px-2 py-1 rounded cursor-pointer transition-colors font-bold"
+                        className="text-[10px] bg-white hover:bg-red-50 text-red-700 border border-red-500 px-2.5 py-1 rounded cursor-pointer transition-colors font-bold shadow-sm"
                       >
                         🚨 Alarma Zona C730
                       </button>
@@ -909,7 +911,7 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
                       {/* Botón C730 Corte Energía */}
                       <button
                         onClick={() => setTextoChat('GAMA SEGURIDAD 24/7: ⚡ CORTE DE ENERGÍA ELÉCTRICA en Abonado C730. Su sistema opera con batería de respaldo.')}
-                        className="text-[10px] bg-[#202c33] hover:bg-[#2a3942] text-yellow-400 border border-[#f59e0b] px-2 py-1 rounded cursor-pointer transition-colors font-bold"
+                        className="text-[10px] bg-white hover:bg-amber-50 text-amber-700 border border-amber-500 px-2.5 py-1 rounded cursor-pointer transition-colors font-bold shadow-sm"
                       >
                         ⚡ Corte Energía C730
                       </button>
@@ -930,18 +932,18 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
 
                           setTextoChat(msg)
                         }}
-                        className="text-[10px] bg-[#005c4b] hover:bg-[#00a884] text-white px-2 py-1 rounded cursor-pointer font-bold ml-auto shadow"
+                        className="text-[10px] bg-[#00a884] hover:bg-[#029676] text-white px-3 py-1 rounded cursor-pointer font-bold ml-auto shadow-sm"
                       >
                         ➕ Novedad por Código Abonado
                       </button>
                     </div>
 
                     {/* Input de respuesta */}
-                    <div className="p-3 bg-[#202c33] border-t border-[#222d34] flex gap-2 items-end shrink-0">
+                    <div className="p-3 bg-[#f0f2f5] border-t border-gray-300 flex gap-2 items-end shrink-0 shadow-sm">
                       <textarea
                         rows={2}
-                        placeholder="Escribe una respuesta directa..."
-                        className="flex-1 bg-[#2a3942] text-white p-2 text-xs font-sans rounded-lg border border-[#374248] focus:outline-none focus:border-[#00a884] resize-none"
+                        placeholder="Escribe un mensaje..."
+                        className="flex-1 bg-white text-[#111b21] p-2.5 text-xs font-sans rounded-lg border border-gray-300 focus:outline-none focus:border-[#00a884] resize-none shadow-sm"
                         value={textoChat}
                         onChange={e => setTextoChat(e.target.value)}
                         onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviarChat() } }}
@@ -949,9 +951,9 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
                       <button
                         onClick={enviarChat}
                         disabled={!textoChat.trim() || enviandoChat}
-                        className="bg-[#00a884] hover:bg-[#029676] text-black font-bold text-xs px-4 py-2 rounded-lg disabled:opacity-50 cursor-pointer shadow h-10"
+                        className="bg-[#00a884] hover:bg-[#029676] text-white font-bold text-xs px-4 py-2.5 rounded-lg disabled:opacity-50 cursor-pointer shadow h-10 transition-colors"
                       >
-                        {enviandoChat ? '⏳' : '💬'}
+                        {enviandoChat ? '⏳' : '💬 Send'}
                       </button>
                     </div>
                   </>
