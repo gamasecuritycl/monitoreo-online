@@ -349,8 +349,7 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
       }).join('\n')
 
       const prompt = `Eres la Central de Monitoreo de Gama Seguridad 24/7 en Chile.
-Genera una respuesta muy concisa, formal y clara en español chileno profesional para la siguiente conversación reciente de WhatsApp.
-Si hay una alarma o consulta del cliente, responde con el protocolo oficial de Gama Seguridad. No agregues saludos largos ni introducciones, responde directamente el texto a enviar por WhatsApp.
+Genera una respuesta concisa, formal y clara para WhatsApp. Responde directamente sin preámbulos.
 
 Conversación reciente:
 ${contextoMsgs || 'Novedad general de monitoreo de alarmas.'}`
@@ -361,11 +360,28 @@ ${contextoMsgs || 'Novedad general de monitoreo de alarmas.'}`
         body: JSON.stringify({ prompt }),
       })
       const data = await res.json()
-      if (data.text) {
-        setTextoChat(data.text.trim())
+      const borrador = data.texto || data.text || data.respuesta || data.result
+
+      if (borrador) {
+        setTextoChat(borrador.trim())
+      } else {
+        // Fallback inteligente de Protocolo Gama Seguridad
+        const ultMsg = mensajesActivos[mensajesActivos.length - 1]
+        const ultTexto = (ultMsg?.respuesta_recibida || ultMsg?.respuesta_cliente || '').toUpperCase()
+
+        if (ultTexto.includes('ALARMA') || ultTexto.includes('ROBO') || ultTexto.includes('SOS')) {
+          setTextoChat('GAMA SEGURIDAD 24/7: Recibida alerta de emergencia. Personal de monitoreo verificando estado y contactando titulares.')
+        } else if (ultTexto.includes('APERTURA') || ultTexto.includes('ABRIERON')) {
+          setTextoChat('GAMA SEGURIDAD 24/7: Registrada apertura de sistema correctamente.')
+        } else if (ultTexto.includes('CIERRE') || ultTexto.includes('CERRARON')) {
+          setTextoChat('GAMA SEGURIDAD 24/7: Registrado cierre de sistema. Propiedad armada correctamente.')
+        } else {
+          setTextoChat('GAMA SEGURIDAD 24/7: Estimado cliente, hemos recibido su reporte. Nuestra central de monitoreo se encuentra atenta a cualquier novedad.')
+        }
       }
     } catch (err) {
-      console.error('Error generando IA:', err)
+      console.error('Error generando respuesta IA:', err)
+      setTextoChat('GAMA SEGURIDAD 24/7: Estimado cliente, hemos recibido su reporte. Nuestra central de monitoreo se encuentra atenta a cualquier novedad.')
     } finally {
       setGenerandoIA(false)
     }

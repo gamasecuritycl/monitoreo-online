@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true, texto, truncado: true })
     }
 
-    return NextResponse.json({ ok: true, texto })
+    return NextResponse.json({ ok: true, texto, text: texto })
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 })
   }
