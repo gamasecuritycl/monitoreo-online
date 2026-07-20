@@ -377,10 +377,12 @@ ${contextoMsgs || 'Novedad general de monitoreo de alarmas.'}`
     setTextoChat('')
     setEnviandoChat(true)
     try {
-      const res = await sendMessage(chatActivo, texto)
+      const cuentaEnvio = clienteSeleccionado?.cuenta || (chatActivo.includes('@g.us') ? 'GRUPO' : 'CENTRAL')
+      const res = await sendMessage(chatActivo, texto, cuentaEnvio)
       if (res.ok) {
         const nuevoMsg = {
           id: Date.now(),
+          cuenta: cuentaEnvio,
           numero: chatActivo,
           mensaje_enviado: texto,
           estado: 'pendiente',
@@ -531,7 +533,8 @@ ${contextoMsgs || 'Novedad general de monitoreo de alarmas.'}`
     setEnviandoNotif(true)
     setStatusNotif('⏳ Enviando...')
     try {
-      const res = await sendMessage(telNorm, mensajeFinal)
+      const cuentaEnvio = clienteSeleccionado?.cuenta || 'MANUAL'
+      const res = await sendMessage(telNorm, mensajeFinal, cuentaEnvio)
       if (!res.ok) throw new Error(res.debug || 'Error enviando mensaje')
 
       const logItem: ChatLogItem = {

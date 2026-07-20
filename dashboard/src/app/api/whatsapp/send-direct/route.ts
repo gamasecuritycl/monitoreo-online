@@ -7,7 +7,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
 export async function POST(req: Request) {
   try {
-    const { telefono, texto } = await req.json()
+    const { telefono, texto, cuenta } = await req.json()
     if (!telefono || !texto) {
       return NextResponse.json({ ok: false, error: 'Faltan parámetros de envío' }, { status: 400 })
     }
@@ -28,8 +28,11 @@ export async function POST(req: Request) {
       }
     }
 
-    // Insertar en conversaciones_whatsapp con estado pendiente
+    const cuentaFinal = cuenta ? String(cuenta).trim() : (telLimpio.includes('@g.us') ? 'GRUPO' : 'CENTRAL')
+
+    // Insertar en conversaciones_whatsapp con estado pendiente y cuenta válida (Not-Null constraint fix)
     const { error } = await supabase.from('conversaciones_whatsapp').insert({
+      cuenta: cuentaFinal,
       numero: telLimpio,
       mensaje_enviado: texto,
       estado: 'pendiente',

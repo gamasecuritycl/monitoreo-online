@@ -22,12 +22,12 @@ export interface ReplyResult {
 const PANICO_KEYWORDS = ['SOCORRO', 'PÁNICO', 'PANICO', 'EMERGENCIA', 'AYUDA YA', 'SOS']
 const ENERGIA_KEYWORDS = ['ENERGÍA', 'ENERGIA', 'CORTE', 'LUZ', 'RESTABLECIDO']
 
-export async function sendMessage(telefono: string, texto: string): Promise<{ ok: boolean; debug?: string }> {
+export async function sendMessage(telefono: string, texto: string, cuenta?: string): Promise<{ ok: boolean; debug?: string }> {
   try {
     const res = await fetch('/api/whatsapp/send-direct', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ telefono, texto }),
+      body: JSON.stringify({ telefono, texto, cuenta }),
     })
     const data = await res.json()
     if (res.ok && data.ok) {
