@@ -979,6 +979,12 @@ function reiniciarTemporizadorInactividad(sock, jid, numero) {
 // ──────────────────────────────────────────────
 async function responderConIA(sock, jid, numero, bodyCliente, promptMaestro, nombreCliente) {
   try {
+    // 🚫 REGLA ESTRICTA: EL BOT SOLO RESPONDE EN CHATS INDIVIDUALES DE WHATSAPP (NUNCA EN GRUPOS)
+    if (jid.includes('@g.us') || numero.includes('g.us') || jid.includes('-')) {
+      log(`🚫 [BOT IGNORA GRUPO] El asistente virtual está configurado EXCLUSIVAMENTE para chats personales. Se ignora mensaje de grupo: ${jid}`)
+      return
+    }
+
     const textClean = bodyCliente.trim().toLowerCase()
     let cuentaActiva = ''
     const numLimpio = numero.replace(/[^0-9]/g, '')
