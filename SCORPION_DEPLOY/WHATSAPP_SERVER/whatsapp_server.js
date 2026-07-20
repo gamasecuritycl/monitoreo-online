@@ -647,9 +647,32 @@ function suscribirSupabaseRealtime() {
             .eq('id', row.id)
         }
       })
-      .subscribe(status => {
-        log(`Supabase Realtime (dispatches): ${status}`)
-      })
+    // 4. Polling Worker de respaldo (cada 3s para máxima confiabilidad)
+    setInterval(async () => {
+      if (!isReady || !sock) return
+      try {
+        const { data: pendientes } = await supabase
+          .from('conversaciones_whatsapp')
+          .select('*')
+          .eq('estado', 'pendiente')
+          .limit(10)
+
+        if (pendientes && pendientes.length > 0) {
+          for (const row of pendientes) {
+            if (!row.numero || !row.mensaje_enviado) continue
+            log(`📥 Polling Worker: Notificación pendiente detectada para +${row.numero} (ID: ${row.id})`)
+            try {
+              await enviarMensaje(row.numero, row.mensaje_enviado)
+              await supabase.from('conversaciones_whatsapp').update({ estado: 'enviado' }).eq('id', row.id)
+              log(`✅ Polling Worker: Fila ID: ${row.id} enviada con éxito a +${row.numero}`)
+            } catch (err) {
+              log(`❌ Polling Worker: Error enviando a ID ${row.id}: ${err.message}`, 'ERROR')
+              await supabase.from('conversaciones_whatsapp').update({ estado: 'error', error_msg: err.message }).eq('id', row.id)
+            }
+          }
+        }
+      } catch (err) {}
+    }, 3000)
 
   } catch (err) {
     log(`Supabase Realtime no disponible: ${err.message}`, 'WARN')
