@@ -557,9 +557,13 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
       const prompt = `${masterPrompt}
 
 IDENTIFICACIÓN DE ABONADO Y CONSULTA DE BITÁCORA EN TIEMPO REAL:
-${contextoMsgs || 'Sin mensajes recientes.'}
+- Cuenta de Abonado Actual: ${cuentaActiva ? `${cuentaActiva} (${clientesMap[cuentaActiva]?.nombre || 'Titular Registrado'})` : 'NO IDENTIFICADO AÚN'}
+- Si la bitácora registra eventos de CIERRE, APERTURA, ALARMA o RESTABLECIMIENTO DE ENERGÍA en las últimas horas, CONFIRMA Y RECONOCE DICHOS EVENTOS AL CLIENTE (por ejemplo: "Se confirma la recepción del CIERRE de su sistema a las [hora]").
 
-Responde directamente el mensaje para WhatsApp al cliente, en un tono 100% verídico, profesional y claro.`
+TELEMETRÍA Y REGISTROS DE BITÁCORA DE ALARMA DE ESTA CUENTA (${cuentaActiva || 'Desconocida'}):
+${resumenEventos || 'No hay eventos de alarma ni cierres/aperturas registrados en los últimos 3 días para esta cuenta específica.'}
+
+Responde directamente el mensaje a enviar por WhatsApp al cliente basándote EXCLUSIVAMENTE en las señales de alarma y bitácora.`
 
       const res = await fetch('/api/gemini', {
         method: 'POST',
@@ -944,11 +948,11 @@ Responde directamente el mensaje para WhatsApp al cliente, en un tono 100% verí
                   </span>
                 </div>
 
-                {/* Selector de Modo Sidebar: Recientes vs Abonados vs Grupos */}
+                {/* Selector de Modo Sidebar: Recientes vs Grupos */}
                 <div className="flex border-b border-gray-300 bg-[#f0f2f5] shrink-0">
                   <button
                     onClick={() => setModoSidebar('recientes')}
-                    className={`flex-1 py-2 text-[11px] font-bold transition-all cursor-pointer border-b-2 ${
+                    className={`flex-1 py-2 text-xs font-bold transition-all cursor-pointer border-b-2 ${
                       modoSidebar === 'recientes'
                         ? 'border-[#00a884] text-[#00a884] bg-white shadow-sm'
                         : 'border-transparent text-[#54656f] hover:text-[#111b21]'
@@ -957,18 +961,8 @@ Responde directamente el mensaje para WhatsApp al cliente, en un tono 100% verí
                     📥 Recientes ({listaRecientes.length})
                   </button>
                   <button
-                    onClick={() => setModoSidebar('abonados')}
-                    className={`flex-1 py-2 text-[11px] font-bold transition-all cursor-pointer border-b-2 ${
-                      modoSidebar === 'abonados'
-                        ? 'border-[#00a884] text-[#00a884] bg-white shadow-sm'
-                        : 'border-transparent text-[#54656f] hover:text-[#111b21]'
-                    }`}
-                  >
-                    🏢 Abonados ({listaAbonadosAgrupada.length})
-                  </button>
-                  <button
                     onClick={() => setModoSidebar('grupos')}
-                    className={`flex-1 py-2 text-[11px] font-bold transition-all cursor-pointer border-b-2 ${
+                    className={`flex-1 py-2 text-xs font-bold transition-all cursor-pointer border-b-2 ${
                       modoSidebar === 'grupos'
                         ? 'border-[#00a884] text-[#00a884] bg-white shadow-sm'
                         : 'border-transparent text-[#54656f] hover:text-[#111b21]'
@@ -982,7 +976,7 @@ Responde directamente el mensaje para WhatsApp al cliente, en un tono 100% verí
                 <div className="p-2.5 bg-[#f0f2f5] border-b border-gray-300 shrink-0">
                   <input
                     type="text"
-                    placeholder={modoSidebar === 'recientes' ? "🔍 Buscar chats recientes..." : modoSidebar === 'abonados' ? "🔍 Buscar abonado o número..." : "🔍 Buscar grupo de WhatsApp..."}
+                    placeholder={modoSidebar === 'recientes' ? "🔍 Buscar chats recientes..." : "🔍 Buscar grupo de WhatsApp..."}
                     className="w-full bg-white text-[#111b21] border border-gray-300 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-[#00a884] shadow-sm"
                     value={busquedaChat}
                     onChange={e => setBusquedaChat(e.target.value)}
@@ -1033,77 +1027,6 @@ Responde directamente el mensaje para WhatsApp al cliente, en un tono 100% verí
                               </div>
                             </div>
                           </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                ) : modoSidebar === 'abonados' ? (
-                  <div className="flex-1 overflow-y-auto divide-y divide-gray-200 bg-white">
-                    {listaAbonadosAgrupada.length === 0 && (
-                      <div className="p-4 text-center text-[#54656f] text-xs">Sin abonados registrados</div>
-                    )}
-                    {listaAbonadosAgrupada.map(abonado => {
-                      const isExpanded = !!cuentasExpandidas[abonado.cuenta]
-                      return (
-                        <div key={abonado.cuenta} className="bg-white">
-                          {/* Item del Abonado Header */}
-                          <div
-                            onClick={() => toggleCuentaExpandida(abonado.cuenta)}
-                            className="p-3 flex items-center justify-between cursor-pointer hover:bg-[#f5f6f6] transition-colors select-none"
-                          >
-                            <div className="flex items-center gap-3 min-w-0">
-                              <div className="w-9 h-9 rounded-full bg-[#00a884] text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-sm">
-                                {abonado.cuenta.slice(0, 3)}
-                              </div>
-                              <div className="min-w-0">
-                                <div className="font-bold text-xs text-[#111b21] truncate max-w-[160px]">
-                                  {abonado.cuenta} — {abonado.nombre}
-                                </div>
-                                <div className="text-[10px] text-[#54656f]">
-                                  {abonado.contactos.length} contacto(s)
-                                </div>
-                              </div>
-                            </div>
-                            <span className="text-xs text-[#00a884] font-bold px-1">
-                              {isExpanded ? '▲' : '▼'}
-                            </span>
-                          </div>
-
-                          {/* Acordeón de Contactos desplegable */}
-                          {isExpanded && (
-                            <div className="bg-[#f5f6f6] pl-4 divide-y divide-gray-200">
-                              {abonado.contactos.length === 0 ? (
-                                <div className="p-2 text-[10px] text-[#54656f]">Sin números registrados</div>
-                              ) : (
-                                abonado.contactos.map((contacto, idx) => {
-                                  const isSelected = chatActivo === contacto.telefono
-                                  return (
-                                    <div
-                                      key={idx}
-                                      onClick={() => {
-                                        setChatActivo(contacto.telefono)
-                                        const cli = clientesMap[abonado.cuenta]
-                                        if (cli) {
-                                          setClienteSeleccionado({ cuenta: abonado.cuenta, nombre: cli.nombre || '' })
-                                        }
-                                      }}
-                                      className={`p-2.5 flex items-center justify-between cursor-pointer hover:bg-[#e9edef] transition-colors ${isSelected ? 'bg-[#e9edef] border-l-4 border-l-[#00a884]' : ''}`}
-                                    >
-                                      <div className="min-w-0">
-                                        <div className="font-bold text-[11px] text-[#111b21] truncate">
-                                          👤 {contacto.nombre}
-                                        </div>
-                                        <div className="text-[9px] text-[#54656f]">
-                                          {contacto.rol} · {formatearNumeroDisplay(contacto.telefono)}
-                                        </div>
-                                      </div>
-                                      <span className="text-[10px] text-[#00a884] font-bold">💬 Chat</span>
-                                    </div>
-                                  )
-                                })
-                              )}
-                            </div>
-                          )}
                         </div>
                       )
                     })}

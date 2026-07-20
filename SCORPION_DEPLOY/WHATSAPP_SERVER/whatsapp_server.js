@@ -941,6 +941,9 @@ log('═════════════════════════
 log('  GAMA SEGURIDAD - WhatsApp Server v3.0   ')
 log('═══════════════════════════════════════════')
 
+// Memoria de autenticación de clientes por nombre/dirección
+const userAuthSessions = {}
+
 // ──────────────────────────────────────────────
 //  FUNCIÓN DE RESPUESTA AUTOMÁTICA CON GEMINI IA & MENÚ INTERACTIVO (DISPARADORES)
 // ──────────────────────────────────────────────
@@ -953,19 +956,53 @@ async function responderConIA(sock, jid, numero, bodyCliente, promptMaestro, nom
     // 1. Identificar abonado por coincidencia en eventos_monitoreo
     const { data: clienteMatch } = await supabase
       .from('eventos_monitoreo')
-      .select('cuenta')
+      .select('cuenta, nombre_abonado')
       .ilike('nombre_abonado', `%${numLimpio}%`)
       .limit(1)
 
     if (clienteMatch && clienteMatch.length > 0) {
       cuentaActiva = clienteMatch[0].cuenta
+    } else if (userAuthSessions[numero]?.cuenta) {
+      cuentaActiva = userAuthSessions[numero].cuenta
     }
 
     // 2. DISPARADORES Y MENÚ INTERACTIVO POR OPCIONES (1, 2, 3, 4)
     let respuestaDirecta = ''
+    const authSession = userAuthSessions[numero]
+
+    if (authSession?.state === 'AWAITING_NAME_OR_ADDRESS') {
+      // El cliente ingresó un nombre o dirección para verificar
+      const { data: matches } = await supabase
+        .from('eventos_monitoreo')
+        .select('cuenta, nombre_abonado')
+        .ilike('nombre_abonado', `%${textClean}%`)
+        .limit(1)
+
+      if (matches && matches.length > 0 && matches[0].nombre_abonado) {
+        userAuthSessions[numero] = {
+          state: 'AWAITING_CONFIRMATION',
+          cuenta: matches[0].cuenta,
+          nombre: matches[0].nombre_abonado
+        }
+        respuestaDirecta = `Verificación de seguridad:\n\n¿La propiedad corresponde a ${matches[0].nombre_abonado}?\n\nPor favor responde "sí" para confirmar.`
+      } else {
+        userAuthSessions[numero] = { state: 'AWAITING_NAME_OR_ADDRESS' }
+        respuestaDirecta = `No encontramos una coincidencia exacta con "${bodyCliente}".\n\nPor favor indícanos la calle o comuna de la propiedad, o responde 4 para comunicarte con un operador.`
+      }
+    }
+    else if (authSession?.state === 'AWAITING_CONFIRMATION') {
+      if (textClean === 'si' || textClean === 'sí' || textClean === 'confirmar' || textClean.includes('correcto') || textClean.includes('es mi')) {
+        userAuthSessions[numero] = { state: 'VERIFIED', cuenta: authSession.cuenta }
+        cuentaActiva = authSession.cuenta
+        respuestaDirecta = `Verificación exitosa. Cuenta [${cuentaActiva}] autenticada.\n\nHola, te comunicas con el Asistente Virtual de Gama Seguridad 24/7.\nPor favor responde con el número de la opción deseada:\n\n1. Consulta de mi alarma y bitácora\n2. Soporte técnico y guía de teclado (DSC / VETTI)\n3. Consultas comerciales\n4. Hablar con un operador o especialista en vivo`
+      } else {
+        userAuthSessions[numero] = null
+        respuestaDirecta = `Verificación cancelada. Si necesitas asistencia directa, por favor responde 4 para comunicarte con un operador.`
+      }
+    }
 
     // Opción 1: CONSULTA DE ALARMA Y BITÁCORA
-    if (textClean === '1' || textClean.includes('bitacora') || textClean.includes('alarma')) {
+    else if (textClean === '1' || textClean.includes('bitacora') || textClean.includes('alarma')) {
       if (cuentaActiva) {
         let eventosTxt = ''
         try {
@@ -988,7 +1025,8 @@ async function responderConIA(sock, jid, numero, bodyCliente, promptMaestro, nom
 
         respuestaDirecta = `Consulta de bitácora y estado de alarma:\n\nCuenta: ${cuentaActiva}\nEstado general: Sistema operando normal.\n\nÚltimos eventos registrados:\n${eventosTxt || '• Se confirma recepción de señales de comunicación normales en la central.'}\n\nSi necesitas asistencia técnica adicional, por favor responde 2 o 4.`
       } else {
-        respuestaDirecta = `Consulta de bitácora y estado de alarma:\n\nPor favor indícanos tu código de abonado (ej: C701) o RUT para consultar los registros de tu propiedad.\n\nSi requieres hablar con un operador, responde 4.`
+        userAuthSessions[numero] = { state: 'AWAITING_NAME_OR_ADDRESS' }
+        respuestaDirecta = `Consulta de bitácora y estado de alarma:\n\nPor seguridad de tus datos, por favor indícanos el nombre y apellido del titular registrado (o la dirección de la propiedad) para verificar tu sistema.`
       }
     }
 
