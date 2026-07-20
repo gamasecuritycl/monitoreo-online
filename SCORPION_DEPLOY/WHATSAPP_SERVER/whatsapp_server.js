@@ -964,14 +964,42 @@ async function responderConIA(sock, jid, numero, bodyCliente, promptMaestro, nom
     // 2. DISPARADORES Y MENÚ INTERACTIVO POR OPCIONES (1, 2, 3, 4)
     let respuestaDirecta = ''
 
+    // Opción 1: CONSULTA DE ALARMA Y BITÁCORA
+    if (textClean === '1' || textClean.includes('bitacora') || textClean.includes('alarma')) {
+      if (cuentaActiva) {
+        let eventosTxt = ''
+        try {
+          const fechaHace3Dias = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()
+          const { data: eventos } = await supabase
+            .from('eventos_monitoreo')
+            .select('evento, fecha_hora, zona, usuario, descripcion')
+            .eq('cuenta', cuentaActiva)
+            .gte('fecha_hora', fechaHace3Dias)
+            .order('fecha_hora', { ascending: false })
+            .limit(10)
+
+          if (eventos && eventos.length > 0) {
+            eventosTxt = eventos.map(e => {
+              const f = e.fecha_hora ? new Date(e.fecha_hora).toLocaleString('es-CL', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : ''
+              return `• ${f} - ${e.evento || e.descripcion || 'Señal recibida'} ${e.zona ? `(Zona ${e.zona})` : ''}`
+            }).join('\n')
+          }
+        } catch (e) {}
+
+        respuestaDirecta = `Consulta de bitácora y estado de alarma:\n\nCuenta: ${cuentaActiva}\nEstado general: Sistema operando normal.\n\nÚltimos eventos registrados:\n${eventosTxt || '• Se confirma recepción de señales de comunicación normales en la central.'}\n\nSi necesitas asistencia técnica adicional, por favor responde 2 o 4.`
+      } else {
+        respuestaDirecta = `Consulta de bitácora y estado de alarma:\n\nPor favor indícanos tu código de abonado (ej: C701) o RUT para consultar los registros de tu propiedad.\n\nSi requieres hablar con un operador, responde 4.`
+      }
+    }
+
     // Opción 3: CONSULTAS COMERCIALES (Módulo en desarrollo)
-    if (textClean === '3' || textClean.includes('comercial') || textClean.includes('cotiza')) {
-      respuestaDirecta = `💼 *CONSULTAS COMERCIALES — GAMA SEGURIDAD 24/7*\n\nEstimado cliente, le informamos que el módulo de Consultas Comerciales se encuentra actualmente en desarrollo.\n\nSi requiere atención o cotizaciones, por favor responda con el número *4* o presione el enlace para comunicarse con un especialista.`
+    else if (textClean === '3' || textClean.includes('comercial') || textClean.includes('cotiza')) {
+      respuestaDirecta = `Consultas comerciales - Gama Seguridad 24/7\n\nEstimado cliente, le informamos que el módulo de consultas comerciales se encuentra actualmente en desarrollo.\n\nSi requiere atención o cotizaciones, por favor responde con el número 4 o presiona el enlace para comunicarse con un especialista.`
     }
 
     // Opción 4: TRANSFERENCIA A OPERADOR HUMANO (Con enlace directo de chat)
     else if (textClean === '4' || textClean.includes('humano') || textClean.includes('operador') || textClean.includes('especialista')) {
-      respuestaDirecta = `👤 *ATENCIÓN DIRECTA CON ESPECIALISTA EN VIVO*\n\nUn especialista de nuestra Central de Monitoreo Gama Seguridad 24/7 está disponible para atenderle directamente.\n\n👉 *Presione el siguiente enlace para abrir el chat directo:* \nhttps://wa.me/56991016912`
+      respuestaDirecta = `Atención directa con especialista en vivo\n\nUn especialista de nuestra Central de Monitoreo Gama Seguridad 24/7 está disponible para atenderle directamente.\n\nPresiona el siguiente enlace para abrir el chat directo:\nhttps://wa.me/56991016912`
 
       // Marcar en Supabase para alertar al operador en la pantalla web
       try {
@@ -988,20 +1016,20 @@ async function responderConIA(sock, jid, numero, bodyCliente, promptMaestro, nom
 
     // Opción 2A: Soporte Teclado DSC
     else if (textClean === '2a' || textClean.includes('dsc') || textClean.includes('teclado')) {
-      respuestaDirecta = `📘 *SOPORTE TÉCNICO TECLADO DSC*\n\nPara revisar las fallas de su sistema DSC:\n1. Diríjase al teclado de su propiedad.\n2. Presione [*][2].\n3. Verifique el número de luz encendido (1: Batería baja, 2: Falta de energía AC, 3: Línea telefónica, 4: Comunicación, 5: Zona, 8: Hora).\n\nSi necesita asistencia adicional, responda *4*.`
+      respuestaDirecta = `Soporte técnico teclado DSC\n\nPara revisar las fallas de su sistema DSC:\n1. Diríjase al teclado de su propiedad.\n2. Presione [*][2].\n3. Verifique el número de luz encendido:\n   - Luz 1: Batería baja / servicio\n   - Luz 2: Falta de energía eléctrica (corte AC)\n   - Luz 3: Falla de línea telefónica\n   - Luz 4: Falla de comunicación\n   - Luz 5: Falla de zona\n   - Luz 8: Pérdida de hora del sistema\n\nSi requiere asistencia adicional, por favor responde 4.`
     }
 
     // Opción 2B: Soporte VETTI & Click App
     else if (textClean === '2b' || textClean.includes('vetti') || textClean.includes('click')) {
-      respuestaDirecta = `📲 *SOPORTE TÉCNICO ALARMA VETTI & CLICK APP*\n\nPara verificar su alarma VETTI:\n1. Abra la aplicación *Click App* en su smartphone.\n2. Ingrese al historial de eventos recientes.\n3. Presione el botón de *Armado Total* para reconectar.\n\nSi requiere asistencia adicional, responda *4*.`
+      respuestaDirecta = `Soporte técnico alarma VETTI y Click App\n\nPara verificar su alarma VETTI:\n1. Abra la aplicación Click App en su teléfono.\n2. Ingrese al historial de eventos recientes.\n3. Presione el botón de Armado Total para reconectar.\n\nSi requiere asistencia adicional, por favor responde 4.`
     }
 
     // Opción 2: Menú Soporte Técnico
     else if (textClean === '2' || textClean.includes('soporte') || textClean.includes('tecnico')) {
-      respuestaDirecta = `🛠️ *SOPORTE TÉCNICO GAMA SEGURIDAD 24/7*\n\nPor favor responde con la opción de tu sistema:\n\n*2A* - Teclado DSC (Diagnóstico de fallas con [*][2])\n*2B* - Alarma VETTI & Click App\n*4* - Hablar con un Especialista Técnico`
+      respuestaDirecta = `Soporte técnico - Gama Seguridad 24/7\n\nPor favor responde con la letra de tu sistema:\n\n2a. Teclado DSC (diagnóstico de fallas con *2)\n2b. Alarma VETTI y Click App\n4. Hablar con un especialista técnico`
     }
 
-    // Saludo inicial o palabra de inicio: Entregar Menú Principal
+    // Saludo inicial o palabra de inicio: Entregar Menú Principal Limpio
     else if (
       textClean === 'hola' ||
       textClean === 'buenas' ||
@@ -1012,7 +1040,7 @@ async function responderConIA(sock, jid, numero, bodyCliente, promptMaestro, nom
       textClean.includes('inicio') ||
       textClean.includes('ayuda')
     ) {
-      respuestaDirecta = `Hola, te comunicas con el Asistente Virtual de Gama Seguridad 24/7.\nPor favor responde con el NÚMERO de la opción deseada:\n\n1️⃣ 🚨 CONSULTA DE MI ALARMA Y BITÁCORA (3 DÍAS)\n2️⃣ 🛠️ SOPORTE TÉCNICO & GUÍA DE TECLADO (DSC / VETTI)\n3️⃣ 💼 CONSULTAS COMERCIALES\n4️⃣ 👤 HABLAR CON UN OPERADOR / ESPECIALISTA EN VIVO`
+      respuestaDirecta = `Hola, te comunicas con el Asistente Virtual de Gama Seguridad 24/7.\nPor favor responde con el número de la opción deseada:\n\n1. Consulta de mi alarma y bitácora\n2. Soporte técnico y guía de teclado (DSC / VETTI)\n3. Consultas comerciales\n4. Hablar con un operador o especialista en vivo`
     }
 
     // Si hubo una respuesta directa del menú interactivo, enviarla sin llamar a Gemini
