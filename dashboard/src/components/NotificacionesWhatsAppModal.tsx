@@ -304,7 +304,12 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
   })
 
   const mensajesActivos = todosLosChats
-    .filter(m => (m.numero || m.telefono) === chatActivo)
+    .filter(m => {
+      if (!chatActivo) return false
+      const num = (m.numero || m.telefono || '').replace('@s.whatsapp.net', '').trim()
+      const active = chatActivo.replace('@s.whatsapp.net', '').trim()
+      return num === active || num === active.replace('@g.us', '') || num + '@g.us' === active || active.includes(num) || num.includes(active)
+    })
     .reverse()
 
   const enviarChat = async () => {
@@ -581,18 +586,27 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
   ]
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-2 font-mono">
-      <div className="bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 w-full max-w-6xl h-[92vh] flex flex-col shadow-2xl overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-2 sm:p-4 font-sans backdrop-blur-sm">
+      <div className="bg-[#111b21] border border-[#222d34] rounded-xl w-full max-w-6xl h-[94vh] flex flex-col shadow-2xl overflow-hidden">
 
-        {/* Header */}
-        <div className="bg-[#000080] text-white px-3 py-1 flex justify-between items-center shrink-0">
-          <div className="font-bold text-sm tracking-wide flex items-center gap-2">
-            <span>💬</span>
-            <span>CENTRO DE MENSAJERÍA WHATSAPP — GAMA SEGURIDAD v3.0</span>
+        {/* Header WhatsApp Web Style */}
+        <div className="bg-[#202c33] text-white px-4 py-2.5 flex justify-between items-center shrink-0 border-b border-[#222d34]">
+          <div className="font-bold text-sm tracking-wide flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-full bg-[#00a884] flex items-center justify-center text-white text-sm shadow font-bold">
+              💬
+            </div>
+            <div>
+              <div className="text-xs font-bold text-white flex items-center gap-2">
+                CENTRO DE MENSAJERÍA WHATSAPP
+                <span className="text-[10px] bg-[#00a884]/20 text-[#00a884] border border-[#00a884]/40 px-1.5 py-0.5 rounded font-mono">v3.0</span>
+              </div>
+              <div className="text-[10px] text-[#8696a0]">Gama Seguridad — Monitoreo 24/7</div>
+            </div>
           </div>
           <div className="flex items-center gap-3">
             {/* Indicador de estado compacto */}
-            <span className="text-[11px] font-bold px-2 py-0.5 rounded-full" style={{ background: statusColor, color: '#000' }}>
+            <span className="text-[11px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1.5" style={{ background: statusColor, color: '#000' }}>
+              <span className="w-2 h-2 rounded-full bg-black/40 animate-pulse" />
               {statusLabel}
             </span>
             {waStatus.cola > 0 && (
@@ -600,20 +614,25 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
                 📥 {waStatus.cola} en cola
               </span>
             )}
-            <button onClick={onClose} className="bg-[#c0c0c0] text-black font-bold border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 w-6 h-6 flex items-center justify-center hover:bg-red-200 cursor-pointer text-xs">✕</button>
+            <button
+              onClick={onClose}
+              className="bg-[#111b21] text-[#8696a0] hover:text-white hover:bg-red-500/20 font-bold border border-[#2a3942] w-7 h-7 rounded-lg flex items-center justify-center transition-colors cursor-pointer text-xs"
+            >
+              ✕
+            </button>
           </div>
         </div>
 
-        {/* Tabs */}
-        <div className="flex border-b border-gray-600 shrink-0 bg-[#b0b0b0]">
+        {/* Tabs WhatsApp Web Style */}
+        <div className="flex border-b border-[#222d34] shrink-0 bg-[#111b21]">
           {tabs.map(t => (
             <button
               key={t.id}
               onClick={() => setActiveTab(t.id)}
-              className={`px-4 py-1.5 text-xs font-bold tracking-wide transition-colors cursor-pointer ${
+              className={`px-5 py-2 text-xs font-bold tracking-wide transition-all cursor-pointer border-b-2 ${
                 activeTab === t.id
-                  ? 'bg-white text-[#000080] border-t-2 border-t-[#000080] border-x border-x-gray-400'
-                  : 'bg-[#a0a0a0] text-black hover:bg-[#c0c0c0] border-x border-x-gray-400'
+                  ? 'bg-[#202c33] text-[#00a884] border-b-[#00a884]'
+                  : 'text-[#8696a0] hover:text-white border-b-transparent hover:bg-[#202c33]/50'
               }`}
             >
               {t.label}
@@ -852,10 +871,10 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
                       <div ref={chatEndRef} />
                     </div>
 
-                    {/* Toolbar de Mensajes Pregrabados / Novedades C730 & Grupo 24/7 */}
+                    {/* Toolbar de Mensajes Pregrabados / Novedades por Código de Abonado */}
                     <div className="bg-[#182229] border-t border-[#222d34] p-2 flex flex-wrap gap-1.5 items-center shrink-0">
                       <span className="text-[10px] font-bold text-[#00a884] uppercase tracking-wider mr-1">
-                        ⚡ PREGRABADOS (24/7 & C730):
+                        ⚡ PREGRABADOS C730 (24/7 & INTEGRA):
                       </span>
 
                       {/* Botón C730 Apertura */}
@@ -877,7 +896,7 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
                       {/* Botón C730 Alarma Zona */}
                       <button
                         onClick={() => {
-                          const zona = prompt('Ingrese el número de Zona con alarma (ej: 02, 05, 12):', '01')
+                          const zona = prompt('Ingrese el número de Zona con alarma en C730 (ej: 02, 05, 12):', '01')
                           if (zona) {
                             setTextoChat(`GAMA SEGURIDAD 24/7: 🚨 ALARMA DE ROBO / INTRUSIÓN en Abonado C730 — ZONA ${zona}. Confirmar estado con personal.`)
                           }
@@ -895,25 +914,25 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
                         ⚡ Corte Energía C730
                       </button>
 
-                      {/* Generador Rápido de Novedad para cualquier Abonado */}
+                      {/* Generador Rápido por Código de Abonado */}
                       <button
                         onClick={() => {
-                          const cuent = prompt('Ingrese Cuenta del Abonado (ej: C730, 1001, C798):', 'C730')?.toUpperCase()
+                          const cuent = prompt('Ingrese CÓDIGO DE ABONADO (ej: C730, 1001, C798):', 'C730')?.toUpperCase()
                           if (!cuent) return
-                          const tipo = prompt('Tipo de novedad (1=Apertura, 2=Cierre, 3=Alarma, 4=Energía):', '1')
+                          const tipo = prompt('Tipo de novedad (1=Apertura, 2=Cierre, 3=Alarma Robo, 4=Corte Energía):', '1')
                           const z = tipo === '3' ? prompt('Número de zona:', '01') : ''
 
                           let msg = `GAMA SEGURIDAD: Novedad sobre Abonado ${cuent}.`
-                          if (tipo === '1') msg = `GAMA SEGURIDAD 24/7: Se registra APERTURA DE SISTEMA en Abonado ${cuent}.`
-                          else if (tipo === '2') msg = `GAMA SEGURIDAD 24/7: Se registra CIERRE DE SISTEMA en Abonado ${cuent}. Sistema armado.`
-                          else if (tipo === '3') msg = `GAMA SEGURIDAD 24/7: 🚨 ALARMA DE INTRUSIÓN en Abonado ${cuent} — ZONA ${z || '01'}.`
-                          else if (tipo === '4') msg = `GAMA SEGURIDAD 24/7: ⚡ CORTE DE ENERGÍA en Abonado ${cuent}. Operando con batería de respaldo.`
+                          if (tipo === '1') msg = `GAMA SEGURIDAD: Se registra APERTURA DE SISTEMA en Abonado ${cuent}.`
+                          else if (tipo === '2') msg = `GAMA SEGURIDAD: Se registra CIERRE DE SISTEMA en Abonado ${cuent}. Sistema armado.`
+                          else if (tipo === '3') msg = `GAMA SEGURIDAD: 🚨 ALARMA DE INTRUSIÓN en Abonado ${cuent} — ZONA ${z || '01'}.`
+                          else if (tipo === '4') msg = `GAMA SEGURIDAD: ⚡ CORTE DE ENERGÍA en Abonado ${cuent}. Operando con batería de respaldo.`
 
                           setTextoChat(msg)
                         }}
-                        className="text-[10px] bg-[#005c4b] hover:bg-[#00a884] text-white px-2 py-1 rounded cursor-pointer font-bold ml-auto"
+                        className="text-[10px] bg-[#005c4b] hover:bg-[#00a884] text-white px-2 py-1 rounded cursor-pointer font-bold ml-auto shadow"
                       >
-                        ➕ Crear Novedad Abonado
+                        ➕ Novedad por Código Abonado
                       </button>
                     </div>
 
