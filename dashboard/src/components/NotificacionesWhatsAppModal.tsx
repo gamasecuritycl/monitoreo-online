@@ -893,48 +893,78 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
                       <div ref={chatEndRef} />
                     </div>
 
-                    {/* Toolbar de Mensajes Pregrabados / Novedades por Código de Abonado */}
+                    {/* Toolbar de Mensajes Pregrabados Rápida */}
                     <div className="bg-[#f0f2f5] border-t border-gray-300 p-2 flex flex-wrap gap-1.5 items-center shrink-0">
                       <span className="text-[10px] font-bold text-[#00a884] uppercase tracking-wider mr-1">
-                        ⚡ PREGRABADOS C730 (24/7 & INTEGRA):
+                        ⚡ PLANTILLAS RÁPIDAS:
                       </span>
 
-                      {/* Botón C730 Apertura */}
-                      <button
-                        onClick={() => setTextoChat('GAMA SEGURIDAD 24/7: Se registra APERTURA DE SISTEMA en Abonado C730.')}
-                        className="text-[10px] bg-white hover:bg-green-50 text-green-700 border border-green-500 px-2.5 py-1 rounded cursor-pointer transition-colors font-bold shadow-sm"
-                      >
-                        🟢 Apertura C730
-                      </button>
-
-                      {/* Botón C730 Cierre */}
-                      <button
-                        onClick={() => setTextoChat('GAMA SEGURIDAD 24/7: Se registra CIERRE DE SISTEMA en Abonado C730. Sistema armado.')}
-                        className="text-[10px] bg-white hover:bg-blue-50 text-blue-700 border border-blue-500 px-2.5 py-1 rounded cursor-pointer transition-colors font-bold shadow-sm"
-                      >
-                        🔵 Cierre C730
-                      </button>
-
-                      {/* Botón C730 Alarma Zona */}
-                      <button
-                        onClick={() => {
-                          const zona = prompt('Ingrese el número de Zona con alarma en C730 (ej: 02, 05, 12):', '01')
-                          if (zona) {
-                            setTextoChat(`GAMA SEGURIDAD 24/7: 🚨 ALARMA DE ROBO / INTRUSIÓN en Abonado C730 — ZONA ${zona}. Confirmar estado con personal.`)
-                          }
-                        }}
-                        className="text-[10px] bg-white hover:bg-red-50 text-red-700 border border-red-500 px-2.5 py-1 rounded cursor-pointer transition-colors font-bold shadow-sm"
-                      >
-                        🚨 Alarma Zona C730
-                      </button>
-
-                      {/* Botón C730 Corte Energía */}
-                      <button
-                        onClick={() => setTextoChat('GAMA SEGURIDAD 24/7: ⚡ CORTE DE ENERGÍA ELÉCTRICA en Abonado C730. Su sistema opera con batería de respaldo.')}
-                        className="text-[10px] bg-white hover:bg-amber-50 text-amber-700 border border-amber-500 px-2.5 py-1 rounded cursor-pointer transition-colors font-bold shadow-sm"
-                      >
-                        ⚡ Corte Energía C730
-                      </button>
+                      {/* Mostrar C730 si es el grupo Acceso 24/7 */}
+                      {chatActivo.includes('56974790348') ? (
+                        <>
+                          <button
+                            onClick={() => setTextoChat('GAMA SEGURIDAD 24/7: Se registra APERTURA DE SISTEMA en Abonado C730.')}
+                            className="text-[10px] bg-white hover:bg-green-50 text-green-700 border border-green-500 px-2.5 py-1 rounded cursor-pointer transition-colors font-bold shadow-sm"
+                          >
+                            🟢 Apertura C730
+                          </button>
+                          <button
+                            onClick={() => setTextoChat('GAMA SEGURIDAD 24/7: Se registra CIERRE DE SISTEMA en Abonado C730. Sistema armado.')}
+                            className="text-[10px] bg-white hover:bg-blue-50 text-blue-700 border border-blue-500 px-2.5 py-1 rounded cursor-pointer transition-colors font-bold shadow-sm"
+                          >
+                            🔵 Cierre C730
+                          </button>
+                          <button
+                            onClick={() => {
+                              const zona = prompt('Ingrese el número de Zona con alarma en C730 (ej: 02, 05, 12):', '01')
+                              if (zona) {
+                                setTextoChat(`GAMA SEGURIDAD 24/7: 🚨 ALARMA DE ROBO / INTRUSIÓN en Abonado C730 — ZONA ${zona}. Confirmar estado con personal.`)
+                              }
+                            }}
+                            className="text-[10px] bg-white hover:bg-red-50 text-red-700 border border-red-500 px-2.5 py-1 rounded cursor-pointer transition-colors font-bold shadow-sm"
+                          >
+                            🚨 Alarma C730
+                          </button>
+                          <button
+                            onClick={() => setTextoChat('GAMA SEGURIDAD 24/7: ⚡ CORTE DE ENERGÍA ELÉCTRICA en Abonado C730. Su sistema opera con batería de respaldo.')}
+                            className="text-[10px] bg-white hover:bg-amber-50 text-amber-700 border border-amber-500 px-2.5 py-1 rounded cursor-pointer transition-colors font-bold shadow-sm"
+                          >
+                            ⚡ Energía C730
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => setTextoChat('GAMA SEGURIDAD INFORMA: Se registra APERTURA DE SISTEMA en su propiedad.')}
+                            className="text-[10px] bg-white hover:bg-green-50 text-green-700 border border-green-500 px-2.5 py-1 rounded cursor-pointer transition-colors font-bold shadow-sm"
+                          >
+                            🟢 Apertura
+                          </button>
+                          <button
+                            onClick={() => setTextoChat('GAMA SEGURIDAD INFORMA: Se registra CIERRE DE SISTEMA. Sistema armado correctamente.')}
+                            className="text-[10px] bg-white hover:bg-blue-50 text-blue-700 border border-blue-500 px-2.5 py-1 rounded cursor-pointer transition-colors font-bold shadow-sm"
+                          >
+                            🔵 Cierre
+                          </button>
+                          <button
+                            onClick={() => {
+                              const zona = prompt('Ingrese el número de Zona con alarma (ej: 02, 05, 12):', '01')
+                              if (zona) {
+                                setTextoChat(`GAMA SEGURIDAD INFORMA: 🚨 ALARMA DE ROBO / INTRUSIÓN en su propiedad — ZONA ${zona}. Por favor confirmar estado urgentemente.`)
+                              }
+                            }}
+                            className="text-[10px] bg-white hover:bg-red-50 text-red-700 border border-red-500 px-2.5 py-1 rounded cursor-pointer transition-colors font-bold shadow-sm"
+                          >
+                            🚨 Alarma Robo
+                          </button>
+                          <button
+                            onClick={() => setTextoChat('GAMA SEGURIDAD INFORMA: ⚡ Se registra CORTE DE ENERGÍA ELÉCTRICA en su propiedad. Su sistema opera con batería de respaldo.')}
+                            className="text-[10px] bg-white hover:bg-amber-50 text-amber-700 border border-amber-500 px-2.5 py-1 rounded cursor-pointer transition-colors font-bold shadow-sm"
+                          >
+                            ⚡ Corte Energía
+                          </button>
+                        </>
+                      )}
 
                       {/* Generador Rápido por Código de Abonado */}
                       <button

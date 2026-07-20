@@ -491,12 +491,11 @@ async function conectar() {
       }
     })
 
-    // ── Mensajes entrantes ──
-    sock.ev.on('messages.upsert', async ({ messages, type }) => {
-      if (type !== 'notify') return
+    // ── Mensajes Entrantes y Salientes (Grupos e Individuales) ──
+    sock.ev.on('messages.upsert', async ({ messages }) => {
       for (const msg of messages) {
-        if (msg.key.fromMe) continue
-        if (isJidBroadcast(msg.key.remoteJid || '')) continue
+        if (!msg.key || !msg.key.remoteJid) continue
+        if (isJidBroadcast(msg.key.remoteJid)) continue
 
         const body = msg.message?.conversation
           || msg.message?.extendedTextMessage?.text
@@ -505,23 +504,25 @@ async function conectar() {
 
         if (!body) continue
 
-        const jid    = msg.key.remoteJid || ''
-        const numero = jid.replace('@s.whatsapp.net', '').replace('@g.us', '')
-        const nombre = msg.pushName || ''
+        const rawJid = msg.key.remoteJid
+        const isGroup = rawJid.endsWith('@g.us') || rawJid.includes('-')
+        const numero = isGroup ? (rawJid.endsWith('@g.us') ? rawJid : rawJid + '@g.us') : rawJid.replace('@s.whatsapp.net', '')
+        const nombre = msg.pushName || (isGroup ? 'Grupo WhatsApp' : '')
 
-        log(`💬 Mensaje de ${nombre} (+${numero}): "${body.slice(0, 60)}"`)
+        log(`💬 [${isGroup ? 'GRUPO' : 'CHAT'}] ${msg.key.fromMe ? 'Enviado por Mí' : nombre}: "${body.slice(0, 50)}"`)
 
-        // Guardar en Supabase
         try {
           await supabase.from('conversaciones_whatsapp').insert({
             numero,
-            tipo_evento:        'mensaje_entrante',
-            estado:             'pendiente',
-            respuesta_recibida: body,
-            created_at:         new Date().toISOString(),
+            tipo_evento: msg.key.fromMe ? 'mensaje_enviado' : 'mensaje_entrante',
+            estado: 'enviado',
+            respuesta_recibida: msg.key.fromMe ? null : body,
+            mensaje_enviado: msg.key.fromMe ? body : null,
+            nombre_grupo: isGroup ? nombre : null,
+            created_at: msg.messageTimestamp ? new Date(msg.messageTimestamp * 1000).toISOString() : new Date().toISOString(),
           })
         } catch (err) {
-          log(`No se pudo guardar mensaje en Supabase: ${err.message}`, 'WARN')
+          log(`⚠️ Error guardando mensaje en Supabase: ${err.message}`, 'WARN')
         }
       }
     })
