@@ -1026,48 +1026,109 @@ async function responderConIA(sock, jid, numero, bodyCliente, promptMaestro, nom
       delete inactivityTimers[numero]
     }
 
-    // Re-mostrar menú ante "sí", "más dudas", "menú"
+    // Comandos Globales de Menú e Inicio (Siempre resetean estados de espera)
     else if (
-      textClean === 'si' ||
-      textClean === 'sí' ||
+      textClean === 'hola' ||
+      textClean === 'buenas' ||
+      textClean === 'menu' ||
+      textClean === 'menú' ||
+      textClean === 'inicio' ||
+      textClean === 'ayuda' ||
+      textClean === 'cancelar' ||
       textClean.includes('mas dudas') ||
       textClean.includes('más dudas') ||
       textClean.includes('otra duda') ||
       textClean.includes('otra consulta')
     ) {
-      respuestaDirecta = `Con gusto le asistimos nuevamente.\nPor favor responde con el número de la opción deseada:\n\n1️⃣ Consulta de mi alarma y bitácora\n2️⃣ Soporte técnico y guía de teclado DSC\n3️⃣ Consultas comerciales\n4️⃣ Hablar con un operador o especialista en vivo`
+      delete userAuthSessions[numero]
+      respuestaDirecta = `🛡️ Hola, te comunicas con el Asistente Virtual de Gama Seguridad 24/7 🚨\nPor favor responde con el número de la opción deseada:\n\n1️⃣ Consulta de mi alarma y bitácora\n2️⃣ Soporte técnico y guía de teclado DSC\n3️⃣ Consultas comerciales\n4️⃣ Hablar con un operador o especialista en vivo`
     }
 
+    // Opción 4: TRANSFERENCIA A OPERADOR HUMANO (Siempre resetea estados de espera)
+    else if (textClean === '4' || textClean.includes('humano') || textClean.includes('operador') || textClean.includes('especialista')) {
+      delete userAuthSessions[numero]
+      respuestaDirecta = `Atención directa con especialista en vivo\n\nUn especialista de nuestra Central de Monitoreo Gama Seguridad 24/7 está disponible para atenderle directamente.\n\nPresiona el siguiente enlace para abrir el chat directo:\nhttps://wa.me/56991016912`
+
+      try {
+        await supabase.from('conversaciones_whatsapp').insert({
+          numero: numero,
+          tipo_evento: 'solicitud_humana',
+          estado: 'requiere_atencion_humana',
+          respuesta_recibida: '⚠️ CLIENTE SOLICITA ATENCIÓN HUMANA EN VIVO',
+          cuenta: cuentaActiva || 'ESPECIALISTA',
+          created_at: new Date().toISOString()
+        })
+      } catch (e) {}
+    }
+
+    // Confirmación "Sí" en estado de espera
+    else if (authSession?.state === 'AWAITING_CONFIRMATION') {
+      if (textClean === 'si' || textClean === 'sí' || textClean === 'confirmar' || textClean.includes('correcto') || textClean.includes('es mi')) {
+        userAuthSessions[numero] = { state: 'VERIFIED', cuenta: authSession.cuenta }
+        cuentaActiva = authSession.cuenta
+        respuestaDirecta = `Verificación exitosa. Cuenta [${cuentaActiva}] autenticada.\n\n🛡️ Hola, te comunicas con el Asistente Virtual de Gama Seguridad 24/7 🚨\nPor favor responde con el número de la opción deseada:\n\n1️⃣ Consulta de mi alarma y bitácora\n2️⃣ Soporte técnico y guía de teclado DSC\n3️⃣ Consultas comerciales\n4️⃣ Hablar con un operador o especialista en vivo`
+      } else {
+        userAuthSessions[numero] = null
+        respuestaDirecta = `Verificación cancelada. Si necesitas asistencia directa, por favor responde 4 para comunicarte con un operador.`
+      }
+    }
+
+    // Búsqueda inteligente de propiedad en estado AWAITING_NAME_OR_ADDRESS
     else if (authSession?.state === 'AWAITING_NAME_OR_ADDRESS') {
-      // 🔍 BÚSQUEDA INTELIGENTE POR PALABRAS CLAVE / COINCIDENCIA PARCIAL / FUZZY
-      const palabras = textClean.split(/\s+/).filter(w => w.length >= 3)
+      const palabras = textClean.split(/\s+/).filter(w => w.length >= 2)
       let matchEncontrado = null
 
       if (palabras.length > 0) {
-        const orClause = palabras.map(p => `nombre_abonado.ilike.%${p}%,descripcion.ilike.%${p}%,cuenta.ilike.%${p}%`).join(',')
-        
         try {
-          const { data: resultados } = await supabase
-            .from('eventos_monitoreo')
-            .select('cuenta, nombre_abonado, descripcion')
-            .or(orClause)
-            .limit(30)
+          // A) Buscar en clientes_monitoreo
+          const orClientes = palabras.map(p => `nombre.ilike.%${p}%,direccion.ilike.%${p}%,comuna.ilike.%${p}%,cuenta.ilike.%${p}%`).join(',')
+          const { data: resClientes } = await supabase
+            .from('clientes_monitoreo')
+            .select('cuenta, nombre, direccion, comuna')
+            .or(orClientes)
+            .limit(20)
 
-          if (resultados && resultados.length > 0) {
+          if (resClientes && resClientes.length > 0) {
             let maxScore = 0
-            for (const r of resultados) {
-              const textPool = `${r.cuenta || ''} ${r.nombre_abonado || ''} ${r.descripcion || ''}`.toLowerCase()
+            for (const r of resClientes) {
+              const haystack = `${r.cuenta || ''} ${r.nombre || ''} ${r.direccion || ''} ${r.comuna || ''}`.toLowerCase()
               let score = 0
-              palabras.forEach(p => {
-                if (textPool.includes(p)) score += 2
-              })
-              if (textClean && textPool.includes(textClean)) score += 5
+              palabras.forEach(p => { if (haystack.includes(p)) score += 2 })
+              if (textClean && haystack.includes(textClean)) score += 5
 
               if (score > maxScore) {
                 maxScore = score
                 matchEncontrado = {
                   cuenta: r.cuenta,
-                  nombre: r.nombre_abonado || r.descripcion || r.cuenta
+                  nombre: `${r.nombre || 'Abonado'} ${r.direccion ? `(${r.direccion})` : ''}`.trim()
+                }
+              }
+            }
+          }
+
+          // B) Buscar en eventos_monitoreo
+          if (!matchEncontrado) {
+            const orEventos = palabras.map(p => `nombre_abonado.ilike.%${p}%,descripcion.ilike.%${p}%,cuenta.ilike.%${p}%`).join(',')
+            const { data: resEventos } = await supabase
+              .from('eventos_monitoreo')
+              .select('cuenta, nombre_abonado, descripcion')
+              .or(orEventos)
+              .limit(20)
+
+            if (resEventos && resEventos.length > 0) {
+              let maxScore = 0
+              for (const r of resEventos) {
+                const haystack = `${r.cuenta || ''} ${r.nombre_abonado || ''} ${r.descripcion || ''}`.toLowerCase()
+                let score = 0
+                palabras.forEach(p => { if (haystack.includes(p)) score += 2 })
+                if (textClean && haystack.includes(textClean)) score += 5
+
+                if (score > maxScore) {
+                  maxScore = score
+                  matchEncontrado = {
+                    cuenta: r.cuenta,
+                    nombre: r.nombre_abonado || r.descripcion || r.cuenta
+                  }
                 }
               }
             }
@@ -1083,20 +1144,10 @@ async function responderConIA(sock, jid, numero, bodyCliente, promptMaestro, nom
           cuenta: matchEncontrado.cuenta,
           nombre: matchEncontrado.nombre
         }
-        respuestaDirecta = `Verificación de seguridad:\n\nEncontramos una coincidencia para tu búsqueda ("${bodyCliente}"):\n• Propiedad / Titular: ${matchEncontrado.nombre}\n• Código: ${matchEncontrado.cuenta}\n\n¿Corresponde esta propiedad a tu sistema? Responde "sí" para confirmar.`
+        respuestaDirecta = `Verificación de seguridad:\n\nEncontramos una coincidencia para tu búsqueda ("${bodyCliente}"):\n• Propiedad / Titular: ${matchEncontrado.nombre}\n• Código de Cuenta: ${matchEncontrado.cuenta}\n\n¿Corresponde esta propiedad a tu sistema? Responde "sí" para confirmar.`
       } else {
         userAuthSessions[numero] = { state: 'AWAITING_NAME_OR_ADDRESS' }
-        respuestaDirecta = `No encontramos una propiedad registrada que coincida con "${bodyCliente}".\n\nPor favor indícanos el nombre del titular, la calle o la comuna (ej: "Santo Domingo", "Marbella" o "María Acuña"), o responde 4 para comunicarte con un operador.`
-      }
-    }
-    else if (authSession?.state === 'AWAITING_CONFIRMATION') {
-      if (textClean === 'si' || textClean === 'sí' || textClean === 'confirmar' || textClean.includes('correcto') || textClean.includes('es mi')) {
-        userAuthSessions[numero] = { state: 'VERIFIED', cuenta: authSession.cuenta }
-        cuentaActiva = authSession.cuenta
-        respuestaDirecta = `Verificación exitosa. Cuenta [${cuentaActiva}] autenticada.\n\n🛡️ Hola, te comunicas con el Asistente Virtual de Gama Seguridad 24/7 🚨\nPor favor responde con el número de la opción deseada:\n\n1️⃣ Consulta de mi alarma y bitácora\n2️⃣ Soporte técnico y guía de teclado DSC\n3️⃣ Consultas comerciales\n4️⃣ Hablar con un operador o especialista en vivo`
-      } else {
-        userAuthSessions[numero] = null
-        respuestaDirecta = `Verificación cancelada. Si necesitas asistencia directa, por favor responde 4 para comunicarte con un operador.`
+        respuestaDirecta = `No encontramos una propiedad registrada que coincida con "${bodyCliente}".\n\nPor favor indícanos el nombre del titular o calle (ej: "Santo Domingo", "Marbella" o "María Acuña"), o responde 4 para comunicarte con un operador.`
       }
     }
 
