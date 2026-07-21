@@ -269,6 +269,19 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
     }
   }
 
+  // Descargar plantilla Excel/CSV oficial de ejemplo
+  const descargarPlantillaExcel = () => {
+    const contenidoCsv = "N_ABONADO;NOMBRE;RUT;SUCURSAL\nC774;MARIA CECILIA ACUÑA;12123123-6;CASA SANTO DOMINGO\nC775;COMERCIAL GAMA LTDA;76123456-K;LOCAL CENTRO\nC810;JUAN PEREZ;15987654-3;CASA MARBELLA"
+    const blob = new Blob(["\uFEFF" + contenidoCsv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.setAttribute('href', url)
+    link.setAttribute('download', 'Plantilla_Maestro_RUT_GamaSeguridad.csv')
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
   // Carga Masiva desde Excel Maestro (.xlsx / .csv / TSV)
   const procesarCargaMasivaExcel = async () => {
     if (usuarioRol !== 'Administrador') {
@@ -288,29 +301,24 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
       const nuevoMap = { ...clientesMap }
 
       for (const linea of lineas) {
-        // Separa por tabuladores (copiado desde Excel) o comas/puntos y comas
+        // Separa por tabuladores (copiado desde Excel) o comas / punto y coma / pipe
         const cols = linea.split(/\t|;|\|/).map(c => c.trim().replace(/^["']|["']$/g, ''))
         if (cols.length < 2) continue
 
-        // Detectar si la primera fila es encabezado
-        if (cols[0].toLowerCase().includes('cuenta') || cols[0].toLowerCase().includes('rut')) continue
+        // Saltar línea de encabezados si contiene "abonado", "cuenta", "nombre", "rut"
+        const col0Lower = cols[0].toLowerCase()
+        if (col0Lower.includes('abonado') || col0Lower.includes('cuenta') || col0Lower.includes('nombre') || col0Lower === 'n°') continue
 
-        // Formato esperado: [CUENTA, RUT, ALIAS_UNIDAD, NOMBRE, DIRECCION, TELEFONO] o [RUT, CUENTA...]
-        let cuentaStr = ''
-        let rutStr = ''
-        let aliasStr = ''
-        let nombreStr = ''
+        // ORDEN ESTRICTO SOLICITADO: Col 0: N° Abonado | Col 1: Nombre | Col 2: RUT | Col 3: Sucursal / Alias
+        let cuentaStr = cols[0] ? cols[0].toUpperCase().trim() : ''
+        let nombreStr = cols[1] || ''
+        let rutStr = cols[2] || ''
+        let sucursalStr = cols[3] || ''
 
-        if (cols[0].toUpperCase().startsWith('C') || /^\d+$/.test(cols[0])) {
-          cuentaStr = cols[0].toUpperCase().trim()
-          rutStr = cols[1] || ''
-          aliasStr = cols[2] || ''
-          nombreStr = cols[3] || ''
-        } else {
-          rutStr = cols[0] || ''
-          cuentaStr = (cols[1] || '').toUpperCase().trim()
-          aliasStr = cols[2] || ''
-          nombreStr = cols[3] || ''
+        // Detección de seguridad si invirtió RUT y Nombre (Col 1 vs Col 2)
+        if (cleanRut(cols[1]).includes('-') && !cleanRut(cols[2]).includes('-')) {
+          rutStr = cols[1]
+          nombreStr = cols[2]
         }
 
         if (!cuentaStr) continue
@@ -323,15 +331,15 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
         nuevoMap[cuentaStr] = {
           ...(nuevoMap[cuentaStr] || {}),
           cuenta: cuentaStr,
+          nombre: nombreStr || nuevoMap[cuentaStr]?.nombre || '',
           rut: rutFormateado || nuevoMap[cuentaStr]?.rut || '',
-          alias_unidad: aliasStr.toUpperCase() || nuevoMap[cuentaStr]?.alias_unidad || '',
-          nombre: nombreStr || nuevoMap[cuentaStr]?.nombre || ''
+          alias_unidad: sucursalStr.toUpperCase() || nuevoMap[cuentaStr]?.alias_unidad || ''
         }
         actualizados++
       }
 
       if (actualizados === 0) {
-        alert('No se detectaron filas válidas con formato CUENTA y RUT.')
+        alert('No se detectaron filas válidas con formato N° ABONADO, NOMBRE, RUT y SUCURSAL.')
         return
       }
 
@@ -1024,33 +1032,43 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
             </div>
 
             <div className="bg-[#ffffd0] p-2 border border-gray-500 text-gray-800 text-[10px]">
-              <strong>Instrucciones:</strong> Copia y pega las filas desde tu archivo Excel o CSV.<br/>
-              Columnas esperadas: <code>[CUENTA, RUT, ALIAS_UNIDAD, NOMBRE_TITULAR]</code>.<br/>
+              <strong>Instrucciones:</strong> Copia y pega las filas desde tu archivo Excel o CSV (o descarga la plantilla oficial abajo).<br/>
+              Orden estricto de columnas: <code>[N° ABONADO | NOMBRE | RUT | SUCURSAL]</code>.<br/>
               <em>El RUT se formateará automáticamente al formato <code>12123123-6</code> (sin puntos, con guión).</em>
             </div>
 
             <textarea
               value={excelTextRaw}
               onChange={(e) => setExcelTextRaw(e.target.value)}
-              placeholder={"C774\t12123123-6\tCASA SANTO DOMINGO\tMARIA CECILIA ACUÑA\nC775\t76123456-K\tLOCAL CENTRO\tCOMERCIAL GAMA"}
+              placeholder={"C774\tMARIA CECILIA ACUÑA\t12123123-6\tCASA SANTO DOMINGO\nC775\tCOMERCIAL GAMA LTDA\t76123456-K\tLOCAL CENTRO"}
               className="w-full h-[180px] bg-white border border-gray-600 p-2 text-[10px] font-mono focus:outline-none"
             />
 
-            <div className="flex justify-end gap-2 shrink-0 pt-1">
+            <div className="flex justify-between items-center gap-2 shrink-0 pt-1">
               <button
-                disabled={cargandoExcel}
-                onClick={() => setMostrarModalExcel(false)}
-                className="px-3 py-1 bg-gray-300 border border-gray-600 font-bold hover:bg-gray-400 cursor-pointer"
+                onClick={descargarPlantillaExcel}
+                className="px-3 py-1 bg-green-700 text-white font-bold rounded-sm text-[10px] hover:bg-green-800 shadow active:translate-y-0.5 cursor-pointer flex items-center gap-1"
+                title="Descargar archivo CSV/Excel de muestra oficial"
               >
-                Cancelar
+                <span>📥 Descargar Plantilla Excel</span>
               </button>
-              <button
-                disabled={cargandoExcel}
-                onClick={procesarCargaMasivaExcel}
-                className="px-4 py-1 bg-[#008080] text-white font-bold hover:bg-teal-900 shadow active:translate-y-0.5 cursor-pointer"
-              >
-                {cargandoExcel ? '⏳ Procesando...' : '🚀 Cargar Maestro'}
-              </button>
+
+              <div className="flex items-center gap-2">
+                <button
+                  disabled={cargandoExcel}
+                  onClick={() => setMostrarModalExcel(false)}
+                  className="px-3 py-1 bg-gray-300 border border-gray-600 font-bold hover:bg-gray-400 cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  disabled={cargandoExcel}
+                  onClick={procesarCargaMasivaExcel}
+                  className="px-4 py-1 bg-[#008080] text-white font-bold hover:bg-teal-900 shadow active:translate-y-0.5 cursor-pointer"
+                >
+                  {cargandoExcel ? '⏳ Procesando...' : '🚀 Cargar Maestro'}
+                </button>
+              </div>
             </div>
           </div>
         </div>
