@@ -1073,86 +1073,128 @@ async function responderConIA(sock, jid, numero, bodyCliente, promptMaestro, nom
       }
     }
 
-    // Búsqueda inteligente de propiedad en estado AWAITING_NAME_OR_ADDRESS
-    else if (authSession?.state === 'AWAITING_NAME_OR_ADDRESS') {
-      const palabras = textClean.split(/\s+/).filter(w => w.length >= 2)
-      let matchEncontrado = null
+    // Selección de Unidad de Monitoreo (Cuando un RUT tiene múltiples propiedades)
+    else if (authSession?.state === 'AWAITING_UNIT_SELECTION') {
+      const idx = parseInt(textClean.replace(/[^0-9]/g, ''), 10) - 1
+      const unidades = authSession?.unidades || []
 
-      if (palabras.length > 0) {
+      if (!isNaN(idx) && idx >= 0 && idx < unidades.length) {
+        const unidadElegida = unidades[idx]
+        userAuthSessions[numero] = { state: 'VERIFIED', cuenta: unidadElegida.cuenta }
+        cuentaActiva = unidadElegida.cuenta
+
+        let eventosTxt = ''
         try {
-          // A) Buscar en clientes_monitoreo
-          const orClientes = palabras.map(p => `nombre.ilike.%${p}%,direccion.ilike.%${p}%,comuna.ilike.%${p}%,cuenta.ilike.%${p}%`).join(',')
-          const { data: resClientes } = await supabase
-            .from('clientes_monitoreo')
-            .select('cuenta, nombre, direccion, comuna')
-            .or(orClientes)
-            .limit(20)
+          const fechaHace3Dias = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()
+          const { data: eventos } = await supabase
+            .from('eventos_monitoreo')
+            .select('evento, fecha_hora, zona, usuario, descripcion')
+            .eq('cuenta', cuentaActiva)
+            .gte('fecha_hora', fechaHace3Dias)
+            .order('fecha_hora', { ascending: false })
+            .limit(10)
 
-          if (resClientes && resClientes.length > 0) {
-            let maxScore = 0
-            for (const r of resClientes) {
-              const haystack = `${r.cuenta || ''} ${r.nombre || ''} ${r.direccion || ''} ${r.comuna || ''}`.toLowerCase()
-              let score = 0
-              palabras.forEach(p => { if (haystack.includes(p)) score += 2 })
-              if (textClean && haystack.includes(textClean)) score += 5
-
-              if (score > maxScore) {
-                maxScore = score
-                matchEncontrado = {
-                  cuenta: r.cuenta,
-                  nombre: `${r.nombre || 'Abonado'} ${r.direccion ? `(${r.direccion})` : ''}`.trim()
-                }
-              }
-            }
+          if (eventos && eventos.length > 0) {
+            eventosTxt = eventos.map(e => {
+              const f = e.fecha_hora ? new Date(e.fecha_hora).toLocaleString('es-CL', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : ''
+              return `• ${f} - ${e.evento || e.descripcion || 'Señal recibida'} ${e.zona ? `(Zona ${e.zona})` : ''}`
+            }).join('\n')
           }
+        } catch (e) {}
 
-          // B) Buscar en eventos_monitoreo
-          if (!matchEncontrado) {
-            const orEventos = palabras.map(p => `nombre_abonado.ilike.%${p}%,descripcion.ilike.%${p}%,cuenta.ilike.%${p}%`).join(',')
-            const { data: resEventos } = await supabase
-              .from('eventos_monitoreo')
-              .select('cuenta, nombre_abonado, descripcion')
-              .or(orEventos)
-              .limit(20)
+        respuestaDirecta = `Unidad [${unidadElegida.cuenta} - ${unidadElegida.alias_unidad || unidadElegida.nombre || 'Propiedad'}] seleccionada.\n\nConsulta de bitácora y estado de alarma:\nCuenta: ${cuentaActiva}\nEstado general: Sistema operando normal.\n\nÚltimos eventos registrados:\n${eventosTxt || '• Se confirma recepción de señales de comunicación normales en la central.'}\n\n¿Tienes alguna otra duda o consulta?\n• Responde el número de otra opción (1, 2, 3, 4)\n• O escribe "menú" para volver al menú principal.`
+      } else {
+        respuestaDirecta = `Opción inválida. Por favor responde con un número del 1 al ${unidades.length} para seleccionar tu unidad de monitoreo, o responde 4 para comunicarte con un operador.`
+      }
+    }
 
-            if (resEventos && resEventos.length > 0) {
-              let maxScore = 0
-              for (const r of resEventos) {
-                const haystack = `${r.cuenta || ''} ${r.nombre_abonado || ''} ${r.descripcion || ''}`.toLowerCase()
-                let score = 0
-                palabras.forEach(p => { if (haystack.includes(p)) score += 2 })
-                if (textClean && haystack.includes(textClean)) score += 5
-
-                if (score > maxScore) {
-                  maxScore = score
-                  matchEncontrado = {
-                    cuenta: r.cuenta,
-                    nombre: r.nombre_abonado || r.descripcion || r.cuenta
-                  }
-                }
-              }
-            }
-          }
-        } catch (e) {
-          log(`⚠️ Error en búsqueda difusa de abonados: ${e.message}`, 'WARN')
-        }
+    // Autenticación por RUT en estado AWAITING_RUT / AWAITING_NAME_OR_ADDRESS
+    else if (authSession?.state === 'AWAITING_RUT' || authSession?.state === 'AWAITING_NAME_OR_ADDRESS') {
+      // Limpiar formato de RUT
+      const cleanRutStr = (str) => {
+        if (!str) return ''
+        const clean = str.trim().toUpperCase().replace(/[^0-9K]/g, '')
+        if (clean.length < 2) return clean
+        return `${clean.slice(0, -1)}-${clean.slice(-1)}`
       }
 
-      if (matchEncontrado) {
+      const rutIngresado = cleanRutStr(bodyCliente)
+      let unidadesEncontradas = []
+
+      try {
+        // Cargar mapa general de clientes desde Supabase (fila especial CLIENTES)
+        let clientesMapBD = {}
+        const { data: rowClientes } = await supabase
+          .from('eventos_monitoreo')
+          .select('nombre_abonado')
+          .eq('cuenta', 'CLIENTES')
+          .limit(1)
+
+        if (rowClientes && rowClientes.length > 0 && rowClientes[0].nombre_abonado) {
+          try { clientesMapBD = JSON.parse(rowClientes[0].nombre_abonado) } catch(e){}
+        }
+
+        // Buscar en clientesMapBD por RUT exacto o coincidencia de RUT
+        Object.values(clientesMapBD).forEach((c) => {
+          const r1 = cleanRutStr(c.rut || '')
+          const r2 = cleanRutStr(rutIngresado)
+          if (r1 && r2 && r1 === r2) {
+            unidadesEncontradas.push({
+              cuenta: (c.cuenta || '').toUpperCase().trim(),
+              nombre: c.nombre || 'Abonado',
+              alias_unidad: c.alias_unidad || c.nombre || 'Unidad'
+            })
+          }
+        })
+
+        // Si no se halló en clientesMapBD, buscar en tabla clientes_monitoreo
+        if (unidadesEncontradas.length === 0 && rutIngresado.length >= 7) {
+          const { data: resClientes } = await supabase
+            .from('clientes_monitoreo')
+            .select('cuenta, nombre, direccion, comuna, rut')
+            .or(`rut.ilike.%${rutIngresado}%,rut.ilike.%${bodyCliente}%`)
+            .limit(10)
+
+          if (resClientes && resClientes.length > 0) {
+            resClientes.forEach((r) => {
+              unidadesEncontradas.push({
+                cuenta: (r.cuenta || '').toUpperCase().trim(),
+                nombre: r.nombre || 'Abonado',
+                alias_unidad: `${r.nombre || 'Unidad'} ${r.direccion ? `(${r.direccion})` : ''}`.trim()
+              })
+            })
+          }
+        }
+      } catch (e) {
+        log(`⚠️ Error consultando RUT de abonados: ${e.message}`, 'WARN')
+      }
+
+      if (unidadesEncontradas.length === 1) {
+        const u = unidadesEncontradas[0]
         userAuthSessions[numero] = {
           state: 'AWAITING_CONFIRMATION',
-          cuenta: matchEncontrado.cuenta,
-          nombre: matchEncontrado.nombre
+          cuenta: u.cuenta,
+          nombre: u.alias_unidad || u.nombre
         }
-        respuestaDirecta = `Verificación de seguridad:\n\nEncontramos una coincidencia para tu búsqueda ("${bodyCliente}"):\n• Propiedad / Titular: ${matchEncontrado.nombre}\n• Código de Cuenta: ${matchEncontrado.cuenta}\n\n¿Corresponde esta propiedad a tu sistema? Responde "sí" para confirmar.`
-      } else {
+        respuestaDirecta = `Verificación de seguridad:\n\nRUT: ${rutIngresado}\n• Propiedad: ${u.alias_unidad || u.nombre} (${u.cuenta})\n\n¿Corresponde esta propiedad a tu sistema? Responde "sí" para confirmar.`
+      }
+      else if (unidadesEncontradas.length > 1) {
+        userAuthSessions[numero] = {
+          state: 'AWAITING_UNIT_SELECTION',
+          rut: rutIngresado,
+          unidades: unidadesEncontradas
+        }
+        const listaUnidades = unidadesEncontradas.map((u, i) => `${i + 1}️⃣ ${u.cuenta} - ${u.alias_unidad || u.nombre}`).join('\n')
+        respuestaDirecta = `RUT ${rutIngresado} autenticado.\n\nSe encontraron ${unidadesEncontradas.length} unidades de monitoreo asociadas a tu RUT:\n\n${listaUnidades}\n\nPor favor responde con el número de la unidad que deseas consultar (1 a ${unidadesEncontradas.length}):`
+      }
+      else {
         const intentos = (authSession?.intentos || 0) + 1
         if (intentos >= 2) {
           delete userAuthSessions[numero]
-          respuestaDirecta = `No logramos encontrar una propiedad registrada para "${bodyCliente}".\n\nPara asistirte de la mejor manera y no hacerte perder tiempo, puedes hablar directamente con un operador:\n\n• Responde 4 o abre el chat directo: https://wa.me/56991016912\n• O responde "menú" para volver al inicio.`
+          respuestaDirecta = `No logramos encontrar unidades registradas para el RUT "${bodyCliente}".\n\nPara asistirte de la mejor manera y no hacerte perder tiempo, puedes hablar directamente con un operador:\n\n• Responde 4 o abre el chat directo: https://wa.me/56991016912\n• O responde "menú" para volver al inicio.`
         } else {
-          userAuthSessions[numero] = { state: 'AWAITING_NAME_OR_ADDRESS', intentos: intentos }
-          respuestaDirecta = `No encontramos una propiedad registrada que coincida con "${bodyCliente}".\n\nPor favor indícanos el nombre del titular o calle (ej: "Santo Domingo", "Marbella" o "María Acuña"), o responde 4 para comunicarte con un operador.`
+          userAuthSessions[numero] = { state: 'AWAITING_RUT', intentos: intentos }
+          respuestaDirecta = `No encontramos unidades de monitoreo registradas para el RUT "${bodyCliente}".\n\nPor seguridad de tus datos, por favor ingresa el RUT del titular o empresa en formato 12123123-6 (sin puntos y con guión), o responde 4 para comunicarte con un operador.`
         }
       }
     }
@@ -1181,8 +1223,8 @@ async function responderConIA(sock, jid, numero, bodyCliente, promptMaestro, nom
 
         respuestaDirecta = `Consulta de bitácora y estado de alarma:\n\nCuenta: ${cuentaActiva}\nEstado general: Sistema operando normal.\n\nÚltimos eventos registrados:\n${eventosTxt || '• Se confirma recepción de señales de comunicación normales en la central.'}\n\n¿Tienes alguna otra duda o consulta?\n• Responde el número de otra opción (1, 2, 3, 4)\n• O escribe "menú" para volver al menú principal.`
       } else {
-        userAuthSessions[numero] = { state: 'AWAITING_NAME_OR_ADDRESS' }
-        respuestaDirecta = `Consulta de bitácora y estado de alarma:\n\nPor seguridad de tus datos, por favor indícanos el nombre y apellido del titular registrado (o la dirección de la propiedad) para verificar tu sistema.`
+        userAuthSessions[numero] = { state: 'AWAITING_RUT' }
+        respuestaDirecta = `Consulta de bitácora y estado de alarma:\n\nPor seguridad de tus datos, por favor ingresa el RUT del titular o empresa en formato 12123123-6 (sin puntos y con guión):`
       }
     }
 

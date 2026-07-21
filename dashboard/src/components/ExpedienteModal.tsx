@@ -4,6 +4,8 @@ import { useEffect, useRef, useState, Fragment } from 'react'
 import type { EventoMonitoreo } from '@/lib/supabase'
 import { supabase, supabaseIA } from '@/lib/supabase'
 
+import { cleanRut } from '@/lib/rut'
+
 // Base de datos de fallback precargada
 import clientesDataRaw from '@/lib/clientes_general.json'
 
@@ -47,6 +49,14 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
   const [inputCam01, setInputCam01] = useState('')
   const [inputCam02, setInputCam02] = useState('')
   const [inputCam03, setInputCam03] = useState('')
+
+  // Estados para RUT y Alias de Unidad (Edición restringida a Administrador)
+  const [inputRut, setInputRut] = useState('')
+  const [inputAlias, setInputAlias] = useState('')
+  const [editandoRut, setEditandoRut] = useState(false)
+  const [mostrarModalExcel, setMostrarModalExcel] = useState(false)
+  const [excelTextRaw, setExcelTextRaw] = useState('')
+  const [cargandoExcel, setCargandoExcel] = useState(false)
 
   // Estados de integración con BD IA
   const [camarasIA, setCamarasIA] = useState<Array<{ id: string; nombre: string; rtsp_url?: string; activa: boolean }>>([])
@@ -206,6 +216,150 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
     }
   }
 
+  // Sincronizar inputs de RUT y Alias al cambiar de cuenta
+  useEffect(() => {
+    const r = clientesMap[cuentaActiva]?.rut || clientesGeneralFallback[cuentaActiva]?.rut || ''
+    const a = clientesMap[cuentaActiva]?.alias_unidad || clientesGeneralFallback[cuentaActiva]?.alias_unidad || ''
+    setInputRut(cleanRut(r))
+    setInputAlias(a)
+    setEditandoRut(false)
+  }, [cuentaActiva, clientesMap])
+
+  // Guardar RUT y Alias de Unidad individual (Restringido a Administrador)
+  const guardarRutYAlias = async () => {
+    if (usuarioRol !== 'Administrador') {
+      alert('🔒 Acción denegada: Solo usuarios con rol Administrador pueden modificar RUTs y Alias de Propiedad.')
+      return
+    }
+
+    const rutFormateado = cleanRut(inputRut)
+    const aliasFormateado = inputAlias.trim().toUpperCase()
+
+    const updatedCliente = {
+      ...(clientesMap[cuentaActiva] || {}),
+      cuenta: cuentaActiva,
+      rut: rutFormateado,
+      alias_unidad: aliasFormateado
+    }
+
+    const updatedMap = {
+      ...clientesMap,
+      [cuentaActiva]: updatedCliente
+    }
+
+    try {
+      const { error } = await supabase
+        .from('eventos_monitoreo')
+        .upsert({
+          cuenta: 'CLIENTES',
+          nombre_abonado: JSON.stringify(updatedMap),
+          evento: 'CONFIGURACION_RUT',
+          fecha_hora: new Date().toISOString()
+        })
+
+      if (!error) {
+        setClientesMap(updatedMap)
+        setEditandoRut(false)
+        alert(`✅ RUT [${rutFormateado}] y Alias [${aliasFormateado || 'SIN ALIAS'}] guardados exitosamente para la cuenta ${cuentaActiva}.`)
+      } else {
+        throw error
+      }
+    } catch (err: any) {
+      alert('❌ Error al guardar datos de RUT: ' + err.message)
+    }
+  }
+
+  // Carga Masiva desde Excel Maestro (.xlsx / .csv / TSV)
+  const procesarCargaMasivaExcel = async () => {
+    if (usuarioRol !== 'Administrador') {
+      alert('🔒 Acceso denegado: Solo administradores pueden cargar archivos de Excel Maestro.')
+      return
+    }
+
+    if (!excelTextRaw.trim()) {
+      alert('Por favor pega el contenido del archivo Excel Maestro (o selecciona/arrastra el texto).')
+      return
+    }
+
+    setCargandoExcel(true)
+    try {
+      const lineas = excelTextRaw.split(/\r?\n/).filter(l => l.trim().length > 0)
+      let actualizados = 0
+      const nuevoMap = { ...clientesMap }
+
+      for (const linea of lineas) {
+        // Separa por tabuladores (copiado desde Excel) o comas/puntos y comas
+        const cols = linea.split(/\t|;|\|/).map(c => c.trim().replace(/^["']|["']$/g, ''))
+        if (cols.length < 2) continue
+
+        // Detectar si la primera fila es encabezado
+        if (cols[0].toLowerCase().includes('cuenta') || cols[0].toLowerCase().includes('rut')) continue
+
+        // Formato esperado: [CUENTA, RUT, ALIAS_UNIDAD, NOMBRE, DIRECCION, TELEFONO] o [RUT, CUENTA...]
+        let cuentaStr = ''
+        let rutStr = ''
+        let aliasStr = ''
+        let nombreStr = ''
+
+        if (cols[0].toUpperCase().startsWith('C') || /^\d+$/.test(cols[0])) {
+          cuentaStr = cols[0].toUpperCase().trim()
+          rutStr = cols[1] || ''
+          aliasStr = cols[2] || ''
+          nombreStr = cols[3] || ''
+        } else {
+          rutStr = cols[0] || ''
+          cuentaStr = (cols[1] || '').toUpperCase().trim()
+          aliasStr = cols[2] || ''
+          nombreStr = cols[3] || ''
+        }
+
+        if (!cuentaStr) continue
+        if (!cuentaStr.startsWith('C') && /^\d+$/.test(cuentaStr)) {
+          cuentaStr = `C${cuentaStr}`
+        }
+
+        const rutFormateado = cleanRut(rutStr)
+
+        nuevoMap[cuentaStr] = {
+          ...(nuevoMap[cuentaStr] || {}),
+          cuenta: cuentaStr,
+          rut: rutFormateado || nuevoMap[cuentaStr]?.rut || '',
+          alias_unidad: aliasStr.toUpperCase() || nuevoMap[cuentaStr]?.alias_unidad || '',
+          nombre: nombreStr || nuevoMap[cuentaStr]?.nombre || ''
+        }
+        actualizados++
+      }
+
+      if (actualizados === 0) {
+        alert('No se detectaron filas válidas con formato CUENTA y RUT.')
+        return
+      }
+
+      // Guardar en Supabase fila especial CLIENTES
+      const { error } = await supabase
+        .from('eventos_monitoreo')
+        .upsert({
+          cuenta: 'CLIENTES',
+          nombre_abonado: JSON.stringify(nuevoMap),
+          evento: 'CARGA_MASIVA_EXCEL',
+          fecha_hora: new Date().toISOString()
+        })
+
+      if (!error) {
+        setClientesMap(nuevoMap)
+        setMostrarModalExcel(false)
+        setExcelTextRaw('')
+        alert(`🎉 ¡Éxito! Se actualizaron ${actualizados} abonados desde el Excel Maestro en la base de datos.`)
+      } else {
+        throw error
+      }
+    } catch (err: any) {
+      alert('❌ Error al procesar Excel Maestro: ' + err.message)
+    } finally {
+      setCargandoExcel(false)
+    }
+  }
+
   // Buscar el registro completo del cliente en el mapa
   const cliente = clientesMap[cuentaActiva] || clientesGeneralFallback[cuentaActiva] || {
     cuenta: cuentaActiva,
@@ -214,6 +368,14 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
     direccion: 'DIRECCIÓN NO DISPONIBLE',
     sector: 'NO DISPONIBLE'
   }
+
+  // Calcular otras unidades vinculadas al mismo RUT
+  const otrasUnidadesRut = Object.values(clientesMap).filter(c => {
+    const rActual = cleanRut(cliente.rut || '')
+    const rComparar = cleanRut(c.rut || '')
+    const cCode = (c.cuenta || '').toUpperCase().trim()
+    return rActual && rComparar === rActual && cCode !== cuentaActiva
+  })
 
   // Lista de todos los clientes para el buscador inferior
   const listaAbonados = Object.values(clientesMap).map(c => ({
@@ -289,7 +451,7 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
                 INFORMACION BASICA:
               </div>
 
-              {/* Cuenta y Nombre */}
+              {/* Cuenta, RUT y Nombre */}
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                 <div className="flex items-center gap-1">
                   <span className="font-bold w-[45px] sm:w-auto">Cuenta:</span>
@@ -297,19 +459,78 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
                     type="text" 
                     readOnly 
                     value={cliente.cuenta || ''} 
-                    className="w-full sm:w-[70px] bg-[#ffffd0] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white font-bold px-1 py-0.5 text-blue-900 focus:outline-none text-[11px]" 
+                    className="w-full sm:w-[65px] bg-[#ffffd0] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white font-bold px-1 py-0.5 text-blue-900 focus:outline-none text-[11px]" 
                   />
                 </div>
-                <div className="flex-1 flex items-center gap-1">
-                  <span className="font-bold w-[45px] sm:w-auto">Nombre:</span>
+
+                {/* RUT del Titular / Empresa (Formato 12123123-6) */}
+                <div className="flex items-center gap-1">
+                  <span className="font-bold text-red-900">RUT:</span>
                   <input 
                     type="text" 
-                    readOnly 
-                    value={cliente.nombre || ''} 
-                    className="w-full bg-[#ffffd0] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white font-bold px-1.5 py-0.5 text-blue-900 focus:outline-none text-[11px] truncate" 
+                    readOnly={usuarioRol !== 'Administrador'}
+                    value={inputRut} 
+                    onChange={(e) => setInputRut(cleanRut(e.target.value))}
+                    placeholder="12123123-6"
+                    className={`w-full sm:w-[95px] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white font-bold px-1 py-0.5 text-[11px] ${
+                      usuarioRol === 'Administrador' ? 'bg-white text-black focus:ring-1 focus:ring-blue-600' : 'bg-[#ffffd0] text-blue-900'
+                    }`}
                   />
                 </div>
+
+                {/* Alias / Nombre de la Unidad */}
+                <div className="flex-1 flex items-center gap-1">
+                  <span className="font-bold text-blue-900 w-[45px] sm:w-auto">Unidad/Alias:</span>
+                  <input 
+                    type="text" 
+                    readOnly={usuarioRol !== 'Administrador'}
+                    value={inputAlias} 
+                    onChange={(e) => setInputAlias(e.target.value)}
+                    placeholder="EJ: CASA SANTO DOMINGO"
+                    className={`w-full border border-t-gray-700 border-l-gray-700 border-b-white border-r-white font-bold px-1.5 py-0.5 text-[11px] truncate ${
+                      usuarioRol === 'Administrador' ? 'bg-white text-black focus:ring-1 focus:ring-blue-600' : 'bg-[#ffffd0] text-blue-900'
+                    }`}
+                  />
+                </div>
+
+                {/* Botón de Guardar RUT / Excel (SOLO ADMINISTRADOR) */}
+                {usuarioRol === 'Administrador' && (
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      onClick={guardarRutYAlias}
+                      className="px-2 py-0.5 bg-[#000080] text-white font-bold rounded text-[10px] hover:bg-blue-900 shadow active:translate-y-0.5 cursor-pointer"
+                      title="Guardar RUT y Alias de Unidad para esta cuenta"
+                    >
+                      💾 Guardar
+                    </button>
+                    <button
+                      onClick={() => setMostrarModalExcel(true)}
+                      className="px-2 py-0.5 bg-[#008080] text-white font-bold rounded text-[10px] hover:bg-teal-900 shadow active:translate-y-0.5 cursor-pointer"
+                      title="Importar Excel Maestro de RUTs y Unidades"
+                    >
+                      📊 Cargar Excel
+                    </button>
+                  </div>
+                )}
               </div>
+
+              {/* Banner de Otras Unidades con el mismo RUT */}
+              {otrasUnidadesRut.length > 0 && (
+                <div className="bg-[#e6f2ff] border border-blue-400 p-1 flex items-center gap-1 text-[10px] text-blue-900">
+                  <span className="font-bold">🏢 Unidades del mismo RUT ({cleanRut(cliente.rut)}):</span>
+                  <div className="flex flex-wrap gap-1">
+                    {otrasUnidadesRut.map(u => (
+                      <button
+                        key={u.cuenta}
+                        onClick={() => setCuentaActiva((u.cuenta || '').toUpperCase().trim())}
+                        className="bg-blue-700 text-white font-bold px-1.5 py-0.2 rounded text-[9px] hover:bg-blue-900 cursor-pointer shadow-xs"
+                      >
+                        {u.cuenta} - {u.alias_unidad || u.nombre || 'Unidad'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Ciudad, Plan y Tipo */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -779,6 +1000,48 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
 
         </div>
       </div>
+
+      {/* MODAL IMPORTAR EXCEL MAESTRO (SOLO ADMINISTRADOR) */}
+      {mostrarModalExcel && usuarioRol === 'Administrador' && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-3">
+          <div className="w-full max-w-[650px] bg-[#d4d0c8] border-2 border-t-white border-l-white border-b-black border-r-black p-3 flex flex-col gap-2 font-mono text-[11px] shadow-2xl">
+            <div className="bg-[#000080] text-white font-bold px-2 py-1 flex justify-between items-center">
+              <span>📊 Importación Masiva - Excel Maestro de RUTs y Unidades</span>
+              <button onClick={() => setMostrarModalExcel(false)} className="text-white font-bold cursor-pointer">✕</button>
+            </div>
+
+            <div className="bg-[#ffffd0] p-2 border border-gray-500 text-gray-800 text-[10px]">
+              <strong>Instrucciones:</strong> Copia y pega las filas desde tu archivo Excel o CSV.<br/>
+              Columnas esperadas: <code>[CUENTA, RUT, ALIAS_UNIDAD, NOMBRE_TITULAR]</code>.<br/>
+              <em>El RUT se formateará automáticamente al formato <code>12123123-6</code> (sin puntos, con guión).</em>
+            </div>
+
+            <textarea
+              value={excelTextRaw}
+              onChange={(e) => setExcelTextRaw(e.target.value)}
+              placeholder={"C774\t12123123-6\tCASA SANTO DOMINGO\tMARIA CECILIA ACUÑA\nC775\t76123456-K\tLOCAL CENTRO\tCOMERCIAL GAMA"}
+              className="w-full h-[180px] bg-white border border-gray-600 p-2 text-[10px] font-mono focus:outline-none"
+            />
+
+            <div className="flex justify-end gap-2 shrink-0 pt-1">
+              <button
+                disabled={cargandoExcel}
+                onClick={() => setMostrarModalExcel(false)}
+                className="px-3 py-1 bg-gray-300 border border-gray-600 font-bold hover:bg-gray-400 cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                disabled={cargandoExcel}
+                onClick={procesarCargaMasivaExcel}
+                className="px-4 py-1 bg-[#008080] text-white font-bold hover:bg-teal-900 shadow active:translate-y-0.5 cursor-pointer"
+              >
+                {cargandoExcel ? '⏳ Procesando...' : '🚀 Cargar Maestro'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
