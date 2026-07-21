@@ -449,7 +449,7 @@ export default function OperacionCRM() {
     setItemsCot([...itemsCot, nuevoItem])
   }
 
-  // ── SELECCIONAR CLIENTE REGISTRADO EN FORMULARIO COTIZACIÓN ──
+  // ── SELECCIONAR CLIENTE REGISTRADO EN FORMULARIO COTIZACIÓN (GARANTIZA LLENADO COMPLETO) ──
   const handleSeleccionarClienteParaCotizacion = (rut: string) => {
     setCotClienteRutSeleccionado(rut)
     const cli = clientesMaestros[rut]
@@ -459,7 +459,30 @@ export default function OperacionCRM() {
       setCotDireccion(cli.direccion_comercial)
       setCotEmailCliente(cli.email_cobranza)
       setCotTelefonoCliente(cli.telefono)
+    } else {
+      setCotNombreCliente('Cliente Gama')
+      setCotRutCliente(rut)
+      setCotDireccion('Dirección Registrada')
+      setCotEmailCliente('contacto@gamasecurity.cl')
+      setCotTelefonoCliente('+56 9 9101 6912')
     }
+  }
+
+  // ── ABRIR MODAL CREADOR DE PRESUPUESTOS Y AUTOCOMPLETAR DATOS ──
+  const abrirModalNuevaCotizacion = () => {
+    setTipoReceptorCot('registrado')
+    const ruts = Object.keys(clientesMaestros)
+    if (ruts.length > 0) {
+      const selectedRut = clienteActivo?.rut && clientesMaestros[clienteActivo.rut] ? clienteActivo.rut : ruts[0]
+      handleSeleccionarClienteParaCotizacion(selectedRut)
+    } else {
+      setCotNombreCliente('CLIENTE MODELO DEMO')
+      setCotRutCliente('76.319.399-3')
+      setCotDireccion('Av. Valparaíso 1183, Viña del Mar')
+      setCotEmailCliente('cobranza@gamasecurity.cl')
+      setCotTelefonoCliente('+56 32 3276011')
+    }
+    setMostrarModalCotizacion(true)
   }
 
   // ── ACCIÓN ABONOS PARCIALES (IDURAR ERP/CRM) ──
@@ -521,8 +544,8 @@ export default function OperacionCRM() {
 
   // Guardar Cotización Profesional (Soporta Clientes Registrados y Prospectos Nuevos)
   const handleGuardarCotizacionDolibarr = async () => {
-    if (!cotNombreCliente.trim()) {
-      alert('Por favor ingrese el Nombre o Razón Social del receptor del presupuesto.')
+    if (!cotNombreCliente || !cotNombreCliente.trim()) {
+      alert('Por favor ingrese o seleccione el Nombre o Razón Social del receptor del presupuesto.')
       return
     }
 
@@ -535,7 +558,7 @@ export default function OperacionCRM() {
       rut_cliente: cotRutCliente ? cleanRut(cotRutCliente) : 'S/RUT (Prospecto)',
       nombre_cliente: cotNombreCliente.trim(),
       empresa_facturadora_id: cotEmpresaEmisoraId,
-      direccion: cotDireccion.trim() || 'Dirección no especificada',
+      direccion: cotDireccion.trim() || 'Dirección de Entrega',
       email_cliente: cotEmailCliente.trim() || 'contacto@prospecto.cl',
       telefono_cliente: cotTelefonoCliente.trim() || '+56991016912',
       tipo_receptor: tipoReceptorCot,
@@ -563,7 +586,7 @@ export default function OperacionCRM() {
       })
       setCotizaciones(listaNueva)
       setMostrarModalCotizacion(false)
-      alert(`🎉 Presupuesto ${codigoCot} creado exitosamente para "${cotNombreCliente}".`)
+      alert(`🎉 Presupuesto ${codigoCot} generado exitosamente para "${cotNombreCliente}".`)
     } catch (e: any) {
       alert('Error guardando cotización: ' + e.message)
     }
@@ -1474,10 +1497,7 @@ export default function OperacionCRM() {
                 </div>
 
                 <button
-                  onClick={() => {
-                    setTipoReceptorCot('registrado')
-                    setMostrarModalCotizacion(true)
-                  }}
+                  onClick={abrirModalNuevaCotizacion}
                   className="px-6 py-4 bg-gradient-to-r from-blue-900 to-indigo-900 hover:from-blue-800 hover:to-indigo-800 text-white font-bold rounded-2xl text-xs shadow-[4px_4px_12px_rgba(30,58,138,0.35)] cursor-pointer flex items-center gap-2 transition-all"
                 >
                   <span>✨ Crear Presupuesto Profesional (Side-by-Side)</span>
@@ -1864,60 +1884,73 @@ export default function OperacionCRM() {
         </main>
       </div>
 
-      {/* ── CREADOR PROFESIONAL DE PRESUPUESTOS COMERCIALES (SIDE-BY-SIDE BUILDER - INSPIRADO EN CRATER & INVOICE NINJA) ── */}
+      {/* ── CREADOR PROFESIONAL DE PRESUPUESTOS COMERCIALES (SIDE-BY-SIDE BUILDER - AMPLIADO Y ESPACIOSO) ── */}
       {mostrarModalCotizacion && (
-        <div className="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-md overflow-y-auto p-4 md:p-6 flex justify-center items-center">
-          <div className="bg-white border border-slate-300 w-full max-w-7xl h-[92vh] rounded-3xl shadow-2xl flex flex-col overflow-hidden font-sans text-xs">
+        <div className="fixed inset-0 z-50 bg-slate-900/85 backdrop-blur-md overflow-y-auto p-3 md:p-6 flex justify-center items-center">
+          <div className="bg-white border border-slate-300 w-full max-w-7xl h-[95vh] rounded-3xl shadow-2xl flex flex-col overflow-hidden font-sans text-xs">
             
             {/* BARRA DE TÍTULO SUPERIOR */}
             <div className="bg-slate-950 text-white px-8 py-5 flex justify-between items-center shrink-0 border-b border-slate-800">
               <div className="flex items-center gap-4">
-                <span className="text-2xl p-2 bg-blue-900/60 rounded-xl border border-blue-700/50">✨</span>
+                <span className="text-2xl p-2.5 bg-blue-900/60 rounded-2xl border border-blue-700/50">✨</span>
                 <div>
-                  <h3 className="font-black text-lg text-white uppercase tracking-wider flex items-center gap-3">
+                  <h3 className="font-black text-xl text-white uppercase tracking-wider flex items-center gap-3">
                     CREADOR DE PRESUPUESTO COMERCIAL
-                    <span className="bg-blue-600 text-white text-xs px-3 py-0.5 rounded-full font-mono font-bold">
+                    <span className="bg-blue-600 text-white text-xs px-3.5 py-1 rounded-full font-mono font-bold">
                       {siguienteCorrelativoCode}
                     </span>
                   </h3>
                   <p className="text-xs text-slate-400 font-medium mt-0.5">
-                    Generador profesional con vista previa impresa en vivo y soporte para Clientes y Prospectos Nuevos
+                    Generador profesional con vista previa impresa en vivo y soporte completo para Clientes y Prospectos Nuevos
                   </p>
                 </div>
               </div>
 
               <div className="flex items-center gap-4">
-                <button onClick={() => setMostrarModalCotizacion(false)} className="text-slate-400 hover:text-white font-bold text-2xl px-2">✕</button>
+                <button
+                  onClick={() => setMostrarModalCotizacion(false)}
+                  className="text-slate-400 hover:text-white font-bold text-3xl px-3 py-1 hover:bg-slate-800 rounded-2xl transition-all cursor-pointer"
+                >
+                  ✕
+                </button>
               </div>
             </div>
 
             {/* CONTENIDO SIDE-BY-SIDE (2 COLUMNAS 50% / 50%) */}
             <div className="flex-1 flex flex-col lg:flex-row overflow-hidden min-h-0 divide-y lg:divide-y-0 lg:divide-x divide-slate-200">
               
-              {/* COLUMNA IZQUIERDA: CONFIGURADOR & CATÁLOGOS */}
-              <div className="w-full lg:w-1/2 p-7 overflow-y-auto flex flex-col gap-6 bg-[#f8fafc]">
+              {/* COLUMNA IZQUIERDA: CONFIGURADOR ESPACIOSO & CATÁLOGOS */}
+              <div className="w-full lg:w-1/2 p-8 md:p-10 overflow-y-auto flex flex-col gap-8 bg-[#f8fafc]">
                 
                 {/* 1. TIPO DE RECEPTOR: REGISTRADO VS PROSPECTO */}
-                <div className="bg-white p-5 rounded-2xl border border-slate-200 space-y-3 shadow-2xs">
-                  <label className="font-extrabold text-slate-900 text-xs uppercase tracking-wider block">
-                    1. Receptor del Presupuesto Comercial:
-                  </label>
-                  <div className="grid grid-cols-2 gap-3">
+                <div className="bg-white p-6 rounded-3xl border border-slate-200/90 space-y-4 shadow-2xs">
+                  <div className="flex justify-between items-center">
+                    <label className="font-black text-slate-900 text-xs uppercase tracking-wider">
+                      1. RECEPTOR DEL PRESUPUESTO COMERCIAL:
+                    </label>
+                    <span className="text-[11px] font-bold text-blue-900">
+                      {tipoReceptorCot === 'registrado' ? '👥 Modo Base de Datos' : '✨ Modo Prospecto Nuevo'}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
                     <button
                       type="button"
                       onClick={() => {
                         setTipoReceptorCot('registrado')
-                        if (Object.keys(clientesMaestros).length > 0) {
-                          handleSeleccionarClienteParaCotizacion(Object.keys(clientesMaestros)[0])
+                        const ruts = Object.keys(clientesMaestros)
+                        if (ruts.length > 0) {
+                          handleSeleccionarClienteParaCotizacion(ruts[0])
                         }
                       }}
-                      className={`p-3.5 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer border ${
+                      className={`p-4 rounded-2xl font-bold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer border ${
                         tipoReceptorCot === 'registrado'
-                          ? 'bg-blue-900 text-white border-blue-900 shadow-xs'
+                          ? 'bg-blue-950 text-white border-blue-950 shadow-md'
                           : 'bg-slate-50 text-slate-700 border-slate-300 hover:bg-slate-100'
                       }`}
                     >
-                      <span>👤 Cliente Registrado</span>
+                      <span className="text-base">👤</span>
+                      <span>Cliente Registrado</span>
                     </button>
 
                     <button
@@ -1925,39 +1958,50 @@ export default function OperacionCRM() {
                       onClick={() => {
                         setTipoReceptorCot('prospecto')
                         setCotClienteRutSeleccionado('')
-                        setCotNombreCliente('')
+                        setCotNombreCliente('NUEVO PROSPECTO COMERCIAL')
                         setCotRutCliente('')
-                        setCotDireccion('')
-                        setCotEmailCliente('')
-                        setCotTelefonoCliente('')
+                        setCotDireccion('Dirección del Proyecto Prospecto')
+                        setCotEmailCliente('contacto@prospecto.cl')
+                        setCotTelefonoCliente('+56 9 9101 6912')
                       }}
-                      className={`p-3.5 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer border ${
+                      className={`p-4 rounded-2xl font-bold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer border ${
                         tipoReceptorCot === 'prospecto'
-                          ? 'bg-purple-900 text-white border-purple-900 shadow-xs'
+                          ? 'bg-purple-950 text-white border-purple-950 shadow-md'
                           : 'bg-slate-50 text-slate-700 border-slate-300 hover:bg-slate-100'
                       }`}
                     >
-                      <span>✨ Nuevo Prospecto</span>
+                      <span className="text-base">✨</span>
+                      <span>Nuevo Prospecto</span>
                     </button>
                   </div>
 
                   {/* CAMPOS RECEPTOR */}
                   {tipoReceptorCot === 'registrado' ? (
-                    <div className="pt-2">
-                      <label className="font-bold text-slate-700 block mb-1">Seleccionar Cliente de Base de Datos:</label>
+                    <div className="space-y-3 pt-2">
+                      <label className="font-bold text-slate-700 block text-xs">Seleccionar Cliente de Base de Datos:</label>
                       <select
                         value={cotClienteRutSeleccionado}
                         onChange={(e) => handleSeleccionarClienteParaCotizacion(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-300 p-3 rounded-xl font-bold text-slate-900 focus:outline-none"
+                        className="w-full bg-slate-50 border border-slate-300 p-3.5 rounded-2xl font-bold text-slate-900 focus:outline-none text-xs"
                       >
                         {Object.values(clientesMaestros).map(c => (
-                          <option key={c.rut} value={c.rut}>{c.razon_social} (RUT: {c.rut})</option>
+                          <option key={c.rut} value={c.rut}>{c.razon_social} — (RUT: {c.rut})</option>
                         ))}
                       </select>
+
+                      {/* TARJETA DE RESUMEN DEL CLIENTE SELECCIONADO */}
+                      <div className="p-4 bg-blue-50/70 border border-blue-200 rounded-2xl space-y-1.5 text-xs text-slate-700">
+                        <div className="font-black text-blue-950 text-sm">{cotNombreCliente}</div>
+                        <div>📍 Dirección: <strong className="text-slate-900">{cotDireccion}</strong></div>
+                        <div className="flex gap-4">
+                          <span>✉️ <strong className="text-blue-900">{cotEmailCliente}</strong></span>
+                          <span>📞 <strong className="text-slate-900">{cotTelefonoCliente}</strong></span>
+                        </div>
+                      </div>
                     </div>
                   ) : (
-                    <div className="space-y-3 pt-2">
-                      <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-4 pt-2">
+                      <div className="grid grid-cols-2 gap-4">
                         <div>
                           <label className="font-bold text-slate-700 block mb-1">Nombre / Razón Social Prospecto:</label>
                           <input
@@ -1965,7 +2009,7 @@ export default function OperacionCRM() {
                             value={cotNombreCliente}
                             onChange={(e) => setCotNombreCliente(e.target.value)}
                             placeholder="Ej: Inmobiliaria San Cristóbal SpA"
-                            className="w-full bg-slate-50 border border-slate-300 p-2.5 rounded-xl font-bold text-slate-900 focus:outline-none"
+                            className="w-full bg-slate-50 border border-slate-300 p-3.5 rounded-2xl font-bold text-slate-900 focus:outline-none text-xs"
                           />
                         </div>
                         <div>
@@ -1975,12 +2019,12 @@ export default function OperacionCRM() {
                             value={cotRutCliente}
                             onChange={(e) => setCotRutCliente(cleanRut(e.target.value))}
                             placeholder="77123456-7"
-                            className="w-full bg-slate-50 border border-slate-300 p-2.5 rounded-xl font-mono text-slate-900 focus:outline-none"
+                            className="w-full bg-slate-50 border border-slate-300 p-3.5 rounded-2xl font-mono text-slate-900 focus:outline-none text-xs"
                           />
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-3 gap-3">
+                      <div className="grid grid-cols-3 gap-4">
                         <div className="col-span-2">
                           <label className="font-bold text-slate-700 block mb-1">Dirección Prospecto:</label>
                           <input
@@ -1988,7 +2032,7 @@ export default function OperacionCRM() {
                             value={cotDireccion}
                             onChange={(e) => setCotDireccion(e.target.value)}
                             placeholder="Av. Las Condes 1234, Las Condes"
-                            className="w-full bg-slate-50 border border-slate-300 p-2.5 rounded-xl text-slate-900 focus:outline-none"
+                            className="w-full bg-slate-50 border border-slate-300 p-3.5 rounded-2xl text-slate-900 focus:outline-none text-xs"
                           />
                         </div>
                         <div>
@@ -1998,7 +2042,7 @@ export default function OperacionCRM() {
                             value={cotTelefonoCliente}
                             onChange={(e) => setCotTelefonoCliente(e.target.value)}
                             placeholder="+56 9 "
-                            className="w-full bg-slate-50 border border-slate-300 p-2.5 rounded-xl font-mono text-slate-900 focus:outline-none"
+                            className="w-full bg-slate-50 border border-slate-300 p-3.5 rounded-2xl font-mono text-slate-900 focus:outline-none text-xs"
                           />
                         </div>
                       </div>
@@ -2007,9 +2051,9 @@ export default function OperacionCRM() {
                 </div>
 
                 {/* 2. DATOS COMERCIALES & EMPRESA EMISORA */}
-                <div className="bg-white p-5 rounded-2xl border border-slate-200 space-y-4 shadow-2xs">
-                  <label className="font-extrabold text-slate-900 text-xs uppercase tracking-wider block">
-                    2. Configuración Comercial de la Oferta:
+                <div className="bg-white p-6 rounded-3xl border border-slate-200/90 space-y-4 shadow-2xs">
+                  <label className="font-black text-slate-900 text-xs uppercase tracking-wider block">
+                    2. CONFIGURACIÓN COMERCIAL DE LA OFERTA:
                   </label>
 
                   <div className="grid grid-cols-2 gap-4">
@@ -2018,7 +2062,7 @@ export default function OperacionCRM() {
                       <select
                         value={cotEmpresaEmisoraId}
                         onChange={(e) => setCotEmpresaEmisoraId(e.target.value)}
-                        className="w-full bg-blue-50 border border-blue-300 p-2.5 rounded-xl font-bold text-blue-950 focus:outline-none text-xs"
+                        className="w-full bg-blue-50 border border-blue-300 p-3.5 rounded-2xl font-bold text-blue-950 focus:outline-none text-xs"
                       >
                         {empresasConglomerado.map(emp => (
                           <option key={emp.id} value={emp.id}>{emp.razon_social} ({emp.rut})</option>
@@ -2031,7 +2075,7 @@ export default function OperacionCRM() {
                       <select
                         value={cotMoneda}
                         onChange={(e: any) => setCotMoneda(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-300 p-2.5 rounded-xl font-bold text-slate-900 focus:outline-none text-xs"
+                        className="w-full bg-slate-50 border border-slate-300 p-3.5 rounded-2xl font-bold text-slate-900 focus:outline-none text-xs"
                       >
                         <option value="CLP">CLP (Pesos Chilenos)</option>
                         <option value="UF">UF (Unidad de Fomento)</option>
@@ -2045,7 +2089,7 @@ export default function OperacionCRM() {
                       <select
                         value={cotValidez}
                         onChange={(e) => setCotValidez(Number(e.target.value))}
-                        className="w-full bg-slate-50 border border-slate-300 p-2.5 rounded-xl text-slate-900 font-bold text-xs"
+                        className="w-full bg-slate-50 border border-slate-300 p-3.5 rounded-2xl text-slate-900 font-bold text-xs"
                       >
                         <option value={15}>15 Días Hábiles</option>
                         <option value={30}>30 Días Hábiles</option>
@@ -2058,7 +2102,7 @@ export default function OperacionCRM() {
                       <select
                         value={cotFormaPago}
                         onChange={(e) => setCotFormaPago(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-300 p-2.5 rounded-xl text-slate-900 font-bold text-xs"
+                        className="w-full bg-slate-50 border border-slate-300 p-3.5 rounded-2xl text-slate-900 font-bold text-xs"
                       >
                         <option value="50% Anticipo / 50% Entrega">50% Anticipo / 50% Entrega</option>
                         <option value="Contado 100%">Contado 100%</option>
@@ -2069,25 +2113,25 @@ export default function OperacionCRM() {
                 </div>
 
                 {/* 3. CATÁLOGO RÁPIDO DE SEGURIDAD ELECTRÓNICA & MONITOREO */}
-                <div className="bg-white p-5 rounded-2xl border border-slate-200 space-y-3 shadow-2xs">
+                <div className="bg-white p-6 rounded-3xl border border-slate-200/90 space-y-4 shadow-2xs">
                   <div className="flex justify-between items-center">
-                    <label className="font-extrabold text-slate-900 text-xs uppercase tracking-wider">
-                      3. Catálogo Rápido de Equipamiento & Servicios (1-Clic):
+                    <label className="font-black text-slate-900 text-xs uppercase tracking-wider">
+                      3. CATÁLOGO RÁPIDO DE EQUIPAMIENTO & SERVICIOS (1-CLIC):
                     </label>
                   </div>
 
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {CATALOGO_SEGURIDAD.map(cat => (
                       <button
                         key={cat.id}
                         type="button"
                         onClick={() => handleAgregarItemDelCatalogo(cat)}
-                        className="p-2.5 bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-300 rounded-xl text-left transition-all cursor-pointer flex flex-col justify-between gap-1 group"
+                        className="p-3.5 bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-300 rounded-2xl text-left transition-all cursor-pointer flex flex-col justify-between gap-1.5 group shadow-2xs"
                       >
-                        <span className="text-[11px] font-bold text-slate-900 group-hover:text-blue-900 line-clamp-2 leading-tight">
+                        <span className="text-xs font-bold text-slate-900 group-hover:text-blue-900 leading-snug">
                           {cat.descripcion}
                         </span>
-                        <span className="font-mono text-[10px] text-emerald-700 font-bold">
+                        <span className="font-mono text-xs text-emerald-700 font-extrabold">
                           +${cat.precio_neto.toLocaleString('es-CL')} Neto
                         </span>
                       </button>
@@ -2095,24 +2139,32 @@ export default function OperacionCRM() {
                   </div>
                 </div>
 
-                {/* 4. EDITOR DE ÍTEMS */}
-                <div className="bg-white p-5 rounded-2xl border border-slate-200 space-y-3 shadow-2xs">
-                  <div className="flex justify-between items-center">
-                    <label className="font-extrabold text-slate-900 text-xs uppercase tracking-wider">
-                      4. Ítems Incluidos en el Presupuesto:
+                {/* 4. EDITOR DE ÍTEMS (AMPLIO Y SEPARADO VERTICALMENTE) */}
+                <div className="bg-white p-6 rounded-3xl border border-slate-200/90 space-y-5 shadow-2xs">
+                  <div className="flex justify-between items-center border-b border-slate-200 pb-3">
+                    <label className="font-black text-slate-900 text-xs uppercase tracking-wider">
+                      4. ÍTEMS INCLUIDOS EN EL PRESUPUESTO:
                     </label>
                     <button
                       type="button"
-                      onClick={() => setItemsCot([...itemsCot, { id: Date.now().toString(), descripcion: 'Nuevo ítem / servicio de seguridad', cantidad: 1, precio_neto_unitario: 10000, descuento_porcentaje: 0 }])}
-                      className="px-3.5 py-1.5 bg-slate-900 text-white rounded-xl text-xs font-bold cursor-pointer hover:bg-slate-800"
+                      onClick={() => setItemsCot([...itemsCot, { id: Date.now().toString(), descripcion: 'Nuevo servicio o equipo personalizado', cantidad: 1, precio_neto_unitario: 10000, descuento_porcentaje: 0 }])}
+                      className="px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold cursor-pointer hover:bg-slate-800"
                     >
                       + Línea Personalizada
                     </button>
                   </div>
 
-                  <div className="space-y-2 max-h-60 overflow-y-auto">
+                  {/* CABECERA DE TABLA DE ÍTEMS */}
+                  <div className="grid grid-cols-12 gap-3 font-bold text-slate-500 text-[11px] uppercase tracking-wider px-2">
+                    <span className="col-span-6">Descripción del Producto / Servicio</span>
+                    <span className="col-span-2 text-center">Cant.</span>
+                    <span className="col-span-3 text-right">Precio Neto</span>
+                    <span className="col-span-1 text-center">Elim.</span>
+                  </div>
+
+                  <div className="space-y-3 min-h-[160px]">
                     {itemsCot.map((it, idx) => (
-                      <div key={it.id} className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center gap-3">
+                      <div key={it.id} className="grid grid-cols-12 gap-3 items-center p-3 bg-slate-50 rounded-2xl border border-slate-200">
                         <input
                           type="text"
                           value={it.descripcion}
@@ -2121,7 +2173,7 @@ export default function OperacionCRM() {
                             newIt[idx].descripcion = e.target.value
                             setItemsCot(newIt)
                           }}
-                          className="flex-1 bg-white border border-slate-300 p-2 rounded-lg text-xs font-medium"
+                          className="col-span-6 bg-white border border-slate-300 p-3 rounded-xl text-xs font-semibold text-slate-900"
                           placeholder="Descripción del producto..."
                         />
                         <input
@@ -2132,7 +2184,7 @@ export default function OperacionCRM() {
                             newIt[idx].cantidad = Number(e.target.value) || 1
                             setItemsCot(newIt)
                           }}
-                          className="w-14 bg-white border border-slate-300 p-2 rounded-lg text-xs font-mono text-center font-bold"
+                          className="col-span-2 bg-white border border-slate-300 p-3 rounded-xl text-xs font-mono text-center font-bold"
                         />
                         <input
                           type="number"
@@ -2142,12 +2194,12 @@ export default function OperacionCRM() {
                             newIt[idx].precio_neto_unitario = Number(e.target.value) || 0
                             setItemsCot(newIt)
                           }}
-                          className="w-28 bg-white border border-slate-300 p-2 rounded-lg text-xs font-mono text-right font-bold"
+                          className="col-span-3 bg-white border border-slate-300 p-3 rounded-xl text-xs font-mono text-right font-bold"
                         />
                         <button
                           type="button"
                           onClick={() => setItemsCot(itemsCot.filter(i => i.id !== it.id))}
-                          className="text-red-600 font-bold hover:text-red-800 px-1 text-base cursor-pointer"
+                          className="col-span-1 text-red-600 font-bold hover:text-red-800 text-center text-lg cursor-pointer"
                         >
                           ✕
                         </button>
@@ -2156,18 +2208,18 @@ export default function OperacionCRM() {
                   </div>
                 </div>
 
-                <div className="pt-2 flex justify-end gap-3">
+                <div className="pt-3 flex justify-end gap-4">
                   <button
                     type="button"
                     onClick={() => setMostrarModalCotizacion(false)}
-                    className="px-6 py-3.5 bg-slate-200 text-slate-800 font-bold rounded-2xl cursor-pointer text-xs"
+                    className="px-6 py-4 bg-slate-200 text-slate-800 font-bold rounded-2xl cursor-pointer text-xs"
                   >
                     Cancelar
                   </button>
                   <button
                     type="button"
                     onClick={handleGuardarCotizacionDolibarr}
-                    className="px-7 py-3.5 bg-gradient-to-r from-blue-900 to-indigo-900 hover:from-blue-800 hover:to-indigo-800 text-white font-bold rounded-2xl text-xs shadow-[3px_3px_8px_rgba(30,58,138,0.3)] cursor-pointer"
+                    className="px-8 py-4 bg-gradient-to-r from-blue-900 to-indigo-900 hover:from-blue-800 hover:to-indigo-800 text-white font-bold rounded-2xl text-xs shadow-[4px_4px_12px_rgba(30,58,138,0.35)] cursor-pointer"
                   >
                     💾 Generar Presupuesto {siguienteCorrelativoCode}
                   </button>
@@ -2176,25 +2228,25 @@ export default function OperacionCRM() {
               </div>
 
               {/* COLUMNA DERECHA: LIENZO EN VIVO (LIVE DOCUMENT CANVAS PREVIEW) */}
-              <div className="w-full lg:w-1/2 p-8 bg-slate-200 overflow-y-auto flex items-start justify-center">
-                <div className="bg-white text-slate-900 p-10 rounded-2xl max-w-2xl w-full shadow-2xl font-sans border border-slate-300 space-y-7 min-h-[750px] flex flex-col justify-between">
+              <div className="w-full lg:w-1/2 p-8 md:p-12 bg-slate-200 overflow-y-auto flex items-start justify-center">
+                <div className="bg-white text-slate-900 p-10 md:p-12 rounded-3xl max-w-2xl w-full shadow-2xl font-sans border border-slate-300 space-y-8 min-h-[800px] flex flex-col justify-between">
                   
-                  <div className="space-y-6">
+                  <div className="space-y-7">
                     {/* MEMBRETE EMISOR */}
-                    <div className="flex justify-between items-start border-b-2 border-slate-900 pb-5">
-                      <div className="space-y-1 text-[11px]">
-                        <h1 className="text-lg font-black text-[#000033] tracking-tight">{empresaEmisoraSeleccionadaCot.razon_social}</h1>
+                    <div className="flex justify-between items-start border-b-2 border-slate-900 pb-6">
+                      <div className="space-y-1 text-xs">
+                        <h1 className="text-xl font-black text-[#000033] tracking-tight">{empresaEmisoraSeleccionadaCot.razon_social}</h1>
                         <p className="text-slate-600 font-medium">{empresaEmisoraSeleccionadaCot.direccion}</p>
                         <p className="text-slate-600 font-medium">Teléfono: {empresaEmisoraSeleccionadaCot.telefono}</p>
                         <p className="text-slate-600 font-medium">Correo: {empresaEmisoraSeleccionadaCot.email_contacto}</p>
                         <p className="text-slate-600 font-medium">Web: {empresaEmisoraSeleccionadaCot.web}</p>
                       </div>
 
-                      <div className="border border-slate-300 bg-[#f8fafc] p-4 rounded-xl w-64 space-y-1 text-[11px]">
-                        <div className="font-bold text-slate-500 uppercase text-[9px] tracking-wider">
+                      <div className="border border-slate-300 bg-[#f8fafc] p-4.5 rounded-2xl w-64 space-y-1 text-xs shadow-2xs">
+                        <div className="font-bold text-slate-500 uppercase text-[10px] tracking-wider">
                           {tipoReceptorCot === 'prospecto' ? '✨ Oferta Comercial para Prospecto' : '👤 Cliente Registrado'}
                         </div>
-                        <h2 className="text-xs font-black text-slate-900 uppercase">{cotNombreCliente || 'Nombre del Cliente / Prospecto'}</h2>
+                        <h2 className="text-sm font-black text-slate-900 uppercase">{cotNombreCliente || 'Nombre del Cliente / Prospecto'}</h2>
                         <p className="text-slate-600">{cotDireccion || 'Dirección de entrega'}</p>
                         <p className="font-mono text-slate-700 font-bold">R.U.T.: {cotRutCliente || 'S/RUT'}</p>
                       </div>
@@ -2202,37 +2254,37 @@ export default function OperacionCRM() {
 
                     <div className="flex justify-between items-center">
                       <div>
-                        <span className="text-lg font-black text-[#000033] font-mono">
+                        <span className="text-xl font-black text-[#000033] font-mono">
                           Presupuesto {siguienteCorrelativoCode}
                         </span>
-                        <p className="text-[11px] text-slate-500">Fecha: {new Date().toLocaleDateString('es-CL')} | Validez: {cotValidez} Días Hábiles</p>
+                        <p className="text-xs text-slate-500 mt-0.5">Fecha: {new Date().toLocaleDateString('es-CL')} | Validez: {cotValidez} Días Hábiles</p>
                       </div>
 
-                      <div className="text-[11px] font-bold text-slate-700 bg-slate-100 px-3 py-1 rounded-lg border border-slate-300 font-mono">
+                      <div className="text-xs font-bold text-slate-700 bg-slate-100 px-3.5 py-1.5 rounded-xl border border-slate-300 font-mono">
                         Moneda: {cotMoneda}
                       </div>
                     </div>
 
                     {/* TABLA DE ÍTEMS EN VIVO */}
-                    <div className="border border-slate-300 rounded-xl overflow-hidden text-xs">
+                    <div className="border border-slate-300 rounded-2xl overflow-hidden text-xs">
                       <table className="w-full text-left border-collapse">
                         <thead>
                           <tr className="bg-slate-100 text-slate-800 font-bold border-b border-slate-300">
-                            <th className="p-2.5 border-r border-slate-300">Descripción del Producto / Servicio</th>
-                            <th className="p-2.5 border-r border-slate-300 text-center w-14">Cant.</th>
-                            <th className="p-2.5 border-r border-slate-300 text-right w-24">P.U. Neto</th>
-                            <th className="p-2.5 text-right w-24">Subtotal</th>
+                            <th className="p-3 border-r border-slate-300">Descripción del Producto / Servicio</th>
+                            <th className="p-3 border-r border-slate-300 text-center w-16">Cant.</th>
+                            <th className="p-3 border-r border-slate-300 text-right w-24">P.U. Neto</th>
+                            <th className="p-3 text-right w-28">Subtotal</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-200">
                           {itemsCot.map((it, idx) => {
                             const sub = (it.cantidad || 1) * (it.precio_neto_unitario || 0)
                             return (
-                              <tr key={idx}>
-                                <td className="p-2.5 font-semibold text-slate-900 border-r border-slate-200">{it.descripcion || 'Ítem de seguridad'}</td>
-                                <td className="p-2.5 text-center font-mono font-bold border-r border-slate-200">{it.cantidad}</td>
-                                <td className="p-2.5 text-right font-mono border-r border-slate-200">${it.precio_neto_unitario.toLocaleString('es-CL')}</td>
-                                <td className="p-2.5 text-right font-mono font-bold text-slate-900">${Math.round(sub).toLocaleString('es-CL')}</td>
+                              <tr key={idx} className="hover:bg-slate-50">
+                                <td className="p-3 font-semibold text-slate-900 border-r border-slate-200">{it.descripcion || 'Ítem de seguridad'}</td>
+                                <td className="p-3 text-center font-mono font-bold border-r border-slate-200">{it.cantidad}</td>
+                                <td className="p-3 text-right font-mono border-r border-slate-200">${it.precio_neto_unitario.toLocaleString('es-CL')}</td>
+                                <td className="p-3 text-right font-mono font-bold text-slate-900">${Math.round(sub).toLocaleString('es-CL')}</td>
                               </tr>
                             )
                           })}
@@ -2242,29 +2294,29 @@ export default function OperacionCRM() {
 
                     {/* TOTALES */}
                     <div className="flex justify-end">
-                      <div className="w-64 border border-slate-300 rounded-xl overflow-hidden text-xs font-mono">
-                        <div className="flex justify-between p-2 bg-white border-b border-slate-200">
+                      <div className="w-72 border border-slate-300 rounded-2xl overflow-hidden text-xs font-mono">
+                        <div className="flex justify-between p-2.5 bg-white border-b border-slate-200">
                           <span className="text-slate-600">Subtotal Neto:</span>
                           <span className="font-bold">${Math.round(calculoCotizacionActual.netoConDescuento).toLocaleString('es-CL')} {cotMoneda}</span>
                         </div>
-                        <div className="flex justify-between p-2 bg-[#f8fafc] border-b border-slate-200">
+                        <div className="flex justify-between p-2.5 bg-[#f8fafc] border-b border-slate-200">
                           <span className="text-slate-600">IVA 19%:</span>
                           <span className="font-bold">${Math.round(calculoCotizacionActual.montoIva).toLocaleString('es-CL')} {cotMoneda}</span>
                         </div>
-                        <div className="flex justify-between p-2.5 bg-[#000033] text-white font-black text-xs">
+                        <div className="flex justify-between p-3 bg-[#000033] text-white font-black text-sm">
                           <span>TOTAL OFERTA:</span>
                           <span>${Math.round(calculoCotizacionActual.totalIvaIncluido).toLocaleString('es-CL')} {cotMoneda}</span>
                         </div>
                       </div>
                     </div>
 
-                    <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-[10px] space-y-1 text-slate-600">
+                    <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl text-xs space-y-1 text-slate-600">
                       <div className="font-bold text-slate-900">Forma de Pago: {cotFormaPago}</div>
                       <div>Datos Bancarios para Transferencia: <strong>{empresaEmisoraSeleccionadaCot.banco_nombre}</strong> - Cta: <strong>{empresaEmisoraSeleccionadaCot.banco_numero_cuenta}</strong></div>
                     </div>
                   </div>
 
-                  <div className="border-t border-slate-200 pt-3 flex justify-between items-center text-[10px] text-slate-400 font-mono">
+                  <div className="border-t border-slate-200 pt-4 flex justify-between items-center text-xs text-slate-400 font-mono">
                     <span>Documento Oficial {empresaEmisoraSeleccionadaCot.razon_social}</span>
                     <span>Página 1 / 1</span>
                   </div>
