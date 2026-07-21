@@ -96,6 +96,9 @@ export interface CotizacionDolibarr {
   direccion: string
   email_cliente?: string
   telefono_cliente?: string
+  giro_cliente?: string
+  contacto_persona?: string
+  vendedor?: string
   tipo_receptor?: 'registrado' | 'prospecto'
   fecha: string
   validez_dias: number
@@ -201,26 +204,6 @@ export default function OperacionCRM() {
   const [cuentaSeleccionada, setCuentaSeleccionada] = useState<string>('')
   const [busquedaClienteInput, setBusquedaClienteInput] = useState<string>('')
 
-  // Modal Edición de Cliente Maestro & Asignación de Empresa Emisora
-  const [mostrarModalCliente, setMostrarModalCliente] = useState(false)
-  const [editRut, setEditRut] = useState('')
-  const [editRazonSocial, setEditRazonSocial] = useState('')
-  const [editEmpresaId, setEditEmpresaId] = useState('EMP-1')
-  const [editEmailCobranza, setEditEmailCobranza] = useState('')
-  const [editTelefono, setEditTelefono] = useState('')
-  const [editDireccionComercial, setEditDireccionComercial] = useState('')
-  const [editMoneda, setEditMoneda] = useState<'UF' | 'CLP'>('CLP')
-  const [editTarifa, setEditTarifa] = useState('29900')
-  const [editDia, setEditDia] = useState('5')
-  const [editPlan, setEditPlan] = useState('MONITOREO ESTÁNDAR 24/7')
-  const [editEstadoPago, setEditEstadoPago] = useState<'Al Día' | 'Pendiente' | 'Moroso'>('Al Día')
-
-  // Modal Vincular Centro de Costo (Abonado)
-  const [mostrarModalVincularAbonado, setMostrarModalVincularAbonado] = useState(false)
-  const [nuevaCuentaAbonadoInput, setNuevaCuentaAbonadoInput] = useState('')
-  const [nuevoAliasCentroCostoInput, setNuevoAliasCentroCostoInput] = useState('')
-  const [nuevaDireccionAbonadoInput, setNuevaDireccionAbonadoInput] = useState('')
-
   // UF Global
   const [valorUF, setValorUF] = useState(38500)
 
@@ -229,14 +212,14 @@ export default function OperacionCRM() {
   const [facturas, setFacturas] = useState<FacturaIndividual[]>([])
   const [cotizaciones, setCotizaciones] = useState<CotizacionDolibarr[]>([])
   
-  // Modales Facturación & Abonos Parciales (IDURAR ERP/CRM)
+  // Modales Facturación & Abonos Parciales
   const [mostrarModalAbono, setMostrarModalAbono] = useState(false)
   const [facturaAbonando, setFacturaAbonando] = useState<FacturaIndividual | null>(null)
   const [montoAbonoInput, setMontoAbonoInput] = useState('')
   const [metodoPagoInput, setMetodoPagoInput] = useState('Transferencia Bancaria')
   const [notaAbonoInput, setNotaAbonoInput] = useState('')
 
-  // Modales OT & Creador de Presupuesto Side-by-Side (Crater / InvoiceNinja)
+  // Modales OT & Creador de Presupuesto Side-by-Side (DTE Chile Standard)
   const [mostrarModalCotizacion, setMostrarModalCotizacion] = useState(false)
   const [cotSeleccionada, setCotSeleccionada] = useState<CotizacionDolibarr | null>(null)
   const [cotEditandoId, setCotEditandoId] = useState<number | null>(null)
@@ -247,31 +230,27 @@ export default function OperacionCRM() {
   const [cotClienteRutSeleccionado, setCotClienteRutSeleccionado] = useState('')
   const [cotNombreCliente, setCotNombreCliente] = useState('')
   const [cotRutCliente, setCotRutCliente] = useState('')
+  const [cotGiroCliente, setCotGiroCliente] = useState('Servicios Integrales / Particular')
+  const [cotContactoPersona, setCotContactoPersona] = useState('')
   const [cotDireccion, setCotDireccion] = useState('')
   const [cotEmailCliente, setCotEmailCliente] = useState('')
   const [cotTelefonoCliente, setCotTelefonoCliente] = useState('')
+  const [cotVendedor, setCotVendedor] = useState('Ejecutivo Comercial Gama Seguridad')
   const [cotValidez, setCotValidez] = useState(15)
-  const [cotFormaPago, setCotFormaPago] = useState('50% Anticipo / 50% Entrega')
+  const [cotFormaPago, setCotFormaPago] = useState('50% Anticipo / 50% Al Finalizar')
   const [cotMoneda, setCotMoneda] = useState<'CLP' | 'UF'>('CLP')
-  const [cotObservaciones, setCotObservaciones] = useState('')
+  const [cotObservaciones, setCotObservaciones] = useState('Garantía de equipos 12 meses. Precios netos afectos al 19% IVA según normativa legal chilena.')
   
   // DESCUENTO GLOBAL DE COTIZACIÓN ($ O %)
   const [descuentoGlobalValor, setDescuentoGlobalValor] = useState<number>(0)
   const [descuentoGlobalTipo, setDescuentoGlobalTipo] = useState<'porcentaje' | 'monto'>('porcentaje')
 
   const [itemsCot, setItemsCot] = useState<ItemCotizacion[]>([
-    { id: '1', descripcion: 'Control remoto inalambrico RadioFrecuencia 4Botones', cantidad: 1, precio_neto_unitario: 31000, descuento_valor: 0, tipo_descuento: 'porcentaje' }
+    { id: '1', descripcion: 'Control remoto inalambrico RadioFrecuencia 4Botones Botón Pánico', cantidad: 1, precio_neto_unitario: 31000, descuento_valor: 0, tipo_descuento: 'porcentaje' }
   ])
 
   // Modales OT
   const [mostrarModalOT, setMostrarModalOT] = useState(false)
-  const [nuevaOTCuenta, setNuevaOTCuenta] = useState('')
-  const [nuevaOTServicio, setNuevaOTServicio] = useState('Instalación de Cámaras de Seguridad')
-  const [nuevaOTTecnico, setNuevaOTTecnico] = useState('Técnico Juan Pérez')
-  const [nuevaOTFecha, setNuevaOTFecha] = useState(new Date().toISOString().split('T')[0])
-  const [nuevaOTObs, setNuevaOTObs] = useState('')
-
-  const [enviandoNotif, setEnviandoNotif] = useState(false)
 
   // ── MOTOR DE AGENTES DE IA AUTÓNOMOS 24/7 (AUTO-COMPANY ENGINE) ──
   const [logsConsenso, setLogsConsenso] = useState<string[]>([
@@ -394,10 +373,8 @@ export default function OperacionCRM() {
     return null
   }, [abonadoActivo, rutClienteSeleccionado, clientesMaestros])
 
-  const empresaFacturadoraActiva = clienteActivo ? empresasConglomerado.find(e => e.id === clienteActivo.empresa_facturadora_id) || empresasConglomerado[0] : empresasConglomerado[0]
-
   const siguienteCorrelativoCode = useMemo(() => {
-    let maxNum = 257
+    let maxNum = 259
     cotizaciones.forEach(c => {
       const match = (c.codigo_cotizacion || '').match(/PR2607-(\d+)/)
       if (match) {
@@ -467,12 +444,14 @@ export default function OperacionCRM() {
       setCotDireccion(cli.direccion_comercial || 'Dirección Comercial Registrada')
       setCotEmailCliente(cli.email_cobranza || 'contacto@gamasecurity.cl')
       setCotTelefonoCliente(cli.telefono || '+56 9 9101 6912')
+      setCotContactoPersona(cli.razon_social)
     } else {
       setCotNombreCliente(rutOKey && rutOKey !== 'Cliente Gama' ? rutOKey : 'CLIENTE REGISTRADO')
       setCotRutCliente(rutOKey)
       setCotDireccion('Dirección Registrada')
       setCotEmailCliente('contacto@gamasecurity.cl')
       setCotTelefonoCliente('+56 9 9101 6912')
+      setCotContactoPersona('Atención Adquisiciones')
     }
   }
 
@@ -491,6 +470,7 @@ export default function OperacionCRM() {
       setCotDireccion('Av. Valparaíso 1183, Viña del Mar')
       setCotEmailCliente('cobranza@gamasecurity.cl')
       setCotTelefonoCliente('+56 32 3276011')
+      setCotContactoPersona('Sr(a). Encargado(a) de Adquisiciones')
     }
     setMostrarModalCotizacion(true)
   }
@@ -511,6 +491,7 @@ export default function OperacionCRM() {
       setCotDireccion(cot.direccion || cliEncontrado.direccion_comercial)
       setCotEmailCliente(cot.email_cliente || cliEncontrado.email_cobranza)
       setCotTelefonoCliente(cot.telefono_cliente || cliEncontrado.telefono)
+      setCotContactoPersona(cot.contacto_persona || cliEncontrado.razon_social)
     } else {
       setCotClienteRutSeleccionado(cot.rut_cliente || cot.nombre_cliente)
       setCotNombreCliente(cot.nombre_cliente && cot.nombre_cliente !== 'Cliente Gama' ? cot.nombre_cliente : (cot.rut_cliente || 'CLIENTE COMERCIAL'))
@@ -518,12 +499,16 @@ export default function OperacionCRM() {
       setCotDireccion(cot.direccion || 'Dirección de Entrega')
       setCotEmailCliente(cot.email_cliente || 'contacto@gamasecurity.cl')
       setCotTelefonoCliente(cot.telefono_cliente || '+56 9 9101 6912')
+      setCotContactoPersona(cot.contacto_persona || 'Atención Comercial')
     }
+    setCotGiroCliente(cot.giro_cliente || 'Servicios Integrales / Particular')
+    setCotVendedor(cot.vendedor || 'Ejecutivo Comercial Gama Seguridad')
     setCotValidez(cot.validez_dias || 15)
-    setCotFormaPago(cot.forma_pago || '50% Anticipo / 50% Entrega')
+    setCotFormaPago(cot.forma_pago || '50% Anticipo / 50% Al Finalizar')
     setCotMoneda(cot.moneda_cotizacion || 'CLP')
     setDescuentoGlobalValor(cot.descuento_global_valor || 0)
     setDescuentoGlobalTipo(cot.descuento_global_tipo || 'porcentaje')
+    setCotObservaciones(cot.observaciones || 'Garantía 12 meses en equipos. Validez de la propuesta: 15 días hábiles.')
     setItemsCot(cot.items.map(it => ({
       ...it,
       descuento_valor: (it as any).descuento_valor ?? it.descuento_porcentaje ?? 0,
@@ -608,21 +593,6 @@ export default function OperacionCRM() {
     }
   }
 
-  const handleCambiarEstadoCotizacion = async (id: number, nuevoEstado: 'Borrador' | 'Enviado' | 'Aprobado' | 'Rechazado') => {
-    const listaNueva = cotizaciones.map(c => c.id === id ? { ...c, estado: nuevoEstado } : c)
-    setCotizaciones(listaNueva)
-    try {
-      await supabase.from('eventos_monitoreo').upsert({
-        cuenta: 'COTIZACIONES_DOLIBARR',
-        nombre_abonado: JSON.stringify(listaNueva),
-        evento: 'CAMBIO_ESTADO_COTIZACION',
-        fecha_hora: new Date().toISOString()
-      })
-    } catch (e: any) {
-      console.error('Error cambiando estado:', e)
-    }
-  }
-
   const handleGuardarCotizacionDolibarr = async () => {
     let nombreFinal = cotNombreCliente.trim()
     let rutFinal = cotRutCliente.trim()
@@ -654,6 +624,9 @@ export default function OperacionCRM() {
       direccion: cotDireccion.trim() || 'Dirección de Entrega',
       email_cliente: cotEmailCliente.trim() || 'contacto@prospecto.cl',
       telefono_cliente: cotTelefonoCliente.trim() || '+56991016912',
+      giro_cliente: cotGiroCliente.trim() || 'Servicios Integrales / Particular',
+      contacto_persona: cotContactoPersona.trim() || nombreFinal,
+      vendedor: cotVendedor.trim() || 'Ejecutivo Comercial Gama Seguridad',
       tipo_receptor: tipoReceptorCot,
       fecha: new Date().toLocaleDateString('es-CL'),
       validez_dias: cotValidez,
@@ -756,7 +729,6 @@ export default function OperacionCRM() {
     }, 600)
   }
 
-  // ── ACCIONES DE CRUD PARA EMPRESAS DEL CONGLOMERADO ──
   const abrirModalEditarEmpresa = (empresa?: EmpresaConglomerado) => {
     if (empresa) {
       setEmpresaEditando(empresa)
@@ -868,8 +840,38 @@ export default function OperacionCRM() {
   return (
     <div className="min-h-screen bg-[#f1f5f9] text-[#0f172a] font-sans flex flex-col select-none p-6 md:p-8 gap-8">
       
-      {/* ── HEADER CON BORDES REDONDEADOS SEGUROS Y HOLGURA INTERNA P-8 ── */}
-      <header className="bg-white rounded-2xl p-6 md:p-8 border border-slate-200 shadow-md flex flex-col md:flex-row justify-between items-start md:items-center gap-6 shrink-0">
+      {/* Estilos CSS para Impresión PDF Limpia (@media print) */}
+      <style jsx global>{`
+        @media print {
+          body * {
+            visibility: hidden !important;
+          }
+          #seccion-imprimible-cotizacion, #seccion-imprimible-cotizacion * {
+            visibility: visible !important;
+          }
+          #seccion-imprimible-cotizacion {
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 100% !important;
+            height: auto !important;
+            margin: 0 !important;
+            padding: 12mm !important;
+            box-shadow: none !important;
+            border: none !important;
+            background: white !important;
+            color: black !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          .no-imprimir {
+            display: none !important;
+          }
+        }
+      `}</style>
+
+      {/* ── HEADER PRINCIPAL ── */}
+      <header className="bg-white rounded-2xl p-6 md:p-8 border border-slate-200 shadow-md flex flex-col md:flex-row justify-between items-start md:items-center gap-6 shrink-0 no-imprimir">
         <div className="flex items-center gap-6">
           <button
             onClick={() => setSidebarAbierto(!sidebarAbierto)}
@@ -909,9 +911,9 @@ export default function OperacionCRM() {
       </header>
 
       {/* ── CONTENEDOR PRINCIPAL ── */}
-      <div className="flex-1 flex gap-8 overflow-hidden min-h-0">
+      <div className="flex-1 flex gap-8 overflow-hidden min-h-0 no-imprimir">
         
-        {/* ── SIDEBAR SEGURO CON PADDING P-6 Y ROUNDED-2XL ── */}
+        {/* ── SIDEBAR SEGURO ── */}
         {sidebarAbierto && (
           <aside className="w-80 bg-white border border-slate-200 p-6 rounded-2xl flex flex-col gap-3 shrink-0 shadow-md transition-all overflow-hidden">
             <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider px-2 mb-2 flex justify-between items-center">
@@ -922,7 +924,7 @@ export default function OperacionCRM() {
             {[
               { id: 'ficha360', label: 'Ficha 360° del Cliente / Abonado', icon: '👤' },
               { id: 'autonomia', label: 'Agentes Autónomos 24/7', icon: '🤖' },
-              { id: 'presupuestos', label: 'Presupuestos & Cotizaciones', icon: '📋' },
+              { id: 'presupuestos', label: 'Presupuestos & Cotizaciones DTE', icon: '📋' },
               { id: 'facturacion', label: 'Facturación & Abonos Parciales', icon: '🧾' },
               { id: 'serv_tecnico', label: 'Servicio Técnico (OTs)', icon: '🛠️' },
               { id: 'kpis', label: 'KPIs Ejecutivos & Reportes', icon: '📊' },
@@ -957,7 +959,6 @@ export default function OperacionCRM() {
           {/* ── MÓDULO 1: FICHA 360° DEL CLIENTE ── */}
           {moduloActivo === 'ficha360' && (
             <div className="flex-1 flex flex-col gap-8 min-h-0">
-              
               <div className="bg-white border border-slate-200 p-6 md:p-8 rounded-2xl shadow-md flex flex-col gap-4 overflow-hidden">
                 <div className="font-bold text-xs text-slate-700 uppercase tracking-wider flex justify-between items-center">
                   <span>🔍 BUSCADOR INTELIGENTE (BUSCA POR CÓDIGO DE ABONADO C774, NOMBRE O RUT)</span>
@@ -1087,24 +1088,27 @@ export default function OperacionCRM() {
             </div>
           )}
 
-          {/* ── MÓDULO 3: PRESUPUESTOS & COTIZACIONES COMERCIAL ── */}
+          {/* ── MÓDULO 3: PRESUPUESTOS & COTIZACIONES DTE COMPLETO CHILENO ── */}
           {moduloActivo === 'presupuestos' && (
             <div className="flex-1 bg-white border border-slate-200 rounded-2xl p-6 md:p-8 flex flex-col gap-6 shadow-md min-h-0 overflow-hidden">
               <div className="bg-[#f8fafc] border border-slate-200 border-l-4 border-l-blue-600 p-5 rounded-xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
                   <h2 className="text-lg font-black text-slate-900 uppercase tracking-wide flex items-center gap-3">
-                    📋 Presupuestos & Cotizaciones Comercial
+                    📋 Presupuestos & Cotizaciones DTE Chile
                     <span className="bg-blue-100 text-blue-900 text-xs px-3 py-1 rounded-full font-mono font-bold border border-blue-200">
                       Siguiente: {siguienteCorrelativoCode}
                     </span>
                   </h2>
+                  <p className="text-xs text-slate-500 font-semibold mt-0.5">
+                    Módulo industrial con desglose tributario chileno (19% IVA), condiciones bancarias y plantilla DTE oficial
+                  </p>
                 </div>
 
                 <button
                   onClick={abrirModalNuevaCotizacion}
-                  className="px-6 py-3 bg-blue-900 hover:bg-blue-800 text-white font-bold rounded-xl text-xs shadow-md cursor-pointer transition-all"
+                  className="px-6 py-3 bg-blue-900 hover:bg-blue-800 text-white font-bold rounded-xl text-xs shadow-md cursor-pointer transition-all flex items-center gap-2"
                 >
-                  <span>✨ Crear Presupuesto Profesional (Side-by-Side)</span>
+                  <span>✨ Crear Presupuesto Profesional DTE</span>
                 </button>
               </div>
 
@@ -1114,8 +1118,9 @@ export default function OperacionCRM() {
                     <tr className="bg-[#f8fafc] text-slate-700 border-b border-slate-200 font-bold uppercase text-xs">
                       <th className="p-4 border-r border-slate-200">FOLIO / FECHA</th>
                       <th className="p-4 border-r border-slate-200">EMPRESA EMISORA</th>
-                      <th className="p-4 border-r border-slate-200">RECEPTOR</th>
-                      <th className="p-4 border-r border-slate-200 text-right">NETO</th>
+                      <th className="p-4 border-r border-slate-200">RECEPTOR (CLIENTE / PROSPECTO)</th>
+                      <th className="p-4 border-r border-slate-200 text-right">NETO AFECTO</th>
+                      <th className="p-4 border-r border-slate-200 text-right">IVA (19%)</th>
                       <th className="p-4 border-r border-slate-200 text-right">TOTAL IVA INCL.</th>
                       <th className="p-4 border-r border-slate-200 text-center">ESTADO</th>
                       <th className="p-4 text-center w-48">ACCIONES</th>
@@ -1131,15 +1136,19 @@ export default function OperacionCRM() {
                             <div className="text-[10px] text-slate-500 font-sans">{c.fecha}</div>
                           </td>
                           <td className="p-4 border-r border-slate-200 font-bold text-emerald-800 text-xs">{empEmisora.razon_social}</td>
-                          <td className="p-4 border-r border-slate-200 font-bold text-slate-900">{c.nombre_cliente}</td>
+                          <td className="p-4 border-r border-slate-200 font-bold text-slate-900">
+                            <div>{c.nombre_cliente}</div>
+                            <div className="text-[10px] text-slate-500 font-mono">RUT: {c.rut_cliente}</div>
+                          </td>
                           <td className="p-4 text-right font-mono border-r border-slate-200">${Math.round(c.neto_con_descuento || 0).toLocaleString('es-CL')}</td>
+                          <td className="p-4 text-right font-mono border-r border-slate-200 text-blue-900">${Math.round(c.monto_iva || 0).toLocaleString('es-CL')}</td>
                           <td className="p-4 text-right font-mono font-bold text-emerald-800 border-r border-slate-200">${Math.round(c.monto_total_iva_incluido || 0).toLocaleString('es-CL')}</td>
                           <td className="p-4 text-center border-r border-slate-200 font-bold">
                             <span className="px-3 py-1 bg-slate-100 rounded-lg text-xs">{c.estado}</span>
                           </td>
                           <td className="p-4 text-center">
                             <div className="flex items-center justify-center gap-1.5">
-                              <button onClick={() => setCotSeleccionada(c)} title="Ver Documento PDF" className="p-2 bg-slate-900 text-white rounded-lg font-bold cursor-pointer text-xs">📄</button>
+                              <button onClick={() => setCotSeleccionada(c)} title="Ver e Imprimir DTE" className="p-2 bg-slate-900 text-white rounded-lg font-bold cursor-pointer text-xs">📄</button>
                               <button onClick={() => handleEditarCotizacion(c)} title="Editar Cotización" className="p-2 bg-blue-900 text-white rounded-lg font-bold cursor-pointer text-xs">✏️</button>
                               <button onClick={() => handleDuplicarCotizacion(c)} title="Copiar Cotización" className="p-2 bg-emerald-700 text-white rounded-lg font-bold cursor-pointer text-xs">📋</button>
                               <button onClick={() => handleEliminarCotizacion(c.id, c.codigo_cotizacion)} title="Eliminar Cotización" className="p-2 bg-red-700 text-white rounded-lg font-bold cursor-pointer text-xs">🗑️</button>
@@ -1154,7 +1163,7 @@ export default function OperacionCRM() {
             </div>
           )}
 
-          {/* ── MÓDULO 4: FACTURACIÓN & ABONOS PARCIALES (TABLA COMPLETA CON MARGEN PROTEGIDO) ── */}
+          {/* ── MÓDULO 4: FACTURACIÓN & ABONOS PARCIALES ── */}
           {moduloActivo === 'facturacion' && (
             <div className="flex-1 bg-white border border-slate-200 rounded-2xl p-6 md:p-8 flex flex-col gap-6 shadow-md overflow-y-auto">
               <div className="bg-[#f8fafc] border border-slate-200 border-l-4 border-l-blue-600 p-5 rounded-xl">
@@ -1233,7 +1242,7 @@ export default function OperacionCRM() {
             </div>
           )}
 
-          {/* ── MÓDULO 5: SERVICIO TÉCNICO (OTs COMPLETO CON MARGEN PROTEGIDO) ── */}
+          {/* ── MÓDULO 5: SERVICIO TÉCNICO (OTs) ── */}
           {moduloActivo === 'serv_tecnico' && (
             <div className="flex-1 bg-white border border-slate-200 rounded-2xl p-6 md:p-8 flex flex-col gap-6 shadow-md overflow-y-auto">
               <div className="bg-[#f8fafc] border border-slate-200 border-l-4 border-l-blue-600 p-5 rounded-xl flex justify-between items-center">
@@ -1287,7 +1296,7 @@ export default function OperacionCRM() {
             </div>
           )}
 
-          {/* ── MÓDULO 6: KPIS EJECUTIVOS (COMPLETO CON MARGEN PROTEGIDO) ── */}
+          {/* ── MÓDULO 6: KPIS EJECUTIVOS ── */}
           {moduloActivo === 'kpis' && (
             <div className="flex-1 bg-white border border-slate-200 rounded-2xl p-6 md:p-8 flex flex-col gap-8 shadow-md overflow-y-auto">
               <div className="bg-[#f8fafc] border border-slate-200 border-l-4 border-l-blue-600 p-5 rounded-xl">
@@ -1323,7 +1332,7 @@ export default function OperacionCRM() {
             </div>
           )}
 
-          {/* ── MÓDULO 7: CRUD EMPRESAS (COMPLETO CON MARGEN PROTEGIDO) ── */}
+          {/* ── MÓDULO 7: CRUD EMPRESAS ── */}
           {moduloActivo === 'config' && (
             <div className="flex-1 bg-white border border-slate-200 rounded-2xl p-6 md:p-8 flex flex-col gap-6 shadow-md overflow-y-auto">
               <div className="bg-[#f8fafc] border border-slate-200 border-l-4 border-l-blue-600 p-5 rounded-xl flex justify-between items-center">
@@ -1379,17 +1388,17 @@ export default function OperacionCRM() {
         </main>
       </div>
 
-      {/* ── CREADOR DE PRESUPUESTOS MODAL SEGURO ── */}
+      {/* ── CREADOR DE PRESUPUESTOS MODAL DTE CHILE ── */}
       {mostrarModalCotizacion && (
-        <div className="fixed inset-0 z-50 bg-slate-900/85 backdrop-blur-md overflow-y-auto p-4 md:p-8 flex justify-center items-center">
-          <div className="bg-slate-950 border border-slate-800 w-full max-w-7xl h-[95vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden p-6 md:p-8 gap-6 font-sans text-xs text-white">
+        <div className="fixed inset-0 z-50 bg-slate-900/85 backdrop-blur-md overflow-y-auto p-4 md:p-6 flex justify-center items-center no-imprimir">
+          <div className="bg-slate-950 border border-slate-800 w-full max-w-7xl h-[95vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden p-5 md:p-6 gap-5 font-sans text-xs text-white">
             
-            <div className="bg-slate-900 p-5 md:p-6 rounded-xl border border-slate-800 flex justify-between items-center shrink-0">
+            <div className="bg-slate-900 p-4 md:p-5 rounded-xl border border-slate-800 flex justify-between items-center shrink-0">
               <div className="flex items-center gap-4">
                 <span className="text-2xl p-2.5 bg-blue-900/80 rounded-xl border border-blue-600/50">✨</span>
                 <div>
-                  <h3 className="font-black text-xl text-white uppercase tracking-wider flex items-center gap-3">
-                    {cotEditandoId ? 'EDITAR PRESUPUESTO COMERCIAL' : 'CREAR PRESUPUESTO COMERCIAL'}
+                  <h3 className="font-black text-lg text-white uppercase tracking-wider flex items-center gap-3">
+                    {cotEditandoId ? 'EDITAR PRESUPUESTO COMERCIAL DTE' : 'CREAR PRESUPUESTO COMERCIAL DTE'}
                     <span className="bg-blue-600 text-white text-xs px-3.5 py-1 rounded-full font-mono font-bold">
                       {cotEditandoId ? cotizaciones.find(c => c.id === cotEditandoId)?.codigo_cotizacion : siguienteCorrelativoCode}
                     </span>
@@ -1406,9 +1415,13 @@ export default function OperacionCRM() {
             </div>
 
             <div className="flex-1 flex flex-col lg:flex-row overflow-hidden gap-6 min-h-0">
-              <div className="w-full lg:w-1/2 p-6 md:p-8 bg-white text-slate-900 rounded-2xl border border-slate-300 overflow-y-auto flex flex-col gap-6 shadow-inner">
-                <div className="bg-[#f8fafc] p-5 rounded-xl border border-slate-200 space-y-3">
-                  <label className="font-black text-slate-900 text-xs uppercase tracking-wider block">1. RECEPTOR:</label>
+              
+              {/* CONFIGURADOR DE DATOS DE COTIZACIÓN */}
+              <div className="w-full lg:w-1/2 p-6 bg-white text-slate-900 rounded-2xl border border-slate-300 overflow-y-auto flex flex-col gap-5 shadow-inner">
+                
+                {/* RECEPTOR */}
+                <div className="bg-[#f8fafc] p-4 rounded-xl border border-slate-200 space-y-3">
+                  <label className="font-black text-slate-900 text-xs uppercase tracking-wider block">1. RECEPTOR DE LA OFERTA COMERCIAL:</label>
                   <div className="grid grid-cols-2 gap-3">
                     <button
                       type="button"
@@ -1427,6 +1440,8 @@ export default function OperacionCRM() {
                         setTipoReceptorCot('prospecto')
                         setCotClienteRutSeleccionado('')
                         setCotNombreCliente('NUEVO PROSPECTO COMERCIAL')
+                        setCotRutCliente('S/RUT')
+                        setCotContactoPersona('Sr(a). Director(a) / Adquisiciones')
                       }}
                       className={`p-3 rounded-xl font-bold text-xs cursor-pointer border ${tipoReceptorCot === 'prospecto' ? 'bg-purple-950 text-white' : 'bg-white text-slate-700'}`}
                     >
@@ -1449,6 +1464,7 @@ export default function OperacionCRM() {
                         type="text"
                         value={cotNombreCliente}
                         onChange={(e) => setCotNombreCliente(e.target.value)}
+                        placeholder="Razón Social / Nombre..."
                         className="w-full bg-white border border-slate-300 p-3 rounded-xl font-bold text-slate-900 text-xs"
                       />
                     </div>
@@ -1457,90 +1473,210 @@ export default function OperacionCRM() {
                       type="text"
                       value={cotNombreCliente}
                       onChange={(e) => setCotNombreCliente(e.target.value)}
+                      placeholder="Razón Social del Prospecto..."
                       className="w-full bg-white border border-slate-300 p-3 rounded-xl font-bold text-slate-900 text-xs"
                     />
                   )}
-                </div>
 
-                <div className="bg-[#f8fafc] p-5 rounded-xl border border-slate-200 space-y-3">
-                  <label className="font-black text-slate-900 text-xs uppercase tracking-wider block">2. MONEDA Y CONDICIONES:</label>
                   <div className="grid grid-cols-2 gap-3">
-                    <select value={cotEmpresaEmisoraId} onChange={(e) => setCotEmpresaEmisoraId(e.target.value)} className="bg-white border border-slate-300 p-3 rounded-xl font-bold text-xs">
-                      {empresasConglomerado.map(e => <option key={e.id} value={e.id}>{e.razon_social}</option>)}
-                    </select>
-                    <select value={cotMoneda} onChange={(e: any) => setCotMoneda(e.target.value)} className="bg-white border border-slate-300 p-3 rounded-xl font-bold text-xs">
-                      <option value="CLP">CLP (Pesos)</option>
-                      <option value="UF">UF</option>
-                    </select>
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-500 block mb-1">RUT RECEPTOR:</label>
+                      <input
+                        type="text"
+                        value={cotRutCliente}
+                        onChange={(e) => setCotRutCliente(e.target.value)}
+                        className="w-full bg-white border border-slate-300 p-2.5 rounded-lg text-xs font-mono font-bold"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-500 block mb-1">ATENCIÓN A (PERSONA):</label>
+                      <input
+                        type="text"
+                        value={cotContactoPersona}
+                        onChange={(e) => setCotContactoPersona(e.target.value)}
+                        className="w-full bg-white border border-slate-300 p-2.5 rounded-lg text-xs font-bold"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-500 block mb-1">DIRECCIÓN ENTREGA:</label>
+                      <input
+                        type="text"
+                        value={cotDireccion}
+                        onChange={(e) => setCotDireccion(e.target.value)}
+                        className="w-full bg-white border border-slate-300 p-2.5 rounded-lg text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-500 block mb-1">EMAIL CONFIRMACIÓN:</label>
+                      <input
+                        type="text"
+                        value={cotEmailCliente}
+                        onChange={(e) => setCotEmailCliente(e.target.value)}
+                        className="w-full bg-white border border-slate-300 p-2.5 rounded-lg text-xs"
+                      />
+                    </div>
                   </div>
                 </div>
 
-                <div className="bg-[#f8fafc] p-5 rounded-xl border border-slate-200 space-y-3">
-                  <div className="flex justify-between items-center">
-                    <label className="font-black text-slate-900 text-xs uppercase tracking-wider">3. ÍTEMS Y DESCUENTOS:</label>
-                    <button type="button" onClick={() => setItemsCot([...itemsCot, { id: Date.now().toString(), descripcion: 'Nuevo equipo', cantidad: 1, precio_neto_unitario: 10000, descuento_valor: 0, tipo_descuento: 'porcentaje' }])} className="px-3 py-1.5 bg-slate-900 text-white rounded-lg text-xs font-bold">+ Línea</button>
+                {/* EMISOR Y CONDICIONES */}
+                <div className="bg-[#f8fafc] p-4 rounded-xl border border-slate-200 space-y-3">
+                  <label className="font-black text-slate-900 text-xs uppercase tracking-wider block">2. RAZÓN SOCIAL EMISORA & MONEDA:</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-500 block mb-1">EMPRESA EMISORA:</label>
+                      <select value={cotEmpresaEmisoraId} onChange={(e) => setCotEmpresaEmisoraId(e.target.value)} className="w-full bg-white border border-slate-300 p-2.5 rounded-lg font-bold text-xs">
+                        {empresasConglomerado.map(e => <option key={e.id} value={e.id}>{e.razon_social}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-500 block mb-1">MONEDA:</label>
+                      <select value={cotMoneda} onChange={(e: any) => setCotMoneda(e.target.value)} className="w-full bg-white border border-slate-300 p-2.5 rounded-lg font-bold text-xs">
+                        <option value="CLP">CLP (Pesos Chilenos)</option>
+                        <option value="UF">UF (Unidad de Fomento)</option>
+                      </select>
+                    </div>
                   </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-500 block mb-1">FORMA DE PAGO:</label>
+                      <input type="text" value={cotFormaPago} onChange={(e) => setCotFormaPago(e.target.value)} className="w-full bg-white border border-slate-300 p-2.5 rounded-lg text-xs font-bold" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-500 block mb-1">DÍAS VALIDEZ:</label>
+                      <input type="number" value={cotValidez} onChange={(e) => setCotValidez(Number(e.target.value) || 15)} className="w-full bg-white border border-slate-300 p-2.5 rounded-lg text-xs font-bold text-center" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* ÍTEMS */}
+                <div className="bg-[#f8fafc] p-4 rounded-xl border border-slate-200 space-y-3">
+                  <div className="flex justify-between items-center">
+                    <label className="font-black text-slate-900 text-xs uppercase tracking-wider">3. DETALLE DE EQUIPOS & SERVICIOS:</label>
+                    <button type="button" onClick={() => setItemsCot([...itemsCot, { id: Date.now().toString(), descripcion: 'Nuevo servicio / equipo de seguridad', cantidad: 1, precio_neto_unitario: 25000, descuento_valor: 0, tipo_descuento: 'porcentaje' }])} className="px-3 py-1.5 bg-slate-900 text-white rounded-lg text-xs font-bold">+ Agregar Línea</button>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    <span className="text-[10px] font-bold text-slate-400">Catálogo Rápido:</span>
+                    {CATALOGO_SEGURIDAD.slice(0, 4).map(cat => (
+                      <button key={cat.id} type="button" onClick={() => handleAgregarItemDelCatalogo(cat)} className="text-[10px] bg-blue-50 hover:bg-blue-100 text-blue-900 font-bold px-2.5 py-1 rounded-md border border-blue-200">
+                        + {cat.categoria}
+                      </button>
+                    ))}
+                  </div>
+
                   {itemsCot.map((it, idx) => (
-                    <div key={it.id} className="grid grid-cols-12 gap-2 items-center p-3 bg-white rounded-xl border border-slate-200">
-                      <input type="text" value={it.descripcion} onChange={(e) => { const newIt = [...itemsCot]; newIt[idx].descripcion = e.target.value; setItemsCot(newIt) }} className="col-span-6 bg-[#f8fafc] border p-2 rounded-lg text-xs" />
-                      <input type="number" value={it.cantidad} onChange={(e) => { const newIt = [...itemsCot]; newIt[idx].cantidad = Number(e.target.value) || 1; setItemsCot(newIt) }} className="col-span-2 bg-[#f8fafc] border p-2 rounded-lg text-xs text-center font-bold" />
-                      <input type="number" value={it.precio_neto_unitario} onChange={(e) => { const newIt = [...itemsCot]; newIt[idx].precio_neto_unitario = Number(e.target.value) || 0; setItemsCot(newIt) }} className="col-span-3 bg-[#f8fafc] border p-2 rounded-lg text-xs text-right font-bold" />
-                      <button type="button" onClick={() => setItemsCot(itemsCot.filter(i => i.id !== it.id))} className="col-span-1 text-red-600 font-bold text-center">✕</button>
+                    <div key={it.id} className="grid grid-cols-12 gap-2 items-center p-3 bg-white rounded-xl border border-slate-200 shadow-2xs">
+                      <input type="text" value={it.descripcion} onChange={(e) => { const newIt = [...itemsCot]; newIt[idx].descripcion = e.target.value; setItemsCot(newIt) }} placeholder="Descripción..." className="col-span-6 bg-[#f8fafc] border p-2 rounded-lg text-xs font-medium" />
+                      <input type="number" value={it.cantidad} onChange={(e) => { const newIt = [...itemsCot]; newIt[idx].cantidad = Number(e.target.value) || 1; setItemsCot(newIt) }} placeholder="Cant" className="col-span-2 bg-[#f8fafc] border p-2 rounded-lg text-xs text-center font-bold" />
+                      <input type="number" value={it.precio_neto_unitario} onChange={(e) => { const newIt = [...itemsCot]; newIt[idx].precio_neto_unitario = Number(e.target.value) || 0; setItemsCot(newIt) }} placeholder="P. Unit Neto" className="col-span-3 bg-[#f8fafc] border p-2 rounded-lg text-xs text-right font-bold font-mono" />
+                      <button type="button" onClick={() => setItemsCot(itemsCot.filter(i => i.id !== it.id))} className="col-span-1 text-red-600 font-bold text-center hover:bg-red-50 p-1 rounded-md">✕</button>
                     </div>
                   ))}
                 </div>
 
                 <div className="pt-2 flex justify-end gap-3">
                   <button type="button" onClick={() => setMostrarModalCotizacion(false)} className="px-6 py-3 bg-slate-200 text-slate-800 font-bold rounded-xl text-xs">Cancelar</button>
-                  <button type="button" onClick={handleGuardarCotizacionDolibarr} className="px-8 py-3 bg-blue-900 text-white font-bold rounded-xl text-xs shadow-md">💾 Guardar Presupuesto</button>
+                  <button type="button" onClick={handleGuardarCotizacionDolibarr} className="px-8 py-3 bg-blue-900 hover:bg-blue-800 text-white font-bold rounded-xl text-xs shadow-md">💾 Guardar Presupuesto DTE</button>
                 </div>
               </div>
 
-              {/* VISTA PREVIA IMPRESA VUELO SEGURO */}
-              <div className="w-full lg:w-1/2 p-6 md:p-10 bg-slate-900 rounded-2xl border border-slate-800 overflow-y-auto flex items-start justify-center">
-                <div className="bg-white text-slate-900 p-8 md:p-12 rounded-2xl max-w-xl w-full shadow-2xl font-sans border border-slate-300 space-y-8 min-h-[750px] flex flex-col justify-between overflow-hidden">
-                  <div className="space-y-6">
-                    <div className="flex justify-between items-start border-b-2 border-slate-900 pb-6 gap-4">
+              {/* VISTA PREVIA IMPRESA A4 EN TIEMPO REAL */}
+              <div className="w-full lg:w-1/2 p-6 bg-slate-900 rounded-2xl border border-slate-800 overflow-y-auto flex items-start justify-center">
+                <div className="bg-white text-slate-900 p-8 rounded-2xl max-w-xl w-full shadow-2xl font-sans border border-slate-300 space-y-6 text-xs min-h-[750px] flex flex-col justify-between overflow-hidden">
+                  <div className="space-y-5">
+                    
+                    {/* CABECERA DTE CHILE */}
+                    <div className="flex justify-between items-start border-b-2 border-slate-900 pb-5 gap-4">
                       <div className="space-y-1 text-xs">
-                        <h1 className="text-lg font-black text-[#000033]">{empresaEmisoraSeleccionadaCot.razon_social}</h1>
-                        <p className="text-slate-600">{empresaEmisoraSeleccionadaCot.direccion}</p>
-                        <p className="text-slate-600">Tel: {empresaEmisoraSeleccionadaCot.telefono}</p>
+                        <h1 className="text-base font-black text-[#000033] uppercase">{empresaEmisoraSeleccionadaCot.razon_social}</h1>
+                        <p className="font-mono text-slate-700 font-bold text-[11px]">R.U.T.: {empresaEmisoraSeleccionadaCot.rut}</p>
+                        <p className="text-slate-600 text-[11px]">{empresaEmisoraSeleccionadaCot.giro}</p>
+                        <p className="text-slate-600 text-[11px]">📍 {empresaEmisoraSeleccionadaCot.direccion}</p>
+                        <p className="text-slate-600 text-[11px]">📞 {empresaEmisoraSeleccionadaCot.telefono} | ✉️ {empresaEmisoraSeleccionadaCot.email_contacto}</p>
                       </div>
-                      <div className="border border-slate-300 bg-[#f8fafc] p-4 rounded-xl w-64 space-y-1 text-xs">
-                        <h2 className="text-xs font-black text-slate-900 uppercase">{cotNombreCliente || 'Nombre del Cliente'}</h2>
-                        <p className="text-slate-600">{cotDireccion || 'Dirección de entrega'}</p>
-                        <p className="font-mono text-slate-700 font-bold">R.U.T.: {cotRutCliente || 'S/RUT'}</p>
+
+                      <div className="border-2 border-slate-900 bg-slate-50 p-4 rounded-xl w-60 space-y-1 text-center shadow-xs">
+                        <span className="text-[10px] font-black text-blue-900 uppercase block tracking-wider">COTIZACIÓN / PRESUPUESTO</span>
+                        <h2 className="text-base font-black text-slate-900 font-mono">{siguienteCorrelativoCode}</h2>
+                        <div className="text-[10px] text-slate-600 pt-1 font-bold">
+                          FECHA: {new Date().toLocaleDateString('es-CL')}
+                        </div>
+                        <div className="text-[10px] text-slate-600 font-bold">
+                          VALIDEZ: {cotValidez} DÍAS HÁBILES
+                        </div>
                       </div>
                     </div>
 
-                    <div className="border border-slate-300 rounded-xl overflow-hidden text-xs">
+                    {/* DATOS DEL CLIENTE / RECEPTOR */}
+                    <div className="border border-slate-300 bg-[#f8fafc] p-4 rounded-xl grid grid-cols-2 gap-3 text-[11px]">
+                      <div>
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">RECEPTOR / RAZÓN SOCIAL:</span>
+                        <strong className="text-slate-900 text-xs block">{cotNombreCliente || 'Nombre del Cliente'}</strong>
+                        <span className="text-slate-600 font-mono font-bold">RUT: {cotRutCliente || 'S/RUT'}</span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">ATENCIÓN A / CONTACTO:</span>
+                        <strong className="text-slate-900 text-xs block">{cotContactoPersona || cotNombreCliente}</strong>
+                        <span className="text-slate-600">📍 {cotDireccion || 'Dirección de Entrega'}</span>
+                      </div>
+                    </div>
+
+                    {/* TABLA DE DETALLE */}
+                    <div className="border border-slate-300 rounded-xl overflow-hidden text-[11px]">
                       <table className="w-full text-left border-collapse">
                         <thead>
-                          <tr className="bg-slate-100 text-slate-800 font-bold border-b border-slate-300">
-                            <th className="p-3 border-r border-slate-300">Descripción</th>
-                            <th className="p-3 border-r border-slate-300 text-center w-12">Cant.</th>
-                            <th className="p-3 text-right w-24">Subtotal</th>
+                          <tr className="bg-slate-100 text-slate-800 font-bold border-b border-slate-300 uppercase text-[10px]">
+                            <th className="p-2.5 border-r border-slate-300 w-8 text-center">#</th>
+                            <th className="p-2.5 border-r border-slate-300">Descripción del Servicio / Equipo</th>
+                            <th className="p-2.5 border-r border-slate-300 text-center w-12">Cant.</th>
+                            <th className="p-2.5 border-r border-slate-300 text-right w-20">P. Unit</th>
+                            <th className="p-2.5 text-right w-24">Subtotal</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-200">
                           {itemsCot.map((it, idx) => (
                             <tr key={idx}>
-                              <td className="p-3 font-semibold text-slate-900 border-r border-slate-200">{it.descripcion}</td>
-                              <td className="p-3 text-center font-mono font-bold border-r border-slate-200">{it.cantidad}</td>
-                              <td className="p-3 text-right font-mono font-bold text-slate-900">${Math.round((it.cantidad || 1) * (it.precio_neto_unitario || 0)).toLocaleString('es-CL')}</td>
+                              <td className="p-2.5 text-center font-mono text-slate-400 border-r border-slate-200">{idx + 1}</td>
+                              <td className="p-2.5 font-semibold text-slate-900 border-r border-slate-200">{it.descripcion}</td>
+                              <td className="p-2.5 text-center font-mono font-bold border-r border-slate-200">{it.cantidad}</td>
+                              <td className="p-2.5 text-right font-mono border-r border-slate-200">${(it.precio_neto_unitario || 0).toLocaleString('es-CL')}</td>
+                              <td className="p-2.5 text-right font-mono font-bold text-slate-900">${Math.round((it.cantidad || 1) * (it.precio_neto_unitario || 0)).toLocaleString('es-CL')}</td>
                             </tr>
                           ))}
                         </tbody>
                       </table>
                     </div>
 
-                    <div className="flex justify-end">
-                      <div className="w-72 border border-slate-300 rounded-xl overflow-hidden text-xs font-mono">
-                        <div className="flex justify-between p-2.5 bg-white border-b"><span>Neto:</span><span className="font-bold">${Math.round(calculoCotizacionActual.netoConDescuento).toLocaleString('es-CL')} {cotMoneda}</span></div>
-                        <div className="flex justify-between p-2.5 bg-[#f8fafc] border-b"><span>IVA 19%:</span><span className="font-bold">${Math.round(calculoCotizacionActual.montoIva).toLocaleString('es-CL')} {cotMoneda}</span></div>
-                        <div className="flex justify-between p-3 bg-[#000033] text-white font-black text-xs"><span>TOTAL:</span><span>${Math.round(calculoCotizacionActual.totalIvaIncluido).toLocaleString('es-CL')} {cotMoneda}</span></div>
+                    {/* DESGLOSE FINANCIERO TRIBUTARIO CHILENO */}
+                    <div className="flex justify-between items-start gap-4 pt-2">
+                      <div className="text-[10px] space-y-1 text-slate-600 max-w-[240px]">
+                        <p className="font-bold text-slate-800">💳 DATOS PARA TRANSFERENCIA BANCARIA:</p>
+                        <p>{empresaEmisoraSeleccionadaCot.banco_nombre}</p>
+                        <p>{empresaEmisoraSeleccionadaCot.banco_tipo_cuenta}: <strong className="font-mono">{empresaEmisoraSeleccionadaCot.banco_numero_cuenta}</strong></p>
+                        <p>RUT: <strong className="font-mono">{empresaEmisoraSeleccionadaCot.rut}</strong></p>
+                        <p>Mail: {empresaEmisoraSeleccionadaCot.email_cobranza}</p>
+                      </div>
+
+                      <div className="w-64 border border-slate-300 rounded-xl overflow-hidden font-mono text-xs shadow-xs">
+                        <div className="flex justify-between p-2 bg-white border-b">
+                          <span className="text-[11px] font-semibold text-slate-600">Neto Afecto:</span>
+                          <span className="font-bold">${Math.round(calculoCotizacionActual.netoConDescuento).toLocaleString('es-CL')} {cotMoneda}</span>
+                        </div>
+                        <div className="flex justify-between p-2 bg-[#f8fafc] border-b text-blue-900">
+                          <span className="text-[11px] font-bold">IVA 19% (Ley 825):</span>
+                          <span className="font-bold">${Math.round(calculoCotizacionActual.montoIva).toLocaleString('es-CL')} {cotMoneda}</span>
+                        </div>
+                        <div className="flex justify-between p-3 bg-slate-900 text-white font-black">
+                          <span>TOTAL:</span>
+                          <span>${Math.round(calculoCotizacionActual.totalIvaIncluido).toLocaleString('es-CL')} {cotMoneda}</span>
+                        </div>
                       </div>
                     </div>
+
                   </div>
                 </div>
               </div>
@@ -1549,67 +1685,164 @@ export default function OperacionCRM() {
         </div>
       )}
 
-      {/* ── VISOR PDF MODAL CON HOLGURA DE SEGURIDAD ── */}
+      {/* ── VISOR IMPRESO PDF COMPLETO CHILE DTE ── */}
       {cotSeleccionada && (
-        <div className="fixed inset-0 z-50 bg-slate-900/85 backdrop-blur-md overflow-y-auto p-6 md:p-10 flex justify-center items-start">
-          <div className="bg-white text-slate-900 p-8 md:p-12 rounded-2xl max-w-4xl w-full shadow-2xl font-sans my-6 border border-slate-300 space-y-8 min-h-[750px] flex flex-col justify-between overflow-hidden">
+        <div className="fixed inset-0 z-50 bg-slate-900/85 backdrop-blur-md overflow-y-auto p-4 md:p-8 flex justify-center items-start">
+          
+          <div className="no-imprimir fixed top-6 right-8 z-50 flex gap-3">
+            <button
+              onClick={() => window.print()}
+              className="px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-xl cursor-pointer flex items-center gap-2"
+            >
+              <span>🖨️ Imprimir / Guardar PDF Oficial</span>
+            </button>
+            <button
+              onClick={() => setCotSeleccionada(null)}
+              className="px-5 py-3 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl shadow-xl cursor-pointer"
+            >
+              ✕ Cerrar
+            </button>
+          </div>
+
+          {/* DOCUMENTO IMPRIMIBLE OFICIAL A4 DTE CHILE */}
+          <div id="seccion-imprimible-cotizacion" className="bg-white text-slate-900 p-10 md:p-14 rounded-2xl max-w-4xl w-full shadow-2xl font-sans my-4 border border-slate-300 space-y-8 min-h-[900px] flex flex-col justify-between overflow-hidden">
+            
             <div className="space-y-6">
+              
+              {/* ENCABEZADO FISCAL CHILENO */}
               {(() => {
                 const empEmisoraDoc = empresasConglomerado.find(e => e.id === cotSeleccionada.empresa_facturadora_id) || empresasConglomerado[0]
                 return (
-                  <div className="flex flex-col md:flex-row justify-between items-start gap-6 border-b-2 border-slate-200 pb-6">
+                  <div className="flex flex-col md:flex-row justify-between items-start gap-6 border-b-2 border-slate-900 pb-6">
                     <div className="space-y-1 text-xs">
-                      <h1 className="text-xl font-black text-[#000033]">{empEmisoraDoc.razon_social}</h1>
-                      <p className="text-slate-600">{empEmisoraDoc.direccion}</p>
-                      <p className="text-slate-600">Teléfono: {empEmisoraDoc.telefono}</p>
-                      <p className="text-slate-600">Correo: {empEmisoraDoc.email_contacto}</p>
+                      <div className="flex items-center gap-3">
+                        <span className="text-2xl p-2 bg-slate-900 text-white rounded-lg">🛡️</span>
+                        <div>
+                          <h1 className="text-xl font-black text-[#000033] uppercase">{empEmisoraDoc.razon_social}</h1>
+                          <p className="font-mono text-slate-800 font-bold">R.U.T.: {empEmisoraDoc.rut}</p>
+                        </div>
+                      </div>
+                      <p className="text-slate-600 pt-2">Giro: {empEmisoraDoc.giro}</p>
+                      <p className="text-slate-600">Dirección Fiscal: {empEmisoraDoc.direccion}</p>
+                      <p className="text-slate-600">Teléfono: {empEmisoraDoc.telefono} | Correo: {empEmisoraDoc.email_contacto}</p>
+                      <p className="text-slate-600 font-mono">Web: {empEmisoraDoc.web}</p>
                     </div>
 
-                    <div className="border border-slate-300 bg-[#f8fafc] p-5 rounded-xl w-full md:w-80 space-y-1 text-xs">
-                      <div className="font-bold text-slate-500 uppercase tracking-wider text-[10px]">
-                        {cotSeleccionada.tipo_receptor === 'prospecto' ? '✨ Oferta para Prospecto' : '👤 Cliente Registrado'}
+                    <div className="border-2 border-slate-900 bg-slate-50 p-5 rounded-xl w-full md:w-80 space-y-2 text-center shadow-xs">
+                      <div className="text-xs font-black text-blue-900 uppercase tracking-widest">PRESUPUESTO / COTIZACIÓN DTE</div>
+                      <h2 className="text-xl font-black text-slate-900 font-mono">{cotSeleccionada.codigo_cotizacion}</h2>
+                      <div className="text-xs text-slate-600 border-t border-slate-300 pt-2 grid grid-cols-2 text-left font-mono">
+                        <div><strong>FECHA:</strong> {cotSeleccionada.fecha}</div>
+                        <div><strong>VALIDEZ:</strong> {cotSeleccionada.validez_dias || 15} Días</div>
                       </div>
-                      <h2 className="text-sm font-black text-slate-900 uppercase">{cotSeleccionada.nombre_cliente}</h2>
-                      <p className="text-slate-600">{cotSeleccionada.direccion || 'Dirección del Cliente'}</p>
-                      {cotSeleccionada.rut_cliente && <p className="font-mono text-slate-700 font-bold">R.U.T.: {cotSeleccionada.rut_cliente}</p>}
                     </div>
                   </div>
                 )
               })()}
 
-              <div className="flex justify-between items-center">
-                <span className="text-xl font-extrabold text-[#000033] font-mono">Presupuesto {cotSeleccionada.codigo_cotizacion}</span>
-                <span className="text-xs font-semibold text-slate-500 font-mono">Moneda: {cotSeleccionada.moneda_cotizacion || 'CLP'}</span>
+              {/* DATOS DEL CLIENTE RECEPTOR */}
+              <div className="border border-slate-300 bg-[#f8fafc] p-5 rounded-xl grid grid-cols-2 gap-4 text-xs">
+                <div className="space-y-1">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">RECEPTOR DE LA PROPUESTA:</span>
+                  <strong className="text-slate-900 text-sm block uppercase">{cotSeleccionada.nombre_cliente}</strong>
+                  <p className="font-mono text-slate-700 font-bold">R.U.T.: {cotSeleccionada.rut_cliente}</p>
+                  <p className="text-slate-600">Giro: {cotSeleccionada.giro_cliente || 'Servicios Integrales / Particular'}</p>
+                </div>
+                <div className="space-y-1">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">ATENCIÓN A / ENTREGA:</span>
+                  <strong className="text-slate-900 text-sm block">{cotSeleccionada.contacto_persona || cotSeleccionada.nombre_cliente}</strong>
+                  <p className="text-slate-600">📍 Dirección: {cotSeleccionada.direccion || 'Dirección Principal'}</p>
+                  <p className="text-slate-600">✉️ Correo: {cotSeleccionada.email_cliente || 'contacto@cliente.cl'}</p>
+                </div>
               </div>
 
-              <div className="border border-slate-300 rounded-xl overflow-hidden">
-                <table className="w-full text-left border-collapse text-xs">
+              {/* TABLA DETALLE DE PRODUCTOS & SERVICIOS */}
+              <div className="border border-slate-300 rounded-xl overflow-hidden text-xs">
+                <table className="w-full text-left border-collapse">
                   <thead>
-                    <tr className="bg-[#e2e8f0] text-slate-800 font-bold border-b border-slate-300">
-                      <th className="p-3.5 border-r border-slate-300">Descripción</th>
+                    <tr className="bg-slate-100 text-slate-800 font-bold border-b border-slate-300 uppercase text-[11px]">
+                      <th className="p-3.5 border-r border-slate-300 text-center w-10">#</th>
+                      <th className="p-3.5 border-r border-slate-300">Descripción del Producto / Servicio Técnico</th>
                       <th className="p-3.5 border-r border-slate-300 text-center w-16">Cant.</th>
-                      <th className="p-3.5 text-right w-28">Subtotal</th>
+                      <th className="p-3.5 border-r border-slate-300 text-right w-28">P. Unit Neto</th>
+                      <th className="p-3.5 text-right w-32">Subtotal Neto</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200">
                     {cotSeleccionada.items.map((it, idx) => (
                       <tr key={idx}>
+                        <td className="p-3.5 text-center font-mono text-slate-400 border-r border-slate-200">{idx + 1}</td>
                         <td className="p-3.5 font-semibold text-slate-900 border-r border-slate-200">{it.descripcion}</td>
                         <td className="p-3.5 text-center font-mono font-bold border-r border-slate-200">{it.cantidad}</td>
+                        <td className="p-3.5 text-right font-mono border-r border-slate-200">${(it.precio_neto_unitario || 0).toLocaleString('es-CL')}</td>
                         <td className="p-3.5 text-right font-mono font-bold text-slate-900">${Math.round((it.cantidad || 1) * (it.precio_neto_unitario || 0)).toLocaleString('es-CL')}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
+
+              {/* RESUMEN FINANCIERO Y TRIBUTARIO CHILENO */}
+              <div className="flex justify-between items-start gap-6 pt-2">
+                
+                {/* CONDICIONES BANCARIAS Y TÉRMINOS */}
+                <div className="text-xs space-y-2 text-slate-600 max-w-md bg-slate-50 border border-slate-200 p-4 rounded-xl">
+                  {(() => {
+                    const empEmisoraDoc = empresasConglomerado.find(e => e.id === cotSeleccionada.empresa_facturadora_id) || empresasConglomerado[0]
+                    return (
+                      <>
+                        <h4 className="font-bold text-slate-900 uppercase text-[11px]">💳 DATOS PARA TRANSFERENCIA ELECTRONICA:</h4>
+                        <p className="text-[11px]">Empresa: <strong>{empEmisoraDoc.razon_social}</strong> (RUT: <strong className="font-mono">{empEmisoraDoc.rut}</strong>)</p>
+                        <p className="text-[11px]">Banco: <strong>{empEmisoraDoc.banco_nombre}</strong> — {empEmisoraDoc.banco_tipo_cuenta}</p>
+                        <p className="text-[11px]">N° Cuenta: <strong className="font-mono">{empresaEmisoraSeleccionadaCot.banco_numero_cuenta}</strong></p>
+                        <p className="text-[11px]">Email Confirmación: <strong>{empEmisoraDoc.email_cobranza}</strong></p>
+                        <div className="border-t border-slate-200 pt-2 text-[10px] text-slate-500 space-y-0.5">
+                          <p>• Precios expresados en Pesos Chilenos (CLP) con IVA 19% incluido.</p>
+                          <p>• Validez de la oferta: {cotSeleccionada.validez_dias || 15} días hábiles a contar de esta fecha.</p>
+                          <p>• Garantía legal de equipos: 12 meses contra defectos de fabricación.</p>
+                        </div>
+                      </>
+                    )
+                  })()}
+                </div>
+
+                {/* CAJA DE TOTALES IMPUESTOS CHILE */}
+                <div className="w-80 border-2 border-slate-900 rounded-xl overflow-hidden font-mono text-xs shadow-md">
+                  <div className="flex justify-between p-3 bg-white border-b border-slate-200">
+                    <span className="font-semibold text-slate-600">Subtotal Neto Afecto:</span>
+                    <span className="font-bold">${Math.round(cotSeleccionada.neto_con_descuento || 0).toLocaleString('es-CL')} {cotSeleccionada.moneda_cotizacion || 'CLP'}</span>
+                  </div>
+                  <div className="flex justify-between p-3 bg-[#f8fafc] border-b border-slate-200 text-blue-900">
+                    <span className="font-bold">IVA (19% Ley 825):</span>
+                    <span className="font-bold">${Math.round(cotSeleccionada.monto_iva || 0).toLocaleString('es-CL')} {cotSeleccionada.moneda_cotizacion || 'CLP'}</span>
+                  </div>
+                  <div className="flex justify-between p-4 bg-[#000033] text-white font-black text-sm">
+                    <span>TOTAL GENERAL:</span>
+                    <span>${Math.round(cotSeleccionada.monto_total_iva_incluido || 0).toLocaleString('es-CL')} {cotSeleccionada.moneda_cotizacion || 'CLP'}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* TIMBRE Y ACEPTACIÓN DEL CLIENTE */}
+              <div className="border-t-2 border-slate-200 pt-8 mt-6 grid grid-cols-2 gap-8 items-end">
+                <div className="text-center space-y-2">
+                  <div className="border-b border-slate-400 w-48 mx-auto"></div>
+                  <p className="font-bold text-xs text-slate-800">{cotSeleccionada.vendedor || 'Ejecutivo Comercial Gama Seguridad'}</p>
+                  <p className="text-[10px] text-slate-500">Emisor Autorizado Conglomerado Gama</p>
+                </div>
+
+                <div className="text-center space-y-2">
+                  <div className="border-b border-slate-400 w-48 mx-auto"></div>
+                  <p className="font-bold text-xs text-slate-800">Aceptado por: {cotSeleccionada.contacto_persona || cotSeleccionada.nombre_cliente}</p>
+                  <p className="text-[10px] text-slate-500">Firma / Timbre de Aceptación del Cliente</p>
+                </div>
+              </div>
+
             </div>
 
-            <div className="border-t border-slate-200 pt-4 flex justify-between items-center">
-              <span className="text-xs text-slate-500 font-mono">Documento Oficial Gama Seguridad</span>
-              <div className="flex gap-3">
-                <button onClick={() => setCotSeleccionada(null)} className="px-5 py-2 bg-slate-200 text-slate-800 font-bold text-xs rounded-xl">Cerrar</button>
-                <button onClick={() => window.print()} className="px-6 py-2 bg-blue-900 text-white font-bold text-xs rounded-xl shadow-xs">🖨️ Imprimir / PDF</button>
-              </div>
+            <div className="border-t border-slate-200 pt-4 flex justify-between items-center text-xs text-slate-500 font-mono no-imprimir">
+              <span>Documento Oficial Gama Seguridad • Cumple Formato DTE Chile</span>
+              <span>Página 1 de 1</span>
             </div>
           </div>
         </div>
