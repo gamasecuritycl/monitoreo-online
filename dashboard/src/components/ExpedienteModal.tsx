@@ -422,7 +422,7 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
       <div
         ref={modalRef}
         tabIndex={-1}
-        className="w-full md:w-[950px] h-[92vh] md:h-[510px] bg-[#d4d0c8] text-black border-2 border-t-white border-l-white border-b-[#808080] border-r-[#808080] p-1 shadow-[4px_4px_12px_rgba(0,0,0,0.6)] focus:outline-none flex flex-col justify-between select-none"
+        className="w-full md:w-[980px] h-[95vh] md:h-[610px] bg-[#d4d0c8] text-black border-2 border-t-white border-l-white border-b-[#808080] border-r-[#808080] p-1 shadow-[4px_4px_12px_rgba(0,0,0,0.6)] focus:outline-none flex flex-col justify-between select-none"
         style={{ fontSize: '11px' }}
       >
         {/* Barra de Título */}
@@ -443,15 +443,15 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
         <div className="flex-1 p-1 flex flex-col gap-2 overflow-y-auto md:overflow-hidden">
           
           {/* FILA 1: INFORMACIÓN BÁSICA + FOTOGRAFÍA */}
-          <div className="h-auto md:h-[140px] flex flex-col md:flex-row gap-2 shrink-0">
+          <div className="h-auto md:h-[195px] flex flex-col md:flex-row gap-2 shrink-0">
             
             {/* Caja Información Básica */}
-            <div className="flex-1 border-2 border-t-[#808080] border-l-[#808080] border-b-white border-r-white p-2 relative pt-3 flex flex-col justify-between gap-1.5 md:gap-0">
+            <div className="flex-1 border-2 border-t-[#808080] border-l-[#808080] border-b-white border-r-white p-2.5 relative pt-4 flex flex-col justify-between gap-1.5">
               <div className="absolute -top-2 left-3 bg-[#d4d0c8] px-1 font-bold text-[9px] uppercase tracking-wider text-gray-700">
                 INFORMACION BASICA:
               </div>
 
-              {/* Cuenta, RUT y Nombre */}
+              {/* LÍNEA 1: Cuenta, RUT y Nombre */}
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                 <div className="flex items-center gap-1">
                   <span className="font-bold w-[45px] sm:w-auto">Cuenta:</span>
@@ -459,7 +459,7 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
                     type="text" 
                     readOnly 
                     value={cliente.cuenta || ''} 
-                    className="w-full sm:w-[65px] bg-[#ffffd0] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white font-bold px-1 py-0.5 text-blue-900 focus:outline-none text-[11px]" 
+                    className="w-full sm:w-[60px] bg-[#ffffd0] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white font-bold px-1 py-0.5 text-blue-900 focus:outline-none text-[11px]" 
                   />
                 </div>
 
@@ -472,15 +472,28 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
                     value={inputRut} 
                     onChange={(e) => setInputRut(cleanRut(e.target.value))}
                     placeholder="12123123-6"
-                    className={`w-full sm:w-[95px] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white font-bold px-1 py-0.5 text-[11px] ${
+                    className={`w-full sm:w-[90px] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white font-bold px-1 py-0.5 text-[11px] ${
                       usuarioRol === 'Administrador' ? 'bg-white text-black focus:ring-1 focus:ring-blue-600' : 'bg-[#ffffd0] text-blue-900'
                     }`}
                   />
                 </div>
 
-                {/* Alias / Nombre de la Unidad */}
+                {/* Nombre del Titular */}
                 <div className="flex-1 flex items-center gap-1">
-                  <span className="font-bold text-blue-900 w-[45px] sm:w-auto">Unidad/Alias:</span>
+                  <span className="font-bold w-[45px] sm:w-auto">Nombre:</span>
+                  <input 
+                    type="text" 
+                    readOnly 
+                    value={cliente.nombre || ''} 
+                    className="w-full bg-[#ffffd0] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white font-bold px-1.5 py-0.5 text-blue-900 focus:outline-none text-[11px] truncate" 
+                  />
+                </div>
+              </div>
+
+              {/* LÍNEA 2: Alias / Unidad de Monitoreo + Botones Admin */}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                <div className="flex-1 flex items-center gap-1">
+                  <span className="font-bold text-blue-900 w-[70px] sm:w-auto">Unidad/Alias:</span>
                   <input 
                     type="text" 
                     readOnly={usuarioRol !== 'Administrador'}
@@ -495,20 +508,20 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
 
                 {/* Botón de Guardar RUT / Excel (SOLO ADMINISTRADOR) */}
                 {usuarioRol === 'Administrador' && (
-                  <div className="flex items-center gap-1 shrink-0">
+                  <div className="flex items-center gap-1.5 shrink-0">
                     <button
                       onClick={guardarRutYAlias}
-                      className="px-2 py-0.5 bg-[#000080] text-white font-bold rounded text-[10px] hover:bg-blue-900 shadow active:translate-y-0.5 cursor-pointer"
+                      className="px-2.5 py-0.5 bg-[#000080] text-white font-bold rounded-sm text-[10px] hover:bg-blue-900 shadow active:translate-y-0.5 cursor-pointer"
                       title="Guardar RUT y Alias de Unidad para esta cuenta"
                     >
                       💾 Guardar
                     </button>
                     <button
                       onClick={() => setMostrarModalExcel(true)}
-                      className="px-2 py-0.5 bg-[#008080] text-white font-bold rounded text-[10px] hover:bg-teal-900 shadow active:translate-y-0.5 cursor-pointer"
+                      className="px-2.5 py-0.5 bg-[#008080] text-white font-bold rounded-sm text-[10px] hover:bg-teal-900 shadow active:translate-y-0.5 cursor-pointer"
                       title="Importar Excel Maestro de RUTs y Unidades"
                     >
-                      📊 Cargar Excel
+                      📊 Cargar Excel Maestro
                     </button>
                   </div>
                 )}
@@ -516,14 +529,14 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
 
               {/* Banner de Otras Unidades con el mismo RUT */}
               {otrasUnidadesRut.length > 0 && (
-                <div className="bg-[#e6f2ff] border border-blue-400 p-1 flex items-center gap-1 text-[10px] text-blue-900">
-                  <span className="font-bold">🏢 Unidades del mismo RUT ({cleanRut(cliente.rut)}):</span>
-                  <div className="flex flex-wrap gap-1">
+                <div className="bg-[#e6f2ff] border border-blue-400 px-1.5 py-0.5 flex items-center gap-1.5 text-[10px] text-blue-900 shrink-0">
+                  <span className="font-bold shrink-0">🏢 Unidades del mismo RUT ({cleanRut(cliente.rut)}):</span>
+                  <div className="flex flex-wrap gap-1 overflow-x-auto">
                     {otrasUnidadesRut.map(u => (
                       <button
                         key={u.cuenta}
                         onClick={() => setCuentaActiva((u.cuenta || '').toUpperCase().trim())}
-                        className="bg-blue-700 text-white font-bold px-1.5 py-0.2 rounded text-[9px] hover:bg-blue-900 cursor-pointer shadow-xs"
+                        className="bg-blue-700 text-white font-bold px-1.5 py-0.2 rounded-xs text-[9px] hover:bg-blue-900 cursor-pointer shadow-xs whitespace-nowrap"
                       >
                         {u.cuenta} - {u.alias_unidad || u.nombre || 'Unidad'}
                       </button>
