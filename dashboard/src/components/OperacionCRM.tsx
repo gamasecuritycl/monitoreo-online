@@ -27,7 +27,7 @@ export interface ClienteCRM {
 }
 
 export interface FacturaIndividual {
-  id: string // "NUM_FACTURA-RAZON_SOCIAL"
+  id: string
   numero_factura: string
   fecha: string
   razon_social: string
@@ -48,7 +48,7 @@ export interface ItemCotizacion {
 
 export interface CotizacionDolibarr {
   id: number
-  codigo_cotizacion: string // Ej: COT-2026-001
+  codigo_cotizacion: string
   cuenta: string
   nombre_cliente: string
   rut_cliente: string
@@ -68,10 +68,10 @@ export interface CotizacionDolibarr {
 export default function OperacionCRM() {
   const [moduloActivo, setModuloActivo] = useState<'ficha360' | 'presupuestos' | 'facturacion' | 'serv_tecnico' | 'kpis' | 'config'>('ficha360')
   
-  // Sidebar colapsable / Menú hamburguesa
+  // Sidebar colapsable
   const [sidebarAbierto, setSidebarAbierto] = useState<boolean>(true)
 
-  // Clientes - Estado inicial 0 (sin seleccionar por defecto)
+  // Clientes
   const [clientesMap, setClientesMap] = useState<Record<string, ClienteCRM>>({})
   const [cuentaSeleccionada, setCuentaSeleccionada] = useState<string>('')
   const [busquedaClienteInput, setBusquedaClienteInput] = useState<string>('')
@@ -84,21 +84,21 @@ export default function OperacionCRM() {
   const [editPlan, setEditPlan] = useState('MONITOREO ESTÁNDAR 24/7')
   const [editEstadoPago, setEditEstadoPago] = useState<'Al Día' | 'Pendiente' | 'Moroso'>('Al Día')
 
-  // Órdenes de Trabajo desde Command Center ('ORDENES_TRABAJO')
+  // Órdenes de Trabajo desde Command Center
   const [ordenesTrabajo, setOrdenesTrabajo] = useState<any[]>([])
 
-  // Facturas cargadas masivamente con deduplicación
+  // Facturas masivas
   const [facturas, setFacturas] = useState<FacturaIndividual[]>([])
   const [mostrarModalCargaFacturas, setMostrarModalCargaFacturas] = useState(false)
   const [facturasTextoRaw, setFacturasTextoRaw] = useState('')
   const [busquedaFacturaInput, setBusquedaFacturaInput] = useState('')
 
-  // Presupuestos & Cotizaciones (Estilo Dolibarr)
+  // Presupuestos & Cotizaciones
   const [cotizaciones, setCotizaciones] = useState<CotizacionDolibarr[]>([])
   const [mostrarModalCotizacion, setMostrarModalCotizacion] = useState(false)
   const [cotSeleccionada, setCotSeleccionada] = useState<CotizacionDolibarr | null>(null)
   
-  // Formulario nueva cotización
+  // Formulario cotización
   const [cotCuenta, setCotCuenta] = useState('')
   const [cotNombre, setCotNombre] = useState('')
   const [cotRut, setCotRut] = useState('')
@@ -112,11 +112,10 @@ export default function OperacionCRM() {
   // Notificaciones
   const [enviandoNotif, setEnviandoNotif] = useState(false)
 
-  // Cargar datos desde Supabase al iniciar
+  // Cargar datos al iniciar
   useEffect(() => {
     const fetchDatos = async () => {
       try {
-        // 1. Clientes desde 'CLIENTES'
         const { data: dClientes } = await supabase
           .from('eventos_monitoreo')
           .select('nombre_abonado')
@@ -152,7 +151,6 @@ export default function OperacionCRM() {
         })
         setClientesMap(mapFinal)
 
-        // 2. OTs desde Command Center 'ORDENES_TRABAJO'
         const { data: dOT } = await supabase
           .from('eventos_monitoreo')
           .select('nombre_abonado')
@@ -163,7 +161,6 @@ export default function OperacionCRM() {
           try { setOrdenesTrabajo(JSON.parse(dOT[0].nombre_abonado)) } catch (e) {}
         }
 
-        // 3. Facturas masivas desde 'FACTURAS_MAESTRO'
         const { data: dFact } = await supabase
           .from('eventos_monitoreo')
           .select('nombre_abonado')
@@ -174,7 +171,6 @@ export default function OperacionCRM() {
           try { setFacturas(JSON.parse(dFact[0].nombre_abonado)) } catch (e) {}
         }
 
-        // 4. Cotizaciones desde 'COTIZACIONES_DOLIBARR'
         const { data: dCot } = await supabase
           .from('eventos_monitoreo')
           .select('nombre_abonado')
@@ -191,7 +187,6 @@ export default function OperacionCRM() {
     fetchDatos()
   }, [])
 
-  // Auto-completar datos al cambiar cuenta en cotización
   useEffect(() => {
     if (cotCuenta && clientesMap[cotCuenta]) {
       const c = clientesMap[cotCuenta]
@@ -201,10 +196,8 @@ export default function OperacionCRM() {
     }
   }, [cotCuenta, clientesMap])
 
-  // Cliente seleccionado en Ficha 360° (o null si está en 0)
   const clienteActivo = cuentaSeleccionada && clientesMap[cuentaSeleccionada] ? clientesMap[cuentaSeleccionada] : null
 
-  // Abrir modal de edición de tarifa
   const abrirModalEditarTarifa = (cliente: ClienteCRM) => {
     setEditMoneda(cliente.moneda)
     setEditTarifa(cliente.tarifa_mensual.toString())
@@ -214,7 +207,6 @@ export default function OperacionCRM() {
     setMostrarModalTarifa(true)
   }
 
-  // Guardar Tarifa Editada
   const handleGuardarTarifaCliente = async () => {
     if (!clienteActivo) return
     const clienteActualizado: ClienteCRM = {
@@ -237,19 +229,17 @@ export default function OperacionCRM() {
         fecha_hora: new Date().toISOString()
       })
       setMostrarModalTarifa(false)
-      alert(`✅ Tarifa de la cuenta ${clienteActivo.cuenta} (${clienteActivo.nombre}) actualizada a ${editMoneda} ${editTarifa}.`)
+      alert(`✅ Tarifa de la cuenta ${clienteActivo.cuenta} (${clienteActivo.nombre}) actualizada.`)
     } catch (e: any) {
       alert('Error al guardar tarifa: ' + e.message)
     }
   }
 
-  // OTs del Command Center para la cuenta activa
   const otsClienteActivo = useMemo(() => {
     if (!cuentaSeleccionada) return []
     return ordenesTrabajo.filter((o: any) => (o.cuenta || '').toUpperCase().trim() === cuentaSeleccionada)
   }, [ordenesTrabajo, cuentaSeleccionada])
 
-  // Facturas cargadas para la cuenta activa / Razón social
   const facturasClienteActivo = useMemo(() => {
     if (!clienteActivo) return []
     const rutClean = cleanRut(clienteActivo.rut)
@@ -260,7 +250,6 @@ export default function OperacionCRM() {
     })
   }, [facturas, clienteActivo])
 
-  // Carga masiva de facturas con Deduplicación Única
   const procesarCargaMasivaFacturas = async () => {
     if (!facturasTextoRaw.trim()) {
       alert('Por favor pegue el texto del Excel o CSV con las facturas.')
@@ -278,8 +267,6 @@ export default function OperacionCRM() {
       for (const linea of lineas) {
         const cols = linea.split(/\t|;|\|/).map(c => c.trim().replace(/^["']|["']$/g, ''))
         if (cols.length < 3) continue
-
-        // Omitir cabecera
         if (cols[0].toLowerCase().includes('fecha') || cols[1].toLowerCase().includes('factura') || cols[1].toLowerCase().includes('número')) continue
 
         const fechaStr = cols[0] || new Date().toISOString().slice(0, 10)
@@ -289,7 +276,6 @@ export default function OperacionCRM() {
 
         if (!numFactura || !razonSocial) continue
 
-        // Clave única anti-duplicados
         const idFactura = `${numFactura}-${razonSocial}`
 
         if (facturasExistentes.has(idFactura)) {
@@ -320,7 +306,7 @@ export default function OperacionCRM() {
       }
 
       if (agregadas === 0 && duplicadasOmitidas > 0) {
-        alert(`ℹ️ No se agregaron facturas nuevas. Todas las ${duplicadasOmitidas} facturas del archivo ya existían en la base de datos (omitidas sin duplicar).`)
+        alert(`ℹ️ No se agregaron facturas nuevas. Todas las ${duplicadasOmitidas} facturas del archivo ya existían (omitidas sin duplicar).`)
         return
       }
 
@@ -336,13 +322,12 @@ export default function OperacionCRM() {
       setFacturas(listaActualizada)
       setMostrarModalCargaFacturas(false)
       setFacturasTextoRaw('')
-      alert(`🎉 ¡Éxito! Se cargaron ${agregadas} facturas nuevas. Se omitieron ${duplicadasOmitidas} facturas duplicadas.`)
+      alert(`🎉 ¡Éxito! Se cargaron ${agregadas} facturas nuevas. Omitidas ${duplicadasOmitidas} duplicadas.`)
     } catch (err: any) {
       alert('Error al cargar facturas: ' + err.message)
     }
   }
 
-  // Cambiar estado de pago de una factura individual
   const cambiarEstadoFactura = async (idFactura: string, nuevoEstado: FacturaIndividual['estado']) => {
     const actualizadas = facturas.map(f => f.id === idFactura ? { ...f, estado: nuevoEstado } : f)
     try {
@@ -356,7 +341,6 @@ export default function OperacionCRM() {
     } catch (e) {}
   }
 
-  // Cálculo de Cotización Dolibarr (Neto, Descuento, IVA, Total)
   const calculoCotizacionActual = useMemo(() => {
     let subtotalNeto = 0
     let totalDescuentos = 0
@@ -381,7 +365,6 @@ export default function OperacionCRM() {
     }
   }, [itemsCot])
 
-  // Guardar nueva cotización estilo Dolibarr
   const handleGuardarCotizacion = async () => {
     if (!cotNombre.trim()) {
       alert('Por favor ingrese la razón social o nombre del cliente.')
@@ -422,13 +405,12 @@ export default function OperacionCRM() {
       setCotizaciones(listaNueva)
       setMostrarModalCotizacion(false)
       setItemsCot([{ id: '1', descripcion: 'Servicio Monitoreo Alarma 24/7', cantidad: 1, precio_neto_unitario: 25000, descuento_porcentaje: 0 }])
-      alert(`🎉 Cotización ${codigoCot} creada exitosamente con IVA incluido.`)
+      alert(`🎉 Cotización ${codigoCot} creada exitosamente.`)
     } catch (e: any) {
       alert('Error guardando cotización: ' + e.message)
     }
   }
 
-  // Enviar Email de Cobranza mediante Resend (@gamasecurity.cl)
   const enviarEmailCobroResend = async (destinatario: string, clienteNombre: string, detalleStr: string) => {
     setEnviandoNotif(true)
     try {
@@ -445,7 +427,7 @@ export default function OperacionCRM() {
       })
 
       if (res.ok) {
-        alert(`📧 Notificación de Cobranza enviada exitosamente por Resend (@gamasecurity.cl) a ${destinatario || 'contacto@gamasecurity.cl'}.`)
+        alert(`📧 Notificación enviada por Resend (@gamasecurity.cl) a ${destinatario || 'contacto@gamasecurity.cl'}.`)
       } else {
         alert(`📧 Notificación enviada a ${destinatario || 'contacto@gamasecurity.cl'}.`)
       }
@@ -456,7 +438,6 @@ export default function OperacionCRM() {
     }
   }
 
-  // Enviar aviso de cobro por WhatsApp
   const enviarWhatsAppCobro = async (telefono: string, clienteNombre: string, detalleStr: string) => {
     if (!telefono) {
       alert('No hay teléfono de contacto disponible.')
@@ -475,7 +456,7 @@ export default function OperacionCRM() {
         body: JSON.stringify({ numero: numClean, mensaje: msg })
       })
 
-      alert(`📲 Aviso de cobro por WhatsApp enviado exitosamente a ${numClean}.`)
+      alert(`📲 Aviso de cobro enviado por WhatsApp a ${numClean}.`)
     } catch (e: any) {
       alert('Error enviando WhatsApp: ' + e.message)
     } finally {
@@ -483,7 +464,6 @@ export default function OperacionCRM() {
     }
   }
 
-  // Lista de clientes filtrados por búsqueda
   const listaAbonadosFiltrada = useMemo(() => {
     const q = busquedaClienteInput.toLowerCase().trim()
     if (!q) return []
@@ -495,7 +475,6 @@ export default function OperacionCRM() {
     )
   }, [clientesMap, busquedaClienteInput])
 
-  // Facturas filtradas por búsqueda
   const facturasFiltradas = useMemo(() => {
     const q = busquedaFacturaInput.toLowerCase().trim()
     if (!q) return facturas
@@ -507,62 +486,60 @@ export default function OperacionCRM() {
   }, [facturas, busquedaFacturaInput])
 
   return (
-    <div className="min-h-screen bg-slate-100 text-slate-800 font-sans flex flex-col select-none">
+    <div className="min-h-screen bg-[#f1f5f9] text-[#0f172a] font-sans flex flex-col select-none p-4 md:p-6 gap-6">
       
-      {/* ── HEADER EJECUTIVO TEMA BLANCO PROFESIONAL CON BOTÓN HAMBURGUESA ── */}
-      <header className="bg-white border-b border-slate-200 px-6 py-3.5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shrink-0 shadow-xs">
-        <div className="flex items-center gap-3">
-          {/* Botón Menú Hamburguesa */}
+      {/* ── HEADER NEUMORFE CON ESTILO GITHUB SOFT ── */}
+      <header className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-[6px_6px_14px_rgba(203,213,225,0.7),-6px_-6px_14px_rgba(255,255,255,0.9)] flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shrink-0">
+        <div className="flex items-center gap-4">
           <button
             onClick={() => setSidebarAbierto(!sidebarAbierto)}
-            className="bg-slate-100 hover:bg-slate-200 text-slate-800 px-3 py-2 rounded-lg border border-slate-300 font-bold flex items-center justify-center transition-all cursor-pointer shadow-2xs"
-            title={sidebarAbierto ? "Ocultar Menú Lateral" : "Mostrar Menú Lateral"}
+            className="bg-[#f8fafc] hover:bg-slate-100 text-slate-700 px-3.5 py-2.5 rounded-xl border border-slate-200 font-bold shadow-[3px_3px_8px_rgba(203,213,225,0.6),-3px_-3px_8px_rgba(255,255,255,0.9)] active:shadow-[inset_2px_2px_4px_rgba(203,213,225,0.6)] transition-all cursor-pointer"
+            title={sidebarAbierto ? "Ocultar Menú" : "Mostrar Menú"}
           >
             <span className="text-lg">☰</span>
           </button>
 
-          <div className="bg-blue-900 text-white font-bold p-2.5 rounded-lg text-xl shadow-sm flex items-center justify-center">
+          <div className="bg-gradient-to-br from-blue-900 to-indigo-950 text-white font-bold p-3 rounded-2xl text-2xl shadow-[4px_4px_10px_rgba(30,58,138,0.3)] flex items-center justify-center">
             🛡️
           </div>
           <div>
-            <h1 className="text-xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
+            <h1 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-3">
               GAMA SEGURIDAD 24/7
-              <span className="bg-blue-50 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded-md border border-blue-200">
-                CENTRO OPERATIVO & CRM
+              <span className="bg-blue-50 text-blue-900 text-xs font-bold px-3 py-1 rounded-full border border-blue-200/80 shadow-2xs">
+                CENTRO OPERATIVO & CRM 360°
               </span>
             </h1>
-            <p className="text-xs text-slate-500 font-medium">
-              Plataforma de Gestión Comercial, Presupuestos, Facturación y Cruce Técnico 360°
+            <p className="text-xs text-slate-500 font-medium mt-0.5">
+              Gestión Empresarial Neumórfica • GitHub UI/UX Clean Architecture
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-3 text-xs font-medium">
-          <div className="bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-md text-slate-700 font-mono">
-            UF HOY: <strong className="text-emerald-700">${VALOR_UF_CLP.toLocaleString('es-CL')} CLP</strong>
+        <div className="flex items-center gap-4 text-xs font-semibold">
+          <div className="bg-[#f8fafc] border border-slate-200/90 px-4 py-2 rounded-xl text-slate-700 font-mono shadow-[inset_2px_2px_4px_rgba(203,213,225,0.4)]">
+            UF HOY: <strong className="text-emerald-700 font-bold">${VALOR_UF_CLP.toLocaleString('es-CL')} CLP</strong>
           </div>
 
           <a
             href="/app"
-            className="bg-slate-900 hover:bg-slate-800 text-white font-bold px-3.5 py-2 rounded-md transition-all shadow-xs flex items-center gap-1.5 cursor-pointer text-xs"
+            className="bg-slate-900 hover:bg-slate-800 text-white font-bold px-4 py-2.5 rounded-xl shadow-[4px_4px_10px_rgba(15,23,42,0.25)] transition-all cursor-pointer text-xs flex items-center gap-2"
           >
-            <span>🖥️ VOLVER AL COMMAND CENTER</span>
+            <span>🖥️ COMMAND CENTER</span>
           </a>
         </div>
       </header>
 
-      {/* ── CONTENEDOR PRINCIPAL: SIDEBAR COLAPSABLE + PANEL DERECHO ── */}
-      <div className="flex-1 flex overflow-hidden min-h-0">
+      {/* ── CONTENEDOR PRINCIPAL ── */}
+      <div className="flex-1 flex gap-6 overflow-hidden min-h-0">
         
-        {/* ── SIDEBAR ADMINISTRATIVO MODULAR COLAPSABLE ── */}
+        {/* ── SIDEBAR NEUMÓRFICO ── */}
         {sidebarAbierto && (
-          <aside className="w-64 bg-white border-r border-slate-200 p-4 flex flex-col gap-1 shrink-0 shadow-xs transition-all">
+          <aside className="w-72 bg-white border border-slate-200/80 p-5 rounded-2xl flex flex-col gap-2 shrink-0 shadow-[6px_6px_14px_rgba(203,213,225,0.7),-6px_-6px_14px_rgba(255,255,255,0.9)] transition-all">
             <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider px-3 mb-2 flex justify-between items-center">
-              <span>Módulos Administrativos</span>
+              <span>MÓDULOS DE GESTIÓN</span>
               <button
                 onClick={() => setSidebarAbierto(false)}
-                className="text-slate-400 hover:text-slate-600 font-bold"
-                title="Ocultar Menú"
+                className="text-slate-400 hover:text-slate-600 font-bold text-sm"
               >
                 ✕
               </button>
@@ -579,37 +556,36 @@ export default function OperacionCRM() {
               <button
                 key={m.id}
                 onClick={() => setModuloActivo(m.id as any)}
-                className={`w-full text-left px-3.5 py-2.5 rounded-lg font-semibold text-xs transition-all flex items-center gap-2.5 cursor-pointer ${
+                className={`w-full text-left px-4 py-3 rounded-xl font-bold text-xs transition-all flex items-center gap-3 cursor-pointer ${
                   moduloActivo === m.id
-                    ? 'bg-blue-50 text-blue-900 font-bold border-l-4 border-blue-800 shadow-2xs'
+                    ? 'bg-blue-600 text-white shadow-[4px_4px_10px_rgba(37,99,235,0.35)]'
                     : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                 }`}
               >
-                <span className="text-base">{m.icon}</span>
+                <span className="text-lg">{m.icon}</span>
                 <span>{m.label}</span>
               </button>
             ))}
 
-            {/* Banner inferior de resumen en Sidebar */}
-            <div className="mt-auto bg-slate-50 border border-slate-200 p-3 rounded-lg text-xs space-y-1 text-slate-600">
-              <div className="font-bold text-slate-800 text-[11px] uppercase">Gama Servicios Ltda.</div>
-              <div>Facturas cargadas: <strong className="text-slate-900 font-mono">{facturas.length}</strong></div>
-              <div>Cotizaciones: <strong className="text-slate-900 font-mono">{cotizaciones.length}</strong></div>
+            <div className="mt-auto bg-[#f8fafc] border border-slate-200 p-4 rounded-xl text-xs space-y-1.5 text-slate-600 shadow-[inset_2px_2px_4px_rgba(203,213,225,0.4)]">
+              <div className="font-bold text-slate-900 text-[11px] uppercase tracking-wide">Gama Servicios Ltda.</div>
+              <div>Facturas Registradas: <strong className="text-slate-900 font-mono font-bold">{facturas.length}</strong></div>
+              <div>Cotizaciones Emitidas: <strong className="text-slate-900 font-mono font-bold">{cotizaciones.length}</strong></div>
             </div>
           </aside>
         )}
 
-        {/* ── PANEL DERECHO PRINCIPAL (Fondo Blanco / Slate Claro) ── */}
-        <main className="flex-1 p-6 bg-slate-50 overflow-y-auto min-h-0 flex flex-col gap-6">
+        {/* ── PANEL DERECHO NEUMÓRFICO ── */}
+        <main className="flex-1 overflow-y-auto min-h-0 flex flex-col gap-6">
 
-          {/* ── MÓDULO 1: FICHA 360° DEL CLIENTE (Buscador superior sin columna lateral) ── */}
+          {/* ── MÓDULO 1: FICHA 360° DE CLIENTES ── */}
           {moduloActivo === 'ficha360' && (
             <div className="flex-1 flex flex-col gap-6 min-h-0">
               
-              {/* Buscador Superior Directo */}
-              <div className="bg-white border border-slate-200 p-5 rounded-xl flex flex-col gap-3 shadow-xs">
+              {/* Buscador Neumórfico Inset */}
+              <div className="bg-white border border-slate-200/80 p-6 rounded-2xl shadow-[6px_6px_14px_rgba(203,213,225,0.7),-6px_-6px_14px_rgba(255,255,255,0.9)] flex flex-col gap-3">
                 <div className="font-bold text-xs text-slate-700 uppercase tracking-wider flex justify-between items-center">
-                  <span>🔍 Buscador de Expedientes CRM 360°</span>
+                  <span>🔍 BUSCADOR DE EXPEDIENTES CRM 360°</span>
                   {cuentaSeleccionada && (
                     <button
                       onClick={() => { setCuentaSeleccionada(''); setBusquedaClienteInput('') }}
@@ -626,25 +602,24 @@ export default function OperacionCRM() {
                     value={busquedaClienteInput}
                     onChange={(e) => setBusquedaClienteInput(e.target.value)}
                     placeholder="Escriba Nombre del Titular, RUT, Código de Cuenta (ej: C774), Dirección..."
-                    className="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-2.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 font-mono shadow-2xs"
+                    className="w-full bg-[#f8fafc] border border-slate-200 rounded-xl px-5 py-3 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 font-mono shadow-[inset_2px_2px_5px_rgba(203,213,225,0.5)]"
                   />
 
-                  {/* Resultados sugeridos del buscador */}
                   {busquedaClienteInput.trim().length > 0 && (
-                    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-300 rounded-xl shadow-xl z-20 max-h-64 overflow-y-auto divide-y divide-slate-100">
+                    <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-slate-200 rounded-2xl shadow-2xl z-20 max-h-72 overflow-y-auto divide-y divide-slate-100 p-2">
                       {listaAbonadosFiltrada.map(c => (
                         <div
                           key={c.cuenta}
                           onClick={() => { setCuentaSeleccionada(c.cuenta); setBusquedaClienteInput('') }}
-                          className="p-3 hover:bg-blue-50 cursor-pointer flex justify-between items-center transition-colors"
+                          className="p-3.5 hover:bg-blue-50 rounded-xl cursor-pointer flex justify-between items-center transition-colors"
                         >
                           <div>
                             <div className="font-bold text-xs text-slate-900">
-                              {c.nombre} <span className="font-mono text-blue-700 font-bold ml-1 font-bold">({c.cuenta})</span>
+                              {c.nombre} <span className="font-mono text-blue-700 font-bold ml-1">({c.cuenta})</span>
                             </div>
-                            <div className="text-[11px] text-slate-500">RUT: {c.rut || 'N/A'} • {c.direccion}</div>
+                            <div className="text-[11px] text-slate-500 font-medium">RUT: {c.rut || 'N/A'} • {c.direccion}</div>
                           </div>
-                          <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                          <span className={`px-3 py-1 rounded-full text-[10px] font-bold ${
                             c.estado_pago === 'Al Día' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'
                           }`}>
                             {c.estado_pago}
@@ -661,57 +636,56 @@ export default function OperacionCRM() {
                 </div>
               </div>
 
-              {/* Dossier 360° si hay cliente seleccionado */}
+              {/* Dossier 360° Si hay cliente seleccionado */}
               {clienteActivo ? (
-                <div className="bg-white border border-slate-200 rounded-xl p-6 flex flex-col gap-6 overflow-y-auto shadow-xs">
+                <div className="bg-white border border-slate-200/80 rounded-2xl p-7 flex flex-col gap-6 shadow-[6px_6px_14px_rgba(203,213,225,0.7),-6px_-6px_14px_rgba(255,255,255,0.9)] overflow-y-auto">
                   
-                  <div className="bg-slate-50 border border-slate-200 p-5 rounded-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                  <div className="bg-[#f8fafc] border border-slate-200/90 p-5 rounded-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shadow-[inset_2px_2px_4px_rgba(203,213,225,0.3)]">
                     <div>
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="bg-blue-900 text-white font-mono text-sm font-bold px-2.5 py-1 rounded">
+                        <span className="bg-blue-900 text-white font-mono text-xs font-bold px-3 py-1 rounded-lg">
                           {clienteActivo.cuenta}
                         </span>
-                        <span className="text-xs text-slate-500 font-mono font-semibold">RUT: {clienteActivo.rut || 'Sin RUT'}</span>
+                        <span className="text-xs text-slate-500 font-mono font-bold">RUT: {clienteActivo.rut || 'Sin RUT'}</span>
                       </div>
-                      <h2 className="text-xl font-bold text-slate-900">{clienteActivo.nombre}</h2>
+                      <h2 className="text-xl font-black text-slate-900">{clienteActivo.nombre}</h2>
                       <p className="text-xs text-slate-500 font-medium">{clienteActivo.direccion} • {clienteActivo.ciudad}</p>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-3">
                       <button
                         onClick={() => abrirModalEditarTarifa(clienteActivo)}
-                        className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-lg text-xs shadow-xs cursor-pointer"
+                        className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-xs shadow-xs cursor-pointer"
                       >
                         ✏️ Editar Tarifa
                       </button>
                       <button
                         disabled={enviandoNotif}
                         onClick={() => enviarEmailCobroResend(clienteActivo.email, clienteActivo.nombre, `Cuenta ${clienteActivo.cuenta}`)}
-                        className="px-3.5 py-2 bg-blue-900 hover:bg-blue-800 text-white font-bold rounded-lg text-xs shadow-xs cursor-pointer"
+                        className="px-4 py-2.5 bg-blue-900 hover:bg-blue-800 text-white font-bold rounded-xl text-xs shadow-xs cursor-pointer"
                       >
                         📧 Email Resend
                       </button>
                       <button
                         disabled={enviandoNotif}
                         onClick={() => enviarWhatsAppCobro(clienteActivo.telefono, clienteActivo.nombre, `Cuenta ${clienteActivo.cuenta}`)}
-                        className="px-3.5 py-2 bg-emerald-700 hover:bg-emerald-600 text-white font-bold rounded-lg text-xs shadow-xs cursor-pointer"
+                        className="px-4 py-2.5 bg-emerald-700 hover:bg-emerald-600 text-white font-bold rounded-xl text-xs shadow-xs cursor-pointer"
                       >
                         📲 Notificar WA
                       </button>
                     </div>
                   </div>
 
-                  {/* 3 Pilares del expediente */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                  {/* 3 Pilares con Neumorfismo */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     
-                    {/* PILAR 1: COMERCIAL */}
-                    <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl flex flex-col gap-3">
+                    <div className="bg-[#f8fafc] border border-slate-200/90 p-5 rounded-2xl flex flex-col gap-3 shadow-[3px_3px_8px_rgba(203,213,225,0.5)]">
                       <div className="font-bold text-xs text-slate-900 border-b border-slate-200 pb-2 flex justify-between uppercase tracking-wider">
-                        <span>💳 Comercial & Tarifa</span>
+                        <span>💳 COMERCIAL & TARIFA</span>
                         <span className="text-emerald-700 font-mono font-bold">{clienteActivo.moneda}</span>
                       </div>
 
-                      <div className="space-y-2 text-xs">
+                      <div className="space-y-2.5 text-xs font-medium">
                         <div className="flex justify-between">
                           <span className="text-slate-500">Plan Contratado:</span>
                           <span className="font-bold text-slate-900 truncate">{clienteActivo.plan}</span>
@@ -731,9 +705,9 @@ export default function OperacionCRM() {
                           <span className="font-bold text-slate-900">Día {clienteActivo.dia_vencimiento}</span>
                         </div>
 
-                        <div className="flex justify-between items-center pt-2 border-t border-slate-200">
+                        <div className="flex justify-between items-center pt-2.5 border-t border-slate-200">
                           <span className="text-slate-500">Estado de Pago:</span>
-                          <span className={`px-2 py-0.5 rounded font-bold text-[10px] ${
+                          <span className={`px-2.5 py-0.5 rounded-full font-bold text-[10px] ${
                             clienteActivo.estado_pago === 'Al Día' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'
                           }`}>
                             {clienteActivo.estado_pago.toUpperCase()}
@@ -742,16 +716,15 @@ export default function OperacionCRM() {
                       </div>
                     </div>
 
-                    {/* PILAR 2: FACTURAS CARGADAS DEL CLIENTE */}
-                    <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl flex flex-col gap-3">
+                    <div className="bg-[#f8fafc] border border-slate-200/90 p-5 rounded-2xl flex flex-col gap-3 shadow-[3px_3px_8px_rgba(203,213,225,0.5)]">
                       <div className="font-bold text-xs text-slate-900 border-b border-slate-200 pb-2 flex justify-between uppercase tracking-wider">
-                        <span>🧾 Facturas Cargadas</span>
-                        <span className="font-mono text-slate-500">({facturasClienteActivo.length})</span>
+                        <span>🧾 FACTURAS CARGADAS</span>
+                        <span className="font-mono text-slate-500 font-bold">({facturasClienteActivo.length})</span>
                       </div>
 
-                      <div className="space-y-2 flex-1 overflow-y-auto max-h-[180px]">
+                      <div className="space-y-2 flex-1 overflow-y-auto max-h-[190px]">
                         {facturasClienteActivo.map((f) => (
-                          <div key={f.id} className="p-2 bg-white rounded-lg border border-slate-200 text-xs space-y-1 shadow-2xs">
+                          <div key={f.id} className="p-2.5 bg-white rounded-xl border border-slate-200/80 text-xs space-y-1 shadow-2xs">
                             <div className="flex justify-between font-mono font-bold text-blue-900">
                               <span>Factura #{f.numero_factura}</span>
                               <span className="text-emerald-800">${f.monto_total.toLocaleString('es-CL')} CLP</span>
@@ -771,16 +744,15 @@ export default function OperacionCRM() {
                       </div>
                     </div>
 
-                    {/* PILAR 3: SERVICIO TÉCNICO EN TERRENO */}
-                    <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl flex flex-col gap-3">
+                    <div className="bg-[#f8fafc] border border-slate-200/90 p-5 rounded-2xl flex flex-col gap-3 shadow-[3px_3px_8px_rgba(203,213,225,0.5)]">
                       <div className="font-bold text-xs text-slate-900 border-b border-slate-200 pb-2 flex justify-between uppercase tracking-wider">
-                        <span>🛠️ Órdenes Técnicas (Command Center)</span>
-                        <span className="font-mono text-slate-500">({otsClienteActivo.length})</span>
+                        <span>🛠️ ÓRDENES TÉCNICAS</span>
+                        <span className="font-mono text-slate-500 font-bold">({otsClienteActivo.length})</span>
                       </div>
 
-                      <div className="space-y-2 flex-1 overflow-y-auto max-h-[180px]">
+                      <div className="space-y-2 flex-1 overflow-y-auto max-h-[190px]">
                         {otsClienteActivo.map((ot: any) => (
-                          <div key={ot.id} className="p-2 bg-white rounded-lg border border-slate-200 text-xs space-y-1 shadow-2xs">
+                          <div key={ot.id} className="p-2.5 bg-white rounded-xl border border-slate-200/80 text-xs space-y-1 shadow-2xs">
                             <div className="flex justify-between font-mono font-bold text-blue-900">
                               <span>{ot.codigo_ot || `OT-${ot.id}`}</span>
                               <span className="text-emerald-800 text-[10px]">{ot.estado}</span>
@@ -802,12 +774,11 @@ export default function OperacionCRM() {
 
                 </div>
               ) : (
-                /* Estado Inicial 0 vacio */
-                <div className="bg-white border border-slate-200 rounded-xl p-12 text-center shadow-xs flex flex-col items-center justify-center gap-3 py-16">
-                  <div className="text-5xl">🔍</div>
-                  <h3 className="text-lg font-bold text-slate-900">Expediente CRM 360° de Abonados</h3>
-                  <p className="text-xs text-slate-500 max-w-md">
-                    Utilice el buscador superior para ingresar el Nombre del Titular, Número de Abonado (ej: C774) o RUT del cliente que desea consultar.
+                <div className="bg-white border border-slate-200/80 rounded-2xl p-16 text-center shadow-[6px_6px_14px_rgba(203,213,225,0.7),-6px_-6px_14px_rgba(255,255,255,0.9)] flex flex-col items-center justify-center gap-4">
+                  <div className="text-6xl p-4 bg-[#f8fafc] rounded-3xl shadow-[inset_2px_2px_5px_rgba(203,213,225,0.5)]">🔍</div>
+                  <h3 className="text-xl font-black text-slate-900">Expediente CRM 360° del Cliente</h3>
+                  <p className="text-xs text-slate-500 max-w-md font-medium">
+                    Ingrese el Nombre del Titular, Número de Abonado (ej: C774) o RUT en el buscador superior para consultar su expediente unificado.
                   </p>
                 </div>
               )}
@@ -815,62 +786,61 @@ export default function OperacionCRM() {
             </div>
           )}
 
-          {/* ── MÓDULO 2: PRESUPUESTOS & COTIZACIONES (ESTILO DOLIBARR) ── */}
+          {/* ── MÓDULO 2: PRESUPUESTOS DOLIBARR ── */}
           {moduloActivo === 'presupuestos' && (
-            <div className="flex-1 bg-white border border-slate-200 rounded-xl p-6 flex flex-col gap-5 min-h-0 shadow-xs">
+            <div className="flex-1 bg-white border border-slate-200/80 rounded-2xl p-7 flex flex-col gap-6 shadow-[6px_6px_14px_rgba(203,213,225,0.7),-6px_-6px_14px_rgba(255,255,255,0.9)] min-h-0">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-200 pb-4">
                 <div>
-                  <h2 className="text-base font-bold text-slate-900 uppercase tracking-wide">
+                  <h2 className="text-base font-black text-slate-900 uppercase tracking-wide">
                     📋 Presupuestos Comercial & Cotizaciones (Estilo Dolibarr)
                   </h2>
-                  <p className="text-xs text-slate-500">
-                    Ingreso manual de productos/servicios con cálculo automático de Neto, Descuentos e IVA (19%)
+                  <p className="text-xs text-slate-500 font-medium">
+                    Ingreso manual de productos/servicios con cálculo de Neto, Descuentos e IVA (19%)
                   </p>
                 </div>
 
                 <button
                   onClick={() => setMostrarModalCotizacion(true)}
-                  className="px-4 py-2 bg-blue-900 hover:bg-blue-800 text-white font-bold rounded-lg text-xs shadow-xs cursor-pointer flex items-center gap-1.5"
+                  className="px-4 py-2.5 bg-blue-900 hover:bg-blue-800 text-white font-bold rounded-xl text-xs shadow-[3px_3px_8px_rgba(30,58,138,0.3)] cursor-pointer flex items-center gap-2"
                 >
                   <span>➕ Nueva Cotización Comercial</span>
                 </button>
               </div>
 
-              {/* Lista de Cotizaciones */}
-              <div className="flex-1 overflow-auto border border-slate-200 rounded-xl bg-white shadow-2xs">
-                <table className="w-full text-left border-collapse text-xs">
+              <div className="flex-1 overflow-auto border border-slate-200/80 rounded-2xl bg-white shadow-2xs">
+                <table className="w-full text-left border-collapse text-xs font-medium">
                   <thead>
-                    <tr className="bg-slate-100 text-slate-700 border-b border-slate-200 font-bold uppercase text-[11px]">
-                      <th className="p-3 border-r border-slate-200">CÓDIGO</th>
-                      <th className="p-3 border-r border-slate-200">FECHA</th>
-                      <th className="p-3 border-r border-slate-200">CLIENTE / RUT</th>
-                      <th className="p-3 border-r border-slate-200 text-right">NETO</th>
-                      <th className="p-3 border-r border-slate-200 text-right">IVA (19%)</th>
-                      <th className="p-3 border-r border-slate-200 text-right">TOTAL IVA INCL.</th>
-                      <th className="p-3 border-r border-slate-200 text-center">ESTADO</th>
-                      <th className="p-3 text-center w-28">ACCIONES</th>
+                    <tr className="bg-[#f8fafc] text-slate-700 border-b border-slate-200 font-bold uppercase text-[11px]">
+                      <th className="p-3.5 border-r border-slate-200">CÓDIGO</th>
+                      <th className="p-3.5 border-r border-slate-200">FECHA</th>
+                      <th className="p-3.5 border-r border-slate-200">CLIENTE / RUT</th>
+                      <th className="p-3.5 border-r border-slate-200 text-right">NETO</th>
+                      <th className="p-3.5 border-r border-slate-200 text-right">IVA (19%)</th>
+                      <th className="p-3.5 border-r border-slate-200 text-right">TOTAL IVA INCL.</th>
+                      <th className="p-3.5 border-r border-slate-200 text-center">ESTADO</th>
+                      <th className="p-3.5 text-center w-28">ACCIONES</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200">
                     {cotizaciones.map(c => (
-                      <tr key={c.id} className="hover:bg-slate-50">
-                        <td className="p-3 font-mono font-bold text-blue-900 border-r border-slate-200">{c.codigo_cotizacion}</td>
-                        <td className="p-3 font-mono text-slate-600 border-r border-slate-200">{c.fecha}</td>
-                        <td className="p-3 border-r border-slate-200">
+                      <tr key={c.id} className="hover:bg-slate-50/80">
+                        <td className="p-3.5 font-mono font-bold text-blue-900 border-r border-slate-200">{c.codigo_cotizacion}</td>
+                        <td className="p-3.5 font-mono text-slate-600 border-r border-slate-200">{c.fecha}</td>
+                        <td className="p-3.5 border-r border-slate-200">
                           <div className="font-bold text-slate-900">{c.nombre_cliente}</div>
                           <div className="text-[11px] text-slate-500 font-mono">RUT: {c.rut_cliente || 'N/A'}</div>
                         </td>
-                        <td className="p-3 text-right font-mono text-slate-700 border-r border-slate-200">
+                        <td className="p-3.5 text-right font-mono text-slate-700 border-r border-slate-200">
                           ${Math.round(c.neto_con_descuento || 0).toLocaleString('es-CL')} CLP
                         </td>
-                        <td className="p-3 text-right font-mono text-slate-500 border-r border-slate-200">
+                        <td className="p-3.5 text-right font-mono text-slate-500 border-r border-slate-200">
                           ${Math.round(c.monto_iva || 0).toLocaleString('es-CL')} CLP
                         </td>
-                        <td className="p-3 text-right font-mono font-bold text-emerald-800 border-r border-slate-200">
+                        <td className="p-3.5 text-right font-mono font-bold text-emerald-800 border-r border-slate-200">
                           ${Math.round(c.monto_total_iva_incluido || 0).toLocaleString('es-CL')} CLP
                         </td>
-                        <td className="p-3 text-center border-r border-slate-200 font-bold">
-                          <span className={`px-2.5 py-0.5 rounded-full text-[10px] ${
+                        <td className="p-3.5 text-center border-r border-slate-200 font-bold">
+                          <span className={`px-3 py-1 rounded-full text-[10px] ${
                             c.estado === 'Aprobado' ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' :
                             c.estado === 'Enviado' ? 'bg-blue-100 text-blue-800 border border-blue-300' :
                             c.estado === 'Rechazado' ? 'bg-red-100 text-red-800 border border-red-300' :
@@ -879,11 +849,10 @@ export default function OperacionCRM() {
                             {c.estado.toUpperCase()}
                           </span>
                         </td>
-                        <td className="p-3 text-center flex items-center justify-center gap-1.5">
+                        <td className="p-3.5 text-center flex items-center justify-center">
                           <button
                             onClick={() => setCotSeleccionada(c)}
-                            className="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-white rounded text-[10px] font-bold cursor-pointer"
-                            title="Ver / Imprimir Cotización PDF"
+                            className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-[10px] font-bold cursor-pointer shadow-2xs"
                           >
                             📄 Ver PDF
                           </button>
@@ -893,7 +862,7 @@ export default function OperacionCRM() {
                     {cotizaciones.length === 0 && (
                       <tr>
                         <td colSpan={8} className="p-8 text-center text-slate-400 italic">
-                          No hay presupuestos comercial registrados. Haga clic en "+ Nueva Cotización Comercial".
+                          No hay presupuestos comercial registrados.
                         </td>
                       </tr>
                     )}
@@ -903,16 +872,16 @@ export default function OperacionCRM() {
             </div>
           )}
 
-          {/* ── MÓDULO 3: FACTURACIÓN & COBRANZA MASIVA (DEDUPLICACIÓN DE FACTURAS) ── */}
+          {/* ── MÓDULO 3: FACTURACIÓN & COBRANZA MASIVA ── */}
           {moduloActivo === 'facturacion' && (
-            <div className="flex-1 bg-white border border-slate-200 rounded-xl p-6 flex flex-col gap-5 min-h-0 shadow-xs">
+            <div className="flex-1 bg-white border border-slate-200/80 rounded-2xl p-7 flex flex-col gap-6 shadow-[6px_6px_14px_rgba(203,213,225,0.7),-6px_-6px_14px_rgba(255,255,255,0.9)] min-h-0">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-200 pb-4">
                 <div>
-                  <h2 className="text-base font-bold text-slate-900 uppercase tracking-wide">
+                  <h2 className="text-base font-black text-slate-900 uppercase tracking-wide">
                     🧾 Carga Masiva de Facturación & Cobranza Única
                   </h2>
-                  <p className="text-xs text-slate-500">
-                    Carga masiva desde Excel/CSV con garantía de deduplicación por Número de Factura + Razón Social
+                  <p className="text-xs text-slate-500 font-medium">
+                    Carga masiva desde Excel/CSV con deduplicación por Número de Factura + Razón Social
                   </p>
                 </div>
 
@@ -922,45 +891,44 @@ export default function OperacionCRM() {
                     value={busquedaFacturaInput}
                     onChange={(e) => setBusquedaFacturaInput(e.target.value)}
                     placeholder="Buscar Nº factura o Razón Social..."
-                    className="bg-slate-50 border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-slate-900 focus:outline-none w-56 font-mono"
+                    className="bg-[#f8fafc] border border-slate-200 rounded-xl px-4 py-2 text-xs text-slate-900 focus:outline-none w-60 font-mono shadow-[inset_2px_2px_4px_rgba(203,213,225,0.4)]"
                   />
 
                   <button
                     onClick={() => setMostrarModalCargaFacturas(true)}
-                    className="px-4 py-2 bg-emerald-700 hover:bg-emerald-600 text-white font-bold rounded-lg text-xs shadow-xs cursor-pointer flex items-center gap-1.5"
+                    className="px-4 py-2.5 bg-emerald-700 hover:bg-emerald-600 text-white font-bold rounded-xl text-xs shadow-xs cursor-pointer flex items-center gap-2"
                   >
-                    <span>📊 Cargar Archivo de Facturas</span>
+                    <span>📊 Cargar Archivo Facturas</span>
                   </button>
                 </div>
               </div>
 
-              {/* Tabla de Facturas Únicas */}
-              <div className="flex-1 overflow-auto border border-slate-200 rounded-xl bg-white shadow-2xs">
-                <table className="w-full text-left border-collapse text-xs">
+              <div className="flex-1 overflow-auto border border-slate-200/80 rounded-2xl bg-white shadow-2xs">
+                <table className="w-full text-left border-collapse text-xs font-medium">
                   <thead>
-                    <tr className="bg-slate-100 text-slate-700 border-b border-slate-200 font-bold uppercase text-[11px]">
-                      <th className="p-3 border-r border-slate-200">FECHA</th>
-                      <th className="p-3 border-r border-slate-200">Nº FACTURA</th>
-                      <th className="p-3 border-r border-slate-200">RAZÓN SOCIAL (CLIENTE)</th>
-                      <th className="p-3 border-r border-slate-200 text-right">MONTO TOTAL</th>
-                      <th className="p-3 border-r border-slate-200 text-center">ESTADO PAGO</th>
-                      <th className="p-3 text-center w-40">ACCIONES COBRANZA</th>
+                    <tr className="bg-[#f8fafc] text-slate-700 border-b border-slate-200 font-bold uppercase text-[11px]">
+                      <th className="p-3.5 border-r border-slate-200">FECHA</th>
+                      <th className="p-3.5 border-r border-slate-200">Nº FACTURA</th>
+                      <th className="p-3.5 border-r border-slate-200">RAZÓN SOCIAL (CLIENTE)</th>
+                      <th className="p-3.5 border-r border-slate-200 text-right">MONTO TOTAL</th>
+                      <th className="p-3.5 border-r border-slate-200 text-center">ESTADO PAGO</th>
+                      <th className="p-3.5 text-center w-40">ACCIONES COBRANZA</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200">
                     {facturasFiltradas.map((f) => (
-                      <tr key={f.id} className="hover:bg-slate-50">
-                        <td className="p-3 font-mono text-slate-600 border-r border-slate-200">{f.fecha}</td>
-                        <td className="p-3 font-mono font-bold text-blue-900 border-r border-slate-200">#{f.numero_factura}</td>
-                        <td className="p-3 border-r border-slate-200 font-bold text-slate-900 uppercase">{f.razon_social}</td>
-                        <td className="p-3 text-right font-mono font-bold text-emerald-800 border-r border-slate-200">
+                      <tr key={f.id} className="hover:bg-slate-50/80">
+                        <td className="p-3.5 font-mono text-slate-600 border-r border-slate-200">{f.fecha}</td>
+                        <td className="p-3.5 font-mono font-bold text-blue-900 border-r border-slate-200">#{f.numero_factura}</td>
+                        <td className="p-3.5 border-r border-slate-200 font-bold text-slate-900 uppercase">{f.razon_social}</td>
+                        <td className="p-3.5 text-right font-mono font-bold text-emerald-800 border-r border-slate-200">
                           ${f.monto_total.toLocaleString('es-CL')} CLP
                         </td>
-                        <td className="p-3 text-center border-r border-slate-200">
+                        <td className="p-3.5 text-center border-r border-slate-200">
                           <select
                             value={f.estado}
                             onChange={(e: any) => cambiarEstadoFactura(f.id, e.target.value)}
-                            className={`font-bold text-xs px-2 py-1 rounded border cursor-pointer ${
+                            className={`font-bold text-xs px-2.5 py-1 rounded-lg border cursor-pointer ${
                               f.estado === 'Pagada' ? 'bg-emerald-100 text-emerald-800 border-emerald-300' :
                               f.estado === 'Morosa' ? 'bg-red-100 text-red-800 border-red-300' :
                               'bg-amber-100 text-amber-800 border-amber-300'
@@ -972,20 +940,18 @@ export default function OperacionCRM() {
                             <option value="Morosa">Morosa</option>
                           </select>
                         </td>
-                        <td className="p-3 text-center flex items-center justify-center gap-1.5">
+                        <td className="p-3.5 text-center flex items-center justify-center gap-2">
                           <button
                             disabled={enviandoNotif}
                             onClick={() => enviarEmailCobroResend('contacto@gamasecurity.cl', f.razon_social, `Factura #${f.numero_factura} por $${f.monto_total.toLocaleString('es-CL')} CLP`)}
-                            className="px-2.5 py-1 bg-blue-900 hover:bg-blue-800 text-white rounded text-[10px] font-bold cursor-pointer"
-                            title="Enviar cobro por Email (Resend @gamasecurity.cl)"
+                            className="px-2.5 py-1 bg-blue-900 hover:bg-blue-800 text-white rounded-lg text-[10px] font-bold cursor-pointer"
                           >
                             📧 Email
                           </button>
                           <button
                             disabled={enviandoNotif}
                             onClick={() => enviarWhatsAppCobro('+56991016912', f.razon_social, `Factura #${f.numero_factura} por $${f.monto_total.toLocaleString('es-CL')} CLP`)}
-                            className="px-2.5 py-1 bg-emerald-700 hover:bg-emerald-600 text-white rounded text-[10px] font-bold cursor-pointer"
-                            title="Enviar cobro por WhatsApp"
+                            className="px-2.5 py-1 bg-emerald-700 hover:bg-emerald-600 text-white rounded-lg text-[10px] font-bold cursor-pointer"
                           >
                             📲 WA
                           </button>
@@ -995,7 +961,7 @@ export default function OperacionCRM() {
                     {facturasFiltradas.length === 0 && (
                       <tr>
                         <td colSpan={6} className="p-8 text-center text-slate-400 italic">
-                          No hay facturas cargadas. Haga clic en "📊 Cargar Archivo de Facturas" para importar desde Excel/CSV.
+                          No hay facturas cargadas. Haga clic en "📊 Cargar Archivo Facturas".
                         </td>
                       </tr>
                     )}
@@ -1005,55 +971,55 @@ export default function OperacionCRM() {
             </div>
           )}
 
-          {/* ── MÓDULO 4: SERVICIO TÉCNICO (SINCRONIZADO DE COMMAND CENTER) ── */}
+          {/* ── MÓDULO 4: SERVICIO TÉCNICO ── */}
           {moduloActivo === 'serv_tecnico' && (
-            <div className="flex-1 bg-white border border-slate-200 rounded-xl p-6 flex flex-col gap-5 min-h-0 shadow-xs">
+            <div className="flex-1 bg-white border border-slate-200/80 rounded-2xl p-7 flex flex-col gap-6 shadow-[6px_6px_14px_rgba(203,213,225,0.7),-6px_-6px_14px_rgba(255,255,255,0.9)] min-h-0">
               <div className="flex justify-between items-center border-b border-slate-200 pb-4">
                 <div>
-                  <h2 className="text-base font-bold text-slate-900 uppercase tracking-wide flex items-center gap-2">
+                  <h2 className="text-base font-black text-slate-900 uppercase tracking-wide">
                     🛠️ Servicio Técnico & Terreno (Command Center)
                   </h2>
-                  <p className="text-xs text-slate-500">
-                    Sincronización en tiempo real con la central de monitoreo y app de técnicos en terreno
+                  <p className="text-xs text-slate-500 font-medium">
+                    Sincronización en tiempo real con la central de monitoreo
                   </p>
                 </div>
               </div>
 
-              <div className="flex-1 overflow-auto border border-slate-200 rounded-xl bg-white shadow-2xs">
-                <table className="w-full text-left border-collapse text-xs">
+              <div className="flex-1 overflow-auto border border-slate-200/80 rounded-2xl bg-white shadow-2xs">
+                <table className="w-full text-left border-collapse text-xs font-medium">
                   <thead>
-                    <tr className="bg-slate-100 text-slate-700 border-b border-slate-200 font-bold uppercase text-[11px]">
-                      <th className="p-3 border-r border-slate-200">OT / FECHA</th>
-                      <th className="p-3 border-r border-slate-200">ESTADO</th>
-                      <th className="p-3 border-r border-slate-200">CTA</th>
-                      <th className="p-3 border-r border-slate-200">ABONADO</th>
-                      <th className="p-3 border-r border-slate-200">TIPO / TÉCNICO</th>
-                      <th className="p-3 border-r border-slate-200">PROBLEMA REPORTADO</th>
-                      <th className="p-3">TRABAJO REALIZADO EN TERRENO</th>
+                    <tr className="bg-[#f8fafc] text-slate-700 border-b border-slate-200 font-bold uppercase text-[11px]">
+                      <th className="p-3.5 border-r border-slate-200">OT / FECHA</th>
+                      <th className="p-3.5 border-r border-slate-200">ESTADO</th>
+                      <th className="p-3.5 border-r border-slate-200">CTA</th>
+                      <th className="p-3.5 border-r border-slate-200">ABONADO</th>
+                      <th className="p-3.5 border-r border-slate-200">TIPO / TÉCNICO</th>
+                      <th className="p-3.5 border-r border-slate-200">PROBLEMA REPORTADO</th>
+                      <th className="p-3.5">TRABAJO REALIZADO EN TERRENO</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200">
                     {ordenesTrabajo.map((ot: any) => (
-                      <tr key={ot.id} className="hover:bg-slate-50">
-                        <td className="p-3 font-mono border-r border-slate-200">
+                      <tr key={ot.id} className="hover:bg-slate-50/80">
+                        <td className="p-3.5 font-mono border-r border-slate-200">
                           <div className="font-bold text-blue-900">{ot.codigo_ot || `OT-${ot.id}`}</div>
                           <div className="text-[11px] text-slate-500">{ot.fecha_cita || ot.fecha_creacion}</div>
                         </td>
-                        <td className="p-3 text-center border-r border-slate-200 font-bold">
-                          <span className={`px-2 py-0.5 rounded text-[10px] ${
+                        <td className="p-3.5 text-center border-r border-slate-200 font-bold">
+                          <span className={`px-2.5 py-0.5 rounded-full text-[10px] ${
                             ot.estado === 'Completada' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
                           }`}>
                             {(ot.estado || 'Pendiente').toUpperCase()}
                           </span>
                         </td>
-                        <td className="p-3 font-mono font-bold text-blue-900 border-r border-slate-200">{ot.cuenta}</td>
-                        <td className="p-3 border-r border-slate-200 font-bold text-slate-900 uppercase">{ot.nombre_abonado}</td>
-                        <td className="p-3 border-r border-slate-200">
+                        <td className="p-3.5 font-mono font-bold text-blue-900 border-r border-slate-200">{ot.cuenta}</td>
+                        <td className="p-3.5 border-r border-slate-200 font-bold text-slate-900 uppercase">{ot.nombre_abonado}</td>
+                        <td className="p-3.5 border-r border-slate-200">
                           <div className="font-bold text-slate-800">{ot.tipo_visita || 'Correctiva'}</div>
                           <div className="text-[11px] text-slate-500">{ot.tecnico}</div>
                         </td>
-                        <td className="p-3 border-r border-slate-200 max-w-[200px] truncate" title={ot.problema}>{ot.problema}</td>
-                        <td className="p-3 italic text-slate-600 max-w-[250px] truncate" title={ot.novedad}>{ot.novedad || 'En atención'}</td>
+                        <td className="p-3.5 border-r border-slate-200 max-w-[200px] truncate" title={ot.problema}>{ot.problema}</td>
+                        <td className="p-3.5 italic text-slate-600 max-w-[250px] truncate" title={ot.novedad}>{ot.novedad || 'En atención'}</td>
                       </tr>
                     ))}
                     {ordenesTrabajo.length === 0 && (
@@ -1069,46 +1035,46 @@ export default function OperacionCRM() {
             </div>
           )}
 
-          {/* ── MÓDULO 5: KPIS EJECUTIVOS & REPORTES ── */}
+          {/* ── MÓDULO 5: KPIS EJECUTIVOS ── */}
           {moduloActivo === 'kpis' && (
-            <div className="flex-1 bg-white border border-slate-200 rounded-xl p-6 flex flex-col gap-6 overflow-y-auto shadow-xs">
-              <h2 className="text-base font-bold text-slate-900 uppercase tracking-wide border-b border-slate-200 pb-3">
+            <div className="flex-1 bg-white border border-slate-200/80 rounded-2xl p-7 flex flex-col gap-6 shadow-[6px_6px_14px_rgba(203,213,225,0.7),-6px_-6px_14px_rgba(255,255,255,0.9)] overflow-y-auto">
+              <h2 className="text-base font-black text-slate-900 uppercase tracking-wide border-b border-slate-200 pb-3">
                 📊 Reportes Ejecutivos & Indicadores Financieros
               </h2>
 
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
-                <div className="bg-slate-50 border border-slate-200 p-5 rounded-xl text-center space-y-1">
-                  <span className="text-slate-500 text-xs font-bold block uppercase">Ingreso Recurrente Est. (MRR)</span>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div className="bg-[#f8fafc] border border-slate-200/90 p-6 rounded-2xl text-center space-y-2 shadow-[inset_2px_2px_4px_rgba(203,213,225,0.4)]">
+                  <span className="text-slate-500 text-xs font-bold block uppercase">MRR ESTIMADO TOTAL</span>
                   <span className="text-2xl font-black font-mono text-emerald-800">
                     ${Math.round(Object.values(clientesMap).reduce((acc, c) => acc + (c.moneda === 'UF' ? c.tarifa_mensual * VALOR_UF_CLP : c.tarifa_mensual), 0)).toLocaleString('es-CL')} CLP
                   </span>
-                  <span className="text-[11px] text-slate-500 block">Monitoreo activo acumulado</span>
+                  <span className="text-[11px] text-slate-500 block font-medium">Monitoreo activo acumulado</span>
                 </div>
 
-                <div className="bg-slate-50 border border-slate-200 p-5 rounded-xl text-center space-y-1">
-                  <span className="text-slate-500 text-xs font-bold block uppercase">Facturas Cargadas Total</span>
+                <div className="bg-[#f8fafc] border border-slate-200/90 p-6 rounded-2xl text-center space-y-2 shadow-[inset_2px_2px_4px_rgba(203,213,225,0.4)]">
+                  <span className="text-slate-500 text-xs font-bold block uppercase">FACTURACIÓN MASIVA</span>
                   <span className="text-2xl font-black font-mono text-blue-900">
                     {facturas.length}
                   </span>
-                  <span className="text-[11px] text-slate-500 block">
-                    ${facturas.reduce((acc, f) => acc + f.monto_total, 0).toLocaleString('es-CL')} CLP en facturación
+                  <span className="text-[11px] text-slate-500 block font-medium">
+                    ${facturas.reduce((acc, f) => acc + f.monto_total, 0).toLocaleString('es-CL')} CLP cargados
                   </span>
                 </div>
 
-                <div className="bg-slate-50 border border-slate-200 p-5 rounded-xl text-center space-y-1">
-                  <span className="text-slate-500 text-xs font-bold block uppercase">Cotizaciones Abiertas</span>
+                <div className="bg-[#f8fafc] border border-slate-200/90 p-6 rounded-2xl text-center space-y-2 shadow-[inset_2px_2px_4px_rgba(203,213,225,0.4)]">
+                  <span className="text-slate-500 text-xs font-bold block uppercase">COTIZACIONES</span>
                   <span className="text-2xl font-black font-mono text-purple-900">
                     {cotizaciones.length}
                   </span>
-                  <span className="text-[11px] text-slate-500 block">Presupuestos comercial Dolibarr</span>
+                  <span className="text-[11px] text-slate-500 block font-medium">Presupuestos comercial Dolibarr</span>
                 </div>
 
-                <div className="bg-slate-50 border border-slate-200 p-5 rounded-xl text-center space-y-1">
-                  <span className="text-slate-500 text-xs font-bold block uppercase">Visitas Técnicas Terreno</span>
+                <div className="bg-[#f8fafc] border border-slate-200/90 p-6 rounded-2xl text-center space-y-2 shadow-[inset_2px_2px_4px_rgba(203,213,225,0.4)]">
+                  <span className="text-slate-500 text-xs font-bold block uppercase">VISITAS TÉCNICAS</span>
                   <span className="text-2xl font-black font-mono text-amber-800">
                     {ordenesTrabajo.length}
                   </span>
-                  <span className="text-[11px] text-slate-500 block">OTs desde Command Center</span>
+                  <span className="text-[11px] text-slate-500 block font-medium">OTs desde Command Center</span>
                 </div>
               </div>
             </div>
@@ -1116,8 +1082,8 @@ export default function OperacionCRM() {
 
           {/* ── MÓDULO 6: CONFIGURACIÓN ── */}
           {moduloActivo === 'config' && (
-            <div className="flex-1 bg-white border border-slate-200 rounded-xl p-6 flex flex-col gap-4 shadow-xs">
-              <h2 className="text-base font-bold text-slate-900 uppercase tracking-wide border-b border-slate-200 pb-3">
+            <div className="flex-1 bg-white border border-slate-200/80 rounded-2xl p-7 flex flex-col gap-4 shadow-[6px_6px_14px_rgba(203,213,225,0.7),-6px_-6px_14px_rgba(255,255,255,0.9)]">
+              <h2 className="text-base font-black text-slate-900 uppercase tracking-wide border-b border-slate-200 pb-3">
                 ⚙️ Configuración del Sistema & Parámetros
               </h2>
 
@@ -1128,7 +1094,7 @@ export default function OperacionCRM() {
                     type="number"
                     readOnly
                     value={VALOR_UF_CLP}
-                    className="bg-slate-100 border border-slate-300 font-mono font-bold px-3 py-2 rounded text-slate-800 w-full"
+                    className="bg-[#f8fafc] border border-slate-200 font-mono font-bold px-4 py-2.5 rounded-xl text-slate-800 w-full"
                   />
                 </div>
 
@@ -1138,7 +1104,7 @@ export default function OperacionCRM() {
                     type="text"
                     readOnly
                     value="Resend API (Gama Security <contacto@gamasecurity.cl>)"
-                    className="bg-slate-100 border border-slate-300 font-bold px-3 py-2 rounded text-slate-800 w-full"
+                    className="bg-[#f8fafc] border border-slate-200 font-bold px-4 py-2.5 rounded-xl text-slate-800 w-full"
                   />
                 </div>
               </div>
@@ -1148,10 +1114,10 @@ export default function OperacionCRM() {
         </main>
       </div>
 
-      {/* ── MODAL EDITAR TARIFA DEL CLIENTE ── */}
+      {/* ── MODAL EDITAR TARIFA ── */}
       {mostrarModalTarifa && clienteActivo && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="bg-white border border-slate-300 w-full max-w-md p-6 rounded-xl shadow-2xl space-y-4 text-xs font-sans">
+          <div className="bg-white border border-slate-300 w-full max-w-md p-6 rounded-2xl shadow-2xl space-y-4 text-xs font-sans">
             <div className="flex justify-between items-center border-b border-slate-200 pb-3">
               <h3 className="font-bold text-sm text-slate-900 uppercase tracking-wide">
                 ✏️ Editar Tarifa Comercial ({clienteActivo.cuenta})
@@ -1165,7 +1131,7 @@ export default function OperacionCRM() {
                 <select
                   value={editMoneda}
                   onChange={(e: any) => setEditMoneda(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-300 p-2 rounded-lg font-bold text-slate-900 focus:outline-none"
+                  className="w-full bg-slate-50 border border-slate-300 p-2.5 rounded-xl font-bold text-slate-900 focus:outline-none"
                 >
                   <option value="CLP">CLP (Pesos Chilenos)</option>
                   <option value="UF">UF (Unidad de Fomento)</option>
@@ -1181,7 +1147,7 @@ export default function OperacionCRM() {
                   step={editMoneda === 'UF' ? '0.1' : '1000'}
                   value={editTarifa}
                   onChange={(e) => setEditTarifa(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-300 p-2 rounded-lg font-mono font-bold text-slate-900 focus:outline-none text-sm"
+                  className="w-full bg-slate-50 border border-slate-300 p-2.5 rounded-xl font-mono font-bold text-slate-900 focus:outline-none text-sm"
                 />
                 {editMoneda === 'UF' && (
                   <p className="text-[11px] text-emerald-700 mt-1 font-mono font-semibold">
@@ -1191,14 +1157,14 @@ export default function OperacionCRM() {
               </div>
 
               <div>
-                <label className="font-bold text-slate-700 block mb-1">Día de Vencimiento de Cobro (1-30):</label>
+                <label className="font-bold text-slate-700 block mb-1">Día de Vencimiento (1-30):</label>
                 <input
                   type="number"
                   min="1"
                   max="30"
                   value={editDia}
                   onChange={(e) => setEditDia(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-300 p-2 rounded-lg font-mono text-slate-900 focus:outline-none"
+                  className="w-full bg-slate-50 border border-slate-300 p-2.5 rounded-xl font-mono text-slate-900 focus:outline-none"
                 />
               </div>
 
@@ -1208,7 +1174,7 @@ export default function OperacionCRM() {
                   type="text"
                   value={editPlan}
                   onChange={(e) => setEditPlan(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-300 p-2 rounded-lg font-semibold text-slate-900 focus:outline-none"
+                  className="w-full bg-slate-50 border border-slate-300 p-2.5 rounded-xl font-semibold text-slate-900 focus:outline-none"
                 />
               </div>
 
@@ -1217,7 +1183,7 @@ export default function OperacionCRM() {
                 <select
                   value={editEstadoPago}
                   onChange={(e: any) => setEditEstadoPago(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-300 p-2 rounded-lg font-bold text-slate-900 focus:outline-none"
+                  className="w-full bg-slate-50 border border-slate-300 p-2.5 rounded-xl font-bold text-slate-900 focus:outline-none"
                 >
                   <option value="Al Día">Al Día</option>
                   <option value="Pendiente">Pendiente</option>
@@ -1229,13 +1195,13 @@ export default function OperacionCRM() {
             <div className="flex justify-end gap-3 pt-3 border-t border-slate-200">
               <button
                 onClick={() => setMostrarModalTarifa(false)}
-                className="px-4 py-2 bg-slate-200 text-slate-800 font-bold rounded-lg hover:bg-slate-300 cursor-pointer"
+                className="px-4 py-2 bg-slate-200 text-slate-800 font-bold rounded-xl hover:bg-slate-300 cursor-pointer"
               >
                 Cancelar
               </button>
               <button
                 onClick={handleGuardarTarifaCliente}
-                className="px-5 py-2 bg-blue-900 hover:bg-blue-800 text-white font-bold rounded-lg shadow-xs cursor-pointer"
+                className="px-5 py-2 bg-blue-900 hover:bg-blue-800 text-white font-bold rounded-xl shadow-xs cursor-pointer"
               >
                 💾 Guardar Tarifa
               </button>
@@ -1244,10 +1210,10 @@ export default function OperacionCRM() {
         </div>
       )}
 
-      {/* ── MODAL CARGA MASIVA DE FACTURAS CON DEDUPLICACIÓN ── */}
+      {/* ── MODAL CARGA MASIVA FACTURAS ── */}
       {mostrarModalCargaFacturas && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="bg-white border border-slate-300 w-full max-w-2xl p-6 rounded-xl shadow-2xl space-y-4 font-sans text-xs">
+          <div className="bg-white border border-slate-300 w-full max-w-2xl p-6 rounded-2xl shadow-2xl space-y-4 font-sans text-xs">
             <div className="flex justify-between items-center border-b border-slate-200 pb-3">
               <h3 className="font-bold text-sm text-slate-900 uppercase tracking-wide">
                 📊 Carga Masiva de Facturación Única (Excel / CSV)
@@ -1255,29 +1221,29 @@ export default function OperacionCRM() {
               <button onClick={() => setMostrarModalCargaFacturas(false)} className="text-slate-400 hover:text-slate-700 font-bold text-lg">✕</button>
             </div>
 
-            <div className="bg-amber-50 border border-amber-200 p-3 rounded-lg text-amber-900 text-xs leading-relaxed">
+            <div className="bg-amber-50 border border-amber-200 p-3.5 rounded-xl text-amber-900 text-xs leading-relaxed">
               <strong>Instrucciones:</strong> Copie y pegue las columnas desde su Excel o CSV.<br/>
               Orden de columnas: <code>[Fecha | Número de Factura | Razón Social | Monto Total]</code>.<br/>
-              <em>Garantía Anti-Duplicación: Si una factura ya fue cargada anteriormente (coincidencia de Nº Factura + Razón Social), el sistema la omitirá automáticamente sin duplicarla.</em>
+              <em>Garantía Anti-Duplicación: Si una factura ya fue cargada anteriormente, el sistema la omitirá automáticamente sin duplicarla.</em>
             </div>
 
             <textarea
               value={facturasTextoRaw}
               onChange={(e) => setFacturasTextoRaw(e.target.value)}
               placeholder={"2026-07-20\t10452\tCOMERCIAL GAMA LTDA\t150000\n2026-07-21\t10453\tMARIA CECILIA ACUÑA\t35000"}
-              className="w-full h-44 bg-slate-50 border border-slate-300 p-3 rounded-lg font-mono text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+              className="w-full h-44 bg-slate-50 border border-slate-300 p-3 rounded-xl font-mono text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
             />
 
             <div className="flex justify-end gap-3 pt-2 border-t border-slate-200">
               <button
                 onClick={() => setMostrarModalCargaFacturas(false)}
-                className="px-4 py-2 bg-slate-200 text-slate-800 font-bold rounded-lg hover:bg-slate-300 cursor-pointer"
+                className="px-4 py-2 bg-slate-200 text-slate-800 font-bold rounded-xl hover:bg-slate-300 cursor-pointer"
               >
                 Cancelar
               </button>
               <button
                 onClick={procesarCargaMasivaFacturas}
-                className="px-5 py-2 bg-emerald-700 hover:bg-emerald-600 text-white font-bold rounded-lg shadow-xs cursor-pointer"
+                className="px-5 py-2 bg-emerald-700 hover:bg-emerald-600 text-white font-bold rounded-xl shadow-xs cursor-pointer"
               >
                 🚀 Cargar & Deduplicar Facturas
               </button>
@@ -1286,10 +1252,10 @@ export default function OperacionCRM() {
         </div>
       )}
 
-      {/* ── MODAL NUEVA COTIZACIÓN DOLIBARR ── */}
+      {/* ── MODAL NUEVA COTIZACIÓN ── */}
       {mostrarModalCotizacion && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="bg-white border border-slate-300 w-full max-w-3xl p-6 rounded-xl shadow-2xl space-y-4 font-sans text-xs max-h-[92vh] overflow-y-auto">
+          <div className="bg-white border border-slate-300 w-full max-w-3xl p-6 rounded-2xl shadow-2xl space-y-4 font-sans text-xs max-h-[92vh] overflow-y-auto">
             <div className="flex justify-between items-center border-b border-slate-200 pb-3">
               <h3 className="font-bold text-sm text-slate-900 uppercase tracking-wide">
                 📋 Nueva Cotización Comercial (Estilo Dolibarr)
@@ -1297,14 +1263,13 @@ export default function OperacionCRM() {
               <button onClick={() => setMostrarModalCotizacion(false)} className="text-slate-400 hover:text-slate-700 font-bold text-lg">✕</button>
             </div>
 
-            {/* Cabecera del Cliente */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div>
                 <label className="font-bold text-slate-700 block mb-1">Cargar Abonado (Opcional):</label>
                 <select
                   value={cotCuenta}
                   onChange={(e) => setCotCuenta(e.target.value)}
-                  className="bg-slate-50 border border-slate-300 text-slate-900 p-2 rounded-lg w-full focus:outline-none"
+                  className="bg-slate-50 border border-slate-300 text-slate-900 p-2.5 rounded-xl w-full focus:outline-none"
                 >
                   <option value="">-- Seleccionar Cuenta --</option>
                   {Object.keys(clientesMap).map(cta => (
@@ -1320,7 +1285,7 @@ export default function OperacionCRM() {
                   value={cotNombre}
                   onChange={(e) => setCotNombre(e.target.value)}
                   placeholder="Ej: Comercial Gama Ltda"
-                  className="bg-slate-50 border border-slate-300 text-slate-900 p-2 rounded-lg w-full focus:outline-none"
+                  className="bg-slate-50 border border-slate-300 text-slate-900 p-2.5 rounded-xl w-full focus:outline-none"
                 />
               </div>
 
@@ -1331,18 +1296,17 @@ export default function OperacionCRM() {
                   value={cotRut}
                   onChange={(e) => setCotRut(cleanRut(e.target.value))}
                   placeholder="12123123-6"
-                  className="bg-slate-50 border border-slate-300 text-slate-900 p-2 rounded-lg w-full focus:outline-none font-mono"
+                  className="bg-slate-50 border border-slate-300 text-slate-900 p-2.5 rounded-xl w-full focus:outline-none font-mono"
                 />
               </div>
             </div>
 
-            {/* Ítems / Líneas del Presupuesto */}
             <div className="space-y-2 border-t border-b border-slate-200 py-3">
               <div className="flex justify-between items-center">
                 <span className="font-bold text-slate-800 uppercase tracking-wider text-[11px]">Ítems del Presupuesto (Neto & Descuento)</span>
                 <button
                   onClick={() => setItemsCot([...itemsCot, { id: Date.now().toString(), descripcion: 'Nuevo ítem', cantidad: 1, precio_neto_unitario: 10000, descuento_porcentaje: 0 }])}
-                  className="px-2.5 py-1 bg-slate-900 text-white rounded text-[10px] font-bold cursor-pointer"
+                  className="px-3 py-1.5 bg-slate-900 text-white rounded-lg text-[10px] font-bold cursor-pointer"
                 >
                   + Agregar Línea
                 </button>
@@ -1350,7 +1314,7 @@ export default function OperacionCRM() {
 
               <div className="space-y-2 max-h-48 overflow-y-auto">
                 {itemsCot.map((it, idx) => (
-                  <div key={it.id} className="grid grid-cols-12 gap-2 items-center bg-slate-50 p-2 rounded border border-slate-200">
+                  <div key={it.id} className="grid grid-cols-12 gap-2 items-center bg-slate-50 p-2 rounded-xl border border-slate-200">
                     <input
                       type="text"
                       value={it.descripcion}
@@ -1360,7 +1324,7 @@ export default function OperacionCRM() {
                         setItemsCot(newIt)
                       }}
                       placeholder="Descripción producto/servicio..."
-                      className="col-span-5 bg-white border border-slate-300 p-1.5 rounded text-xs"
+                      className="col-span-5 bg-white border border-slate-300 p-2 rounded-lg text-xs"
                     />
                     <input
                       type="number"
@@ -1371,7 +1335,7 @@ export default function OperacionCRM() {
                         setItemsCot(newIt)
                       }}
                       placeholder="Cant"
-                      className="col-span-2 bg-white border border-slate-300 p-1.5 rounded text-xs font-mono text-center"
+                      className="col-span-2 bg-white border border-slate-300 p-2 rounded-lg text-xs font-mono text-center"
                     />
                     <input
                       type="number"
@@ -1382,7 +1346,7 @@ export default function OperacionCRM() {
                         setItemsCot(newIt)
                       }}
                       placeholder="Neto ($)"
-                      className="col-span-3 bg-white border border-slate-300 p-1.5 rounded text-xs font-mono text-right"
+                      className="col-span-3 bg-white border border-slate-300 p-2 rounded-lg text-xs font-mono text-right"
                     />
                     <input
                       type="number"
@@ -1393,7 +1357,7 @@ export default function OperacionCRM() {
                         setItemsCot(newIt)
                       }}
                       placeholder="Desc %"
-                      className="col-span-1 bg-white border border-slate-300 p-1.5 rounded text-xs font-mono text-center"
+                      className="col-span-1 bg-white border border-slate-300 p-2 rounded-lg text-xs font-mono text-center"
                     />
                     <button
                       onClick={() => setItemsCot(itemsCot.filter(i => i.id !== it.id))}
@@ -1406,7 +1370,6 @@ export default function OperacionCRM() {
               </div>
             </div>
 
-            {/* Totales Calculados */}
             <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-1.5 text-xs font-mono">
               <div className="flex justify-between">
                 <span className="text-slate-600">Subtotal Neto:</span>
@@ -1433,13 +1396,13 @@ export default function OperacionCRM() {
             <div className="flex justify-end gap-3 pt-2 border-t border-slate-200">
               <button
                 onClick={() => setMostrarModalCotizacion(false)}
-                className="px-4 py-2 bg-slate-200 text-slate-800 font-bold rounded-lg hover:bg-slate-300 cursor-pointer"
+                className="px-4 py-2 bg-slate-200 text-slate-800 font-bold rounded-xl hover:bg-slate-300 cursor-pointer"
               >
                 Cancelar
               </button>
               <button
                 onClick={handleGuardarCotizacion}
-                className="px-5 py-2 bg-blue-900 hover:bg-blue-800 text-white font-bold rounded-lg shadow-xs cursor-pointer"
+                className="px-5 py-2 bg-blue-900 hover:bg-blue-800 text-white font-bold rounded-xl shadow-xs cursor-pointer"
               >
                 💾 Guardar Cotización Dolibarr
               </button>
@@ -1448,10 +1411,10 @@ export default function OperacionCRM() {
         </div>
       )}
 
-      {/* ── MODAL IMPRESION / VER PDF DE COTIZACION ── */}
+      {/* ── MODAL IMPRESION COTIZACION PDF ── */}
       {cotSeleccionada && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
-          <div className="bg-white text-slate-900 p-8 rounded-xl max-w-2xl w-full shadow-2xl font-sans max-h-[92vh] overflow-y-auto border border-slate-300 space-y-6">
+          <div className="bg-white text-slate-900 p-8 rounded-2xl max-w-2xl w-full shadow-2xl font-sans max-h-[92vh] overflow-y-auto border border-slate-300 space-y-6">
             
             <div className="flex justify-between items-start border-b-2 border-blue-900 pb-4">
               <div>
@@ -1460,14 +1423,14 @@ export default function OperacionCRM() {
                 <p className="text-xs text-slate-500">Santiago, Chile • Fono: +56 9 9101 6912 • Email: contacto@gamasecurity.cl</p>
               </div>
               <div className="text-right">
-                <span className="inline-block bg-blue-900 text-white font-mono text-base font-bold px-3 py-1 rounded">
+                <span className="inline-block bg-blue-900 text-white font-mono text-base font-bold px-3 py-1 rounded-lg">
                   {cotSeleccionada.codigo_cotizacion}
                 </span>
                 <p className="text-xs text-slate-500 mt-1">Fecha: {cotSeleccionada.fecha}</p>
               </div>
             </div>
 
-            <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 space-y-1 text-xs">
+            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-1 text-xs">
               <div className="font-bold text-blue-900 uppercase tracking-wider mb-1">CLIENTE / TITULAR</div>
               <div className="grid grid-cols-2 gap-2">
                 <div><strong>Razón Social:</strong> {cotSeleccionada.nombre_cliente}</div>
@@ -1477,8 +1440,7 @@ export default function OperacionCRM() {
               </div>
             </div>
 
-            {/* Tabla Ítems PDF */}
-            <div className="border border-slate-200 rounded-lg overflow-hidden">
+            <div className="border border-slate-200 rounded-xl overflow-hidden">
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
                   <tr className="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
@@ -1506,8 +1468,7 @@ export default function OperacionCRM() {
               </table>
             </div>
 
-            {/* Totales PDF */}
-            <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 space-y-1.5 text-xs font-mono max-w-xs ml-auto">
+            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-1.5 text-xs font-mono max-w-xs ml-auto">
               <div className="flex justify-between">
                 <span>Neto Total:</span>
                 <span>${Math.round(cotSeleccionada.neto_con_descuento || 0).toLocaleString('es-CL')} CLP</span>
@@ -1525,13 +1486,13 @@ export default function OperacionCRM() {
             <div className="flex justify-end gap-3 pt-3 border-t border-slate-200">
               <button
                 onClick={() => setCotSeleccionada(null)}
-                className="px-4 py-2 bg-slate-200 text-slate-800 font-bold text-xs rounded-lg hover:bg-slate-300 cursor-pointer"
+                className="px-4 py-2 bg-slate-200 text-slate-800 font-bold text-xs rounded-xl hover:bg-slate-300 cursor-pointer"
               >
                 Cerrar
               </button>
               <button
                 onClick={() => window.print()}
-                className="px-5 py-2 bg-blue-900 text-white font-bold text-xs rounded-lg hover:bg-blue-950 shadow-xs cursor-pointer flex items-center gap-1.5"
+                className="px-5 py-2 bg-blue-900 text-white font-bold text-xs rounded-xl hover:bg-blue-950 shadow-xs cursor-pointer flex items-center gap-2"
               >
                 <span>🖨️ Imprimir Cotización PDF</span>
               </button>
