@@ -1146,8 +1146,14 @@ async function responderConIA(sock, jid, numero, bodyCliente, promptMaestro, nom
         }
         respuestaDirecta = `Verificación de seguridad:\n\nEncontramos una coincidencia para tu búsqueda ("${bodyCliente}"):\n• Propiedad / Titular: ${matchEncontrado.nombre}\n• Código de Cuenta: ${matchEncontrado.cuenta}\n\n¿Corresponde esta propiedad a tu sistema? Responde "sí" para confirmar.`
       } else {
-        userAuthSessions[numero] = { state: 'AWAITING_NAME_OR_ADDRESS' }
-        respuestaDirecta = `No encontramos una propiedad registrada que coincida con "${bodyCliente}".\n\nPor favor indícanos el nombre del titular o calle (ej: "Santo Domingo", "Marbella" o "María Acuña"), o responde 4 para comunicarte con un operador.`
+        const intentos = (authSession?.intentos || 0) + 1
+        if (intentos >= 2) {
+          delete userAuthSessions[numero]
+          respuestaDirecta = `No logramos encontrar una propiedad registrada para "${bodyCliente}".\n\nPara asistirte de la mejor manera y no hacerte perder tiempo, puedes hablar directamente con un operador:\n\n• Responde 4 o abre el chat directo: https://wa.me/56991016912\n• O responde "menú" para volver al inicio.`
+        } else {
+          userAuthSessions[numero] = { state: 'AWAITING_NAME_OR_ADDRESS', intentos: intentos }
+          respuestaDirecta = `No encontramos una propiedad registrada que coincida con "${bodyCliente}".\n\nPor favor indícanos el nombre del titular o calle (ej: "Santo Domingo", "Marbella" o "María Acuña"), o responde 4 para comunicarte con un operador.`
+        }
       }
     }
 
