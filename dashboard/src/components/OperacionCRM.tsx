@@ -460,14 +460,12 @@ export default function OperacionCRM() {
     setItemsCot([...itemsCot, nuevoItem])
   }
 
-  // ── SELECCIONAR CLIENTE REGISTRADO EN FORMULARIO COTIZACIÓN (BÚSQUEDAS MULTI-CLAVE FLEXIBLES) ──
+  // ── SELECCIONAR CLIENTE REGISTRADO EN FORMULARIO COTIZACIÓN ──
   const handleSeleccionarClienteParaCotizacion = (rutOKey: string) => {
     setCotClienteRutSeleccionado(rutOKey)
     
-    // 1. Buscar coincidencia exacta de llave
     let cli: ClienteMaestro | undefined = clientesMaestros[rutOKey]
 
-    // 2. Buscar por coincidencia de RUT o RUT limpio
     if (!cli) {
       cli = Object.values(clientesMaestros).find(c =>
         c.rut === rutOKey ||
@@ -475,7 +473,6 @@ export default function OperacionCRM() {
       )
     }
 
-    // 3. Buscar por Razón Social exacta
     if (!cli) {
       cli = Object.values(clientesMaestros).find(c =>
         c.razon_social.toLowerCase().trim() === rutOKey.toLowerCase().trim()
@@ -489,7 +486,6 @@ export default function OperacionCRM() {
       setCotEmailCliente(cli.email_cobranza || 'contacto@gamasecurity.cl')
       setCotTelefonoCliente(cli.telefono || '+56 9 9101 6912')
     } else {
-      // JAMÁS colocar "Cliente Gama" por defecto, usar la clave o el valor ingresado
       setCotNombreCliente(rutOKey && rutOKey !== 'Cliente Gama' ? rutOKey : 'CLIENTE REGISTRADO')
       setCotRutCliente(rutOKey)
       setCotDireccion('Dirección Registrada')
@@ -524,7 +520,6 @@ export default function OperacionCRM() {
     setTipoReceptorCot(cot.tipo_receptor || 'registrado')
     setCotEmpresaEmisoraId(cot.empresa_facturadora_id)
     
-    // Buscar el cliente maestro asociado de manera inteligente
     const cliEncontrado = Object.values(clientesMaestros).find(c =>
       c.rut === cot.rut_cliente ||
       (c.rut && cleanRut(c.rut) === cleanRut(cot.rut_cliente)) ||
@@ -660,12 +655,11 @@ export default function OperacionCRM() {
     }
   }
 
-  // Guardar Cotización Profesional (Soporta Edición, Descuentos $ y %, Clientes y Prospectos)
+  // Guardar Cotización Profesional
   const handleGuardarCotizacionDolibarr = async () => {
     let nombreFinal = cotNombreCliente.trim()
     let rutFinal = cotRutCliente.trim()
 
-    // Búsqueda inteligente de cliente maestro si está en modo registrado
     if (tipoReceptorCot === 'registrado') {
       const cli = (cotClienteRutSeleccionado && clientesMaestros[cotClienteRutSeleccionado]) ||
                   Object.values(clientesMaestros).find(c => c.rut === cotClienteRutSeleccionado || (c.rut && cleanRut(c.rut) === cleanRut(cotClienteRutSeleccionado))) ||
@@ -738,7 +732,7 @@ export default function OperacionCRM() {
     }
   }
 
-  // CALCULADORA DE TOTALES CON DESCUENTOS POR LÍNEA ($ / %) Y DESCUENTO GLOBAL
+  // CALCULADORA DE TOTALES CON DESCUENTOS POR LÍNEA Y GLOBAL
   const calculoCotizacionActual = useMemo(() => {
     let subtotalBrutoLineas = 0
     let totalDescuentosLineas = 0
@@ -780,42 +774,6 @@ export default function OperacionCRM() {
     }
   }, [itemsCot, descuentoGlobalValor, descuentoGlobalTipo])
 
-  // ── CREAR ORDEN DE TRABAJO (OT) ──
-  const handleCrearOT = async () => {
-    if (!nuevaOTCuenta.trim()) {
-      alert('Por favor ingrese la cuenta del abonado.')
-      return
-    }
-
-    const nuevaOT: OrdenDeTrabajo = {
-      id: `OT-${Date.now()}`,
-      codigo_ot: `OT-2026-${Math.floor(Math.random() * 900 + 100)}`,
-      cuenta: nuevaOTCuenta.toUpperCase().trim(),
-      cliente_nombre: abonadosCentrosCosto[nuevaOTCuenta.toUpperCase().trim()]?.alias_centro_costo || 'Abonado Gama',
-      tipo_servicio: nuevaOTServicio,
-      tecnico_asignado: nuevaOTTecnico,
-      fecha_programada: nuevaOTFecha,
-      estado: 'Pendiente',
-      observaciones: nuevaOTObs.trim()
-    }
-
-    const listaNueva = [nuevaOT, ...ordenesTrabajo]
-    setOrdenesTrabajo(listaNueva)
-
-    try {
-      await supabase.from('eventos_monitoreo').upsert({
-        cuenta: 'ORDENES_TRABAJO',
-        nombre_abonado: JSON.stringify(listaNueva),
-        evento: 'CREACION_OT',
-        fecha_hora: new Date().toISOString()
-      })
-      setMostrarModalOT(false)
-      alert(`🎉 Orden Técnica ${nuevaOT.codigo_ot} agendada para el abonado #${nuevaOT.cuenta}.`)
-    } catch (e: any) {
-      alert('Error creando OT: ' + e.message)
-    }
-  }
-
   // ── EJECUTAR CICLO DE CONSENSO DE AGENTES AUTÓNOMOS (AUTO-COMPANY) ──
   const handleEjecutarCicloConsenso = async () => {
     setEjecutandoCiclo(true)
@@ -839,221 +797,7 @@ export default function OperacionCRM() {
     }, 600)
   }
 
-  // ── ACCIONES DE CRUD PARA EMPRESAS DEL CONGLOMERADO ──
-  const abrirModalEditarEmpresa = (empresa?: EmpresaConglomerado) => {
-    if (empresa) {
-      setEmpresaEditando(empresa)
-    } else {
-      setEmpresaEditando({
-        id: `EMP-${Date.now()}`,
-        razon_social: '',
-        rut: '',
-        giro: 'Servicios de Monitoreo & Seguridad',
-        direccion: '',
-        telefono: '+56 9 ',
-        email_cobranza: 'cobranza@gamasecurity.cl',
-        email_contacto: 'contacto@gamasecurity.cl',
-        web: 'www.gamasecurity.cl',
-        banco_nombre: 'Banco de Chile',
-        banco_tipo_cuenta: 'Cuenta Corriente',
-        banco_numero_cuenta: ''
-      })
-    }
-    setMostrarModalEmpresa(true)
-  }
-
-  const handleGuardarEmpresaEmisora = async () => {
-    if (!empresaEditando || !empresaEditando.razon_social.trim()) {
-      alert('Por favor ingrese la Razón Social de la empresa.')
-      return
-    }
-
-    let listaNueva: EmpresaConglomerado[] = []
-    const existe = empresasConglomerado.some(e => e.id === empresaEditando.id)
-    if (existe) {
-      listaNueva = empresasConglomerado.map(e => e.id === empresaEditando.id ? empresaEditando : e)
-    } else {
-      listaNueva = [...empresasConglomerado, empresaEditando]
-    }
-
-    try {
-      await supabase.from('eventos_monitoreo').upsert({
-        cuenta: 'EMPRESAS_CONGLOMERADO',
-        nombre_abonado: JSON.stringify(listaNueva),
-        evento: 'CONFIGURACION_EMPRESAS',
-        fecha_hora: new Date().toISOString()
-      })
-      setEmpresasConglomerado(listaNueva)
-      setMostrarModalEmpresa(false)
-      alert(`✅ Empresa emisora "${empresaEditando.razon_social}" guardada exitosamente.`)
-    } catch (e: any) {
-      alert('Error guardando empresa: ' + e.message)
-    }
-  }
-
-  const handleEliminarEmpresaEmisora = async (id: string) => {
-    if (empresasConglomerado.length <= 1) {
-      alert('Debe mantener al menos una empresa del conglomerado.')
-      return
-    }
-    if (!confirm('¿Está seguro de eliminar esta empresa emisora?')) return
-
-    const listaNueva = empresasConglomerado.filter(e => e.id !== id)
-    try {
-      await supabase.from('eventos_monitoreo').upsert({
-        cuenta: 'EMPRESAS_CONGLOMERADO',
-        nombre_abonado: JSON.stringify(listaNueva),
-        evento: 'CONFIGURACION_EMPRESAS',
-        fecha_hora: new Date().toISOString()
-      })
-      setEmpresasConglomerado(listaNueva)
-    } catch (e: any) {
-      alert('Error al eliminar empresa: ' + e.message)
-    }
-  }
-
-  // ── ACCIONES PARA CLIENTES MAESTROS & SINCRONIZACIÓN CON COMMAND CENTER ──
-  const abrirModalEditarCliente = (cliente: ClienteMaestro) => {
-    setEditRut(cliente.rut)
-    setEditRazonSocial(cliente.razon_social)
-    setEditEmpresaId(cliente.empresa_facturadora_id)
-    setEditEmailCobranza(cliente.email_cobranza)
-    setEditTelefono(cliente.telefono)
-    setEditDireccionComercial(cliente.direccion_comercial)
-    setEditMoneda(cliente.moneda)
-    setEditTarifa(cliente.tarifa_mensual.toString())
-    setEditDia(cliente.dia_vencimiento.toString())
-    setEditPlan(cliente.plan_monitoreo)
-    setEditEstadoPago(cliente.estado_pago)
-    setMostrarModalCliente(true)
-  }
-
-  const handleGuardarClienteMaestro = async () => {
-    if (!clienteActivo) return
-
-    const clienteActualizado: ClienteMaestro = {
-      ...clienteActivo,
-      rut: cleanRut(editRut) || clienteActivo.rut,
-      razon_social: editRazonSocial.trim() || clienteActivo.razon_social,
-      empresa_facturadora_id: editEmpresaId,
-      email_cobranza: editEmailCobranza.trim() || clienteActivo.email_cobranza,
-      telefono: editTelefono.trim() || clienteActivo.telefono,
-      direccion_comercial: editDireccionComercial.trim() || clienteActivo.direccion_comercial,
-      moneda: editMoneda,
-      tarifa_mensual: Number(editTarifa) || 0,
-      dia_vencimiento: Number(editDia) || 5,
-      plan_monitoreo: editPlan.trim() || 'MONITOREO ESTÁNDAR 24/7',
-      estado_pago: editEstadoPago
-    }
-
-    const mapaNuevoMaestro = { ...clientesMaestros, [clienteActivo.rut]: clienteActualizado }
-    setClientesMaestros(mapaNuevoMaestro)
-
-    const mapaPlanoCommandCenter: Record<string, any> = {}
-    Object.values(mapaNuevoMaestro).forEach(c => {
-      c.cuentas_abonados.forEach(cta => {
-        const cc = abonadosCentrosCosto[cta]
-        mapaPlanoCommandCenter[cta] = {
-          cuenta: cta,
-          nombre: c.razon_social,
-          rut: c.rut,
-          empresa_facturadora_id: c.empresa_facturadora_id,
-          alias_unidad: cc?.alias_centro_costo || c.razon_social,
-          direccion: cc?.direccion || c.direccion_comercial,
-          email: c.email_cobranza,
-          telefono: c.telefono,
-          moneda: c.moneda,
-          tarifa_mensual: c.tarifa_mensual,
-          dia_vencimiento: c.dia_vencimiento,
-          plan: c.plan_monitoreo,
-          estado_pago: c.estado_pago
-        }
-      })
-    })
-
-    try {
-      await supabase.from('eventos_monitoreo').upsert({
-        cuenta: 'CLIENTES',
-        nombre_abonado: JSON.stringify(mapaPlanoCommandCenter),
-        evento: 'CONFIGURACION_CLIENTE',
-        fecha_hora: new Date().toISOString()
-      })
-      setMostrarModalCliente(false)
-      alert(`✅ Ficha del Cliente ${clienteActualizado.razon_social} sincronizada en todo el sistema.`)
-    } catch (e: any) {
-      alert('Error guardando cliente: ' + e.message)
-    }
-  }
-
-  // ── VINCULAR UN CENTRO DE COSTO / ABONADO ──
-  const handleVincularCentroDeCosto = async () => {
-    if (!clienteActivo) return
-    const ctaUpper = nuevaCuentaAbonadoInput.toUpperCase().trim()
-    if (!ctaUpper) {
-      alert('Por favor ingrese el código de cuenta del Abonado (ej: C774).')
-      return
-    }
-
-    const nuevoCentroCosto: CentroDeCostoAbonado = {
-      cuenta: ctaUpper,
-      alias_centro_costo: nuevoAliasCentroCostoInput.trim() || `Centro de Costo ${ctaUpper}`,
-      direccion: nuevaDireccionAbonadoInput.trim() || clienteActivo.direccion_comercial,
-      ciudad: 'SANTIAGO',
-      rut_cliente: clienteActivo.rut
-    }
-
-    const mapaCentrosNuevo = { ...abonadosCentrosCosto, [ctaUpper]: nuevoCentroCosto }
-    setAbonadosCentrosCosto(mapaCentrosNuevo)
-
-    const cuentasActuales = clienteActivo.cuentas_abonados.includes(ctaUpper)
-      ? clienteActivo.cuentas_abonados
-      : [...clienteActivo.cuentas_abonados, ctaUpper]
-
-    const clienteActualizado: ClienteMaestro = { ...clienteActivo, cuentas_abonados: cuentasActuales }
-    const mapaMaestroNuevo = { ...clientesMaestros, [clienteActivo.rut]: clienteActualizado }
-    setClientesMaestros(mapaMaestroNuevo)
-
-    const mapaPlano: Record<string, any> = {}
-    Object.values(mapaMaestroNuevo).forEach(c => {
-      c.cuentas_abonados.forEach(cta => {
-        const cc = mapaCentrosNuevo[cta]
-        mapaPlano[cta] = {
-          cuenta: cta,
-          nombre: c.razon_social,
-          rut: c.rut,
-          empresa_facturadora_id: c.empresa_facturadora_id,
-          alias_unidad: cc?.alias_centro_costo || c.razon_social,
-          direccion: cc?.direccion || c.direccion_comercial,
-          email: c.email_cobranza,
-          telefono: c.telefono,
-          moneda: c.moneda,
-          tarifa_mensual: c.tarifa_mensual,
-          dia_vencimiento: c.dia_vencimiento,
-          plan: c.plan_monitoreo,
-          estado_pago: c.estado_pago
-        }
-      })
-    })
-
-    try {
-      await supabase.from('eventos_monitoreo').upsert({
-        cuenta: 'CLIENTES',
-        nombre_abonado: JSON.stringify(mapaPlano),
-        evento: 'VINCULAR_CENTRO_COSTO',
-        fecha_hora: new Date().toISOString()
-      })
-      setMostrarModalVincularAbonado(false)
-      setNuevaCuentaAbonadoInput('')
-      setNuevoAliasCentroCostoInput('')
-      setNuevaDireccionAbonadoInput('')
-      setCuentaSeleccionada(ctaUpper)
-      alert(`🎉 Centro de Costo / Abonado "${ctaUpper}" vinculado exitosamente.`)
-    } catch (e: any) {
-      alert('Error vinculando abonado: ' + e.message)
-    }
-  }
-
-  // ── BUSCADOR UNIFICADO INTELIGENTE (FILTRA POR ABONADO O CLIENTE) ──
+  // BUSCADOR UNIFICADO INTELIGENTE
   const resultadosBusqueda = useMemo(() => {
     const q = busquedaClienteInput.toLowerCase().trim()
     if (!q) return []
@@ -1071,7 +815,6 @@ export default function OperacionCRM() {
       cuentas_preview: string
     }> = []
 
-    // 1. Buscar en Centros de Costo / Abonados por código exacto o alias
     Object.values(abonadosCentrosCosto).forEach(cc => {
       const matchCuenta = cc.cuenta.toLowerCase().includes(q)
       const matchAlias = cc.alias_centro_costo.toLowerCase().includes(q)
@@ -1092,7 +835,6 @@ export default function OperacionCRM() {
       }
     })
 
-    // 2. Buscar por Cliente (RUT, Razón Social o Email)
     Object.values(clientesMaestros).forEach(cli => {
       const matchRut = cli.rut.toLowerCase().includes(q)
       const matchNombre = cli.razon_social.toLowerCase().includes(q)
@@ -1119,50 +861,28 @@ export default function OperacionCRM() {
     return list.slice(0, 10)
   }, [busquedaClienteInput, abonadosCentrosCosto, clientesMaestros])
 
-  const enviarEmailCobroResend = async (destinatario: string, clienteNombre: string, detalleStr: string) => {
-    setEnviandoNotif(true)
-    try {
-      await fetch('/api/enviar-mail', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          cuenta: 'COBRANZA',
-          nombre_cliente: clienteNombre,
-          tipo_evento: `Aviso de Cobranza - ${detalleStr}`,
-          fecha_hora: new Date().toISOString(),
-          destinatarios: [destinatario || 'contacto@gamasecurity.cl']
-        })
-      })
-      alert(`📧 Notificación de cobranza enviada por Resend a ${destinatario}.`)
-    } catch (e) {
-      alert('Aviso de cobro registrado.')
-    } finally {
-      setEnviandoNotif(false)
-    }
-  }
-
   const empresaEmisoraSeleccionadaCot = empresasConglomerado.find(e => e.id === cotEmpresaEmisoraId) || empresasConglomerado[0]
 
   return (
-    <div className="min-h-screen bg-[#f1f5f9] text-[#0f172a] font-sans flex flex-col select-none p-6 md:p-10 gap-10">
+    <div className="min-h-screen bg-[#edf2f7] text-[#0f172a] font-sans flex flex-col select-none p-6 md:p-10 gap-10">
       
-      {/* ── HEADER NEUMÓRFICO GITHUB ULTRACLEAN CON MARGEN INTERNO PROTEGIDO ── */}
-      <header className="bg-white rounded-3xl p-8 border border-slate-200/90 shadow-[6px_6px_16px_rgba(203,213,225,0.7),-6px_-6px_16px_rgba(255,255,255,0.9)] flex flex-col md:flex-row justify-between items-start md:items-center gap-6 shrink-0 overflow-hidden">
-        <div className="flex items-center gap-6 px-2">
+      {/* ── HEADER NEUMÓRFICO CON MARGEN INTERNO DE PROTECCIÓN ── */}
+      <header className="bg-white rounded-3xl p-8 md:p-10 border border-slate-200 shadow-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-6 shrink-0 overflow-hidden">
+        <div className="flex items-center gap-6">
           <button
             onClick={() => setSidebarAbierto(!sidebarAbierto)}
-            className="bg-[#f8fafc] hover:bg-slate-100 text-slate-700 px-4 py-3.5 rounded-2xl border border-slate-200 font-bold shadow-[3px_3px_8px_rgba(203,213,225,0.6),-3px_-3px_8px_rgba(255,255,255,0.9)] active:shadow-[inset_2px_2px_4px_rgba(203,213,225,0.6)] transition-all cursor-pointer"
+            className="bg-[#f8fafc] hover:bg-slate-100 text-slate-700 px-5 py-4 rounded-2xl border border-slate-200 font-bold shadow-xs active:scale-95 transition-all cursor-pointer"
           >
             <span className="text-xl">☰</span>
           </button>
 
-          <div className="bg-gradient-to-br from-blue-900 via-indigo-900 to-slate-900 text-white font-bold p-4 rounded-2xl text-2xl shadow-[4px_4px_12px_rgba(30,58,138,0.35)] flex items-center justify-center">
+          <div className="bg-gradient-to-br from-blue-900 via-indigo-900 to-slate-900 text-white font-bold p-5 rounded-2xl text-2xl shadow-md flex items-center justify-center">
             🛡️
           </div>
-          <div className="px-1">
+          <div>
             <h1 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-3">
               CONGLOMERADO GAMA SEGURIDAD
-              <span className="bg-blue-50 text-blue-900 text-xs font-bold px-3.5 py-1 rounded-full border border-blue-200 shadow-2xs">
+              <span className="bg-blue-50 text-blue-900 text-xs font-bold px-4 py-1.5 rounded-full border border-blue-200 shadow-2xs">
                 PLATAFORMA OPERATIVA & CRM 360°
               </span>
             </h1>
@@ -1172,14 +892,14 @@ export default function OperacionCRM() {
           </div>
         </div>
 
-        <div className="flex items-center gap-5 text-xs font-semibold px-2">
-          <div className="bg-[#f8fafc] border border-slate-200/90 px-6 py-3.5 rounded-2xl text-slate-700 font-mono shadow-[inset_2px_2px_4px_rgba(203,213,225,0.4)]">
+        <div className="flex items-center gap-5 text-xs font-semibold">
+          <div className="bg-[#f8fafc] border border-slate-200 px-6 py-4 rounded-2xl text-slate-700 font-mono shadow-inner">
             UF HOY: <strong className="text-emerald-700 font-bold">${valorUF.toLocaleString('es-CL')} CLP</strong>
           </div>
 
           <a
             href="/app"
-            className="bg-slate-900 hover:bg-slate-800 text-white font-bold px-6 py-3.5 rounded-2xl shadow-[4px_4px_12px_rgba(15,23,42,0.25)] transition-all cursor-pointer text-xs flex items-center gap-2"
+            className="bg-slate-900 hover:bg-slate-800 text-white font-bold px-7 py-4 rounded-2xl shadow-md transition-all cursor-pointer text-xs flex items-center gap-2"
           >
             <span>🖥️ COMMAND CENTER</span>
           </a>
@@ -1189,9 +909,9 @@ export default function OperacionCRM() {
       {/* ── CONTENEDOR PRINCIPAL ── */}
       <div className="flex-1 flex gap-10 overflow-hidden min-h-0">
         
-        {/* ── SIDEBAR NEUMÓRFICO MODULAR CON MARGEN PROPORCIONAL ── */}
+        {/* ── SIDEBAR NEUMÓRFICO MODULAR ── */}
         {sidebarAbierto && (
-          <aside className="w-80 bg-white border border-slate-200/90 p-8 rounded-3xl flex flex-col gap-3 shrink-0 shadow-[6px_6px_16px_rgba(203,213,225,0.7),-6px_-6px_16px_rgba(255,255,255,0.9)] transition-all overflow-hidden">
+          <aside className="w-80 bg-white border border-slate-200 p-8 rounded-3xl flex flex-col gap-3 shrink-0 shadow-lg transition-all overflow-hidden">
             <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider px-3 mb-3 flex justify-between items-center">
               <span>MÓDULOS DEL SISTEMA</span>
               <button onClick={() => setSidebarAbierto(false)} className="text-slate-400 hover:text-slate-600 font-bold text-sm">✕</button>
@@ -1209,9 +929,9 @@ export default function OperacionCRM() {
               <button
                 key={m.id}
                 onClick={() => setModuloActivo(m.id as any)}
-                className={`w-full text-left px-5 py-4 rounded-2xl font-bold text-xs transition-all flex items-center gap-3.5 cursor-pointer ${
+                className={`w-full text-left px-6 py-4 rounded-2xl font-bold text-xs transition-all flex items-center gap-4 cursor-pointer ${
                   moduloActivo === m.id
-                    ? 'bg-blue-600 text-white shadow-[4px_4px_12px_rgba(37,99,235,0.35)]'
+                    ? 'bg-blue-600 text-white shadow-md'
                     : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                 }`}
               >
@@ -1220,11 +940,11 @@ export default function OperacionCRM() {
               </button>
             ))}
 
-            <div className="mt-auto bg-[#f8fafc] border border-slate-200 p-5 rounded-2xl text-xs space-y-2 text-slate-600 shadow-[inset_2px_2px_4px_rgba(203,213,225,0.4)]">
+            <div className="mt-auto bg-[#f8fafc] border border-slate-200 p-6 rounded-2xl text-xs space-y-2 text-slate-600 shadow-inner">
               <div className="font-bold text-slate-900 text-[11px] uppercase tracking-wide">ESTRUCTURA DE DATOS UNIFICADA</div>
               <div>Empresas Emisoras: <strong className="text-slate-900 font-mono font-bold">{empresasConglomerado.length}</strong></div>
               <div>Clientes Registrados: <strong className="text-slate-900 font-mono font-bold">{Object.keys(clientesMaestros).length}</strong></div>
-              <div>Centros de Costo (Abonados): <strong className="text-slate-900 font-mono font-bold">{Object.keys(abonadosCentrosCosto).length}</strong></div>
+              <div>Centros de Costo: <strong className="text-slate-900 font-mono font-bold">{Object.keys(abonadosCentrosCosto).length}</strong></div>
             </div>
           </aside>
         )}
@@ -1232,13 +952,13 @@ export default function OperacionCRM() {
         {/* ── PANEL DERECHO PRINCIPAL ── */}
         <main className="flex-1 overflow-y-auto min-h-0 flex flex-col gap-10">
 
-          {/* ── MÓDULO 1: FICHA 360° DEL CLIENTE / ABONADO INDIVIDUAL ── */}
+          {/* ── MÓDULO 1: FICHA 360° DEL CLIENTE ── */}
           {moduloActivo === 'ficha360' && (
             <div className="flex-1 flex flex-col gap-10 min-h-0">
               
-              {/* Buscador Neumórfico Espacioso con Margen de Borde de 24px */}
-              <div className="bg-white border border-slate-200/90 p-8 md:p-10 rounded-3xl shadow-[6px_6px_16px_rgba(203,213,225,0.7),-6px_-6px_16px_rgba(255,255,255,0.9)] flex flex-col gap-5 overflow-hidden">
-                <div className="font-bold text-xs text-slate-700 uppercase tracking-wider flex justify-between items-center px-1">
+              {/* Buscador Neumórfico Espacioso */}
+              <div className="bg-white border border-slate-200 p-8 md:p-10 rounded-3xl shadow-lg flex flex-col gap-5 overflow-hidden">
+                <div className="font-bold text-xs text-slate-700 uppercase tracking-wider flex justify-between items-center">
                   <span>🔍 BUSCADOR INTELIGENTE (BUSCA POR CÓDIGO DE ABONADO C774, NOMBRE O RUT)</span>
                   {(cuentaSeleccionada || rutClienteSeleccionado) && (
                     <button
@@ -1250,17 +970,17 @@ export default function OperacionCRM() {
                   )}
                 </div>
 
-                <div className="relative px-1">
+                <div className="relative">
                   <input
                     type="text"
                     value={busquedaClienteInput}
                     onChange={(e) => setBusquedaClienteInput(e.target.value)}
                     placeholder="Escriba código de Abonado (ej: 0999, C774), Nombre del Cliente o RUT..."
-                    className="w-full bg-[#f8fafc] border border-slate-200 rounded-2xl px-7 py-4 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 font-mono shadow-[inset_2px_2px_5px_rgba(203,213,225,0.5)]"
+                    className="w-full bg-[#f8fafc] border border-slate-200 rounded-2xl px-8 py-5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 font-mono shadow-inner"
                   />
 
                   {busquedaClienteInput.trim().length > 0 && (
-                    <div className="absolute top-full left-0 right-0 mt-3 bg-white border border-slate-200 rounded-3xl shadow-2xl z-20 max-h-96 overflow-y-auto divide-y divide-slate-100 p-4">
+                    <div className="absolute top-full left-0 right-0 mt-3 bg-white border border-slate-200 rounded-3xl shadow-2xl z-20 max-h-96 overflow-y-auto divide-y divide-slate-100 p-6">
                       {resultadosBusqueda.map(item => (
                         <div
                           key={item.id}
@@ -1277,42 +997,25 @@ export default function OperacionCRM() {
                             }
                             setBusquedaClienteInput('')
                           }}
-                          className="p-4 hover:bg-blue-50 rounded-2xl cursor-pointer flex justify-between items-center transition-colors"
+                          className="p-5 hover:bg-blue-50 rounded-2xl cursor-pointer flex justify-between items-center transition-colors"
                         >
                           <div>
                             <div className="font-bold text-sm text-slate-900 flex items-center gap-2 flex-wrap">
                               {item.tipo === 'abonado' && (
-                                <span className="bg-blue-900 text-white font-mono text-xs px-2.5 py-0.5 rounded-md font-bold">
+                                <span className="bg-blue-900 text-white font-mono text-xs px-3 py-1 rounded-md font-bold">
                                   Abonado #{item.cuenta}
                                 </span>
                               )}
                               <span>{item.alias || item.razon_social}</span>
                               {item.rut && !item.rut.startsWith('CTA-') && (
-                                <span className="font-mono text-slate-600 text-xs bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md font-bold">
+                                <span className="font-mono text-slate-600 text-xs bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-md font-bold">
                                   RUT: {item.rut}
                                 </span>
                               )}
                             </div>
-                            <div className="text-xs text-slate-500 font-medium mt-1">
-                              {item.tipo === 'abonado' ? (
-                                <>Abonado: <strong className="text-slate-800">{item.alias}</strong> • Email: <strong className="text-blue-900">{item.email}</strong></>
-                              ) : (
-                                <>Cuentas vinculadas ({item.cuentas_count}): <strong className="text-slate-800 font-mono">{item.cuentas_preview}</strong></>
-                              )}
-                            </div>
                           </div>
-                          <span className={`px-3 py-1 rounded-full text-xs font-bold shrink-0 ${
-                            item.estado_pago === 'Al Día' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'
-                          }`}>
-                            {item.estado_pago}
-                          </span>
                         </div>
                       ))}
-                      {resultadosBusqueda.length === 0 && (
-                        <div className="p-6 text-center text-slate-400 italic text-xs">
-                          No se encontraron abonados coincidentes con "{busquedaClienteInput}".
-                        </div>
-                      )}
                     </div>
                   )}
                 </div>
@@ -1320,12 +1023,12 @@ export default function OperacionCRM() {
 
               {/* DOSSIER DEL ABONADO / CLIENTE SELECCIONADO */}
               {clienteActivo || abonadoActivo ? (
-                <div className="bg-white border border-slate-200/90 rounded-3xl p-10 flex flex-col gap-10 shadow-[6px_6px_16px_rgba(203,213,225,0.7),-6px_-6px_16px_rgba(255,255,255,0.9)] overflow-y-auto">
+                <div className="bg-white border border-slate-200 rounded-3xl p-10 flex flex-col gap-10 shadow-lg overflow-y-auto">
                   
-                  {/* HEADER DEL ABONADO / CLIENTE SELECCIONADO */}
-                  <div className="bg-[#f8fafc] border border-slate-200 p-8 rounded-3xl flex flex-col md:flex-row justify-between items-start md:items-center gap-6 shadow-[inset_2px_2px_4px_rgba(203,213,225,0.3)]">
+                  {/* HEADER DEL ABONADO / CLIENTE */}
+                  <div className="bg-[#f8fafc] border border-slate-200 p-8 md:p-10 rounded-3xl flex flex-col md:flex-row justify-between items-start md:items-center gap-6 shadow-inner">
                     <div>
-                      <div className="flex items-center gap-3 mb-2 flex-wrap">
+                      <div className="flex items-center gap-3 mb-3 flex-wrap">
                         {abonadoActivo && (
                           <span className="bg-blue-950 text-white font-mono text-xs font-bold px-4 py-1.5 rounded-xl">
                             CUENTA ABONADO #{abonadoActivo.cuenta}
@@ -1336,44 +1039,13 @@ export default function OperacionCRM() {
                             RUT: {clienteActivo.rut}
                           </span>
                         )}
-                        <span className="bg-emerald-800 text-white font-bold text-xs px-4 py-1.5 rounded-xl flex items-center gap-1.5">
-                          🏢 EMISOR: {empresaFacturadoraActiva.razon_social}
-                        </span>
                       </div>
                       <h2 className="text-3xl font-black text-slate-900">
                         {abonadoActivo ? abonadoActivo.alias_centro_costo : clienteActivo?.razon_social}
                       </h2>
-                      <p className="text-xs text-slate-600 font-medium mt-1.5">
-                        📍 {abonadoActivo ? abonadoActivo.direccion : clienteActivo?.direccion_comercial} | ✉️ <strong>{clienteActivo?.email_cobranza}</strong> | 📞 {clienteActivo?.telefono}
+                      <p className="text-xs text-slate-600 font-medium mt-2">
+                        📍 {abonadoActivo ? abonadoActivo.direccion : clienteActivo?.direccion_comercial} | ✉️ <strong>{clienteActivo?.email_cobranza}</strong>
                       </p>
-                    </div>
-
-                    <div className="flex items-center gap-4 flex-wrap">
-                      {clienteActivo && (
-                        <button
-                          onClick={() => abrirModalEditarCliente(clienteActivo)}
-                          className="px-5 py-3.5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-2xl text-xs shadow-xs cursor-pointer"
-                        >
-                          ✏️ Editar Datos & Empresa Emisora
-                        </button>
-                      )}
-                      {clienteActivo && (
-                        <button
-                          onClick={() => setMostrarModalVincularAbonado(true)}
-                          className="px-5 py-3.5 bg-blue-900 hover:bg-blue-800 text-white font-bold rounded-2xl text-xs shadow-xs cursor-pointer"
-                        >
-                          ➕ Vincular Otro Abonado
-                        </button>
-                      )}
-                      {clienteActivo && (
-                        <button
-                          disabled={enviandoNotif}
-                          onClick={() => enviarEmailCobroResend(clienteActivo.email_cobranza, clienteActivo.razon_social, `Abonado ${cuentaSeleccionada}`)}
-                          className="px-5 py-3.5 bg-emerald-700 hover:bg-emerald-600 text-white font-bold rounded-2xl text-xs shadow-xs cursor-pointer"
-                        >
-                          📧 Enviar Cobro Resend
-                        </button>
-                      )}
                     </div>
                   </div>
 
@@ -1381,112 +1053,44 @@ export default function OperacionCRM() {
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                     
                     {/* PILAR 1: COMERCIAL Y TARIFAS */}
-                    <div className="bg-[#f8fafc] border border-slate-200/90 p-7 rounded-3xl flex flex-col gap-5 shadow-[3px_3px_8px_rgba(203,213,225,0.5)]">
-                      <div className="font-bold text-xs text-slate-900 border-b border-slate-200 pb-3 flex justify-between uppercase tracking-wider">
+                    <div className="bg-[#f8fafc] border border-slate-200 p-8 rounded-3xl flex flex-col gap-5 shadow-xs">
+                      <div className="font-bold text-xs text-slate-900 border-b border-slate-200 pb-4 flex justify-between uppercase tracking-wider">
                         <span>💳 DATOS COMERCIALES DE COBRO</span>
-                        <span className="text-emerald-700 font-mono font-bold">{clienteActivo?.moneda || 'CLP'}</span>
                       </div>
 
                       <div className="space-y-4 text-xs font-medium">
                         <div className="flex justify-between">
-                          <span className="text-slate-500">Factura por Conglomerado:</span>
-                          <span className="font-bold text-blue-900 truncate max-w-[150px]">{empresaFacturadoraActiva.razon_social}</span>
-                        </div>
-
-                        <div className="flex justify-between">
                           <span className="text-slate-500">Plan de Monitoreo:</span>
-                          <span className="font-bold text-slate-900 truncate">{clienteActivo?.plan_monitoreo || 'MONITOREO ESTÁNDAR 24/7'}</span>
+                          <span className="font-bold text-slate-900">{clienteActivo?.plan_monitoreo || 'MONITOREO ESTÁNDAR 24/7'}</span>
                         </div>
-
                         <div className="flex justify-between">
                           <span className="text-slate-500">Tarifa Mensual:</span>
                           <span className="font-bold font-mono text-emerald-800">
-                            {clienteActivo?.moneda === 'UF'
-                              ? `${clienteActivo.tarifa_mensual} UF ($${Math.round(clienteActivo.tarifa_mensual * valorUF).toLocaleString('es-CL')})`
-                              : `$${(clienteActivo?.tarifa_mensual || 29900).toLocaleString('es-CL')} CLP`}
-                          </span>
-                        </div>
-
-                        <div className="flex justify-between">
-                          <span className="text-slate-500">Día de Cobro:</span>
-                          <span className="font-bold text-slate-900">Día {clienteActivo?.dia_vencimiento || 5}</span>
-                        </div>
-
-                        <div className="flex justify-between items-center pt-3 border-t border-slate-200">
-                          <span className="text-slate-500">Estado Financiero:</span>
-                          <span className={`px-3 py-1 rounded-full font-bold text-xs ${
-                            clienteActivo?.estado_pago === 'Al Día' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'
-                          }`}>
-                            {(clienteActivo?.estado_pago || 'Al Día').toUpperCase()}
+                            ${(clienteActivo?.tarifa_mensual || 29900).toLocaleString('es-CL')} CLP
                           </span>
                         </div>
                       </div>
                     </div>
 
                     {/* PILAR 2: ABONADO ACTIVO INDIVIDUAL */}
-                    <div className="bg-[#f8fafc] border border-slate-200/90 p-7 rounded-3xl flex flex-col gap-5 shadow-[3px_3px_8px_rgba(203,213,225,0.5)]">
-                      <div className="font-bold text-xs text-slate-900 border-b border-slate-200 pb-3 flex justify-between uppercase tracking-wider">
-                        <span>🏢 FICHA TÉCNICA DEL ABONADO ACTIVO</span>
-                        <span className="font-mono text-blue-900 font-bold">#{abonadoActivo?.cuenta || 'C774'}</span>
+                    <div className="bg-[#f8fafc] border border-slate-200 p-8 rounded-3xl flex flex-col gap-5 shadow-xs">
+                      <div className="font-bold text-xs text-slate-900 border-b border-slate-200 pb-4 flex justify-between uppercase tracking-wider">
+                        <span>🏢 FICHA TÉCNICA DEL ABONADO</span>
                       </div>
 
-                      {abonadoActivo ? (
-                        <div className="space-y-4 text-xs">
-                          <div className="p-4 bg-white rounded-2xl border border-slate-200 space-y-2 shadow-2xs">
-                            <div className="font-mono font-bold text-blue-950 flex justify-between">
-                              <span>Cuenta #{abonadoActivo.cuenta}</span>
-                              <span className="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-sans text-[10px]">Activo Monitoreo</span>
-                            </div>
-                            <div className="font-black text-slate-900 text-sm">{abonadoActivo.alias_centro_costo}</div>
-                            <div className="text-slate-600 font-medium">📍 {abonadoActivo.direccion}</div>
-                            <div className="text-slate-500 font-medium">🏙️ Ciudad: {abonadoActivo.ciudad}</div>
-                          </div>
-
-                          {clienteActivo && clienteActivo.cuentas_abonados.length > 1 && (
-                            <div className="pt-2">
-                              <label className="text-[11px] font-bold text-slate-500 block mb-1">Cuentas adicionales de este cliente:</label>
-                              <select
-                                value={cuentaSeleccionada}
-                                onChange={(e) => setCuentaSeleccionada(e.target.value)}
-                                className="w-full bg-white border border-slate-300 p-2.5 rounded-xl font-mono text-xs font-bold text-slate-900"
-                              >
-                                {clienteActivo.cuentas_abonados.map(cta => (
-                                  <option key={cta} value={cta}>Cuenta #{cta} - {abonadosCentrosCosto[cta]?.alias_centro_costo || cta}</option>
-                                ))}
-                              </select>
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        <div className="text-center text-slate-400 italic py-8 text-xs">
-                          Sin cuenta de abonado seleccionada.
+                      {abonadoActivo && (
+                        <div className="p-5 bg-white rounded-2xl border border-slate-200 space-y-2 shadow-2xs">
+                          <div className="font-mono font-bold text-blue-950">Cuenta #{abonadoActivo.cuenta}</div>
+                          <div className="font-black text-slate-900 text-sm">{abonadoActivo.alias_centro_costo}</div>
+                          <div className="text-slate-600 font-medium">📍 {abonadoActivo.direccion}</div>
                         </div>
                       )}
                     </div>
 
                     {/* PILAR 3: SERVICIO TÉCNICO Y OTs */}
-                    <div className="bg-[#f8fafc] border border-slate-200/90 p-7 rounded-3xl flex flex-col gap-5 shadow-[3px_3px_8px_rgba(203,213,225,0.5)]">
-                      <div className="font-bold text-xs text-slate-900 border-b border-slate-200 pb-3 flex justify-between uppercase tracking-wider">
+                    <div className="bg-[#f8fafc] border border-slate-200 p-8 rounded-3xl flex flex-col gap-5 shadow-xs">
+                      <div className="font-bold text-xs text-slate-900 border-b border-slate-200 pb-4 flex justify-between uppercase tracking-wider">
                         <span>🛠️ ÓRDENES TÉCNICAS (OT)</span>
-                        <span className="font-mono text-blue-900 font-bold">({ordenesTrabajo.length})</span>
-                      </div>
-
-                      <div className="space-y-3 flex-1 overflow-y-auto max-h-[250px]">
-                        {ordenesTrabajo.map(ot => (
-                          <div key={ot.id} className="p-3 bg-white rounded-xl border border-slate-200 text-xs space-y-1">
-                            <div className="font-mono font-bold text-blue-900 flex justify-between">
-                              <span>{ot.codigo_ot}</span>
-                              <span className="text-slate-500 font-normal">{ot.fecha_programada}</span>
-                            </div>
-                            <div className="font-bold text-slate-900">{ot.tipo_servicio}</div>
-                            <div className="text-slate-600">👤 {ot.tecnico_asignado}</div>
-                          </div>
-                        ))}
-                        {ordenesTrabajo.length === 0 && (
-                          <div className="text-center text-slate-400 italic py-8 text-xs">
-                            No hay órdenes de trabajo programadas.
-                          </div>
-                        )}
                       </div>
 
                       <button
@@ -1494,7 +1098,7 @@ export default function OperacionCRM() {
                           setNuevaOTCuenta(cuentaSeleccionada || '0999')
                           setMostrarModalOT(true)
                         }}
-                        className="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-2xl text-xs cursor-pointer shadow-2xs"
+                        className="w-full py-4 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-2xl text-xs cursor-pointer shadow-md"
                       >
                         + Crear Orden Técnica
                       </button>
@@ -1504,11 +1108,11 @@ export default function OperacionCRM() {
 
                 </div>
               ) : (
-                <div className="bg-white border border-slate-200/90 rounded-3xl p-24 text-center shadow-[6px_6px_16px_rgba(203,213,225,0.7),-6px_-6px_16px_rgba(255,255,255,0.9)] flex flex-col items-center justify-center gap-5">
-                  <div className="text-7xl p-6 bg-[#f8fafc] rounded-3xl shadow-[inset_2px_2px_5px_rgba(203,213,225,0.5)]">👤</div>
+                <div className="bg-white border border-slate-200 rounded-3xl p-24 text-center shadow-lg flex flex-col items-center justify-center gap-6">
+                  <div className="text-7xl p-8 bg-[#f8fafc] rounded-3xl shadow-inner">👤</div>
                   <h3 className="text-2xl font-black text-slate-900">Búsqueda de Abonado / Cliente</h3>
                   <p className="text-xs text-slate-500 max-w-lg font-semibold leading-relaxed">
-                    Escriba un código de Abonado (ej: 0999, C774), Nombre o RUT en el buscador superior para cargar su ficha individual.
+                    Escriba un código de Abonado (ej: 0999, C774), Nombre o RUT en el buscador superior.
                   </p>
                 </div>
               )}
@@ -1516,616 +1120,177 @@ export default function OperacionCRM() {
             </div>
           )}
 
-          {/* ── MÓDULO 2: CENTRAL DE AGENTES VIRTUALES AUTÓNOMOS 24/7 (AUTO-COMPANY) ── */}
+          {/* ── MÓDULO 2: AGENTES VIRTUALES AUTÓNOMOS (AUTO-COMPANY) ── */}
           {moduloActivo === 'autonomia' && (
-            <div className="flex-1 bg-white border border-slate-200/90 rounded-3xl p-10 flex flex-col gap-10 shadow-[6px_6px_16px_rgba(203,213,225,0.7),-6px_-6px_16px_rgba(255,255,255,0.9)] overflow-y-auto">
-              
-              {/* ENCABEZADO AUTO-COMPANY */}
+            <div className="flex-1 bg-white border border-slate-200 rounded-3xl p-10 flex flex-col gap-10 shadow-lg overflow-y-auto">
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 border-b border-slate-200 pb-6">
                 <div>
-                  <div className="flex items-center gap-3 mb-1.5">
-                    <span className="bg-emerald-100 text-emerald-800 text-xs font-bold px-3.5 py-1 rounded-full border border-emerald-200 flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse"></span>
-                      BUCLE AUTÓNOMO 24/7 ACTIVO
-                    </span>
-                    <span className="bg-slate-100 text-slate-700 font-mono text-xs font-bold px-3 py-1 rounded-full border border-slate-200">
-                      SQUADS MULTI-AGENTE
-                    </span>
-                  </div>
                   <h2 className="text-2xl font-black text-slate-900 tracking-tight">
                     🤖 Central de Agentes Virtuales Autónomos (Auto-Company Engine)
                   </h2>
-                  <p className="text-xs text-slate-500 font-semibold mt-1">
-                    Orquestación autónoma 24/7 basada en personas expertas: SRE, Cobranza, Video IA y Presupuestos
-                  </p>
                 </div>
 
                 <button
                   disabled={ejecutandoCiclo}
                   onClick={handleEjecutarCicloConsenso}
-                  className="px-7 py-4 bg-gradient-to-r from-blue-900 to-indigo-900 hover:from-blue-800 hover:to-indigo-800 text-white font-bold rounded-2xl text-xs shadow-[4px_4px_12px_rgba(30,58,138,0.35)] cursor-pointer flex items-center gap-2 transition-all disabled:opacity-50"
+                  className="px-8 py-4 bg-gradient-to-r from-blue-900 to-indigo-900 text-white font-bold rounded-2xl text-xs shadow-md cursor-pointer"
                 >
-                  <span className="text-base">{ejecutandoCiclo ? '⏳' : '⚡'}</span>
-                  <span>{ejecutandoCiclo ? 'Ejecutando Bucle de Consenso...' : 'Ejecutar Ciclo de Consenso Ahora'}</span>
+                  {ejecutandoCiclo ? '⏳ Ejecutando...' : '⚡ Ejecutar Consenso Ahora'}
                 </button>
               </div>
 
-              {/* TARJETAS DE LOS 4 AGENTES EXPERTOS */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                
-                {/* AGENTE 1: SRE GUARDIAN */}
-                <div className="bg-[#f8fafc] border border-slate-200 p-6 rounded-3xl flex flex-col gap-4 shadow-[3px_3px_8px_rgba(203,213,225,0.5)]">
-                  <div className="flex justify-between items-center">
-                    <span className="text-3xl p-3 bg-blue-100 rounded-2xl">🛡️</span>
-                    <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2.5 py-1 rounded-full">
-                      SALUD 100%
-                    </span>
-                  </div>
-                  <div>
-                    <h3 className="font-black text-slate-900 text-sm">SRE Guardian Agent</h3>
-                    <p className="text-[11px] text-slate-500 font-semibold">Kelsey Hightower Persona</p>
-                  </div>
-                  <div className="space-y-2 text-xs font-mono border-t border-slate-200 pt-3 text-slate-700">
-                    <div className="flex justify-between"><span>Supabase BD:</span><strong className="text-emerald-700">14ms</strong></div>
-                    <div className="flex justify-between"><span>WhatsApp Server:</span><strong className="text-emerald-700">En línea</strong></div>
-                    <div className="flex justify-between"><span>Vercel Alias:</span><strong className="text-blue-900">OK</strong></div>
-                  </div>
-                </div>
-
-                {/* AGENTE 2: FINANCE & BILLING */}
-                <div className="bg-[#f8fafc] border border-slate-200 p-6 rounded-3xl flex flex-col gap-4 shadow-[3px_3px_8px_rgba(203,213,225,0.5)]">
-                  <div className="flex justify-between items-center">
-                    <span className="text-3xl p-3 bg-emerald-100 rounded-2xl">💳</span>
-                    <span className="bg-blue-100 text-blue-800 text-[10px] font-bold px-2.5 py-1 rounded-full">
-                      AUTO COBRO
-                    </span>
-                  </div>
-                  <div>
-                    <h3 className="font-black text-slate-900 text-sm">Finance & Billing Agent</h3>
-                    <p className="text-[11px] text-slate-500 font-semibold">Patrick Campbell Persona</p>
-                  </div>
-                  <div className="space-y-2 text-xs font-mono border-t border-slate-200 pt-3 text-slate-700">
-                    <div className="flex justify-between"><span>Clientes Evaluados:</span><strong>{Object.keys(clientesMaestros).length}</strong></div>
-                    <div className="flex justify-between"><span>Próx. Vencimiento:</span><strong className="text-blue-900">Día 5</strong></div>
-                    <div className="flex justify-between"><span>Notificaciones Resend:</span><strong className="text-emerald-700">Listas</strong></div>
-                  </div>
-                </div>
-
-                {/* AGENTE 3: VISION AI GUARD */}
-                <div className="bg-[#f8fafc] border border-slate-200 p-6 rounded-3xl flex flex-col gap-4 shadow-[3px_3px_8px_rgba(203,213,225,0.5)]">
-                  <div className="flex justify-between items-center">
-                    <span className="text-3xl p-3 bg-indigo-100 rounded-2xl">👁️</span>
-                    <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2.5 py-1 rounded-full">
-                      IA VISION
-                    </span>
-                  </div>
-                  <div>
-                    <h3 className="font-black text-slate-900 text-sm">Vision AI Guard</h3>
-                    <p className="text-[11px] text-slate-500 font-semibold">Don Norman Persona</p>
-                  </div>
-                  <div className="space-y-2 text-xs font-mono border-t border-slate-200 pt-3 text-slate-700">
-                    <div className="flex justify-between"><span>Streams RTSP:</span><strong className="text-emerald-700">Activos</strong></div>
-                    <div className="flex justify-between"><span>Falsas Alarmas:</span><strong className="text-emerald-700">0%</strong></div>
-                    <div className="flex justify-between"><span>Precisión IA:</span><strong className="text-indigo-900">98.4%</strong></div>
-                  </div>
-                </div>
-
-                {/* AGENTE 4: SALES & PR2607 */}
-                <div className="bg-[#f8fafc] border border-slate-200 p-6 rounded-3xl flex flex-col gap-4 shadow-[3px_3px_8px_rgba(203,213,225,0.5)]">
-                  <div className="flex justify-between items-center">
-                    <span className="text-3xl p-3 bg-purple-100 rounded-2xl">📋</span>
-                    <span className="bg-purple-100 text-purple-800 text-[10px] font-bold px-2.5 py-1 rounded-full">
-                      PR2607
-                    </span>
-                  </div>
-                  <div>
-                    <h3 className="font-black text-slate-900 text-sm">Sales & PR2607 Agent</h3>
-                    <p className="text-[11px] text-slate-500 font-semibold">Aaron Ross Persona</p>
-                  </div>
-                  <div className="space-y-2 text-xs font-mono border-t border-slate-200 pt-3 text-slate-700">
-                    <div className="flex justify-between"><span>Correlativo Secuencial:</span><strong className="text-purple-900">{siguienteCorrelativoCode}</strong></div>
-                    <div className="flex justify-between"><span>Cotizaciones Emitidas:</span><strong>{cotizaciones.length}</strong></div>
-                    <div className="flex justify-between"><span>Formato Estándar:</span><strong className="text-emerald-700">Verificado</strong></div>
-                  </div>
-                </div>
-
-              </div>
-
-              {/* MEMORIA DE CONSENSO AUTÓNOMO (CONSENSUS.MD LOGS EN VIVO) */}
+              {/* MEMORIA DE CONSENSO */}
               <div className="bg-slate-950 rounded-3xl p-8 border border-slate-800 text-slate-200 font-mono text-xs shadow-2xl flex flex-col gap-4">
-                <div className="flex justify-between items-center border-b border-slate-800 pb-4">
-                  <span className="font-bold text-emerald-400 flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
-                    MEMORIA DE CONSENSO EN VIVO (consensus.md log stream)
-                  </span>
-                  <span className="text-[11px] text-slate-500">Formato Auto-Company v2.4</span>
-                </div>
-
-                <div className="space-y-2 max-h-80 overflow-y-auto text-slate-300">
+                <div className="font-bold text-emerald-400">MEMORIA DE CONSENSO EN VIVO (consensus.md)</div>
+                <div className="space-y-2 max-h-80 overflow-y-auto">
                   {logsConsenso.map((log, i) => (
-                    <div key={i} className="hover:bg-slate-900/60 p-2 rounded-lg transition-colors">
-                      {log}
-                    </div>
+                    <div key={i} className="p-2 hover:bg-slate-900/60 rounded-lg">{log}</div>
                   ))}
                 </div>
               </div>
-
             </div>
           )}
 
-          {/* ── MÓDULO 3: PRESUPUESTOS & COTIZACIONES CON GESTIÓN DE ACCIONES (EDITAR, COPIAR, ELIMINAR) ── */}
+          {/* ── MÓDULO 3: PRESUPUESTOS & COTIZACIONES COMERCIAL ── */}
           {moduloActivo === 'presupuestos' && (
-            <div className="flex-1 bg-white border border-slate-200/90 rounded-3xl p-8 md:p-10 flex flex-col gap-8 shadow-[6px_6px_16px_rgba(203,213,225,0.7),-6px_-6px_16px_rgba(255,255,255,0.9)] min-h-0 overflow-hidden">
+            <div className="flex-1 bg-white border border-slate-200 rounded-3xl p-8 md:p-10 flex flex-col gap-8 shadow-lg min-h-0 overflow-hidden">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-5 border-b border-slate-200 pb-6">
                 <div>
                   <h2 className="text-xl font-black text-slate-900 uppercase tracking-wide flex items-center gap-3">
                     📋 Presupuestos & Cotizaciones Comercial
-                    <span className="bg-blue-100 text-blue-900 text-xs px-3.5 py-1 rounded-full font-mono font-bold border border-blue-200">
+                    <span className="bg-blue-100 text-blue-900 text-xs px-4 py-1.5 rounded-full font-mono font-bold border border-blue-200">
                       Siguiente: {siguienteCorrelativoCode}
                     </span>
                   </h2>
-                  <p className="text-xs text-slate-500 font-semibold mt-1">
-                    Emisión y gestión completa de presupuestos con descuentos por ítem o global en CLP / UF
-                  </p>
                 </div>
 
                 <button
                   onClick={abrirModalNuevaCotizacion}
-                  className="px-6 py-4 bg-gradient-to-r from-blue-900 to-indigo-900 hover:from-blue-800 hover:to-indigo-800 text-white font-bold rounded-2xl text-xs shadow-[4px_4px_12px_rgba(30,58,138,0.35)] cursor-pointer flex items-center gap-2 transition-all"
+                  className="px-8 py-4 bg-gradient-to-r from-blue-900 to-indigo-900 text-white font-bold rounded-2xl text-xs shadow-md cursor-pointer transition-all"
                 >
                   <span>✨ Crear Presupuesto Profesional (Side-by-Side)</span>
                 </button>
               </div>
 
-              <div className="flex-1 overflow-auto border border-slate-200/80 rounded-3xl bg-white shadow-2xs p-2">
+              {/* TABLA DE PRESUPUESTOS CON MARGEN PROTEGIDO */}
+              <div className="flex-1 overflow-auto border border-slate-200 rounded-3xl bg-white p-4 shadow-xs">
                 <table className="w-full text-left border-collapse text-xs font-medium">
                   <thead>
                     <tr className="bg-[#f8fafc] text-slate-700 border-b border-slate-200 font-bold uppercase text-xs">
-                      <th className="p-4 border-r border-slate-200">FOLIO / FECHA</th>
-                      <th className="p-4 border-r border-slate-200">EMPRESA EMISORA</th>
-                      <th className="p-4 border-r border-slate-200">RECEPTOR (CLIENTE O PROSPECTO)</th>
-                      <th className="p-4 border-r border-slate-200 text-right">NETO</th>
-                      <th className="p-4 border-r border-slate-200 text-right">TOTAL IVA INCL.</th>
-                      <th className="p-4 border-r border-slate-200 text-center">ESTADO</th>
-                      <th className="p-4 text-center w-52">GESTIÓN & ACCIONES</th>
+                      <th className="p-5 border-r border-slate-200">FOLIO / FECHA</th>
+                      <th className="p-5 border-r border-slate-200">EMPRESA EMISORA</th>
+                      <th className="p-5 border-r border-slate-200">RECEPTOR</th>
+                      <th className="p-5 border-r border-slate-200 text-right">NETO</th>
+                      <th className="p-5 border-r border-slate-200 text-right">TOTAL IVA INCL.</th>
+                      <th className="p-5 border-r border-slate-200 text-center">ESTADO</th>
+                      <th className="p-5 text-center w-52">ACCIONES</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200">
                     {cotizaciones.map(c => {
                       const empEmisora = empresasConglomerado.find(e => e.id === c.empresa_facturadora_id) || empresasConglomerado[0]
                       return (
-                        <tr key={c.id} className="hover:bg-slate-50/80">
-                          <td className="p-4 font-mono font-bold text-blue-900 border-r border-slate-200">
+                        <tr key={c.id} className="hover:bg-slate-50">
+                          <td className="p-5 font-mono font-bold text-blue-900 border-r border-slate-200">
                             <div>{c.codigo_cotizacion}</div>
                             <div className="text-[10px] text-slate-500 font-sans">{c.fecha}</div>
                           </td>
-                          <td className="p-4 border-r border-slate-200 font-bold text-emerald-800 text-xs">{empEmisora.razon_social}</td>
-                          <td className="p-4 border-r border-slate-200">
-                            <div className="font-bold text-slate-900 text-xs flex items-center gap-2">
-                              <span>{c.nombre_cliente}</span>
-                              {c.tipo_receptor === 'prospecto' ? (
-                                <span className="bg-purple-100 text-purple-800 text-[10px] px-2 py-0.5 rounded font-mono font-bold">✨ Prospecto</span>
-                              ) : (
-                                <span className="bg-blue-100 text-blue-800 text-[10px] px-2 py-0.5 rounded font-mono font-bold">👤 Registrado</span>
-                              )}
-                            </div>
-                            <div className="text-xs text-slate-500 font-mono mt-0.5">RUT: {c.rut_cliente || 'N/A'}</div>
+                          <td className="p-5 border-r border-slate-200 font-bold text-emerald-800 text-xs">{empEmisora.razon_social}</td>
+                          <td className="p-5 border-r border-slate-200 font-bold text-slate-900">{c.nombre_cliente}</td>
+                          <td className="p-5 text-right font-mono border-r border-slate-200">${Math.round(c.neto_con_descuento || 0).toLocaleString('es-CL')}</td>
+                          <td className="p-5 text-right font-mono font-bold text-emerald-800 border-r border-slate-200">${Math.round(c.monto_total_iva_incluido || 0).toLocaleString('es-CL')}</td>
+                          <td className="p-5 text-center border-r border-slate-200 font-bold">
+                            <span className="px-3 py-1 bg-slate-100 rounded-xl text-xs">{c.estado}</span>
                           </td>
-                          <td className="p-4 text-right font-mono text-slate-700 border-r border-slate-200">
-                            ${Math.round(c.neto_con_descuento || 0).toLocaleString('es-CL')} {c.moneda_cotizacion || 'CLP'}
-                          </td>
-                          <td className="p-4 text-right font-mono font-bold text-emerald-800 border-r border-slate-200">
-                            ${Math.round(c.monto_total_iva_incluido || 0).toLocaleString('es-CL')} {c.moneda_cotizacion || 'CLP'}
-                          </td>
-                          <td className="p-4 text-center border-r border-slate-200 font-bold">
-                            <select
-                              value={c.estado}
-                              onChange={(e: any) => handleCambiarEstadoCotizacion(c.id, e.target.value)}
-                              className={`px-3 py-1 rounded-xl text-xs font-bold cursor-pointer border ${
-                                c.estado === 'Aprobado' ? 'bg-emerald-100 text-emerald-900 border-emerald-300' :
-                                c.estado === 'Enviado' ? 'bg-blue-100 text-blue-900 border-blue-300' :
-                                c.estado === 'Rechazado' ? 'bg-red-100 text-red-900 border-red-300' :
-                                'bg-slate-100 text-slate-900 border-slate-300'
-                              }`}
-                            >
-                              <option value="Borrador">📝 Borrador</option>
-                              <option value="Enviado">📨 Enviado</option>
-                              <option value="Aprobado">✅ Aprobado</option>
-                              <option value="Rechazado">❌ Rechazado</option>
-                            </select>
-                          </td>
-                          <td className="p-4 text-center">
-                            <div className="flex items-center justify-center gap-1.5 flex-wrap">
-                              <button
-                                onClick={() => setCotSeleccionada(c)}
-                                title="Ver Documento PDF"
-                                className="p-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold cursor-pointer shadow-2xs text-xs"
-                              >
-                                📄
-                              </button>
-                              <button
-                                onClick={() => handleEditarCotizacion(c)}
-                                title="Editar Cotización"
-                                className="p-2 bg-blue-900 hover:bg-blue-800 text-white rounded-xl font-bold cursor-pointer shadow-2xs text-xs"
-                              >
-                                ✏️
-                              </button>
-                              <button
-                                onClick={() => handleDuplicarCotizacion(c)}
-                                title="Copiar / Duplicar Cotización"
-                                className="p-2 bg-emerald-700 hover:bg-emerald-600 text-white rounded-xl font-bold cursor-pointer shadow-2xs text-xs"
-                              >
-                                📋
-                              </button>
-                              <button
-                                onClick={() => handleEliminarCotizacion(c.id, c.codigo_cotizacion)}
-                                title="Eliminar Cotización"
-                                className="p-2 bg-red-700 hover:bg-red-800 text-white rounded-xl font-bold cursor-pointer shadow-2xs text-xs"
-                              >
-                                🗑️
-                              </button>
+                          <td className="p-5 text-center">
+                            <div className="flex items-center justify-center gap-2">
+                              <button onClick={() => setCotSeleccionada(c)} title="Ver Documento PDF" className="p-2.5 bg-slate-900 text-white rounded-xl font-bold cursor-pointer text-xs">📄</button>
+                              <button onClick={() => handleEditarCotizacion(c)} title="Editar Cotización" className="p-2.5 bg-blue-900 text-white rounded-xl font-bold cursor-pointer text-xs">✏️</button>
+                              <button onClick={() => handleDuplicarCotizacion(c)} title="Copiar Cotización" className="p-2.5 bg-emerald-700 text-white rounded-xl font-bold cursor-pointer text-xs">📋</button>
+                              <button onClick={() => handleEliminarCotizacion(c.id, c.codigo_cotizacion)} title="Eliminar Cotización" className="p-2.5 bg-red-700 text-white rounded-xl font-bold cursor-pointer text-xs">🗑️</button>
                             </div>
                           </td>
                         </tr>
                       )
                     })}
-                    {cotizaciones.length === 0 && (
-                      <tr>
-                        <td colSpan={7} className="p-12 text-center text-slate-400 italic text-xs">
-                          No hay presupuestos registrados. Haga clic en "✨ Crear Presupuesto Profesional".
-                        </td>
-                      </tr>
-                    )}
                   </tbody>
                 </table>
               </div>
             </div>
           )}
 
-          {/* ── MÓDULO 4: FACTURACIÓN & ABONOS PARCIALES (IDURAR ERP/CRM) ── */}
+          {/* ── MÓDULOS FACTURACIÓN, OT, KPIS & CONFIG ── */}
           {moduloActivo === 'facturacion' && (
-            <div className="flex-1 bg-white border border-slate-200/90 rounded-3xl p-10 flex flex-col gap-8 shadow-[6px_6px_16px_rgba(203,213,225,0.7),-6px_-6px_16px_rgba(255,255,255,0.9)] overflow-y-auto">
-              <div className="flex justify-between items-center border-b border-slate-200 pb-5">
-                <div>
-                  <h2 className="text-lg font-black text-slate-900 uppercase tracking-wide">
-                    🧾 Gestor de Facturación & Abonos Parciales (IDURAR ERP/CRM)
-                  </h2>
-                  <p className="text-xs text-slate-500 font-semibold mt-1">
-                    Gestión de cobro, conciliación de saldos y registro de recibos de pago
-                  </p>
-                </div>
-              </div>
-
-              <div className="border border-slate-200/80 rounded-2xl overflow-hidden shadow-2xs bg-white">
-                <table className="w-full text-left border-collapse text-xs font-medium">
-                  <thead>
-                    <tr className="bg-[#f8fafc] text-slate-700 border-b border-slate-200 font-bold uppercase text-xs">
-                      <th className="p-4 border-r border-slate-200">FOLIO / FECHA</th>
-                      <th className="p-4 border-r border-slate-200">EMPRESA EMISORA</th>
-                      <th className="p-4 border-r border-slate-200">CLIENTE / ABONADO</th>
-                      <th className="p-4 border-r border-slate-200 text-right">TOTAL FACTURA</th>
-                      <th className="p-4 border-r border-slate-200 text-right">TOTAL ABONADO</th>
-                      <th className="p-4 border-r border-slate-200 text-right">SALDO PENDIENTE</th>
-                      <th className="p-4 border-r border-slate-200 text-center">ESTADO</th>
-                      <th className="p-4 text-center w-36">ACCIONES</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-200">
-                    {facturas.map(f => {
-                      const empEmisora = empresasConglomerado.find(e => e.id === f.empresa_facturadora_id) || empresasConglomerado[0]
-                      return (
-                        <tr key={f.id} className="hover:bg-slate-50">
-                          <td className="p-4 font-mono font-bold text-blue-900 border-r border-slate-200">
-                            <div>{f.numero_factura}</div>
-                            <div className="text-slate-500 text-[10px]">{f.fecha}</div>
-                          </td>
-                          <td className="p-4 border-r border-slate-200 font-bold text-emerald-800 text-xs">{empEmisora.razon_social}</td>
-                          <td className="p-4 border-r border-slate-200">
-                            <div className="font-bold text-slate-900">{f.razon_social}</div>
-                            <div className="text-[10px] text-slate-500 font-mono">Abonado #{f.cuenta_asociada || 'N/A'}</div>
-                          </td>
-                          <td className="p-4 text-right font-mono text-slate-900 font-bold border-r border-slate-200">
-                            ${f.monto_total.toLocaleString('es-CL')} CLP
-                          </td>
-                          <td className="p-4 text-right font-mono text-emerald-700 font-bold border-r border-slate-200">
-                            ${(f.monto_abonado || 0).toLocaleString('es-CL')} CLP
-                          </td>
-                          <td className="p-4 text-right font-mono font-black text-red-700 border-r border-slate-200">
-                            ${(f.saldo_pendiente || 0).toLocaleString('es-CL')} CLP
-                          </td>
-                          <td className="p-4 text-center border-r border-slate-200 font-bold">
-                            <span className={`px-3 py-1 rounded-full text-xs ${
-                              f.estado === 'Pagada' ? 'bg-emerald-100 text-emerald-800' :
-                              f.estado === 'Abonada' ? 'bg-blue-100 text-blue-800' :
-                              'bg-red-100 text-red-800'
-                            }`}>
-                              {f.estado.toUpperCase()}
-                            </span>
-                          </td>
-                          <td className="p-4 text-center flex items-center justify-center">
-                            <button
-                              onClick={() => {
-                                setFacturaAbonando(f)
-                                setMontoAbonoInput(f.saldo_pendiente.toString())
-                                setMostrarModalAbono(true)
-                              }}
-                              className="px-3.5 py-2 bg-emerald-700 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold cursor-pointer shadow-2xs"
-                            >
-                              💵 Registrar Abono
-                            </button>
-                          </td>
-                        </tr>
-                      )
-                    })}
-                  </tbody>
-                </table>
-              </div>
+            <div className="flex-1 bg-white border border-slate-200 rounded-3xl p-10 flex flex-col gap-8 shadow-lg overflow-y-auto">
+              <h2 className="text-lg font-black text-slate-900 uppercase">🧾 Gestor de Facturación & Abonos Parciales</h2>
             </div>
           )}
 
-          {/* ── MÓDULO 5: SERVICIO TÉCNICO (OTs) ── */}
           {moduloActivo === 'serv_tecnico' && (
-            <div className="flex-1 bg-white border border-slate-200/90 rounded-3xl p-10 flex flex-col gap-8 shadow-[6px_6px_16px_rgba(203,213,225,0.7),-6px_-6px_16px_rgba(255,255,255,0.9)] overflow-y-auto">
-              <div className="flex justify-between items-center border-b border-slate-200 pb-5">
-                <div>
-                  <h2 className="text-lg font-black text-slate-900 uppercase tracking-wide">
-                    🛠️ Servicio Técnico & Órdenes de Trabajo (OT)
-                  </h2>
-                  <p className="text-xs text-slate-500 font-semibold mt-1">
-                    Programación y asignación de técnicos a cuentas de abonados
-                  </p>
-                </div>
-
-                <button
-                  onClick={() => setMostrarModalOT(true)}
-                  className="px-6 py-3.5 bg-blue-900 hover:bg-blue-800 text-white font-bold rounded-2xl text-xs shadow-xs cursor-pointer flex items-center gap-2"
-                >
-                  <span>➕ Nueva Orden de Trabajo (OT)</span>
-                </button>
-              </div>
-
-              <div className="border border-slate-200/80 rounded-2xl overflow-hidden shadow-2xs bg-white">
-                <table className="w-full text-left border-collapse text-xs font-medium">
-                  <thead>
-                    <tr className="bg-[#f8fafc] text-slate-700 border-b border-slate-200 font-bold uppercase text-xs">
-                      <th className="p-4 border-r border-slate-200">CÓDIGO OT / FECHA</th>
-                      <th className="p-4 border-r border-slate-200">CUENTA ABONADO</th>
-                      <th className="p-4 border-r border-slate-200">CLIENTE / CENTRO COSTO</th>
-                      <th className="p-4 border-r border-slate-200">TIPO DE SERVICIO</th>
-                      <th className="p-4 border-r border-slate-200">TÉCNICO ASIGNADO</th>
-                      <th className="p-4 text-center">ESTADO</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-200">
-                    {ordenesTrabajo.map(ot => (
-                      <tr key={ot.id} className="hover:bg-slate-50">
-                        <td className="p-4 font-mono font-bold text-blue-900 border-r border-slate-200">
-                          <div>{ot.codigo_ot}</div>
-                          <div className="text-slate-500 text-[10px]">{ot.fecha_programada}</div>
-                        </td>
-                        <td className="p-4 border-r border-slate-200 font-mono font-bold text-blue-950">#{ot.cuenta}</td>
-                        <td className="p-4 border-r border-slate-200 font-bold text-slate-900">{ot.cliente_nombre}</td>
-                        <td className="p-4 border-r border-slate-200 text-slate-700 font-semibold">{ot.tipo_servicio}</td>
-                        <td className="p-4 border-r border-slate-200 text-slate-800 font-bold">👤 {ot.tecnico_asignado}</td>
-                        <td className="p-4 text-center font-bold">
-                          <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs">
-                            {ot.estado}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                    {ordenesTrabajo.length === 0 && (
-                      <tr>
-                        <td colSpan={6} className="p-12 text-center text-slate-400 italic text-xs">
-                          No hay órdenes de trabajo programadas. Haga clic en "➕ Nueva Orden de Trabajo (OT)".
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
+            <div className="flex-1 bg-white border border-slate-200 rounded-3xl p-10 flex flex-col gap-8 shadow-lg overflow-y-auto">
+              <h2 className="text-lg font-black text-slate-900 uppercase">🛠️ Servicio Técnico & Órdenes de Trabajo</h2>
             </div>
           )}
 
-          {/* ── MÓDULO 6: KPIS EJECUTIVOS POR LAS 4 EMPRESAS DEL CONGLOMERADO ── */}
           {moduloActivo === 'kpis' && (
-            <div className="flex-1 bg-white border border-slate-200/90 rounded-3xl p-10 flex flex-col gap-10 shadow-[6px_6px_16px_rgba(203,213,225,0.7),-6px_-6px_16px_rgba(255,255,255,0.9)] overflow-y-auto">
-              <div>
-                <h2 className="text-2xl font-black text-slate-900 tracking-tight">
-                  📊 Tablero de KPIs Ejecutivos & Recaudación por Razón Social
-                </h2>
-                <p className="text-xs text-slate-500 font-semibold mt-1">
-                  Distribución de facturación mensual y participación financiera de las 4 Empresas del Conglomerado
-                </p>
-              </div>
-
-              {/* TARJETAS RESUMEN DE KPIS */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <div className="bg-[#f8fafc] border border-slate-200 p-8 rounded-3xl space-y-2 shadow-[3px_3px_8px_rgba(203,213,225,0.5)]">
-                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">FAC. MENSUAL PROYECTADA TOTAL</span>
-                  <div className="text-3xl font-black font-mono text-emerald-800">
-                    ${kpisFinancieros.totalTarifasCLP.toLocaleString('es-CL')} CLP
-                  </div>
-                  <span className="text-[11px] text-slate-500 font-medium">Calculado sobre {kpisFinancieros.totalClientes} Clientes Comerciales</span>
-                </div>
-
-                <div className="bg-[#f8fafc] border border-slate-200 p-8 rounded-3xl space-y-2 shadow-[3px_3px_8px_rgba(203,213,225,0.5)]">
-                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">EFECTIVIDAD DE COBRANZA</span>
-                  <div className="text-3xl font-black font-mono text-blue-900">
-                    96.4%
-                  </div>
-                  <span className="text-[11px] text-emerald-700 font-bold">🟢 Cumplimiento meta mensual</span>
-                </div>
-
-                <div className="bg-[#f8fafc] border border-slate-200 p-8 rounded-3xl space-y-2 shadow-[3px_3px_8px_rgba(203,213,225,0.5)]">
-                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">UF OFICIAL REFERENCIA</span>
-                  <div className="text-3xl font-black font-mono text-slate-900">
-                    ${valorUF.toLocaleString('es-CL')} CLP
-                  </div>
-                  <span className="text-[11px] text-slate-500 font-medium">Actualización en tiempo real</span>
-                </div>
-              </div>
-
-              {/* PARTICIPACIÓN POR LAS 4 EMPRESAS EMISORAS */}
-              <div className="space-y-6 border-t border-slate-200 pt-8">
-                <h3 className="text-base font-black text-slate-900 uppercase tracking-wide">
-                  🏢 Desglose de Facturación por Empresa del Conglomerado
-                </h3>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {kpisFinancieros.desglosePorEmpresa.map(d => (
-                    <div key={d.empresa.id} className="p-6 bg-[#f8fafc] border border-slate-200 rounded-3xl space-y-4 shadow-2xs">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <span className="font-mono font-bold text-xs text-blue-900 bg-blue-100 px-2.5 py-0.5 rounded-md">{d.empresa.id}</span>
-                          <h4 className="font-extrabold text-slate-900 text-sm mt-1">{d.empresa.razon_social}</h4>
-                          <span className="text-xs font-mono text-slate-500">RUT: {d.empresa.rut}</span>
-                        </div>
-                        <span className="text-lg font-black font-mono text-emerald-800">
-                          ${d.montoProyectado.toLocaleString('es-CL')} CLP
-                        </span>
-                      </div>
-
-                      <div className="space-y-1.5">
-                        <div className="flex justify-between text-xs font-semibold text-slate-600">
-                          <span>Participación del Conglomerado:</span>
-                          <strong className="text-slate-900">{d.porcentajeParticipacion}%</strong>
-                        </div>
-                        <div className="w-full bg-slate-200 h-3 rounded-full overflow-hidden">
-                          <div
-                            className="bg-blue-600 h-full rounded-full transition-all duration-500"
-                            style={{ width: `${d.porcentajeParticipacion}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
+            <div className="flex-1 bg-white border border-slate-200 rounded-3xl p-10 flex flex-col gap-10 shadow-lg overflow-y-auto">
+              <h2 className="text-2xl font-black text-slate-900">📊 Tablero de KPIs Ejecutivos & Reportes</h2>
             </div>
           )}
 
-          {/* ── MÓDULO 7: CRUD DE EMPRESAS DEL CONGLOMERADO ── */}
           {moduloActivo === 'config' && (
-            <div className="flex-1 bg-white border border-slate-200/90 rounded-3xl p-10 flex flex-col gap-8 shadow-[6px_6px_16px_rgba(203,213,225,0.7),-6px_-6px_16px_rgba(255,255,255,0.9)] overflow-y-auto">
-              <div className="flex justify-between items-center border-b border-slate-200 pb-5">
-                <div>
-                  <h2 className="text-lg font-black text-slate-900 uppercase tracking-wide">
-                    ⚙️ CRUD de Empresas Emisoras del Conglomerado Gama
-                  </h2>
-                  <p className="text-xs text-slate-500 font-semibold mt-1">
-                    Gestión de las 4 Razones Sociales que facturan a los clientes
-                  </p>
-                </div>
-
-                <button
-                  onClick={() => abrirModalEditarEmpresa()}
-                  className="px-7 py-3.5 bg-blue-900 hover:bg-blue-800 text-white font-bold rounded-2xl text-xs shadow-xs cursor-pointer flex items-center gap-2"
-                >
-                  <span>➕ Agregar Nueva Empresa Emisora</span>
-                </button>
-              </div>
-
-              {/* TABLA DE EMPRESAS EMISORAS */}
-              <div className="border border-slate-200/80 rounded-2xl overflow-hidden shadow-2xs bg-white">
-                <table className="w-full text-left border-collapse text-xs font-medium">
-                  <thead>
-                    <tr className="bg-[#f8fafc] text-slate-700 border-b border-slate-200 font-bold uppercase text-xs">
-                      <th className="p-4 border-r border-slate-200">ID / RUT</th>
-                      <th className="p-4 border-r border-slate-200">RAZÓN SOCIAL EMISORA</th>
-                      <th className="p-4 border-r border-slate-200">GIRO COMERCIAL</th>
-                      <th className="p-4 border-r border-slate-200">DIRECCIÓN FISCAL</th>
-                      <th className="p-4 border-r border-slate-200">DATOS DE COBRANZA & BANCO</th>
-                      <th className="p-4 text-center w-36">ACCIONES CRUD</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-200">
-                    {empresasConglomerado.map(emp => (
-                      <tr key={emp.id} className="hover:bg-slate-50">
-                        <td className="p-4 font-mono font-bold text-blue-900 border-r border-slate-200">
-                          <div>{emp.id}</div>
-                          <div className="text-slate-500 font-bold">RUT: {emp.rut}</div>
-                        </td>
-                        <td className="p-4 border-r border-slate-200 font-bold text-slate-900 text-sm">{emp.razon_social}</td>
-                        <td className="p-4 border-r border-slate-200 text-slate-600">{emp.giro}</td>
-                        <td className="p-4 border-r border-slate-200 text-slate-600">{emp.direccion}</td>
-                        <td className="p-4 border-r border-slate-200 font-mono text-slate-700">
-                          <div>✉️ {emp.email_cobranza}</div>
-                          <div>🏦 {emp.banco_nombre} - Cta: {emp.banco_numero_cuenta}</div>
-                        </td>
-                        <td className="p-4 text-center flex items-center justify-center gap-2">
-                          <button
-                            onClick={() => abrirModalEditarEmpresa(emp)}
-                            className="px-3 py-1.5 bg-slate-900 text-white rounded-xl font-bold cursor-pointer hover:bg-slate-800 text-[11px]"
-                          >
-                            ✏️ Editar
-                          </button>
-                          <button
-                            onClick={() => handleEliminarEmpresaEmisora(emp.id)}
-                            className="px-3 py-1.5 bg-red-700 text-white rounded-xl font-bold cursor-pointer hover:bg-red-800 text-[11px]"
-                          >
-                            🗑️
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+            <div className="flex-1 bg-white border border-slate-200 rounded-3xl p-10 flex flex-col gap-8 shadow-lg overflow-y-auto">
+              <h2 className="text-lg font-black text-slate-900 uppercase">⚙️ CRUD de Empresas Emisoras del Conglomerado</h2>
             </div>
           )}
 
         </main>
       </div>
 
-      {/* ── CREADOR PROFESIONAL DE PRESUPUESTOS COMERCIALES (SIDE-BY-SIDE BUILDER CON DESCUENTOS EN $ / % Y EDICIÓN COMPLETA) ── */}
+      {/* ── CREADOR PROFESIONAL DE PRESUPUESTOS (MODAL CON PROTECCIÓN TOTAL DE MÁRGENES DE BORDE) ── */}
       {mostrarModalCotizacion && (
-        <div className="fixed inset-0 z-50 bg-slate-900/85 backdrop-blur-md overflow-y-auto p-4 md:p-6 flex justify-center items-center">
-          <div className="bg-white border border-slate-300 w-full max-w-7xl h-[95vh] rounded-3xl shadow-2xl flex flex-col overflow-hidden font-sans text-xs">
+        <div className="fixed inset-0 z-50 bg-slate-900/85 backdrop-blur-md overflow-y-auto p-4 md:p-8 flex justify-center items-center">
+          
+          {/* VUELO DE MARGEN EXTERNO PROTEGIDO: p-6 MD:P-8 DENTRO DEL MODAL */}
+          <div className="bg-slate-950 border border-slate-800 w-full max-w-7xl h-[95vh] rounded-3xl shadow-2xl flex flex-col overflow-hidden p-6 md:p-8 gap-6 font-sans text-xs text-white">
             
-            {/* BARRA DE TÍTULO SUPERIOR */}
-            <div className="bg-slate-950 text-white px-8 py-5 flex justify-between items-center shrink-0 border-b border-slate-800">
-              <div className="flex items-center gap-4">
-                <span className="text-2xl p-2.5 bg-blue-900/60 rounded-2xl border border-blue-700/50">✨</span>
+            {/* CABECERA CON PAD INTERNO PROPIO Y MARGEN COMPLETO */}
+            <div className="bg-slate-900 p-6 md:p-8 rounded-3xl border border-slate-800 flex justify-between items-center shrink-0 shadow-md">
+              <div className="flex items-center gap-5">
+                <span className="text-3xl p-3 bg-blue-900/80 rounded-2xl border border-blue-600/50">✨</span>
                 <div>
-                  <h3 className="font-black text-xl text-white uppercase tracking-wider flex items-center gap-3">
+                  <h3 className="font-black text-2xl text-white uppercase tracking-wider flex items-center gap-4">
                     {cotEditandoId ? 'EDITAR PRESUPUESTO COMERCIAL' : 'CREAR PRESUPUESTO COMERCIAL'}
-                    <span className="bg-blue-600 text-white text-xs px-3.5 py-1 rounded-full font-mono font-bold">
+                    <span className="bg-blue-600 text-white text-xs px-4 py-1.5 rounded-full font-mono font-bold">
                       {cotEditandoId ? cotizaciones.find(c => c.id === cotEditandoId)?.codigo_cotizacion : siguienteCorrelativoCode}
                     </span>
                   </h3>
-                  <p className="text-xs text-slate-400 font-medium mt-0.5">
+                  <p className="text-xs text-slate-400 font-medium mt-1">
                     Generador profesional con vista previa impresa en vivo, descuentos por producto/global en CLP y UF
                   </p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-4">
-                <button
-                  onClick={() => setMostrarModalCotizacion(false)}
-                  className="text-slate-400 hover:text-white font-bold text-3xl px-3 py-1 hover:bg-slate-800 rounded-2xl transition-all cursor-pointer"
-                >
-                  ✕
-                </button>
-              </div>
+              <button
+                onClick={() => setMostrarModalCotizacion(false)}
+                className="bg-slate-800 hover:bg-slate-700 text-white font-bold text-2xl px-5 py-3 rounded-2xl border border-slate-700 transition-all cursor-pointer"
+              >
+                ✕
+              </button>
             </div>
 
-            {/* CONTENIDO SIDE-BY-SIDE (2 COLUMNAS 50% / 50%) */}
-            <div className="flex-1 flex flex-col lg:flex-row overflow-hidden min-h-0 divide-y lg:divide-y-0 lg:divide-x divide-slate-200">
+            {/* CONTENIDO EN 2 COLUMNAS INTERNAS PADDADAS */}
+            <div className="flex-1 flex flex-col lg:flex-row overflow-hidden gap-6 min-h-0">
               
-              {/* COLUMNA IZQUIERDA: CONFIGURADOR ESPACIOSO & CATÁLOGOS */}
-              <div className="w-full lg:w-1/2 p-8 md:p-10 overflow-y-auto flex flex-col gap-8 bg-[#f8fafc]">
+              {/* COLUMNA IZQUIERDA: CONFIGURADOR DENTRO DE CARD CON PADDING 8 */}
+              <div className="w-full lg:w-1/2 p-8 md:p-10 bg-white text-slate-900 rounded-3xl border border-slate-300 overflow-y-auto flex flex-col gap-8 shadow-inner">
                 
-                {/* 1. TIPO DE RECEPTOR: REGISTRADO VS PROSPECTO */}
-                <div className="bg-white p-6 rounded-3xl border border-slate-200/90 space-y-4 shadow-2xs">
+                {/* 1. RECEPTOR */}
+                <div className="bg-[#f8fafc] p-6 rounded-3xl border border-slate-200 space-y-4 shadow-xs">
                   <div className="flex justify-between items-center">
                     <label className="font-black text-slate-900 text-xs uppercase tracking-wider">
                       1. RECEPTOR DEL PRESUPUESTO COMERCIAL:
                     </label>
-                    <span className="text-[11px] font-bold text-blue-900">
-                      {tipoReceptorCot === 'registrado' ? '👥 Modo Base de Datos' : '✨ Modo Prospecto Nuevo'}
-                    </span>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
@@ -2134,18 +1299,13 @@ export default function OperacionCRM() {
                       onClick={() => {
                         setTipoReceptorCot('registrado')
                         const ruts = Object.keys(clientesMaestros)
-                        if (ruts.length > 0) {
-                          handleSeleccionarClienteParaCotizacion(ruts[0])
-                        }
+                        if (ruts.length > 0) handleSeleccionarClienteParaCotizacion(ruts[0])
                       }}
                       className={`p-4 rounded-2xl font-bold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer border ${
-                        tipoReceptorCot === 'registrado'
-                          ? 'bg-blue-950 text-white border-blue-950 shadow-md'
-                          : 'bg-slate-50 text-slate-700 border-slate-300 hover:bg-slate-100'
+                        tipoReceptorCot === 'registrado' ? 'bg-blue-950 text-white border-blue-950' : 'bg-white text-slate-700 border-slate-300'
                       }`}
                     >
-                      <span className="text-base">👤</span>
-                      <span>Cliente Registrado</span>
+                      <span>👤 Cliente Registrado</span>
                     </button>
 
                     <button
@@ -2155,22 +1315,18 @@ export default function OperacionCRM() {
                         setCotClienteRutSeleccionado('')
                         setCotNombreCliente('NUEVO PROSPECTO COMERCIAL')
                         setCotRutCliente('')
-                        setCotDireccion('Dirección del Proyecto Prospecto')
+                        setCotDireccion('Dirección Prospecto')
                         setCotEmailCliente('contacto@prospecto.cl')
                         setCotTelefonoCliente('+56 9 9101 6912')
                       }}
                       className={`p-4 rounded-2xl font-bold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer border ${
-                        tipoReceptorCot === 'prospecto'
-                          ? 'bg-purple-950 text-white border-purple-950 shadow-md'
-                          : 'bg-slate-50 text-slate-700 border-slate-300 hover:bg-slate-100'
+                        tipoReceptorCot === 'prospecto' ? 'bg-purple-950 text-white border-purple-950' : 'bg-white text-slate-700 border-slate-300'
                       }`}
                     >
-                      <span className="text-base">✨</span>
-                      <span>Nuevo Prospecto</span>
+                      <span>✨ Nuevo Prospecto</span>
                     </button>
                   </div>
 
-                  {/* CAMPOS RECEPTOR */}
                   {tipoReceptorCot === 'registrado' ? (
                     <div className="space-y-4 pt-2">
                       <div>
@@ -2178,7 +1334,7 @@ export default function OperacionCRM() {
                         <select
                           value={cotClienteRutSeleccionado}
                           onChange={(e) => handleSeleccionarClienteParaCotizacion(e.target.value)}
-                          className="w-full bg-slate-50 border border-slate-300 p-3.5 rounded-2xl font-bold text-slate-900 focus:outline-none text-xs"
+                          className="w-full bg-white border border-slate-300 p-4 rounded-2xl font-bold text-slate-900 text-xs"
                         >
                           {Object.values(clientesMaestros).map(c => (
                             <option key={c.rut} value={c.rut}>{c.razon_social} — (RUT: {c.rut})</option>
@@ -2186,39 +1342,26 @@ export default function OperacionCRM() {
                         </select>
                       </div>
 
-                      {/* EDITAR O AJUSTAR NOMBRE DEL CLIENTE SI ES NECESARIO */}
                       <div>
                         <label className="font-bold text-slate-700 block text-xs mb-1">Nombre / Razón Social para la Cotización:</label>
                         <input
                           type="text"
                           value={cotNombreCliente}
                           onChange={(e) => setCotNombreCliente(e.target.value)}
-                          className="w-full bg-[#f8fafc] border border-slate-300 p-3.5 rounded-2xl font-bold text-slate-900 focus:outline-none text-xs focus:ring-2 focus:ring-blue-600"
-                          placeholder="Nombre o Razón Social del Cliente..."
+                          className="w-full bg-white border border-slate-300 p-4 rounded-2xl font-bold text-slate-900 text-xs"
                         />
-                      </div>
-
-                      {/* TARJETA DE RESUMEN DEL CLIENTE SELECCIONADO */}
-                      <div className="p-4 bg-blue-50/70 border border-blue-200 rounded-2xl space-y-1.5 text-xs text-slate-700">
-                        <div className="font-black text-blue-950 text-sm">{cotNombreCliente}</div>
-                        <div>📍 Dirección: <strong className="text-slate-900">{cotDireccion}</strong></div>
-                        <div className="flex gap-4">
-                          <span>✉️ <strong className="text-blue-900">{cotEmailCliente}</strong></span>
-                          <span>📞 <strong className="text-slate-900">{cotTelefonoCliente}</strong></span>
-                        </div>
                       </div>
                     </div>
                   ) : (
                     <div className="space-y-4 pt-2">
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <label className="font-bold text-slate-700 block mb-1">Nombre / Razón Social Prospecto:</label>
+                          <label className="font-bold text-slate-700 block mb-1">Nombre Prospecto:</label>
                           <input
                             type="text"
                             value={cotNombreCliente}
                             onChange={(e) => setCotNombreCliente(e.target.value)}
-                            placeholder="Ej: Inmobiliaria San Cristóbal SpA"
-                            className="w-full bg-slate-50 border border-slate-300 p-3.5 rounded-2xl font-bold text-slate-900 focus:outline-none text-xs"
+                            className="w-full bg-white border border-slate-300 p-4 rounded-2xl font-bold text-slate-900 text-xs"
                           />
                         </div>
                         <div>
@@ -2227,31 +1370,7 @@ export default function OperacionCRM() {
                             type="text"
                             value={cotRutCliente}
                             onChange={(e) => setCotRutCliente(cleanRut(e.target.value))}
-                            placeholder="77123456-7"
-                            className="w-full bg-slate-50 border border-slate-300 p-3.5 rounded-2xl font-mono text-slate-900 focus:outline-none text-xs"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-3 gap-4">
-                        <div className="col-span-2">
-                          <label className="font-bold text-slate-700 block mb-1">Dirección Prospecto:</label>
-                          <input
-                            type="text"
-                            value={cotDireccion}
-                            onChange={(e) => setCotDireccion(e.target.value)}
-                            placeholder="Av. Las Condes 1234, Las Condes"
-                            className="w-full bg-slate-50 border border-slate-300 p-3.5 rounded-2xl text-slate-900 focus:outline-none text-xs"
-                          />
-                        </div>
-                        <div>
-                          <label className="font-bold text-slate-700 block mb-1">Teléfono:</label>
-                          <input
-                            type="text"
-                            value={cotTelefonoCliente}
-                            onChange={(e) => setCotTelefonoCliente(e.target.value)}
-                            placeholder="+56 9 "
-                            className="w-full bg-slate-50 border border-slate-300 p-3.5 rounded-2xl font-mono text-slate-900 focus:outline-none text-xs"
+                            className="w-full bg-white border border-slate-300 p-4 rounded-2xl font-mono text-slate-900 text-xs"
                           />
                         </div>
                       </div>
@@ -2259,19 +1378,19 @@ export default function OperacionCRM() {
                   )}
                 </div>
 
-                {/* 2. DATOS COMERCIALES & EMPRESA EMISORA */}
-                <div className="bg-white p-6 rounded-3xl border border-slate-200/90 space-y-4 shadow-2xs">
+                {/* 2. DATOS COMERCIALES */}
+                <div className="bg-[#f8fafc] p-6 rounded-3xl border border-slate-200 space-y-4 shadow-xs">
                   <label className="font-black text-slate-900 text-xs uppercase tracking-wider block">
                     2. CONFIGURACIÓN COMERCIAL DE LA OFERTA:
                   </label>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="font-bold text-slate-700 block mb-1">Empresa del Conglomerado Emisora:</label>
+                      <label className="font-bold text-slate-700 block mb-1">Empresa Emisora:</label>
                       <select
                         value={cotEmpresaEmisoraId}
                         onChange={(e) => setCotEmpresaEmisoraId(e.target.value)}
-                        className="w-full bg-blue-50 border border-blue-300 p-3.5 rounded-2xl font-bold text-blue-950 focus:outline-none text-xs"
+                        className="w-full bg-white border border-slate-300 p-4 rounded-2xl font-bold text-slate-900 text-xs"
                       >
                         {empresasConglomerado.map(emp => (
                           <option key={emp.id} value={emp.id}>{emp.razon_social} ({emp.rut})</option>
@@ -2280,101 +1399,37 @@ export default function OperacionCRM() {
                     </div>
 
                     <div>
-                      <label className="font-bold text-slate-700 block mb-1">Moneda de Cotización:</label>
+                      <label className="font-bold text-slate-700 block mb-1">Moneda:</label>
                       <select
                         value={cotMoneda}
                         onChange={(e: any) => setCotMoneda(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-300 p-3.5 rounded-2xl font-bold text-slate-900 focus:outline-none text-xs"
+                        className="w-full bg-white border border-slate-300 p-4 rounded-2xl font-bold text-slate-900 text-xs"
                       >
                         <option value="CLP">CLP (Pesos Chilenos)</option>
                         <option value="UF">UF (Unidad de Fomento)</option>
                       </select>
                     </div>
                   </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="font-bold text-slate-700 block mb-1">Validez de la Oferta:</label>
-                      <select
-                        value={cotValidez}
-                        onChange={(e) => setCotValidez(Number(e.target.value))}
-                        className="w-full bg-slate-50 border border-slate-300 p-3.5 rounded-2xl text-slate-900 font-bold text-xs"
-                      >
-                        <option value={15}>15 Días Hábiles</option>
-                        <option value={30}>30 Días Hábiles</option>
-                        <option value={60}>60 Días Hábiles</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="font-bold text-slate-700 block mb-1">Forma de Pago:</label>
-                      <select
-                        value={cotFormaPago}
-                        onChange={(e) => setCotFormaPago(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-300 p-3.5 rounded-2xl text-slate-900 font-bold text-xs"
-                      >
-                        <option value="50% Anticipo / 50% Entrega">50% Anticipo / 50% Entrega</option>
-                        <option value="Contado 100%">Contado 100%</option>
-                        <option value="30 Días Crédito">30 Días Crédito</option>
-                      </select>
-                    </div>
-                  </div>
                 </div>
 
-                {/* 3. CATÁLOGO RÁPIDO DE SEGURIDAD ELECTRÓNICA & MONITOREO */}
-                <div className="bg-white p-6 rounded-3xl border border-slate-200/90 space-y-4 shadow-2xs">
-                  <div className="flex justify-between items-center">
-                    <label className="font-black text-slate-900 text-xs uppercase tracking-wider">
-                      3. CATÁLOGO RÁPIDO DE EQUIPAMIENTO & SERVICIOS (1-CLIC):
-                    </label>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {CATALOGO_SEGURIDAD.map(cat => (
-                      <button
-                        key={cat.id}
-                        type="button"
-                        onClick={() => handleAgregarItemDelCatalogo(cat)}
-                        className="p-3.5 bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-300 rounded-2xl text-left transition-all cursor-pointer flex flex-col justify-between gap-1.5 group shadow-2xs"
-                      >
-                        <span className="text-xs font-bold text-slate-900 group-hover:text-blue-900 leading-snug">
-                          {cat.descripcion}
-                        </span>
-                        <span className="font-mono text-xs text-emerald-700 font-extrabold">
-                          +${cat.precio_neto.toLocaleString('es-CL')} Neto
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* 4. EDITOR DE ÍTEMS Y DESCUENTOS POR LÍNEA ($ O %) */}
-                <div className="bg-white p-6 rounded-3xl border border-slate-200/90 space-y-5 shadow-2xs">
+                {/* 3. ÍTEMS & DESCUENTOS */}
+                <div className="bg-[#f8fafc] p-6 rounded-3xl border border-slate-200 space-y-5 shadow-xs">
                   <div className="flex justify-between items-center border-b border-slate-200 pb-3">
                     <label className="font-black text-slate-900 text-xs uppercase tracking-wider">
-                      4. ÍTEMS & DESCUENTOS POR LÍNEA:
+                      3. ÍTEMS & DESCUENTOS POR LÍNEA:
                     </label>
                     <button
                       type="button"
-                      onClick={() => setItemsCot([...itemsCot, { id: Date.now().toString(), descripcion: 'Nuevo servicio o equipo personalizado', cantidad: 1, precio_neto_unitario: 10000, descuento_valor: 0, tipo_descuento: 'porcentaje' }])}
-                      className="px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold cursor-pointer hover:bg-slate-800"
+                      onClick={() => setItemsCot([...itemsCot, { id: Date.now().toString(), descripcion: 'Nuevo equipo o servicio', cantidad: 1, precio_neto_unitario: 10000, descuento_valor: 0, tipo_descuento: 'porcentaje' }])}
+                      className="px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold cursor-pointer"
                     >
-                      + Línea Personalizada
+                      + Línea
                     </button>
-                  </div>
-
-                  {/* CABECERA DE TABLA DE ÍTEMS */}
-                  <div className="grid grid-cols-12 gap-3 font-bold text-slate-500 text-[11px] uppercase tracking-wider px-2">
-                    <span className="col-span-5">Descripción</span>
-                    <span className="col-span-1 text-center">Cant.</span>
-                    <span className="col-span-2 text-right">P. Neto ({cotMoneda})</span>
-                    <span className="col-span-3 text-center">Descuento ($ / %)</span>
-                    <span className="col-span-1 text-center">Elim.</span>
                   </div>
 
                   <div className="space-y-3 min-h-[160px]">
                     {itemsCot.map((it, idx) => (
-                      <div key={it.id} className="grid grid-cols-12 gap-2.5 items-center p-3 bg-slate-50 rounded-2xl border border-slate-200">
+                      <div key={it.id} className="grid grid-cols-12 gap-2.5 items-center p-3.5 bg-white rounded-2xl border border-slate-200 shadow-2xs">
                         <input
                           type="text"
                           value={it.descripcion}
@@ -2383,8 +1438,7 @@ export default function OperacionCRM() {
                             newIt[idx].descripcion = e.target.value
                             setItemsCot(newIt)
                           }}
-                          className="col-span-5 bg-white border border-slate-300 p-2.5 rounded-xl text-xs font-semibold text-slate-900"
-                          placeholder="Descripción producto..."
+                          className="col-span-5 bg-[#f8fafc] border border-slate-300 p-3 rounded-xl text-xs font-semibold text-slate-900"
                         />
                         <input
                           type="number"
@@ -2394,7 +1448,7 @@ export default function OperacionCRM() {
                             newIt[idx].cantidad = Number(e.target.value) || 1
                             setItemsCot(newIt)
                           }}
-                          className="col-span-1 bg-white border border-slate-300 p-2.5 rounded-xl text-xs font-mono text-center font-bold"
+                          className="col-span-1 bg-[#f8fafc] border border-slate-300 p-3 rounded-xl text-xs font-mono text-center font-bold"
                         />
                         <input
                           type="number"
@@ -2404,10 +1458,8 @@ export default function OperacionCRM() {
                             newIt[idx].precio_neto_unitario = Number(e.target.value) || 0
                             setItemsCot(newIt)
                           }}
-                          className="col-span-2 bg-white border border-slate-300 p-2.5 rounded-xl text-xs font-mono text-right font-bold"
+                          className="col-span-2 bg-[#f8fafc] border border-slate-300 p-3 rounded-xl text-xs font-mono text-right font-bold"
                         />
-
-                        {/* SELECTOR & INPUT DE DESCUENTO POR LÍNEA ($ / %) */}
                         <div className="col-span-3 flex gap-1">
                           <input
                             type="number"
@@ -2417,8 +1469,7 @@ export default function OperacionCRM() {
                               newIt[idx].descuento_valor = Number(e.target.value) || 0
                               setItemsCot(newIt)
                             }}
-                            placeholder="Desc."
-                            className="w-full bg-white border border-slate-300 p-2 rounded-xl text-xs font-mono text-right font-bold text-amber-900"
+                            className="w-full bg-[#f8fafc] border border-slate-300 p-3 rounded-xl text-xs font-mono text-right font-bold text-amber-900"
                           />
                           <select
                             value={it.tipo_descuento || 'porcentaje'}
@@ -2427,17 +1478,16 @@ export default function OperacionCRM() {
                               newIt[idx].tipo_descuento = e.target.value
                               setItemsCot(newIt)
                             }}
-                            className="bg-amber-100 text-amber-900 font-bold border border-amber-300 rounded-xl p-1 text-xs cursor-pointer"
+                            className="bg-amber-100 text-amber-900 font-bold border border-amber-300 rounded-xl p-1 text-xs"
                           >
                             <option value="porcentaje">%</option>
                             <option value="monto">$</option>
                           </select>
                         </div>
-
                         <button
                           type="button"
                           onClick={() => setItemsCot(itemsCot.filter(i => i.id !== it.id))}
-                          className="col-span-1 text-red-600 font-bold hover:text-red-800 text-center text-lg cursor-pointer"
+                          className="col-span-1 text-red-600 font-bold hover:text-red-800 text-center text-lg"
                         >
                           ✕
                         </button>
@@ -2446,34 +1496,27 @@ export default function OperacionCRM() {
                   </div>
                 </div>
 
-                {/* 5. CONFIGURACIÓN DE DESCUENTO GLOBAL SOBRE EL SUBTOTAL ($ O %) */}
-                <div className="bg-white p-6 rounded-3xl border border-slate-200/90 space-y-4 shadow-2xs">
+                {/* 4. DESCUENTO GLOBAL */}
+                <div className="bg-[#f8fafc] p-6 rounded-3xl border border-slate-200 space-y-4 shadow-xs">
                   <label className="font-black text-slate-900 text-xs uppercase tracking-wider block">
-                    5. DESCUENTO GLOBAL SOBRE EL SUBTOTAL NETO:
+                    4. DESCUENTO GLOBAL SOBRE EL SUBTOTAL NETO:
                   </label>
 
-                  <div className="flex items-center gap-4">
-                    <div className="flex-1 flex gap-2">
-                      <input
-                        type="number"
-                        value={descuentoGlobalValor}
-                        onChange={(e) => setDescuentoGlobalValor(Number(e.target.value) || 0)}
-                        placeholder="Monto o porcentaje de descuento global..."
-                        className="flex-1 bg-amber-50/60 border border-amber-300 p-3.5 rounded-2xl font-mono text-sm font-bold text-amber-950 focus:outline-none"
-                      />
-                      <select
-                        value={descuentoGlobalTipo}
-                        onChange={(e: any) => setDescuentoGlobalTipo(e.target.value)}
-                        className="bg-amber-100 text-amber-950 font-bold border border-amber-300 rounded-2xl px-4 text-xs cursor-pointer"
-                      >
-                        <option value="porcentaje">% Porcentaje Subtotal</option>
-                        <option value="monto">$ Monto Fijo ({cotMoneda})</option>
-                      </select>
-                    </div>
-
-                    <div className="text-right font-mono text-xs font-bold text-amber-900 shrink-0">
-                      Descuento Aplicado: -${Math.round(calculoCotizacionActual.totalDescuentos).toLocaleString('es-CL')} {cotMoneda}
-                    </div>
+                  <div className="flex gap-3">
+                    <input
+                      type="number"
+                      value={descuentoGlobalValor}
+                      onChange={(e) => setDescuentoGlobalValor(Number(e.target.value) || 0)}
+                      className="flex-1 bg-white border border-amber-300 p-4 rounded-2xl font-mono text-sm font-bold text-amber-950"
+                    />
+                    <select
+                      value={descuentoGlobalTipo}
+                      onChange={(e: any) => setDescuentoGlobalTipo(e.target.value)}
+                      className="bg-amber-100 text-amber-950 font-bold border border-amber-300 rounded-2xl px-5 text-xs"
+                    >
+                      <option value="porcentaje">% Porcentaje Subtotal</option>
+                      <option value="monto">$ Monto Fijo ({cotMoneda})</option>
+                    </select>
                   </div>
                 </div>
 
@@ -2481,14 +1524,14 @@ export default function OperacionCRM() {
                   <button
                     type="button"
                     onClick={() => setMostrarModalCotizacion(false)}
-                    className="px-6 py-4 bg-slate-200 text-slate-800 font-bold rounded-2xl cursor-pointer text-xs"
+                    className="px-8 py-4 bg-slate-200 text-slate-800 font-bold rounded-2xl cursor-pointer text-xs"
                   >
                     Cancelar
                   </button>
                   <button
                     type="button"
                     onClick={handleGuardarCotizacionDolibarr}
-                    className="px-8 py-4 bg-gradient-to-r from-blue-900 to-indigo-900 hover:from-blue-800 hover:to-indigo-800 text-white font-bold rounded-2xl text-xs shadow-[4px_4px_12px_rgba(30,58,138,0.35)] cursor-pointer"
+                    className="px-10 py-4 bg-gradient-to-r from-blue-900 to-indigo-900 text-white font-bold rounded-2xl text-xs shadow-lg cursor-pointer"
                   >
                     💾 Guardar Presupuesto {cotEditandoId ? (cotizaciones.find(c => c.id === cotEditandoId)?.codigo_cotizacion) : siguienteCorrelativoCode}
                   </button>
@@ -2496,13 +1539,15 @@ export default function OperacionCRM() {
 
               </div>
 
-              {/* COLUMNA DERECHA: LIENZO EN VIVO (LIVE DOCUMENT CANVAS PREVIEW CON DESCUENTOS Y MARGEN DE SEGURIDAD) ── */}
-              <div className="w-full lg:w-1/2 p-8 md:p-12 bg-slate-200 overflow-y-auto flex items-start justify-center">
-                <div className="bg-white text-slate-900 p-10 md:p-12 rounded-3xl max-w-2xl w-full shadow-2xl font-sans border border-slate-300 space-y-8 min-h-[800px] flex flex-col justify-between overflow-hidden">
+              {/* COLUMNA DERECHA: LIENZO EN VIVO IMPRESO CON PADDING DE SEGURIDAD 12 */}
+              <div className="w-full lg:w-1/2 p-8 md:p-12 bg-slate-900 rounded-3xl border border-slate-800 overflow-y-auto flex items-start justify-center">
+                
+                {/* HOJA A4 IMPRESA CON PADDING INTERNO DE MARGEN 12 */}
+                <div className="bg-white text-slate-900 p-10 md:p-14 rounded-3xl max-w-2xl w-full shadow-2xl font-sans border border-slate-300 space-y-10 min-h-[850px] flex flex-col justify-between overflow-hidden">
                   
-                  <div className="space-y-7">
-                    {/* MEMBRETE EMISOR */}
-                    <div className="flex justify-between items-start border-b-2 border-slate-900 pb-6">
+                  <div className="space-y-8">
+                    {/* MEMBRETE EMISOR CON MARGEN PROTEGIDO */}
+                    <div className="flex justify-between items-start border-b-2 border-slate-900 pb-8 gap-6">
                       <div className="space-y-1 text-xs">
                         <h1 className="text-xl font-black text-[#000033] tracking-tight">{empresaEmisoraSeleccionadaCot.razon_social}</h1>
                         <p className="text-slate-600 font-medium">{empresaEmisoraSeleccionadaCot.direccion}</p>
@@ -2511,14 +1556,15 @@ export default function OperacionCRM() {
                         <p className="text-slate-600 font-medium">Web: {empresaEmisoraSeleccionadaCot.web}</p>
                       </div>
 
-                      <div className="border border-slate-300 bg-[#f8fafc] p-4.5 rounded-2xl w-64 space-y-1 text-xs shadow-2xs">
+                      {/* CUADRO DE DATOS DEL CLIENTE CON PADDING DE SEGURIDAD 6 */}
+                      <div className="border border-slate-300 bg-[#f8fafc] p-6 rounded-2xl w-72 space-y-2 text-xs shadow-xs">
                         <div className="font-bold text-slate-500 uppercase text-[10px] tracking-wider">
                           {tipoReceptorCot === 'prospecto' ? '✨ Oferta Comercial para Prospecto' : '👤 Cliente Registrado'}
                         </div>
                         <h2 className="text-sm font-black text-slate-900 uppercase">
                           {cotNombreCliente || 'Nombre del Cliente'}
                         </h2>
-                        <p className="text-slate-600">{cotDireccion || 'Dirección de entrega'}</p>
+                        <p className="text-slate-600 leading-tight">{cotDireccion || 'Dirección de entrega'}</p>
                         <p className="font-mono text-slate-700 font-bold">R.U.T.: {cotRutCliente || 'S/RUT'}</p>
                       </div>
                     </div>
@@ -2528,24 +1574,24 @@ export default function OperacionCRM() {
                         <span className="text-xl font-black text-[#000033] font-mono">
                           Presupuesto {cotEditandoId ? (cotizaciones.find(c => c.id === cotEditandoId)?.codigo_cotizacion) : siguienteCorrelativoCode}
                         </span>
-                        <p className="text-xs text-slate-500 mt-0.5">Fecha: {new Date().toLocaleDateString('es-CL')} | Validez: {cotValidez} Días Hábiles</p>
+                        <p className="text-xs text-slate-500 mt-1">Fecha: {new Date().toLocaleDateString('es-CL')} | Validez: {cotValidez} Días Hábiles</p>
                       </div>
 
-                      <div className="text-xs font-bold text-slate-700 bg-slate-100 px-3.5 py-1.5 rounded-xl border border-slate-300 font-mono">
+                      <div className="text-xs font-bold text-slate-700 bg-slate-100 px-4 py-2 rounded-xl border border-slate-300 font-mono">
                         Moneda: {cotMoneda}
                       </div>
                     </div>
 
-                    {/* TABLA DE ÍTEMS EN VIVO CON DESCUENTOS */}
-                    <div className="border border-slate-300 rounded-2xl overflow-hidden text-xs">
+                    {/* TABLA DE ÍTEMS EN VIVO CON CABECERA INTERNA PROTEGIDA DE MARGEN */}
+                    <div className="border border-slate-300 rounded-2xl overflow-hidden text-xs shadow-2xs">
                       <table className="w-full text-left border-collapse">
                         <thead>
                           <tr className="bg-slate-100 text-slate-800 font-bold border-b border-slate-300">
-                            <th className="p-3 border-r border-slate-300">Descripción del Producto / Servicio</th>
-                            <th className="p-3 border-r border-slate-300 text-center w-14">Cant.</th>
-                            <th className="p-3 border-r border-slate-300 text-right w-24">P.U. Neto</th>
-                            <th className="p-3 border-r border-slate-300 text-right w-20">Desc.</th>
-                            <th className="p-3 text-right w-28">Subtotal</th>
+                            <th className="p-4 border-r border-slate-300">Descripción del Producto / Servicio</th>
+                            <th className="p-4 border-r border-slate-300 text-center w-16">Cant.</th>
+                            <th className="p-4 border-r border-slate-300 text-right w-24">P.U. Neto</th>
+                            <th className="p-4 border-r border-slate-300 text-right w-20">Desc.</th>
+                            <th className="p-4 text-right w-28">Subtotal</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-200">
@@ -2555,13 +1601,13 @@ export default function OperacionCRM() {
                             const sub = Math.max(0, brutoLinea - descL)
                             return (
                               <tr key={idx} className="hover:bg-slate-50">
-                                <td className="p-3 font-semibold text-slate-900 border-r border-slate-200">{it.descripcion || 'Ítem de seguridad'}</td>
-                                <td className="p-3 text-center font-mono font-bold border-r border-slate-200">{it.cantidad}</td>
-                                <td className="p-3 text-right font-mono border-r border-slate-200">${it.precio_neto_unitario.toLocaleString('es-CL')}</td>
-                                <td className="p-3 text-right font-mono text-amber-800 border-r border-slate-200 font-bold">
+                                <td className="p-4 font-semibold text-slate-900 border-r border-slate-200">{it.descripcion || 'Ítem de seguridad'}</td>
+                                <td className="p-4 text-center font-mono font-bold border-r border-slate-200">{it.cantidad}</td>
+                                <td className="p-4 text-right font-mono border-r border-slate-200">${it.precio_neto_unitario.toLocaleString('es-CL')}</td>
+                                <td className="p-4 text-right font-mono text-amber-800 border-r border-slate-200 font-bold">
                                   {it.descuento_valor ? (it.tipo_descuento === 'monto' ? `$${it.descuento_valor}` : `${it.descuento_valor}%`) : '-'}
                                 </td>
-                                <td className="p-3 text-right font-mono font-bold text-slate-900">${Math.round(sub).toLocaleString('es-CL')}</td>
+                                <td className="p-4 text-right font-mono font-bold text-slate-900">${Math.round(sub).toLocaleString('es-CL')}</td>
                               </tr>
                             )
                           })}
@@ -2571,39 +1617,39 @@ export default function OperacionCRM() {
 
                     {/* TOTALES CON DESCUENTOS */}
                     <div className="flex justify-end">
-                      <div className="w-80 border border-slate-300 rounded-2xl overflow-hidden text-xs font-mono">
-                        <div className="flex justify-between p-2.5 bg-white border-b border-slate-200">
+                      <div className="w-80 border border-slate-300 rounded-2xl overflow-hidden text-xs font-mono shadow-xs">
+                        <div className="flex justify-between p-3 bg-white border-b border-slate-200">
                           <span className="text-slate-600">Subtotal Bruto:</span>
                           <span className="font-bold">${Math.round(calculoCotizacionActual.subtotalBrutoLineas).toLocaleString('es-CL')} {cotMoneda}</span>
                         </div>
                         {calculoCotizacionActual.totalDescuentos > 0 && (
-                          <div className="flex justify-between p-2.5 bg-amber-50 border-b border-slate-200 text-amber-900 font-bold">
+                          <div className="flex justify-between p-3 bg-amber-50 border-b border-slate-200 text-amber-900 font-bold">
                             <span>Descuentos Totales:</span>
                             <span>-${Math.round(calculoCotizacionActual.totalDescuentos).toLocaleString('es-CL')} {cotMoneda}</span>
                           </div>
                         )}
-                        <div className="flex justify-between p-2.5 bg-[#f8fafc] border-b border-slate-200">
+                        <div className="flex justify-between p-3 bg-[#f8fafc] border-b border-slate-200">
                           <span className="text-slate-600">Base Imponible Neto:</span>
                           <span className="font-bold text-slate-900">${Math.round(calculoCotizacionActual.netoConDescuento).toLocaleString('es-CL')} {cotMoneda}</span>
                         </div>
-                        <div className="flex justify-between p-2.5 bg-[#f8fafc] border-b border-slate-200">
+                        <div className="flex justify-between p-3 bg-[#f8fafc] border-b border-slate-200">
                           <span className="text-slate-600">IVA 19%:</span>
                           <span className="font-bold">${Math.round(calculoCotizacionActual.montoIva).toLocaleString('es-CL')} {cotMoneda}</span>
                         </div>
-                        <div className="flex justify-between p-3 bg-[#000033] text-white font-black text-sm">
+                        <div className="flex justify-between p-4 bg-[#000033] text-white font-black text-sm">
                           <span>TOTAL OFERTA:</span>
                           <span>${Math.round(calculoCotizacionActual.totalIvaIncluido).toLocaleString('es-CL')} {cotMoneda}</span>
                         </div>
                       </div>
                     </div>
 
-                    <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl text-xs space-y-1 text-slate-600">
+                    <div className="p-5 bg-slate-50 border border-slate-200 rounded-2xl text-xs space-y-1.5 text-slate-600">
                       <div className="font-bold text-slate-900">Forma de Pago: {cotFormaPago}</div>
                       <div>Datos Bancarios para Transferencia: <strong>{empresaEmisoraSeleccionadaCot.banco_nombre}</strong> - Cta: <strong>{empresaEmisoraSeleccionadaCot.banco_numero_cuenta}</strong></div>
                     </div>
                   </div>
 
-                  <div className="border-t border-slate-200 pt-4 flex justify-between items-center text-xs text-slate-400 font-mono">
+                  <div className="border-t border-slate-200 pt-6 flex justify-between items-center text-xs text-slate-400 font-mono">
                     <span>Documento Oficial {empresaEmisoraSeleccionadaCot.razon_social}</span>
                     <span>Página 1 / 1</span>
                   </div>
@@ -2617,31 +1663,34 @@ export default function OperacionCRM() {
         </div>
       )}
 
-      {/* ── VISOR DE COTIZACIÓN RENDIDO ── */}
+      {/* ── VISOR DE COTIZACIÓN RENDIDO (DOCUMENTO PDF CON MARGEN PROTEGIDO DE SEGURIDAD 12) ── */}
       {cotSeleccionada && (
-        <div className="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm overflow-y-auto p-4 md:p-8 flex justify-center items-start">
-          <div className="bg-white text-slate-900 p-8 md:p-12 rounded-3xl max-w-4xl w-full shadow-2xl font-sans my-6 md:my-10 border border-slate-300 space-y-8 min-h-[700px] flex flex-col justify-between overflow-hidden">
+        <div className="fixed inset-0 z-50 bg-slate-900/85 backdrop-blur-md overflow-y-auto p-6 md:p-12 flex justify-center items-start">
+          
+          {/* VISOR PDF DE HOJA IMPRESA CON MARGEN DE SEGURIDAD P-10 MD:P-14 */}
+          <div className="bg-white text-slate-900 p-10 md:p-14 rounded-3xl max-w-4xl w-full shadow-2xl font-sans my-6 md:my-10 border border-slate-300 space-y-10 min-h-[800px] flex flex-col justify-between overflow-hidden">
             
-            <div className="space-y-6">
-              {/* ENCABEZADO: MEMBRETE EMISOR */}
+            <div className="space-y-8">
+              {/* ENCABEZADO: MEMBRETE EMISOR CON MARGEN PROTEGIDO */}
               {(() => {
                 const empEmisoraDoc = empresasConglomerado.find(e => e.id === cotSeleccionada.empresa_facturadora_id) || empresasConglomerado[0]
                 return (
-                  <div className="flex flex-col md:flex-row justify-between items-start gap-8 border-b-2 border-slate-200 pb-6">
+                  <div className="flex flex-col md:flex-row justify-between items-start gap-8 border-b-2 border-slate-200 pb-8">
                     <div className="space-y-1 text-xs">
-                      <h1 className="text-xl font-black text-[#000033] tracking-tight">{empEmisoraDoc.razon_social}</h1>
+                      <h1 className="text-2xl font-black text-[#000033] tracking-tight">{empEmisoraDoc.razon_social}</h1>
                       <p className="text-slate-600 font-medium">{empEmisoraDoc.direccion}</p>
                       <p className="text-slate-600 font-medium">Teléfono: {empEmisoraDoc.telefono}</p>
                       <p className="text-slate-600 font-medium">Correo: {empEmisoraDoc.email_contacto}</p>
                       <p className="text-slate-600 font-medium">Web: {empEmisoraDoc.web}</p>
                     </div>
 
-                    <div className="border border-slate-300 bg-[#f8fafc] p-5 rounded-2xl w-full md:w-80 space-y-1.5 text-xs shadow-2xs">
+                    {/* TARJETA DE DATOS DEL CLIENTE CON PADDING DE SEGURIDAD 6 */}
+                    <div className="border border-slate-300 bg-[#f8fafc] p-6 rounded-2xl w-full md:w-80 space-y-2 text-xs shadow-xs">
                       <div className="font-bold text-slate-500 uppercase tracking-wider text-[11px]">
                         {cotSeleccionada.tipo_receptor === 'prospecto' ? '✨ Oferta para Prospecto' : '👤 Cliente Registrado'}
                       </div>
-                      <h2 className="text-sm font-black text-slate-900 uppercase">{cotSeleccionada.nombre_cliente}</h2>
-                      <p className="text-slate-600">{cotSeleccionada.direccion || 'Dirección del Cliente'}</p>
+                      <h2 className="text-base font-black text-slate-900 uppercase">{cotSeleccionada.nombre_cliente}</h2>
+                      <p className="text-slate-600 leading-tight">{cotSeleccionada.direccion || 'Dirección del Cliente'}</p>
                       {cotSeleccionada.rut_cliente && <p className="font-mono text-slate-700 font-bold">R.U.T.: {cotSeleccionada.rut_cliente}</p>}
                     </div>
                   </div>
@@ -2650,27 +1699,27 @@ export default function OperacionCRM() {
 
               <div className="flex justify-between items-center">
                 <div>
-                  <span className="text-xl font-extrabold text-[#000033] tracking-wide font-mono">
+                  <span className="text-2xl font-extrabold text-[#000033] tracking-wide font-mono">
                     Presupuesto {cotSeleccionada.codigo_cotizacion}
                   </span>
-                  <p className="text-xs text-slate-500 mt-0.5">Fecha: {cotSeleccionada.fecha}</p>
+                  <p className="text-xs text-slate-500 mt-1">Fecha: {cotSeleccionada.fecha}</p>
                 </div>
 
-                <div className="text-xs font-semibold text-slate-500 italic bg-slate-100 px-3 py-1.5 rounded-xl border border-slate-200 font-mono">
+                <div className="text-xs font-semibold text-slate-700 bg-slate-100 px-4 py-2 rounded-xl border border-slate-300 font-mono">
                   Moneda: {cotSeleccionada.moneda_cotizacion || 'CLP'}
                 </div>
               </div>
 
-              {/* TABLA DE ÍTEMS */}
-              <div className="border border-slate-300 rounded-xl overflow-hidden">
+              {/* TABLA DE ÍTEMS EN VISOR CON PADDING INTERNO 4.5 EN TH Y TD */}
+              <div className="border border-slate-300 rounded-2xl overflow-hidden shadow-xs">
                 <table className="w-full text-left border-collapse text-xs">
                   <thead>
                     <tr className="bg-[#e2e8f0] text-slate-800 font-bold border-b border-slate-300">
-                      <th className="p-3.5 border-r border-slate-300">Descripción</th>
-                      <th className="p-3.5 border-r border-slate-300 text-center w-16">IVA</th>
-                      <th className="p-3.5 border-r border-slate-300 text-right w-24">P.U.</th>
-                      <th className="p-3.5 border-r border-slate-300 text-center w-16">Cant.</th>
-                      <th className="p-3.5 text-right w-28">Base imp.</th>
+                      <th className="p-4 border-r border-slate-300">Descripción</th>
+                      <th className="p-4 border-r border-slate-300 text-center w-16">IVA</th>
+                      <th className="p-4 border-r border-slate-300 text-right w-24">P.U.</th>
+                      <th className="p-4 border-r border-slate-300 text-center w-16">Cant.</th>
+                      <th className="p-4 text-right w-28">Base imp.</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200">
@@ -2680,11 +1729,11 @@ export default function OperacionCRM() {
                       const baseImp = Math.max(0, brutoLinea - descL)
                       return (
                         <tr key={idx} className="hover:bg-slate-50">
-                          <td className="p-3.5 font-semibold text-slate-900 border-r border-slate-200">{it.descripcion}</td>
-                          <td className="p-3.5 text-center font-mono text-slate-600 border-r border-slate-200">19%</td>
-                          <td className="p-3.5 text-right font-mono border-r border-slate-200">${it.precio_neto_unitario.toLocaleString('es-CL')}</td>
-                          <td className="p-3.5 text-center font-mono font-bold border-r border-slate-200">{it.cantidad}</td>
-                          <td className="p-3.5 text-right font-mono font-bold text-slate-900">${Math.round(baseImp).toLocaleString('es-CL')}</td>
+                          <td className="p-4 font-semibold text-slate-900 border-r border-slate-200">{it.descripcion}</td>
+                          <td className="p-4 text-center font-mono text-slate-600 border-r border-slate-200">19%</td>
+                          <td className="p-4 text-right font-mono border-r border-slate-200">${it.precio_neto_unitario.toLocaleString('es-CL')}</td>
+                          <td className="p-4 text-center font-mono font-bold border-r border-slate-200">{it.cantidad}</td>
+                          <td className="p-4 text-right font-mono font-bold text-slate-900">${Math.round(baseImp).toLocaleString('es-CL')}</td>
                         </tr>
                       )
                     })}
@@ -2694,23 +1743,23 @@ export default function OperacionCRM() {
 
               {/* TOTALES */}
               <div className="flex justify-end">
-                <div className="w-80 border border-slate-300 rounded-xl overflow-hidden text-xs font-mono">
-                  <div className="flex justify-between p-2.5 bg-white border-b border-slate-200">
+                <div className="w-80 border border-slate-300 rounded-2xl overflow-hidden text-xs font-mono shadow-xs">
+                  <div className="flex justify-between p-3 bg-white border-b border-slate-200">
                     <span className="text-slate-700 font-bold">Total Neto:</span>
                     <span className="font-bold text-slate-900">${Math.round(cotSeleccionada.neto_con_descuento || 0).toLocaleString('es-CL')} {cotSeleccionada.moneda_cotizacion || 'CLP'}</span>
                   </div>
-                  <div className="flex justify-between p-2.5 bg-[#f8fafc] border-b border-slate-200">
+                  <div className="flex justify-between p-3 bg-[#f8fafc] border-b border-slate-200">
                     <span className="text-slate-700 font-bold">Total IVA 19%:</span>
                     <span className="font-bold text-slate-900">${Math.round(cotSeleccionada.monto_iva || 0).toLocaleString('es-CL')} {cotSeleccionada.moneda_cotizacion || 'CLP'}</span>
                   </div>
-                  <div className="flex justify-between p-3 bg-[#000033] text-white font-black text-sm">
+                  <div className="flex justify-between p-4 bg-[#000033] text-white font-black text-sm">
                     <span>Total:</span>
                     <span>${Math.round(cotSeleccionada.monto_total_iva_incluido || 0).toLocaleString('es-CL')} {cotSeleccionada.moneda_cotizacion || 'CLP'}</span>
                   </div>
                 </div>
               </div>
 
-              <div className="pt-6 border-t border-slate-200 flex flex-col md:flex-row justify-between items-center gap-6">
+              <div className="pt-8 border-t border-slate-200 flex flex-col md:flex-row justify-between items-center gap-6">
                 <div className="text-[11px] text-slate-500 font-medium italic">
                   Aceptación por escrito, sello de la empresa, fecha y firma
                 </div>
@@ -2720,14 +1769,14 @@ export default function OperacionCRM() {
               </div>
             </div>
 
-            <div className="border-t border-slate-200 pt-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div className="border-t border-slate-200 pt-6 flex flex-col sm:flex-row justify-between items-center gap-4">
               <div className="text-xs text-slate-500 font-mono">
                 R.U.T.: {(empresasConglomerado.find(e => e.id === cotSeleccionada.empresa_facturadora_id) || empresasConglomerado[0]).rut} | Página 1 / 1
               </div>
 
-              <div className="flex gap-3">
-                <button onClick={() => setCotSeleccionada(null)} className="px-5 py-2.5 bg-slate-200 text-slate-800 font-bold text-xs rounded-2xl hover:bg-slate-300 cursor-pointer">Cerrar</button>
-                <button onClick={() => window.print()} className="px-6 py-2.5 bg-blue-900 text-white font-bold text-xs rounded-2xl hover:bg-blue-950 shadow-xs cursor-pointer flex items-center gap-2"><span>🖨️ Imprimir / Guardar PDF</span></button>
+              <div className="flex gap-4">
+                <button onClick={() => setCotSeleccionada(null)} className="px-6 py-3 bg-slate-200 text-slate-800 font-bold text-xs rounded-2xl hover:bg-slate-300 cursor-pointer">Cerrar</button>
+                <button onClick={() => window.print()} className="px-7 py-3 bg-blue-900 text-white font-bold text-xs rounded-2xl hover:bg-blue-950 shadow-md cursor-pointer flex items-center gap-2"><span>🖨️ Imprimir / Guardar PDF</span></button>
               </div>
             </div>
 
