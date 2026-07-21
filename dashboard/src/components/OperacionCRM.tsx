@@ -9,6 +9,16 @@ const clientesFallback = clientesDataRaw as Record<string, Record<string, string
 
 const IVA_PORCENTAJE = 0.19
 
+// ── CATALOGO PRECONFIGURADO DE SEGURIDAD ELECTRÓNICA & MONITOREO ──
+const CATALOGO_SEGURIDAD = [
+  { id: 'CAT-1', descripcion: 'Kit Alarma DSC Neo 8 Zonas con Teclado LCD & Sirena Exterior 110dB', precio_neto: 235294, categoria: 'Kit Alarma' },
+  { id: 'CAT-2', descripcion: 'Cámara IP 4MP Hikvision DarkFighter Visión Nocturna Color 24/7', precio_neto: 71428, categoria: 'CCTV' },
+  { id: 'CAT-3', descripcion: 'Control remoto inalambrico RadioFrecuencia 4Botones Botón Pánico', precio_neto: 26050, categoria: 'Accesorios' },
+  { id: 'CAT-4', descripcion: 'Cerco Eléctrico Perimetral 6 Hilos con Energizador 12.000V Batería Respaldo', precio_neto: 378151, categoria: 'Cerco' },
+  { id: 'CAT-5', descripcion: 'Servicio de Monitoreo de Alarma 24/7 & Verificación por Video IA (Mensual)', precio_neto: 25126, categoria: 'Monitoreo' },
+  { id: 'CAT-6', descripcion: 'Sensor de Movimiento Exterior Infrarrojo Dual Tech Antimask', precio_neto: 48500, categoria: 'Sensores' }
+]
+
 // ── NIVEL 1: EMPRESA DEL CONGLOMERADO (CRUD 4 RAZONES SOCIALES) ──
 export interface EmpresaConglomerado {
   id: string
@@ -82,8 +92,13 @@ export interface CotizacionDolibarr {
   nombre_cliente: string
   empresa_facturadora_id: string
   direccion: string
+  email_cliente?: string
+  telefono_cliente?: string
+  tipo_receptor?: 'registrado' | 'prospecto'
   fecha: string
   validez_dias: number
+  forma_pago?: string
+  moneda_cotizacion?: 'CLP' | 'UF'
   items: ItemCotizacion[]
   subtotal_neto: number
   total_descuentos: number
@@ -217,27 +232,34 @@ export default function OperacionCRM() {
   const [metodoPagoInput, setMetodoPagoInput] = useState('Transferencia Bancaria')
   const [notaAbonoInput, setNotaAbonoInput] = useState('')
 
-  // Modales OT & Cotización
+  // Modales OT & Creador de Presupuesto Side-by-Side (Crater / InvoiceNinja)
   const [mostrarModalCotizacion, setMostrarModalCotizacion] = useState(false)
   const [cotSeleccionada, setCotSeleccionada] = useState<CotizacionDolibarr | null>(null)
   
+  // FORMULARIO Y ESTADO DEL CREADOR DE COTIZACIONES PROFESIONAL (SIDE-BY-SIDE)
+  const [tipoReceptorCot, setTipoReceptorCot] = useState<'registrado' | 'prospecto'>('registrado')
+  const [cotEmpresaEmisoraId, setCotEmpresaEmisoraId] = useState('EMP-1')
+  const [cotClienteRutSeleccionado, setCotClienteRutSeleccionado] = useState('')
+  const [cotNombreCliente, setCotNombreCliente] = useState('')
+  const [cotRutCliente, setCotRutCliente] = useState('')
+  const [cotDireccion, setCotDireccion] = useState('')
+  const [cotEmailCliente, setCotEmailCliente] = useState('')
+  const [cotTelefonoCliente, setCotTelefonoCliente] = useState('')
+  const [cotValidez, setCotValidez] = useState(15)
+  const [cotFormaPago, setCotFormaPago] = useState('50% Anticipo / 50% Entrega')
+  const [cotMoneda, setCotMoneda] = useState<'CLP' | 'UF'>('CLP')
+  const [cotObservaciones, setCotObservaciones] = useState('')
+  const [itemsCot, setItemsCot] = useState<ItemCotizacion[]>([
+    { id: '1', descripcion: 'Control remoto inalambrico RadioFrecuencia 4Botones', cantidad: 1, precio_neto_unitario: 31000, descuento_porcentaje: 0 }
+  ])
+
+  // Modales OT
   const [mostrarModalOT, setMostrarModalOT] = useState(false)
   const [nuevaOTCuenta, setNuevaOTCuenta] = useState('')
   const [nuevaOTServicio, setNuevaOTServicio] = useState('Instalación de Cámaras de Seguridad')
   const [nuevaOTTecnico, setNuevaOTTecnico] = useState('Técnico Juan Pérez')
   const [nuevaOTFecha, setNuevaOTFecha] = useState(new Date().toISOString().split('T')[0])
   const [nuevaOTObs, setNuevaOTObs] = useState('')
-
-  // Formulario Cotización
-  const [cotEmpresaEmisoraId, setCotEmpresaEmisoraId] = useState('EMP-1')
-  const [cotRutCliente, setCotRutCliente] = useState('')
-  const [cotNombreCliente, setCotNombreCliente] = useState('')
-  const [cotDireccion, setCotDireccion] = useState('')
-  const [cotValidez, setCotValidez] = useState(15)
-  const [cotObservaciones, setCotObservaciones] = useState('')
-  const [itemsCot, setItemsCot] = useState<ItemCotizacion[]>([
-    { id: '1', descripcion: 'Control remoto inalambrico RadioFrecuencia 4Botones', cantidad: 1, precio_neto_unitario: 31000, descuento_porcentaje: 0 }
-  ])
 
   const [enviandoNotif, setEnviandoNotif] = useState(false)
 
@@ -331,7 +353,6 @@ export default function OperacionCRM() {
         if (dFact && dFact.length > 0 && dFact[0].nombre_abonado) {
           try { setFacturas(JSON.parse(dFact[0].nombre_abonado)) } catch (e) {}
         } else {
-          // Generar facturas de demostración iniciales
           const facturasIniciales: FacturaIndividual[] = [
             { id: 'FAC-1001', numero_factura: 'F-8820', fecha: '2026-07-01', razon_social: 'GAMA SEGURIDAD SPA DEMO', rut_cliente: '76.319.399-3', empresa_facturadora_id: 'EMP-1', monto_total: 35581, monto_abonado: 0, saldo_pendiente: 35581, cuenta_asociada: '0999', estado: 'Emitida', fecha_carga: '2026-07-01' },
             { id: 'FAC-1002', numero_factura: 'F-8821', fecha: '2026-07-05', razon_social: 'CORPORACION PRODEL', rut_cliente: '77.890.123-4', empresa_facturadora_id: 'EMP-2', monto_total: 89700, monto_abonado: 45000, saldo_pendiente: 44700, cuenta_asociada: 'C774', estado: 'Abonada', fecha_carga: '2026-07-05' }
@@ -416,6 +437,31 @@ export default function OperacionCRM() {
     return { totalTarifasCLP, totalClientes, desglosePorEmpresa }
   }, [clientesMaestros, empresasConglomerado, valorUF])
 
+  // ── AGREGAR ÍTEM DEL CATÁLOGO AL PRESUPUESTO EN 1 CLIC ──
+  const handleAgregarItemDelCatalogo = (catItem: typeof CATALOGO_SEGURIDAD[0]) => {
+    const nuevoItem: ItemCotizacion = {
+      id: Date.now().toString(),
+      descripcion: catItem.descripcion,
+      cantidad: 1,
+      precio_neto_unitario: catItem.precio_neto,
+      descuento_porcentaje: 0
+    }
+    setItemsCot([...itemsCot, nuevoItem])
+  }
+
+  // ── SELECCIONAR CLIENTE REGISTRADO EN FORMULARIO COTIZACIÓN ──
+  const handleSeleccionarClienteParaCotizacion = (rut: string) => {
+    setCotClienteRutSeleccionado(rut)
+    const cli = clientesMaestros[rut]
+    if (cli) {
+      setCotNombreCliente(cli.razon_social)
+      setCotRutCliente(cli.rut)
+      setCotDireccion(cli.direccion_comercial)
+      setCotEmailCliente(cli.email_cobranza)
+      setCotTelefonoCliente(cli.telefono)
+    }
+  }
+
   // ── ACCIÓN ABONOS PARCIALES (IDURAR ERP/CRM) ──
   const handleRegistrarAbonoParcial = async () => {
     if (!facturaAbonando) return
@@ -472,6 +518,71 @@ export default function OperacionCRM() {
       console.error('Error cambiando estado:', e)
     }
   }
+
+  // Guardar Cotización Profesional (Soporta Clientes Registrados y Prospectos Nuevos)
+  const handleGuardarCotizacionDolibarr = async () => {
+    if (!cotNombreCliente.trim()) {
+      alert('Por favor ingrese el Nombre o Razón Social del receptor del presupuesto.')
+      return
+    }
+
+    const codigoCot = siguienteCorrelativoCode
+
+    const nuevaCot: CotizacionDolibarr = {
+      id: Date.now(),
+      codigo_cotizacion: codigoCot,
+      cuenta: cotRutCliente || `PROSPECTO-${Date.now()}`,
+      rut_cliente: cotRutCliente ? cleanRut(cotRutCliente) : 'S/RUT (Prospecto)',
+      nombre_cliente: cotNombreCliente.trim(),
+      empresa_facturadora_id: cotEmpresaEmisoraId,
+      direccion: cotDireccion.trim() || 'Dirección no especificada',
+      email_cliente: cotEmailCliente.trim() || 'contacto@prospecto.cl',
+      telefono_cliente: cotTelefonoCliente.trim() || '+56991016912',
+      tipo_receptor: tipoReceptorCot,
+      fecha: new Date().toLocaleDateString('es-CL'),
+      validez_dias: cotValidez,
+      forma_pago: cotFormaPago,
+      moneda_cotizacion: cotMoneda,
+      items: itemsCot,
+      subtotal_neto: calculoCotizacionActual.subtotalNeto,
+      total_descuentos: calculoCotizacionActual.totalDescuentos,
+      neto_con_descuento: calculoCotizacionActual.netoConDescuento,
+      monto_iva: calculoCotizacionActual.montoIva,
+      monto_total_iva_incluido: calculoCotizacionActual.totalIvaIncluido,
+      estado: 'Borrador',
+      observaciones: cotObservaciones.trim()
+    }
+
+    const listaNueva = [nuevaCot, ...cotizaciones]
+    try {
+      await supabase.from('eventos_monitoreo').upsert({
+        cuenta: 'COTIZACIONES_DOLIBARR',
+        nombre_abonado: JSON.stringify(listaNueva),
+        evento: 'CREACION_COTIZACION',
+        fecha_hora: new Date().toISOString()
+      })
+      setCotizaciones(listaNueva)
+      setMostrarModalCotizacion(false)
+      alert(`🎉 Presupuesto ${codigoCot} creado exitosamente para "${cotNombreCliente}".`)
+    } catch (e: any) {
+      alert('Error guardando cotización: ' + e.message)
+    }
+  }
+
+  const calculoCotizacionActual = useMemo(() => {
+    let subtotalNeto = 0
+    let totalDescuentos = 0
+    itemsCot.forEach(it => {
+      const netoLinea = (it.cantidad || 1) * (it.precio_neto_unitario || 0)
+      const descLinea = netoLinea * ((it.descuento_porcentaje || 0) / 100)
+      subtotalNeto += netoLinea
+      totalDescuentos += descLinea
+    })
+    const netoConDescuento = subtotalNeto - totalDescuentos
+    const montoIva = netoConDescuento * IVA_PORCENTAJE
+    const totalIvaIncluido = netoConDescuento + montoIva
+    return { subtotalNeto, totalDescuentos, netoConDescuento, montoIva, totalIvaIncluido }
+  }, [itemsCot])
 
   // ── CREAR ORDEN DE TRABAJO (OT) ──
   const handleCrearOT = async () => {
@@ -812,66 +923,6 @@ export default function OperacionCRM() {
     return list.slice(0, 10)
   }, [busquedaClienteInput, abonadosCentrosCosto, clientesMaestros])
 
-  // Guardar Cotización con Correlativo Dinámico (PR2607-0258, PR2607-0259...)
-  const handleGuardarCotizacionDolibarr = async () => {
-    if (!cotNombreCliente.trim()) {
-      alert('Por favor ingrese la razón social del cliente receptor.')
-      return
-    }
-
-    const codigoCot = siguienteCorrelativoCode
-
-    const nuevaCot: CotizacionDolibarr = {
-      id: Date.now(),
-      codigo_cotizacion: codigoCot,
-      cuenta: cotRutCliente,
-      rut_cliente: cleanRut(cotRutCliente),
-      nombre_cliente: cotNombreCliente.trim(),
-      empresa_facturadora_id: cotEmpresaEmisoraId,
-      direccion: cotDireccion || 'Dirección de Entrega',
-      fecha: new Date().toLocaleDateString('es-CL'),
-      validez_dias: cotValidez,
-      items: itemsCot,
-      subtotal_neto: calculoCotizacionActual.subtotalNeto,
-      total_descuentos: calculoCotizacionActual.totalDescuentos,
-      neto_con_descuento: calculoCotizacionActual.netoConDescuento,
-      monto_iva: calculoCotizacionActual.montoIva,
-      monto_total_iva_incluido: calculoCotizacionActual.totalIvaIncluido,
-      estado: 'Borrador',
-      observaciones: cotObservaciones.trim()
-    }
-
-    const listaNueva = [nuevaCot, ...cotizaciones]
-    try {
-      await supabase.from('eventos_monitoreo').upsert({
-        cuenta: 'COTIZACIONES_DOLIBARR',
-        nombre_abonado: JSON.stringify(listaNueva),
-        evento: 'CREACION_COTIZACION',
-        fecha_hora: new Date().toISOString()
-      })
-      setCotizaciones(listaNueva)
-      setMostrarModalCotizacion(false)
-      alert(`🎉 Presupuesto ${codigoCot} generado exitosamente.`)
-    } catch (e: any) {
-      alert('Error guardando cotización: ' + e.message)
-    }
-  }
-
-  const calculoCotizacionActual = useMemo(() => {
-    let subtotalNeto = 0
-    let totalDescuentos = 0
-    itemsCot.forEach(it => {
-      const netoLinea = (it.cantidad || 1) * (it.precio_neto_unitario || 0)
-      const descLinea = netoLinea * ((it.descuento_porcentaje || 0) / 100)
-      subtotalNeto += netoLinea
-      totalDescuentos += descLinea
-    })
-    const netoConDescuento = subtotalNeto - totalDescuentos
-    const montoIva = netoConDescuento * IVA_PORCENTAJE
-    const totalIvaIncluido = netoConDescuento + montoIva
-    return { subtotalNeto, totalDescuentos, netoConDescuento, montoIva, totalIvaIncluido }
-  }, [itemsCot])
-
   const enviarEmailCobroResend = async (destinatario: string, clienteNombre: string, detalleStr: string) => {
     setEnviandoNotif(true)
     try {
@@ -893,6 +944,8 @@ export default function OperacionCRM() {
       setEnviandoNotif(false)
     }
   }
+
+  const empresaEmisoraSeleccionadaCot = empresasConglomerado.find(e => e.id === cotEmpresaEmisoraId) || empresasConglomerado[0]
 
   return (
     <div className="min-h-screen bg-[#f1f5f9] text-[#0f172a] font-sans flex flex-col select-none p-6 md:p-10 gap-10">
@@ -1235,7 +1288,7 @@ export default function OperacionCRM() {
                         ))}
                         {ordenesTrabajo.length === 0 && (
                           <div className="text-center text-slate-400 italic py-8 text-xs">
-                            No hay OTs agendadas para esta cuenta.
+                            No hay órdenes de trabajo programadas.
                           </div>
                         )}
                       </div>
@@ -1416,15 +1469,18 @@ export default function OperacionCRM() {
                     </span>
                   </h2>
                   <p className="text-xs text-slate-500 font-semibold mt-1">
-                    Emisión de Cotizaciones vinculadas a la Empresa del Conglomerado y Cliente (RUT)
+                    Emisión de Cotizaciones vinculadas a la Empresa del Conglomerado (Clientes o Prospectos Nuevos)
                   </p>
                 </div>
 
                 <button
-                  onClick={() => setMostrarModalCotizacion(true)}
-                  className="px-6 py-4 bg-blue-900 hover:bg-blue-800 text-white font-bold rounded-2xl text-xs shadow-[3px_3px_8px_rgba(30,58,138,0.3)] cursor-pointer flex items-center gap-2"
+                  onClick={() => {
+                    setTipoReceptorCot('registrado')
+                    setMostrarModalCotizacion(true)
+                  }}
+                  className="px-6 py-4 bg-gradient-to-r from-blue-900 to-indigo-900 hover:from-blue-800 hover:to-indigo-800 text-white font-bold rounded-2xl text-xs shadow-[4px_4px_12px_rgba(30,58,138,0.35)] cursor-pointer flex items-center gap-2 transition-all"
                 >
-                  <span>➕ Nueva Cotización Comercial</span>
+                  <span>✨ Crear Presupuesto Profesional (Side-by-Side)</span>
                 </button>
               </div>
 
@@ -1435,10 +1491,10 @@ export default function OperacionCRM() {
                       <th className="p-4 border-r border-slate-200">CÓDIGO CORRELATIVO</th>
                       <th className="p-4 border-r border-slate-200">FECHA / VALIDEZ</th>
                       <th className="p-4 border-r border-slate-200">EMPRESA EMISORA</th>
-                      <th className="p-4 border-r border-slate-200">CLIENTE / RUT</th>
+                      <th className="p-4 border-r border-slate-200">RECEPTOR (CLIENTE O PROSPECTO)</th>
                       <th className="p-4 border-r border-slate-200 text-right">NETO</th>
                       <th className="p-4 border-r border-slate-200 text-right">TOTAL IVA INCL.</th>
-                      <th className="p-4 border-r border-slate-200 text-center">ESTADO (CAMBIO 1-CLIC)</th>
+                      <th className="p-4 border-r border-slate-200 text-center">ESTADO (1-CLIC)</th>
                       <th className="p-4 text-center w-32">ACCIONES</th>
                     </tr>
                   </thead>
@@ -1454,14 +1510,21 @@ export default function OperacionCRM() {
                           </td>
                           <td className="p-4 border-r border-slate-200 font-bold text-emerald-800 text-xs">{empEmisora.razon_social}</td>
                           <td className="p-4 border-r border-slate-200">
-                            <div className="font-bold text-slate-900 text-xs">{c.nombre_cliente}</div>
+                            <div className="font-bold text-slate-900 text-xs flex items-center gap-2">
+                              <span>{c.nombre_cliente}</span>
+                              {c.tipo_receptor === 'prospecto' ? (
+                                <span className="bg-purple-100 text-purple-800 text-[10px] px-2 py-0.5 rounded font-mono font-bold">✨ Prospecto</span>
+                              ) : (
+                                <span className="bg-blue-100 text-blue-800 text-[10px] px-2 py-0.5 rounded font-mono font-bold">👤 Registrado</span>
+                              )}
+                            </div>
                             <div className="text-xs text-slate-500 font-mono mt-0.5">RUT: {c.rut_cliente || 'N/A'}</div>
                           </td>
                           <td className="p-4 text-right font-mono text-slate-700 border-r border-slate-200">
-                            ${Math.round(c.neto_con_descuento || 0).toLocaleString('es-CL')} CLP
+                            ${Math.round(c.neto_con_descuento || 0).toLocaleString('es-CL')} {c.moneda_cotizacion || 'CLP'}
                           </td>
                           <td className="p-4 text-right font-mono font-bold text-emerald-800 border-r border-slate-200">
-                            ${Math.round(c.monto_total_iva_incluido || 0).toLocaleString('es-CL')} CLP
+                            ${Math.round(c.monto_total_iva_incluido || 0).toLocaleString('es-CL')} {c.moneda_cotizacion || 'CLP'}
                           </td>
                           <td className="p-4 text-center border-r border-slate-200 font-bold">
                             <select
@@ -1494,7 +1557,7 @@ export default function OperacionCRM() {
                     {cotizaciones.length === 0 && (
                       <tr>
                         <td colSpan={8} className="p-12 text-center text-slate-400 italic text-xs">
-                          No hay presupuestos registrados. Haga clic en "➕ Nueva Cotización Comercial".
+                          No hay presupuestos registrados. Haga clic en "✨ Crear Presupuesto Profesional".
                         </td>
                       </tr>
                     )}
@@ -1801,552 +1864,416 @@ export default function OperacionCRM() {
         </main>
       </div>
 
-      {/* ── MODAL REGISTRO DE ABONO PARCIAL (IDURAR ERP/CRM) ── */}
-      {mostrarModalAbono && facturaAbonando && (
-        <div className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-xs overflow-y-auto p-4 md:p-8 flex justify-center items-start">
-          <div className="bg-white border border-slate-300 w-full max-w-md rounded-3xl shadow-2xl my-6 md:my-10 p-8 space-y-5 text-xs font-sans">
-            <div className="flex justify-between items-center border-b border-slate-200 pb-3">
-              <div>
-                <h3 className="font-black text-sm text-slate-900 uppercase tracking-wide">
-                  💵 Registrar Abono Parcial ({facturaAbonando.numero_factura})
-                </h3>
-                <p className="text-xs text-slate-500 font-medium">{facturaAbonando.razon_social}</p>
-              </div>
-              <button onClick={() => setMostrarModalAbono(false)} className="text-slate-400 font-bold text-xl">✕</button>
-            </div>
-
-            <div className="p-4 bg-slate-50 rounded-2xl space-y-1 font-mono text-xs">
-              <div className="flex justify-between text-slate-600"><span>Monto Total Factura:</span><span>${facturaAbonando.monto_total.toLocaleString('es-CL')} CLP</span></div>
-              <div className="flex justify-between text-emerald-700 font-bold"><span>Total Abonado Prev.:</span><span>${(facturaAbonando.monto_abonado || 0).toLocaleString('es-CL')} CLP</span></div>
-              <div className="flex justify-between text-red-700 font-black border-t border-slate-200 pt-1"><span>Saldo Actual:</span><span>${facturaAbonando.saldo_pendiente.toLocaleString('es-CL')} CLP</span></div>
-            </div>
-
-            <div className="space-y-3">
-              <div>
-                <label className="font-bold text-slate-700 block mb-1">Monto a Abonar (CLP):</label>
-                <input
-                  type="number"
-                  value={montoAbonoInput}
-                  onChange={(e) => setMontoAbonoInput(e.target.value)}
-                  className="w-full bg-white border border-slate-300 p-3 rounded-2xl font-mono font-bold text-slate-900 text-sm focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="font-bold text-slate-700 block mb-1">Método de Pago / Vía:</label>
-                <select
-                  value={metodoPagoInput}
-                  onChange={(e) => setMetodoPagoInput(e.target.value)}
-                  className="w-full bg-white border border-slate-300 p-3 rounded-2xl font-bold text-slate-900"
-                >
-                  <option value="Transferencia Bancaria">Transferencia Bancaria</option>
-                  <option value="Webpay / Débito / Crédito">Webpay / Débito / Crédito</option>
-                  <option value="Cheque a Fecha">Cheque a Fecha</option>
-                  <option value="Efectivo / Caja">Efectivo / Caja</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="font-bold text-slate-700 block mb-1">Notas de Cobranza / Comprobante:</label>
-                <input
-                  type="text"
-                  value={notaAbonoInput}
-                  onChange={(e) => setNotaAbonoInput(e.target.value)}
-                  placeholder="Ej: N° Transf 881029 Banco Estado"
-                  className="w-full bg-white border border-slate-300 p-3 rounded-2xl text-slate-900"
-                />
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-3 pt-3 border-t border-slate-200">
-              <button onClick={() => setMostrarModalAbono(false)} className="px-4 py-2.5 bg-slate-200 text-slate-800 font-bold rounded-2xl cursor-pointer">Cancelar</button>
-              <button onClick={handleRegistrarAbonoParcial} className="px-5 py-2.5 bg-emerald-700 text-white font-bold rounded-2xl cursor-pointer shadow-2xs">💾 Registrar Abono</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── MODAL NUEVA ORDEN DE TRABAJO (OT) ── */}
-      {mostrarModalOT && (
-        <div className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-xs overflow-y-auto p-4 md:p-8 flex justify-center items-start">
-          <div className="bg-white border border-slate-300 w-full max-w-md rounded-3xl shadow-2xl my-6 md:my-10 p-8 space-y-5 text-xs font-sans">
-            <div className="flex justify-between items-center border-b border-slate-200 pb-3">
-              <h3 className="font-black text-sm text-slate-900 uppercase tracking-wide">
-                🛠️ Crear Orden de Trabajo (OT)
-              </h3>
-              <button onClick={() => setMostrarModalOT(false)} className="text-slate-400 font-bold text-xl">✕</button>
-            </div>
-
-            <div className="space-y-3">
-              <div>
-                <label className="font-bold text-slate-700 block mb-1">Cuenta Abonado (ej: 0999):</label>
-                <input
-                  type="text"
-                  value={nuevaOTCuenta}
-                  onChange={(e) => setNuevaOTCuenta(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-300 p-3 rounded-2xl font-mono font-bold text-slate-900 uppercase"
-                />
-              </div>
-
-              <div>
-                <label className="font-bold text-slate-700 block mb-1">Tipo de Servicio Técnico:</label>
-                <select
-                  value={nuevaOTServicio}
-                  onChange={(e) => setNuevaOTServicio(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-300 p-3 rounded-2xl font-bold text-slate-900"
-                >
-                  <option value="Instalación de Cámaras de Seguridad">Instalación de Cámaras CCTV</option>
-                  <option value="Mantención Preventiva de Alarma">Mantención Preventiva de Alarma</option>
-                  <option value="Cambio de Batería de Respaldo">Cambio de Batería de Respaldo</option>
-                  <option value="Revisión de Cerco Eléctrico">Revisión de Cerco Eléctrico</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="font-bold text-slate-700 block mb-1">Técnico Asignado:</label>
-                <input
-                  type="text"
-                  value={nuevaOTTecnico}
-                  onChange={(e) => setNuevaOTTecnico(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-300 p-3 rounded-2xl text-slate-900 font-bold"
-                />
-              </div>
-
-              <div>
-                <label className="font-bold text-slate-700 block mb-1">Fecha Programada:</label>
-                <input
-                  type="date"
-                  value={nuevaOTFecha}
-                  onChange={(e) => setNuevaOTFecha(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-300 p-3 rounded-2xl font-mono text-slate-900 font-bold"
-                />
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-3 pt-3 border-t border-slate-200">
-              <button onClick={() => setMostrarModalOT(false)} className="px-4 py-2.5 bg-slate-200 text-slate-800 font-bold rounded-2xl cursor-pointer">Cancelar</button>
-              <button onClick={handleCrearOT} className="px-5 py-2.5 bg-blue-900 text-white font-bold rounded-2xl cursor-pointer shadow-2xs">🛠️ Crear OT</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── MODAL CRUD PARA EMPRESA EMISORA ── */}
-      {mostrarModalEmpresa && empresaEditando && (
-        <div className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-xs overflow-y-auto p-4 md:p-8 flex justify-center items-start">
-          <div className="bg-white border border-slate-300 w-full max-w-2xl rounded-3xl shadow-2xl my-6 md:my-10 p-8 space-y-6 text-xs font-sans">
-            <div className="flex justify-between items-center border-b border-slate-200 pb-4">
-              <h3 className="font-black text-lg text-slate-900 uppercase tracking-wide">
-                ⚙️ {empresaEditando.id ? 'Editar Empresa Emisora' : 'Agregar Nueva Empresa Emisora'}
-              </h3>
-              <button onClick={() => setMostrarModalEmpresa(false)} className="text-slate-400 font-bold text-2xl">✕</button>
-            </div>
-
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="font-bold text-slate-700 block mb-1">Razón Social Emisora:</label>
-                  <input
-                    type="text"
-                    value={empresaEditando.razon_social}
-                    onChange={(e) => setEmpresaEditando({ ...empresaEditando, razon_social: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-300 p-3 rounded-2xl font-bold text-slate-900 focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="font-bold text-slate-700 block mb-1">RUT Empresa:</label>
-                  <input
-                    type="text"
-                    value={empresaEditando.rut}
-                    onChange={(e) => setEmpresaEditando({ ...empresaEditando, rut: cleanRut(e.target.value) })}
-                    className="w-full bg-slate-50 border border-slate-300 p-3 rounded-2xl font-mono font-bold text-slate-900 focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="font-bold text-slate-700 block mb-1">Giro Comercial:</label>
-                <input
-                  type="text"
-                  value={empresaEditando.giro}
-                  onChange={(e) => setEmpresaEditando({ ...empresaEditando, giro: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-300 p-3 rounded-2xl text-slate-900 focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="font-bold text-slate-700 block mb-1">Dirección Fiscal:</label>
-                <input
-                  type="text"
-                  value={empresaEditando.direccion}
-                  onChange={(e) => setEmpresaEditando({ ...empresaEditando, direccion: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-300 p-3 rounded-2xl text-slate-900 focus:outline-none"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="font-bold text-slate-700 block mb-1">Email Cobranza:</label>
-                  <input
-                    type="email"
-                    value={empresaEditando.email_cobranza}
-                    onChange={(e) => setEmpresaEditando({ ...empresaEditando, email_cobranza: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-300 p-3 rounded-2xl text-blue-900 font-bold focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="font-bold text-slate-700 block mb-1">Teléfono:</label>
-                  <input
-                    type="text"
-                    value={empresaEditando.telefono}
-                    onChange={(e) => setEmpresaEditando({ ...empresaEditando, telefono: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-300 p-3 rounded-2xl font-mono text-slate-900 focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <label className="font-bold text-slate-700 block mb-1">Banco:</label>
-                  <input
-                    type="text"
-                    value={empresaEditando.banco_nombre}
-                    onChange={(e) => setEmpresaEditando({ ...empresaEditando, banco_nombre: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-300 p-3 rounded-2xl text-slate-900 font-semibold"
-                  />
-                </div>
-                <div>
-                  <label className="font-bold text-slate-700 block mb-1">Tipo Cta:</label>
-                  <input
-                    type="text"
-                    value={empresaEditando.banco_tipo_cuenta}
-                    onChange={(e) => setEmpresaEditando({ ...empresaEditando, banco_tipo_cuenta: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-300 p-3 rounded-2xl text-slate-900 font-semibold"
-                  />
-                </div>
-                <div>
-                  <label className="font-bold text-slate-700 block mb-1">Nº Cuenta:</label>
-                  <input
-                    type="text"
-                    value={empresaEditando.banco_numero_cuenta}
-                    onChange={(e) => setEmpresaEditando({ ...empresaEditando, banco_numero_cuenta: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-300 p-3 rounded-2xl font-mono text-slate-900 font-bold"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-4 pt-4 border-t border-slate-200">
-              <button onClick={() => setMostrarModalEmpresa(false)} className="px-5 py-3 bg-slate-200 text-slate-800 font-bold rounded-2xl cursor-pointer">Cancelar</button>
-              <button onClick={handleGuardarEmpresaEmisora} className="px-6 py-3 bg-blue-900 text-white font-bold rounded-2xl shadow-xs cursor-pointer">💾 Guardar Empresa</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── MODAL EDITAR CLIENTE (RUT) ── */}
-      {mostrarModalCliente && clienteActivo && (
-        <div className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-xs overflow-y-auto p-4 md:p-8 flex justify-center items-start">
-          <div className="bg-white border border-slate-300 w-full max-w-2xl rounded-3xl shadow-2xl my-6 md:my-10 p-8 space-y-6 text-xs font-sans">
-            <div className="flex justify-between items-center border-b border-slate-200 pb-4">
-              <div>
-                <h3 className="font-black text-lg text-slate-900 uppercase tracking-wide">
-                  ✏️ Editar Datos (RUT: {clienteActivo.rut})
-                </h3>
-                <p className="text-xs text-slate-500 font-medium mt-0.5">Asigne la Empresa del Conglomerado que le facturará a este cliente.</p>
-              </div>
-              <button onClick={() => setMostrarModalCliente(false)} className="text-slate-400 font-bold text-2xl">✕</button>
-            </div>
-
-            <div className="space-y-4">
-              <div className="bg-blue-50 border border-blue-200 p-4 rounded-2xl">
-                <label className="font-extrabold text-blue-950 block mb-1 text-xs uppercase tracking-wider">
-                  🏢 Empresa del Conglomerado Asignada (Emisora / Facturadora):
-                </label>
-                <select
-                  value={editEmpresaId}
-                  onChange={(e) => setEditEmpresaId(e.target.value)}
-                  className="w-full bg-white border border-blue-300 p-3 rounded-xl font-bold text-slate-900 text-xs focus:outline-none"
-                >
-                  {empresasConglomerado.map(emp => (
-                    <option key={emp.id} value={emp.id}>{emp.razon_social} (RUT: {emp.rut})</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="font-bold text-slate-700 block mb-1">Razón Social Cliente:</label>
-                  <input
-                    type="text"
-                    value={editRazonSocial}
-                    onChange={(e) => setEditRazonSocial(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-300 p-3.5 rounded-2xl font-bold text-slate-900"
-                  />
-                </div>
-
-                <div>
-                  <label className="font-bold text-slate-700 block mb-1">Email Cobranza:</label>
-                  <input
-                    type="email"
-                    value={editEmailCobranza}
-                    onChange={(e) => setEditEmailCobranza(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-300 p-3.5 rounded-2xl font-bold text-blue-900"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="font-bold text-slate-700 block mb-1">Teléfono:</label>
-                  <input
-                    type="text"
-                    value={editTelefono}
-                    onChange={(e) => setEditTelefono(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-300 p-3.5 rounded-2xl font-mono font-bold text-slate-900"
-                  />
-                </div>
-
-                <div>
-                  <label className="font-bold text-slate-700 block mb-1">Dirección Comercial:</label>
-                  <input
-                    type="text"
-                    value={editDireccionComercial}
-                    onChange={(e) => setEditDireccionComercial(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-300 p-3.5 rounded-2xl text-slate-900"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 pt-2 border-t border-slate-200">
-                <div>
-                  <label className="font-bold text-slate-700 block mb-1">Moneda de Cobro:</label>
-                  <select
-                    value={editMoneda}
-                    onChange={(e: any) => setEditMoneda(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-300 p-3.5 rounded-2xl font-bold text-slate-900"
-                  >
-                    <option value="CLP">CLP (Pesos Chilenos)</option>
-                    <option value="UF">UF (Unidad de Fomento)</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="font-bold text-slate-700 block mb-1">Monto Mensual:</label>
-                  <input
-                    type="number"
-                    step={editMoneda === 'UF' ? '0.1' : '1000'}
-                    value={editTarifa}
-                    onChange={(e) => setEditTarifa(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-300 p-3.5 rounded-2xl font-mono font-bold text-slate-900"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-4 pt-5 border-t border-slate-200">
-              <button onClick={() => setMostrarModalCliente(false)} className="px-6 py-3.5 bg-slate-200 text-slate-800 font-bold rounded-2xl cursor-pointer">Cancelar</button>
-              <button onClick={handleGuardarClienteMaestro} className="px-7 py-3.5 bg-blue-900 text-white font-bold rounded-2xl shadow-xs cursor-pointer">💾 Guardar Cliente</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── MODAL VINCULAR UN CENTRO DE COSTO ── */}
-      {mostrarModalVincularAbonado && clienteActivo && (
-        <div className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-xs overflow-y-auto p-4 md:p-8 flex justify-center items-start">
-          <div className="bg-white border border-slate-300 w-full max-w-md my-6 md:my-10 p-8 rounded-3xl shadow-2xl space-y-5 text-xs font-sans">
-            <div className="flex justify-between items-center border-b border-slate-200 pb-3">
-              <h3 className="font-black text-sm text-slate-900 uppercase tracking-wide">
-                ➕ Vincular Centro de Costo (Abonado)
-              </h3>
-              <button onClick={() => setMostrarModalVincularAbonado(false)} className="text-slate-400 font-bold text-xl">✕</button>
-            </div>
-
-            <div className="space-y-3">
-              <div>
-                <label className="font-bold text-slate-700 block mb-1">Código de Abonado / Cuenta Command Center (ej: C774):</label>
-                <input
-                  type="text"
-                  value={nuevaCuentaAbonadoInput}
-                  onChange={(e) => setNuevaCuentaAbonadoInput(e.target.value)}
-                  placeholder="C774"
-                  className="w-full bg-slate-50 border border-slate-300 p-3 rounded-2xl font-mono font-bold text-slate-900 uppercase focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="font-bold text-slate-700 block mb-1">Nombre / Alias del Centro de Costo:</label>
-                <input
-                  type="text"
-                  value={nuevoAliasCentroCostoInput}
-                  onChange={(e) => setNuevoAliasCentroCostoInput(e.target.value)}
-                  placeholder="Ej: Sucursal San Bernardo / Planta Lampa"
-                  className="w-full bg-slate-50 border border-slate-300 p-3 rounded-2xl text-slate-900 focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="font-bold text-slate-700 block mb-1">Dirección del Centro de Costo:</label>
-                <input
-                  type="text"
-                  value={nuevaDireccionAbonadoInput}
-                  onChange={(e) => setNuevaDireccionAbonadoInput(e.target.value)}
-                  placeholder="Av. Lo Blanco 713, San Bernardo"
-                  className="w-full bg-slate-50 border border-slate-300 p-3 rounded-2xl text-slate-900 focus:outline-none"
-                />
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-3 pt-3 border-t border-slate-200">
-              <button onClick={() => setMostrarModalVincularAbonado(false)} className="px-4 py-2.5 bg-slate-200 text-slate-800 font-bold rounded-2xl cursor-pointer">Cancelar</button>
-              <button onClick={handleVincularCentroDeCosto} className="px-5 py-2.5 bg-blue-900 text-white font-bold rounded-2xl cursor-pointer">🚀 Vincular Abonado</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── MODAL NUEVA COTIZACIÓN COMERCIAL ── */}
+      {/* ── CREADOR PROFESIONAL DE PRESUPUESTOS COMERCIALES (SIDE-BY-SIDE BUILDER - INSPIRADO EN CRATER & INVOICE NINJA) ── */}
       {mostrarModalCotizacion && (
-        <div className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-xs overflow-y-auto p-4 md:p-8 flex justify-center items-start">
-          <div className="bg-white border border-slate-300 w-full max-w-5xl rounded-3xl shadow-2xl my-6 md:my-10 p-8 space-y-6 font-sans text-xs">
-            <div className="flex justify-between items-center border-b border-slate-200 pb-5">
-              <div>
-                <h3 className="font-black text-lg text-slate-900 uppercase tracking-wide flex items-center gap-3">
-                  📋 Crear Presupuesto Comercial
-                  <span className="bg-blue-100 text-blue-900 text-xs px-3 py-1 rounded-full font-mono font-bold border border-blue-200">
-                    CÓDIGO: {siguienteCorrelativoCode}
-                  </span>
-                </h3>
-                <p className="text-xs text-slate-500 font-medium mt-1">Seleccione la Empresa del Conglomerado emisora y el Cliente receptor</p>
-              </div>
-              <button onClick={() => setMostrarModalCotizacion(false)} className="text-slate-400 font-bold text-2xl hover:text-slate-700">✕</button>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div>
-                <label className="font-bold text-slate-700 block mb-1.5 text-xs">Empresa del Conglomerado Emisora:</label>
-                <select
-                  value={cotEmpresaEmisoraId}
-                  onChange={(e) => setCotEmpresaEmisoraId(e.target.value)}
-                  className="bg-[#f8fafc] border border-blue-300 text-slate-900 p-3.5 rounded-2xl w-full focus:outline-none font-bold text-xs"
-                >
-                  {empresasConglomerado.map(emp => (
-                    <option key={emp.id} value={emp.id}>{emp.razon_social} ({emp.rut})</option>
-                  ))}
-                </select>
+        <div className="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-md overflow-y-auto p-4 md:p-6 flex justify-center items-center">
+          <div className="bg-white border border-slate-300 w-full max-w-7xl h-[92vh] rounded-3xl shadow-2xl flex flex-col overflow-hidden font-sans text-xs">
+            
+            {/* BARRA DE TÍTULO SUPERIOR */}
+            <div className="bg-slate-950 text-white px-8 py-5 flex justify-between items-center shrink-0 border-b border-slate-800">
+              <div className="flex items-center gap-4">
+                <span className="text-2xl p-2 bg-blue-900/60 rounded-xl border border-blue-700/50">✨</span>
+                <div>
+                  <h3 className="font-black text-lg text-white uppercase tracking-wider flex items-center gap-3">
+                    CREADOR DE PRESUPUESTO COMERCIAL
+                    <span className="bg-blue-600 text-white text-xs px-3 py-0.5 rounded-full font-mono font-bold">
+                      {siguienteCorrelativoCode}
+                    </span>
+                  </h3>
+                  <p className="text-xs text-slate-400 font-medium mt-0.5">
+                    Generador profesional con vista previa impresa en vivo y soporte para Clientes y Prospectos Nuevos
+                  </p>
+                </div>
               </div>
 
-              <div>
-                <label className="font-bold text-slate-700 block mb-1.5 text-xs">Razón Social Cliente Receptor:</label>
-                <input
-                  type="text"
-                  value={cotNombreCliente}
-                  onChange={(e) => setCotNombreCliente(e.target.value)}
-                  placeholder="Ej: CORPORACION PRODEL"
-                  className="bg-[#f8fafc] border border-slate-300 text-slate-900 p-3.5 rounded-2xl w-full focus:outline-none font-bold text-xs"
-                />
-              </div>
-
-              <div>
-                <label className="font-bold text-slate-700 block mb-1.5 text-xs">RUT Cliente Receptor:</label>
-                <input
-                  type="text"
-                  value={cotRutCliente}
-                  onChange={(e) => setCotRutCliente(cleanRut(e.target.value))}
-                  placeholder="76319399-3"
-                  className="bg-[#f8fafc] border border-slate-300 text-slate-900 p-3.5 rounded-2xl w-full focus:outline-none font-mono font-bold text-xs"
-                />
+              <div className="flex items-center gap-4">
+                <button onClick={() => setMostrarModalCotizacion(false)} className="text-slate-400 hover:text-white font-bold text-2xl px-2">✕</button>
               </div>
             </div>
 
-            {/* TABLA DE ÍTEMS */}
-            <div className="space-y-4 border-t border-b border-slate-200 py-6">
-              <div className="flex justify-between items-center">
-                <span className="font-black text-slate-900 uppercase tracking-wider text-xs">Ítems del Presupuesto (Neto & Descuento)</span>
-                <button
-                  onClick={() => setItemsCot([...itemsCot, { id: Date.now().toString(), descripcion: 'Nuevo ítem / servicio', cantidad: 1, precio_neto_unitario: 10000, descuento_porcentaje: 0 }])}
-                  className="px-5 py-2.5 bg-slate-900 text-white rounded-2xl text-xs font-bold cursor-pointer hover:bg-slate-800 shadow-xs"
-                >
-                  + Agregar Línea
-                </button>
-              </div>
-
-              <div className="space-y-3 max-h-64 overflow-y-auto">
-                {itemsCot.map((it, idx) => (
-                  <div key={it.id} className="grid grid-cols-12 gap-3 items-center bg-[#f8fafc] p-3.5 rounded-2xl border border-slate-200">
-                    <input
-                      type="text"
-                      value={it.descripcion}
-                      onChange={(e) => {
-                        const newIt = [...itemsCot]
-                        newIt[idx].descripcion = e.target.value
-                        setItemsCot(newIt)
-                      }}
-                      placeholder="Descripción del producto o servicio..."
-                      className="col-span-5 bg-white border border-slate-300 p-3 rounded-xl text-xs font-medium"
-                    />
-                    <input
-                      type="number"
-                      value={it.cantidad}
-                      onChange={(e) => {
-                        const newIt = [...itemsCot]
-                        newIt[idx].cantidad = Number(e.target.value) || 1
-                        setItemsCot(newIt)
-                      }}
-                      className="col-span-2 bg-white border border-slate-300 p-3 rounded-xl text-xs font-mono text-center font-bold"
-                    />
-                    <input
-                      type="number"
-                      value={it.precio_neto_unitario}
-                      onChange={(e) => {
-                        const newIt = [...itemsCot]
-                        newIt[idx].precio_neto_unitario = Number(e.target.value) || 0
-                        setItemsCot(newIt)
-                      }}
-                      className="col-span-3 bg-white border border-slate-300 p-3 rounded-xl text-xs font-mono text-right font-bold"
-                    />
-                    <input
-                      type="number"
-                      value={it.descuento_porcentaje}
-                      onChange={(e) => {
-                        const newIt = [...itemsCot]
-                        newIt[idx].descuento_porcentaje = Number(e.target.value) || 0
-                        setItemsCot(newIt)
-                      }}
-                      className="col-span-1 bg-white border border-slate-300 p-3 rounded-xl text-xs font-mono text-center font-bold"
-                    />
+            {/* CONTENIDO SIDE-BY-SIDE (2 COLUMNAS 50% / 50%) */}
+            <div className="flex-1 flex flex-col lg:flex-row overflow-hidden min-h-0 divide-y lg:divide-y-0 lg:divide-x divide-slate-200">
+              
+              {/* COLUMNA IZQUIERDA: CONFIGURADOR & CATÁLOGOS */}
+              <div className="w-full lg:w-1/2 p-7 overflow-y-auto flex flex-col gap-6 bg-[#f8fafc]">
+                
+                {/* 1. TIPO DE RECEPTOR: REGISTRADO VS PROSPECTO */}
+                <div className="bg-white p-5 rounded-2xl border border-slate-200 space-y-3 shadow-2xs">
+                  <label className="font-extrabold text-slate-900 text-xs uppercase tracking-wider block">
+                    1. Receptor del Presupuesto Comercial:
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
                     <button
-                      onClick={() => setItemsCot(itemsCot.filter(i => i.id !== it.id))}
-                      className="col-span-1 text-red-600 font-bold hover:text-red-800 text-center text-lg cursor-pointer"
+                      type="button"
+                      onClick={() => {
+                        setTipoReceptorCot('registrado')
+                        if (Object.keys(clientesMaestros).length > 0) {
+                          handleSeleccionarClienteParaCotizacion(Object.keys(clientesMaestros)[0])
+                        }
+                      }}
+                      className={`p-3.5 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer border ${
+                        tipoReceptorCot === 'registrado'
+                          ? 'bg-blue-900 text-white border-blue-900 shadow-xs'
+                          : 'bg-slate-50 text-slate-700 border-slate-300 hover:bg-slate-100'
+                      }`}
                     >
-                      ✕
+                      <span>👤 Cliente Registrado</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTipoReceptorCot('prospecto')
+                        setCotClienteRutSeleccionado('')
+                        setCotNombreCliente('')
+                        setCotRutCliente('')
+                        setCotDireccion('')
+                        setCotEmailCliente('')
+                        setCotTelefonoCliente('')
+                      }}
+                      className={`p-3.5 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer border ${
+                        tipoReceptorCot === 'prospecto'
+                          ? 'bg-purple-900 text-white border-purple-900 shadow-xs'
+                          : 'bg-slate-50 text-slate-700 border-slate-300 hover:bg-slate-100'
+                      }`}
+                    >
+                      <span>✨ Nuevo Prospecto</span>
                     </button>
                   </div>
-                ))}
+
+                  {/* CAMPOS RECEPTOR */}
+                  {tipoReceptorCot === 'registrado' ? (
+                    <div className="pt-2">
+                      <label className="font-bold text-slate-700 block mb-1">Seleccionar Cliente de Base de Datos:</label>
+                      <select
+                        value={cotClienteRutSeleccionado}
+                        onChange={(e) => handleSeleccionarClienteParaCotizacion(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-300 p-3 rounded-xl font-bold text-slate-900 focus:outline-none"
+                      >
+                        {Object.values(clientesMaestros).map(c => (
+                          <option key={c.rut} value={c.rut}>{c.razon_social} (RUT: {c.rut})</option>
+                        ))}
+                      </select>
+                    </div>
+                  ) : (
+                    <div className="space-y-3 pt-2">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="font-bold text-slate-700 block mb-1">Nombre / Razón Social Prospecto:</label>
+                          <input
+                            type="text"
+                            value={cotNombreCliente}
+                            onChange={(e) => setCotNombreCliente(e.target.value)}
+                            placeholder="Ej: Inmobiliaria San Cristóbal SpA"
+                            className="w-full bg-slate-50 border border-slate-300 p-2.5 rounded-xl font-bold text-slate-900 focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="font-bold text-slate-700 block mb-1">RUT (Opcional):</label>
+                          <input
+                            type="text"
+                            value={cotRutCliente}
+                            onChange={(e) => setCotRutCliente(cleanRut(e.target.value))}
+                            placeholder="77123456-7"
+                            className="w-full bg-slate-50 border border-slate-300 p-2.5 rounded-xl font-mono text-slate-900 focus:outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-3">
+                        <div className="col-span-2">
+                          <label className="font-bold text-slate-700 block mb-1">Dirección Prospecto:</label>
+                          <input
+                            type="text"
+                            value={cotDireccion}
+                            onChange={(e) => setCotDireccion(e.target.value)}
+                            placeholder="Av. Las Condes 1234, Las Condes"
+                            className="w-full bg-slate-50 border border-slate-300 p-2.5 rounded-xl text-slate-900 focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="font-bold text-slate-700 block mb-1">Teléfono:</label>
+                          <input
+                            type="text"
+                            value={cotTelefonoCliente}
+                            onChange={(e) => setCotTelefonoCliente(e.target.value)}
+                            placeholder="+56 9 "
+                            className="w-full bg-slate-50 border border-slate-300 p-2.5 rounded-xl font-mono text-slate-900 focus:outline-none"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* 2. DATOS COMERCIALES & EMPRESA EMISORA */}
+                <div className="bg-white p-5 rounded-2xl border border-slate-200 space-y-4 shadow-2xs">
+                  <label className="font-extrabold text-slate-900 text-xs uppercase tracking-wider block">
+                    2. Configuración Comercial de la Oferta:
+                  </label>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="font-bold text-slate-700 block mb-1">Empresa del Conglomerado Emisora:</label>
+                      <select
+                        value={cotEmpresaEmisoraId}
+                        onChange={(e) => setCotEmpresaEmisoraId(e.target.value)}
+                        className="w-full bg-blue-50 border border-blue-300 p-2.5 rounded-xl font-bold text-blue-950 focus:outline-none text-xs"
+                      >
+                        {empresasConglomerado.map(emp => (
+                          <option key={emp.id} value={emp.id}>{emp.razon_social} ({emp.rut})</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="font-bold text-slate-700 block mb-1">Moneda de Cotización:</label>
+                      <select
+                        value={cotMoneda}
+                        onChange={(e: any) => setCotMoneda(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-300 p-2.5 rounded-xl font-bold text-slate-900 focus:outline-none text-xs"
+                      >
+                        <option value="CLP">CLP (Pesos Chilenos)</option>
+                        <option value="UF">UF (Unidad de Fomento)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="font-bold text-slate-700 block mb-1">Validez de la Oferta:</label>
+                      <select
+                        value={cotValidez}
+                        onChange={(e) => setCotValidez(Number(e.target.value))}
+                        className="w-full bg-slate-50 border border-slate-300 p-2.5 rounded-xl text-slate-900 font-bold text-xs"
+                      >
+                        <option value={15}>15 Días Hábiles</option>
+                        <option value={30}>30 Días Hábiles</option>
+                        <option value={60}>60 Días Hábiles</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="font-bold text-slate-700 block mb-1">Forma de Pago:</label>
+                      <select
+                        value={cotFormaPago}
+                        onChange={(e) => setCotFormaPago(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-300 p-2.5 rounded-xl text-slate-900 font-bold text-xs"
+                      >
+                        <option value="50% Anticipo / 50% Entrega">50% Anticipo / 50% Entrega</option>
+                        <option value="Contado 100%">Contado 100%</option>
+                        <option value="30 Días Crédito">30 Días Crédito</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 3. CATÁLOGO RÁPIDO DE SEGURIDAD ELECTRÓNICA & MONITOREO */}
+                <div className="bg-white p-5 rounded-2xl border border-slate-200 space-y-3 shadow-2xs">
+                  <div className="flex justify-between items-center">
+                    <label className="font-extrabold text-slate-900 text-xs uppercase tracking-wider">
+                      3. Catálogo Rápido de Equipamiento & Servicios (1-Clic):
+                    </label>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {CATALOGO_SEGURIDAD.map(cat => (
+                      <button
+                        key={cat.id}
+                        type="button"
+                        onClick={() => handleAgregarItemDelCatalogo(cat)}
+                        className="p-2.5 bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-300 rounded-xl text-left transition-all cursor-pointer flex flex-col justify-between gap-1 group"
+                      >
+                        <span className="text-[11px] font-bold text-slate-900 group-hover:text-blue-900 line-clamp-2 leading-tight">
+                          {cat.descripcion}
+                        </span>
+                        <span className="font-mono text-[10px] text-emerald-700 font-bold">
+                          +${cat.precio_neto.toLocaleString('es-CL')} Neto
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 4. EDITOR DE ÍTEMS */}
+                <div className="bg-white p-5 rounded-2xl border border-slate-200 space-y-3 shadow-2xs">
+                  <div className="flex justify-between items-center">
+                    <label className="font-extrabold text-slate-900 text-xs uppercase tracking-wider">
+                      4. Ítems Incluidos en el Presupuesto:
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setItemsCot([...itemsCot, { id: Date.now().toString(), descripcion: 'Nuevo ítem / servicio de seguridad', cantidad: 1, precio_neto_unitario: 10000, descuento_porcentaje: 0 }])}
+                      className="px-3.5 py-1.5 bg-slate-900 text-white rounded-xl text-xs font-bold cursor-pointer hover:bg-slate-800"
+                    >
+                      + Línea Personalizada
+                    </button>
+                  </div>
+
+                  <div className="space-y-2 max-h-60 overflow-y-auto">
+                    {itemsCot.map((it, idx) => (
+                      <div key={it.id} className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center gap-3">
+                        <input
+                          type="text"
+                          value={it.descripcion}
+                          onChange={(e) => {
+                            const newIt = [...itemsCot]
+                            newIt[idx].descripcion = e.target.value
+                            setItemsCot(newIt)
+                          }}
+                          className="flex-1 bg-white border border-slate-300 p-2 rounded-lg text-xs font-medium"
+                          placeholder="Descripción del producto..."
+                        />
+                        <input
+                          type="number"
+                          value={it.cantidad}
+                          onChange={(e) => {
+                            const newIt = [...itemsCot]
+                            newIt[idx].cantidad = Number(e.target.value) || 1
+                            setItemsCot(newIt)
+                          }}
+                          className="w-14 bg-white border border-slate-300 p-2 rounded-lg text-xs font-mono text-center font-bold"
+                        />
+                        <input
+                          type="number"
+                          value={it.precio_neto_unitario}
+                          onChange={(e) => {
+                            const newIt = [...itemsCot]
+                            newIt[idx].precio_neto_unitario = Number(e.target.value) || 0
+                            setItemsCot(newIt)
+                          }}
+                          className="w-28 bg-white border border-slate-300 p-2 rounded-lg text-xs font-mono text-right font-bold"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setItemsCot(itemsCot.filter(i => i.id !== it.id))}
+                          className="text-red-600 font-bold hover:text-red-800 px-1 text-base cursor-pointer"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="pt-2 flex justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setMostrarModalCotizacion(false)}
+                    className="px-6 py-3.5 bg-slate-200 text-slate-800 font-bold rounded-2xl cursor-pointer text-xs"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleGuardarCotizacionDolibarr}
+                    className="px-7 py-3.5 bg-gradient-to-r from-blue-900 to-indigo-900 hover:from-blue-800 hover:to-indigo-800 text-white font-bold rounded-2xl text-xs shadow-[3px_3px_8px_rgba(30,58,138,0.3)] cursor-pointer"
+                  >
+                    💾 Generar Presupuesto {siguienteCorrelativoCode}
+                  </button>
+                </div>
+
               </div>
+
+              {/* COLUMNA DERECHA: LIENZO EN VIVO (LIVE DOCUMENT CANVAS PREVIEW) */}
+              <div className="w-full lg:w-1/2 p-8 bg-slate-200 overflow-y-auto flex items-start justify-center">
+                <div className="bg-white text-slate-900 p-10 rounded-2xl max-w-2xl w-full shadow-2xl font-sans border border-slate-300 space-y-7 min-h-[750px] flex flex-col justify-between">
+                  
+                  <div className="space-y-6">
+                    {/* MEMBRETE EMISOR */}
+                    <div className="flex justify-between items-start border-b-2 border-slate-900 pb-5">
+                      <div className="space-y-1 text-[11px]">
+                        <h1 className="text-lg font-black text-[#000033] tracking-tight">{empresaEmisoraSeleccionadaCot.razon_social}</h1>
+                        <p className="text-slate-600 font-medium">{empresaEmisoraSeleccionadaCot.direccion}</p>
+                        <p className="text-slate-600 font-medium">Teléfono: {empresaEmisoraSeleccionadaCot.telefono}</p>
+                        <p className="text-slate-600 font-medium">Correo: {empresaEmisoraSeleccionadaCot.email_contacto}</p>
+                        <p className="text-slate-600 font-medium">Web: {empresaEmisoraSeleccionadaCot.web}</p>
+                      </div>
+
+                      <div className="border border-slate-300 bg-[#f8fafc] p-4 rounded-xl w-64 space-y-1 text-[11px]">
+                        <div className="font-bold text-slate-500 uppercase text-[9px] tracking-wider">
+                          {tipoReceptorCot === 'prospecto' ? '✨ Oferta Comercial para Prospecto' : '👤 Cliente Registrado'}
+                        </div>
+                        <h2 className="text-xs font-black text-slate-900 uppercase">{cotNombreCliente || 'Nombre del Cliente / Prospecto'}</h2>
+                        <p className="text-slate-600">{cotDireccion || 'Dirección de entrega'}</p>
+                        <p className="font-mono text-slate-700 font-bold">R.U.T.: {cotRutCliente || 'S/RUT'}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <span className="text-lg font-black text-[#000033] font-mono">
+                          Presupuesto {siguienteCorrelativoCode}
+                        </span>
+                        <p className="text-[11px] text-slate-500">Fecha: {new Date().toLocaleDateString('es-CL')} | Validez: {cotValidez} Días Hábiles</p>
+                      </div>
+
+                      <div className="text-[11px] font-bold text-slate-700 bg-slate-100 px-3 py-1 rounded-lg border border-slate-300 font-mono">
+                        Moneda: {cotMoneda}
+                      </div>
+                    </div>
+
+                    {/* TABLA DE ÍTEMS EN VIVO */}
+                    <div className="border border-slate-300 rounded-xl overflow-hidden text-xs">
+                      <table className="w-full text-left border-collapse">
+                        <thead>
+                          <tr className="bg-slate-100 text-slate-800 font-bold border-b border-slate-300">
+                            <th className="p-2.5 border-r border-slate-300">Descripción del Producto / Servicio</th>
+                            <th className="p-2.5 border-r border-slate-300 text-center w-14">Cant.</th>
+                            <th className="p-2.5 border-r border-slate-300 text-right w-24">P.U. Neto</th>
+                            <th className="p-2.5 text-right w-24">Subtotal</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-200">
+                          {itemsCot.map((it, idx) => {
+                            const sub = (it.cantidad || 1) * (it.precio_neto_unitario || 0)
+                            return (
+                              <tr key={idx}>
+                                <td className="p-2.5 font-semibold text-slate-900 border-r border-slate-200">{it.descripcion || 'Ítem de seguridad'}</td>
+                                <td className="p-2.5 text-center font-mono font-bold border-r border-slate-200">{it.cantidad}</td>
+                                <td className="p-2.5 text-right font-mono border-r border-slate-200">${it.precio_neto_unitario.toLocaleString('es-CL')}</td>
+                                <td className="p-2.5 text-right font-mono font-bold text-slate-900">${Math.round(sub).toLocaleString('es-CL')}</td>
+                              </tr>
+                            )
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* TOTALES */}
+                    <div className="flex justify-end">
+                      <div className="w-64 border border-slate-300 rounded-xl overflow-hidden text-xs font-mono">
+                        <div className="flex justify-between p-2 bg-white border-b border-slate-200">
+                          <span className="text-slate-600">Subtotal Neto:</span>
+                          <span className="font-bold">${Math.round(calculoCotizacionActual.netoConDescuento).toLocaleString('es-CL')} {cotMoneda}</span>
+                        </div>
+                        <div className="flex justify-between p-2 bg-[#f8fafc] border-b border-slate-200">
+                          <span className="text-slate-600">IVA 19%:</span>
+                          <span className="font-bold">${Math.round(calculoCotizacionActual.montoIva).toLocaleString('es-CL')} {cotMoneda}</span>
+                        </div>
+                        <div className="flex justify-between p-2.5 bg-[#000033] text-white font-black text-xs">
+                          <span>TOTAL OFERTA:</span>
+                          <span>${Math.round(calculoCotizacionActual.totalIvaIncluido).toLocaleString('es-CL')} {cotMoneda}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-[10px] space-y-1 text-slate-600">
+                      <div className="font-bold text-slate-900">Forma de Pago: {cotFormaPago}</div>
+                      <div>Datos Bancarios para Transferencia: <strong>{empresaEmisoraSeleccionadaCot.banco_nombre}</strong> - Cta: <strong>{empresaEmisoraSeleccionadaCot.banco_numero_cuenta}</strong></div>
+                    </div>
+                  </div>
+
+                  <div className="border-t border-slate-200 pt-3 flex justify-between items-center text-[10px] text-slate-400 font-mono">
+                    <span>Documento Oficial {empresaEmisoraSeleccionadaCot.razon_social}</span>
+                    <span>Página 1 / 1</span>
+                  </div>
+
+                </div>
+              </div>
+
             </div>
 
-            {/* RESUMEN DE TOTALES */}
-            <div className="bg-[#f8fafc] p-6 rounded-2xl border border-slate-200 space-y-2 text-xs font-mono max-w-sm ml-auto">
-              <div className="flex justify-between">
-                <span className="text-slate-600">Total (Base imp.):</span>
-                <span className="font-bold">${Math.round(calculoCotizacionActual.netoConDescuento).toLocaleString('es-CL')} CLP</span>
-              </div>
-              <div className="flex justify-between text-slate-600">
-                <span>Total IVA 19%:</span>
-                <span>${Math.round(calculoCotizacionActual.montoIva).toLocaleString('es-CL')} CLP</span>
-              </div>
-              <div className="flex justify-between text-base font-black text-blue-900 border-t border-slate-300 pt-2">
-                <span>TOTAL:</span>
-                <span>${Math.round(calculoCotizacionActual.totalIvaIncluido).toLocaleString('es-CL')} CLP</span>
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-4 pt-4 border-t border-slate-200">
-              <button onClick={() => setMostrarModalCotizacion(false)} className="px-6 py-3.5 bg-slate-200 text-slate-800 font-bold rounded-2xl cursor-pointer text-xs">Cancelar</button>
-              <button onClick={handleGuardarCotizacionDolibarr} className="px-7 py-3.5 bg-blue-900 text-white font-bold rounded-2xl shadow-xs cursor-pointer text-xs">💾 Generar Cotización {siguienteCorrelativoCode}</button>
-            </div>
           </div>
         </div>
       )}
@@ -2371,7 +2298,9 @@ export default function OperacionCRM() {
                     </div>
 
                     <div className="border border-slate-300 bg-[#f8fafc] p-5 rounded-2xl w-full md:w-80 space-y-1.5 text-xs shadow-2xs">
-                      <div className="font-bold text-slate-500 uppercase tracking-wider text-[11px]">Enviar a</div>
+                      <div className="font-bold text-slate-500 uppercase tracking-wider text-[11px]">
+                        {cotSeleccionada.tipo_receptor === 'prospecto' ? '✨ Oferta para Prospecto' : '👤 Cliente Registrado'}
+                      </div>
                       <h2 className="text-sm font-black text-slate-900 uppercase">{cotSeleccionada.nombre_cliente}</h2>
                       <p className="text-slate-600">{cotSeleccionada.direccion || 'Dirección del Cliente'}</p>
                       {cotSeleccionada.rut_cliente && <p className="font-mono text-slate-700 font-bold">R.U.T.: {cotSeleccionada.rut_cliente}</p>}
@@ -2388,8 +2317,8 @@ export default function OperacionCRM() {
                   <p className="text-xs text-slate-500 mt-0.5">Fecha: {cotSeleccionada.fecha}</p>
                 </div>
 
-                <div className="text-xs font-semibold text-slate-500 italic bg-slate-100 px-3 py-1.5 rounded-xl border border-slate-200">
-                  Importes visualizados en Chile Peso
+                <div className="text-xs font-semibold text-slate-500 italic bg-slate-100 px-3 py-1.5 rounded-xl border border-slate-200 font-mono">
+                  Moneda: {cotSeleccionada.moneda_cotizacion || 'CLP'}
                 </div>
               </div>
 
@@ -2427,15 +2356,15 @@ export default function OperacionCRM() {
                 <div className="w-72 border border-slate-300 rounded-xl overflow-hidden text-xs font-mono">
                   <div className="flex justify-between p-2.5 bg-white border-b border-slate-200">
                     <span className="text-slate-700 font-bold">Total (Base imp.):</span>
-                    <span className="font-bold text-slate-900">${Math.round(cotSeleccionada.neto_con_descuento || 0).toLocaleString('es-CL')}</span>
+                    <span className="font-bold text-slate-900">${Math.round(cotSeleccionada.neto_con_descuento || 0).toLocaleString('es-CL')} {cotSeleccionada.moneda_cotizacion || 'CLP'}</span>
                   </div>
                   <div className="flex justify-between p-2.5 bg-[#f8fafc] border-b border-slate-200">
                     <span className="text-slate-700 font-bold">Total IVA 19%:</span>
-                    <span className="font-bold text-slate-900">${Math.round(cotSeleccionada.monto_iva || 0).toLocaleString('es-CL')}</span>
+                    <span className="font-bold text-slate-900">${Math.round(cotSeleccionada.monto_iva || 0).toLocaleString('es-CL')} {cotSeleccionada.moneda_cotizacion || 'CLP'}</span>
                   </div>
                   <div className="flex justify-between p-3 bg-[#000033] text-white font-black text-sm">
                     <span>Total:</span>
-                    <span>${Math.round(cotSeleccionada.monto_total_iva_incluido || 0).toLocaleString('es-CL')} CLP</span>
+                    <span>${Math.round(cotSeleccionada.monto_total_iva_incluido || 0).toLocaleString('es-CL')} {cotSeleccionada.moneda_cotizacion || 'CLP'}</span>
                   </div>
                 </div>
               </div>
