@@ -460,19 +460,38 @@ export default function OperacionCRM() {
     setItemsCot([...itemsCot, nuevoItem])
   }
 
-  // ── SELECCIONAR CLIENTE REGISTRADO EN FORMULARIO COTIZACIÓN ──
-  const handleSeleccionarClienteParaCotizacion = (rut: string) => {
-    setCotClienteRutSeleccionado(rut)
-    const cli = clientesMaestros[rut]
+  // ── SELECCIONAR CLIENTE REGISTRADO EN FORMULARIO COTIZACIÓN (BÚSQUEDAS MULTI-CLAVE FLEXIBLES) ──
+  const handleSeleccionarClienteParaCotizacion = (rutOKey: string) => {
+    setCotClienteRutSeleccionado(rutOKey)
+    
+    // 1. Buscar coincidencia exacta de llave
+    let cli: ClienteMaestro | undefined = clientesMaestros[rutOKey]
+
+    // 2. Buscar por coincidencia de RUT o RUT limpio
+    if (!cli) {
+      cli = Object.values(clientesMaestros).find(c =>
+        c.rut === rutOKey ||
+        (c.rut && cleanRut(c.rut) === cleanRut(rutOKey))
+      )
+    }
+
+    // 3. Buscar por Razón Social exacta
+    if (!cli) {
+      cli = Object.values(clientesMaestros).find(c =>
+        c.razon_social.toLowerCase().trim() === rutOKey.toLowerCase().trim()
+      )
+    }
+
     if (cli) {
       setCotNombreCliente(cli.razon_social)
       setCotRutCliente(cli.rut)
-      setCotDireccion(cli.direccion_comercial)
-      setCotEmailCliente(cli.email_cobranza)
-      setCotTelefonoCliente(cli.telefono)
+      setCotDireccion(cli.direccion_comercial || 'Dirección Comercial Registrada')
+      setCotEmailCliente(cli.email_cobranza || 'contacto@gamasecurity.cl')
+      setCotTelefonoCliente(cli.telefono || '+56 9 9101 6912')
     } else {
-      setCotNombreCliente('Cliente Gama')
-      setCotRutCliente(rut)
+      // JAMÁS colocar "Cliente Gama" por defecto, usar la clave o el valor ingresado
+      setCotNombreCliente(rutOKey && rutOKey !== 'Cliente Gama' ? rutOKey : 'CLIENTE REGISTRADO')
+      setCotRutCliente(rutOKey)
       setCotDireccion('Dirección Registrada')
       setCotEmailCliente('contacto@gamasecurity.cl')
       setCotTelefonoCliente('+56 9 9101 6912')
@@ -504,12 +523,30 @@ export default function OperacionCRM() {
     setCotEditandoId(cot.id)
     setTipoReceptorCot(cot.tipo_receptor || 'registrado')
     setCotEmpresaEmisoraId(cot.empresa_facturadora_id)
-    setCotClienteRutSeleccionado(cot.rut_cliente)
-    setCotNombreCliente(cot.nombre_cliente)
-    setCotRutCliente(cot.rut_cliente)
-    setCotDireccion(cot.direccion)
-    setCotEmailCliente(cot.email_cliente || 'contacto@gamasecurity.cl')
-    setCotTelefonoCliente(cot.telefono_cliente || '+56 9 9101 6912')
+    
+    // Buscar el cliente maestro asociado de manera inteligente
+    const cliEncontrado = Object.values(clientesMaestros).find(c =>
+      c.rut === cot.rut_cliente ||
+      (c.rut && cleanRut(c.rut) === cleanRut(cot.rut_cliente)) ||
+      c.razon_social.toLowerCase().trim() === (cot.nombre_cliente || '').toLowerCase().trim()
+    )
+
+    if (cliEncontrado) {
+      setCotClienteRutSeleccionado(cliEncontrado.rut)
+      setCotNombreCliente(cliEncontrado.razon_social)
+      setCotRutCliente(cliEncontrado.rut)
+      setCotDireccion(cot.direccion || cliEncontrado.direccion_comercial)
+      setCotEmailCliente(cot.email_cliente || cliEncontrado.email_cobranza)
+      setCotTelefonoCliente(cot.telefono_cliente || cliEncontrado.telefono)
+    } else {
+      setCotClienteRutSeleccionado(cot.rut_cliente || cot.nombre_cliente)
+      setCotNombreCliente(cot.nombre_cliente && cot.nombre_cliente !== 'Cliente Gama' ? cot.nombre_cliente : (cot.rut_cliente || 'CLIENTE COMERCIAL'))
+      setCotRutCliente(cot.rut_cliente || 'S/RUT')
+      setCotDireccion(cot.direccion || 'Dirección de Entrega')
+      setCotEmailCliente(cot.email_cliente || 'contacto@gamasecurity.cl')
+      setCotTelefonoCliente(cot.telefono_cliente || '+56 9 9101 6912')
+    }
+
     setCotValidez(cot.validez_dias || 15)
     setCotFormaPago(cot.forma_pago || '50% Anticipo / 50% Entrega')
     setCotMoneda(cot.moneda_cotizacion || 'CLP')
@@ -628,15 +665,25 @@ export default function OperacionCRM() {
     let nombreFinal = cotNombreCliente.trim()
     let rutFinal = cotRutCliente.trim()
 
-    if (tipoReceptorCot === 'registrado' && cotClienteRutSeleccionado && clientesMaestros[cotClienteRutSeleccionado]) {
-      const cli = clientesMaestros[cotClienteRutSeleccionado]
-      nombreFinal = cli.razon_social
-      rutFinal = cli.rut
+    // Búsqueda inteligente de cliente maestro si está en modo registrado
+    if (tipoReceptorCot === 'registrado') {
+      const cli = (cotClienteRutSeleccionado && clientesMaestros[cotClienteRutSeleccionado]) ||
+                  Object.values(clientesMaestros).find(c => c.rut === cotClienteRutSeleccionado || (c.rut && cleanRut(c.rut) === cleanRut(cotClienteRutSeleccionado))) ||
+                  Object.values(clientesMaestros).find(c => c.razon_social.toLowerCase().trim() === cotNombreCliente.toLowerCase().trim())
+      
+      if (cli) {
+        nombreFinal = cli.razon_social
+        rutFinal = cli.rut
+      }
     }
 
-    if (!nombreFinal) {
-      alert('Por favor ingrese o seleccione el Nombre o Razón Social del receptor del presupuesto.')
-      return
+    if (!nombreFinal || nombreFinal === 'Cliente Gama') {
+      if (cotNombreCliente && cotNombreCliente !== 'Cliente Gama') {
+        nombreFinal = cotNombreCliente
+      } else {
+        alert('Por favor ingrese o seleccione el Nombre o Razón Social del receptor del presupuesto.')
+        return
+      }
     }
 
     const codigoCot = cotEditandoId ? (cotizaciones.find(c => c.id === cotEditandoId)?.codigo_cotizacion || siguienteCorrelativoCode) : siguienteCorrelativoCode
@@ -2125,17 +2172,31 @@ export default function OperacionCRM() {
 
                   {/* CAMPOS RECEPTOR */}
                   {tipoReceptorCot === 'registrado' ? (
-                    <div className="space-y-3 pt-2">
-                      <label className="font-bold text-slate-700 block text-xs">Seleccionar Cliente de Base de Datos:</label>
-                      <select
-                        value={cotClienteRutSeleccionado}
-                        onChange={(e) => handleSeleccionarClienteParaCotizacion(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-300 p-3.5 rounded-2xl font-bold text-slate-900 focus:outline-none text-xs"
-                      >
-                        {Object.values(clientesMaestros).map(c => (
-                          <option key={c.rut} value={c.rut}>{c.razon_social} — (RUT: {c.rut})</option>
-                        ))}
-                      </select>
+                    <div className="space-y-4 pt-2">
+                      <div>
+                        <label className="font-bold text-slate-700 block text-xs mb-1">Seleccionar Cliente de Base de Datos:</label>
+                        <select
+                          value={cotClienteRutSeleccionado}
+                          onChange={(e) => handleSeleccionarClienteParaCotizacion(e.target.value)}
+                          className="w-full bg-slate-50 border border-slate-300 p-3.5 rounded-2xl font-bold text-slate-900 focus:outline-none text-xs"
+                        >
+                          {Object.values(clientesMaestros).map(c => (
+                            <option key={c.rut} value={c.rut}>{c.razon_social} — (RUT: {c.rut})</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* EDITAR O AJUSTAR NOMBRE DEL CLIENTE SI ES NECESARIO */}
+                      <div>
+                        <label className="font-bold text-slate-700 block text-xs mb-1">Nombre / Razón Social para la Cotización:</label>
+                        <input
+                          type="text"
+                          value={cotNombreCliente}
+                          onChange={(e) => setCotNombreCliente(e.target.value)}
+                          className="w-full bg-[#f8fafc] border border-slate-300 p-3.5 rounded-2xl font-bold text-slate-900 focus:outline-none text-xs focus:ring-2 focus:ring-blue-600"
+                          placeholder="Nombre o Razón Social del Cliente..."
+                        />
+                      </div>
 
                       {/* TARJETA DE RESUMEN DEL CLIENTE SELECCIONADO */}
                       <div className="p-4 bg-blue-50/70 border border-blue-200 rounded-2xl space-y-1.5 text-xs text-slate-700">
@@ -2455,9 +2516,7 @@ export default function OperacionCRM() {
                           {tipoReceptorCot === 'prospecto' ? '✨ Oferta Comercial para Prospecto' : '👤 Cliente Registrado'}
                         </div>
                         <h2 className="text-sm font-black text-slate-900 uppercase">
-                          {tipoReceptorCot === 'registrado' && cotClienteRutSeleccionado && clientesMaestros[cotClienteRutSeleccionado]
-                            ? clientesMaestros[cotClienteRutSeleccionado].razon_social
-                            : (cotNombreCliente || 'Nombre del Cliente')}
+                          {cotNombreCliente || 'Nombre del Cliente'}
                         </h2>
                         <p className="text-slate-600">{cotDireccion || 'Dirección de entrega'}</p>
                         <p className="font-mono text-slate-700 font-bold">R.U.T.: {cotRutCliente || 'S/RUT'}</p>
