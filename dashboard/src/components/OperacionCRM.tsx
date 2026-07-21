@@ -9,7 +9,7 @@ const clientesFallback = clientesDataRaw as Record<string, Record<string, string
 
 const IVA_PORCENTAJE = 0.19
 
-// ── CATALOGO PRECONFIGURADO DE SEGURIDAD ELECTRÓNICA & MONITOREO ──
+// ── CATÁLOGO PRECONFIGURADO DE SEGURIDAD ELECTRÓNICA & MONITOREO ──
 const CATALOGO_SEGURIDAD = [
   { id: 'CAT-1', descripcion: 'Kit Alarma DSC Neo 8 Zonas con Teclado LCD & Sirena Exterior 110dB', precio_neto: 235294, categoria: 'Kit Alarma' },
   { id: 'CAT-2', descripcion: 'Cámara IP 4MP Hikvision DarkFighter Visión Nocturna Color 24/7', precio_neto: 71428, categoria: 'CCTV' },
@@ -81,7 +81,9 @@ export interface ItemCotizacion {
   descripcion: string
   cantidad: number
   precio_neto_unitario: number
-  descuento_porcentaje: number
+  descuento_valor: number
+  tipo_descuento: 'porcentaje' | 'monto'
+  descuento_porcentaje?: number
 }
 
 export interface CotizacionDolibarr {
@@ -99,6 +101,8 @@ export interface CotizacionDolibarr {
   validez_dias: number
   forma_pago?: string
   moneda_cotizacion?: 'CLP' | 'UF'
+  descuento_global_valor?: number
+  descuento_global_tipo?: 'porcentaje' | 'monto'
   items: ItemCotizacion[]
   subtotal_neto: number
   total_descuentos: number
@@ -235,8 +239,9 @@ export default function OperacionCRM() {
   // Modales OT & Creador de Presupuesto Side-by-Side (Crater / InvoiceNinja)
   const [mostrarModalCotizacion, setMostrarModalCotizacion] = useState(false)
   const [cotSeleccionada, setCotSeleccionada] = useState<CotizacionDolibarr | null>(null)
-  
-  // FORMULARIO Y ESTADO DEL CREADOR DE COTIZACIONES PROFESIONAL (SIDE-BY-SIDE)
+  const [cotEditandoId, setCotEditandoId] = useState<number | null>(null)
+
+  // FORMULARIO Y ESTADO DEL CREADOR DE COTIZACIONES PROFESIONAL
   const [tipoReceptorCot, setTipoReceptorCot] = useState<'registrado' | 'prospecto'>('registrado')
   const [cotEmpresaEmisoraId, setCotEmpresaEmisoraId] = useState('EMP-1')
   const [cotClienteRutSeleccionado, setCotClienteRutSeleccionado] = useState('')
@@ -249,8 +254,13 @@ export default function OperacionCRM() {
   const [cotFormaPago, setCotFormaPago] = useState('50% Anticipo / 50% Entrega')
   const [cotMoneda, setCotMoneda] = useState<'CLP' | 'UF'>('CLP')
   const [cotObservaciones, setCotObservaciones] = useState('')
+  
+  // DESCUENTO GLOBAL DE COTIZACIÓN ($ O %)
+  const [descuentoGlobalValor, setDescuentoGlobalValor] = useState<number>(0)
+  const [descuentoGlobalTipo, setDescuentoGlobalTipo] = useState<'porcentaje' | 'monto'>('porcentaje')
+
   const [itemsCot, setItemsCot] = useState<ItemCotizacion[]>([
-    { id: '1', descripcion: 'Control remoto inalambrico RadioFrecuencia 4Botones', cantidad: 1, precio_neto_unitario: 31000, descuento_porcentaje: 0 }
+    { id: '1', descripcion: 'Control remoto inalambrico RadioFrecuencia 4Botones', cantidad: 1, precio_neto_unitario: 31000, descuento_valor: 0, tipo_descuento: 'porcentaje' }
   ])
 
   // Modales OT
@@ -444,12 +454,13 @@ export default function OperacionCRM() {
       descripcion: catItem.descripcion,
       cantidad: 1,
       precio_neto_unitario: catItem.precio_neto,
-      descuento_porcentaje: 0
+      descuento_valor: 0,
+      tipo_descuento: 'porcentaje'
     }
     setItemsCot([...itemsCot, nuevoItem])
   }
 
-  // ── SELECCIONAR CLIENTE REGISTRADO EN FORMULARIO COTIZACIÓN (GARANTIZA LLENADO COMPLETO) ──
+  // ── SELECCIONAR CLIENTE REGISTRADO EN FORMULARIO COTIZACIÓN ──
   const handleSeleccionarClienteParaCotizacion = (rut: string) => {
     setCotClienteRutSeleccionado(rut)
     const cli = clientesMaestros[rut]
@@ -468,9 +479,12 @@ export default function OperacionCRM() {
     }
   }
 
-  // ── ABRIR MODAL CREADOR DE PRESUPUESTOS Y AUTOCOMPLETAR DATOS ──
+  // ── ABRIR MODAL CREADOR DE PRESUPUESTOS ──
   const abrirModalNuevaCotizacion = () => {
+    setCotEditandoId(null)
     setTipoReceptorCot('registrado')
+    setDescuentoGlobalValor(0)
+    setDescuentoGlobalTipo('porcentaje')
     const ruts = Object.keys(clientesMaestros)
     if (ruts.length > 0) {
       const selectedRut = clienteActivo?.rut && clientesMaestros[clienteActivo.rut] ? clienteActivo.rut : ruts[0]
@@ -483,6 +497,73 @@ export default function OperacionCRM() {
       setCotTelefonoCliente('+56 32 3276011')
     }
     setMostrarModalCotizacion(true)
+  }
+
+  // ── GESTIÓN DE COTIZACIONES: EDITAR ──
+  const handleEditarCotizacion = (cot: CotizacionDolibarr) => {
+    setCotEditandoId(cot.id)
+    setTipoReceptorCot(cot.tipo_receptor || 'registrado')
+    setCotEmpresaEmisoraId(cot.empresa_facturadora_id)
+    setCotClienteRutSeleccionado(cot.rut_cliente)
+    setCotNombreCliente(cot.nombre_cliente)
+    setCotRutCliente(cot.rut_cliente)
+    setCotDireccion(cot.direccion)
+    setCotEmailCliente(cot.email_cliente || 'contacto@gamasecurity.cl')
+    setCotTelefonoCliente(cot.telefono_cliente || '+56 9 9101 6912')
+    setCotValidez(cot.validez_dias || 15)
+    setCotFormaPago(cot.forma_pago || '50% Anticipo / 50% Entrega')
+    setCotMoneda(cot.moneda_cotizacion || 'CLP')
+    setDescuentoGlobalValor(cot.descuento_global_valor || 0)
+    setDescuentoGlobalTipo(cot.descuento_global_tipo || 'porcentaje')
+    setItemsCot(cot.items.map(it => ({
+      ...it,
+      descuento_valor: (it as any).descuento_valor ?? it.descuento_porcentaje ?? 0,
+      tipo_descuento: (it as any).tipo_descuento || 'porcentaje'
+    })))
+    setMostrarModalCotizacion(true)
+  }
+
+  // ── GESTIÓN DE COTIZACIONES: DUPLICAR ──
+  const handleDuplicarCotizacion = async (cot: CotizacionDolibarr) => {
+    const nuevoCodigo = siguienteCorrelativoCode
+    const duplicada: CotizacionDolibarr = {
+      ...cot,
+      id: Date.now(),
+      codigo_cotizacion: nuevoCodigo,
+      fecha: new Date().toLocaleDateString('es-CL'),
+      estado: 'Borrador'
+    }
+    const listaNueva = [duplicada, ...cotizaciones]
+    setCotizaciones(listaNueva)
+    try {
+      await supabase.from('eventos_monitoreo').upsert({
+        cuenta: 'COTIZACIONES_DOLIBARR',
+        nombre_abonado: JSON.stringify(listaNueva),
+        evento: 'DUPLICAR_COTIZACION',
+        fecha_hora: new Date().toISOString()
+      })
+      alert(`📋 Presupuesto duplicado exitosamente con nuevo folio ${nuevoCodigo}.`)
+    } catch (e: any) {
+      alert('Error duplicando cotización: ' + e.message)
+    }
+  }
+
+  // ── GESTIÓN DE COTIZACIONES: ELIMINAR ──
+  const handleEliminarCotizacion = async (id: number, codigo: string) => {
+    if (!confirm(`¿Está seguro de eliminar permanentemente el presupuesto ${codigo}?`)) return
+    const listaNueva = cotizaciones.filter(c => c.id !== id)
+    setCotizaciones(listaNueva)
+    try {
+      await supabase.from('eventos_monitoreo').upsert({
+        cuenta: 'COTIZACIONES_DOLIBARR',
+        nombre_abonado: JSON.stringify(listaNueva),
+        evento: 'ELIMINAR_COTIZACION',
+        fecha_hora: new Date().toISOString()
+      })
+      alert(`🗑️ Presupuesto ${codigo} eliminado correctamente.`)
+    } catch (e: any) {
+      alert('Error eliminando cotización: ' + e.message)
+    }
   }
 
   // ── ACCIÓN ABONOS PARCIALES (IDURAR ERP/CRM) ──
@@ -542,21 +623,30 @@ export default function OperacionCRM() {
     }
   }
 
-  // Guardar Cotización Profesional (Soporta Clientes Registrados y Prospectos Nuevos)
+  // Guardar Cotización Profesional (Soporta Edición, Descuentos $ y %, Clientes y Prospectos)
   const handleGuardarCotizacionDolibarr = async () => {
-    if (!cotNombreCliente || !cotNombreCliente.trim()) {
+    let nombreFinal = cotNombreCliente.trim()
+    let rutFinal = cotRutCliente.trim()
+
+    if (tipoReceptorCot === 'registrado' && cotClienteRutSeleccionado && clientesMaestros[cotClienteRutSeleccionado]) {
+      const cli = clientesMaestros[cotClienteRutSeleccionado]
+      nombreFinal = cli.razon_social
+      rutFinal = cli.rut
+    }
+
+    if (!nombreFinal) {
       alert('Por favor ingrese o seleccione el Nombre o Razón Social del receptor del presupuesto.')
       return
     }
 
-    const codigoCot = siguienteCorrelativoCode
+    const codigoCot = cotEditandoId ? (cotizaciones.find(c => c.id === cotEditandoId)?.codigo_cotizacion || siguienteCorrelativoCode) : siguienteCorrelativoCode
 
-    const nuevaCot: CotizacionDolibarr = {
-      id: Date.now(),
+    const cotizacionObjeto: CotizacionDolibarr = {
+      id: cotEditandoId || Date.now(),
       codigo_cotizacion: codigoCot,
-      cuenta: cotRutCliente || `PROSPECTO-${Date.now()}`,
-      rut_cliente: cotRutCliente ? cleanRut(cotRutCliente) : 'S/RUT (Prospecto)',
-      nombre_cliente: cotNombreCliente.trim(),
+      cuenta: rutFinal || `PROSPECTO-${Date.now()}`,
+      rut_cliente: rutFinal ? cleanRut(rutFinal) : 'S/RUT (Prospecto)',
+      nombre_cliente: nombreFinal,
       empresa_facturadora_id: cotEmpresaEmisoraId,
       direccion: cotDireccion.trim() || 'Dirección de Entrega',
       email_cliente: cotEmailCliente.trim() || 'contacto@prospecto.cl',
@@ -566,8 +656,10 @@ export default function OperacionCRM() {
       validez_dias: cotValidez,
       forma_pago: cotFormaPago,
       moneda_cotizacion: cotMoneda,
+      descuento_global_valor: descuentoGlobalValor,
+      descuento_global_tipo: descuentoGlobalTipo,
       items: itemsCot,
-      subtotal_neto: calculoCotizacionActual.subtotalNeto,
+      subtotal_neto: calculoCotizacionActual.subtotalBrutoLineas,
       total_descuentos: calculoCotizacionActual.totalDescuentos,
       neto_con_descuento: calculoCotizacionActual.netoConDescuento,
       monto_iva: calculoCotizacionActual.montoIva,
@@ -576,36 +668,70 @@ export default function OperacionCRM() {
       observaciones: cotObservaciones.trim()
     }
 
-    const listaNueva = [nuevaCot, ...cotizaciones]
+    let listaNueva: CotizacionDolibarr[] = []
+    if (cotEditandoId) {
+      listaNueva = cotizaciones.map(c => c.id === cotEditandoId ? cotizacionObjeto : c)
+    } else {
+      listaNueva = [cotizacionObjeto, ...cotizaciones]
+    }
+
     try {
       await supabase.from('eventos_monitoreo').upsert({
         cuenta: 'COTIZACIONES_DOLIBARR',
         nombre_abonado: JSON.stringify(listaNueva),
-        evento: 'CREACION_COTIZACION',
+        evento: cotEditandoId ? 'EDICION_COTIZACION' : 'CREACION_COTIZACION',
         fecha_hora: new Date().toISOString()
       })
       setCotizaciones(listaNueva)
       setMostrarModalCotizacion(false)
-      alert(`🎉 Presupuesto ${codigoCot} generado exitosamente para "${cotNombreCliente}".`)
+      setCotEditandoId(null)
+      alert(`🎉 Presupuesto ${codigoCot} guardado exitosamente para "${nombreFinal}".`)
     } catch (e: any) {
       alert('Error guardando cotización: ' + e.message)
     }
   }
 
+  // CALCULADORA DE TOTALES CON DESCUENTOS POR LÍNEA ($ / %) Y DESCUENTO GLOBAL
   const calculoCotizacionActual = useMemo(() => {
-    let subtotalNeto = 0
-    let totalDescuentos = 0
+    let subtotalBrutoLineas = 0
+    let totalDescuentosLineas = 0
+
     itemsCot.forEach(it => {
-      const netoLinea = (it.cantidad || 1) * (it.precio_neto_unitario || 0)
-      const descLinea = netoLinea * ((it.descuento_porcentaje || 0) / 100)
-      subtotalNeto += netoLinea
-      totalDescuentos += descLinea
+      const netoBrutoLinea = (it.cantidad || 1) * (it.precio_neto_unitario || 0)
+      let descLinea = 0
+      if (it.tipo_descuento === 'monto') {
+        descLinea = Math.min(netoBrutoLinea, it.descuento_valor || 0)
+      } else {
+        descLinea = netoBrutoLinea * ((it.descuento_valor || 0) / 100)
+      }
+      subtotalBrutoLineas += netoBrutoLinea
+      totalDescuentosLineas += descLinea
     })
-    const netoConDescuento = subtotalNeto - totalDescuentos
+
+    const subtotalTrasDescLineas = Math.max(0, subtotalBrutoLineas - totalDescuentosLineas)
+
+    let descGlobal = 0
+    if (descuentoGlobalTipo === 'monto') {
+      descGlobal = Math.min(subtotalTrasDescLineas, descuentoGlobalValor || 0)
+    } else {
+      descGlobal = subtotalTrasDescLineas * ((descuentoGlobalValor || 0) / 100)
+    }
+
+    const totalDescuentos = totalDescuentosLineas + descGlobal
+    const netoConDescuento = Math.max(0, subtotalBrutoLineas - totalDescuentos)
     const montoIva = netoConDescuento * IVA_PORCENTAJE
     const totalIvaIncluido = netoConDescuento + montoIva
-    return { subtotalNeto, totalDescuentos, netoConDescuento, montoIva, totalIvaIncluido }
-  }, [itemsCot])
+
+    return {
+      subtotalBrutoLineas,
+      totalDescuentosLineas,
+      descGlobal,
+      totalDescuentos,
+      netoConDescuento,
+      montoIva,
+      totalIvaIncluido
+    }
+  }, [itemsCot, descuentoGlobalValor, descuentoGlobalTipo])
 
   // ── CREAR ORDEN DE TRABAJO (OT) ──
   const handleCrearOT = async () => {
@@ -973,9 +1099,9 @@ export default function OperacionCRM() {
   return (
     <div className="min-h-screen bg-[#f1f5f9] text-[#0f172a] font-sans flex flex-col select-none p-6 md:p-10 gap-10">
       
-      {/* ── HEADER NEUMÓRFICO GITHUB ULTRACLEAN ── */}
-      <header className="bg-white rounded-3xl p-7 border border-slate-200/90 shadow-[6px_6px_16px_rgba(203,213,225,0.7),-6px_-6px_16px_rgba(255,255,255,0.9)] flex flex-col md:flex-row justify-between items-start md:items-center gap-6 shrink-0">
-        <div className="flex items-center gap-6">
+      {/* ── HEADER NEUMÓRFICO GITHUB ULTRACLEAN CON MARGEN INTERNO PROTEGIDO ── */}
+      <header className="bg-white rounded-3xl p-8 border border-slate-200/90 shadow-[6px_6px_16px_rgba(203,213,225,0.7),-6px_-6px_16px_rgba(255,255,255,0.9)] flex flex-col md:flex-row justify-between items-start md:items-center gap-6 shrink-0 overflow-hidden">
+        <div className="flex items-center gap-6 px-2">
           <button
             onClick={() => setSidebarAbierto(!sidebarAbierto)}
             className="bg-[#f8fafc] hover:bg-slate-100 text-slate-700 px-4 py-3.5 rounded-2xl border border-slate-200 font-bold shadow-[3px_3px_8px_rgba(203,213,225,0.6),-3px_-3px_8px_rgba(255,255,255,0.9)] active:shadow-[inset_2px_2px_4px_rgba(203,213,225,0.6)] transition-all cursor-pointer"
@@ -986,7 +1112,7 @@ export default function OperacionCRM() {
           <div className="bg-gradient-to-br from-blue-900 via-indigo-900 to-slate-900 text-white font-bold p-4 rounded-2xl text-2xl shadow-[4px_4px_12px_rgba(30,58,138,0.35)] flex items-center justify-center">
             🛡️
           </div>
-          <div>
+          <div className="px-1">
             <h1 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-3">
               CONGLOMERADO GAMA SEGURIDAD
               <span className="bg-blue-50 text-blue-900 text-xs font-bold px-3.5 py-1 rounded-full border border-blue-200 shadow-2xs">
@@ -999,8 +1125,8 @@ export default function OperacionCRM() {
           </div>
         </div>
 
-        <div className="flex items-center gap-5 text-xs font-semibold">
-          <div className="bg-[#f8fafc] border border-slate-200/90 px-5 py-3 rounded-2xl text-slate-700 font-mono shadow-[inset_2px_2px_4px_rgba(203,213,225,0.4)]">
+        <div className="flex items-center gap-5 text-xs font-semibold px-2">
+          <div className="bg-[#f8fafc] border border-slate-200/90 px-6 py-3.5 rounded-2xl text-slate-700 font-mono shadow-[inset_2px_2px_4px_rgba(203,213,225,0.4)]">
             UF HOY: <strong className="text-emerald-700 font-bold">${valorUF.toLocaleString('es-CL')} CLP</strong>
           </div>
 
@@ -1016,9 +1142,9 @@ export default function OperacionCRM() {
       {/* ── CONTENEDOR PRINCIPAL ── */}
       <div className="flex-1 flex gap-10 overflow-hidden min-h-0">
         
-        {/* ── SIDEBAR NEUMÓRFICO MODULAR ── */}
+        {/* ── SIDEBAR NEUMÓRFICO MODULAR CON MARGEN PROPORCIONAL ── */}
         {sidebarAbierto && (
-          <aside className="w-80 bg-white border border-slate-200/90 p-7 rounded-3xl flex flex-col gap-3 shrink-0 shadow-[6px_6px_16px_rgba(203,213,225,0.7),-6px_-6px_16px_rgba(255,255,255,0.9)] transition-all">
+          <aside className="w-80 bg-white border border-slate-200/90 p-8 rounded-3xl flex flex-col gap-3 shrink-0 shadow-[6px_6px_16px_rgba(203,213,225,0.7),-6px_-6px_16px_rgba(255,255,255,0.9)] transition-all overflow-hidden">
             <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider px-3 mb-3 flex justify-between items-center">
               <span>MÓDULOS DEL SISTEMA</span>
               <button onClick={() => setSidebarAbierto(false)} className="text-slate-400 hover:text-slate-600 font-bold text-sm">✕</button>
@@ -1063,9 +1189,9 @@ export default function OperacionCRM() {
           {moduloActivo === 'ficha360' && (
             <div className="flex-1 flex flex-col gap-10 min-h-0">
               
-              {/* Buscador Neumórfico Espacioso */}
-              <div className="bg-white border border-slate-200/90 p-8 rounded-3xl shadow-[6px_6px_16px_rgba(203,213,225,0.7),-6px_-6px_16px_rgba(255,255,255,0.9)] flex flex-col gap-5">
-                <div className="font-bold text-xs text-slate-700 uppercase tracking-wider flex justify-between items-center">
+              {/* Buscador Neumórfico Espacioso con Margen de Borde de 24px */}
+              <div className="bg-white border border-slate-200/90 p-8 md:p-10 rounded-3xl shadow-[6px_6px_16px_rgba(203,213,225,0.7),-6px_-6px_16px_rgba(255,255,255,0.9)] flex flex-col gap-5 overflow-hidden">
+                <div className="font-bold text-xs text-slate-700 uppercase tracking-wider flex justify-between items-center px-1">
                   <span>🔍 BUSCADOR INTELIGENTE (BUSCA POR CÓDIGO DE ABONADO C774, NOMBRE O RUT)</span>
                   {(cuentaSeleccionada || rutClienteSeleccionado) && (
                     <button
@@ -1077,7 +1203,7 @@ export default function OperacionCRM() {
                   )}
                 </div>
 
-                <div className="relative">
+                <div className="relative px-1">
                   <input
                     type="text"
                     value={busquedaClienteInput}
@@ -1480,19 +1606,19 @@ export default function OperacionCRM() {
             </div>
           )}
 
-          {/* ── MÓDULO 3: PRESUPUESTOS & COTIZACIONES ── */}
+          {/* ── MÓDULO 3: PRESUPUESTOS & COTIZACIONES CON GESTIÓN DE ACCIONES (EDITAR, COPIAR, ELIMINAR) ── */}
           {moduloActivo === 'presupuestos' && (
-            <div className="flex-1 bg-white border border-slate-200/90 rounded-3xl p-10 flex flex-col gap-8 shadow-[6px_6px_16px_rgba(203,213,225,0.7),-6px_-6px_16px_rgba(255,255,255,0.9)] min-h-0">
+            <div className="flex-1 bg-white border border-slate-200/90 rounded-3xl p-8 md:p-10 flex flex-col gap-8 shadow-[6px_6px_16px_rgba(203,213,225,0.7),-6px_-6px_16px_rgba(255,255,255,0.9)] min-h-0 overflow-hidden">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-5 border-b border-slate-200 pb-6">
                 <div>
-                  <h2 className="text-lg font-black text-slate-900 uppercase tracking-wide flex items-center gap-2">
+                  <h2 className="text-xl font-black text-slate-900 uppercase tracking-wide flex items-center gap-3">
                     📋 Presupuestos & Cotizaciones Comercial
-                    <span className="bg-blue-100 text-blue-900 text-xs px-3 py-1 rounded-full font-mono font-bold border border-blue-200">
+                    <span className="bg-blue-100 text-blue-900 text-xs px-3.5 py-1 rounded-full font-mono font-bold border border-blue-200">
                       Siguiente: {siguienteCorrelativoCode}
                     </span>
                   </h2>
                   <p className="text-xs text-slate-500 font-semibold mt-1">
-                    Emisión de Cotizaciones vinculadas a la Empresa del Conglomerado (Clientes o Prospectos Nuevos)
+                    Emisión y gestión completa de presupuestos con descuentos por ítem o global en CLP / UF
                   </p>
                 </div>
 
@@ -1504,18 +1630,17 @@ export default function OperacionCRM() {
                 </button>
               </div>
 
-              <div className="flex-1 overflow-auto border border-slate-200/80 rounded-2xl bg-white shadow-2xs">
+              <div className="flex-1 overflow-auto border border-slate-200/80 rounded-3xl bg-white shadow-2xs p-2">
                 <table className="w-full text-left border-collapse text-xs font-medium">
                   <thead>
                     <tr className="bg-[#f8fafc] text-slate-700 border-b border-slate-200 font-bold uppercase text-xs">
-                      <th className="p-4 border-r border-slate-200">CÓDIGO CORRELATIVO</th>
-                      <th className="p-4 border-r border-slate-200">FECHA / VALIDEZ</th>
+                      <th className="p-4 border-r border-slate-200">FOLIO / FECHA</th>
                       <th className="p-4 border-r border-slate-200">EMPRESA EMISORA</th>
                       <th className="p-4 border-r border-slate-200">RECEPTOR (CLIENTE O PROSPECTO)</th>
                       <th className="p-4 border-r border-slate-200 text-right">NETO</th>
                       <th className="p-4 border-r border-slate-200 text-right">TOTAL IVA INCL.</th>
-                      <th className="p-4 border-r border-slate-200 text-center">ESTADO (1-CLIC)</th>
-                      <th className="p-4 text-center w-32">ACCIONES</th>
+                      <th className="p-4 border-r border-slate-200 text-center">ESTADO</th>
+                      <th className="p-4 text-center w-52">GESTIÓN & ACCIONES</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200">
@@ -1523,10 +1648,9 @@ export default function OperacionCRM() {
                       const empEmisora = empresasConglomerado.find(e => e.id === c.empresa_facturadora_id) || empresasConglomerado[0]
                       return (
                         <tr key={c.id} className="hover:bg-slate-50/80">
-                          <td className="p-4 font-mono font-bold text-blue-900 border-r border-slate-200">{c.codigo_cotizacion}</td>
-                          <td className="p-4 font-mono text-slate-600 border-r border-slate-200">
-                            <div>{c.fecha}</div>
-                            <div className="text-[10px] text-amber-700 font-bold">Validez: {c.validez_dias || 15} días</div>
+                          <td className="p-4 font-mono font-bold text-blue-900 border-r border-slate-200">
+                            <div>{c.codigo_cotizacion}</div>
+                            <div className="text-[10px] text-slate-500 font-sans">{c.fecha}</div>
                           </td>
                           <td className="p-4 border-r border-slate-200 font-bold text-emerald-800 text-xs">{empEmisora.razon_social}</td>
                           <td className="p-4 border-r border-slate-200">
@@ -1563,20 +1687,44 @@ export default function OperacionCRM() {
                               <option value="Rechazado">❌ Rechazado</option>
                             </select>
                           </td>
-                          <td className="p-4 text-center flex items-center justify-center">
-                            <button
-                              onClick={() => setCotSeleccionada(c)}
-                              className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold cursor-pointer shadow-2xs"
-                            >
-                              📄 Ver PDF Documento
-                            </button>
+                          <td className="p-4 text-center">
+                            <div className="flex items-center justify-center gap-1.5 flex-wrap">
+                              <button
+                                onClick={() => setCotSeleccionada(c)}
+                                title="Ver Documento PDF"
+                                className="p-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold cursor-pointer shadow-2xs text-xs"
+                              >
+                                📄
+                              </button>
+                              <button
+                                onClick={() => handleEditarCotizacion(c)}
+                                title="Editar Cotización"
+                                className="p-2 bg-blue-900 hover:bg-blue-800 text-white rounded-xl font-bold cursor-pointer shadow-2xs text-xs"
+                              >
+                                ✏️
+                              </button>
+                              <button
+                                onClick={() => handleDuplicarCotizacion(c)}
+                                title="Copiar / Duplicar Cotización"
+                                className="p-2 bg-emerald-700 hover:bg-emerald-600 text-white rounded-xl font-bold cursor-pointer shadow-2xs text-xs"
+                              >
+                                📋
+                              </button>
+                              <button
+                                onClick={() => handleEliminarCotizacion(c.id, c.codigo_cotizacion)}
+                                title="Eliminar Cotización"
+                                className="p-2 bg-red-700 hover:bg-red-800 text-white rounded-xl font-bold cursor-pointer shadow-2xs text-xs"
+                              >
+                                🗑️
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       )
                     })}
                     {cotizaciones.length === 0 && (
                       <tr>
-                        <td colSpan={8} className="p-12 text-center text-slate-400 italic text-xs">
+                        <td colSpan={7} className="p-12 text-center text-slate-400 italic text-xs">
                           No hay presupuestos registrados. Haga clic en "✨ Crear Presupuesto Profesional".
                         </td>
                       </tr>
@@ -1884,9 +2032,9 @@ export default function OperacionCRM() {
         </main>
       </div>
 
-      {/* ── CREADOR PROFESIONAL DE PRESUPUESTOS COMERCIALES (SIDE-BY-SIDE BUILDER - AMPLIADO Y ESPACIOSO) ── */}
+      {/* ── CREADOR PROFESIONAL DE PRESUPUESTOS COMERCIALES (SIDE-BY-SIDE BUILDER CON DESCUENTOS EN $ / % Y EDICIÓN COMPLETA) ── */}
       {mostrarModalCotizacion && (
-        <div className="fixed inset-0 z-50 bg-slate-900/85 backdrop-blur-md overflow-y-auto p-3 md:p-6 flex justify-center items-center">
+        <div className="fixed inset-0 z-50 bg-slate-900/85 backdrop-blur-md overflow-y-auto p-4 md:p-6 flex justify-center items-center">
           <div className="bg-white border border-slate-300 w-full max-w-7xl h-[95vh] rounded-3xl shadow-2xl flex flex-col overflow-hidden font-sans text-xs">
             
             {/* BARRA DE TÍTULO SUPERIOR */}
@@ -1895,13 +2043,13 @@ export default function OperacionCRM() {
                 <span className="text-2xl p-2.5 bg-blue-900/60 rounded-2xl border border-blue-700/50">✨</span>
                 <div>
                   <h3 className="font-black text-xl text-white uppercase tracking-wider flex items-center gap-3">
-                    CREADOR DE PRESUPUESTO COMERCIAL
+                    {cotEditandoId ? 'EDITAR PRESUPUESTO COMERCIAL' : 'CREAR PRESUPUESTO COMERCIAL'}
                     <span className="bg-blue-600 text-white text-xs px-3.5 py-1 rounded-full font-mono font-bold">
-                      {siguienteCorrelativoCode}
+                      {cotEditandoId ? cotizaciones.find(c => c.id === cotEditandoId)?.codigo_cotizacion : siguienteCorrelativoCode}
                     </span>
                   </h3>
                   <p className="text-xs text-slate-400 font-medium mt-0.5">
-                    Generador profesional con vista previa impresa en vivo y soporte completo para Clientes y Prospectos Nuevos
+                    Generador profesional con vista previa impresa en vivo, descuentos por producto/global en CLP y UF
                   </p>
                 </div>
               </div>
@@ -2139,15 +2287,15 @@ export default function OperacionCRM() {
                   </div>
                 </div>
 
-                {/* 4. EDITOR DE ÍTEMS (AMPLIO Y SEPARADO VERTICALMENTE) */}
+                {/* 4. EDITOR DE ÍTEMS Y DESCUENTOS POR LÍNEA ($ O %) */}
                 <div className="bg-white p-6 rounded-3xl border border-slate-200/90 space-y-5 shadow-2xs">
                   <div className="flex justify-between items-center border-b border-slate-200 pb-3">
                     <label className="font-black text-slate-900 text-xs uppercase tracking-wider">
-                      4. ÍTEMS INCLUIDOS EN EL PRESUPUESTO:
+                      4. ÍTEMS & DESCUENTOS POR LÍNEA:
                     </label>
                     <button
                       type="button"
-                      onClick={() => setItemsCot([...itemsCot, { id: Date.now().toString(), descripcion: 'Nuevo servicio o equipo personalizado', cantidad: 1, precio_neto_unitario: 10000, descuento_porcentaje: 0 }])}
+                      onClick={() => setItemsCot([...itemsCot, { id: Date.now().toString(), descripcion: 'Nuevo servicio o equipo personalizado', cantidad: 1, precio_neto_unitario: 10000, descuento_valor: 0, tipo_descuento: 'porcentaje' }])}
                       className="px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold cursor-pointer hover:bg-slate-800"
                     >
                       + Línea Personalizada
@@ -2156,15 +2304,16 @@ export default function OperacionCRM() {
 
                   {/* CABECERA DE TABLA DE ÍTEMS */}
                   <div className="grid grid-cols-12 gap-3 font-bold text-slate-500 text-[11px] uppercase tracking-wider px-2">
-                    <span className="col-span-6">Descripción del Producto / Servicio</span>
-                    <span className="col-span-2 text-center">Cant.</span>
-                    <span className="col-span-3 text-right">Precio Neto</span>
+                    <span className="col-span-5">Descripción</span>
+                    <span className="col-span-1 text-center">Cant.</span>
+                    <span className="col-span-2 text-right">P. Neto ({cotMoneda})</span>
+                    <span className="col-span-3 text-center">Descuento ($ / %)</span>
                     <span className="col-span-1 text-center">Elim.</span>
                   </div>
 
                   <div className="space-y-3 min-h-[160px]">
                     {itemsCot.map((it, idx) => (
-                      <div key={it.id} className="grid grid-cols-12 gap-3 items-center p-3 bg-slate-50 rounded-2xl border border-slate-200">
+                      <div key={it.id} className="grid grid-cols-12 gap-2.5 items-center p-3 bg-slate-50 rounded-2xl border border-slate-200">
                         <input
                           type="text"
                           value={it.descripcion}
@@ -2173,8 +2322,8 @@ export default function OperacionCRM() {
                             newIt[idx].descripcion = e.target.value
                             setItemsCot(newIt)
                           }}
-                          className="col-span-6 bg-white border border-slate-300 p-3 rounded-xl text-xs font-semibold text-slate-900"
-                          placeholder="Descripción del producto..."
+                          className="col-span-5 bg-white border border-slate-300 p-2.5 rounded-xl text-xs font-semibold text-slate-900"
+                          placeholder="Descripción producto..."
                         />
                         <input
                           type="number"
@@ -2184,7 +2333,7 @@ export default function OperacionCRM() {
                             newIt[idx].cantidad = Number(e.target.value) || 1
                             setItemsCot(newIt)
                           }}
-                          className="col-span-2 bg-white border border-slate-300 p-3 rounded-xl text-xs font-mono text-center font-bold"
+                          className="col-span-1 bg-white border border-slate-300 p-2.5 rounded-xl text-xs font-mono text-center font-bold"
                         />
                         <input
                           type="number"
@@ -2194,8 +2343,36 @@ export default function OperacionCRM() {
                             newIt[idx].precio_neto_unitario = Number(e.target.value) || 0
                             setItemsCot(newIt)
                           }}
-                          className="col-span-3 bg-white border border-slate-300 p-3 rounded-xl text-xs font-mono text-right font-bold"
+                          className="col-span-2 bg-white border border-slate-300 p-2.5 rounded-xl text-xs font-mono text-right font-bold"
                         />
+
+                        {/* SELECTOR & INPUT DE DESCUENTO POR LÍNEA ($ / %) */}
+                        <div className="col-span-3 flex gap-1">
+                          <input
+                            type="number"
+                            value={it.descuento_valor || 0}
+                            onChange={(e) => {
+                              const newIt = [...itemsCot]
+                              newIt[idx].descuento_valor = Number(e.target.value) || 0
+                              setItemsCot(newIt)
+                            }}
+                            placeholder="Desc."
+                            className="w-full bg-white border border-slate-300 p-2 rounded-xl text-xs font-mono text-right font-bold text-amber-900"
+                          />
+                          <select
+                            value={it.tipo_descuento || 'porcentaje'}
+                            onChange={(e: any) => {
+                              const newIt = [...itemsCot]
+                              newIt[idx].tipo_descuento = e.target.value
+                              setItemsCot(newIt)
+                            }}
+                            className="bg-amber-100 text-amber-900 font-bold border border-amber-300 rounded-xl p-1 text-xs cursor-pointer"
+                          >
+                            <option value="porcentaje">%</option>
+                            <option value="monto">$</option>
+                          </select>
+                        </div>
+
                         <button
                           type="button"
                           onClick={() => setItemsCot(itemsCot.filter(i => i.id !== it.id))}
@@ -2205,6 +2382,37 @@ export default function OperacionCRM() {
                         </button>
                       </div>
                     ))}
+                  </div>
+                </div>
+
+                {/* 5. CONFIGURACIÓN DE DESCUENTO GLOBAL SOBRE EL SUBTOTAL ($ O %) */}
+                <div className="bg-white p-6 rounded-3xl border border-slate-200/90 space-y-4 shadow-2xs">
+                  <label className="font-black text-slate-900 text-xs uppercase tracking-wider block">
+                    5. DESCUENTO GLOBAL SOBRE EL SUBTOTAL NETO:
+                  </label>
+
+                  <div className="flex items-center gap-4">
+                    <div className="flex-1 flex gap-2">
+                      <input
+                        type="number"
+                        value={descuentoGlobalValor}
+                        onChange={(e) => setDescuentoGlobalValor(Number(e.target.value) || 0)}
+                        placeholder="Monto o porcentaje de descuento global..."
+                        className="flex-1 bg-amber-50/60 border border-amber-300 p-3.5 rounded-2xl font-mono text-sm font-bold text-amber-950 focus:outline-none"
+                      />
+                      <select
+                        value={descuentoGlobalTipo}
+                        onChange={(e: any) => setDescuentoGlobalTipo(e.target.value)}
+                        className="bg-amber-100 text-amber-950 font-bold border border-amber-300 rounded-2xl px-4 text-xs cursor-pointer"
+                      >
+                        <option value="porcentaje">% Porcentaje Subtotal</option>
+                        <option value="monto">$ Monto Fijo ({cotMoneda})</option>
+                      </select>
+                    </div>
+
+                    <div className="text-right font-mono text-xs font-bold text-amber-900 shrink-0">
+                      Descuento Aplicado: -${Math.round(calculoCotizacionActual.totalDescuentos).toLocaleString('es-CL')} {cotMoneda}
+                    </div>
                   </div>
                 </div>
 
@@ -2221,15 +2429,15 @@ export default function OperacionCRM() {
                     onClick={handleGuardarCotizacionDolibarr}
                     className="px-8 py-4 bg-gradient-to-r from-blue-900 to-indigo-900 hover:from-blue-800 hover:to-indigo-800 text-white font-bold rounded-2xl text-xs shadow-[4px_4px_12px_rgba(30,58,138,0.35)] cursor-pointer"
                   >
-                    💾 Generar Presupuesto {siguienteCorrelativoCode}
+                    💾 Guardar Presupuesto {cotEditandoId ? (cotizaciones.find(c => c.id === cotEditandoId)?.codigo_cotizacion) : siguienteCorrelativoCode}
                   </button>
                 </div>
 
               </div>
 
-              {/* COLUMNA DERECHA: LIENZO EN VIVO (LIVE DOCUMENT CANVAS PREVIEW) */}
+              {/* COLUMNA DERECHA: LIENZO EN VIVO (LIVE DOCUMENT CANVAS PREVIEW CON DESCUENTOS Y MARGEN DE SEGURIDAD) ── */}
               <div className="w-full lg:w-1/2 p-8 md:p-12 bg-slate-200 overflow-y-auto flex items-start justify-center">
-                <div className="bg-white text-slate-900 p-10 md:p-12 rounded-3xl max-w-2xl w-full shadow-2xl font-sans border border-slate-300 space-y-8 min-h-[800px] flex flex-col justify-between">
+                <div className="bg-white text-slate-900 p-10 md:p-12 rounded-3xl max-w-2xl w-full shadow-2xl font-sans border border-slate-300 space-y-8 min-h-[800px] flex flex-col justify-between overflow-hidden">
                   
                   <div className="space-y-7">
                     {/* MEMBRETE EMISOR */}
@@ -2246,7 +2454,11 @@ export default function OperacionCRM() {
                         <div className="font-bold text-slate-500 uppercase text-[10px] tracking-wider">
                           {tipoReceptorCot === 'prospecto' ? '✨ Oferta Comercial para Prospecto' : '👤 Cliente Registrado'}
                         </div>
-                        <h2 className="text-sm font-black text-slate-900 uppercase">{cotNombreCliente || 'Nombre del Cliente / Prospecto'}</h2>
+                        <h2 className="text-sm font-black text-slate-900 uppercase">
+                          {tipoReceptorCot === 'registrado' && cotClienteRutSeleccionado && clientesMaestros[cotClienteRutSeleccionado]
+                            ? clientesMaestros[cotClienteRutSeleccionado].razon_social
+                            : (cotNombreCliente || 'Nombre del Cliente')}
+                        </h2>
                         <p className="text-slate-600">{cotDireccion || 'Dirección de entrega'}</p>
                         <p className="font-mono text-slate-700 font-bold">R.U.T.: {cotRutCliente || 'S/RUT'}</p>
                       </div>
@@ -2255,7 +2467,7 @@ export default function OperacionCRM() {
                     <div className="flex justify-between items-center">
                       <div>
                         <span className="text-xl font-black text-[#000033] font-mono">
-                          Presupuesto {siguienteCorrelativoCode}
+                          Presupuesto {cotEditandoId ? (cotizaciones.find(c => c.id === cotEditandoId)?.codigo_cotizacion) : siguienteCorrelativoCode}
                         </span>
                         <p className="text-xs text-slate-500 mt-0.5">Fecha: {new Date().toLocaleDateString('es-CL')} | Validez: {cotValidez} Días Hábiles</p>
                       </div>
@@ -2265,25 +2477,31 @@ export default function OperacionCRM() {
                       </div>
                     </div>
 
-                    {/* TABLA DE ÍTEMS EN VIVO */}
+                    {/* TABLA DE ÍTEMS EN VIVO CON DESCUENTOS */}
                     <div className="border border-slate-300 rounded-2xl overflow-hidden text-xs">
                       <table className="w-full text-left border-collapse">
                         <thead>
                           <tr className="bg-slate-100 text-slate-800 font-bold border-b border-slate-300">
                             <th className="p-3 border-r border-slate-300">Descripción del Producto / Servicio</th>
-                            <th className="p-3 border-r border-slate-300 text-center w-16">Cant.</th>
+                            <th className="p-3 border-r border-slate-300 text-center w-14">Cant.</th>
                             <th className="p-3 border-r border-slate-300 text-right w-24">P.U. Neto</th>
+                            <th className="p-3 border-r border-slate-300 text-right w-20">Desc.</th>
                             <th className="p-3 text-right w-28">Subtotal</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-200">
                           {itemsCot.map((it, idx) => {
-                            const sub = (it.cantidad || 1) * (it.precio_neto_unitario || 0)
+                            const brutoLinea = (it.cantidad || 1) * (it.precio_neto_unitario || 0)
+                            const descL = it.tipo_descuento === 'monto' ? (it.descuento_valor || 0) : (brutoLinea * ((it.descuento_valor || 0) / 100))
+                            const sub = Math.max(0, brutoLinea - descL)
                             return (
                               <tr key={idx} className="hover:bg-slate-50">
                                 <td className="p-3 font-semibold text-slate-900 border-r border-slate-200">{it.descripcion || 'Ítem de seguridad'}</td>
                                 <td className="p-3 text-center font-mono font-bold border-r border-slate-200">{it.cantidad}</td>
                                 <td className="p-3 text-right font-mono border-r border-slate-200">${it.precio_neto_unitario.toLocaleString('es-CL')}</td>
+                                <td className="p-3 text-right font-mono text-amber-800 border-r border-slate-200 font-bold">
+                                  {it.descuento_valor ? (it.tipo_descuento === 'monto' ? `$${it.descuento_valor}` : `${it.descuento_valor}%`) : '-'}
+                                </td>
                                 <td className="p-3 text-right font-mono font-bold text-slate-900">${Math.round(sub).toLocaleString('es-CL')}</td>
                               </tr>
                             )
@@ -2292,12 +2510,22 @@ export default function OperacionCRM() {
                       </table>
                     </div>
 
-                    {/* TOTALES */}
+                    {/* TOTALES CON DESCUENTOS */}
                     <div className="flex justify-end">
-                      <div className="w-72 border border-slate-300 rounded-2xl overflow-hidden text-xs font-mono">
+                      <div className="w-80 border border-slate-300 rounded-2xl overflow-hidden text-xs font-mono">
                         <div className="flex justify-between p-2.5 bg-white border-b border-slate-200">
-                          <span className="text-slate-600">Subtotal Neto:</span>
-                          <span className="font-bold">${Math.round(calculoCotizacionActual.netoConDescuento).toLocaleString('es-CL')} {cotMoneda}</span>
+                          <span className="text-slate-600">Subtotal Bruto:</span>
+                          <span className="font-bold">${Math.round(calculoCotizacionActual.subtotalBrutoLineas).toLocaleString('es-CL')} {cotMoneda}</span>
+                        </div>
+                        {calculoCotizacionActual.totalDescuentos > 0 && (
+                          <div className="flex justify-between p-2.5 bg-amber-50 border-b border-slate-200 text-amber-900 font-bold">
+                            <span>Descuentos Totales:</span>
+                            <span>-${Math.round(calculoCotizacionActual.totalDescuentos).toLocaleString('es-CL')} {cotMoneda}</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between p-2.5 bg-[#f8fafc] border-b border-slate-200">
+                          <span className="text-slate-600">Base Imponible Neto:</span>
+                          <span className="font-bold text-slate-900">${Math.round(calculoCotizacionActual.netoConDescuento).toLocaleString('es-CL')} {cotMoneda}</span>
                         </div>
                         <div className="flex justify-between p-2.5 bg-[#f8fafc] border-b border-slate-200">
                           <span className="text-slate-600">IVA 19%:</span>
@@ -2333,7 +2561,7 @@ export default function OperacionCRM() {
       {/* ── VISOR DE COTIZACIÓN RENDIDO ── */}
       {cotSeleccionada && (
         <div className="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm overflow-y-auto p-4 md:p-8 flex justify-center items-start">
-          <div className="bg-white text-slate-900 p-8 md:p-12 rounded-3xl max-w-4xl w-full shadow-2xl font-sans my-6 md:my-10 border border-slate-300 space-y-8 min-h-[700px] flex flex-col justify-between">
+          <div className="bg-white text-slate-900 p-8 md:p-12 rounded-3xl max-w-4xl w-full shadow-2xl font-sans my-6 md:my-10 border border-slate-300 space-y-8 min-h-[700px] flex flex-col justify-between overflow-hidden">
             
             <div className="space-y-6">
               {/* ENCABEZADO: MEMBRETE EMISOR */}
@@ -2379,16 +2607,18 @@ export default function OperacionCRM() {
                 <table className="w-full text-left border-collapse text-xs">
                   <thead>
                     <tr className="bg-[#e2e8f0] text-slate-800 font-bold border-b border-slate-300">
-                      <th className="p-3 border-r border-slate-300">Descripción</th>
-                      <th className="p-3 border-r border-slate-300 text-center w-16">IVA</th>
-                      <th className="p-3 border-r border-slate-300 text-right w-24">P.U.</th>
-                      <th className="p-3 border-r border-slate-300 text-center w-16">Cant.</th>
-                      <th className="p-3 text-right w-28">Base imp.</th>
+                      <th className="p-3.5 border-r border-slate-300">Descripción</th>
+                      <th className="p-3.5 border-r border-slate-300 text-center w-16">IVA</th>
+                      <th className="p-3.5 border-r border-slate-300 text-right w-24">P.U.</th>
+                      <th className="p-3.5 border-r border-slate-300 text-center w-16">Cant.</th>
+                      <th className="p-3.5 text-right w-28">Base imp.</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200">
                     {cotSeleccionada.items.map((it, idx) => {
-                      const baseImp = (it.cantidad || 1) * (it.precio_neto_unitario || 0) * (1 - (it.descuento_porcentaje || 0) / 100)
+                      const brutoLinea = (it.cantidad || 1) * (it.precio_neto_unitario || 0)
+                      const descL = it.tipo_descuento === 'monto' ? (it.descuento_valor || 0) : (brutoLinea * ((it.descuento_valor || it.descuento_porcentaje || 0) / 100))
+                      const baseImp = Math.max(0, brutoLinea - descL)
                       return (
                         <tr key={idx} className="hover:bg-slate-50">
                           <td className="p-3.5 font-semibold text-slate-900 border-r border-slate-200">{it.descripcion}</td>
@@ -2405,9 +2635,9 @@ export default function OperacionCRM() {
 
               {/* TOTALES */}
               <div className="flex justify-end">
-                <div className="w-72 border border-slate-300 rounded-xl overflow-hidden text-xs font-mono">
+                <div className="w-80 border border-slate-300 rounded-xl overflow-hidden text-xs font-mono">
                   <div className="flex justify-between p-2.5 bg-white border-b border-slate-200">
-                    <span className="text-slate-700 font-bold">Total (Base imp.):</span>
+                    <span className="text-slate-700 font-bold">Total Neto:</span>
                     <span className="font-bold text-slate-900">${Math.round(cotSeleccionada.neto_con_descuento || 0).toLocaleString('es-CL')} {cotSeleccionada.moneda_cotizacion || 'CLP'}</span>
                   </div>
                   <div className="flex justify-between p-2.5 bg-[#f8fafc] border-b border-slate-200">
