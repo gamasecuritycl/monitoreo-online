@@ -25,11 +25,11 @@ export interface EmpresaConglomerado {
   banco_numero_cuenta: string
 }
 
-// ── NIVEL 2: CLIENTE COMERCIAL (POR RUT ÚNICO) ──
+// ── NIVEL 2: CLIENTE COMERCIAL (POR RUT ÚNICO O FICHA) ──
 export interface ClienteMaestro {
   rut: string
   razon_social: string
-  empresa_facturadora_id: string // ID de la Empresa del Conglomerado asignada
+  empresa_facturadora_id: string
   email_cobranza: string
   telefono: string
   direccion_comercial: string
@@ -38,13 +38,13 @@ export interface ClienteMaestro {
   dia_vencimiento: number
   plan_monitoreo: string
   estado_pago: 'Al Día' | 'Pendiente' | 'Moroso'
-  cuentas_abonados: string[] // Cuentas de Centros de Costo asignadas (ej: ['C774', 'C775'])
+  cuentas_abonados: string[]
 }
 
 // ── NIVEL 3: CENTRO DE COSTO / ABONADO (COMMAND CENTER) ──
 export interface CentroDeCostoAbonado {
-  cuenta: string // Ej: 'C774'
-  alias_centro_costo: string // Ej: 'Planta Lampa'
+  cuenta: string
+  alias_centro_costo: string
   direccion: string
   ciudad: string
   rut_cliente: string
@@ -160,13 +160,13 @@ export default function OperacionCRM() {
   const [mostrarModalEmpresa, setMostrarModalEmpresa] = useState(false)
   const [empresaEditando, setEmpresaEditando] = useState<EmpresaConglomerado | null>(null)
 
-  // ── NIVEL 2: CLIENTES MAESTROS (POR RUT) ──
+  // ── NIVEL 2 Y 3: SELECCIÓN DE CLIENTE Y ABONADO INDIVIDUAL ──
   const [clientesMaestros, setClientesMaestros] = useState<Record<string, ClienteMaestro>>({})
-  const [rutClienteSeleccionado, setRutClienteSeleccionado] = useState<string>('')
-  const [busquedaClienteInput, setBusquedaClienteInput] = useState<string>('')
-
-  // ── NIVEL 3: CENTROS DE COSTO / ABONADOS (COMMAND CENTER) ──
   const [abonadosCentrosCosto, setAbonadosCentrosCosto] = useState<Record<string, CentroDeCostoAbonado>>({})
+  
+  const [rutClienteSeleccionado, setRutClienteSeleccionado] = useState<string>('')
+  const [cuentaSeleccionada, setCuentaSeleccionada] = useState<string>('')
+  const [busquedaClienteInput, setBusquedaClienteInput] = useState<string>('')
 
   // Modal Edición de Cliente Maestro & Asignación de Empresa Emisora
   const [mostrarModalCliente, setMostrarModalCliente] = useState(false)
@@ -194,10 +194,6 @@ export default function OperacionCRM() {
   // Órdenes de Trabajo & Facturas & Cotizaciones
   const [ordenesTrabajo, setOrdenesTrabajo] = useState<any[]>([])
   const [facturas, setFacturas] = useState<FacturaIndividual[]>([])
-  const [mostrarModalCargaFacturas, setMostrarModalCargaFacturas] = useState(false)
-  const [facturasTextoRaw, setFacturasTextoRaw] = useState('')
-  const [busquedaFacturaInput, setBusquedaFacturaInput] = useState('')
-
   const [cotizaciones, setCotizaciones] = useState<CotizacionDolibarr[]>([])
   const [mostrarModalCotizacion, setMostrarModalCotizacion] = useState(false)
   const [cotSeleccionada, setCotSeleccionada] = useState<CotizacionDolibarr | null>(null)
@@ -215,7 +211,7 @@ export default function OperacionCRM() {
 
   const [enviandoNotif, setEnviandoNotif] = useState(false)
 
-  // ── INICIALIZACIÓN DE DATOS JERÁRQUICOS DESDE SUPABASE ──
+  // ── INICIALIZACIÓN DE DATOS JERÁRQUICOS DESDE SUPABASE & FALLBACK ──
   useEffect(() => {
     const fetchDatosJerarquicos = async () => {
       try {
@@ -242,7 +238,6 @@ export default function OperacionCRM() {
           try { rawClientesMap = JSON.parse(dClientes[0].nombre_abonado) } catch (e) {}
         }
 
-        // Construir jerarquía: Cliente (RUT) -> Centros de Costo (Abonados)
         const mapaMaestro: Record<string, ClienteMaestro> = {}
         const mapaCentrosCosto: Record<string, CentroDeCostoAbonado> = {}
 
@@ -251,27 +246,28 @@ export default function OperacionCRM() {
         todasCuentas.forEach(cta => {
           const raw = rawClientesMap[cta] || clientesFallback[cta] || {}
           const cCode = (raw.cuenta || cta).toUpperCase().trim()
-          const rutLimpio = cleanRut(raw.rut || '76123456K') || '76123456K'
-          const razonSocial = (raw.nombre || 'CLIENTE SIN NOMBRE').toUpperCase().trim()
+          
+          // Preservar la identidad única de cada abonado
+          const nombreAbonado = (raw.alias_unidad || raw.nombre || `Abonado ${cCode}`).trim()
+          const rutRaw = raw.rut ? cleanRut(raw.rut) : ''
+          const rutKey = rutRaw && rutRaw !== '76123456K' ? rutRaw : `CTA-${cCode}`
 
-          // Registrar Abonado/Centro de Costo
           mapaCentrosCosto[cCode] = {
             cuenta: cCode,
-            alias_centro_costo: raw.alias_unidad || raw.nombre || `Centro de Costo ${cCode}`,
+            alias_centro_costo: nombreAbonado,
             direccion: raw.direccion || 'Dirección sin registrar',
             ciudad: raw.ciudad || 'SANTIAGO',
-            rut_cliente: rutLimpio
+            rut_cliente: rutKey
           }
 
-          // Registrar o actualizar Cliente Maestro por RUT
-          if (!mapaMaestro[rutLimpio]) {
-            mapaMaestro[rutLimpio] = {
-              rut: rutLimpio,
-              razon_social: razonSocial,
+          if (!mapaMaestro[rutKey]) {
+            mapaMaestro[rutKey] = {
+              rut: rutRaw || `RUT-${cCode}`,
+              razon_social: raw.nombre || nombreAbonado,
               empresa_facturadora_id: raw.empresa_facturadora_id || 'EMP-1',
               email_cobranza: raw.email || 'cobranza@cliente.cl',
               telefono: raw.telefono1 || raw.t1 || raw.telefono || '+56991016912',
-              direccion_comercial: raw.direccion || 'Dirección Comercial Principal',
+              direccion_comercial: raw.direccion || 'Dirección Principal',
               moneda: raw.moneda === 'UF' ? 'UF' : 'CLP',
               tarifa_mensual: Number(raw.tarifa_mensual) || (raw.moneda === 'UF' ? 1.2 : 29900),
               dia_vencimiento: Number(raw.dia_vencimiento) || 5,
@@ -280,8 +276,8 @@ export default function OperacionCRM() {
               cuentas_abonados: [cCode]
             }
           } else {
-            if (!mapaMaestro[rutLimpio].cuentas_abonados.includes(cCode)) {
-              mapaMaestro[rutLimpio].cuentas_abonados.push(cCode)
+            if (!mapaMaestro[rutKey].cuentas_abonados.includes(cCode)) {
+              mapaMaestro[rutKey].cuentas_abonados.push(cCode)
             }
           }
         })
@@ -306,15 +302,26 @@ export default function OperacionCRM() {
     fetchDatosJerarquicos()
   }, [])
 
-  // Cliente activo seleccionado
-  const clienteActivo = rutClienteSeleccionado && clientesMaestros[rutClienteSeleccionado] ? clientesMaestros[rutClienteSeleccionado] : null
-  const empresaFacturadoraActiva = clienteActivo ? empresasConglomerado.find(e => e.id === clienteActivo.empresa_facturadora_id) || empresasConglomerado[0] : empresasConglomerado[0]
+  // ABONADO ACTIVO SELECCIONADO INDIVIDUALMENTE
+  const abonadoActivo = useMemo(() => {
+    if (cuentaSeleccionada && abonadosCentrosCosto[cuentaSeleccionada]) {
+      return abonadosCentrosCosto[cuentaSeleccionada]
+    }
+    return null
+  }, [cuentaSeleccionada, abonadosCentrosCosto])
 
-  // Lista de Centros de Costo (Abonados) asignados al Cliente Activo
-  const centrosCostoClienteActivo = useMemo(() => {
-    if (!clienteActivo) return []
-    return clienteActivo.cuentas_abonados.map(cta => abonadosCentrosCosto[cta]).filter(Boolean)
-  }, [clienteActivo, abonadosCentrosCosto])
+  // CLIENTE MAESTRO ASOCIADO
+  const clienteActivo = useMemo(() => {
+    if (abonadoActivo && abonadoActivo.rut_cliente && clientesMaestros[abonadoActivo.rut_cliente]) {
+      return clientesMaestros[abonadoActivo.rut_cliente]
+    }
+    if (rutClienteSeleccionado && clientesMaestros[rutClienteSeleccionado]) {
+      return clientesMaestros[rutClienteSeleccionado]
+    }
+    return null
+  }, [abonadoActivo, rutClienteSeleccionado, clientesMaestros])
+
+  const empresaFacturadoraActiva = clienteActivo ? empresasConglomerado.find(e => e.id === clienteActivo.empresa_facturadora_id) || empresasConglomerado[0] : empresasConglomerado[0]
 
   // ── MOTOR DINÁMICO DE CORRELATIVO SECUENCIAL DE COTIZACIONES (PR2607-XXXX) ──
   const siguienteCorrelativoCode = useMemo(() => {
@@ -440,7 +447,6 @@ export default function OperacionCRM() {
     const mapaNuevoMaestro = { ...clientesMaestros, [clienteActivo.rut]: clienteActualizado }
     setClientesMaestros(mapaNuevoMaestro)
 
-    // Sincronizar mapa plano para Command Center ('CLIENTES' en Supabase)
     const mapaPlanoCommandCenter: Record<string, any> = {}
     Object.values(mapaNuevoMaestro).forEach(c => {
       c.cuentas_abonados.forEach(cta => {
@@ -471,13 +477,13 @@ export default function OperacionCRM() {
         fecha_hora: new Date().toISOString()
       })
       setMostrarModalCliente(false)
-      alert(`✅ Ficha del Cliente RUT ${clienteActualizado.rut} (${clienteActualizado.razon_social}) sincronizada en todo el sistema.`)
+      alert(`✅ Ficha del Cliente ${clienteActualizado.razon_social} sincronizada en todo el sistema.`)
     } catch (e: any) {
       alert('Error guardando cliente: ' + e.message)
     }
   }
 
-  // ── VINCULAR O CREAR UN CENTRO DE COSTO (ABONADO COMMAND CENTER) ──
+  // ── VINCULAR UN CENTRO DE COSTO / ABONADO ──
   const handleVincularCentroDeCosto = async () => {
     if (!clienteActivo) return
     const ctaUpper = nuevaCuentaAbonadoInput.toUpperCase().trim()
@@ -538,13 +544,14 @@ export default function OperacionCRM() {
       setNuevaCuentaAbonadoInput('')
       setNuevoAliasCentroCostoInput('')
       setNuevaDireccionAbonadoInput('')
-      alert(`🎉 Centro de Costo / Abonado "${ctaUpper}" vinculado exitosamente al Cliente RUT ${clienteActivo.rut}.`)
+      setCuentaSeleccionada(ctaUpper)
+      alert(`🎉 Centro de Costo / Abonado "${ctaUpper}" vinculado exitosamente.`)
     } catch (e: any) {
       alert('Error vinculando abonado: ' + e.message)
     }
   }
 
-  // ── BUSCADOR UNIFICADO INTELIGENTE (POR ABONADO O NOMBRE DE CLIENTE / RUT) ──
+  // ── BUSCADOR UNIFICADO INTELIGENTE (FILTRA POR ABONADO O CLIENTE) ──
   const resultadosBusqueda = useMemo(() => {
     const q = busquedaClienteInput.toLowerCase().trim()
     if (!q) return []
@@ -562,7 +569,7 @@ export default function OperacionCRM() {
       cuentas_preview: string
     }> = []
 
-    // 1. Buscar en Centros de Costo / Abonados por cuenta o alias
+    // 1. Buscar en Centros de Costo / Abonados por código exacto o alias
     Object.values(abonadosCentrosCosto).forEach(cc => {
       const matchCuenta = cc.cuenta.toLowerCase().includes(q)
       const matchAlias = cc.alias_centro_costo.toLowerCase().includes(q)
@@ -607,7 +614,7 @@ export default function OperacionCRM() {
       }
     })
 
-    return list.slice(0, 12)
+    return list.slice(0, 10)
   }, [busquedaClienteInput, abonadosCentrosCosto, clientesMaestros])
 
   // Guardar Cotización con Correlativo Dinámico (PR2607-0258, PR2607-0259...)
@@ -692,28 +699,6 @@ export default function OperacionCRM() {
     }
   }
 
-  const enviarWhatsAppCobro = async (telefono: string, clienteNombre: string, detalleStr: string) => {
-    if (!telefono) { alert('No hay teléfono de contacto.'); return }
-    setEnviandoNotif(true)
-    try {
-      let numClean = telefono.replace(/[^0-9]/g, '')
-      if (numClean.length === 9 && numClean.startsWith('9')) numClean = '56' + numClean
-
-      const msg = `💳 *${empresaFacturadoraActiva.razon_social} - Estado de Cuenta & Cobranza*\n\nEstimado(a) *${clienteNombre}*,\n\nLe recordamos la cobranza pendiente de su cuenta:\n• *Detalle:* ${detalleStr}\n• *Banco:* ${empresaFacturadoraActiva.banco_nombre}\n• *Nº Cta:* ${empresaFacturadoraActiva.banco_numero_cuenta}\n• *Email Cobranza:* ${empresaFacturadoraActiva.email_cobranza}\n\nAgradecemos su atención.`
-
-      await fetch('/api/whatsapp/send-direct', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ numero: numClean, mensaje: msg })
-      })
-      alert(`📲 Aviso enviado por WhatsApp a ${numClean}.`)
-    } catch (e: any) {
-      alert('Error enviando WhatsApp: ' + e.message)
-    } finally {
-      setEnviandoNotif(false)
-    }
-  }
-
   return (
     <div className="min-h-screen bg-[#f1f5f9] text-[#0f172a] font-sans flex flex-col select-none p-6 md:p-10 gap-10">
       
@@ -738,7 +723,7 @@ export default function OperacionCRM() {
               </span>
             </h1>
             <p className="text-xs text-slate-500 font-semibold mt-1">
-              {empresasConglomerado.length} Razones Sociales Emisoras • Gestión Comercial por RUT & Centros de Costo
+              {empresasConglomerado.length} Razones Sociales Emisoras • Búsqueda por Abonado & Cliente
             </p>
           </div>
         </div>
@@ -769,7 +754,7 @@ export default function OperacionCRM() {
             </div>
 
             {[
-              { id: 'ficha360', label: 'Ficha 360° del Cliente (RUT)', icon: '👤' },
+              { id: 'ficha360', label: 'Ficha 360° del Cliente / Abonado', icon: '👤' },
               { id: 'presupuestos', label: 'Presupuestos & Cotizaciones', icon: '📋' },
               { id: 'facturacion', label: 'Facturación & Cobranza', icon: '🧾' },
               { id: 'serv_tecnico', label: 'Servicio Técnico (OTs)', icon: '🛠️' },
@@ -802,17 +787,17 @@ export default function OperacionCRM() {
         {/* ── PANEL DERECHO PRINCIPAL ── */}
         <main className="flex-1 overflow-y-auto min-h-0 flex flex-col gap-10">
 
-          {/* ── MÓDULO 1: FICHA 360° DEL CLIENTE POR RUT & CENTROS DE COSTO ── */}
+          {/* ── MÓDULO 1: FICHA 360° DEL CLIENTE / ABONADO INDIVIDUAL ── */}
           {moduloActivo === 'ficha360' && (
             <div className="flex-1 flex flex-col gap-10 min-h-0">
               
               {/* Buscador Neumórfico Espacioso */}
               <div className="bg-white border border-slate-200/90 p-8 rounded-3xl shadow-[6px_6px_16px_rgba(203,213,225,0.7),-6px_-6px_16px_rgba(255,255,255,0.9)] flex flex-col gap-5">
                 <div className="font-bold text-xs text-slate-700 uppercase tracking-wider flex justify-between items-center">
-                  <span>🔍 BUSCADOR UNIFICADO (BUSCA POR RUT, CLIENTE, EMAIL O CUENTA ABONADO)</span>
-                  {rutClienteSeleccionado && (
+                  <span>🔍 BUSCADOR INTELIGENTE (BUSCA POR CÓDIGO DE ABONADO C774, NOMBRE O RUT)</span>
+                  {(cuentaSeleccionada || rutClienteSeleccionado) && (
                     <button
-                      onClick={() => { setRutClienteSeleccionado(''); setBusquedaClienteInput('') }}
+                      onClick={() => { setCuentaSeleccionada(''); setRutClienteSeleccionado(''); setBusquedaClienteInput('') }}
                       className="text-xs text-red-600 hover:underline font-bold cursor-pointer"
                     >
                       ✕ Limpiar Selección
@@ -825,7 +810,7 @@ export default function OperacionCRM() {
                     type="text"
                     value={busquedaClienteInput}
                     onChange={(e) => setBusquedaClienteInput(e.target.value)}
-                    placeholder="Escriba RUT del Cliente (ej: 76.319.399-3), Razón Social, Email o Cuenta Abonado (ej: C774)..."
+                    placeholder="Escriba código de Abonado (ej: 0999, C774), Nombre del Cliente o RUT..."
                     className="w-full bg-[#f8fafc] border border-slate-200 rounded-2xl px-7 py-4 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 font-mono shadow-[inset_2px_2px_5px_rgba(203,213,225,0.5)]"
                   />
 
@@ -834,7 +819,19 @@ export default function OperacionCRM() {
                       {resultadosBusqueda.map(item => (
                         <div
                           key={item.id}
-                          onClick={() => { setRutClienteSeleccionado(item.rut); setBusquedaClienteInput('') }}
+                          onClick={() => {
+                            if (item.tipo === 'abonado' && item.cuenta) {
+                              setCuentaSeleccionada(item.cuenta)
+                              setRutClienteSeleccionado(item.rut)
+                            } else {
+                              setRutClienteSeleccionado(item.rut)
+                              const cli = clientesMaestros[item.rut]
+                              if (cli && cli.cuentas_abonados.length > 0) {
+                                setCuentaSeleccionada(cli.cuentas_abonados[0])
+                              }
+                            }
+                            setBusquedaClienteInput('')
+                          }}
                           className="p-4 hover:bg-blue-50 rounded-2xl cursor-pointer flex justify-between items-center transition-colors"
                         >
                           <div>
@@ -845,15 +842,17 @@ export default function OperacionCRM() {
                                 </span>
                               )}
                               <span>{item.alias || item.razon_social}</span>
-                              <span className="font-mono text-slate-600 text-xs bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md font-bold">
-                                RUT: {item.rut}
-                              </span>
+                              {item.rut && !item.rut.startsWith('CTA-') && (
+                                <span className="font-mono text-slate-600 text-xs bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md font-bold">
+                                  RUT: {item.rut}
+                                </span>
+                              )}
                             </div>
                             <div className="text-xs text-slate-500 font-medium mt-1">
                               {item.tipo === 'abonado' ? (
-                                <>Cliente: <strong className="text-slate-800">{item.razon_social}</strong> • Email: <strong className="text-blue-900">{item.email}</strong></>
+                                <>Abonado: <strong className="text-slate-800">{item.alias}</strong> • Email: <strong className="text-blue-900">{item.email}</strong></>
                               ) : (
-                                <>Centros de Costo ({item.cuentas_count}): <strong className="text-slate-800 font-mono">{item.cuentas_preview}</strong> • Email: <strong className="text-blue-900">{item.email}</strong></>
+                                <>Cuentas vinculadas ({item.cuentas_count}): <strong className="text-slate-800 font-mono">{item.cuentas_preview}</strong></>
                               )}
                             </div>
                           </div>
@@ -866,7 +865,7 @@ export default function OperacionCRM() {
                       ))}
                       {resultadosBusqueda.length === 0 && (
                         <div className="p-6 text-center text-slate-400 italic text-xs">
-                          No se encontraron abonados o clientes coincidentes con "{busquedaClienteInput}".
+                          No se encontraron abonados coincidentes con "{busquedaClienteInput}".
                         </div>
                       )}
                     </div>
@@ -874,58 +873,73 @@ export default function OperacionCRM() {
                 </div>
               </div>
 
-              {/* DOSSIER 360° DEL CLIENTE MAESTRO & CENTROS DE COSTO */}
-              {clienteActivo ? (
+              {/* DOSSIER DEL ABONADO / CLIENTE SELECCIONADO */}
+              {clienteActivo || abonadoActivo ? (
                 <div className="bg-white border border-slate-200/90 rounded-3xl p-10 flex flex-col gap-10 shadow-[6px_6px_16px_rgba(203,213,225,0.7),-6px_-6px_16px_rgba(255,255,255,0.9)] overflow-y-auto">
                   
-                  {/* HEADER DEL CLIENTE CON EMPRESA EMISORA ASIGNADA */}
+                  {/* HEADER DEL ABONADO / CLIENTE SELECCIONADO */}
                   <div className="bg-[#f8fafc] border border-slate-200 p-8 rounded-3xl flex flex-col md:flex-row justify-between items-start md:items-center gap-6 shadow-[inset_2px_2px_4px_rgba(203,213,225,0.3)]">
                     <div>
                       <div className="flex items-center gap-3 mb-2 flex-wrap">
-                        <span className="bg-blue-950 text-white font-mono text-xs font-bold px-4 py-1.5 rounded-xl">
-                          RUT CLIENTE: {clienteActivo.rut}
-                        </span>
+                        {abonadoActivo && (
+                          <span className="bg-blue-950 text-white font-mono text-xs font-bold px-4 py-1.5 rounded-xl">
+                            CUENTA ABONADO #{abonadoActivo.cuenta}
+                          </span>
+                        )}
+                        {clienteActivo && clienteActivo.rut && !clienteActivo.rut.startsWith('CTA-') && (
+                          <span className="bg-slate-800 text-white font-mono text-xs font-bold px-4 py-1.5 rounded-xl">
+                            RUT: {clienteActivo.rut}
+                          </span>
+                        )}
                         <span className="bg-emerald-800 text-white font-bold text-xs px-4 py-1.5 rounded-xl flex items-center gap-1.5">
-                          🏢 EMPRESA A CARGO: {empresaFacturadoraActiva.razon_social} ({empresaFacturadoraActiva.rut})
+                          🏢 EMISOR: {empresaFacturadoraActiva.razon_social}
                         </span>
                       </div>
-                      <h2 className="text-3xl font-black text-slate-900">{clienteActivo.razon_social}</h2>
+                      <h2 className="text-3xl font-black text-slate-900">
+                        {abonadoActivo ? abonadoActivo.alias_centro_costo : clienteActivo?.razon_social}
+                      </h2>
                       <p className="text-xs text-slate-600 font-medium mt-1.5">
-                        📍 {clienteActivo.direccion_comercial} | ✉️ <strong>{clienteActivo.email_cobranza}</strong> | 📞 {clienteActivo.telefono}
+                        📍 {abonadoActivo ? abonadoActivo.direccion : clienteActivo?.direccion_comercial} | ✉️ <strong>{clienteActivo?.email_cobranza}</strong> | 📞 {clienteActivo?.telefono}
                       </p>
                     </div>
 
                     <div className="flex items-center gap-4 flex-wrap">
-                      <button
-                        onClick={() => abrirModalEditarCliente(clienteActivo)}
-                        className="px-5 py-3.5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-2xl text-xs shadow-xs cursor-pointer"
-                      >
-                        ✏️ Editar Cliente & Empresa Emisora
-                      </button>
-                      <button
-                        onClick={() => setMostrarModalVincularAbonado(true)}
-                        className="px-5 py-3.5 bg-blue-900 hover:bg-blue-800 text-white font-bold rounded-2xl text-xs shadow-xs cursor-pointer"
-                      >
-                        ➕ Vincular Centro de Costo (Abonado)
-                      </button>
-                      <button
-                        disabled={enviandoNotif}
-                        onClick={() => enviarEmailCobroResend(clienteActivo.email_cobranza, clienteActivo.razon_social, `Cliente RUT ${clienteActivo.rut}`)}
-                        className="px-5 py-3.5 bg-emerald-700 hover:bg-emerald-600 text-white font-bold rounded-2xl text-xs shadow-xs cursor-pointer"
-                      >
-                        📧 Enviar Cobro Resend
-                      </button>
+                      {clienteActivo && (
+                        <button
+                          onClick={() => abrirModalEditarCliente(clienteActivo)}
+                          className="px-5 py-3.5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-2xl text-xs shadow-xs cursor-pointer"
+                        >
+                          ✏️ Editar Datos & Empresa Emisora
+                        </button>
+                      )}
+                      {clienteActivo && (
+                        <button
+                          onClick={() => setMostrarModalVincularAbonado(true)}
+                          className="px-5 py-3.5 bg-blue-900 hover:bg-blue-800 text-white font-bold rounded-2xl text-xs shadow-xs cursor-pointer"
+                        >
+                          ➕ Vincular Otro Abonado
+                        </button>
+                      )}
+                      {clienteActivo && (
+                        <button
+                          disabled={enviandoNotif}
+                          onClick={() => enviarEmailCobroResend(clienteActivo.email_cobranza, clienteActivo.razon_social, `Abonado ${cuentaSeleccionada}`)}
+                          className="px-5 py-3.5 bg-emerald-700 hover:bg-emerald-600 text-white font-bold rounded-2xl text-xs shadow-xs cursor-pointer"
+                        >
+                          📧 Enviar Cobro Resend
+                        </button>
+                      )}
                     </div>
                   </div>
 
-                  {/* 3 PILARES JERÁRQUICOS */}
+                  {/* 3 PILARES JERÁRQUICOS SIN SOBERBIO LISTADO DE 466 ABONADOS */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                     
                     {/* PILAR 1: COMERCIAL Y TARIFAS */}
                     <div className="bg-[#f8fafc] border border-slate-200/90 p-7 rounded-3xl flex flex-col gap-5 shadow-[3px_3px_8px_rgba(203,213,225,0.5)]">
                       <div className="font-bold text-xs text-slate-900 border-b border-slate-200 pb-3 flex justify-between uppercase tracking-wider">
                         <span>💳 DATOS COMERCIALES DE COBRO</span>
-                        <span className="text-emerald-700 font-mono font-bold">{clienteActivo.moneda}</span>
+                        <span className="text-emerald-700 font-mono font-bold">{clienteActivo?.moneda || 'CLP'}</span>
                       </div>
 
                       <div className="space-y-4 text-xs font-medium">
@@ -936,71 +950,85 @@ export default function OperacionCRM() {
 
                         <div className="flex justify-between">
                           <span className="text-slate-500">Plan de Monitoreo:</span>
-                          <span className="font-bold text-slate-900 truncate">{clienteActivo.plan_monitoreo}</span>
+                          <span className="font-bold text-slate-900 truncate">{clienteActivo?.plan_monitoreo || 'MONITOREO ESTÁNDAR 24/7'}</span>
                         </div>
 
                         <div className="flex justify-between">
                           <span className="text-slate-500">Tarifa Mensual:</span>
                           <span className="font-bold font-mono text-emerald-800">
-                            {clienteActivo.moneda === 'UF'
+                            {clienteActivo?.moneda === 'UF'
                               ? `${clienteActivo.tarifa_mensual} UF ($${Math.round(clienteActivo.tarifa_mensual * valorUF).toLocaleString('es-CL')})`
-                              : `$${clienteActivo.tarifa_mensual.toLocaleString('es-CL')} CLP`}
+                              : `$${(clienteActivo?.tarifa_mensual || 29900).toLocaleString('es-CL')} CLP`}
                           </span>
                         </div>
 
                         <div className="flex justify-between">
                           <span className="text-slate-500">Día de Cobro:</span>
-                          <span className="font-bold text-slate-900">Día {clienteActivo.dia_vencimiento}</span>
+                          <span className="font-bold text-slate-900">Día {clienteActivo?.dia_vencimiento || 5}</span>
                         </div>
 
                         <div className="flex justify-between items-center pt-3 border-t border-slate-200">
                           <span className="text-slate-500">Estado Financiero:</span>
                           <span className={`px-3 py-1 rounded-full font-bold text-xs ${
-                            clienteActivo.estado_pago === 'Al Día' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'
+                            clienteActivo?.estado_pago === 'Al Día' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'
                           }`}>
-                            {clienteActivo.estado_pago.toUpperCase()}
+                            {(clienteActivo?.estado_pago || 'Al Día').toUpperCase()}
                           </span>
                         </div>
                       </div>
                     </div>
 
-                    {/* PILAR 2: CENTROS DE COSTO / ABONADOS VINCULADOS */}
+                    {/* PILAR 2: ABONADO ACTIVO INDIVIDUAL (SIN LISTA DE 466 COSAS) */}
                     <div className="bg-[#f8fafc] border border-slate-200/90 p-7 rounded-3xl flex flex-col gap-5 shadow-[3px_3px_8px_rgba(203,213,225,0.5)]">
                       <div className="font-bold text-xs text-slate-900 border-b border-slate-200 pb-3 flex justify-between uppercase tracking-wider">
-                        <span>🏢 CENTROS DE COSTO / ABONADOS</span>
-                        <span className="font-mono text-blue-900 font-bold">({centrosCostoClienteActivo.length})</span>
+                        <span>🏢 FICHA TÉCNICA DEL ABONADO ACTIVO</span>
+                        <span className="font-mono text-blue-900 font-bold">#{abonadoActivo?.cuenta || 'C774'}</span>
                       </div>
 
-                      <div className="space-y-3 flex-1 overflow-y-auto max-h-[250px]">
-                        {centrosCostoClienteActivo.map((cc) => (
-                          <div key={cc.cuenta} className="p-4 bg-white rounded-2xl border border-slate-200/80 text-xs space-y-1.5 shadow-2xs">
-                            <div className="flex justify-between font-mono font-bold text-blue-950">
-                              <span>Cuenta #{cc.cuenta}</span>
-                              <span className="text-blue-700 bg-blue-50 px-2 py-0.5 rounded text-[10px]">Command Center</span>
+                      {abonadoActivo ? (
+                        <div className="space-y-4 text-xs">
+                          <div className="p-4 bg-white rounded-2xl border border-slate-200 space-y-2 shadow-2xs">
+                            <div className="font-mono font-bold text-blue-950 flex justify-between">
+                              <span>Cuenta #{abonadoActivo.cuenta}</span>
+                              <span className="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-sans text-[10px]">Activo Monitoreo</span>
                             </div>
-                            <div className="font-bold text-slate-900">{cc.alias_centro_costo}</div>
-                            <div className="text-xs text-slate-500 font-medium">{cc.direccion}</div>
+                            <div className="font-black text-slate-900 text-sm">{abonadoActivo.alias_centro_costo}</div>
+                            <div className="text-slate-600 font-medium">📍 {abonadoActivo.direccion}</div>
+                            <div className="text-slate-500 font-medium">🏙️ Ciudad: {abonadoActivo.ciudad}</div>
                           </div>
-                        ))}
 
-                        {centrosCostoClienteActivo.length === 0 && (
-                          <div className="text-center text-slate-400 italic py-12 text-xs">
-                            Sin centros de costo / abonados vinculados a este RUT.
-                          </div>
-                        )}
-                      </div>
+                          {clienteActivo && clienteActivo.cuentas_abonados.length > 1 && (
+                            <div className="pt-2">
+                              <label className="text-[11px] font-bold text-slate-500 block mb-1">Cuentas adicionales de este cliente:</label>
+                              <select
+                                value={cuentaSeleccionada}
+                                onChange={(e) => setCuentaSeleccionada(e.target.value)}
+                                className="w-full bg-white border border-slate-300 p-2.5 rounded-xl font-mono text-xs font-bold text-slate-900"
+                              >
+                                {clienteActivo.cuentas_abonados.map(cta => (
+                                  <option key={cta} value={cta}>Cuenta #{cta} - {abonadosCentrosCosto[cta]?.alias_centro_costo || cta}</option>
+                                ))}
+                              </select>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="text-center text-slate-400 italic py-8 text-xs">
+                          Sin cuenta de abonado seleccionada.
+                        </div>
+                      )}
                     </div>
 
                     {/* PILAR 3: SERVICIO TÉCNICO Y OTs */}
                     <div className="bg-[#f8fafc] border border-slate-200/90 p-7 rounded-3xl flex flex-col gap-5 shadow-[3px_3px_8px_rgba(203,213,225,0.5)]">
                       <div className="font-bold text-xs text-slate-900 border-b border-slate-200 pb-3 flex justify-between uppercase tracking-wider">
-                        <span>🛠️ ÓRDENES TÉCNICAS (COMMAND CENTER)</span>
+                        <span>🛠️ ÓRDENES TÉCNICAS DE ESTE ABONADO</span>
                         <span className="font-mono text-slate-500 font-bold">(0)</span>
                       </div>
 
                       <div className="space-y-3 flex-1 overflow-y-auto max-h-[250px]">
                         <div className="text-center text-slate-400 italic py-12 text-xs">
-                          Historial de OTs sincronizadas por Centro de Costo
+                          Historial de OTs asociadas a la cuenta #{cuentaSeleccionada || 'ACTIVA'}
                         </div>
                       </div>
                     </div>
@@ -1011,9 +1039,9 @@ export default function OperacionCRM() {
               ) : (
                 <div className="bg-white border border-slate-200/90 rounded-3xl p-24 text-center shadow-[6px_6px_16px_rgba(203,213,225,0.7),-6px_-6px_16px_rgba(255,255,255,0.9)] flex flex-col items-center justify-center gap-5">
                   <div className="text-7xl p-6 bg-[#f8fafc] rounded-3xl shadow-[inset_2px_2px_5px_rgba(203,213,225,0.5)]">👤</div>
-                  <h3 className="text-2xl font-black text-slate-900">Expediente Comercial por RUT</h3>
+                  <h3 className="text-2xl font-black text-slate-900">Búsqueda de Abonado / Cliente</h3>
                   <p className="text-xs text-slate-500 max-w-lg font-semibold leading-relaxed">
-                    Seleccione un Cliente por RUT o busque en la barra superior para visualizar su Empresa Emisora asignada, Ficha Comercial y sus Centros de Costo (Abonados Command Center).
+                    Escriba un código de Abonado (ej: 0999, C774), Nombre o RUT en el buscador superior para cargar su ficha individual.
                   </p>
                 </div>
               )}
@@ -1021,7 +1049,7 @@ export default function OperacionCRM() {
             </div>
           )}
 
-          {/* ── MÓDULO 2: PRESUPUESTOS & COTIZACIONES (PR2607) ── */}
+          {/* ── MÓDULO 2: PRESUPUESTOS & COTIZACIONES ── */}
           {moduloActivo === 'presupuestos' && (
             <div className="flex-1 bg-white border border-slate-200/90 rounded-3xl p-10 flex flex-col gap-8 shadow-[6px_6px_16px_rgba(203,213,225,0.7),-6px_-6px_16px_rgba(255,255,255,0.9)] min-h-0">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-5 border-b border-slate-200 pb-6">
@@ -1181,7 +1209,7 @@ export default function OperacionCRM() {
         </main>
       </div>
 
-      {/* ── MODAL CRUD PARA EMPRESA EMISORA (LAYOUT PERFECTO NO CLIPPING) ── */}
+      {/* ── MODAL CRUD PARA EMPRESA EMISORA ── */}
       {mostrarModalEmpresa && empresaEditando && (
         <div className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-xs overflow-y-auto p-4 md:p-8 flex justify-center items-start">
           <div className="bg-white border border-slate-300 w-full max-w-2xl rounded-3xl shadow-2xl my-6 md:my-10 p-8 space-y-6 text-xs font-sans">
@@ -1294,14 +1322,14 @@ export default function OperacionCRM() {
         </div>
       )}
 
-      {/* ── MODAL EDITAR CLIENTE (RUT) (LAYOUT PERFECTO NO CLIPPING) ── */}
+      {/* ── MODAL EDITAR CLIENTE (RUT) ── */}
       {mostrarModalCliente && clienteActivo && (
         <div className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-xs overflow-y-auto p-4 md:p-8 flex justify-center items-start">
           <div className="bg-white border border-slate-300 w-full max-w-2xl rounded-3xl shadow-2xl my-6 md:my-10 p-8 space-y-6 text-xs font-sans">
             <div className="flex justify-between items-center border-b border-slate-200 pb-4">
               <div>
                 <h3 className="font-black text-lg text-slate-900 uppercase tracking-wide">
-                  ✏️ Editar Cliente Comercial (RUT: {clienteActivo.rut})
+                  ✏️ Editar Datos (RUT: {clienteActivo.rut})
                 </h3>
                 <p className="text-xs text-slate-500 font-medium mt-0.5">Asigne la Empresa del Conglomerado que le facturará a este cliente.</p>
               </div>
@@ -1402,7 +1430,61 @@ export default function OperacionCRM() {
         </div>
       )}
 
-      {/* ── MODAL NUEVA COTIZACIÓN COMERCIAL (RESPONSIVO Y PERFECTO EN PANTALLA) ── */}
+      {/* ── MODAL VINCULAR UN CENTRO DE COSTO ── */}
+      {mostrarModalVincularAbonado && clienteActivo && (
+        <div className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-xs overflow-y-auto p-4 md:p-8 flex justify-center items-start">
+          <div className="bg-white border border-slate-300 w-full max-w-md my-6 md:my-10 p-8 rounded-3xl shadow-2xl space-y-5 text-xs font-sans">
+            <div className="flex justify-between items-center border-b border-slate-200 pb-3">
+              <h3 className="font-black text-sm text-slate-900 uppercase tracking-wide">
+                ➕ Vincular Centro de Costo (Abonado)
+              </h3>
+              <button onClick={() => setMostrarModalVincularAbonado(false)} className="text-slate-400 font-bold text-xl">✕</button>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Código de Abonado / Cuenta Command Center (ej: C774):</label>
+                <input
+                  type="text"
+                  value={nuevaCuentaAbonadoInput}
+                  onChange={(e) => setNuevaCuentaAbonadoInput(e.target.value)}
+                  placeholder="C774"
+                  className="w-full bg-slate-50 border border-slate-300 p-3 rounded-2xl font-mono font-bold text-slate-900 uppercase focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Nombre / Alias del Centro de Costo:</label>
+                <input
+                  type="text"
+                  value={nuevoAliasCentroCostoInput}
+                  onChange={(e) => setNuevoAliasCentroCostoInput(e.target.value)}
+                  placeholder="Ej: Sucursal San Bernardo / Planta Lampa"
+                  className="w-full bg-slate-50 border border-slate-300 p-3 rounded-2xl text-slate-900 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Dirección del Centro de Costo:</label>
+                <input
+                  type="text"
+                  value={nuevaDireccionAbonadoInput}
+                  onChange={(e) => setNuevaDireccionAbonadoInput(e.target.value)}
+                  placeholder="Av. Lo Blanco 713, San Bernardo"
+                  className="w-full bg-slate-50 border border-slate-300 p-3 rounded-2xl text-slate-900 focus:outline-none"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-3 border-t border-slate-200">
+              <button onClick={() => setMostrarModalVincularAbonado(false)} className="px-4 py-2.5 bg-slate-200 text-slate-800 font-bold rounded-2xl cursor-pointer">Cancelar</button>
+              <button onClick={handleVincularCentroDeCosto} className="px-5 py-2.5 bg-blue-900 text-white font-bold rounded-2xl cursor-pointer">🚀 Vincular Abonado</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL NUEVA COTIZACIÓN COMERCIAL ── */}
       {mostrarModalCotizacion && (
         <div className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-xs overflow-y-auto p-4 md:p-8 flex justify-center items-start">
           <div className="bg-white border border-slate-300 w-full max-w-5xl rounded-3xl shadow-2xl my-6 md:my-10 p-8 space-y-6 font-sans text-xs">
@@ -1456,7 +1538,7 @@ export default function OperacionCRM() {
               </div>
             </div>
 
-            {/* TABLA DE ÍTEMS CON ESPACIO AMPLIO */}
+            {/* TABLA DE ÍTEMS */}
             <div className="space-y-4 border-t border-b border-slate-200 py-6">
               <div className="flex justify-between items-center">
                 <span className="font-black text-slate-900 uppercase tracking-wider text-xs">Ítems del Presupuesto (Neto & Descuento)</span>
@@ -1547,13 +1629,13 @@ export default function OperacionCRM() {
         </div>
       )}
 
-      {/* ── VISOR DE COTIZACIÓN RENDIDO COMPLETO (LAYOUT PERFECTO NO CLIPPING) ── */}
+      {/* ── VISOR DE COTIZACIÓN RENDIDO ── */}
       {cotSeleccionada && (
         <div className="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm overflow-y-auto p-4 md:p-8 flex justify-center items-start">
           <div className="bg-white text-slate-900 p-8 md:p-12 rounded-3xl max-w-4xl w-full shadow-2xl font-sans my-6 md:my-10 border border-slate-300 space-y-8 min-h-[700px] flex flex-col justify-between">
             
             <div className="space-y-6">
-              {/* ENCABEZADO: MEMBRETE EMISOR DE LA EMPRESA DEL CONGLOMERADO SELECCIONADA */}
+              {/* ENCABEZADO: MEMBRETE EMISOR */}
               {(() => {
                 const empEmisoraDoc = empresasConglomerado.find(e => e.id === cotSeleccionada.empresa_facturadora_id) || empresasConglomerado[0]
                 return (
