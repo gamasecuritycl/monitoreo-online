@@ -43,6 +43,7 @@ export interface ClienteMaestro {
   email_cobranza: string
   telefono: string
   direccion_comercial: string
+  ciudad?: string
   moneda: 'UF' | 'CLP'
   tarifa_mensual: number
   dia_vencimiento: number
@@ -94,6 +95,7 @@ export interface CotizacionDolibarr {
   nombre_cliente: string
   empresa_facturadora_id: string
   direccion: string
+  ciudad_cliente?: string
   email_cliente?: string
   telefono_cliente?: string
   giro_cliente?: string
@@ -233,6 +235,7 @@ export default function OperacionCRM() {
   const [cotGiroCliente, setCotGiroCliente] = useState('Servicios Integrales / Particular')
   const [cotContactoPersona, setCotContactoPersona] = useState('')
   const [cotDireccion, setCotDireccion] = useState('')
+  const [cotCiudadCliente, setCotCiudadCliente] = useState('Santiago')
   const [cotEmailCliente, setCotEmailCliente] = useState('')
   const [cotTelefonoCliente, setCotTelefonoCliente] = useState('')
   const [cotVendedor, setCotVendedor] = useState('Ejecutivo Comercial Gama Seguridad')
@@ -315,6 +318,7 @@ export default function OperacionCRM() {
               email_cobranza: raw.email || 'cobranza@cliente.cl',
               telefono: raw.telefono1 || raw.t1 || raw.telefono || '+56991016912',
               direccion_comercial: raw.direccion || 'Dirección Principal',
+              ciudad: raw.ciudad || 'Santiago',
               moneda: raw.moneda === 'UF' ? 'UF' : 'CLP',
               tarifa_mensual: Number(raw.tarifa_mensual) || (raw.moneda === 'UF' ? 1.2 : 29900),
               dia_vencimiento: Number(raw.dia_vencimiento) || 5,
@@ -442,6 +446,7 @@ export default function OperacionCRM() {
       setCotNombreCliente(cli.razon_social)
       setCotRutCliente(cli.rut)
       setCotDireccion(cli.direccion_comercial || 'Dirección Comercial Registrada')
+      setCotCiudadCliente(cli.ciudad || 'Santiago')
       setCotEmailCliente(cli.email_cobranza || 'contacto@gamasecurity.cl')
       setCotTelefonoCliente(cli.telefono || '+56 9 9101 6912')
       setCotContactoPersona(cli.razon_social)
@@ -449,6 +454,7 @@ export default function OperacionCRM() {
       setCotNombreCliente(rutOKey && rutOKey !== 'Cliente Gama' ? rutOKey : 'CLIENTE REGISTRADO')
       setCotRutCliente(rutOKey)
       setCotDireccion('Dirección Registrada')
+      setCotCiudadCliente('Santiago')
       setCotEmailCliente('contacto@gamasecurity.cl')
       setCotTelefonoCliente('+56 9 9101 6912')
       setCotContactoPersona('Atención Adquisiciones')
@@ -467,7 +473,8 @@ export default function OperacionCRM() {
     } else {
       setCotNombreCliente('CLIENTE MODELO DEMO')
       setCotRutCliente('76.319.399-3')
-      setCotDireccion('Av. Valparaíso 1183, Viña del Mar')
+      setCotDireccion('Av. Valparaíso 1183')
+      setCotCiudadCliente('Viña del Mar')
       setCotEmailCliente('cobranza@gamasecurity.cl')
       setCotTelefonoCliente('+56 32 3276011')
       setCotContactoPersona('Sr(a). Encargado(a) de Adquisiciones')
@@ -479,28 +486,14 @@ export default function OperacionCRM() {
     setCotEditandoId(cot.id)
     setTipoReceptorCot(cot.tipo_receptor || 'registrado')
     setCotEmpresaEmisoraId(cot.empresa_facturadora_id)
-    const cliEncontrado = Object.values(clientesMaestros).find(c =>
-      c.rut === cot.rut_cliente ||
-      (c.rut && cleanRut(c.rut) === cleanRut(cot.rut_cliente)) ||
-      c.razon_social.toLowerCase().trim() === (cot.nombre_cliente || '').toLowerCase().trim()
-    )
-    if (cliEncontrado) {
-      setCotClienteRutSeleccionado(cliEncontrado.rut)
-      setCotNombreCliente(cliEncontrado.razon_social)
-      setCotRutCliente(cliEncontrado.rut)
-      setCotDireccion(cot.direccion || cliEncontrado.direccion_comercial)
-      setCotEmailCliente(cot.email_cliente || cliEncontrado.email_cobranza)
-      setCotTelefonoCliente(cot.telefono_cliente || cliEncontrado.telefono)
-      setCotContactoPersona(cot.contacto_persona || cliEncontrado.razon_social)
-    } else {
-      setCotClienteRutSeleccionado(cot.rut_cliente || cot.nombre_cliente)
-      setCotNombreCliente(cot.nombre_cliente && cot.nombre_cliente !== 'Cliente Gama' ? cot.nombre_cliente : (cot.rut_cliente || 'CLIENTE COMERCIAL'))
-      setCotRutCliente(cot.rut_cliente || 'S/RUT')
-      setCotDireccion(cot.direccion || 'Dirección de Entrega')
-      setCotEmailCliente(cot.email_cliente || 'contacto@gamasecurity.cl')
-      setCotTelefonoCliente(cot.telefono_cliente || '+56 9 9101 6912')
-      setCotContactoPersona(cot.contacto_persona || 'Atención Comercial')
-    }
+    
+    setCotNombreCliente(cot.nombre_cliente || 'CLIENTE COMERCIAL')
+    setCotRutCliente(cot.rut_cliente || 'S/RUT')
+    setCotDireccion(cot.direccion || 'Dirección de Entrega')
+    setCotCiudadCliente(cot.ciudad_cliente || 'Santiago')
+    setCotEmailCliente(cot.email_cliente || 'contacto@gamasecurity.cl')
+    setCotTelefonoCliente(cot.telefono_cliente || '+56 9 9101 6912')
+    setCotContactoPersona(cot.contacto_persona || cot.nombre_cliente || 'Atención Comercial')
     setCotGiroCliente(cot.giro_cliente || 'Servicios Integrales / Particular')
     setCotVendedor(cot.vendedor || 'Ejecutivo Comercial Gama Seguridad')
     setCotValidez(cot.validez_dias || 15)
@@ -558,53 +551,10 @@ export default function OperacionCRM() {
     }
   }
 
-  const handleRegistrarAbonoParcial = async () => {
-    if (!facturaAbonando) return
-    const abonoNum = Number(montoAbonoInput)
-    if (!abonoNum || abonoNum <= 0) {
-      alert('Por favor ingrese un monto de abono válido.')
-      return
-    }
-    const nuevoAbonado = (facturaAbonando.monto_abonado || 0) + abonoNum
-    const nuevoSaldo = Math.max(0, facturaAbonando.monto_total - nuevoAbonado)
-    const nuevoEstado: 'Emitida' | 'Abonada' | 'Pagada' | 'Morosa' = nuevoSaldo === 0 ? 'Pagada' : 'Abonada'
-    const facturaActualizada: FacturaIndividual = {
-      ...facturaAbonando,
-      monto_abonado: nuevoAbonado,
-      saldo_pendiente: nuevoSaldo,
-      estado: nuevoEstado,
-      notas_cobranza: `Abono de $${abonoNum.toLocaleString('es-CL')} registrado el ${new Date().toLocaleDateString('es-CL')} via ${metodoPagoInput}. ${notaAbonoInput}`
-    }
-    const listaNueva = facturas.map(f => f.id === facturaAbonando.id ? facturaActualizada : f)
-    setFacturas(listaNueva)
-    try {
-      await supabase.from('eventos_monitoreo').upsert({
-        cuenta: 'FACTURAS_MAESTRO',
-        nombre_abonado: JSON.stringify(listaNueva),
-        evento: 'REGISTRO_ABONO',
-        fecha_hora: new Date().toISOString()
-      })
-      setMostrarModalAbono(false)
-      setMontoAbonoInput('')
-      setNotaAbonoInput('')
-      alert(`🎉 Abono de $${abonoNum.toLocaleString('es-CL')} registrado exitosamente. Saldo restante: $${nuevoSaldo.toLocaleString('es-CL')} CLP.`)
-    } catch (e: any) {
-      alert('Error registrando abono: ' + e.message)
-    }
-  }
-
   const handleGuardarCotizacionDolibarr = async () => {
     let nombreFinal = cotNombreCliente.trim()
-    let rutFinal = cotRutCliente.trim()
-    if (tipoReceptorCot === 'registrado') {
-      const cli = (cotClienteRutSeleccionado && clientesMaestros[cotClienteRutSeleccionado]) ||
-                  Object.values(clientesMaestros).find(c => c.rut === cotClienteRutSeleccionado || (c.rut && cleanRut(c.rut) === cleanRut(cotClienteRutSeleccionado))) ||
-                  Object.values(clientesMaestros).find(c => c.razon_social.toLowerCase().trim() === cotNombreCliente.toLowerCase().trim())
-      if (cli) {
-        nombreFinal = cli.razon_social
-        rutFinal = cli.rut
-      }
-    }
+    let rutFinal = cotRutCliente.trim() // GUARDA EXACTAMENTE EL RUT INGRESADO POR EL USUARIO
+
     if (!nombreFinal || nombreFinal === 'Cliente Gama') {
       if (cotNombreCliente && cotNombreCliente !== 'Cliente Gama') {
         nombreFinal = cotNombreCliente
@@ -613,15 +563,21 @@ export default function OperacionCRM() {
         return
       }
     }
+
+    if (!rutFinal) {
+      rutFinal = cotClienteRutSeleccionado || 'S/RUT'
+    }
+
     const codigoCot = cotEditandoId ? (cotizaciones.find(c => c.id === cotEditandoId)?.codigo_cotizacion || siguienteCorrelativoCode) : siguienteCorrelativoCode
     const cotizacionObjeto: CotizacionDolibarr = {
       id: cotEditandoId || Date.now(),
       codigo_cotizacion: codigoCot,
       cuenta: rutFinal || `PROSPECTO-${Date.now()}`,
-      rut_cliente: rutFinal ? cleanRut(rutFinal) : 'S/RUT (Prospecto)',
+      rut_cliente: rutFinal, // PRESERVA EL RUT MANUALMENTE DIGITADO (CON GUION/PUNTOS)
       nombre_cliente: nombreFinal,
       empresa_facturadora_id: cotEmpresaEmisoraId,
       direccion: cotDireccion.trim() || 'Dirección de Entrega',
+      ciudad_cliente: cotCiudadCliente.trim() || 'Santiago',
       email_cliente: cotEmailCliente.trim() || 'contacto@prospecto.cl',
       telefono_cliente: cotTelefonoCliente.trim() || '+56991016912',
       giro_cliente: cotGiroCliente.trim() || 'Servicios Integrales / Particular',
@@ -661,7 +617,7 @@ export default function OperacionCRM() {
       setCotizaciones(listaNueva)
       setMostrarModalCotizacion(false)
       setCotEditandoId(null)
-      alert(`🎉 Presupuesto ${codigoCot} guardado exitosamente para "${nombreFinal}".`)
+      alert(`🎉 Presupuesto ${codigoCot} guardado exitosamente para "${nombreFinal}" (RUT: ${rutFinal}).`)
     } catch (e: any) {
       alert('Error guardando cotización: ' + e.message)
     }
@@ -1043,7 +999,7 @@ export default function OperacionCRM() {
                         {abonadoActivo ? abonadoActivo.alias_centro_costo : clienteActivo?.razon_social}
                       </h2>
                       <p className="text-xs text-slate-600 font-medium mt-1">
-                        📍 {abonadoActivo ? abonadoActivo.direccion : clienteActivo?.direccion_comercial} | ✉️ <strong>{clienteActivo?.email_cobranza}</strong>
+                        📍 {abonadoActivo ? abonadoActivo.direccion : clienteActivo?.direccion_comercial} ({clienteActivo?.ciudad || 'Santiago'}) | ✉️ <strong>{clienteActivo?.email_cobranza}</strong>
                       </p>
                     </div>
                   </div>
@@ -1100,7 +1056,7 @@ export default function OperacionCRM() {
                     </span>
                   </h2>
                   <p className="text-xs text-slate-500 font-semibold mt-0.5">
-                    Módulo industrial con desglose tributario chileno (19% IVA), condiciones bancarias y plantilla DTE oficial
+                    Módulo industrial con desglose tributario chileno (19% IVA), ciudad/comuna, RUT personalizable y plantilla DTE oficial
                   </p>
                 </div>
 
@@ -1119,8 +1075,8 @@ export default function OperacionCRM() {
                       <th className="p-4 border-r border-slate-200">FOLIO / FECHA</th>
                       <th className="p-4 border-r border-slate-200">EMPRESA EMISORA</th>
                       <th className="p-4 border-r border-slate-200">RECEPTOR (CLIENTE / PROSPECTO)</th>
+                      <th className="p-4 border-r border-slate-200">CIUDAD / COMUNA</th>
                       <th className="p-4 border-r border-slate-200 text-right">NETO AFECTO</th>
-                      <th className="p-4 border-r border-slate-200 text-right">IVA (19%)</th>
                       <th className="p-4 border-r border-slate-200 text-right">TOTAL IVA INCL.</th>
                       <th className="p-4 border-r border-slate-200 text-center">ESTADO</th>
                       <th className="p-4 text-center w-48">ACCIONES</th>
@@ -1140,8 +1096,8 @@ export default function OperacionCRM() {
                             <div>{c.nombre_cliente}</div>
                             <div className="text-[10px] text-slate-500 font-mono">RUT: {c.rut_cliente}</div>
                           </td>
+                          <td className="p-4 border-r border-slate-200 font-bold text-slate-700">{c.ciudad_cliente || 'Santiago'}</td>
                           <td className="p-4 text-right font-mono border-r border-slate-200">${Math.round(c.neto_con_descuento || 0).toLocaleString('es-CL')}</td>
-                          <td className="p-4 text-right font-mono border-r border-slate-200 text-blue-900">${Math.round(c.monto_iva || 0).toLocaleString('es-CL')}</td>
                           <td className="p-4 text-right font-mono font-bold text-emerald-800 border-r border-slate-200">${Math.round(c.monto_total_iva_incluido || 0).toLocaleString('es-CL')}</td>
                           <td className="p-4 text-center border-r border-slate-200 font-bold">
                             <span className="px-3 py-1 bg-slate-100 rounded-lg text-xs">{c.estado}</span>
@@ -1440,7 +1396,7 @@ export default function OperacionCRM() {
                         setTipoReceptorCot('prospecto')
                         setCotClienteRutSeleccionado('')
                         setCotNombreCliente('NUEVO PROSPECTO COMERCIAL')
-                        setCotRutCliente('S/RUT')
+                        setCotRutCliente('75.000.000-0')
                         setCotContactoPersona('Sr(a). Director(a) / Adquisiciones')
                       }}
                       className={`p-3 rounded-xl font-bold text-xs cursor-pointer border ${tipoReceptorCot === 'prospecto' ? 'bg-purple-950 text-white' : 'bg-white text-slate-700'}`}
@@ -1480,12 +1436,13 @@ export default function OperacionCRM() {
 
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-[10px] font-bold text-slate-500 block mb-1">RUT RECEPTOR:</label>
+                      <label className="text-[10px] font-bold text-slate-500 block mb-1">RUT RECEPTOR (EDITABLE):</label>
                       <input
                         type="text"
                         value={cotRutCliente}
                         onChange={(e) => setCotRutCliente(e.target.value)}
-                        className="w-full bg-white border border-slate-300 p-2.5 rounded-lg text-xs font-mono font-bold"
+                        placeholder="ej: 75.123.456-7"
+                        className="w-full bg-white border border-slate-300 p-2.5 rounded-lg text-xs font-mono font-bold text-blue-900"
                       />
                     </div>
                     <div>
@@ -1494,6 +1451,7 @@ export default function OperacionCRM() {
                         type="text"
                         value={cotContactoPersona}
                         onChange={(e) => setCotContactoPersona(e.target.value)}
+                        placeholder="Nombre de contacto..."
                         className="w-full bg-white border border-slate-300 p-2.5 rounded-lg text-xs font-bold"
                       />
                     </div>
@@ -1510,12 +1468,34 @@ export default function OperacionCRM() {
                       />
                     </div>
                     <div>
+                      <label className="text-[10px] font-bold text-slate-500 block mb-1">CIUDAD / COMUNA:</label>
+                      <input
+                        type="text"
+                        value={cotCiudadCliente}
+                        onChange={(e) => setCotCiudadCliente(e.target.value)}
+                        placeholder="ej: Viña del Mar, Santiago..."
+                        className="w-full bg-white border border-slate-300 p-2.5 rounded-lg text-xs font-bold text-slate-900"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
                       <label className="text-[10px] font-bold text-slate-500 block mb-1">EMAIL CONFIRMACIÓN:</label>
                       <input
                         type="text"
                         value={cotEmailCliente}
                         onChange={(e) => setCotEmailCliente(e.target.value)}
                         className="w-full bg-white border border-slate-300 p-2.5 rounded-lg text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-500 block mb-1">TELÉFONO RECEPTOR:</label>
+                      <input
+                        type="text"
+                        value={cotTelefonoCliente}
+                        onChange={(e) => setCotTelefonoCliente(e.target.value)}
+                        className="w-full bg-white border border-slate-300 p-2.5 rounded-lg text-xs font-mono"
                       />
                     </div>
                   </div>
@@ -1616,12 +1596,13 @@ export default function OperacionCRM() {
                       <div>
                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">RECEPTOR / RAZÓN SOCIAL:</span>
                         <strong className="text-slate-900 text-xs block">{cotNombreCliente || 'Nombre del Cliente'}</strong>
-                        <span className="text-slate-600 font-mono font-bold">RUT: {cotRutCliente || 'S/RUT'}</span>
+                        <span className="text-blue-900 font-mono font-bold block">R.U.T.: {cotRutCliente || 'S/RUT'}</span>
                       </div>
                       <div>
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">ATENCIÓN A / CONTACTO:</span>
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">ATENCIÓN A / ENTREGA:</span>
                         <strong className="text-slate-900 text-xs block">{cotContactoPersona || cotNombreCliente}</strong>
-                        <span className="text-slate-600">📍 {cotDireccion || 'Dirección de Entrega'}</span>
+                        <span className="text-slate-600 block">📍 Dirección: {cotDireccion || 'Dirección de Entrega'}</span>
+                        <span className="text-slate-900 font-bold block">🏙️ Ciudad: {cotCiudadCliente || 'Santiago'}, Chile</span>
                       </div>
                     </div>
 
@@ -1745,13 +1726,14 @@ export default function OperacionCRM() {
                 <div className="space-y-1">
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">RECEPTOR DE LA PROPUESTA:</span>
                   <strong className="text-slate-900 text-sm block uppercase">{cotSeleccionada.nombre_cliente}</strong>
-                  <p className="font-mono text-slate-700 font-bold">R.U.T.: {cotSeleccionada.rut_cliente}</p>
+                  <p className="font-mono text-blue-900 font-extrabold text-sm">R.U.T.: {cotSeleccionada.rut_cliente || 'S/RUT'}</p>
                   <p className="text-slate-600">Giro: {cotSeleccionada.giro_cliente || 'Servicios Integrales / Particular'}</p>
                 </div>
                 <div className="space-y-1">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">ATENCIÓN A / ENTREGA:</span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">ATENCIÓN A / CIUDAD / ENTREGA:</span>
                   <strong className="text-slate-900 text-sm block">{cotSeleccionada.contacto_persona || cotSeleccionada.nombre_cliente}</strong>
                   <p className="text-slate-600">📍 Dirección: {cotSeleccionada.direccion || 'Dirección Principal'}</p>
+                  <p className="text-slate-900 font-bold">🏙️ Ciudad / Comuna: <span className="text-blue-950 font-black">{cotSeleccionada.ciudad_cliente || 'Santiago'}</span>, Chile</p>
                   <p className="text-slate-600">✉️ Correo: {cotSeleccionada.email_cliente || 'contacto@cliente.cl'}</p>
                 </div>
               </div>
