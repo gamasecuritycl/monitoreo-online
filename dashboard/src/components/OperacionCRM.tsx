@@ -68,7 +68,10 @@ export interface CotizacionDolibarr {
 export default function OperacionCRM() {
   const [moduloActivo, setModuloActivo] = useState<'ficha360' | 'presupuestos' | 'facturacion' | 'serv_tecnico' | 'kpis' | 'config'>('ficha360')
   
-  // Clientes
+  // Sidebar colapsable / Menú hamburguesa
+  const [sidebarAbierto, setSidebarAbierto] = useState<boolean>(true)
+
+  // Clientes - Estado inicial 0 (sin seleccionar por defecto)
   const [clientesMap, setClientesMap] = useState<Record<string, ClienteCRM>>({})
   const [cuentaSeleccionada, setCuentaSeleccionada] = useState<string>('')
   const [busquedaClienteInput, setBusquedaClienteInput] = useState<string>('')
@@ -140,8 +143,6 @@ export default function OperacionCRM() {
           }
         })
         setClientesMap(mapFinal)
-        const keys = Object.keys(mapFinal)
-        if (keys.length > 0 && !cuentaSeleccionada) setCuentaSeleccionada(keys[0])
 
         // 2. OTs desde Command Center 'ORDENES_TRABAJO'
         const { data: dOT } = await supabase
@@ -192,30 +193,18 @@ export default function OperacionCRM() {
     }
   }, [cotCuenta, clientesMap])
 
-  // Cliente seleccionado en Ficha 360°
-  const clienteActivo = clientesMap[cuentaSeleccionada] || {
-    cuenta: cuentaSeleccionada || 'C774',
-    nombre: 'Abonado Ejemplo',
-    rut: '12123123-6',
-    alias_unidad: 'CASA SANTO DOMINGO',
-    direccion: 'Av. Santo Domingo 1234',
-    ciudad: 'SANTIAGO',
-    telefono: '+56 9 9101 6912',
-    email: 'contacto@cliente.cl',
-    moneda: 'CLP',
-    tarifa_mensual: 29900,
-    dia_vencimiento: 5,
-    estado_pago: 'Al Día',
-    plan: 'ESTÁNDAR 24/7'
-  }
+  // Cliente seleccionado en Ficha 360° (o null si está en 0)
+  const clienteActivo = cuentaSeleccionada && clientesMap[cuentaSeleccionada] ? clientesMap[cuentaSeleccionada] : null
 
   // OTs del Command Center para la cuenta activa
   const otsClienteActivo = useMemo(() => {
+    if (!cuentaSeleccionada) return []
     return ordenesTrabajo.filter((o: any) => (o.cuenta || '').toUpperCase().trim() === cuentaSeleccionada)
   }, [ordenesTrabajo, cuentaSeleccionada])
 
   // Facturas cargadas para la cuenta activa / Razón social
   const facturasClienteActivo = useMemo(() => {
+    if (!clienteActivo) return []
     const rutClean = cleanRut(clienteActivo.rut)
     const nomClean = clienteActivo.nombre.toLowerCase().trim()
     return facturas.filter(f => {
@@ -452,11 +441,12 @@ export default function OperacionCRM() {
   // Lista de clientes filtrados por búsqueda
   const listaAbonadosFiltrada = useMemo(() => {
     const q = busquedaClienteInput.toLowerCase().trim()
-    if (!q) return Object.values(clientesMap)
+    if (!q) return []
     return Object.values(clientesMap).filter(c =>
       c.cuenta.toLowerCase().includes(q) ||
       c.nombre.toLowerCase().includes(q) ||
-      c.rut.toLowerCase().includes(q)
+      c.rut.toLowerCase().includes(q) ||
+      c.direccion.toLowerCase().includes(q)
     )
   }, [clientesMap, busquedaClienteInput])
 
@@ -474,9 +464,18 @@ export default function OperacionCRM() {
   return (
     <div className="min-h-screen bg-slate-100 text-slate-800 font-sans flex flex-col select-none">
       
-      {/* ── HEADER EJECUTIVO TEMA BLANCO PROFESIONAL ── */}
+      {/* ── HEADER EJECUTIVO TEMA BLANCO PROFESIONAL CON BOTÓN HAMBURGUESA ── */}
       <header className="bg-white border-b border-slate-200 px-6 py-3.5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shrink-0 shadow-xs">
         <div className="flex items-center gap-3">
+          {/* Botón Menú Hamburguesa */}
+          <button
+            onClick={() => setSidebarAbierto(!sidebarAbierto)}
+            className="bg-slate-100 hover:bg-slate-200 text-slate-800 px-3 py-2 rounded-lg border border-slate-300 font-bold flex items-center justify-center transition-all cursor-pointer shadow-2xs"
+            title={sidebarAbierto ? "Ocultar Menú Lateral" : "Mostrar Menú Lateral"}
+          >
+            <span className="text-lg">☰</span>
+          </button>
+
           <div className="bg-blue-900 text-white font-bold p-2.5 rounded-lg text-xl shadow-sm flex items-center justify-center">
             🛡️
           </div>
@@ -507,228 +506,260 @@ export default function OperacionCRM() {
         </div>
       </header>
 
-      {/* ── CONTENEDOR PRINCIPAL: SIDEBAR + PANEL DERECHO ── */}
+      {/* ── CONTENEDOR PRINCIPAL: SIDEBAR COLAPSABLE + PANEL DERECHO ── */}
       <div className="flex-1 flex overflow-hidden min-h-0">
         
-        {/* ── SIDEBAR ADMINISTRATIVO MODULAR (Fondo blanco/slate, sin abonados) ── */}
-        <aside className="w-64 bg-white border-r border-slate-200 p-4 flex flex-col gap-1 shrink-0 shadow-xs">
-          <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider px-3 mb-2">
-            Módulos Administrativos
-          </div>
+        {/* ── SIDEBAR ADMINISTRATIVO MODULAR COLAPSABLE ── */}
+        {sidebarAbierto && (
+          <aside className="w-64 bg-white border-r border-slate-200 p-4 flex flex-col gap-1 shrink-0 shadow-xs transition-all">
+            <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider px-3 mb-2 flex justify-between items-center">
+              <span>Módulos Administrativos</span>
+              <button
+                onClick={() => setSidebarAbierto(false)}
+                className="text-slate-400 hover:text-slate-600 font-bold"
+                title="Ocultar Menú"
+              >
+                ✕
+              </button>
+            </div>
 
-          {[
-            { id: 'ficha360', label: 'Ficha 360° del Cliente', icon: '👤' },
-            { id: 'presupuestos', label: 'Presupuestos (Dolibarr)', icon: '📋' },
-            { id: 'facturacion', label: 'Facturación & Cobranza', icon: '🧾' },
-            { id: 'serv_tecnico', label: 'Servicio Técnico (OTs)', icon: '🛠️' },
-            { id: 'kpis', label: 'KPIs Ejecutivos & Reportes', icon: '📊' },
-            { id: 'config', label: 'Configuración & Empresa', icon: '⚙️' },
-          ].map(m => (
-            <button
-              key={m.id}
-              onClick={() => setModuloActivo(m.id as any)}
-              className={`w-full text-left px-3.5 py-2.5 rounded-lg font-semibold text-xs transition-all flex items-center gap-2.5 cursor-pointer ${
-                moduloActivo === m.id
-                  ? 'bg-blue-50 text-blue-900 font-bold border-l-4 border-blue-800 shadow-2xs'
-                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-              }`}
-            >
-              <span className="text-base">{m.icon}</span>
-              <span>{m.label}</span>
-            </button>
-          ))}
+            {[
+              { id: 'ficha360', label: 'Ficha 360° del Cliente', icon: '👤' },
+              { id: 'presupuestos', label: 'Presupuestos (Dolibarr)', icon: '📋' },
+              { id: 'facturacion', label: 'Facturación & Cobranza', icon: '🧾' },
+              { id: 'serv_tecnico', label: 'Servicio Técnico (OTs)', icon: '🛠️' },
+              { id: 'kpis', label: 'KPIs Ejecutivos & Reportes', icon: '📊' },
+              { id: 'config', label: 'Configuración & Empresa', icon: '⚙️' },
+            ].map(m => (
+              <button
+                key={m.id}
+                onClick={() => setModuloActivo(m.id as any)}
+                className={`w-full text-left px-3.5 py-2.5 rounded-lg font-semibold text-xs transition-all flex items-center gap-2.5 cursor-pointer ${
+                  moduloActivo === m.id
+                    ? 'bg-blue-50 text-blue-900 font-bold border-l-4 border-blue-800 shadow-2xs'
+                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                }`}
+              >
+                <span className="text-base">{m.icon}</span>
+                <span>{m.label}</span>
+              </button>
+            ))}
 
-          {/* Banner inferior de resumen en Sidebar */}
-          <div className="mt-auto bg-slate-50 border border-slate-200 p-3 rounded-lg text-xs space-y-1 text-slate-600">
-            <div className="font-bold text-slate-800 text-[11px] uppercase">Gama Servicios Ltda.</div>
-            <div>Facturas cargadas: <strong className="text-slate-900 font-mono">{facturas.length}</strong></div>
-            <div>Cotizaciones: <strong className="text-slate-900 font-mono">{cotizaciones.length}</strong></div>
-          </div>
-        </aside>
+            {/* Banner inferior de resumen en Sidebar */}
+            <div className="mt-auto bg-slate-50 border border-slate-200 p-3 rounded-lg text-xs space-y-1 text-slate-600">
+              <div className="font-bold text-slate-800 text-[11px] uppercase">Gama Servicios Ltda.</div>
+              <div>Facturas cargadas: <strong className="text-slate-900 font-mono">{facturas.length}</strong></div>
+              <div>Cotizaciones: <strong className="text-slate-900 font-mono">{cotizaciones.length}</strong></div>
+            </div>
+          </aside>
+        )}
 
         {/* ── PANEL DERECHO PRINCIPAL (Fondo Blanco / Slate Claro) ── */}
         <main className="flex-1 p-6 bg-slate-50 overflow-y-auto min-h-0 flex flex-col gap-6">
 
-          {/* ── MÓDULO 1: FICHA 360° DEL CLIENTE ── */}
+          {/* ── MÓDULO 1: FICHA 360° DEL CLIENTE (Buscador superior sin columna lateral) ── */}
           {moduloActivo === 'ficha360' && (
-            <div className="flex-1 flex flex-col lg:flex-row gap-6 overflow-hidden min-h-0">
+            <div className="flex-1 flex flex-col gap-6 min-h-0">
               
-              {/* Selector de Cliente */}
-              <div className="w-full lg:w-80 bg-white border border-slate-200 rounded-xl p-4 flex flex-col gap-3 shrink-0 shadow-xs">
-                <div className="font-bold text-xs text-slate-700 uppercase tracking-wider flex justify-between">
-                  <span>Buscador de Clientes</span>
-                  <span className="font-mono text-slate-400">({listaAbonadosFiltrada.length})</span>
+              {/* Buscador Superior Directo */}
+              <div className="bg-white border border-slate-200 p-5 rounded-xl flex flex-col gap-3 shadow-xs">
+                <div className="font-bold text-xs text-slate-700 uppercase tracking-wider flex justify-between items-center">
+                  <span>🔍 Buscador de Expedientes CRM 360°</span>
+                  {cuentaSeleccionada && (
+                    <button
+                      onClick={() => { setCuentaSeleccionada(''); setBusquedaClienteInput('') }}
+                      className="text-xs text-red-600 hover:underline font-bold cursor-pointer"
+                    >
+                      ✕ Limpiar Selección
+                    </button>
+                  )}
                 </div>
 
-                <input
-                  type="text"
-                  value={busquedaClienteInput}
-                  onChange={(e) => setBusquedaClienteInput(e.target.value)}
-                  placeholder="Cuenta, Nombre, RUT..."
-                  className="bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 font-mono"
-                />
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={busquedaClienteInput}
+                    onChange={(e) => setBusquedaClienteInput(e.target.value)}
+                    placeholder="Escriba Nombre del Titular, RUT, Código de Cuenta (ej: C774), Dirección..."
+                    className="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-2.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 font-mono shadow-2xs"
+                  />
 
-                <div className="flex-1 overflow-y-auto space-y-2 pr-1 max-h-[600px]">
-                  {listaAbonadosFiltrada.map(c => (
-                    <div
-                      key={c.cuenta}
-                      onClick={() => setCuentaSeleccionada(c.cuenta)}
-                      className={`p-3 rounded-lg border cursor-pointer transition-all ${
-                        cuentaSeleccionada === c.cuenta
-                          ? 'bg-blue-50 border-blue-600 text-blue-950 shadow-xs'
-                          : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300'
-                      }`}
-                    >
-                      <div className="flex justify-between items-center font-mono font-bold text-xs mb-1">
-                        <span className="text-blue-700">{c.cuenta}</span>
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-semibold ${
-                          c.estado_pago === 'Al Día' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'
-                        }`}>
-                          {c.estado_pago}
-                        </span>
-                      </div>
-                      <div className="font-bold text-xs truncate text-slate-900">{c.nombre}</div>
-                      <div className="text-[11px] text-slate-500 truncate mt-0.5">
-                        RUT: {c.rut || 'N/A'} • {c.moneda === 'UF' ? `${c.tarifa_mensual} UF` : `$${c.tarifa_mensual.toLocaleString('es-CL')} CLP`}
-                      </div>
+                  {/* Resultados sugeridos del buscador */}
+                  {busquedaClienteInput.trim().length > 0 && (
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-300 rounded-xl shadow-xl z-20 max-h-64 overflow-y-auto divide-y divide-slate-100">
+                      {listaAbonadosFiltrada.map(c => (
+                        <div
+                          key={c.cuenta}
+                          onClick={() => { setCuentaSeleccionada(c.cuenta); setBusquedaClienteInput('') }}
+                          className="p-3 hover:bg-blue-50 cursor-pointer flex justify-between items-center transition-colors"
+                        >
+                          <div>
+                            <div className="font-bold text-xs text-slate-900">
+                              {c.nombre} <span className="font-mono text-blue-700 font-bold ml-1 font-bold">({c.cuenta})</span>
+                            </div>
+                            <div className="text-[11px] text-slate-500">RUT: {c.rut || 'N/A'} • {c.direccion}</div>
+                          </div>
+                          <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                            c.estado_pago === 'Al Día' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'
+                          }`}>
+                            {c.estado_pago}
+                          </span>
+                        </div>
+                      ))}
+                      {listaAbonadosFiltrada.length === 0 && (
+                        <div className="p-4 text-center text-slate-400 italic text-xs">
+                          No se encontraron clientes coincidentes con "{busquedaClienteInput}".
+                        </div>
+                      )}
                     </div>
-                  ))}
+                  )}
                 </div>
               </div>
 
-              {/* Dossier 360° Lado Derecho */}
-              <div className="flex-1 bg-white border border-slate-200 rounded-xl p-6 flex flex-col gap-6 overflow-y-auto shadow-xs">
-                
-                <div className="bg-slate-50 border border-slate-200 p-5 rounded-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="bg-blue-900 text-white font-mono text-sm font-bold px-2.5 py-1 rounded">
-                        {clienteActivo.cuenta}
-                      </span>
-                      <span className="text-xs text-slate-500 font-mono font-semibold">RUT: {clienteActivo.rut || 'Sin RUT'}</span>
-                    </div>
-                    <h2 className="text-xl font-bold text-slate-900">{clienteActivo.nombre}</h2>
-                    <p className="text-xs text-slate-500 font-medium">{clienteActivo.direccion} • {clienteActivo.ciudad}</p>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <button
-                      disabled={enviandoNotif}
-                      onClick={() => enviarEmailCobroResend(clienteActivo.email, clienteActivo.nombre, `Cuenta ${clienteActivo.cuenta}`)}
-                      className="px-3.5 py-2 bg-blue-900 hover:bg-blue-800 text-white font-bold rounded-lg text-xs shadow-xs cursor-pointer"
-                    >
-                      📧 Email Resend (@gamasecurity.cl)
-                    </button>
-                    <button
-                      disabled={enviandoNotif}
-                      onClick={() => enviarWhatsAppCobro(clienteActivo.telefono, clienteActivo.nombre, `Cuenta ${clienteActivo.cuenta}`)}
-                      className="px-3.5 py-2 bg-emerald-700 hover:bg-emerald-600 text-white font-bold rounded-lg text-xs shadow-xs cursor-pointer"
-                    >
-                      📲 Notificar por WA
-                    </button>
-                  </div>
-                </div>
-
-                {/* 3 Pilares */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              {/* Dossier 360° si hay cliente seleccionado */}
+              {clienteActivo ? (
+                <div className="bg-white border border-slate-200 rounded-xl p-6 flex flex-col gap-6 overflow-y-auto shadow-xs">
                   
-                  {/* PILAR 1: COMERCIAL */}
-                  <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl flex flex-col gap-3">
-                    <div className="font-bold text-xs text-slate-900 border-b border-slate-200 pb-2 flex justify-between uppercase tracking-wider">
-                      <span>💳 Comercial & Tarifa</span>
-                      <span className="text-emerald-700 font-mono font-bold">{clienteActivo.moneda}</span>
+                  <div className="bg-slate-50 border border-slate-200 p-5 rounded-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="bg-blue-900 text-white font-mono text-sm font-bold px-2.5 py-1 rounded">
+                          {clienteActivo.cuenta}
+                        </span>
+                        <span className="text-xs text-slate-500 font-mono font-semibold">RUT: {clienteActivo.rut || 'Sin RUT'}</span>
+                      </div>
+                      <h2 className="text-xl font-bold text-slate-900">{clienteActivo.nombre}</h2>
+                      <p className="text-xs text-slate-500 font-medium">{clienteActivo.direccion} • {clienteActivo.ciudad}</p>
                     </div>
 
-                    <div className="space-y-2 text-xs">
-                      <div className="flex justify-between">
-                        <span className="text-slate-500">Plan Contratado:</span>
-                        <span className="font-bold text-slate-900 truncate">{clienteActivo.plan}</span>
-                      </div>
-
-                      <div className="flex justify-between">
-                        <span className="text-slate-500">Tarifa Mensual:</span>
-                        <span className="font-bold font-mono text-emerald-800">
-                          {clienteActivo.moneda === 'UF'
-                            ? `${clienteActivo.tarifa_mensual} UF ($${Math.round(clienteActivo.tarifa_mensual * VALOR_UF_CLP).toLocaleString('es-CL')})`
-                            : `$${clienteActivo.tarifa_mensual.toLocaleString('es-CL')} CLP`}
-                        </span>
-                      </div>
-
-                      <div className="flex justify-between">
-                        <span className="text-slate-500">Día de Cobro:</span>
-                        <span className="font-bold text-slate-900">Día {clienteActivo.dia_vencimiento}</span>
-                      </div>
-
-                      <div className="flex justify-between items-center pt-2 border-t border-slate-200">
-                        <span className="text-slate-500">Estado de Pago:</span>
-                        <span className={`px-2 py-0.5 rounded font-bold text-[10px] ${
-                          clienteActivo.estado_pago === 'Al Día' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'
-                        }`}>
-                          {clienteActivo.estado_pago.toUpperCase()}
-                        </span>
-                      </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        disabled={enviandoNotif}
+                        onClick={() => enviarEmailCobroResend(clienteActivo.email, clienteActivo.nombre, `Cuenta ${clienteActivo.cuenta}`)}
+                        className="px-3.5 py-2 bg-blue-900 hover:bg-blue-800 text-white font-bold rounded-lg text-xs shadow-xs cursor-pointer"
+                      >
+                        📧 Email Resend (@gamasecurity.cl)
+                      </button>
+                      <button
+                        disabled={enviandoNotif}
+                        onClick={() => enviarWhatsAppCobro(clienteActivo.telefono, clienteActivo.nombre, `Cuenta ${clienteActivo.cuenta}`)}
+                        className="px-3.5 py-2 bg-emerald-700 hover:bg-emerald-600 text-white font-bold rounded-lg text-xs shadow-xs cursor-pointer"
+                      >
+                        📲 Notificar por WA
+                      </button>
                     </div>
                   </div>
 
-                  {/* PILAR 2: FACTURAS CARGADAS DEL CLIENTE */}
-                  <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl flex flex-col gap-3">
-                    <div className="font-bold text-xs text-slate-900 border-b border-slate-200 pb-2 flex justify-between uppercase tracking-wider">
-                      <span>🧾 Facturas Cargadas</span>
-                      <span className="font-mono text-slate-500">({facturasClienteActivo.length})</span>
+                  {/* 3 Pilares del expediente */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                    
+                    {/* PILAR 1: COMERCIAL */}
+                    <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl flex flex-col gap-3">
+                      <div className="font-bold text-xs text-slate-900 border-b border-slate-200 pb-2 flex justify-between uppercase tracking-wider">
+                        <span>💳 Comercial & Tarifa</span>
+                        <span className="text-emerald-700 font-mono font-bold">{clienteActivo.moneda}</span>
+                      </div>
+
+                      <div className="space-y-2 text-xs">
+                        <div className="flex justify-between">
+                          <span className="text-slate-500">Plan Contratado:</span>
+                          <span className="font-bold text-slate-900 truncate">{clienteActivo.plan}</span>
+                        </div>
+
+                        <div className="flex justify-between">
+                          <span className="text-slate-500">Tarifa Mensual:</span>
+                          <span className="font-bold font-mono text-emerald-800">
+                            {clienteActivo.moneda === 'UF'
+                              ? `${clienteActivo.tarifa_mensual} UF ($${Math.round(clienteActivo.tarifa_mensual * VALOR_UF_CLP).toLocaleString('es-CL')})`
+                              : `$${clienteActivo.tarifa_mensual.toLocaleString('es-CL')} CLP`}
+                          </span>
+                        </div>
+
+                        <div className="flex justify-between">
+                          <span className="text-slate-500">Día de Cobro:</span>
+                          <span className="font-bold text-slate-900">Día {clienteActivo.dia_vencimiento}</span>
+                        </div>
+
+                        <div className="flex justify-between items-center pt-2 border-t border-slate-200">
+                          <span className="text-slate-500">Estado de Pago:</span>
+                          <span className={`px-2 py-0.5 rounded font-bold text-[10px] ${
+                            clienteActivo.estado_pago === 'Al Día' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'
+                          }`}>
+                            {clienteActivo.estado_pago.toUpperCase()}
+                          </span>
+                        </div>
+                      </div>
                     </div>
 
-                    <div className="space-y-2 flex-1 overflow-y-auto max-h-[180px]">
-                      {facturasClienteActivo.map((f) => (
-                        <div key={f.id} className="p-2 bg-white rounded-lg border border-slate-200 text-xs space-y-1 shadow-2xs">
-                          <div className="flex justify-between font-mono font-bold text-blue-900">
-                            <span>Factura #{f.numero_factura}</span>
-                            <span className="text-emerald-800">${f.monto_total.toLocaleString('es-CL')} CLP</span>
+                    {/* PILAR 2: FACTURAS CARGADAS DEL CLIENTE */}
+                    <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl flex flex-col gap-3">
+                      <div className="font-bold text-xs text-slate-900 border-b border-slate-200 pb-2 flex justify-between uppercase tracking-wider">
+                        <span>🧾 Facturas Cargadas</span>
+                        <span className="font-mono text-slate-500">({facturasClienteActivo.length})</span>
+                      </div>
+
+                      <div className="space-y-2 flex-1 overflow-y-auto max-h-[180px]">
+                        {facturasClienteActivo.map((f) => (
+                          <div key={f.id} className="p-2 bg-white rounded-lg border border-slate-200 text-xs space-y-1 shadow-2xs">
+                            <div className="flex justify-between font-mono font-bold text-blue-900">
+                              <span>Factura #{f.numero_factura}</span>
+                              <span className="text-emerald-800">${f.monto_total.toLocaleString('es-CL')} CLP</span>
+                            </div>
+                            <div className="text-[11px] text-slate-500 flex justify-between">
+                              <span>{f.fecha}</span>
+                              <span className="font-bold text-slate-700">{f.estado}</span>
+                            </div>
                           </div>
-                          <div className="text-[11px] text-slate-500 flex justify-between">
-                            <span>{f.fecha}</span>
-                            <span className="font-bold text-slate-700">{f.estado}</span>
+                        ))}
+
+                        {facturasClienteActivo.length === 0 && (
+                          <div className="text-center text-slate-400 italic py-8 text-xs">
+                            Sin facturas registradas para esta razón social
                           </div>
-                        </div>
-                      ))}
-
-                      {facturasClienteActivo.length === 0 && (
-                        <div className="text-center text-slate-400 italic py-8 text-xs">
-                          Sin facturas registradas para esta razón social
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* PILAR 3: SERVICIO TÉCNICO EN TERRENO */}
-                  <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl flex flex-col gap-3">
-                    <div className="font-bold text-xs text-slate-900 border-b border-slate-200 pb-2 flex justify-between uppercase tracking-wider">
-                      <span>🛠️ Órdenes Técnicas (Command Center)</span>
-                      <span className="font-mono text-slate-500">({otsClienteActivo.length})</span>
+                        )}
+                      </div>
                     </div>
 
-                    <div className="space-y-2 flex-1 overflow-y-auto max-h-[180px]">
-                      {otsClienteActivo.map((ot: any) => (
-                        <div key={ot.id} className="p-2 bg-white rounded-lg border border-slate-200 text-xs space-y-1 shadow-2xs">
-                          <div className="flex justify-between font-mono font-bold text-blue-900">
-                            <span>{ot.codigo_ot || `OT-${ot.id}`}</span>
-                            <span className="text-emerald-800 text-[10px]">{ot.estado}</span>
+                    {/* PILAR 3: SERVICIO TÉCNICO EN TERRENO */}
+                    <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl flex flex-col gap-3">
+                      <div className="font-bold text-xs text-slate-900 border-b border-slate-200 pb-2 flex justify-between uppercase tracking-wider">
+                        <span>🛠️ Órdenes Técnicas (Command Center)</span>
+                        <span className="font-mono text-slate-500">({otsClienteActivo.length})</span>
+                      </div>
+
+                      <div className="space-y-2 flex-1 overflow-y-auto max-h-[180px]">
+                        {otsClienteActivo.map((ot: any) => (
+                          <div key={ot.id} className="p-2 bg-white rounded-lg border border-slate-200 text-xs space-y-1 shadow-2xs">
+                            <div className="flex justify-between font-mono font-bold text-blue-900">
+                              <span>{ot.codigo_ot || `OT-${ot.id}`}</span>
+                              <span className="text-emerald-800 text-[10px]">{ot.estado}</span>
+                            </div>
+                            <div className="font-bold text-slate-800 text-[11px]">{ot.tipo_visita || 'Correctiva'} • {ot.tecnico}</div>
+                            <div className="text-[10px] text-slate-500 truncate">{ot.problema}</div>
                           </div>
-                          <div className="font-bold text-slate-800 text-[11px]">{ot.tipo_visita || 'Correctiva'} • {ot.tecnico}</div>
-                          <div className="text-[10px] text-slate-500 truncate">{ot.problema}</div>
-                        </div>
-                      ))}
+                        ))}
 
-                      {otsClienteActivo.length === 0 && (
-                        <div className="text-center text-slate-400 italic py-8 text-xs">
-                          Sin visitas técnicas de Command Center
-                        </div>
-                      )}
+                        {otsClienteActivo.length === 0 && (
+                          <div className="text-center text-slate-400 italic py-8 text-xs">
+                            Sin visitas técnicas de Command Center
+                          </div>
+                        )}
+                      </div>
                     </div>
+
                   </div>
 
                 </div>
-
-              </div>
+              ) : (
+                /* Estado Inicial 0 vacio */
+                <div className="bg-white border border-slate-200 rounded-xl p-12 text-center shadow-xs flex flex-col items-center justify-center gap-3 py-16">
+                  <div className="text-5xl">🔍</div>
+                  <h3 className="text-lg font-bold text-slate-900">Expediente CRM 360° de Abonados</h3>
+                  <p className="text-xs text-slate-500 max-w-md">
+                    Utilice el buscador superior para ingresar el Nombre del Titular, Número de Abonado (ej: C774) o RUT del cliente que desea consultar.
+                  </p>
+                </div>
+              )}
 
             </div>
           )}
