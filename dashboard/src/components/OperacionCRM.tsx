@@ -76,6 +76,14 @@ export default function OperacionCRM() {
   const [cuentaSeleccionada, setCuentaSeleccionada] = useState<string>('')
   const [busquedaClienteInput, setBusquedaClienteInput] = useState<string>('')
 
+  // Modal Edición de Tarifa
+  const [mostrarModalTarifa, setMostrarModalTarifa] = useState(false)
+  const [editMoneda, setEditMoneda] = useState<'UF' | 'CLP'>('CLP')
+  const [editTarifa, setEditTarifa] = useState('29900')
+  const [editDia, setEditDia] = useState('5')
+  const [editPlan, setEditPlan] = useState('MONITOREO ESTÁNDAR 24/7')
+  const [editEstadoPago, setEditEstadoPago] = useState<'Al Día' | 'Pendiente' | 'Moroso'>('Al Día')
+
   // Órdenes de Trabajo desde Command Center ('ORDENES_TRABAJO')
   const [ordenesTrabajo, setOrdenesTrabajo] = useState<any[]>([])
 
@@ -196,6 +204,45 @@ export default function OperacionCRM() {
   // Cliente seleccionado en Ficha 360° (o null si está en 0)
   const clienteActivo = cuentaSeleccionada && clientesMap[cuentaSeleccionada] ? clientesMap[cuentaSeleccionada] : null
 
+  // Abrir modal de edición de tarifa
+  const abrirModalEditarTarifa = (cliente: ClienteCRM) => {
+    setEditMoneda(cliente.moneda)
+    setEditTarifa(cliente.tarifa_mensual.toString())
+    setEditDia(cliente.dia_vencimiento.toString())
+    setEditPlan(cliente.plan)
+    setEditEstadoPago(cliente.estado_pago)
+    setMostrarModalTarifa(true)
+  }
+
+  // Guardar Tarifa Editada
+  const handleGuardarTarifaCliente = async () => {
+    if (!clienteActivo) return
+    const clienteActualizado: ClienteCRM = {
+      ...clienteActivo,
+      moneda: editMoneda,
+      tarifa_mensual: Number(editTarifa) || 0,
+      dia_vencimiento: Number(editDia) || 5,
+      plan: editPlan.trim() || 'MONITOREO ESTÁNDAR 24/7',
+      estado_pago: editEstadoPago
+    }
+
+    const mapNuevo = { ...clientesMap, [clienteActivo.cuenta]: clienteActualizado }
+    setClientesMap(mapNuevo)
+
+    try {
+      await supabase.from('eventos_monitoreo').upsert({
+        cuenta: 'CLIENTES',
+        nombre_abonado: JSON.stringify(mapNuevo),
+        evento: 'CONFIGURACION_TARIFA',
+        fecha_hora: new Date().toISOString()
+      })
+      setMostrarModalTarifa(false)
+      alert(`✅ Tarifa de la cuenta ${clienteActivo.cuenta} (${clienteActivo.nombre}) actualizada a ${editMoneda} ${editTarifa}.`)
+    } catch (e: any) {
+      alert('Error al guardar tarifa: ' + e.message)
+    }
+  }
+
   // OTs del Command Center para la cuenta activa
   const otsClienteActivo = useMemo(() => {
     if (!cuentaSeleccionada) return []
@@ -235,7 +282,6 @@ export default function OperacionCRM() {
         // Omitir cabecera
         if (cols[0].toLowerCase().includes('fecha') || cols[1].toLowerCase().includes('factura') || cols[1].toLowerCase().includes('número')) continue
 
-        // Columnas requeridas: Fecha | Numero Factura | Razon Social | Monto Total
         const fechaStr = cols[0] || new Date().toISOString().slice(0, 10)
         const numFactura = cols[1] ? cols[1].replace(/[^0-9]/g, '') : ''
         const razonSocial = cols[2] ? cols[2].toUpperCase().trim() : ''
@@ -251,7 +297,6 @@ export default function OperacionCRM() {
           continue
         }
 
-        // Buscar coincidencia de cuenta abonado por razón social
         let ctaMatch = ''
         Object.values(clientesMap).forEach(c => {
           if (c.nombre.toUpperCase().includes(razonSocial) || razonSocial.includes(c.nombre.toUpperCase())) {
@@ -634,18 +679,24 @@ export default function OperacionCRM() {
 
                     <div className="flex items-center gap-2">
                       <button
+                        onClick={() => abrirModalEditarTarifa(clienteActivo)}
+                        className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-lg text-xs shadow-xs cursor-pointer"
+                      >
+                        ✏️ Editar Tarifa
+                      </button>
+                      <button
                         disabled={enviandoNotif}
                         onClick={() => enviarEmailCobroResend(clienteActivo.email, clienteActivo.nombre, `Cuenta ${clienteActivo.cuenta}`)}
                         className="px-3.5 py-2 bg-blue-900 hover:bg-blue-800 text-white font-bold rounded-lg text-xs shadow-xs cursor-pointer"
                       >
-                        📧 Email Resend (@gamasecurity.cl)
+                        📧 Email Resend
                       </button>
                       <button
                         disabled={enviandoNotif}
                         onClick={() => enviarWhatsAppCobro(clienteActivo.telefono, clienteActivo.nombre, `Cuenta ${clienteActivo.cuenta}`)}
                         className="px-3.5 py-2 bg-emerald-700 hover:bg-emerald-600 text-white font-bold rounded-lg text-xs shadow-xs cursor-pointer"
                       >
-                        📲 Notificar por WA
+                        📲 Notificar WA
                       </button>
                     </div>
                   </div>
@@ -1096,6 +1147,102 @@ export default function OperacionCRM() {
 
         </main>
       </div>
+
+      {/* ── MODAL EDITAR TARIFA DEL CLIENTE ── */}
+      {mostrarModalTarifa && clienteActivo && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="bg-white border border-slate-300 w-full max-w-md p-6 rounded-xl shadow-2xl space-y-4 text-xs font-sans">
+            <div className="flex justify-between items-center border-b border-slate-200 pb-3">
+              <h3 className="font-bold text-sm text-slate-900 uppercase tracking-wide">
+                ✏️ Editar Tarifa Comercial ({clienteActivo.cuenta})
+              </h3>
+              <button onClick={() => setMostrarModalTarifa(false)} className="text-slate-400 hover:text-slate-700 font-bold text-lg">✕</button>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Moneda de Cobro:</label>
+                <select
+                  value={editMoneda}
+                  onChange={(e: any) => setEditMoneda(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-300 p-2 rounded-lg font-bold text-slate-900 focus:outline-none"
+                >
+                  <option value="CLP">CLP (Pesos Chilenos)</option>
+                  <option value="UF">UF (Unidad de Fomento)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">
+                  Monto Mensual {editMoneda === 'UF' ? '(en UF, ej: 1.2)' : '(en CLP, ej: 29900)'}:
+                </label>
+                <input
+                  type="number"
+                  step={editMoneda === 'UF' ? '0.1' : '1000'}
+                  value={editTarifa}
+                  onChange={(e) => setEditTarifa(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-300 p-2 rounded-lg font-mono font-bold text-slate-900 focus:outline-none text-sm"
+                />
+                {editMoneda === 'UF' && (
+                  <p className="text-[11px] text-emerald-700 mt-1 font-mono font-semibold">
+                    ≈ ${Math.round((Number(editTarifa) || 0) * VALOR_UF_CLP).toLocaleString('es-CL')} CLP mensual al valor UF actual.
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Día de Vencimiento de Cobro (1-30):</label>
+                <input
+                  type="number"
+                  min="1"
+                  max="30"
+                  value={editDia}
+                  onChange={(e) => setEditDia(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-300 p-2 rounded-lg font-mono text-slate-900 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Plan de Monitoreo:</label>
+                <input
+                  type="text"
+                  value={editPlan}
+                  onChange={(e) => setEditPlan(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-300 p-2 rounded-lg font-semibold text-slate-900 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Estado de Pago Inicial:</label>
+                <select
+                  value={editEstadoPago}
+                  onChange={(e: any) => setEditEstadoPago(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-300 p-2 rounded-lg font-bold text-slate-900 focus:outline-none"
+                >
+                  <option value="Al Día">Al Día</option>
+                  <option value="Pendiente">Pendiente</option>
+                  <option value="Moroso">Moroso</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-3 border-t border-slate-200">
+              <button
+                onClick={() => setMostrarModalTarifa(false)}
+                className="px-4 py-2 bg-slate-200 text-slate-800 font-bold rounded-lg hover:bg-slate-300 cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleGuardarTarifaCliente}
+                className="px-5 py-2 bg-blue-900 hover:bg-blue-800 text-white font-bold rounded-lg shadow-xs cursor-pointer"
+              >
+                💾 Guardar Tarifa
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── MODAL CARGA MASIVA DE FACTURAS CON DEDUPLICACIÓN ── */}
       {mostrarModalCargaFacturas && (
