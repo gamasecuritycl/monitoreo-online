@@ -202,7 +202,7 @@ export default function OperacionCRM() {
   const [mostrarModalCotizacion, setMostrarModalCotizacion] = useState(false)
   const [cotSeleccionada, setCotSeleccionada] = useState<CotizacionDolibarr | null>(null)
   
-  // Formulario Cotización Dolibarr
+  // Formulario Cotización
   const [cotEmpresaEmisoraId, setCotEmpresaEmisoraId] = useState('EMP-1')
   const [cotRutCliente, setCotRutCliente] = useState('')
   const [cotNombreCliente, setCotNombreCliente] = useState('')
@@ -316,6 +316,20 @@ export default function OperacionCRM() {
     return clienteActivo.cuentas_abonados.map(cta => abonadosCentrosCosto[cta]).filter(Boolean)
   }, [clienteActivo, abonadosCentrosCosto])
 
+  // ── MOTOR DINÁMICO DE CORRELATIVO SECUENCIAL DE COTIZACIONES (PR2607-XXXX) ──
+  const siguienteCorrelativoCode = useMemo(() => {
+    let maxNum = 257
+    cotizaciones.forEach(c => {
+      const match = (c.codigo_cotizacion || '').match(/PR2607-(\d+)/)
+      if (match) {
+        const n = parseInt(match[1], 10)
+        if (n > maxNum) maxNum = n
+      }
+    })
+    const nextNum = maxNum + 1
+    return `PR2607-${nextNum.toString().padStart(4, '0')}`
+  }, [cotizaciones])
+
   // ── ACCIONES DE CRUD PARA EMPRESAS DEL CONGLOMERADO ──
   const abrirModalEditarEmpresa = (empresa?: EmpresaConglomerado) => {
     if (empresa) {
@@ -426,7 +440,7 @@ export default function OperacionCRM() {
     const mapaNuevoMaestro = { ...clientesMaestros, [clienteActivo.rut]: clienteActualizado }
     setClientesMaestros(mapaNuevoMaestro)
 
-    // Sincronizar plano llano para Command Center ('CLIENTES' en Supabase)
+    // Sincronizar mapa plano para Command Center ('CLIENTES' en Supabase)
     const mapaPlanoCommandCenter: Record<string, any> = {}
     Object.values(mapaNuevoMaestro).forEach(c => {
       c.cuentas_abonados.forEach(cta => {
@@ -472,7 +486,6 @@ export default function OperacionCRM() {
       return
     }
 
-    // Crear/actualizar Centro de Costo
     const nuevoCentroCosto: CentroDeCostoAbonado = {
       cuenta: ctaUpper,
       alias_centro_costo: nuevoAliasCentroCostoInput.trim() || `Centro de Costo ${ctaUpper}`,
@@ -492,7 +505,6 @@ export default function OperacionCRM() {
     const mapaMaestroNuevo = { ...clientesMaestros, [clienteActivo.rut]: clienteActualizado }
     setClientesMaestros(mapaMaestroNuevo)
 
-    // Sincronizar en Supabase para Command Center
     const mapaPlano: Record<string, any> = {}
     Object.values(mapaMaestroNuevo).forEach(c => {
       c.cuentas_abonados.forEach(cta => {
@@ -532,7 +544,7 @@ export default function OperacionCRM() {
     }
   }
 
-  // ── BUSCADOR UNIFICADO EN LA FICHA 360° (BUSCA POR RUT, CLIENTE, EMAIL O ABONADO) ──
+  // ── BUSCADOR UNIFICADO EN LA FICHA 360° ──
   const listaClientesFiltrados = useMemo(() => {
     const q = busquedaClienteInput.toLowerCase().trim()
     if (!q) return []
@@ -544,15 +556,14 @@ export default function OperacionCRM() {
     )
   }, [clientesMaestros, busquedaClienteInput])
 
-  // Cotización guardada con selección de Empresa Emisora
+  // Guardar Cotización con Correlativo Dinámico (PR2607-0258, PR2607-0259...)
   const handleGuardarCotizacionDolibarr = async () => {
     if (!cotNombreCliente.trim()) {
-      alert('Por favor ingrese la razón social del cliente.')
+      alert('Por favor ingrese la razón social del cliente receptor.')
       return
     }
 
-    const numSecuencia = (cotizaciones.length + 258).toString().padStart(4, '0')
-    const codigoCot = `PR2607-${numSecuencia}`
+    const codigoCot = siguienteCorrelativoCode
 
     const nuevaCot: CotizacionDolibarr = {
       id: Date.now(),
@@ -584,7 +595,7 @@ export default function OperacionCRM() {
       })
       setCotizaciones(listaNueva)
       setMostrarModalCotizacion(false)
-      alert(`🎉 Presupuesto Dolibarr ${codigoCot} creado exitosamente.`)
+      alert(`🎉 Presupuesto ${codigoCot} generado exitosamente.`)
     } catch (e: any) {
       alert('Error guardando cotización: ' + e.message)
     }
@@ -669,7 +680,7 @@ export default function OperacionCRM() {
             <h1 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-3">
               CONGLOMERADO GAMA SEGURIDAD
               <span className="bg-blue-50 text-blue-900 text-xs font-bold px-3.5 py-1 rounded-full border border-blue-200 shadow-2xs">
-                SISTEMA OPERATIVO & CRM 360°
+                PLATAFORMA OPERATIVA & CRM 360°
               </span>
             </h1>
             <p className="text-xs text-slate-500 font-semibold mt-1">
@@ -705,7 +716,7 @@ export default function OperacionCRM() {
 
             {[
               { id: 'ficha360', label: 'Ficha 360° del Cliente (RUT)', icon: '👤' },
-              { id: 'presupuestos', label: 'Presupuestos (Dolibarr)', icon: '📋' },
+              { id: 'presupuestos', label: 'Presupuestos & Cotizaciones', icon: '📋' },
               { id: 'facturacion', label: 'Facturación & Cobranza', icon: '🧾' },
               { id: 'serv_tecnico', label: 'Servicio Técnico (OTs)', icon: '🛠️' },
               { id: 'kpis', label: 'KPIs Ejecutivos & Reportes', icon: '📊' },
@@ -945,13 +956,16 @@ export default function OperacionCRM() {
             </div>
           )}
 
-          {/* ── MÓDULO 2: PRESUPUESTOS DOLIBARR (PR2607) ── */}
+          {/* ── MÓDULO 2: PRESUPUESTOS & COTIZACIONES (PR2607) ── */}
           {moduloActivo === 'presupuestos' && (
             <div className="flex-1 bg-white border border-slate-200/90 rounded-3xl p-10 flex flex-col gap-8 shadow-[6px_6px_16px_rgba(203,213,225,0.7),-6px_-6px_16px_rgba(255,255,255,0.9)] min-h-0">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-5 border-b border-slate-200 pb-6">
                 <div>
-                  <h2 className="text-lg font-black text-slate-900 uppercase tracking-wide">
-                    📋 Presupuestos Comercial & Cotizaciones (Estilo Dolibarr)
+                  <h2 className="text-lg font-black text-slate-900 uppercase tracking-wide flex items-center gap-2">
+                    📋 Presupuestos & Cotizaciones Comercial
+                    <span className="bg-blue-100 text-blue-900 text-xs px-3 py-1 rounded-full font-mono font-bold border border-blue-200">
+                      Siguiente: {siguienteCorrelativoCode}
+                    </span>
                   </h2>
                   <p className="text-xs text-slate-500 font-semibold mt-1">
                     Emisión de Cotizaciones vinculadas a la Empresa del Conglomerado y Cliente (RUT)
@@ -970,7 +984,7 @@ export default function OperacionCRM() {
                 <table className="w-full text-left border-collapse text-xs font-medium">
                   <thead>
                     <tr className="bg-[#f8fafc] text-slate-700 border-b border-slate-200 font-bold uppercase text-xs">
-                      <th className="p-4 border-r border-slate-200">CÓDIGO</th>
+                      <th className="p-4 border-r border-slate-200">CÓDIGO CORRELATIVO</th>
                       <th className="p-4 border-r border-slate-200">FECHA</th>
                       <th className="p-4 border-r border-slate-200">EMPRESA EMISORA</th>
                       <th className="p-4 border-r border-slate-200">CLIENTE / RUT</th>
@@ -1010,19 +1024,26 @@ export default function OperacionCRM() {
                               onClick={() => setCotSeleccionada(c)}
                               className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold cursor-pointer shadow-2xs"
                             >
-                              📄 Ver PDF Dolibarr
+                              📄 Ver PDF Documento
                             </button>
                           </td>
                         </tr>
                       )
                     })}
+                    {cotizaciones.length === 0 && (
+                      <tr>
+                        <td colSpan={8} className="p-12 text-center text-slate-400 italic text-xs">
+                          No hay presupuestos registrados. Haga clic en "➕ Nueva Cotización Comercial".
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>
             </div>
           )}
 
-          {/* ── MÓDULO 6: CRUD DE EMPRESAS DEL CONGLOMERADO (4 RAZONES SOCIALES) ── */}
+          {/* ── MÓDULO 6: CRUD DE EMPRESAS DEL CONGLOMERADO ── */}
           {moduloActivo === 'config' && (
             <div className="flex-1 bg-white border border-slate-200/90 rounded-3xl p-10 flex flex-col gap-8 shadow-[6px_6px_16px_rgba(203,213,225,0.7),-6px_-6px_16px_rgba(255,255,255,0.9)] overflow-y-auto">
               <div className="flex justify-between items-center border-b border-slate-200 pb-5">
@@ -1095,10 +1116,10 @@ export default function OperacionCRM() {
         </main>
       </div>
 
-      {/* ── MODAL CRUD PARA AGREGAR/EDITAR EMPRESA EMISORA ── */}
+      {/* ── MODAL CRUD PARA EMPRESA EMISORA (LAYOUT PERFECTO NO CLIPPING) ── */}
       {mostrarModalEmpresa && empresaEditando && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-6">
-          <div className="bg-white border border-slate-300 w-full max-w-2xl p-9 rounded-3xl shadow-2xl space-y-6 text-xs font-sans max-h-[92vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-xs overflow-y-auto p-4 md:p-8 flex justify-center items-start">
+          <div className="bg-white border border-slate-300 w-full max-w-2xl rounded-3xl shadow-2xl my-6 md:my-10 p-8 space-y-6 text-xs font-sans">
             <div className="flex justify-between items-center border-b border-slate-200 pb-4">
               <h3 className="font-black text-lg text-slate-900 uppercase tracking-wide">
                 ⚙️ {empresaEditando.id ? 'Editar Empresa Emisora' : 'Agregar Nueva Empresa Emisora'}
@@ -1208,10 +1229,10 @@ export default function OperacionCRM() {
         </div>
       )}
 
-      {/* ── MODAL EDITAR CLIENTE (RUT) Y ASIGNAR EMPRESA DEL CONGLOMERADO ── */}
+      {/* ── MODAL EDITAR CLIENTE (RUT) (LAYOUT PERFECTO NO CLIPPING) ── */}
       {mostrarModalCliente && clienteActivo && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-6">
-          <div className="bg-white border border-slate-300 w-full max-w-2xl p-9 rounded-3xl shadow-2xl space-y-6 text-xs font-sans max-h-[92vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-xs overflow-y-auto p-4 md:p-8 flex justify-center items-start">
+          <div className="bg-white border border-slate-300 w-full max-w-2xl rounded-3xl shadow-2xl my-6 md:my-10 p-8 space-y-6 text-xs font-sans">
             <div className="flex justify-between items-center border-b border-slate-200 pb-4">
               <div>
                 <h3 className="font-black text-lg text-slate-900 uppercase tracking-wide">
@@ -1316,72 +1337,21 @@ export default function OperacionCRM() {
         </div>
       )}
 
-      {/* ── MODAL VINCULAR CENTRO DE COSTO (ABONADO COMMAND CENTER) ── */}
-      {mostrarModalVincularAbonado && clienteActivo && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-6">
-          <div className="bg-white border border-slate-300 w-full max-w-md p-8 rounded-3xl shadow-2xl space-y-5 text-xs font-sans">
-            <div className="flex justify-between items-center border-b border-slate-200 pb-3">
-              <h3 className="font-black text-sm text-slate-900 uppercase tracking-wide">
-                ➕ Vincular Centro de Costo (Abonado)
-              </h3>
-              <button onClick={() => setMostrarModalVincularAbonado(false)} className="text-slate-400 font-bold text-xl">✕</button>
-            </div>
-
-            <div className="space-y-3">
-              <div>
-                <label className="font-bold text-slate-700 block mb-1">Código de Abonado / Cuenta Command Center (ej: C774):</label>
-                <input
-                  type="text"
-                  value={nuevaCuentaAbonadoInput}
-                  onChange={(e) => setNuevaCuentaAbonadoInput(e.target.value)}
-                  placeholder="C774"
-                  className="w-full bg-slate-50 border border-slate-300 p-3 rounded-2xl font-mono font-bold text-slate-900 uppercase focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="font-bold text-slate-700 block mb-1">Nombre / Alias del Centro de Costo:</label>
-                <input
-                  type="text"
-                  value={nuevoAliasCentroCostoInput}
-                  onChange={(e) => setNuevoAliasCentroCostoInput(e.target.value)}
-                  placeholder="Ej: Sucursal San Bernardo / Planta Lampa"
-                  className="w-full bg-slate-50 border border-slate-300 p-3 rounded-2xl text-slate-900 focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="font-bold text-slate-700 block mb-1">Dirección del Centro de Costo:</label>
-                <input
-                  type="text"
-                  value={nuevaDireccionAbonadoInput}
-                  onChange={(e) => setNuevaDireccionAbonadoInput(e.target.value)}
-                  placeholder="Av. Lo Blanco 713, San Bernardo"
-                  className="w-full bg-slate-50 border border-slate-300 p-3 rounded-2xl text-slate-900 focus:outline-none"
-                />
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-3 pt-3 border-t border-slate-200">
-              <button onClick={() => setMostrarModalVincularAbonado(false)} className="px-4 py-2.5 bg-slate-200 text-slate-800 font-bold rounded-2xl cursor-pointer">Cancelar</button>
-              <button onClick={handleVincularCentroDeCosto} className="px-5 py-2.5 bg-blue-900 text-white font-bold rounded-2xl cursor-pointer">🚀 Vincular a RUT {clienteActivo.rut}</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── MODAL NUEVA COTIZACIÓN COMERCIAL CON SELECCIÓN DE EMPRESA DEL CONGLOMERADO ── */}
+      {/* ── MODAL NUEVA COTIZACIÓN COMERCIAL (RESPONSIVO Y PERFECTO EN PANTALLA) ── */}
       {mostrarModalCotizacion && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-6">
-          <div className="bg-white border border-slate-300 w-full max-w-6xl p-10 rounded-3xl shadow-2xl space-y-6 font-sans text-xs max-h-[94vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-xs overflow-y-auto p-4 md:p-8 flex justify-center items-start">
+          <div className="bg-white border border-slate-300 w-full max-w-5xl rounded-3xl shadow-2xl my-6 md:my-10 p-8 space-y-6 font-sans text-xs">
             <div className="flex justify-between items-center border-b border-slate-200 pb-5">
               <div>
-                <h3 className="font-black text-lg text-slate-900 uppercase tracking-wide">
-                  📋 Crear Presupuesto Comercial (Formato Oficial Dolibarr PR2607)
+                <h3 className="font-black text-lg text-slate-900 uppercase tracking-wide flex items-center gap-3">
+                  📋 Crear Presupuesto Comercial
+                  <span className="bg-blue-100 text-blue-900 text-xs px-3 py-1 rounded-full font-mono font-bold border border-blue-200">
+                    CÓDIGO: {siguienteCorrelativoCode}
+                  </span>
                 </h3>
                 <p className="text-xs text-slate-500 font-medium mt-1">Seleccione la Empresa del Conglomerado emisora y el Cliente receptor</p>
               </div>
-              <button onClick={() => setMostrarModalCotizacion(false)} className="text-slate-400 font-bold text-2xl">✕</button>
+              <button onClick={() => setMostrarModalCotizacion(false)} className="text-slate-400 font-bold text-2xl hover:text-slate-700">✕</button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -1506,16 +1476,16 @@ export default function OperacionCRM() {
 
             <div className="flex justify-end gap-4 pt-4 border-t border-slate-200">
               <button onClick={() => setMostrarModalCotizacion(false)} className="px-6 py-3.5 bg-slate-200 text-slate-800 font-bold rounded-2xl cursor-pointer text-xs">Cancelar</button>
-              <button onClick={handleGuardarCotizacionDolibarr} className="px-7 py-3.5 bg-blue-900 text-white font-bold rounded-2xl shadow-xs cursor-pointer text-xs">💾 Generar Cotización PR2607</button>
+              <button onClick={handleGuardarCotizacionDolibarr} className="px-7 py-3.5 bg-blue-900 text-white font-bold rounded-2xl shadow-xs cursor-pointer text-xs">💾 Generar Cotización {siguienteCorrelativoCode}</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ── VISOR DE COTIZACIÓN RENDIDO SEGÚN PR2607-0258.pdf ── */}
+      {/* ── VISOR DE COTIZACIÓN RENDIDO COMPLETO (LAYOUT PERFECTO NO CLIPPING) ── */}
       {cotSeleccionada && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-6 overflow-y-auto">
-          <div className="bg-white text-slate-900 p-10 md:p-12 rounded-3xl max-w-4xl w-full shadow-2xl font-sans my-auto border border-slate-300 space-y-8 min-h-[750px] flex flex-col justify-between">
+        <div className="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm overflow-y-auto p-4 md:p-8 flex justify-center items-start">
+          <div className="bg-white text-slate-900 p-8 md:p-12 rounded-3xl max-w-4xl w-full shadow-2xl font-sans my-6 md:my-10 border border-slate-300 space-y-8 min-h-[700px] flex flex-col justify-between">
             
             <div className="space-y-6">
               {/* ENCABEZADO: MEMBRETE EMISOR DE LA EMPRESA DEL CONGLOMERADO SELECCIONADA */}
@@ -1554,7 +1524,7 @@ export default function OperacionCRM() {
                 </div>
               </div>
 
-              {/* TABLA PR2607-0258 */}
+              {/* TABLA DE ÍTEMS */}
               <div className="border border-slate-300 rounded-xl overflow-hidden">
                 <table className="w-full text-left border-collapse text-xs">
                   <thead>
@@ -1618,7 +1588,7 @@ export default function OperacionCRM() {
 
               <div className="flex gap-3">
                 <button onClick={() => setCotSeleccionada(null)} className="px-5 py-2.5 bg-slate-200 text-slate-800 font-bold text-xs rounded-2xl hover:bg-slate-300 cursor-pointer">Cerrar</button>
-                <button onClick={() => window.print()} className="px-6 py-2.5 bg-blue-900 text-white font-bold text-xs rounded-2xl hover:bg-blue-950 shadow-xs cursor-pointer flex items-center gap-2"><span>🖨️ Imprimir Cotización Dolibarr (PDF)</span></button>
+                <button onClick={() => window.print()} className="px-6 py-2.5 bg-blue-900 text-white font-bold text-xs rounded-2xl hover:bg-blue-950 shadow-xs cursor-pointer flex items-center gap-2"><span>🖨️ Imprimir / Guardar PDF</span></button>
               </div>
             </div>
 
