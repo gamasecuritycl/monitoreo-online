@@ -544,17 +544,71 @@ export default function OperacionCRM() {
     }
   }
 
-  // ── BUSCADOR UNIFICADO EN LA FICHA 360° ──
-  const listaClientesFiltrados = useMemo(() => {
+  // ── BUSCADOR UNIFICADO INTELIGENTE (POR ABONADO O NOMBRE DE CLIENTE / RUT) ──
+  const resultadosBusqueda = useMemo(() => {
     const q = busquedaClienteInput.toLowerCase().trim()
     if (!q) return []
-    return Object.values(clientesMaestros).filter(c =>
-      c.rut.toLowerCase().includes(q) ||
-      c.razon_social.toLowerCase().includes(q) ||
-      c.email_cobranza.toLowerCase().includes(q) ||
-      c.cuentas_abonados.some(cta => cta.toLowerCase().includes(q))
-    )
-  }, [clientesMaestros, busquedaClienteInput])
+
+    const list: Array<{
+      id: string
+      tipo: 'abonado' | 'cliente'
+      cuenta?: string
+      alias?: string
+      rut: string
+      razon_social: string
+      email: string
+      estado_pago: 'Al Día' | 'Pendiente' | 'Moroso'
+      cuentas_count: number
+      cuentas_preview: string
+    }> = []
+
+    // 1. Buscar en Centros de Costo / Abonados por cuenta o alias
+    Object.values(abonadosCentrosCosto).forEach(cc => {
+      const matchCuenta = cc.cuenta.toLowerCase().includes(q)
+      const matchAlias = cc.alias_centro_costo.toLowerCase().includes(q)
+      if (matchCuenta || matchAlias) {
+        const cli = clientesMaestros[cc.rut_cliente]
+        list.push({
+          id: `abonado-${cc.cuenta}`,
+          tipo: 'abonado',
+          cuenta: cc.cuenta,
+          alias: cc.alias_centro_costo,
+          rut: cc.rut_cliente,
+          razon_social: cli?.razon_social || cc.alias_centro_costo,
+          email: cli?.email_cobranza || 'contacto@cliente.cl',
+          estado_pago: cli?.estado_pago || 'Al Día',
+          cuentas_count: cli?.cuentas_abonados.length || 1,
+          cuentas_preview: cc.cuenta
+        })
+      }
+    })
+
+    // 2. Buscar por Cliente (RUT, Razón Social o Email)
+    Object.values(clientesMaestros).forEach(cli => {
+      const matchRut = cli.rut.toLowerCase().includes(q)
+      const matchNombre = cli.razon_social.toLowerCase().includes(q)
+      const matchEmail = cli.email_cobranza.toLowerCase().includes(q)
+      if (matchRut || matchNombre || matchEmail) {
+        const yaExiste = list.some(l => l.rut === cli.rut)
+        if (!yaExiste) {
+          const firstFew = cli.cuentas_abonados.slice(0, 3).join(', ')
+          const extra = cli.cuentas_abonados.length > 3 ? ` (+${cli.cuentas_abonados.length - 3} más)` : ''
+          list.push({
+            id: `cliente-${cli.rut}`,
+            tipo: 'cliente',
+            rut: cli.rut,
+            razon_social: cli.razon_social,
+            email: cli.email_cobranza,
+            estado_pago: cli.estado_pago,
+            cuentas_count: cli.cuentas_abonados.length,
+            cuentas_preview: firstFew + extra
+          })
+        }
+      }
+    })
+
+    return list.slice(0, 12)
+  }, [busquedaClienteInput, abonadosCentrosCosto, clientesMaestros])
 
   // Guardar Cotización con Correlativo Dinámico (PR2607-0258, PR2607-0259...)
   const handleGuardarCotizacionDolibarr = async () => {
@@ -777,31 +831,42 @@ export default function OperacionCRM() {
 
                   {busquedaClienteInput.trim().length > 0 && (
                     <div className="absolute top-full left-0 right-0 mt-3 bg-white border border-slate-200 rounded-3xl shadow-2xl z-20 max-h-96 overflow-y-auto divide-y divide-slate-100 p-4">
-                      {listaClientesFiltrados.map(c => (
+                      {resultadosBusqueda.map(item => (
                         <div
-                          key={c.rut}
-                          onClick={() => { setRutClienteSeleccionado(c.rut); setBusquedaClienteInput('') }}
+                          key={item.id}
+                          onClick={() => { setRutClienteSeleccionado(item.rut); setBusquedaClienteInput('') }}
                           className="p-4 hover:bg-blue-50 rounded-2xl cursor-pointer flex justify-between items-center transition-colors"
                         >
                           <div>
-                            <div className="font-bold text-sm text-slate-900 flex items-center gap-2">
-                              {c.razon_social}
-                              <span className="font-mono text-blue-800 text-xs bg-blue-100 px-2.5 py-0.5 rounded-md font-bold">RUT: {c.rut}</span>
+                            <div className="font-bold text-sm text-slate-900 flex items-center gap-2 flex-wrap">
+                              {item.tipo === 'abonado' && (
+                                <span className="bg-blue-900 text-white font-mono text-xs px-2.5 py-0.5 rounded-md font-bold">
+                                  Abonado #{item.cuenta}
+                                </span>
+                              )}
+                              <span>{item.alias || item.razon_social}</span>
+                              <span className="font-mono text-slate-600 text-xs bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md font-bold">
+                                RUT: {item.rut}
+                              </span>
                             </div>
                             <div className="text-xs text-slate-500 font-medium mt-1">
-                              Centros de Costo ({c.cuentas_abonados.length}): <strong className="text-slate-800 font-mono">{c.cuentas_abonados.join(', ')}</strong> • Email: <strong className="text-blue-900">{c.email_cobranza}</strong>
+                              {item.tipo === 'abonado' ? (
+                                <>Cliente: <strong className="text-slate-800">{item.razon_social}</strong> • Email: <strong className="text-blue-900">{item.email}</strong></>
+                              ) : (
+                                <>Centros de Costo ({item.cuentas_count}): <strong className="text-slate-800 font-mono">{item.cuentas_preview}</strong> • Email: <strong className="text-blue-900">{item.email}</strong></>
+                              )}
                             </div>
                           </div>
-                          <span className={`px-4 py-1.5 rounded-full text-xs font-bold ${
-                            c.estado_pago === 'Al Día' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'
+                          <span className={`px-3 py-1 rounded-full text-xs font-bold shrink-0 ${
+                            item.estado_pago === 'Al Día' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'
                           }`}>
-                            {c.estado_pago}
+                            {item.estado_pago}
                           </span>
                         </div>
                       ))}
-                      {listaClientesFiltrados.length === 0 && (
+                      {resultadosBusqueda.length === 0 && (
                         <div className="p-6 text-center text-slate-400 italic text-xs">
-                          No se encontraron clientes coincidentes con "{busquedaClienteInput}".
+                          No se encontraron abonados o clientes coincidentes con "{busquedaClienteInput}".
                         </div>
                       )}
                     </div>
