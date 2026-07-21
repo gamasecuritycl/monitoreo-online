@@ -11,18 +11,24 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'No recipients provided' }, { status: 400 })
     }
 
-    // Parse date for display
+    // Parse date in Chile Local Time (America/Santiago)
     let fechaFormat = fecha_hora
     let horaFormat = ''
     try {
-      const d = new Date(fecha_hora)
-      const dia = d.getDate().toString().padStart(2, '0')
-      const mes = (d.getMonth() + 1).toString().padStart(2, '0')
-      const anio = d.getFullYear().toString().slice(-2) // AA
-      const hora = d.getHours().toString().padStart(2, '0')
-      const min = d.getMinutes().toString().padStart(2, '0')
-      fechaFormat = `${dia}/${mes}/${anio}`
-      horaFormat = `${hora}:${min}`
+      const d = new Date(fecha_hora || Date.now())
+      fechaFormat = new Intl.DateTimeFormat('es-CL', {
+        timeZone: 'America/Santiago',
+        day: '2-digit',
+        month: '2-digit',
+        year: '2-digit'
+      }).format(d)
+
+      horaFormat = new Intl.DateTimeFormat('es-CL', {
+        timeZone: 'America/Santiago',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+      }).format(d)
     } catch (e) {
       // fallback if parse fails
     }
