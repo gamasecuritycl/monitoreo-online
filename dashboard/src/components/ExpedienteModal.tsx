@@ -29,13 +29,34 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
   const [clientesMap, setClientesMap] = useState<Record<string, Record<string, string>>>(clientesGeneralFallback)
   
   // Control de pestañas
-  const [tabEmergentes, setTabEmergentes] = useState<'telefonos' | 'horarios' | 'camara'>(pestanaInicial || 'telefonos')
+  const [tabEmergentes, setTabEmergentes] = useState<'telefonos' | 'horarios' | 'camara' | 'servicio_tecnico'>(pestanaInicial || 'telefonos')
+  const [ordenesCuenta, setOrdenesCuenta] = useState<any[]>([])
   
   useEffect(() => {
     if (pestanaInicial) {
       setTabEmergentes(pestanaInicial)
     }
   }, [pestanaInicial])
+
+  // Cargar historial de Órdenes de Trabajo para la cuenta activa
+  useEffect(() => {
+    const fetchOTs = async () => {
+      if (!cuentaActiva) return
+      try {
+        const { data } = await supabase
+          .from('eventos_monitoreo')
+          .select('nombre_abonado')
+          .eq('cuenta', 'ORDENES_TRABAJO')
+          .limit(1)
+        if (data && data.length > 0 && data[0].nombre_abonado) {
+          const list: any[] = JSON.parse(data[0].nombre_abonado || '[]')
+          const filtered = list.filter((o: any) => (o.cuenta || '').toUpperCase().trim() === cuentaActiva.toUpperCase().trim())
+          setOrdenesCuenta(filtered)
+        }
+      } catch (e) {}
+    }
+    fetchOTs()
+  }, [cuentaActiva])
 
   const [tabInfo, setTabInfo] = useState<'caracteristicas' | 'referencias' | 'observaciones'>('caracteristicas')
   const [tabInstalacion, setTabInstalacion] = useState<'instalacion' | 'ucontrol'>('instalacion')
@@ -648,9 +669,65 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
                 >
                   CAMARA DE VERIFICACION
                 </button>
+                <button
+                  onClick={() => setTabEmergentes('servicio_tecnico')}
+                  className={`px-2 py-1 font-bold border-t border-l border-r border-white rounded-t-sm cursor-pointer ${
+                    tabEmergentes === 'servicio_tecnico' ? 'bg-[#d4d0c8] pb-1 -mb-0.5 z-10' : 'bg-[#b0b0b0] text-gray-700'
+                  }`}
+                >
+                  🛠️ SERVICIO TECNICO ({ordenesCuenta.length})
+                </button>
               </div>
               
               <div className="border-2 border-white bg-[#d4d0c8] p-1 flex-1 flex flex-col justify-start overflow-hidden min-h-[110px] md:min-h-0">
+                {tabEmergentes === 'servicio_tecnico' && (
+                  <div className="border border-gray-400 p-1 relative flex-1 bg-[#d4d0c8] flex flex-col overflow-hidden">
+                    <div className="absolute -top-2 left-2 bg-[#d4d0c8] px-1 text-[8px] font-bold text-gray-700 uppercase">
+                      HISTORIAL DE ATENCIONES TECNICAS EN TERRENO
+                    </div>
+                    <div className="flex-1 bg-[#ffffd0] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white overflow-y-auto">
+                      <table className="w-full border-collapse text-[10px] text-left">
+                        <thead>
+                          <tr className="bg-[#b0b0b0] border-b border-gray-400 font-bold sticky top-0 text-[9px]">
+                            <th className="p-1 border-r border-gray-400">OT / FECHA</th>
+                            <th className="p-1 border-r border-gray-400">TIPO / TÉCNICO</th>
+                            <th className="p-1 border-r border-gray-400">FALLA REPORTADA</th>
+                            <th className="p-1 border-r border-gray-400">TRABAJO REALIZADO</th>
+                            <th className="p-1 text-center">ESTADO</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-300">
+                          {ordenesCuenta.map((o, idx) => (
+                            <tr key={idx} className="hover:bg-blue-100 font-bold text-gray-800 text-[10px]">
+                              <td className="p-1 border-r border-gray-300 font-mono text-blue-900">
+                                <div>{o.codigo_ot || `OT-${o.id}`}</div>
+                                <div className="text-[8px] text-gray-500">{o.fecha_cita || o.fecha}</div>
+                              </td>
+                              <td className="p-1 border-r border-gray-300">
+                                <div>{o.tipo_visita || 'Correctiva'}</div>
+                                <div className="text-[8px] text-gray-500">{o.tecnico}</div>
+                              </td>
+                              <td className="p-1 border-r border-gray-300 max-w-[120px] truncate" title={o.problema}>{o.problema}</td>
+                              <td className="p-1 border-r border-gray-300 italic text-slate-700 max-w-[150px] truncate" title={o.novedad}>{o.novedad || 'En atención'}</td>
+                              <td className="p-1 text-center">
+                                <span className={`px-1 py-0.2 text-[8px] font-bold rounded-xs ${
+                                  o.estado === 'Completada' ? 'bg-green-700 text-white' : 'bg-yellow-600 text-white'
+                                }`}>
+                                  {o.estado || 'PENDIENTE'}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                          {ordenesCuenta.length === 0 && (
+                            <tr>
+                              <td colSpan={5} className="p-4 text-center text-gray-400 italic">No hay órdenes de servicio técnico registradas para este abonado.</td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
                 {tabEmergentes === 'telefonos' && (
                   <div className="border border-gray-400 p-1 relative flex-1 bg-[#d4d0c8] flex flex-col overflow-hidden">
                     <div className="absolute -top-2 left-2 bg-[#d4d0c8] px-1 text-[8px] font-bold text-gray-700">
