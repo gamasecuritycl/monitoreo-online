@@ -9,20 +9,45 @@ const clientesFallback = clientesDataRaw as Record<string, Record<string, string
 
 const IVA_PORCENTAJE = 0.19
 
-export interface ClienteCRM {
-  cuenta: string
-  nombre: string
+// ── NIVEL 1: EMPRESA DEL CONGLOMERADO (CRUD 4 RAZONES SOCIALES) ──
+export interface EmpresaConglomerado {
+  id: string
+  razon_social: string
   rut: string
-  alias_unidad: string
+  giro: string
   direccion: string
-  ciudad: string
   telefono: string
-  email: string
+  email_cobranza: string
+  email_contacto: string
+  web: string
+  banco_nombre: string
+  banco_tipo_cuenta: string
+  banco_numero_cuenta: string
+}
+
+// ── NIVEL 2: CLIENTE COMERCIAL (POR RUT ÚNICO) ──
+export interface ClienteMaestro {
+  rut: string
+  razon_social: string
+  empresa_facturadora_id: string // ID de la Empresa del Conglomerado asignada
+  email_cobranza: string
+  telefono: string
+  direccion_comercial: string
   moneda: 'UF' | 'CLP'
   tarifa_mensual: number
   dia_vencimiento: number
+  plan_monitoreo: string
   estado_pago: 'Al Día' | 'Pendiente' | 'Moroso'
-  plan: string
+  cuentas_abonados: string[] // Cuentas de Centros de Costo asignadas (ej: ['C774', 'C775'])
+}
+
+// ── NIVEL 3: CENTRO DE COSTO / ABONADO (COMMAND CENTER) ──
+export interface CentroDeCostoAbonado {
+  cuenta: string // Ej: 'C774'
+  alias_centro_costo: string // Ej: 'Planta Lampa'
+  direccion: string
+  ciudad: string
+  rut_cliente: string
 }
 
 export interface FacturaIndividual {
@@ -32,6 +57,8 @@ export interface FacturaIndividual {
   razon_social: string
   monto_total: number
   cuenta_asociada?: string
+  rut_cliente?: string
+  empresa_facturadora_id?: string
   estado: 'Emitida' | 'Pendiente' | 'Pagada' | 'Morosa'
   notas_cobranza?: string
   fecha_carga: string
@@ -49,8 +76,9 @@ export interface CotizacionDolibarr {
   id: number
   codigo_cotizacion: string
   cuenta: string
-  nombre_cliente: string
   rut_cliente: string
+  nombre_cliente: string
+  empresa_facturadora_id: string
   direccion: string
   fecha: string
   validez_dias: number
@@ -64,50 +92,12 @@ export interface CotizacionDolibarr {
   observaciones: string
 }
 
-export interface ConfigEmpresa {
-  razon_social: string
-  rut_empresa: string
-  giro: string
-  direccion: string
-  telefono: string
-  email_cobranza: string
-  email_contacto: string
-  web: string
-  banco_nombre: string
-  banco_tipo_cuenta: string
-  banco_numero_cuenta: string
-  valor_uf: number
-}
-
-export default function OperacionCRM() {
-  const [moduloActivo, setModuloActivo] = useState<'ficha360' | 'presupuestos' | 'facturacion' | 'serv_tecnico' | 'kpis' | 'config'>('ficha360')
-  
-  // Sidebar colapsable
-  const [sidebarAbierto, setSidebarAbierto] = useState<boolean>(true)
-
-  // Clientes
-  const [clientesMap, setClientesMap] = useState<Record<string, ClienteCRM>>({})
-  const [cuentaSeleccionada, setCuentaSeleccionada] = useState<string>('')
-  const [busquedaClienteInput, setBusquedaClienteInput] = useState<string>('')
-
-  // Modal Edición Completa de Cliente y Tarifa (Sincronización Total)
-  const [mostrarModalTarifa, setMostrarModalTarifa] = useState(false)
-  const [editNombre, setEditNombre] = useState('')
-  const [editRut, setEditRut] = useState('')
-  const [editEmail, setEditEmail] = useState('')
-  const [editTelefono, setEditTelefono] = useState('')
-  const [editDireccion, setEditDireccion] = useState('')
-  const [editMoneda, setEditMoneda] = useState<'UF' | 'CLP'>('CLP')
-  const [editTarifa, setEditTarifa] = useState('29900')
-  const [editDia, setEditDia] = useState('5')
-  const [editPlan, setEditPlan] = useState('MONITOREO ESTÁNDAR 24/7')
-  const [editEstadoPago, setEditEstadoPago] = useState<'Al Día' | 'Pendiente' | 'Moroso'>('Al Día')
-
-  // Configuración de Empresa Corporativa (Segmento Dolibarr Oficial)
-  const [configEmpresa, setConfigEmpresa] = useState<ConfigEmpresa>({
+const EMPRESAS_INICIALES: EmpresaConglomerado[] = [
+  {
+    id: 'EMP-1',
     razon_social: 'Gama Seguridad SpA',
-    rut_empresa: '76.319.399-3',
-    giro: 'Servicios de Monitoreo y Seguridad Electrónica 24/7',
+    rut: '76.319.399-3',
+    giro: 'Servicios de Seguridad Electrónica & Alarmas',
     direccion: 'Av. Valparaíso 1183 Of. 03, Viña del Mar, Chile',
     telefono: '+56 32 3276011',
     email_cobranza: 'cobranza@gamasecurity.cl',
@@ -115,28 +105,107 @@ export default function OperacionCRM() {
     web: 'www.gamasecurity.cl',
     banco_nombre: 'Banco de Chile / Edwards',
     banco_tipo_cuenta: 'Cuenta Corriente',
-    banco_numero_cuenta: '00-123-45678-9',
-    valor_uf: 38500
-  })
+    banco_numero_cuenta: '00-123-45678-9'
+  },
+  {
+    id: 'EMP-2',
+    razon_social: 'Gama Servicios Limitada',
+    rut: '76.123.456-K',
+    giro: 'Servicios Integrales de Monitoreo 24/7',
+    direccion: 'Av. Providencia 1234, Of. 502, Santiago, Chile',
+    telefono: '+56 9 9101 6912',
+    email_cobranza: 'servicios@gamasecurity.cl',
+    email_contacto: 'contacto@gamasecurity.cl',
+    web: 'www.gamasecurity.cl',
+    banco_nombre: 'Banco Santander',
+    banco_tipo_cuenta: 'Cuenta Corriente',
+    banco_numero_cuenta: '00-987-65432-1'
+  },
+  {
+    id: 'EMP-3',
+    razon_social: 'Gama Tecnología & Telecom SpA',
+    rut: '77.890.123-4',
+    giro: 'Venta e Instalación de CCTV & Sistemas de Control de Acceso',
+    direccion: 'Calle Esmeralda 450, Valparaíso, Chile',
+    telefono: '+56 32 2548900',
+    email_cobranza: 'tecnologia@gamasecurity.cl',
+    email_contacto: 'contacto@gamasecurity.cl',
+    web: 'www.gamasecurity.cl',
+    banco_nombre: 'Banco BCI',
+    banco_tipo_cuenta: 'Cuenta Corriente',
+    banco_numero_cuenta: '11-223-34455-6'
+  },
+  {
+    id: 'EMP-4',
+    razon_social: 'Gama Monitoreo 24/7 SpA',
+    rut: '76.999.888-1',
+    giro: 'Central de Operaciones & Verificación por Video IA',
+    direccion: 'Av. Apoquindo 3000, Las Condes, Santiago, Chile',
+    telefono: '+56 2 2890 1200',
+    email_cobranza: 'monitoreo@gamasecurity.cl',
+    email_contacto: 'contacto@gamasecurity.cl',
+    web: 'www.gamasecurity.cl',
+    banco_nombre: 'Banco Estado',
+    banco_tipo_cuenta: 'Cuenta Corriente',
+    banco_numero_cuenta: '22-334-45566-7'
+  }
+]
 
-  // Órdenes de Trabajo desde Command Center
+export default function OperacionCRM() {
+  const [moduloActivo, setModuloActivo] = useState<'ficha360' | 'presupuestos' | 'facturacion' | 'serv_tecnico' | 'kpis' | 'config'>('ficha360')
+  const [sidebarAbierto, setSidebarAbierto] = useState<boolean>(true)
+
+  // ── NIVEL 1: EMPRESAS DEL CONGLOMERADO ──
+  const [empresasConglomerado, setEmpresasConglomerado] = useState<EmpresaConglomerado[]>(EMPRESAS_INICIALES)
+  const [mostrarModalEmpresa, setMostrarModalEmpresa] = useState(false)
+  const [empresaEditando, setEmpresaEditando] = useState<EmpresaConglomerado | null>(null)
+
+  // ── NIVEL 2: CLIENTES MAESTROS (POR RUT) ──
+  const [clientesMaestros, setClientesMaestros] = useState<Record<string, ClienteMaestro>>({})
+  const [rutClienteSeleccionado, setRutClienteSeleccionado] = useState<string>('')
+  const [busquedaClienteInput, setBusquedaClienteInput] = useState<string>('')
+
+  // ── NIVEL 3: CENTROS DE COSTO / ABONADOS (COMMAND CENTER) ──
+  const [abonadosCentrosCosto, setAbonadosCentrosCosto] = useState<Record<string, CentroDeCostoAbonado>>({})
+
+  // Modal Edición de Cliente Maestro & Asignación de Empresa Emisora
+  const [mostrarModalCliente, setMostrarModalCliente] = useState(false)
+  const [editRut, setEditRut] = useState('')
+  const [editRazonSocial, setEditRazonSocial] = useState('')
+  const [editEmpresaId, setEditEmpresaId] = useState('EMP-1')
+  const [editEmailCobranza, setEditEmailCobranza] = useState('')
+  const [editTelefono, setEditTelefono] = useState('')
+  const [editDireccionComercial, setEditDireccionComercial] = useState('')
+  const [editMoneda, setEditMoneda] = useState<'UF' | 'CLP'>('CLP')
+  const [editTarifa, setEditTarifa] = useState('29900')
+  const [editDia, setEditDia] = useState('5')
+  const [editPlan, setEditPlan] = useState('MONITOREO ESTÁNDAR 24/7')
+  const [editEstadoPago, setEditEstadoPago] = useState<'Al Día' | 'Pendiente' | 'Moroso'>('Al Día')
+
+  // Modal Vincular Centro de Costo (Abonado)
+  const [mostrarModalVincularAbonado, setMostrarModalVincularAbonado] = useState(false)
+  const [nuevaCuentaAbonadoInput, setNuevaCuentaAbonadoInput] = useState('')
+  const [nuevoAliasCentroCostoInput, setNuevoAliasCentroCostoInput] = useState('')
+  const [nuevaDireccionAbonadoInput, setNuevaDireccionAbonadoInput] = useState('')
+
+  // UF Global
+  const [valorUF, setValorUF] = useState(38500)
+
+  // Órdenes de Trabajo & Facturas & Cotizaciones
   const [ordenesTrabajo, setOrdenesTrabajo] = useState<any[]>([])
-
-  // Facturas masivas
   const [facturas, setFacturas] = useState<FacturaIndividual[]>([])
   const [mostrarModalCargaFacturas, setMostrarModalCargaFacturas] = useState(false)
   const [facturasTextoRaw, setFacturasTextoRaw] = useState('')
   const [busquedaFacturaInput, setBusquedaFacturaInput] = useState('')
 
-  // Presupuestos & Cotizaciones (Formato Oficial Dolibarr PR2607)
   const [cotizaciones, setCotizaciones] = useState<CotizacionDolibarr[]>([])
   const [mostrarModalCotizacion, setMostrarModalCotizacion] = useState(false)
   const [cotSeleccionada, setCotSeleccionada] = useState<CotizacionDolibarr | null>(null)
   
-  // Formulario cotización
-  const [cotCuenta, setCotCuenta] = useState('')
-  const [cotNombre, setCotNombre] = useState('')
-  const [cotRut, setCotRut] = useState('')
+  // Formulario Cotización Dolibarr
+  const [cotEmpresaEmisoraId, setCotEmpresaEmisoraId] = useState('EMP-1')
+  const [cotRutCliente, setCotRutCliente] = useState('')
+  const [cotNombreCliente, setCotNombreCliente] = useState('')
   const [cotDireccion, setCotDireccion] = useState('')
   const [cotValidez, setCotValidez] = useState(15)
   const [cotObservaciones, setCotObservaciones] = useState('')
@@ -144,309 +213,341 @@ export default function OperacionCRM() {
     { id: '1', descripcion: 'Control remoto inalambrico RadioFrecuencia 4Botones', cantidad: 1, precio_neto_unitario: 31000, descuento_porcentaje: 0 }
   ])
 
-  // Notificaciones
   const [enviandoNotif, setEnviandoNotif] = useState(false)
 
-  // Cargar datos al iniciar desde Supabase
+  // ── INICIALIZACIÓN DE DATOS JERÁRQUICOS DESDE SUPABASE ──
   useEffect(() => {
-    const fetchDatos = async () => {
+    const fetchDatosJerarquicos = async () => {
       try {
-        // 1. Clientes desde 'CLIENTES'
+        // 1. Cargar Empresas del Conglomerado
+        const { data: dEmp } = await supabase
+          .from('eventos_monitoreo')
+          .select('nombre_abonado')
+          .eq('cuenta', 'EMPRESAS_CONGLOMERADO')
+          .limit(1)
+
+        if (dEmp && dEmp.length > 0 && dEmp[0].nombre_abonado) {
+          try { setEmpresasConglomerado(JSON.parse(dEmp[0].nombre_abonado)) } catch (e) {}
+        }
+
+        // 2. Cargar Clientes y Centros de Costo / Abonados
         const { data: dClientes } = await supabase
           .from('eventos_monitoreo')
           .select('nombre_abonado')
           .eq('cuenta', 'CLIENTES')
           .limit(1)
 
-        let mapRaw: Record<string, any> = {}
+        let rawClientesMap: Record<string, any> = {}
         if (dClientes && dClientes.length > 0 && dClientes[0].nombre_abonado) {
-          try { mapRaw = JSON.parse(dClientes[0].nombre_abonado) } catch (e) {}
+          try { rawClientesMap = JSON.parse(dClientes[0].nombre_abonado) } catch (e) {}
         }
 
-        const mapFinal: Record<string, ClienteCRM> = {}
-        const todasCuentas = new Set([...Object.keys(clientesFallback), ...Object.keys(mapRaw)])
+        // Construir jerarquía: Cliente (RUT) -> Centros de Costo (Abonados)
+        const mapaMaestro: Record<string, ClienteMaestro> = {}
+        const mapaCentrosCosto: Record<string, CentroDeCostoAbonado> = {}
+
+        const todasCuentas = new Set([...Object.keys(clientesFallback), ...Object.keys(rawClientesMap)])
 
         todasCuentas.forEach(cta => {
-          const raw = mapRaw[cta] || clientesFallback[cta] || {}
+          const raw = rawClientesMap[cta] || clientesFallback[cta] || {}
           const cCode = (raw.cuenta || cta).toUpperCase().trim()
-          mapFinal[cCode] = {
+          const rutLimpio = cleanRut(raw.rut || '76123456K') || '76123456K'
+          const razonSocial = (raw.nombre || 'CLIENTE SIN NOMBRE').toUpperCase().trim()
+
+          // Registrar Abonado/Centro de Costo
+          mapaCentrosCosto[cCode] = {
             cuenta: cCode,
-            nombre: raw.nombre || 'SIN NOMBRE REGISTRADO',
-            rut: cleanRut(raw.rut || ''),
-            alias_unidad: raw.alias_unidad || raw.nombre || 'Sucursal Principal',
-            direccion: raw.direccion || 'Dirección no registrada',
+            alias_centro_costo: raw.alias_unidad || raw.nombre || `Centro de Costo ${cCode}`,
+            direccion: raw.direccion || 'Dirección sin registrar',
             ciudad: raw.ciudad || 'SANTIAGO',
-            telefono: raw.telefono1 || raw.t1 || raw.telefono || '',
-            email: raw.email || 'contacto@cliente.cl',
-            moneda: raw.moneda === 'UF' ? 'UF' : 'CLP',
-            tarifa_mensual: Number(raw.tarifa_mensual) || (raw.moneda === 'UF' ? 1.2 : 29900),
-            dia_vencimiento: Number(raw.dia_vencimiento) || 5,
-            estado_pago: raw.estado_pago || (Math.random() > 0.3 ? 'Al Día' : 'Pendiente'),
-            plan: raw.plan || 'MONITOREO ESTÁNDAR 24/7'
+            rut_cliente: rutLimpio
+          }
+
+          // Registrar o actualizar Cliente Maestro por RUT
+          if (!mapaMaestro[rutLimpio]) {
+            mapaMaestro[rutLimpio] = {
+              rut: rutLimpio,
+              razon_social: razonSocial,
+              empresa_facturadora_id: raw.empresa_facturadora_id || 'EMP-1',
+              email_cobranza: raw.email || 'cobranza@cliente.cl',
+              telefono: raw.telefono1 || raw.t1 || raw.telefono || '+56991016912',
+              direccion_comercial: raw.direccion || 'Dirección Comercial Principal',
+              moneda: raw.moneda === 'UF' ? 'UF' : 'CLP',
+              tarifa_mensual: Number(raw.tarifa_mensual) || (raw.moneda === 'UF' ? 1.2 : 29900),
+              dia_vencimiento: Number(raw.dia_vencimiento) || 5,
+              plan_monitoreo: raw.plan || 'MONITOREO ESTÁNDAR 24/7',
+              estado_pago: raw.estado_pago || 'Al Día',
+              cuentas_abonados: [cCode]
+            }
+          } else {
+            if (!mapaMaestro[rutLimpio].cuentas_abonados.includes(cCode)) {
+              mapaMaestro[rutLimpio].cuentas_abonados.push(cCode)
+            }
           }
         })
-        setClientesMap(mapFinal)
 
-        // 2. Configuración Empresa desde 'CONFIGURACION_EMPRESA'
-        const { data: dCfg } = await supabase
-          .from('eventos_monitoreo')
-          .select('nombre_abonado')
-          .eq('cuenta', 'CONFIGURACION_EMPRESA')
-          .limit(1)
+        setClientesMaestros(mapaMaestro)
+        setAbonadosCentrosCosto(mapaCentrosCosto)
 
-        if (dCfg && dCfg.length > 0 && dCfg[0].nombre_abonado) {
-          try { setConfigEmpresa(JSON.parse(dCfg[0].nombre_abonado)) } catch (e) {}
-        }
+        // 3. Cargar OTs, Facturas y Cotizaciones
+        const { data: dOT } = await supabase.from('eventos_monitoreo').select('nombre_abonado').eq('cuenta', 'ORDENES_TRABAJO').limit(1)
+        if (dOT && dOT.length > 0 && dOT[0].nombre_abonado) try { setOrdenesTrabajo(JSON.parse(dOT[0].nombre_abonado)) } catch (e) {}
 
-        // 3. OTs desde Command Center 'ORDENES_TRABAJO'
-        const { data: dOT } = await supabase
-          .from('eventos_monitoreo')
-          .select('nombre_abonado')
-          .eq('cuenta', 'ORDENES_TRABAJO')
-          .limit(1)
+        const { data: dFact } = await supabase.from('eventos_monitoreo').select('nombre_abonado').eq('cuenta', 'FACTURAS_MAESTRO').limit(1)
+        if (dFact && dFact.length > 0 && dFact[0].nombre_abonado) try { setFacturas(JSON.parse(dFact[0].nombre_abonado)) } catch (e) {}
 
-        if (dOT && dOT.length > 0 && dOT[0].nombre_abonado) {
-          try { setOrdenesTrabajo(JSON.parse(dOT[0].nombre_abonado)) } catch (e) {}
-        }
+        const { data: dCot } = await supabase.from('eventos_monitoreo').select('nombre_abonado').eq('cuenta', 'COTIZACIONES_DOLIBARR').limit(1)
+        if (dCot && dCot.length > 0 && dCot[0].nombre_abonado) try { setCotizaciones(JSON.parse(dCot[0].nombre_abonado)) } catch (e) {}
 
-        // 4. Facturas masivas desde 'FACTURAS_MAESTRO'
-        const { data: dFact } = await supabase
-          .from('eventos_monitoreo')
-          .select('nombre_abonado')
-          .eq('cuenta', 'FACTURAS_MAESTRO')
-          .limit(1)
-
-        if (dFact && dFact.length > 0 && dFact[0].nombre_abonado) {
-          try { setFacturas(JSON.parse(dFact[0].nombre_abonado)) } catch (e) {}
-        }
-
-        // 5. Cotizaciones desde 'COTIZACIONES_DOLIBARR'
-        const { data: dCot } = await supabase
-          .from('eventos_monitoreo')
-          .select('nombre_abonado')
-          .eq('cuenta', 'COTIZACIONES_DOLIBARR')
-          .limit(1)
-
-        if (dCot && dCot.length > 0 && dCot[0].nombre_abonado) {
-          try { setCotizaciones(JSON.parse(dCot[0].nombre_abonado)) } catch (e) {}
-        }
       } catch (err) {
-        console.error('Error cargando datos CRM:', err)
+        console.error('Error cargando estructura jerárquica:', err)
       }
     }
-    fetchDatos()
+    fetchDatosJerarquicos()
   }, [])
 
-  useEffect(() => {
-    if (cotCuenta && clientesMap[cotCuenta]) {
-      const c = clientesMap[cotCuenta]
-      setCotNombre(c.nombre)
-      setCotRut(c.rut)
-      setCotDireccion(c.direccion)
+  // Cliente activo seleccionado
+  const clienteActivo = rutClienteSeleccionado && clientesMaestros[rutClienteSeleccionado] ? clientesMaestros[rutClienteSeleccionado] : null
+  const empresaFacturadoraActiva = clienteActivo ? empresasConglomerado.find(e => e.id === clienteActivo.empresa_facturadora_id) || empresasConglomerado[0] : empresasConglomerado[0]
+
+  // Lista de Centros de Costo (Abonados) asignados al Cliente Activo
+  const centrosCostoClienteActivo = useMemo(() => {
+    if (!clienteActivo) return []
+    return clienteActivo.cuentas_abonados.map(cta => abonadosCentrosCosto[cta]).filter(Boolean)
+  }, [clienteActivo, abonadosCentrosCosto])
+
+  // ── ACCIONES DE CRUD PARA EMPRESAS DEL CONGLOMERADO ──
+  const abrirModalEditarEmpresa = (empresa?: EmpresaConglomerado) => {
+    if (empresa) {
+      setEmpresaEditando(empresa)
+    } else {
+      setEmpresaEditando({
+        id: `EMP-${Date.now()}`,
+        razon_social: '',
+        rut: '',
+        giro: 'Servicios de Monitoreo & Seguridad',
+        direccion: '',
+        telefono: '+56 9 ',
+        email_cobranza: 'cobranza@gamasecurity.cl',
+        email_contacto: 'contacto@gamasecurity.cl',
+        web: 'www.gamasecurity.cl',
+        banco_nombre: 'Banco de Chile',
+        banco_tipo_cuenta: 'Cuenta Corriente',
+        banco_numero_cuenta: ''
+      })
     }
-  }, [cotCuenta, clientesMap])
+    setMostrarModalEmpresa(true)
+  }
 
-  const clienteActivo = cuentaSeleccionada && clientesMap[cuentaSeleccionada] ? clientesMap[cuentaSeleccionada] : null
+  const handleGuardarEmpresaEmisora = async () => {
+    if (!empresaEditando || !empresaEditando.razon_social.trim()) {
+      alert('Por favor ingrese la Razón Social de la empresa.')
+      return
+    }
 
-  // Abrir Modal Edición Completa del Cliente
-  const abrirModalEditarTarifa = (cliente: ClienteCRM) => {
-    setEditNombre(cliente.nombre)
+    let listaNueva: EmpresaConglomerado[] = []
+    const existe = empresasConglomerado.some(e => e.id === empresaEditando.id)
+    if (existe) {
+      listaNueva = empresasConglomerado.map(e => e.id === empresaEditando.id ? empresaEditando : e)
+    } else {
+      listaNueva = [...empresasConglomerado, empresaEditando]
+    }
+
+    try {
+      await supabase.from('eventos_monitoreo').upsert({
+        cuenta: 'EMPRESAS_CONGLOMERADO',
+        nombre_abonado: JSON.stringify(listaNueva),
+        evento: 'CONFIGURACION_EMPRESAS',
+        fecha_hora: new Date().toISOString()
+      })
+      setEmpresasConglomerado(listaNueva)
+      setMostrarModalEmpresa(false)
+      alert(`✅ Empresa emisora "${empresaEditando.razon_social}" guardada exitosamente.`)
+    } catch (e: any) {
+      alert('Error guardando empresa: ' + e.message)
+    }
+  }
+
+  const handleEliminarEmpresaEmisora = async (id: string) => {
+    if (empresasConglomerado.length <= 1) {
+      alert('Debe mantener al menos una empresa del conglomerado.')
+      return
+    }
+    if (!confirm('¿Está seguro de eliminar esta empresa emisora?')) return
+
+    const listaNueva = empresasConglomerado.filter(e => e.id !== id)
+    try {
+      await supabase.from('eventos_monitoreo').upsert({
+        cuenta: 'EMPRESAS_CONGLOMERADO',
+        nombre_abonado: JSON.stringify(listaNueva),
+        evento: 'CONFIGURACION_EMPRESAS',
+        fecha_hora: new Date().toISOString()
+      })
+      setEmpresasConglomerado(listaNueva)
+    } catch (e: any) {
+      alert('Error al eliminar empresa: ' + e.message)
+    }
+  }
+
+  // ── ACCIONES PARA CLIENTES MAESTROS & SINCRONIZACIÓN CON COMMAND CENTER ──
+  const abrirModalEditarCliente = (cliente: ClienteMaestro) => {
     setEditRut(cliente.rut)
-    setEditEmail(cliente.email)
+    setEditRazonSocial(cliente.razon_social)
+    setEditEmpresaId(cliente.empresa_facturadora_id)
+    setEditEmailCobranza(cliente.email_cobranza)
     setEditTelefono(cliente.telefono)
-    setEditDireccion(cliente.direccion)
+    setEditDireccionComercial(cliente.direccion_comercial)
     setEditMoneda(cliente.moneda)
     setEditTarifa(cliente.tarifa_mensual.toString())
     setEditDia(cliente.dia_vencimiento.toString())
-    setEditPlan(cliente.plan)
+    setEditPlan(cliente.plan_monitoreo)
     setEditEstadoPago(cliente.estado_pago)
-    setMostrarModalTarifa(true)
+    setMostrarModalCliente(true)
   }
 
-  // Guardar Edición Completa y Sincronizar en Supabase 'CLIENTES'
-  const handleGuardarTarifaCliente = async () => {
+  const handleGuardarClienteMaestro = async () => {
     if (!clienteActivo) return
 
-    const clienteActualizado: ClienteCRM = {
+    const clienteActualizado: ClienteMaestro = {
       ...clienteActivo,
-      nombre: editNombre.trim() || clienteActivo.nombre,
       rut: cleanRut(editRut) || clienteActivo.rut,
-      email: editEmail.trim() || clienteActivo.email,
+      razon_social: editRazonSocial.trim() || clienteActivo.razon_social,
+      empresa_facturadora_id: editEmpresaId,
+      email_cobranza: editEmailCobranza.trim() || clienteActivo.email_cobranza,
       telefono: editTelefono.trim() || clienteActivo.telefono,
-      direccion: editDireccion.trim() || clienteActivo.direccion,
+      direccion_comercial: editDireccionComercial.trim() || clienteActivo.direccion_comercial,
       moneda: editMoneda,
       tarifa_mensual: Number(editTarifa) || 0,
       dia_vencimiento: Number(editDia) || 5,
-      plan: editPlan.trim() || 'MONITOREO ESTÁNDAR 24/7',
+      plan_monitoreo: editPlan.trim() || 'MONITOREO ESTÁNDAR 24/7',
       estado_pago: editEstadoPago
     }
 
-    const mapNuevo = { ...clientesMap, [clienteActivo.cuenta]: clienteActualizado }
-    setClientesMap(mapNuevo)
+    const mapaNuevoMaestro = { ...clientesMaestros, [clienteActivo.rut]: clienteActualizado }
+    setClientesMaestros(mapaNuevoMaestro)
+
+    // Sincronizar plano llano para Command Center ('CLIENTES' en Supabase)
+    const mapaPlanoCommandCenter: Record<string, any> = {}
+    Object.values(mapaNuevoMaestro).forEach(c => {
+      c.cuentas_abonados.forEach(cta => {
+        const cc = abonadosCentrosCosto[cta]
+        mapaPlanoCommandCenter[cta] = {
+          cuenta: cta,
+          nombre: c.razon_social,
+          rut: c.rut,
+          empresa_facturadora_id: c.empresa_facturadora_id,
+          alias_unidad: cc?.alias_centro_costo || c.razon_social,
+          direccion: cc?.direccion || c.direccion_comercial,
+          email: c.email_cobranza,
+          telefono: c.telefono,
+          moneda: c.moneda,
+          tarifa_mensual: c.tarifa_mensual,
+          dia_vencimiento: c.dia_vencimiento,
+          plan: c.plan_monitoreo,
+          estado_pago: c.estado_pago
+        }
+      })
+    })
 
     try {
       await supabase.from('eventos_monitoreo').upsert({
         cuenta: 'CLIENTES',
-        nombre_abonado: JSON.stringify(mapNuevo),
+        nombre_abonado: JSON.stringify(mapaPlanoCommandCenter),
         evento: 'CONFIGURACION_CLIENTE',
         fecha_hora: new Date().toISOString()
       })
-      setMostrarModalTarifa(false)
-      alert(`✅ Datos del cliente ${clienteActivo.cuenta} (${clienteActualizado.nombre}) actualizados y sincronizados en todo el sistema.`)
+      setMostrarModalCliente(false)
+      alert(`✅ Ficha del Cliente RUT ${clienteActualizado.rut} (${clienteActualizado.razon_social}) sincronizada en todo el sistema.`)
     } catch (e: any) {
-      alert('Error al guardar datos del cliente: ' + e.message)
+      alert('Error guardando cliente: ' + e.message)
     }
   }
 
-  // Guardar Configuración de Empresa Corporativa
-  const handleGuardarConfigEmpresa = async () => {
-    try {
-      await supabase.from('eventos_monitoreo').upsert({
-        cuenta: 'CONFIGURACION_EMPRESA',
-        nombre_abonado: JSON.stringify(configEmpresa),
-        evento: 'CONFIGURACION_EMPRESA_UPDATE',
-        fecha_hora: new Date().toISOString()
-      })
-      alert('✅ Datos institucionales de la empresa guardados exitosamente.')
-    } catch (e: any) {
-      alert('Error guardando configuración de empresa: ' + e.message)
-    }
-  }
-
-  const otsClienteActivo = useMemo(() => {
-    if (!cuentaSeleccionada) return []
-    return ordenesTrabajo.filter((o: any) => (o.cuenta || '').toUpperCase().trim() === cuentaSeleccionada)
-  }, [ordenesTrabajo, cuentaSeleccionada])
-
-  const facturasClienteActivo = useMemo(() => {
-    if (!clienteActivo) return []
-    const rutClean = cleanRut(clienteActivo.rut)
-    const nomClean = clienteActivo.nombre.toLowerCase().trim()
-    return facturas.filter(f => {
-      const fRazon = f.razon_social.toLowerCase().trim()
-      return f.cuenta_asociada === clienteActivo.cuenta || fRazon.includes(nomClean) || (rutClean && fRazon.includes(rutClean))
-    })
-  }, [facturas, clienteActivo])
-
-  const procesarCargaMasivaFacturas = async () => {
-    if (!facturasTextoRaw.trim()) {
-      alert('Por favor pegue el texto del Excel o CSV con las facturas.')
+  // ── VINCULAR O CREAR UN CENTRO DE COSTO (ABONADO COMMAND CENTER) ──
+  const handleVincularCentroDeCosto = async () => {
+    if (!clienteActivo) return
+    const ctaUpper = nuevaCuentaAbonadoInput.toUpperCase().trim()
+    if (!ctaUpper) {
+      alert('Por favor ingrese el código de cuenta del Abonado (ej: C774).')
       return
     }
 
-    try {
-      const lineas = facturasTextoRaw.split(/\r?\n/).filter(l => l.trim().length > 0)
-      const facturasExistentes = new Map<string, FacturaIndividual>()
-      facturas.forEach(f => facturasExistentes.set(f.id, f))
-
-      let agregadas = 0
-      let duplicadasOmitidas = 0
-
-      for (const linea of lineas) {
-        const cols = linea.split(/\t|;|\|/).map(c => c.trim().replace(/^["']|["']$/g, ''))
-        if (cols.length < 3) continue
-        if (cols[0].toLowerCase().includes('fecha') || cols[1].toLowerCase().includes('factura') || cols[1].toLowerCase().includes('número')) continue
-
-        const fechaStr = cols[0] || new Date().toISOString().slice(0, 10)
-        const numFactura = cols[1] ? cols[1].replace(/[^0-9]/g, '') : ''
-        const razonSocial = cols[2] ? cols[2].toUpperCase().trim() : ''
-        const montoTotal = Number((cols[3] || '0').replace(/[^0-9]/g, '')) || 0
-
-        if (!numFactura || !razonSocial) continue
-
-        const idFactura = `${numFactura}-${razonSocial}`
-
-        if (facturasExistentes.has(idFactura)) {
-          duplicadasOmitidas++
-          continue
-        }
-
-        let ctaMatch = ''
-        Object.values(clientesMap).forEach(c => {
-          if (c.nombre.toUpperCase().includes(razonSocial) || razonSocial.includes(c.nombre.toUpperCase())) {
-            ctaMatch = c.cuenta
-          }
-        })
-
-        const nuevaFactura: FacturaIndividual = {
-          id: idFactura,
-          numero_factura: numFactura,
-          fecha: fechaStr,
-          razon_social: razonSocial,
-          monto_total: montoTotal,
-          cuenta_asociada: ctaMatch,
-          estado: 'Emitida',
-          fecha_carga: new Date().toISOString().slice(0, 10)
-        }
-
-        facturasExistentes.set(idFactura, nuevaFactura)
-        agregadas++
-      }
-
-      if (agregadas === 0 && duplicadasOmitidas > 0) {
-        alert(`ℹ️ No se agregaron facturas nuevas. Todas las ${duplicadasOmitidas} facturas del archivo ya existían (omitidas sin duplicar).`)
-        return
-      }
-
-      const listaActualizada = Array.from(facturasExistentes.values())
-
-      await supabase.from('eventos_monitoreo').upsert({
-        cuenta: 'FACTURAS_MAESTRO',
-        nombre_abonado: JSON.stringify(listaActualizada),
-        evento: 'CARGA_MASIVA_FACTURAS',
-        fecha_hora: new Date().toISOString()
-      })
-
-      setFacturas(listaActualizada)
-      setMostrarModalCargaFacturas(false)
-      setFacturasTextoRaw('')
-      alert(`🎉 ¡Éxito! Se cargaron ${agregadas} facturas nuevas. Omitidas ${duplicadasOmitidas} duplicadas.`)
-    } catch (err: any) {
-      alert('Error al cargar facturas: ' + err.message)
+    // Crear/actualizar Centro de Costo
+    const nuevoCentroCosto: CentroDeCostoAbonado = {
+      cuenta: ctaUpper,
+      alias_centro_costo: nuevoAliasCentroCostoInput.trim() || `Centro de Costo ${ctaUpper}`,
+      direccion: nuevaDireccionAbonadoInput.trim() || clienteActivo.direccion_comercial,
+      ciudad: 'SANTIAGO',
+      rut_cliente: clienteActivo.rut
     }
-  }
 
-  const cambiarEstadoFactura = async (idFactura: string, nuevoEstado: FacturaIndividual['estado']) => {
-    const actualizadas = facturas.map(f => f.id === idFactura ? { ...f, estado: nuevoEstado } : f)
-    try {
-      await supabase.from('eventos_monitoreo').upsert({
-        cuenta: 'FACTURAS_MAESTRO',
-        nombre_abonado: JSON.stringify(actualizadas),
-        evento: 'CONFIGURACION',
-        fecha_hora: new Date().toISOString()
+    const mapaCentrosNuevo = { ...abonadosCentrosCosto, [ctaUpper]: nuevoCentroCosto }
+    setAbonadosCentrosCosto(mapaCentrosNuevo)
+
+    const cuentasActuales = clienteActivo.cuentas_abonados.includes(ctaUpper)
+      ? clienteActivo.cuentas_abonados
+      : [...clienteActivo.cuentas_abonados, ctaUpper]
+
+    const clienteActualizado: ClienteMaestro = { ...clienteActivo, cuentas_abonados: cuentasActuales }
+    const mapaMaestroNuevo = { ...clientesMaestros, [clienteActivo.rut]: clienteActualizado }
+    setClientesMaestros(mapaMaestroNuevo)
+
+    // Sincronizar en Supabase para Command Center
+    const mapaPlano: Record<string, any> = {}
+    Object.values(mapaMaestroNuevo).forEach(c => {
+      c.cuentas_abonados.forEach(cta => {
+        const cc = mapaCentrosNuevo[cta]
+        mapaPlano[cta] = {
+          cuenta: cta,
+          nombre: c.razon_social,
+          rut: c.rut,
+          empresa_facturadora_id: c.empresa_facturadora_id,
+          alias_unidad: cc?.alias_centro_costo || c.razon_social,
+          direccion: cc?.direccion || c.direccion_comercial,
+          email: c.email_cobranza,
+          telefono: c.telefono,
+          moneda: c.moneda,
+          tarifa_mensual: c.tarifa_mensual,
+          dia_vencimiento: c.dia_vencimiento,
+          plan: c.plan_monitoreo,
+          estado_pago: c.estado_pago
+        }
       })
-      setFacturas(actualizadas)
-    } catch (e) {}
-  }
-
-  const calculoCotizacionActual = useMemo(() => {
-    let subtotalNeto = 0
-    let totalDescuentos = 0
-
-    itemsCot.forEach(it => {
-      const netoLinea = (it.cantidad || 1) * (it.precio_neto_unitario || 0)
-      const descLinea = netoLinea * ((it.descuento_porcentaje || 0) / 100)
-      subtotalNeto += netoLinea
-      totalDescuentos += descLinea
     })
 
-    const netoConDescuento = subtotalNeto - totalDescuentos
-    const montoIva = netoConDescuento * IVA_PORCENTAJE
-    const totalIvaIncluido = netoConDescuento + montoIva
-
-    return {
-      subtotalNeto,
-      totalDescuentos,
-      netoConDescuento,
-      montoIva,
-      totalIvaIncluido
+    try {
+      await supabase.from('eventos_monitoreo').upsert({
+        cuenta: 'CLIENTES',
+        nombre_abonado: JSON.stringify(mapaPlano),
+        evento: 'VINCULAR_CENTRO_COSTO',
+        fecha_hora: new Date().toISOString()
+      })
+      setMostrarModalVincularAbonado(false)
+      setNuevaCuentaAbonadoInput('')
+      setNuevoAliasCentroCostoInput('')
+      setNuevaDireccionAbonadoInput('')
+      alert(`🎉 Centro de Costo / Abonado "${ctaUpper}" vinculado exitosamente al Cliente RUT ${clienteActivo.rut}.`)
+    } catch (e: any) {
+      alert('Error vinculando abonado: ' + e.message)
     }
-  }, [itemsCot])
+  }
 
-  // Crear Cotización con formato de código PR2607-0258
-  const handleGuardarCotizacion = async () => {
-    if (!cotNombre.trim()) {
-      alert('Por favor ingrese la razón social o nombre del cliente.')
+  // ── BUSCADOR UNIFICADO EN LA FICHA 360° (BUSCA POR RUT, CLIENTE, EMAIL O ABONADO) ──
+  const listaClientesFiltrados = useMemo(() => {
+    const q = busquedaClienteInput.toLowerCase().trim()
+    if (!q) return []
+    return Object.values(clientesMaestros).filter(c =>
+      c.rut.toLowerCase().includes(q) ||
+      c.razon_social.toLowerCase().includes(q) ||
+      c.email_cobranza.toLowerCase().includes(q) ||
+      c.cuentas_abonados.some(cta => cta.toLowerCase().includes(q))
+    )
+  }, [clientesMaestros, busquedaClienteInput])
+
+  // Cotización guardada con selección de Empresa Emisora
+  const handleGuardarCotizacionDolibarr = async () => {
+    if (!cotNombreCliente.trim()) {
+      alert('Por favor ingrese la razón social del cliente.')
       return
     }
 
@@ -456,10 +557,11 @@ export default function OperacionCRM() {
     const nuevaCot: CotizacionDolibarr = {
       id: Date.now(),
       codigo_cotizacion: codigoCot,
-      cuenta: cotCuenta,
-      nombre_cliente: cotNombre.trim(),
-      rut_cliente: cleanRut(cotRut),
-      direccion: cotDireccion || 'Dirección de Entrega / Instalación',
+      cuenta: cotRutCliente,
+      rut_cliente: cleanRut(cotRutCliente),
+      nombre_cliente: cotNombreCliente.trim(),
+      empresa_facturadora_id: cotEmpresaEmisoraId,
+      direccion: cotDireccion || 'Dirección de Entrega',
       fecha: new Date().toLocaleDateString('es-CL'),
       validez_dias: cotValidez,
       items: itemsCot,
@@ -480,7 +582,6 @@ export default function OperacionCRM() {
         evento: 'CREACION_COTIZACION',
         fecha_hora: new Date().toISOString()
       })
-
       setCotizaciones(listaNueva)
       setMostrarModalCotizacion(false)
       alert(`🎉 Presupuesto Dolibarr ${codigoCot} creado exitosamente.`)
@@ -489,10 +590,25 @@ export default function OperacionCRM() {
     }
   }
 
+  const calculoCotizacionActual = useMemo(() => {
+    let subtotalNeto = 0
+    let totalDescuentos = 0
+    itemsCot.forEach(it => {
+      const netoLinea = (it.cantidad || 1) * (it.precio_neto_unitario || 0)
+      const descLinea = netoLinea * ((it.descuento_porcentaje || 0) / 100)
+      subtotalNeto += netoLinea
+      totalDescuentos += descLinea
+    })
+    const netoConDescuento = subtotalNeto - totalDescuentos
+    const montoIva = netoConDescuento * IVA_PORCENTAJE
+    const totalIvaIncluido = netoConDescuento + montoIva
+    return { subtotalNeto, totalDescuentos, netoConDescuento, montoIva, totalIvaIncluido }
+  }, [itemsCot])
+
   const enviarEmailCobroResend = async (destinatario: string, clienteNombre: string, detalleStr: string) => {
     setEnviandoNotif(true)
     try {
-      const res = await fetch('/api/enviar-mail', {
+      await fetch('/api/enviar-mail', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -500,15 +616,10 @@ export default function OperacionCRM() {
           nombre_cliente: clienteNombre,
           tipo_evento: `Aviso de Cobranza - ${detalleStr}`,
           fecha_hora: new Date().toISOString(),
-          destinatarios: [destinatario || configEmpresa.email_cobranza || 'contacto@gamasecurity.cl']
+          destinatarios: [destinatario || 'contacto@gamasecurity.cl']
         })
       })
-
-      if (res.ok) {
-        alert(`📧 Notificación enviada por Resend (@gamasecurity.cl) a ${destinatario || configEmpresa.email_cobranza}.`)
-      } else {
-        alert(`📧 Notificación enviada a ${destinatario || configEmpresa.email_cobranza}.`)
-      }
+      alert(`📧 Notificación de cobranza enviada por Resend a ${destinatario}.`)
     } catch (e) {
       alert('Aviso de cobro registrado.')
     } finally {
@@ -517,52 +628,26 @@ export default function OperacionCRM() {
   }
 
   const enviarWhatsAppCobro = async (telefono: string, clienteNombre: string, detalleStr: string) => {
-    if (!telefono) {
-      alert('No hay teléfono de contacto disponible para este cliente.')
-      return
-    }
+    if (!telefono) { alert('No hay teléfono de contacto.'); return }
     setEnviandoNotif(true)
     try {
       let numClean = telefono.replace(/[^0-9]/g, '')
       if (numClean.length === 9 && numClean.startsWith('9')) numClean = '56' + numClean
 
-      const msg = `💳 *${configEmpresa.razon_social} - Estado de Cuenta & Cobranza*\n\nEstimado(a) *${clienteNombre}*,\n\nLe recordamos la cobranza pendiente de su cuenta:\n• *Detalle:* ${detalleStr}\n• *Banco:* ${configEmpresa.banco_nombre}\n• *Tipo Cta:* ${configEmpresa.banco_tipo_cuenta}\n• *Nº Cta:* ${configEmpresa.banco_numero_cuenta}\n• *Email Cobranza:* ${configEmpresa.email_cobranza}\n\nAgradecemos su atención.`
+      const msg = `💳 *${empresaFacturadoraActiva.razon_social} - Estado de Cuenta & Cobranza*\n\nEstimado(a) *${clienteNombre}*,\n\nLe recordamos la cobranza pendiente de su cuenta:\n• *Detalle:* ${detalleStr}\n• *Banco:* ${empresaFacturadoraActiva.banco_nombre}\n• *Nº Cta:* ${empresaFacturadoraActiva.banco_numero_cuenta}\n• *Email Cobranza:* ${empresaFacturadoraActiva.email_cobranza}\n\nAgradecemos su atención.`
 
       await fetch('/api/whatsapp/send-direct', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ numero: numClean, mensaje: msg })
       })
-
-      alert(`📲 Aviso de cobro enviado por WhatsApp a ${numClean}.`)
+      alert(`📲 Aviso enviado por WhatsApp a ${numClean}.`)
     } catch (e: any) {
       alert('Error enviando WhatsApp: ' + e.message)
     } finally {
       setEnviandoNotif(false)
     }
   }
-
-  const listaAbonadosFiltrada = useMemo(() => {
-    const q = busquedaClienteInput.toLowerCase().trim()
-    if (!q) return []
-    return Object.values(clientesMap).filter(c =>
-      c.cuenta.toLowerCase().includes(q) ||
-      c.nombre.toLowerCase().includes(q) ||
-      c.rut.toLowerCase().includes(q) ||
-      c.direccion.toLowerCase().includes(q) ||
-      (c.email || '').toLowerCase().includes(q)
-    )
-  }, [clientesMap, busquedaClienteInput])
-
-  const facturasFiltradas = useMemo(() => {
-    const q = busquedaFacturaInput.toLowerCase().trim()
-    if (!q) return facturas
-    return facturas.filter(f =>
-      f.numero_factura.includes(q) ||
-      f.razon_social.toLowerCase().includes(q) ||
-      (f.cuenta_asociada || '').toLowerCase().includes(q)
-    )
-  }, [facturas, busquedaFacturaInput])
 
   return (
     <div className="min-h-screen bg-[#f1f5f9] text-[#0f172a] font-sans flex flex-col select-none p-6 md:p-10 gap-10">
@@ -573,7 +658,6 @@ export default function OperacionCRM() {
           <button
             onClick={() => setSidebarAbierto(!sidebarAbierto)}
             className="bg-[#f8fafc] hover:bg-slate-100 text-slate-700 px-4 py-3.5 rounded-2xl border border-slate-200 font-bold shadow-[3px_3px_8px_rgba(203,213,225,0.6),-3px_-3px_8px_rgba(255,255,255,0.9)] active:shadow-[inset_2px_2px_4px_rgba(203,213,225,0.6)] transition-all cursor-pointer"
-            title={sidebarAbierto ? "Ocultar Menú" : "Mostrar Menú"}
           >
             <span className="text-xl">☰</span>
           </button>
@@ -583,20 +667,20 @@ export default function OperacionCRM() {
           </div>
           <div>
             <h1 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-3">
-              {configEmpresa.razon_social}
+              CONGLOMERADO GAMA SEGURIDAD
               <span className="bg-blue-50 text-blue-900 text-xs font-bold px-3.5 py-1 rounded-full border border-blue-200 shadow-2xs">
-                OPERACIÓN & CRM 360°
+                SISTEMA OPERATIVO & CRM 360°
               </span>
             </h1>
             <p className="text-xs text-slate-500 font-semibold mt-1">
-              {configEmpresa.giro} • RUT: {configEmpresa.rut_empresa}
+              {empresasConglomerado.length} Razones Sociales Emisoras • Gestión Comercial por RUT & Centros de Costo
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-5 text-xs font-semibold">
           <div className="bg-[#f8fafc] border border-slate-200/90 px-5 py-3 rounded-2xl text-slate-700 font-mono shadow-[inset_2px_2px_4px_rgba(203,213,225,0.4)]">
-            UF HOY: <strong className="text-emerald-700 font-bold">${configEmpresa.valor_uf.toLocaleString('es-CL')} CLP</strong>
+            UF HOY: <strong className="text-emerald-700 font-bold">${valorUF.toLocaleString('es-CL')} CLP</strong>
           </div>
 
           <a
@@ -611,26 +695,21 @@ export default function OperacionCRM() {
       {/* ── CONTENEDOR PRINCIPAL ── */}
       <div className="flex-1 flex gap-10 overflow-hidden min-h-0">
         
-        {/* ── SIDEBAR NEUMÓRFICO ── */}
+        {/* ── SIDEBAR NEUMÓRFICO MODULAR ── */}
         {sidebarAbierto && (
           <aside className="w-80 bg-white border border-slate-200/90 p-7 rounded-3xl flex flex-col gap-3 shrink-0 shadow-[6px_6px_16px_rgba(203,213,225,0.7),-6px_-6px_16px_rgba(255,255,255,0.9)] transition-all">
             <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider px-3 mb-3 flex justify-between items-center">
               <span>MÓDULOS DEL SISTEMA</span>
-              <button
-                onClick={() => setSidebarAbierto(false)}
-                className="text-slate-400 hover:text-slate-600 font-bold text-sm"
-              >
-                ✕
-              </button>
+              <button onClick={() => setSidebarAbierto(false)} className="text-slate-400 hover:text-slate-600 font-bold text-sm">✕</button>
             </div>
 
             {[
-              { id: 'ficha360', label: 'Ficha 360° del Cliente', icon: '👤' },
+              { id: 'ficha360', label: 'Ficha 360° del Cliente (RUT)', icon: '👤' },
               { id: 'presupuestos', label: 'Presupuestos (Dolibarr)', icon: '📋' },
               { id: 'facturacion', label: 'Facturación & Cobranza', icon: '🧾' },
               { id: 'serv_tecnico', label: 'Servicio Técnico (OTs)', icon: '🛠️' },
               { id: 'kpis', label: 'KPIs Ejecutivos & Reportes', icon: '📊' },
-              { id: 'config', label: 'Configuración de Empresa', icon: '⚙️' },
+              { id: 'config', label: 'CRUD Empresas Conglomerado', icon: '⚙️' },
             ].map(m => (
               <button
                 key={m.id}
@@ -647,9 +726,10 @@ export default function OperacionCRM() {
             ))}
 
             <div className="mt-auto bg-[#f8fafc] border border-slate-200 p-5 rounded-2xl text-xs space-y-2 text-slate-600 shadow-[inset_2px_2px_4px_rgba(203,213,225,0.4)]">
-              <div className="font-bold text-slate-900 text-[11px] uppercase tracking-wide">{configEmpresa.razon_social}</div>
-              <div>Facturas Cargadas: <strong className="text-slate-900 font-mono font-bold">{facturas.length}</strong></div>
-              <div>Cotizaciones Emitidas: <strong className="text-slate-900 font-mono font-bold">{cotizaciones.length}</strong></div>
+              <div className="font-bold text-slate-900 text-[11px] uppercase tracking-wide">ESTRUCTURA DE DATOS UNIFICADA</div>
+              <div>Empresas Emisoras: <strong className="text-slate-900 font-mono font-bold">{empresasConglomerado.length}</strong></div>
+              <div>Clientes Registrados: <strong className="text-slate-900 font-mono font-bold">{Object.keys(clientesMaestros).length}</strong></div>
+              <div>Centros de Costo (Abonados): <strong className="text-slate-900 font-mono font-bold">{Object.keys(abonadosCentrosCosto).length}</strong></div>
             </div>
           </aside>
         )}
@@ -657,17 +737,17 @@ export default function OperacionCRM() {
         {/* ── PANEL DERECHO PRINCIPAL ── */}
         <main className="flex-1 overflow-y-auto min-h-0 flex flex-col gap-10">
 
-          {/* ── MÓDULO 1: FICHA 360° DE CLIENTES ── */}
+          {/* ── MÓDULO 1: FICHA 360° DEL CLIENTE POR RUT & CENTROS DE COSTO ── */}
           {moduloActivo === 'ficha360' && (
             <div className="flex-1 flex flex-col gap-10 min-h-0">
               
               {/* Buscador Neumórfico Espacioso */}
               <div className="bg-white border border-slate-200/90 p-8 rounded-3xl shadow-[6px_6px_16px_rgba(203,213,225,0.7),-6px_-6px_16px_rgba(255,255,255,0.9)] flex flex-col gap-5">
                 <div className="font-bold text-xs text-slate-700 uppercase tracking-wider flex justify-between items-center">
-                  <span>🔍 BUSCADOR DE EXPEDIENTES CRM 360°</span>
-                  {cuentaSeleccionada && (
+                  <span>🔍 BUSCADOR UNIFICADO (BUSCA POR RUT, CLIENTE, EMAIL O CUENTA ABONADO)</span>
+                  {rutClienteSeleccionado && (
                     <button
-                      onClick={() => { setCuentaSeleccionada(''); setBusquedaClienteInput('') }}
+                      onClick={() => { setRutClienteSeleccionado(''); setBusquedaClienteInput('') }}
                       className="text-xs text-red-600 hover:underline font-bold cursor-pointer"
                     >
                       ✕ Limpiar Selección
@@ -680,24 +760,25 @@ export default function OperacionCRM() {
                     type="text"
                     value={busquedaClienteInput}
                     onChange={(e) => setBusquedaClienteInput(e.target.value)}
-                    placeholder="Escriba Nombre del Titular, Email (ej: cliente@gmail.com), RUT, Código de Cuenta (ej: C774)..."
+                    placeholder="Escriba RUT del Cliente (ej: 76.319.399-3), Razón Social, Email o Cuenta Abonado (ej: C774)..."
                     className="w-full bg-[#f8fafc] border border-slate-200 rounded-2xl px-7 py-4 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 font-mono shadow-[inset_2px_2px_5px_rgba(203,213,225,0.5)]"
                   />
 
                   {busquedaClienteInput.trim().length > 0 && (
                     <div className="absolute top-full left-0 right-0 mt-3 bg-white border border-slate-200 rounded-3xl shadow-2xl z-20 max-h-96 overflow-y-auto divide-y divide-slate-100 p-4">
-                      {listaAbonadosFiltrada.map(c => (
+                      {listaClientesFiltrados.map(c => (
                         <div
-                          key={c.cuenta}
-                          onClick={() => { setCuentaSeleccionada(c.cuenta); setBusquedaClienteInput('') }}
+                          key={c.rut}
+                          onClick={() => { setRutClienteSeleccionado(c.rut); setBusquedaClienteInput('') }}
                           className="p-4 hover:bg-blue-50 rounded-2xl cursor-pointer flex justify-between items-center transition-colors"
                         >
                           <div>
-                            <div className="font-bold text-sm text-slate-900">
-                              {c.nombre} <span className="font-mono text-blue-700 font-bold ml-1">({c.cuenta})</span>
+                            <div className="font-bold text-sm text-slate-900 flex items-center gap-2">
+                              {c.razon_social}
+                              <span className="font-mono text-blue-800 text-xs bg-blue-100 px-2.5 py-0.5 rounded-md font-bold">RUT: {c.rut}</span>
                             </div>
                             <div className="text-xs text-slate-500 font-medium mt-1">
-                              RUT: {c.rut || 'N/A'} • Email: <strong className="text-blue-900">{c.email || 'Sin email'}</strong> • {c.direccion}
+                              Centros de Costo ({c.cuentas_abonados.length}): <strong className="text-slate-800 font-mono">{c.cuentas_abonados.join(', ')}</strong> • Email: <strong className="text-blue-900">{c.email_cobranza}</strong>
                             </div>
                           </div>
                           <span className={`px-4 py-1.5 rounded-full text-xs font-bold ${
@@ -707,7 +788,7 @@ export default function OperacionCRM() {
                           </span>
                         </div>
                       ))}
-                      {listaAbonadosFiltrada.length === 0 && (
+                      {listaClientesFiltrados.length === 0 && (
                         <div className="p-6 text-center text-slate-400 italic text-xs">
                           No se encontraron clientes coincidentes con "{busquedaClienteInput}".
                         </div>
@@ -717,84 +798,87 @@ export default function OperacionCRM() {
                 </div>
               </div>
 
-              {/* Dossier 360° Si hay cliente seleccionado */}
+              {/* DOSSIER 360° DEL CLIENTE MAESTRO & CENTROS DE COSTO */}
               {clienteActivo ? (
                 <div className="bg-white border border-slate-200/90 rounded-3xl p-10 flex flex-col gap-10 shadow-[6px_6px_16px_rgba(203,213,225,0.7),-6px_-6px_16px_rgba(255,255,255,0.9)] overflow-y-auto">
                   
-                  <div className="bg-[#f8fafc] border border-slate-200 p-7 rounded-3xl flex flex-col md:flex-row justify-between items-start md:items-center gap-6 shadow-[inset_2px_2px_4px_rgba(203,213,225,0.3)]">
+                  {/* HEADER DEL CLIENTE CON EMPRESA EMISORA ASIGNADA */}
+                  <div className="bg-[#f8fafc] border border-slate-200 p-8 rounded-3xl flex flex-col md:flex-row justify-between items-start md:items-center gap-6 shadow-[inset_2px_2px_4px_rgba(203,213,225,0.3)]">
                     <div>
-                      <div className="flex items-center gap-3 mb-2">
-                        <span className="bg-blue-900 text-white font-mono text-xs font-bold px-4 py-1.5 rounded-xl">
-                          {clienteActivo.cuenta}
+                      <div className="flex items-center gap-3 mb-2 flex-wrap">
+                        <span className="bg-blue-950 text-white font-mono text-xs font-bold px-4 py-1.5 rounded-xl">
+                          RUT CLIENTE: {clienteActivo.rut}
                         </span>
-                        <span className="text-xs text-slate-500 font-mono font-bold">RUT: {clienteActivo.rut || 'Sin RUT'}</span>
+                        <span className="bg-emerald-800 text-white font-bold text-xs px-4 py-1.5 rounded-xl flex items-center gap-1.5">
+                          🏢 EMPRESA A CARGO: {empresaFacturadoraActiva.razon_social} ({empresaFacturadoraActiva.rut})
+                        </span>
                       </div>
-                      <h2 className="text-3xl font-black text-slate-900">{clienteActivo.nombre}</h2>
+                      <h2 className="text-3xl font-black text-slate-900">{clienteActivo.razon_social}</h2>
                       <p className="text-xs text-slate-600 font-medium mt-1.5">
-                        📍 {clienteActivo.direccion} • {clienteActivo.ciudad} | ✉️ <strong>{clienteActivo.email || 'Sin correo registrado'}</strong> | 📞 {clienteActivo.telefono || 'Sin teléfono'}
+                        📍 {clienteActivo.direccion_comercial} | ✉️ <strong>{clienteActivo.email_cobranza}</strong> | 📞 {clienteActivo.telefono}
                       </p>
                     </div>
 
                     <div className="flex items-center gap-4 flex-wrap">
                       <button
-                        onClick={() => abrirModalEditarTarifa(clienteActivo)}
+                        onClick={() => abrirModalEditarCliente(clienteActivo)}
                         className="px-5 py-3.5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-2xl text-xs shadow-xs cursor-pointer"
                       >
-                        ✏️ Editar Cliente & Email
+                        ✏️ Editar Cliente & Empresa Emisora
                       </button>
                       <button
-                        disabled={enviandoNotif}
-                        onClick={() => enviarEmailCobroResend(clienteActivo.email, clienteActivo.nombre, `Cuenta ${clienteActivo.cuenta}`)}
+                        onClick={() => setMostrarModalVincularAbonado(true)}
                         className="px-5 py-3.5 bg-blue-900 hover:bg-blue-800 text-white font-bold rounded-2xl text-xs shadow-xs cursor-pointer"
                       >
-                        📧 Email Resend
+                        ➕ Vincular Centro de Costo (Abonado)
                       </button>
                       <button
                         disabled={enviandoNotif}
-                        onClick={() => enviarWhatsAppCobro(clienteActivo.telefono, clienteActivo.nombre, `Cuenta ${clienteActivo.cuenta}`)}
+                        onClick={() => enviarEmailCobroResend(clienteActivo.email_cobranza, clienteActivo.razon_social, `Cliente RUT ${clienteActivo.rut}`)}
                         className="px-5 py-3.5 bg-emerald-700 hover:bg-emerald-600 text-white font-bold rounded-2xl text-xs shadow-xs cursor-pointer"
                       >
-                        📲 Notificar WA
+                        📧 Enviar Cobro Resend
                       </button>
                     </div>
                   </div>
 
-                  {/* 3 Pilares con Neumorfismo Amplio */}
+                  {/* 3 PILARES JERÁRQUICOS */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                     
+                    {/* PILAR 1: COMERCIAL Y TARIFAS */}
                     <div className="bg-[#f8fafc] border border-slate-200/90 p-7 rounded-3xl flex flex-col gap-5 shadow-[3px_3px_8px_rgba(203,213,225,0.5)]">
                       <div className="font-bold text-xs text-slate-900 border-b border-slate-200 pb-3 flex justify-between uppercase tracking-wider">
-                        <span>💳 COMERCIAL & TARIFA</span>
+                        <span>💳 DATOS COMERCIALES DE COBRO</span>
                         <span className="text-emerald-700 font-mono font-bold">{clienteActivo.moneda}</span>
                       </div>
 
                       <div className="space-y-4 text-xs font-medium">
                         <div className="flex justify-between">
-                          <span className="text-slate-500">Plan Contratado:</span>
-                          <span className="font-bold text-slate-900 truncate">{clienteActivo.plan}</span>
+                          <span className="text-slate-500">Factura por Conglomerado:</span>
+                          <span className="font-bold text-blue-900 truncate max-w-[150px]">{empresaFacturadoraActiva.razon_social}</span>
                         </div>
 
                         <div className="flex justify-between">
-                          <span className="text-slate-500">Email Oficial:</span>
-                          <span className="font-bold text-blue-950 truncate max-w-[170px]">{clienteActivo.email || 'Sin correo'}</span>
+                          <span className="text-slate-500">Plan de Monitoreo:</span>
+                          <span className="font-bold text-slate-900 truncate">{clienteActivo.plan_monitoreo}</span>
                         </div>
 
                         <div className="flex justify-between">
                           <span className="text-slate-500">Tarifa Mensual:</span>
                           <span className="font-bold font-mono text-emerald-800">
                             {clienteActivo.moneda === 'UF'
-                              ? `${clienteActivo.tarifa_mensual} UF ($${Math.round(clienteActivo.tarifa_mensual * configEmpresa.valor_uf).toLocaleString('es-CL')})`
+                              ? `${clienteActivo.tarifa_mensual} UF ($${Math.round(clienteActivo.tarifa_mensual * valorUF).toLocaleString('es-CL')})`
                               : `$${clienteActivo.tarifa_mensual.toLocaleString('es-CL')} CLP`}
                           </span>
                         </div>
 
                         <div className="flex justify-between">
-                          <span className="text-slate-500">Día de Vencimiento:</span>
+                          <span className="text-slate-500">Día de Cobro:</span>
                           <span className="font-bold text-slate-900">Día {clienteActivo.dia_vencimiento}</span>
                         </div>
 
                         <div className="flex justify-between items-center pt-3 border-t border-slate-200">
-                          <span className="text-slate-500">Estado de Pago:</span>
+                          <span className="text-slate-500">Estado Financiero:</span>
                           <span className={`px-3 py-1 rounded-full font-bold text-xs ${
                             clienteActivo.estado_pago === 'Al Día' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'
                           }`}>
@@ -804,57 +888,44 @@ export default function OperacionCRM() {
                       </div>
                     </div>
 
+                    {/* PILAR 2: CENTROS DE COSTO / ABONADOS VINCULADOS */}
                     <div className="bg-[#f8fafc] border border-slate-200/90 p-7 rounded-3xl flex flex-col gap-5 shadow-[3px_3px_8px_rgba(203,213,225,0.5)]">
                       <div className="font-bold text-xs text-slate-900 border-b border-slate-200 pb-3 flex justify-between uppercase tracking-wider">
-                        <span>🧾 FACTURAS CARGADAS</span>
-                        <span className="font-mono text-slate-500 font-bold">({facturasClienteActivo.length})</span>
+                        <span>🏢 CENTROS DE COSTO / ABONADOS</span>
+                        <span className="font-mono text-blue-900 font-bold">({centrosCostoClienteActivo.length})</span>
                       </div>
 
                       <div className="space-y-3 flex-1 overflow-y-auto max-h-[250px]">
-                        {facturasClienteActivo.map((f) => (
-                          <div key={f.id} className="p-4 bg-white rounded-2xl border border-slate-200/80 text-xs space-y-1.5 shadow-2xs">
-                            <div className="flex justify-between font-mono font-bold text-blue-900">
-                              <span>Factura #{f.numero_factura}</span>
-                              <span className="text-emerald-800">${f.monto_total.toLocaleString('es-CL')} CLP</span>
+                        {centrosCostoClienteActivo.map((cc) => (
+                          <div key={cc.cuenta} className="p-4 bg-white rounded-2xl border border-slate-200/80 text-xs space-y-1.5 shadow-2xs">
+                            <div className="flex justify-between font-mono font-bold text-blue-950">
+                              <span>Cuenta #{cc.cuenta}</span>
+                              <span className="text-blue-700 bg-blue-50 px-2 py-0.5 rounded text-[10px]">Command Center</span>
                             </div>
-                            <div className="text-xs text-slate-500 flex justify-between">
-                              <span>{f.fecha}</span>
-                              <span className="font-bold text-slate-700">{f.estado}</span>
-                            </div>
+                            <div className="font-bold text-slate-900">{cc.alias_centro_costo}</div>
+                            <div className="text-xs text-slate-500 font-medium">{cc.direccion}</div>
                           </div>
                         ))}
 
-                        {facturasClienteActivo.length === 0 && (
+                        {centrosCostoClienteActivo.length === 0 && (
                           <div className="text-center text-slate-400 italic py-12 text-xs">
-                            Sin facturas registradas para esta razón social
+                            Sin centros de costo / abonados vinculados a este RUT.
                           </div>
                         )}
                       </div>
                     </div>
 
+                    {/* PILAR 3: SERVICIO TÉCNICO Y OTs */}
                     <div className="bg-[#f8fafc] border border-slate-200/90 p-7 rounded-3xl flex flex-col gap-5 shadow-[3px_3px_8px_rgba(203,213,225,0.5)]">
                       <div className="font-bold text-xs text-slate-900 border-b border-slate-200 pb-3 flex justify-between uppercase tracking-wider">
-                        <span>🛠️ ÓRDENES TÉCNICAS</span>
-                        <span className="font-mono text-slate-500 font-bold">({otsClienteActivo.length})</span>
+                        <span>🛠️ ÓRDENES TÉCNICAS (COMMAND CENTER)</span>
+                        <span className="font-mono text-slate-500 font-bold">(0)</span>
                       </div>
 
                       <div className="space-y-3 flex-1 overflow-y-auto max-h-[250px]">
-                        {otsClienteActivo.map((ot: any) => (
-                          <div key={ot.id} className="p-4 bg-white rounded-2xl border border-slate-200/80 text-xs space-y-1.5 shadow-2xs">
-                            <div className="flex justify-between font-mono font-bold text-blue-900">
-                              <span>{ot.codigo_ot || `OT-${ot.id}`}</span>
-                              <span className="text-emerald-800 text-xs font-bold">{ot.estado}</span>
-                            </div>
-                            <div className="font-bold text-slate-800 text-xs">{ot.tipo_visita || 'Correctiva'} • {ot.tecnico}</div>
-                            <div className="text-xs text-slate-500 truncate">{ot.problema}</div>
-                          </div>
-                        ))}
-
-                        {otsClienteActivo.length === 0 && (
-                          <div className="text-center text-slate-400 italic py-12 text-xs">
-                            Sin visitas técnicas de Command Center
-                          </div>
-                        )}
+                        <div className="text-center text-slate-400 italic py-12 text-xs">
+                          Historial de OTs sincronizadas por Centro de Costo
+                        </div>
                       </div>
                     </div>
 
@@ -863,10 +934,10 @@ export default function OperacionCRM() {
                 </div>
               ) : (
                 <div className="bg-white border border-slate-200/90 rounded-3xl p-24 text-center shadow-[6px_6px_16px_rgba(203,213,225,0.7),-6px_-6px_16px_rgba(255,255,255,0.9)] flex flex-col items-center justify-center gap-5">
-                  <div className="text-7xl p-6 bg-[#f8fafc] rounded-3xl shadow-[inset_2px_2px_5px_rgba(203,213,225,0.5)]">🔍</div>
-                  <h3 className="text-2xl font-black text-slate-900">Expediente CRM 360° del Cliente</h3>
+                  <div className="text-7xl p-6 bg-[#f8fafc] rounded-3xl shadow-[inset_2px_2px_5px_rgba(203,213,225,0.5)]">👤</div>
+                  <h3 className="text-2xl font-black text-slate-900">Expediente Comercial por RUT</h3>
                   <p className="text-xs text-slate-500 max-w-lg font-semibold leading-relaxed">
-                    Ingrese el Nombre del Titular, Correo Electrónico, Número de Abonado (ej: C774) o RUT en el buscador superior para consultar su expediente unificado.
+                    Seleccione un Cliente por RUT o busque en la barra superior para visualizar su Empresa Emisora asignada, Ficha Comercial y sus Centros de Costo (Abonados Command Center).
                   </p>
                 </div>
               )}
@@ -874,7 +945,7 @@ export default function OperacionCRM() {
             </div>
           )}
 
-          {/* ── MÓDULO 2: PRESUPUESTOS DOLIBARR ── */}
+          {/* ── MÓDULO 2: PRESUPUESTOS DOLIBARR (PR2607) ── */}
           {moduloActivo === 'presupuestos' && (
             <div className="flex-1 bg-white border border-slate-200/90 rounded-3xl p-10 flex flex-col gap-8 shadow-[6px_6px_16px_rgba(203,213,225,0.7),-6px_-6px_16px_rgba(255,255,255,0.9)] min-h-0">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-5 border-b border-slate-200 pb-6">
@@ -883,7 +954,7 @@ export default function OperacionCRM() {
                     📋 Presupuestos Comercial & Cotizaciones (Estilo Dolibarr)
                   </h2>
                   <p className="text-xs text-slate-500 font-semibold mt-1">
-                    Ingreso manual de productos/servicios con formato oficial de Cotización PR2607
+                    Emisión de Cotizaciones vinculadas a la Empresa del Conglomerado y Cliente (RUT)
                   </p>
                 </div>
 
@@ -901,402 +972,122 @@ export default function OperacionCRM() {
                     <tr className="bg-[#f8fafc] text-slate-700 border-b border-slate-200 font-bold uppercase text-xs">
                       <th className="p-4 border-r border-slate-200">CÓDIGO</th>
                       <th className="p-4 border-r border-slate-200">FECHA</th>
+                      <th className="p-4 border-r border-slate-200">EMPRESA EMISORA</th>
                       <th className="p-4 border-r border-slate-200">CLIENTE / RUT</th>
                       <th className="p-4 border-r border-slate-200 text-right">NETO</th>
-                      <th className="p-4 border-r border-slate-200 text-right">IVA (19%)</th>
                       <th className="p-4 border-r border-slate-200 text-right">TOTAL IVA INCL.</th>
                       <th className="p-4 border-r border-slate-200 text-center">ESTADO</th>
                       <th className="p-4 text-center w-32">ACCIONES</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200">
-                    {cotizaciones.map(c => (
-                      <tr key={c.id} className="hover:bg-slate-50/80">
-                        <td className="p-4 font-mono font-bold text-blue-900 border-r border-slate-200">{c.codigo_cotizacion}</td>
-                        <td className="p-4 font-mono text-slate-600 border-r border-slate-200">{c.fecha}</td>
-                        <td className="p-4 border-r border-slate-200">
-                          <div className="font-bold text-slate-900 text-xs">{c.nombre_cliente}</div>
-                          <div className="text-xs text-slate-500 font-mono mt-0.5">RUT: {c.rut_cliente || 'N/A'}</div>
-                        </td>
-                        <td className="p-4 text-right font-mono text-slate-700 border-r border-slate-200">
-                          ${Math.round(c.neto_con_descuento || 0).toLocaleString('es-CL')} CLP
-                        </td>
-                        <td className="p-4 text-right font-mono text-slate-500 border-r border-slate-200">
-                          ${Math.round(c.monto_iva || 0).toLocaleString('es-CL')} CLP
-                        </td>
-                        <td className="p-4 text-right font-mono font-bold text-emerald-800 border-r border-slate-200">
-                          ${Math.round(c.monto_total_iva_incluido || 0).toLocaleString('es-CL')} CLP
-                        </td>
-                        <td className="p-4 text-center border-r border-slate-200 font-bold">
-                          <span className={`px-3 py-1 rounded-full text-xs ${
-                            c.estado === 'Aprobado' ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' :
-                            c.estado === 'Enviado' ? 'bg-blue-100 text-blue-800 border border-blue-300' :
-                            c.estado === 'Rechazado' ? 'bg-red-100 text-red-800 border border-red-300' :
-                            'bg-slate-200 text-slate-800 border border-slate-300'
-                          }`}>
-                            {c.estado.toUpperCase()}
-                          </span>
-                        </td>
-                        <td className="p-4 text-center flex items-center justify-center">
-                          <button
-                            onClick={() => setCotSeleccionada(c)}
-                            className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold cursor-pointer shadow-2xs"
-                          >
-                            📄 Ver PDF Dolibarr
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                    {cotizaciones.length === 0 && (
-                      <tr>
-                        <td colSpan={8} className="p-12 text-center text-slate-400 italic text-xs">
-                          No hay presupuestos comercial registrados. Haga clic en "➕ Nueva Cotización Comercial".
-                        </td>
-                      </tr>
-                    )}
+                    {cotizaciones.map(c => {
+                      const empEmisora = empresasConglomerado.find(e => e.id === c.empresa_facturadora_id) || empresasConglomerado[0]
+                      return (
+                        <tr key={c.id} className="hover:bg-slate-50/80">
+                          <td className="p-4 font-mono font-bold text-blue-900 border-r border-slate-200">{c.codigo_cotizacion}</td>
+                          <td className="p-4 font-mono text-slate-600 border-r border-slate-200">{c.fecha}</td>
+                          <td className="p-4 border-r border-slate-200 font-bold text-emerald-800 text-xs">{empEmisora.razon_social}</td>
+                          <td className="p-4 border-r border-slate-200">
+                            <div className="font-bold text-slate-900 text-xs">{c.nombre_cliente}</div>
+                            <div className="text-xs text-slate-500 font-mono mt-0.5">RUT: {c.rut_cliente || 'N/A'}</div>
+                          </td>
+                          <td className="p-4 text-right font-mono text-slate-700 border-r border-slate-200">
+                            ${Math.round(c.neto_con_descuento || 0).toLocaleString('es-CL')} CLP
+                          </td>
+                          <td className="p-4 text-right font-mono font-bold text-emerald-800 border-r border-slate-200">
+                            ${Math.round(c.monto_total_iva_incluido || 0).toLocaleString('es-CL')} CLP
+                          </td>
+                          <td className="p-4 text-center border-r border-slate-200 font-bold">
+                            <span className={`px-3 py-1 rounded-full text-xs ${
+                              c.estado === 'Aprobado' ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-100 text-blue-800'
+                            }`}>
+                              {c.estado.toUpperCase()}
+                            </span>
+                          </td>
+                          <td className="p-4 text-center flex items-center justify-center">
+                            <button
+                              onClick={() => setCotSeleccionada(c)}
+                              className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold cursor-pointer shadow-2xs"
+                            >
+                              📄 Ver PDF Dolibarr
+                            </button>
+                          </td>
+                        </tr>
+                      )
+                    })}
                   </tbody>
                 </table>
               </div>
             </div>
           )}
 
-          {/* ── MÓDULO 3: FACTURACIÓN & COBRANZA MASIVA ── */}
-          {moduloActivo === 'facturacion' && (
-            <div className="flex-1 bg-white border border-slate-200/90 rounded-3xl p-10 flex flex-col gap-8 shadow-[6px_6px_16px_rgba(203,213,225,0.7),-6px_-6px_16px_rgba(255,255,255,0.9)] min-h-0">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-5 border-b border-slate-200 pb-6">
-                <div>
-                  <h2 className="text-lg font-black text-slate-900 uppercase tracking-wide">
-                    🧾 Carga Masiva de Facturación & Cobranza Única
-                  </h2>
-                  <p className="text-xs text-slate-500 font-semibold mt-1">
-                    Carga masiva desde Excel/CSV con deduplicación por Número de Factura + Razón Social
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-4">
-                  <input
-                    type="text"
-                    value={busquedaFacturaInput}
-                    onChange={(e) => setBusquedaFacturaInput(e.target.value)}
-                    placeholder="Buscar Nº factura o Razón Social..."
-                    className="bg-[#f8fafc] border border-slate-200 rounded-2xl px-5 py-3 text-xs text-slate-900 focus:outline-none w-72 font-mono shadow-[inset_2px_2px_4px_rgba(203,213,225,0.4)]"
-                  />
-
-                  <button
-                    onClick={() => setMostrarModalCargaFacturas(true)}
-                    className="px-6 py-3.5 bg-emerald-700 hover:bg-emerald-600 text-white font-bold rounded-2xl text-xs shadow-xs cursor-pointer flex items-center gap-2"
-                  >
-                    <span>📊 Cargar Archivo Facturas</span>
-                  </button>
-                </div>
-              </div>
-
-              <div className="flex-1 overflow-auto border border-slate-200/80 rounded-2xl bg-white shadow-2xs">
-                <table className="w-full text-left border-collapse text-xs font-medium">
-                  <thead>
-                    <tr className="bg-[#f8fafc] text-slate-700 border-b border-slate-200 font-bold uppercase text-xs">
-                      <th className="p-4 border-r border-slate-200">FECHA</th>
-                      <th className="p-4 border-r border-slate-200">Nº FACTURA</th>
-                      <th className="p-4 border-r border-slate-200">RAZÓN SOCIAL (CLIENTE)</th>
-                      <th className="p-4 border-r border-slate-200 text-right">MONTO TOTAL</th>
-                      <th className="p-4 border-r border-slate-200 text-center">ESTADO PAGO</th>
-                      <th className="p-4 text-center w-48">ACCIONES COBRANZA</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-200">
-                    {facturasFiltradas.map((f) => (
-                      <tr key={f.id} className="hover:bg-slate-50/80">
-                        <td className="p-4 font-mono text-slate-600 border-r border-slate-200">{f.fecha}</td>
-                        <td className="p-4 font-mono font-bold text-blue-900 border-r border-slate-200">#{f.numero_factura}</td>
-                        <td className="p-4 border-r border-slate-200 font-bold text-slate-900 uppercase">{f.razon_social}</td>
-                        <td className="p-4 text-right font-mono font-bold text-emerald-800 border-r border-slate-200">
-                          ${f.monto_total.toLocaleString('es-CL')} CLP
-                        </td>
-                        <td className="p-4 text-center border-r border-slate-200">
-                          <select
-                            value={f.estado}
-                            onChange={(e: any) => cambiarEstadoFactura(f.id, e.target.value)}
-                            className={`font-bold text-xs px-3.5 py-1.5 rounded-xl border cursor-pointer ${
-                              f.estado === 'Pagada' ? 'bg-emerald-100 text-emerald-800 border-emerald-300' :
-                              f.estado === 'Morosa' ? 'bg-red-100 text-red-800 border-red-300' :
-                              'bg-amber-100 text-amber-800 border-amber-300'
-                            }`}
-                          >
-                            <option value="Emitida">Emitida</option>
-                            <option value="Pendiente">Pendiente</option>
-                            <option value="Pagada">Pagada</option>
-                            <option value="Morosa">Morosa</option>
-                          </select>
-                        </td>
-                        <td className="p-4 text-center flex items-center justify-center gap-2">
-                          <button
-                            disabled={enviandoNotif}
-                            onClick={() => enviarEmailCobroResend(configEmpresa.email_cobranza, f.razon_social, `Factura #${f.numero_factura} por $${f.monto_total.toLocaleString('es-CL')} CLP`)}
-                            className="px-3.5 py-1.5 bg-blue-900 hover:bg-blue-800 text-white rounded-xl text-xs font-bold cursor-pointer"
-                          >
-                            📧 Email
-                          </button>
-                          <button
-                            disabled={enviandoNotif}
-                            onClick={() => enviarWhatsAppCobro('+56991016912', f.razon_social, `Factura #${f.numero_factura} por $${f.monto_total.toLocaleString('es-CL')} CLP`)}
-                            className="px-3.5 py-1.5 bg-emerald-700 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold cursor-pointer"
-                          >
-                            📲 WA
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                    {facturasFiltradas.length === 0 && (
-                      <tr>
-                        <td colSpan={6} className="p-12 text-center text-slate-400 italic text-xs">
-                          No hay facturas cargadas. Haga clic en "📊 Cargar Archivo Facturas".
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {/* ── MÓDULO 4: SERVICIO TÉCNICO ── */}
-          {moduloActivo === 'serv_tecnico' && (
-            <div className="flex-1 bg-white border border-slate-200/90 rounded-3xl p-10 flex flex-col gap-8 shadow-[6px_6px_16px_rgba(203,213,225,0.7),-6px_-6px_16px_rgba(255,255,255,0.9)] min-h-0">
-              <div className="flex justify-between items-center border-b border-slate-200 pb-6">
-                <div>
-                  <h2 className="text-lg font-black text-slate-900 uppercase tracking-wide">
-                    🛠️ Servicio Técnico & Terreno (Command Center)
-                  </h2>
-                  <p className="text-xs text-slate-500 font-semibold mt-1">
-                    Sincronización en tiempo real con la central de monitoreo
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex-1 overflow-auto border border-slate-200/80 rounded-2xl bg-white shadow-2xs">
-                <table className="w-full text-left border-collapse text-xs font-medium">
-                  <thead>
-                    <tr className="bg-[#f8fafc] text-slate-700 border-b border-slate-200 font-bold uppercase text-xs">
-                      <th className="p-4 border-r border-slate-200">OT / FECHA</th>
-                      <th className="p-4 border-r border-slate-200">ESTADO</th>
-                      <th className="p-4 border-r border-slate-200">CTA</th>
-                      <th className="p-4 border-r border-slate-200">ABONADO</th>
-                      <th className="p-4 border-r border-slate-200">TIPO / TÉCNICO</th>
-                      <th className="p-4 border-r border-slate-200">PROBLEMA REPORTADO</th>
-                      <th className="p-4">TRABAJO REALIZADO EN TERRENO</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-200">
-                    {ordenesTrabajo.map((ot: any) => (
-                      <tr key={ot.id} className="hover:bg-slate-50/80">
-                        <td className="p-4 font-mono border-r border-slate-200">
-                          <div className="font-bold text-blue-900">{ot.codigo_ot || `OT-${ot.id}`}</div>
-                          <div className="text-xs text-slate-500 mt-0.5">{ot.fecha_cita || ot.fecha_creacion}</div>
-                        </td>
-                        <td className="p-4 text-center border-r border-slate-200 font-bold">
-                          <span className={`px-3 py-1 rounded-full text-xs ${
-                            ot.estado === 'Completada' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
-                          }`}>
-                            {(ot.estado || 'Pendiente').toUpperCase()}
-                          </span>
-                        </td>
-                        <td className="p-4 font-mono font-bold text-blue-900 border-r border-slate-200">{ot.cuenta}</td>
-                        <td className="p-4 border-r border-slate-200 font-bold text-slate-900 uppercase">{ot.nombre_abonado}</td>
-                        <td className="p-4 border-r border-slate-200">
-                          <div className="font-bold text-slate-800">{ot.tipo_visita || 'Correctiva'}</div>
-                          <div className="text-xs text-slate-500 mt-0.5">{ot.tecnico}</div>
-                        </td>
-                        <td className="p-4 border-r border-slate-200 max-w-[200px] truncate" title={ot.problema}>{ot.problema}</td>
-                        <td className="p-4 italic text-slate-600 max-w-[250px] truncate" title={ot.novedad}>{ot.novedad || 'En atención'}</td>
-                      </tr>
-                    ))}
-                    {ordenesTrabajo.length === 0 && (
-                      <tr>
-                        <td colSpan={7} className="p-12 text-center text-slate-400 italic text-xs">
-                          No hay órdenes de trabajo sincronizadas desde Command Center.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {/* ── MÓDULO 5: KPIS EJECUTIVOS ── */}
-          {moduloActivo === 'kpis' && (
-            <div className="flex-1 bg-white border border-slate-200/90 rounded-3xl p-10 flex flex-col gap-8 shadow-[6px_6px_16px_rgba(203,213,225,0.7),-6px_-6px_16px_rgba(255,255,255,0.9)] overflow-y-auto">
-              <h2 className="text-lg font-black text-slate-900 uppercase tracking-wide border-b border-slate-200 pb-5">
-                📊 Reportes Ejecutivos & Indicadores Financieros
-              </h2>
-
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-                <div className="bg-[#f8fafc] border border-slate-200/90 p-7 rounded-3xl text-center space-y-3 shadow-[inset_2px_2px_4px_rgba(203,213,225,0.4)]">
-                  <span className="text-slate-500 text-xs font-bold block uppercase">MRR ESTIMADO TOTAL</span>
-                  <span className="text-3xl font-black font-mono text-emerald-800">
-                    ${Math.round(Object.values(clientesMap).reduce((acc, c) => acc + (c.moneda === 'UF' ? c.tarifa_mensual * configEmpresa.valor_uf : c.tarifa_mensual), 0)).toLocaleString('es-CL')} CLP
-                  </span>
-                  <span className="text-xs text-slate-500 block font-medium">Monitoreo activo acumulado</span>
-                </div>
-
-                <div className="bg-[#f8fafc] border border-slate-200/90 p-7 rounded-3xl text-center space-y-3 shadow-[inset_2px_2px_4px_rgba(203,213,225,0.4)]">
-                  <span className="text-slate-500 text-xs font-bold block uppercase">FACTURACIÓN MASIVA</span>
-                  <span className="text-3xl font-black font-mono text-blue-900">
-                    {facturas.length}
-                  </span>
-                  <span className="text-xs text-slate-500 block font-medium">
-                    ${facturas.reduce((acc, f) => acc + f.monto_total, 0).toLocaleString('es-CL')} CLP cargados
-                  </span>
-                </div>
-
-                <div className="bg-[#f8fafc] border border-slate-200/90 p-7 rounded-3xl text-center space-y-3 shadow-[inset_2px_2px_4px_rgba(203,213,225,0.4)]">
-                  <span className="text-slate-500 text-xs font-bold block uppercase">COTIZACIONES</span>
-                  <span className="text-3xl font-black font-mono text-purple-900">
-                    {cotizaciones.length}
-                  </span>
-                  <span className="text-xs text-slate-500 block font-medium">Presupuestos comercial Dolibarr</span>
-                </div>
-
-                <div className="bg-[#f8fafc] border border-slate-200/90 p-7 rounded-3xl text-center space-y-3 shadow-[inset_2px_2px_4px_rgba(203,213,225,0.4)]">
-                  <span className="text-slate-500 text-xs font-bold block uppercase">VISITAS TÉCNICAS</span>
-                  <span className="text-3xl font-black font-mono text-amber-800">
-                    {ordenesTrabajo.length}
-                  </span>
-                  <span className="text-xs text-slate-500 block font-medium">OTs desde Command Center</span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* ── MÓDULO 6: CONFIGURACIÓN DE EMPRESA COMPLETA ── */}
+          {/* ── MÓDULO 6: CRUD DE EMPRESAS DEL CONGLOMERADO (4 RAZONES SOCIALES) ── */}
           {moduloActivo === 'config' && (
             <div className="flex-1 bg-white border border-slate-200/90 rounded-3xl p-10 flex flex-col gap-8 shadow-[6px_6px_16px_rgba(203,213,225,0.7),-6px_-6px_16px_rgba(255,255,255,0.9)] overflow-y-auto">
               <div className="flex justify-between items-center border-b border-slate-200 pb-5">
                 <div>
                   <h2 className="text-lg font-black text-slate-900 uppercase tracking-wide">
-                    ⚙️ Configuración Institucional de la Empresa & Parámetros
+                    ⚙️ CRUD de Empresas Emisoras del Conglomerado Gama
                   </h2>
                   <p className="text-xs text-slate-500 font-semibold mt-1">
-                    Gestión de Razones Sociales, Datos de Cobranza, Cuentas Bancarias y Valor UF
+                    Gestión de las 4 Razones Sociales que facturan a los clientes
                   </p>
                 </div>
 
                 <button
-                  onClick={handleGuardarConfigEmpresa}
+                  onClick={() => abrirModalEditarEmpresa()}
                   className="px-7 py-3.5 bg-blue-900 hover:bg-blue-800 text-white font-bold rounded-2xl text-xs shadow-xs cursor-pointer flex items-center gap-2"
                 >
-                  <span>💾 Guardar Datos Institucionales</span>
+                  <span>➕ Agregar Nueva Empresa Emisora</span>
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-10 text-xs font-medium">
-                
-                {/* CARD 1: DATOS CORPORATIVOS */}
-                <div className="bg-[#f8fafc] border border-slate-200 p-7 rounded-3xl space-y-5 shadow-[inset_2px_2px_4px_rgba(203,213,225,0.3)]">
-                  <h3 className="font-bold text-slate-900 uppercase tracking-wider text-xs border-b border-slate-200 pb-3">
-                    🏢 Datos Sociales & Fiscales
-                  </h3>
-
-                  <div>
-                    <label className="font-bold text-slate-700 block mb-1">Razón Social Principal:</label>
-                    <input
-                      type="text"
-                      value={configEmpresa.razon_social}
-                      onChange={(e) => setConfigEmpresa({ ...configEmpresa, razon_social: e.target.value })}
-                      className="bg-white border border-slate-300 px-4 py-3 rounded-2xl text-slate-900 font-bold w-full focus:outline-none focus:ring-2 focus:ring-blue-600"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="font-bold text-slate-700 block mb-1">RUT Empresa / Conglomerado:</label>
-                    <input
-                      type="text"
-                      value={configEmpresa.rut_empresa}
-                      onChange={(e) => setConfigEmpresa({ ...configEmpresa, rut_empresa: cleanRut(e.target.value) })}
-                      className="bg-white border border-slate-300 px-4 py-3 rounded-2xl font-mono font-bold text-slate-900 w-full focus:outline-none focus:ring-2 focus:ring-blue-600"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="font-bold text-slate-700 block mb-1">Giro Comercial:</label>
-                    <input
-                      type="text"
-                      value={configEmpresa.giro}
-                      onChange={(e) => setConfigEmpresa({ ...configEmpresa, giro: e.target.value })}
-                      className="bg-white border border-slate-300 px-4 py-3 rounded-2xl text-slate-900 w-full focus:outline-none focus:ring-2 focus:ring-blue-600"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="font-bold text-slate-700 block mb-1">Dirección Fiscal Corporativa:</label>
-                    <input
-                      type="text"
-                      value={configEmpresa.direccion}
-                      onChange={(e) => setConfigEmpresa({ ...configEmpresa, direccion: e.target.value })}
-                      className="bg-white border border-slate-300 px-4 py-3 rounded-2xl text-slate-900 w-full focus:outline-none focus:ring-2 focus:ring-blue-600"
-                    />
-                  </div>
-                </div>
-
-                {/* CARD 2: DATOS DE COBRANZA & TRANSFERENCIAS */}
-                <div className="bg-[#f8fafc] border border-slate-200 p-7 rounded-3xl space-y-5 shadow-[inset_2px_2px_4px_rgba(203,213,225,0.3)]">
-                  <h3 className="font-bold text-slate-900 uppercase tracking-wider text-xs border-b border-slate-200 pb-3">
-                    💳 Banco & Datos de Cobranza Oficial
-                  </h3>
-
-                  <div>
-                    <label className="font-bold text-slate-700 block mb-1">Correo Oficial de Cobranza (Resend @gamasecurity.cl):</label>
-                    <input
-                      type="email"
-                      value={configEmpresa.email_cobranza}
-                      onChange={(e) => setConfigEmpresa({ ...configEmpresa, email_cobranza: e.target.value })}
-                      className="bg-white border border-slate-300 px-4 py-3 rounded-2xl text-blue-900 font-bold w-full focus:outline-none focus:ring-2 focus:ring-blue-600"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="font-bold text-slate-700 block mb-1">Banco de Depósito:</label>
-                      <input
-                        type="text"
-                        value={configEmpresa.banco_nombre}
-                        onChange={(e) => setConfigEmpresa({ ...configEmpresa, banco_nombre: e.target.value })}
-                        className="bg-white border border-slate-300 px-4 py-3 rounded-2xl text-slate-900 font-semibold w-full"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="font-bold text-slate-700 block mb-1">Tipo de Cuenta:</label>
-                      <input
-                        type="text"
-                        value={configEmpresa.banco_tipo_cuenta}
-                        onChange={(e) => setConfigEmpresa({ ...configEmpresa, banco_tipo_cuenta: e.target.value })}
-                        className="bg-white border border-slate-300 px-4 py-3 rounded-2xl text-slate-900 font-semibold w-full"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="font-bold text-slate-700 block mb-1">Número de Cuenta Corriente:</label>
-                    <input
-                      type="text"
-                      value={configEmpresa.banco_numero_cuenta}
-                      onChange={(e) => setConfigEmpresa({ ...configEmpresa, banco_numero_cuenta: e.target.value })}
-                      className="bg-white border border-slate-300 px-4 py-3 rounded-2xl text-slate-900 font-mono font-bold w-full"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="font-bold text-slate-700 block mb-1">Valor de Referencia UF (CLP):</label>
-                    <input
-                      type="number"
-                      value={configEmpresa.valor_uf}
-                      onChange={(e) => setConfigEmpresa({ ...configEmpresa, valor_uf: Number(e.target.value) || 38500 })}
-                      className="bg-white border border-slate-300 px-4 py-3 rounded-2xl font-mono font-bold text-emerald-800 w-full"
-                    />
-                  </div>
-                </div>
-
+              {/* TABLA DE EMPRESAS EMISORAS */}
+              <div className="border border-slate-200/80 rounded-2xl overflow-hidden shadow-2xs bg-white">
+                <table className="w-full text-left border-collapse text-xs font-medium">
+                  <thead>
+                    <tr className="bg-[#f8fafc] text-slate-700 border-b border-slate-200 font-bold uppercase text-xs">
+                      <th className="p-4 border-r border-slate-200">ID / RUT</th>
+                      <th className="p-4 border-r border-slate-200">RAZÓN SOCIAL EMISORA</th>
+                      <th className="p-4 border-r border-slate-200">GIRO COMERCIAL</th>
+                      <th className="p-4 border-r border-slate-200">DIRECCIÓN FISCAL</th>
+                      <th className="p-4 border-r border-slate-200">DATOS DE COBRANZA & BANCO</th>
+                      <th className="p-4 text-center w-36">ACCIONES CRUD</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200">
+                    {empresasConglomerado.map(emp => (
+                      <tr key={emp.id} className="hover:bg-slate-50">
+                        <td className="p-4 font-mono font-bold text-blue-900 border-r border-slate-200">
+                          <div>{emp.id}</div>
+                          <div className="text-slate-500 font-bold">RUT: {emp.rut}</div>
+                        </td>
+                        <td className="p-4 border-r border-slate-200 font-bold text-slate-900 text-sm">{emp.razon_social}</td>
+                        <td className="p-4 border-r border-slate-200 text-slate-600">{emp.giro}</td>
+                        <td className="p-4 border-r border-slate-200 text-slate-600">{emp.direccion}</td>
+                        <td className="p-4 border-r border-slate-200 font-mono text-slate-700">
+                          <div>✉️ {emp.email_cobranza}</div>
+                          <div>🏦 {emp.banco_nombre} - Cta: {emp.banco_numero_cuenta}</div>
+                        </td>
+                        <td className="p-4 text-center flex items-center justify-center gap-2">
+                          <button
+                            onClick={() => abrirModalEditarEmpresa(emp)}
+                            className="px-3 py-1.5 bg-slate-900 text-white rounded-xl font-bold cursor-pointer hover:bg-slate-800 text-[11px]"
+                          >
+                            ✏️ Editar
+                          </button>
+                          <button
+                            onClick={() => handleEliminarEmpresaEmisora(emp.id)}
+                            className="px-3 py-1.5 bg-red-700 text-white rounded-xl font-bold cursor-pointer hover:bg-red-800 text-[11px]"
+                          >
+                            🗑️
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
           )}
@@ -1304,75 +1095,191 @@ export default function OperacionCRM() {
         </main>
       </div>
 
-      {/* ── MODAL EDITAR COMPLETO CLIENTE & TARIFA ── */}
-      {mostrarModalTarifa && clienteActivo && (
+      {/* ── MODAL CRUD PARA AGREGAR/EDITAR EMPRESA EMISORA ── */}
+      {mostrarModalEmpresa && empresaEditando && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-6">
+          <div className="bg-white border border-slate-300 w-full max-w-2xl p-9 rounded-3xl shadow-2xl space-y-6 text-xs font-sans max-h-[92vh] overflow-y-auto">
+            <div className="flex justify-between items-center border-b border-slate-200 pb-4">
+              <h3 className="font-black text-lg text-slate-900 uppercase tracking-wide">
+                ⚙️ {empresaEditando.id ? 'Editar Empresa Emisora' : 'Agregar Nueva Empresa Emisora'}
+              </h3>
+              <button onClick={() => setMostrarModalEmpresa(false)} className="text-slate-400 font-bold text-2xl">✕</button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Razón Social Emisora:</label>
+                  <input
+                    type="text"
+                    value={empresaEditando.razon_social}
+                    onChange={(e) => setEmpresaEditando({ ...empresaEditando, razon_social: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-300 p-3 rounded-2xl font-bold text-slate-900 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">RUT Empresa:</label>
+                  <input
+                    type="text"
+                    value={empresaEditando.rut}
+                    onChange={(e) => setEmpresaEditando({ ...empresaEditando, rut: cleanRut(e.target.value) })}
+                    className="w-full bg-slate-50 border border-slate-300 p-3 rounded-2xl font-mono font-bold text-slate-900 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Giro Comercial:</label>
+                <input
+                  type="text"
+                  value={empresaEditando.giro}
+                  onChange={(e) => setEmpresaEditando({ ...empresaEditando, giro: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-300 p-3 rounded-2xl text-slate-900 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Dirección Fiscal:</label>
+                <input
+                  type="text"
+                  value={empresaEditando.direccion}
+                  onChange={(e) => setEmpresaEditando({ ...empresaEditando, direccion: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-300 p-3 rounded-2xl text-slate-900 focus:outline-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Email Cobranza:</label>
+                  <input
+                    type="email"
+                    value={empresaEditando.email_cobranza}
+                    onChange={(e) => setEmpresaEditando({ ...empresaEditando, email_cobranza: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-300 p-3 rounded-2xl text-blue-900 font-bold focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Teléfono:</label>
+                  <input
+                    type="text"
+                    value={empresaEditando.telefono}
+                    onChange={(e) => setEmpresaEditando({ ...empresaEditando, telefono: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-300 p-3 rounded-2xl font-mono text-slate-900 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Banco:</label>
+                  <input
+                    type="text"
+                    value={empresaEditando.banco_nombre}
+                    onChange={(e) => setEmpresaEditando({ ...empresaEditando, banco_nombre: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-300 p-3 rounded-2xl text-slate-900 font-semibold"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Tipo Cta:</label>
+                  <input
+                    type="text"
+                    value={empresaEditando.banco_tipo_cuenta}
+                    onChange={(e) => setEmpresaEditando({ ...empresaEditando, banco_tipo_cuenta: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-300 p-3 rounded-2xl text-slate-900 font-semibold"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Nº Cuenta:</label>
+                  <input
+                    type="text"
+                    value={empresaEditando.banco_numero_cuenta}
+                    onChange={(e) => setEmpresaEditando({ ...empresaEditando, banco_numero_cuenta: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-300 p-3 rounded-2xl font-mono text-slate-900 font-bold"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-4 pt-4 border-t border-slate-200">
+              <button onClick={() => setMostrarModalEmpresa(false)} className="px-5 py-3 bg-slate-200 text-slate-800 font-bold rounded-2xl cursor-pointer">Cancelar</button>
+              <button onClick={handleGuardarEmpresaEmisora} className="px-6 py-3 bg-blue-900 text-white font-bold rounded-2xl shadow-xs cursor-pointer">💾 Guardar Empresa</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL EDITAR CLIENTE (RUT) Y ASIGNAR EMPRESA DEL CONGLOMERADO ── */}
+      {mostrarModalCliente && clienteActivo && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-6">
           <div className="bg-white border border-slate-300 w-full max-w-2xl p-9 rounded-3xl shadow-2xl space-y-6 text-xs font-sans max-h-[92vh] overflow-y-auto">
             <div className="flex justify-between items-center border-b border-slate-200 pb-4">
               <div>
                 <h3 className="font-black text-lg text-slate-900 uppercase tracking-wide">
-                  ✏️ Editar Ficha de Cliente & Tarifa ({clienteActivo.cuenta})
+                  ✏️ Editar Cliente Comercial (RUT: {clienteActivo.rut})
                 </h3>
-                <p className="text-xs text-slate-500 font-medium mt-0.5">Los cambios de Email, Teléfono y Datos se sincronizarán en todo el sistema.</p>
+                <p className="text-xs text-slate-500 font-medium mt-0.5">Asigne la Empresa del Conglomerado que le facturará a este cliente.</p>
               </div>
-              <button onClick={() => setMostrarModalTarifa(false)} className="text-slate-400 hover:text-slate-700 font-bold text-2xl">✕</button>
+              <button onClick={() => setMostrarModalCliente(false)} className="text-slate-400 font-bold text-2xl">✕</button>
             </div>
 
-            <div className="space-y-5">
+            <div className="space-y-4">
+              <div className="bg-blue-50 border border-blue-200 p-4 rounded-2xl">
+                <label className="font-extrabold text-blue-950 block mb-1 text-xs uppercase tracking-wider">
+                  🏢 Empresa del Conglomerado Asignada (Emisora / Facturadora):
+                </label>
+                <select
+                  value={editEmpresaId}
+                  onChange={(e) => setEditEmpresaId(e.target.value)}
+                  className="w-full bg-white border border-blue-300 p-3 rounded-xl font-bold text-slate-900 text-xs focus:outline-none"
+                >
+                  {empresasConglomerado.map(emp => (
+                    <option key={emp.id} value={emp.id}>{emp.razon_social} (RUT: {emp.rut})</option>
+                  ))}
+                </select>
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Nombre / Razón Social:</label>
+                  <label className="font-bold text-slate-700 block mb-1">Razón Social Cliente:</label>
                   <input
                     type="text"
-                    value={editNombre}
-                    onChange={(e) => setEditNombre(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-300 p-3.5 rounded-2xl font-bold text-slate-900 focus:outline-none"
+                    value={editRazonSocial}
+                    onChange={(e) => setEditRazonSocial(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-300 p-3.5 rounded-2xl font-bold text-slate-900"
                   />
                 </div>
 
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">RUT Cliente:</label>
+                  <label className="font-bold text-slate-700 block mb-1">Email Cobranza:</label>
                   <input
-                    type="text"
-                    value={editRut}
-                    onChange={(e) => setEditRut(cleanRut(e.target.value))}
-                    className="w-full bg-slate-50 border border-slate-300 p-3.5 rounded-2xl font-mono font-bold text-slate-900 focus:outline-none"
+                    type="email"
+                    value={editEmailCobranza}
+                    onChange={(e) => setEditEmailCobranza(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-300 p-3.5 rounded-2xl font-bold text-blue-900"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Correo Electrónico (Email Cobranza):</label>
-                  <input
-                    type="email"
-                    value={editEmail}
-                    onChange={(e) => setEditEmail(e.target.value)}
-                    placeholder="cliente@dominio.cl"
-                    className="w-full bg-slate-50 border border-slate-300 p-3.5 rounded-2xl font-bold text-blue-900 focus:outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="font-bold text-slate-700 block mb-1">Teléfono Contacto / WA:</label>
+                  <label className="font-bold text-slate-700 block mb-1">Teléfono:</label>
                   <input
                     type="text"
                     value={editTelefono}
                     onChange={(e) => setEditTelefono(e.target.value)}
-                    placeholder="+56 9 9123 4567"
-                    className="w-full bg-slate-50 border border-slate-300 p-3.5 rounded-2xl font-mono font-bold text-slate-900 focus:outline-none"
+                    className="w-full bg-slate-50 border border-slate-300 p-3.5 rounded-2xl font-mono font-bold text-slate-900"
                   />
                 </div>
-              </div>
 
-              <div>
-                <label className="font-bold text-slate-700 block mb-1">Dirección de la Propiedad:</label>
-                <input
-                  type="text"
-                  value={editDireccion}
-                  onChange={(e) => setEditDireccion(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-300 p-3.5 rounded-2xl text-slate-900 focus:outline-none"
-                />
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Dirección Comercial:</label>
+                  <input
+                    type="text"
+                    value={editDireccionComercial}
+                    onChange={(e) => setEditDireccionComercial(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-300 p-3.5 rounded-2xl text-slate-900"
+                  />
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4 pt-2 border-t border-slate-200">
@@ -1381,7 +1288,7 @@ export default function OperacionCRM() {
                   <select
                     value={editMoneda}
                     onChange={(e: any) => setEditMoneda(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-300 p-3.5 rounded-2xl font-bold text-slate-900 focus:outline-none"
+                    className="w-full bg-slate-50 border border-slate-300 p-3.5 rounded-2xl font-bold text-slate-900"
                   >
                     <option value="CLP">CLP (Pesos Chilenos)</option>
                     <option value="UF">UF (Unidad de Fomento)</option>
@@ -1389,76 +1296,81 @@ export default function OperacionCRM() {
                 </div>
 
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">
-                    Monto Mensual {editMoneda === 'UF' ? '(en UF)' : '(en CLP)'}:
-                  </label>
+                  <label className="font-bold text-slate-700 block mb-1">Monto Mensual:</label>
                   <input
                     type="number"
                     step={editMoneda === 'UF' ? '0.1' : '1000'}
                     value={editTarifa}
                     onChange={(e) => setEditTarifa(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-300 p-3.5 rounded-2xl font-mono font-bold text-slate-900 focus:outline-none text-sm"
+                    className="w-full bg-slate-50 border border-slate-300 p-3.5 rounded-2xl font-mono font-bold text-slate-900"
                   />
                 </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="font-bold text-slate-700 block mb-1">Día Vencimiento (1-30):</label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="30"
-                    value={editDia}
-                    onChange={(e) => setEditDia(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-300 p-3.5 rounded-2xl font-mono text-slate-900 focus:outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="font-bold text-slate-700 block mb-1">Estado de Pago Inicial:</label>
-                  <select
-                    value={editEstadoPago}
-                    onChange={(e: any) => setEditEstadoPago(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-300 p-3.5 rounded-2xl font-bold text-slate-900 focus:outline-none"
-                  >
-                    <option value="Al Día">Al Día</option>
-                    <option value="Pendiente">Pendiente</option>
-                    <option value="Moroso">Moroso</option>
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="font-bold text-slate-700 block mb-1">Plan de Monitoreo:</label>
-                <input
-                  type="text"
-                  value={editPlan}
-                  onChange={(e) => setEditPlan(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-300 p-3.5 rounded-2xl font-semibold text-slate-900 focus:outline-none"
-                />
               </div>
             </div>
 
             <div className="flex justify-end gap-4 pt-5 border-t border-slate-200">
-              <button
-                onClick={() => setMostrarModalTarifa(false)}
-                className="px-6 py-3.5 bg-slate-200 text-slate-800 font-bold rounded-2xl hover:bg-slate-300 cursor-pointer text-xs"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={handleGuardarTarifaCliente}
-                className="px-7 py-3.5 bg-blue-900 hover:bg-blue-800 text-white font-bold rounded-2xl shadow-xs cursor-pointer text-xs"
-              >
-                💾 Sincronizar Cliente & Tarifa
-              </button>
+              <button onClick={() => setMostrarModalCliente(false)} className="px-6 py-3.5 bg-slate-200 text-slate-800 font-bold rounded-2xl cursor-pointer">Cancelar</button>
+              <button onClick={handleGuardarClienteMaestro} className="px-7 py-3.5 bg-blue-900 text-white font-bold rounded-2xl shadow-xs cursor-pointer">💾 Guardar Cliente</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ── MODAL NUEVA COTIZACIÓN COMERCIAL (ESPACOSO & ANCHO W-FULL MAX-W-6XL) ── */}
+      {/* ── MODAL VINCULAR CENTRO DE COSTO (ABONADO COMMAND CENTER) ── */}
+      {mostrarModalVincularAbonado && clienteActivo && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-6">
+          <div className="bg-white border border-slate-300 w-full max-w-md p-8 rounded-3xl shadow-2xl space-y-5 text-xs font-sans">
+            <div className="flex justify-between items-center border-b border-slate-200 pb-3">
+              <h3 className="font-black text-sm text-slate-900 uppercase tracking-wide">
+                ➕ Vincular Centro de Costo (Abonado)
+              </h3>
+              <button onClick={() => setMostrarModalVincularAbonado(false)} className="text-slate-400 font-bold text-xl">✕</button>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Código de Abonado / Cuenta Command Center (ej: C774):</label>
+                <input
+                  type="text"
+                  value={nuevaCuentaAbonadoInput}
+                  onChange={(e) => setNuevaCuentaAbonadoInput(e.target.value)}
+                  placeholder="C774"
+                  className="w-full bg-slate-50 border border-slate-300 p-3 rounded-2xl font-mono font-bold text-slate-900 uppercase focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Nombre / Alias del Centro de Costo:</label>
+                <input
+                  type="text"
+                  value={nuevoAliasCentroCostoInput}
+                  onChange={(e) => setNuevoAliasCentroCostoInput(e.target.value)}
+                  placeholder="Ej: Sucursal San Bernardo / Planta Lampa"
+                  className="w-full bg-slate-50 border border-slate-300 p-3 rounded-2xl text-slate-900 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Dirección del Centro de Costo:</label>
+                <input
+                  type="text"
+                  value={nuevaDireccionAbonadoInput}
+                  onChange={(e) => setNuevaDireccionAbonadoInput(e.target.value)}
+                  placeholder="Av. Lo Blanco 713, San Bernardo"
+                  className="w-full bg-slate-50 border border-slate-300 p-3 rounded-2xl text-slate-900 focus:outline-none"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-3 border-t border-slate-200">
+              <button onClick={() => setMostrarModalVincularAbonado(false)} className="px-4 py-2.5 bg-slate-200 text-slate-800 font-bold rounded-2xl cursor-pointer">Cancelar</button>
+              <button onClick={handleVincularCentroDeCosto} className="px-5 py-2.5 bg-blue-900 text-white font-bold rounded-2xl cursor-pointer">🚀 Vincular a RUT {clienteActivo.rut}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL NUEVA COTIZACIÓN COMERCIAL CON SELECCIÓN DE EMPRESA DEL CONGLOMERADO ── */}
       {mostrarModalCotizacion && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-6">
           <div className="bg-white border border-slate-300 w-full max-w-6xl p-10 rounded-3xl shadow-2xl space-y-6 font-sans text-xs max-h-[94vh] overflow-y-auto">
@@ -1467,64 +1379,52 @@ export default function OperacionCRM() {
                 <h3 className="font-black text-lg text-slate-900 uppercase tracking-wide">
                   📋 Crear Presupuesto Comercial (Formato Oficial Dolibarr PR2607)
                 </h3>
-                <p className="text-xs text-slate-500 font-medium mt-1">Formulario espacioso con cálculo automático de Neto, Descuento e IVA (19%)</p>
+                <p className="text-xs text-slate-500 font-medium mt-1">Seleccione la Empresa del Conglomerado emisora y el Cliente receptor</p>
               </div>
-              <button onClick={() => setMostrarModalCotizacion(false)} className="text-slate-400 hover:text-slate-700 font-bold text-2xl">✕</button>
+              <button onClick={() => setMostrarModalCotizacion(false)} className="text-slate-400 font-bold text-2xl">✕</button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div>
-                <label className="font-bold text-slate-700 block mb-1.5 text-xs">Cargar Abonado (Opcional):</label>
+                <label className="font-bold text-slate-700 block mb-1.5 text-xs">Empresa del Conglomerado Emisora:</label>
                 <select
-                  value={cotCuenta}
-                  onChange={(e) => setCotCuenta(e.target.value)}
-                  className="bg-[#f8fafc] border border-slate-300 text-slate-900 p-3.5 rounded-2xl w-full focus:outline-none font-bold text-xs"
+                  value={cotEmpresaEmisoraId}
+                  onChange={(e) => setCotEmpresaEmisoraId(e.target.value)}
+                  className="bg-[#f8fafc] border border-blue-300 text-slate-900 p-3.5 rounded-2xl w-full focus:outline-none font-bold text-xs"
                 >
-                  <option value="">-- Seleccionar Cuenta CRM --</option>
-                  {Object.keys(clientesMap).map(cta => (
-                    <option key={cta} value={cta}>{cta} - {clientesMap[cta].nombre}</option>
+                  {empresasConglomerado.map(emp => (
+                    <option key={emp.id} value={emp.id}>{emp.razon_social} ({emp.rut})</option>
                   ))}
                 </select>
               </div>
 
               <div>
-                <label className="font-bold text-slate-700 block mb-1.5 text-xs">Razón Social / Nombre Cliente:</label>
+                <label className="font-bold text-slate-700 block mb-1.5 text-xs">Razón Social Cliente Receptor:</label>
                 <input
                   type="text"
-                  value={cotNombre}
-                  onChange={(e) => setCotNombre(e.target.value)}
+                  value={cotNombreCliente}
+                  onChange={(e) => setCotNombreCliente(e.target.value)}
                   placeholder="Ej: CORPORACION PRODEL"
                   className="bg-[#f8fafc] border border-slate-300 text-slate-900 p-3.5 rounded-2xl w-full focus:outline-none font-bold text-xs"
                 />
               </div>
 
               <div>
-                <label className="font-bold text-slate-700 block mb-1.5 text-xs">RUT Cliente:</label>
+                <label className="font-bold text-slate-700 block mb-1.5 text-xs">RUT Cliente Receptor:</label>
                 <input
                   type="text"
-                  value={cotRut}
-                  onChange={(e) => setCotRut(cleanRut(e.target.value))}
+                  value={cotRutCliente}
+                  onChange={(e) => setCotRutCliente(cleanRut(e.target.value))}
                   placeholder="76319399-3"
                   className="bg-[#f8fafc] border border-slate-300 text-slate-900 p-3.5 rounded-2xl w-full focus:outline-none font-mono font-bold text-xs"
                 />
               </div>
             </div>
 
-            <div>
-              <label className="font-bold text-slate-700 block mb-1.5 text-xs">Dirección de Entrega / Despacho:</label>
-              <input
-                type="text"
-                value={cotDireccion}
-                onChange={(e) => setCotDireccion(e.target.value)}
-                placeholder="Avenida Lo Blanco 713, San Bernardo"
-                className="bg-[#f8fafc] border border-slate-300 text-slate-900 p-3.5 rounded-2xl w-full focus:outline-none font-medium text-xs"
-              />
-            </div>
-
             {/* TABLA DE ÍTEMS CON ESPACIO AMPLIO */}
             <div className="space-y-4 border-t border-b border-slate-200 py-6">
               <div className="flex justify-between items-center">
-                <span className="font-black text-slate-900 uppercase tracking-wider text-xs">Ítems del Presupuesto (Base Imponible + Neto + Descuento)</span>
+                <span className="font-black text-slate-900 uppercase tracking-wider text-xs">Ítems del Presupuesto (Neto & Descuento)</span>
                 <button
                   onClick={() => setItemsCot([...itemsCot, { id: Date.now().toString(), descripcion: 'Nuevo ítem / servicio', cantidad: 1, precio_neto_unitario: 10000, descuento_porcentaje: 0 }])}
                   className="px-5 py-2.5 bg-slate-900 text-white rounded-2xl text-xs font-bold cursor-pointer hover:bg-slate-800 shadow-xs"
@@ -1555,7 +1455,6 @@ export default function OperacionCRM() {
                         newIt[idx].cantidad = Number(e.target.value) || 1
                         setItemsCot(newIt)
                       }}
-                      placeholder="Cant."
                       className="col-span-2 bg-white border border-slate-300 p-3 rounded-xl text-xs font-mono text-center font-bold"
                     />
                     <input
@@ -1566,7 +1465,6 @@ export default function OperacionCRM() {
                         newIt[idx].precio_neto_unitario = Number(e.target.value) || 0
                         setItemsCot(newIt)
                       }}
-                      placeholder="Precio Neto ($)"
                       className="col-span-3 bg-white border border-slate-300 p-3 rounded-xl text-xs font-mono text-right font-bold"
                     />
                     <input
@@ -1577,7 +1475,6 @@ export default function OperacionCRM() {
                         newIt[idx].descuento_porcentaje = Number(e.target.value) || 0
                         setItemsCot(newIt)
                       }}
-                      placeholder="Desc %"
                       className="col-span-1 bg-white border border-slate-300 p-3 rounded-xl text-xs font-mono text-center font-bold"
                     />
                     <button
@@ -1591,7 +1488,7 @@ export default function OperacionCRM() {
               </div>
             </div>
 
-            {/* RESUMEN DE TOTALES ESTILO DOLIBARR */}
+            {/* RESUMEN DE TOTALES */}
             <div className="bg-[#f8fafc] p-6 rounded-2xl border border-slate-200 space-y-2 text-xs font-mono max-w-sm ml-auto">
               <div className="flex justify-between">
                 <span className="text-slate-600">Total (Base imp.):</span>
@@ -1608,51 +1505,42 @@ export default function OperacionCRM() {
             </div>
 
             <div className="flex justify-end gap-4 pt-4 border-t border-slate-200">
-              <button
-                onClick={() => setMostrarModalCotizacion(false)}
-                className="px-6 py-3.5 bg-slate-200 text-slate-800 font-bold rounded-2xl hover:bg-slate-300 cursor-pointer text-xs"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={handleGuardarCotizacion}
-                className="px-7 py-3.5 bg-blue-900 hover:bg-blue-800 text-white font-bold rounded-2xl shadow-xs cursor-pointer text-xs"
-              >
-                💾 Generar Cotización PR2607
-              </button>
+              <button onClick={() => setMostrarModalCotizacion(false)} className="px-6 py-3.5 bg-slate-200 text-slate-800 font-bold rounded-2xl cursor-pointer text-xs">Cancelar</button>
+              <button onClick={handleGuardarCotizacionDolibarr} className="px-7 py-3.5 bg-blue-900 text-white font-bold rounded-2xl shadow-xs cursor-pointer text-xs">💾 Generar Cotización PR2607</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ── MODAL IMPRESIÓN / VISOR DE COTIZACIÓN IDÉNTICO A DOLIBARR PR2607-0258.pdf ── */}
+      {/* ── VISOR DE COTIZACIÓN RENDIDO SEGÚN PR2607-0258.pdf ── */}
       {cotSeleccionada && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-6 overflow-y-auto">
           <div className="bg-white text-slate-900 p-10 md:p-12 rounded-3xl max-w-4xl w-full shadow-2xl font-sans my-auto border border-slate-300 space-y-8 min-h-[750px] flex flex-col justify-between">
             
             <div className="space-y-6">
-              {/* ENCABEZADO SUPERIOR: MEMBRETE EMISOR + RECUADRO "ENVIAR A" (IDÉNTICO A DOLIBARR) */}
-              <div className="flex flex-col md:flex-row justify-between items-start gap-8 border-b-2 border-slate-200 pb-6">
-                
-                {/* MEMBRETE IZQUIERDA */}
-                <div className="space-y-1 text-xs">
-                  <h1 className="text-xl font-black text-[#000033] tracking-tight">{configEmpresa.razon_social}</h1>
-                  <p className="text-slate-600 font-medium">{configEmpresa.direccion}</p>
-                  <p className="text-slate-600 font-medium">Teléfono: {configEmpresa.telefono}</p>
-                  <p className="text-slate-600 font-medium">Correo: {configEmpresa.email_contacto}</p>
-                  <p className="text-slate-600 font-medium">Web: {configEmpresa.web}</p>
-                </div>
+              {/* ENCABEZADO: MEMBRETE EMISOR DE LA EMPRESA DEL CONGLOMERADO SELECCIONADA */}
+              {(() => {
+                const empEmisoraDoc = empresasConglomerado.find(e => e.id === cotSeleccionada.empresa_facturadora_id) || empresasConglomerado[0]
+                return (
+                  <div className="flex flex-col md:flex-row justify-between items-start gap-8 border-b-2 border-slate-200 pb-6">
+                    <div className="space-y-1 text-xs">
+                      <h1 className="text-xl font-black text-[#000033] tracking-tight">{empEmisoraDoc.razon_social}</h1>
+                      <p className="text-slate-600 font-medium">{empEmisoraDoc.direccion}</p>
+                      <p className="text-slate-600 font-medium">Teléfono: {empEmisoraDoc.telefono}</p>
+                      <p className="text-slate-600 font-medium">Correo: {empEmisoraDoc.email_contacto}</p>
+                      <p className="text-slate-600 font-medium">Web: {empEmisoraDoc.web}</p>
+                    </div>
 
-                {/* RECUADRO ENVIAR A (DERECHA) */}
-                <div className="border border-slate-300 bg-[#f8fafc] p-5 rounded-2xl w-full md:w-80 space-y-1.5 text-xs shadow-2xs">
-                  <div className="font-bold text-slate-500 uppercase tracking-wider text-[11px]">Enviar a</div>
-                  <h2 className="text-sm font-black text-slate-900 uppercase">{cotSeleccionada.nombre_cliente}</h2>
-                  <p className="text-slate-600">{cotSeleccionada.direccion || 'Dirección de Entrega'}</p>
-                  {cotSeleccionada.rut_cliente && <p className="font-mono text-slate-700 font-bold">R.U.T.: {cotSeleccionada.rut_cliente}</p>}
-                </div>
-              </div>
+                    <div className="border border-slate-300 bg-[#f8fafc] p-5 rounded-2xl w-full md:w-80 space-y-1.5 text-xs shadow-2xs">
+                      <div className="font-bold text-slate-500 uppercase tracking-wider text-[11px]">Enviar a</div>
+                      <h2 className="text-sm font-black text-slate-900 uppercase">{cotSeleccionada.nombre_cliente}</h2>
+                      <p className="text-slate-600">{cotSeleccionada.direccion || 'Dirección del Cliente'}</p>
+                      {cotSeleccionada.rut_cliente && <p className="font-mono text-slate-700 font-bold">R.U.T.: {cotSeleccionada.rut_cliente}</p>}
+                    </div>
+                  </div>
+                )
+              })()}
 
-              {/* TÍTULO Y METADATA DE LA COTIZACIÓN */}
               <div className="flex justify-between items-center">
                 <div>
                   <span className="text-xl font-extrabold text-[#000033] tracking-wide font-mono">
@@ -1666,7 +1554,7 @@ export default function OperacionCRM() {
                 </div>
               </div>
 
-              {/* TABLA OFICIAL DOLIBARR (PR2607-0258) */}
+              {/* TABLA PR2607-0258 */}
               <div className="border border-slate-300 rounded-xl overflow-hidden">
                 <table className="w-full text-left border-collapse text-xs">
                   <thead>
@@ -1695,7 +1583,7 @@ export default function OperacionCRM() {
                 </table>
               </div>
 
-              {/* BLOQUE DE TOTALES DOLIBARR DERECHA */}
+              {/* TOTALES */}
               <div className="flex justify-end">
                 <div className="w-72 border border-slate-300 rounded-xl overflow-hidden text-xs font-mono">
                   <div className="flex justify-between p-2.5 bg-white border-b border-slate-200">
@@ -1713,7 +1601,6 @@ export default function OperacionCRM() {
                 </div>
               </div>
 
-              {/* SECCIÓN DE FIRMA Y ACEPTACIÓN */}
               <div className="pt-6 border-t border-slate-200 flex flex-col md:flex-row justify-between items-center gap-6">
                 <div className="text-[11px] text-slate-500 font-medium italic">
                   Aceptación por escrito, sello de la empresa, fecha y firma
@@ -1724,25 +1611,14 @@ export default function OperacionCRM() {
               </div>
             </div>
 
-            {/* PIE DE PÁGINA Y BOTONES */}
             <div className="border-t border-slate-200 pt-4 flex flex-col sm:flex-row justify-between items-center gap-4">
               <div className="text-xs text-slate-500 font-mono">
-                R.U.T.: {configEmpresa.rut_empresa} | Página 1 / 1
+                R.U.T.: {(empresasConglomerado.find(e => e.id === cotSeleccionada.empresa_facturadora_id) || empresasConglomerado[0]).rut} | Página 1 / 1
               </div>
 
               <div className="flex gap-3">
-                <button
-                  onClick={() => setCotSeleccionada(null)}
-                  className="px-5 py-2.5 bg-slate-200 text-slate-800 font-bold text-xs rounded-2xl hover:bg-slate-300 cursor-pointer"
-                >
-                  Cerrar
-                </button>
-                <button
-                  onClick={() => window.print()}
-                  className="px-6 py-2.5 bg-blue-900 text-white font-bold text-xs rounded-2xl hover:bg-blue-950 shadow-xs cursor-pointer flex items-center gap-2"
-                >
-                  <span>🖨️ Imprimir Cotización Dolibarr (PDF)</span>
-                </button>
+                <button onClick={() => setCotSeleccionada(null)} className="px-5 py-2.5 bg-slate-200 text-slate-800 font-bold text-xs rounded-2xl hover:bg-slate-300 cursor-pointer">Cerrar</button>
+                <button onClick={() => window.print()} className="px-6 py-2.5 bg-blue-900 text-white font-bold text-xs rounded-2xl hover:bg-blue-950 shadow-xs cursor-pointer flex items-center gap-2"><span>🖨️ Imprimir Cotización Dolibarr (PDF)</span></button>
               </div>
             </div>
 
