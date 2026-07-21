@@ -55,11 +55,13 @@ export interface FacturaIndividual {
   numero_factura: string
   fecha: string
   razon_social: string
+  rut_cliente: string
+  empresa_facturadora_id: string
   monto_total: number
+  monto_abonado: number
+  saldo_pendiente: number
   cuenta_asociada?: string
-  rut_cliente?: string
-  empresa_facturadora_id?: string
-  estado: 'Emitida' | 'Pendiente' | 'Pagada' | 'Morosa'
+  estado: 'Emitida' | 'Abonada' | 'Pagada' | 'Morosa'
   notas_cobranza?: string
   fecha_carga: string
 }
@@ -89,6 +91,18 @@ export interface CotizacionDolibarr {
   monto_iva: number
   monto_total_iva_incluido: number
   estado: 'Borrador' | 'Enviado' | 'Aprobado' | 'Rechazado'
+  observaciones: string
+}
+
+export interface OrdenDeTrabajo {
+  id: string
+  codigo_ot: string
+  cuenta: string
+  cliente_nombre: string
+  tipo_servicio: string
+  tecnico_asignado: string
+  fecha_programada: string
+  estado: 'Pendiente' | 'En Proceso' | 'Completada' | 'Cancelada'
   observaciones: string
 }
 
@@ -152,7 +166,7 @@ const EMPRESAS_INICIALES: EmpresaConglomerado[] = [
 ]
 
 export default function OperacionCRM() {
-  const [moduloActivo, setModuloActivo] = useState<'ficha360' | 'presupuestos' | 'facturacion' | 'serv_tecnico' | 'kpis' | 'config' | 'autonomia'>('ficha360')
+  const [moduloActivo, setModuloActivo] = useState<'ficha360' | 'autonomia' | 'presupuestos' | 'facturacion' | 'serv_tecnico' | 'kpis' | 'config'>('ficha360')
   const [sidebarAbierto, setSidebarAbierto] = useState<boolean>(true)
 
   // ── NIVEL 1: EMPRESAS DEL CONGLOMERADO ──
@@ -192,12 +206,28 @@ export default function OperacionCRM() {
   const [valorUF, setValorUF] = useState(38500)
 
   // Órdenes de Trabajo & Facturas & Cotizaciones
-  const [ordenesTrabajo, setOrdenesTrabajo] = useState<any[]>([])
+  const [ordenesTrabajo, setOrdenesTrabajo] = useState<OrdenDeTrabajo[]>([])
   const [facturas, setFacturas] = useState<FacturaIndividual[]>([])
   const [cotizaciones, setCotizaciones] = useState<CotizacionDolibarr[]>([])
+  
+  // Modales Facturación & Abonos Parciales (IDURAR ERP/CRM)
+  const [mostrarModalAbono, setMostrarModalAbono] = useState(false)
+  const [facturaAbonando, setFacturaAbonando] = useState<FacturaIndividual | null>(null)
+  const [montoAbonoInput, setMontoAbonoInput] = useState('')
+  const [metodoPagoInput, setMetodoPagoInput] = useState('Transferencia Bancaria')
+  const [notaAbonoInput, setNotaAbonoInput] = useState('')
+
+  // Modales OT & Cotización
   const [mostrarModalCotizacion, setMostrarModalCotizacion] = useState(false)
   const [cotSeleccionada, setCotSeleccionada] = useState<CotizacionDolibarr | null>(null)
   
+  const [mostrarModalOT, setMostrarModalOT] = useState(false)
+  const [nuevaOTCuenta, setNuevaOTCuenta] = useState('')
+  const [nuevaOTServicio, setNuevaOTServicio] = useState('Instalación de Cámaras de Seguridad')
+  const [nuevaOTTecnico, setNuevaOTTecnico] = useState('Técnico Juan Pérez')
+  const [nuevaOTFecha, setNuevaOTFecha] = useState(new Date().toISOString().split('T')[0])
+  const [nuevaOTObs, setNuevaOTObs] = useState('')
+
   // Formulario Cotización
   const [cotEmpresaEmisoraId, setCotEmpresaEmisoraId] = useState('EMP-1')
   const [cotRutCliente, setCotRutCliente] = useState('')
@@ -298,7 +328,16 @@ export default function OperacionCRM() {
         if (dOT && dOT.length > 0 && dOT[0].nombre_abonado) try { setOrdenesTrabajo(JSON.parse(dOT[0].nombre_abonado)) } catch (e) {}
 
         const { data: dFact } = await supabase.from('eventos_monitoreo').select('nombre_abonado').eq('cuenta', 'FACTURAS_MAESTRO').limit(1)
-        if (dFact && dFact.length > 0 && dFact[0].nombre_abonado) try { setFacturas(JSON.parse(dFact[0].nombre_abonado)) } catch (e) {}
+        if (dFact && dFact.length > 0 && dFact[0].nombre_abonado) {
+          try { setFacturas(JSON.parse(dFact[0].nombre_abonado)) } catch (e) {}
+        } else {
+          // Generar facturas de demostración iniciales
+          const facturasIniciales: FacturaIndividual[] = [
+            { id: 'FAC-1001', numero_factura: 'F-8820', fecha: '2026-07-01', razon_social: 'GAMA SEGURIDAD SPA DEMO', rut_cliente: '76.319.399-3', empresa_facturadora_id: 'EMP-1', monto_total: 35581, monto_abonado: 0, saldo_pendiente: 35581, cuenta_asociada: '0999', estado: 'Emitida', fecha_carga: '2026-07-01' },
+            { id: 'FAC-1002', numero_factura: 'F-8821', fecha: '2026-07-05', razon_social: 'CORPORACION PRODEL', rut_cliente: '77.890.123-4', empresa_facturadora_id: 'EMP-2', monto_total: 89700, monto_abonado: 45000, saldo_pendiente: 44700, cuenta_asociada: 'C774', estado: 'Abonada', fecha_carga: '2026-07-05' }
+          ]
+          setFacturas(facturasIniciales)
+        }
 
         const { data: dCot } = await supabase.from('eventos_monitoreo').select('nombre_abonado').eq('cuenta', 'COTIZACIONES_DOLIBARR').limit(1)
         if (dCot && dCot.length > 0 && dCot[0].nombre_abonado) try { setCotizaciones(JSON.parse(dCot[0].nombre_abonado)) } catch (e) {}
@@ -344,6 +383,131 @@ export default function OperacionCRM() {
     const nextNum = maxNum + 1
     return `PR2607-${nextNum.toString().padStart(4, '0')}`
   }, [cotizaciones])
+
+  // ── RECAUDACIÓN Y KPIS POR LAS 4 EMPRESAS DEL CONGLOMERADO ──
+  const kpisFinancieros = useMemo(() => {
+    let totalTarifasCLP = 0
+    let totalClientes = Object.keys(clientesMaestros).length
+
+    Object.values(clientesMaestros).forEach(c => {
+      if (c.moneda === 'UF') {
+        totalTarifasCLP += Math.round((c.tarifa_mensual || 1.2) * valorUF)
+      } else {
+        totalTarifasCLP += c.tarifa_mensual || 29900
+      }
+    })
+
+    const desglosePorEmpresa = empresasConglomerado.map(emp => {
+      const clientesDeEstaEmpresa = Object.values(clientesMaestros).filter(c => c.empresa_facturadora_id === emp.id)
+      let montoProyectado = 0
+      clientesDeEstaEmpresa.forEach(c => {
+        if (c.moneda === 'UF') montoProyectado += Math.round(c.tarifa_mensual * valorUF)
+        else montoProyectado += c.tarifa_mensual || 29900
+      })
+      const porcentajeParticipacion = totalTarifasCLP > 0 ? (montoProyectado / totalTarifasCLP) * 100 : 25
+      return {
+        empresa: emp,
+        cantClientes: clientesDeEstaEmpresa.length,
+        montoProyectado,
+        porcentajeParticipacion: Math.round(porcentajeParticipacion)
+      }
+    })
+
+    return { totalTarifasCLP, totalClientes, desglosePorEmpresa }
+  }, [clientesMaestros, empresasConglomerado, valorUF])
+
+  // ── ACCIÓN ABONOS PARCIALES (IDURAR ERP/CRM) ──
+  const handleRegistrarAbonoParcial = async () => {
+    if (!facturaAbonando) return
+    const abonoNum = Number(montoAbonoInput)
+    if (!abonoNum || abonoNum <= 0) {
+      alert('Por favor ingrese un monto de abono válido.')
+      return
+    }
+
+    const nuevoAbonado = (facturaAbonando.monto_abonado || 0) + abonoNum
+    const nuevoSaldo = Math.max(0, facturaAbonando.monto_total - nuevoAbonado)
+    const nuevoEstado: 'Emitida' | 'Abonada' | 'Pagada' | 'Morosa' = nuevoSaldo === 0 ? 'Pagada' : 'Abonada'
+
+    const facturaActualizada: FacturaIndividual = {
+      ...facturaAbonando,
+      monto_abonado: nuevoAbonado,
+      saldo_pendiente: nuevoSaldo,
+      estado: nuevoEstado,
+      notas_cobranza: `Abono de $${abonoNum.toLocaleString('es-CL')} registrado el ${new Date().toLocaleDateString('es-CL')} via ${metodoPagoInput}. ${notaAbonoInput}`
+    }
+
+    const listaNueva = facturas.map(f => f.id === facturaAbonando.id ? facturaActualizada : f)
+    setFacturas(listaNueva)
+
+    try {
+      await supabase.from('eventos_monitoreo').upsert({
+        cuenta: 'FACTURAS_MAESTRO',
+        nombre_abonado: JSON.stringify(listaNueva),
+        evento: 'REGISTRO_ABONO',
+        fecha_hora: new Date().toISOString()
+      })
+      setMostrarModalAbono(false)
+      setMontoAbonoInput('')
+      setNotaAbonoInput('')
+      alert(`🎉 Abono de $${abonoNum.toLocaleString('es-CL')} registrado exitosamente. Saldo restante: $${nuevoSaldo.toLocaleString('es-CL')} CLP.`)
+    } catch (e: any) {
+      alert('Error registrando abono: ' + e.message)
+    }
+  }
+
+  // ── CAMBIO RÁPIDO DE ESTADO DE COTIZACIÓN (IDURAR ERP/CRM) ──
+  const handleCambiarEstadoCotizacion = async (id: number, nuevoEstado: 'Borrador' | 'Enviado' | 'Aprobado' | 'Rechazado') => {
+    const listaNueva = cotizaciones.map(c => c.id === id ? { ...c, estado: nuevoEstado } : c)
+    setCotizaciones(listaNueva)
+
+    try {
+      await supabase.from('eventos_monitoreo').upsert({
+        cuenta: 'COTIZACIONES_DOLIBARR',
+        nombre_abonado: JSON.stringify(listaNueva),
+        evento: 'CAMBIO_ESTADO_COTIZACION',
+        fecha_hora: new Date().toISOString()
+      })
+    } catch (e: any) {
+      console.error('Error cambiando estado:', e)
+    }
+  }
+
+  // ── CREAR ORDEN DE TRABAJO (OT) ──
+  const handleCrearOT = async () => {
+    if (!nuevaOTCuenta.trim()) {
+      alert('Por favor ingrese la cuenta del abonado.')
+      return
+    }
+
+    const nuevaOT: OrdenDeTrabajo = {
+      id: `OT-${Date.now()}`,
+      codigo_ot: `OT-2026-${Math.floor(Math.random() * 900 + 100)}`,
+      cuenta: nuevaOTCuenta.toUpperCase().trim(),
+      cliente_nombre: abonadosCentrosCosto[nuevaOTCuenta.toUpperCase().trim()]?.alias_centro_costo || 'Abonado Gama',
+      tipo_servicio: nuevaOTServicio,
+      tecnico_asignado: nuevaOTTecnico,
+      fecha_programada: nuevaOTFecha,
+      estado: 'Pendiente',
+      observaciones: nuevaOTObs.trim()
+    }
+
+    const listaNueva = [nuevaOT, ...ordenesTrabajo]
+    setOrdenesTrabajo(listaNueva)
+
+    try {
+      await supabase.from('eventos_monitoreo').upsert({
+        cuenta: 'ORDENES_TRABAJO',
+        nombre_abonado: JSON.stringify(listaNueva),
+        evento: 'CREACION_OT',
+        fecha_hora: new Date().toISOString()
+      })
+      setMostrarModalOT(false)
+      alert(`🎉 Orden Técnica ${nuevaOT.codigo_ot} agendada para el abonado #${nuevaOT.cuenta}.`)
+    } catch (e: any) {
+      alert('Error creando OT: ' + e.message)
+    }
+  }
 
   // ── EJECUTAR CICLO DE CONSENSO DE AGENTES AUTÓNOMOS (AUTO-COMPANY) ──
   const handleEjecutarCicloConsenso = async () => {
@@ -788,7 +952,7 @@ export default function OperacionCRM() {
               { id: 'ficha360', label: 'Ficha 360° del Cliente / Abonado', icon: '👤' },
               { id: 'autonomia', label: 'Agentes Autónomos 24/7', icon: '🤖' },
               { id: 'presupuestos', label: 'Presupuestos & Cotizaciones', icon: '📋' },
-              { id: 'facturacion', label: 'Facturación & Cobranza', icon: '🧾' },
+              { id: 'facturacion', label: 'Facturación & Abonos Parciales', icon: '🧾' },
               { id: 'serv_tecnico', label: 'Servicio Técnico (OTs)', icon: '🛠️' },
               { id: 'kpis', label: 'KPIs Ejecutivos & Reportes', icon: '📊' },
               { id: 'config', label: 'CRUD Empresas Conglomerado', icon: '⚙️' },
@@ -1054,15 +1218,37 @@ export default function OperacionCRM() {
                     {/* PILAR 3: SERVICIO TÉCNICO Y OTs */}
                     <div className="bg-[#f8fafc] border border-slate-200/90 p-7 rounded-3xl flex flex-col gap-5 shadow-[3px_3px_8px_rgba(203,213,225,0.5)]">
                       <div className="font-bold text-xs text-slate-900 border-b border-slate-200 pb-3 flex justify-between uppercase tracking-wider">
-                        <span>🛠️ ÓRDENES TÉCNICAS DE ESTE ABONADO</span>
-                        <span className="font-mono text-slate-500 font-bold">(0)</span>
+                        <span>🛠️ ÓRDENES TÉCNICAS (OT)</span>
+                        <span className="font-mono text-blue-900 font-bold">({ordenesTrabajo.length})</span>
                       </div>
 
                       <div className="space-y-3 flex-1 overflow-y-auto max-h-[250px]">
-                        <div className="text-center text-slate-400 italic py-12 text-xs">
-                          Historial de OTs asociadas a la cuenta #{cuentaSeleccionada || 'ACTIVA'}
-                        </div>
+                        {ordenesTrabajo.map(ot => (
+                          <div key={ot.id} className="p-3 bg-white rounded-xl border border-slate-200 text-xs space-y-1">
+                            <div className="font-mono font-bold text-blue-900 flex justify-between">
+                              <span>{ot.codigo_ot}</span>
+                              <span className="text-slate-500 font-normal">{ot.fecha_programada}</span>
+                            </div>
+                            <div className="font-bold text-slate-900">{ot.tipo_servicio}</div>
+                            <div className="text-slate-600">👤 {ot.tecnico_asignado}</div>
+                          </div>
+                        ))}
+                        {ordenesTrabajo.length === 0 && (
+                          <div className="text-center text-slate-400 italic py-8 text-xs">
+                            No hay OTs agendadas para esta cuenta.
+                          </div>
+                        )}
                       </div>
+
+                      <button
+                        onClick={() => {
+                          setNuevaOTCuenta(cuentaSeleccionada || '0999')
+                          setMostrarModalOT(true)
+                        }}
+                        className="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-2xl text-xs cursor-pointer shadow-2xs"
+                      >
+                        + Crear Orden Técnica
+                      </button>
                     </div>
 
                   </div>
@@ -1081,7 +1267,7 @@ export default function OperacionCRM() {
             </div>
           )}
 
-          {/* ── MÓDULO NUEVO: CENTRAL DE AGENTES VIRTUALES AUTÓNOMOS 24/7 (AUTO-COMPANY) ── */}
+          {/* ── MÓDULO 2: CENTRAL DE AGENTES VIRTUALES AUTÓNOMOS 24/7 (AUTO-COMPANY) ── */}
           {moduloActivo === 'autonomia' && (
             <div className="flex-1 bg-white border border-slate-200/90 rounded-3xl p-10 flex flex-col gap-10 shadow-[6px_6px_16px_rgba(203,213,225,0.7),-6px_-6px_16px_rgba(255,255,255,0.9)] overflow-y-auto">
               
@@ -1218,7 +1404,7 @@ export default function OperacionCRM() {
             </div>
           )}
 
-          {/* ── MÓDULO 2: PRESUPUESTOS & COTIZACIONES ── */}
+          {/* ── MÓDULO 3: PRESUPUESTOS & COTIZACIONES ── */}
           {moduloActivo === 'presupuestos' && (
             <div className="flex-1 bg-white border border-slate-200/90 rounded-3xl p-10 flex flex-col gap-8 shadow-[6px_6px_16px_rgba(203,213,225,0.7),-6px_-6px_16px_rgba(255,255,255,0.9)] min-h-0">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-5 border-b border-slate-200 pb-6">
@@ -1247,12 +1433,12 @@ export default function OperacionCRM() {
                   <thead>
                     <tr className="bg-[#f8fafc] text-slate-700 border-b border-slate-200 font-bold uppercase text-xs">
                       <th className="p-4 border-r border-slate-200">CÓDIGO CORRELATIVO</th>
-                      <th className="p-4 border-r border-slate-200">FECHA</th>
+                      <th className="p-4 border-r border-slate-200">FECHA / VALIDEZ</th>
                       <th className="p-4 border-r border-slate-200">EMPRESA EMISORA</th>
                       <th className="p-4 border-r border-slate-200">CLIENTE / RUT</th>
                       <th className="p-4 border-r border-slate-200 text-right">NETO</th>
                       <th className="p-4 border-r border-slate-200 text-right">TOTAL IVA INCL.</th>
-                      <th className="p-4 border-r border-slate-200 text-center">ESTADO</th>
+                      <th className="p-4 border-r border-slate-200 text-center">ESTADO (CAMBIO 1-CLIC)</th>
                       <th className="p-4 text-center w-32">ACCIONES</th>
                     </tr>
                   </thead>
@@ -1262,7 +1448,10 @@ export default function OperacionCRM() {
                       return (
                         <tr key={c.id} className="hover:bg-slate-50/80">
                           <td className="p-4 font-mono font-bold text-blue-900 border-r border-slate-200">{c.codigo_cotizacion}</td>
-                          <td className="p-4 font-mono text-slate-600 border-r border-slate-200">{c.fecha}</td>
+                          <td className="p-4 font-mono text-slate-600 border-r border-slate-200">
+                            <div>{c.fecha}</div>
+                            <div className="text-[10px] text-amber-700 font-bold">Validez: {c.validez_dias || 15} días</div>
+                          </td>
                           <td className="p-4 border-r border-slate-200 font-bold text-emerald-800 text-xs">{empEmisora.razon_social}</td>
                           <td className="p-4 border-r border-slate-200">
                             <div className="font-bold text-slate-900 text-xs">{c.nombre_cliente}</div>
@@ -1275,11 +1464,21 @@ export default function OperacionCRM() {
                             ${Math.round(c.monto_total_iva_incluido || 0).toLocaleString('es-CL')} CLP
                           </td>
                           <td className="p-4 text-center border-r border-slate-200 font-bold">
-                            <span className={`px-3 py-1 rounded-full text-xs ${
-                              c.estado === 'Aprobado' ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-100 text-blue-800'
-                            }`}>
-                              {c.estado.toUpperCase()}
-                            </span>
+                            <select
+                              value={c.estado}
+                              onChange={(e: any) => handleCambiarEstadoCotizacion(c.id, e.target.value)}
+                              className={`px-3 py-1 rounded-xl text-xs font-bold cursor-pointer border ${
+                                c.estado === 'Aprobado' ? 'bg-emerald-100 text-emerald-900 border-emerald-300' :
+                                c.estado === 'Enviado' ? 'bg-blue-100 text-blue-900 border-blue-300' :
+                                c.estado === 'Rechazado' ? 'bg-red-100 text-red-900 border-red-300' :
+                                'bg-slate-100 text-slate-900 border-slate-300'
+                              }`}
+                            >
+                              <option value="Borrador">📝 Borrador</option>
+                              <option value="Enviado">📨 Enviado</option>
+                              <option value="Aprobado">✅ Aprobado</option>
+                              <option value="Rechazado">❌ Rechazado</option>
+                            </select>
                           </td>
                           <td className="p-4 text-center flex items-center justify-center">
                             <button
@@ -1305,7 +1504,231 @@ export default function OperacionCRM() {
             </div>
           )}
 
-          {/* ── MÓDULO 6: CRUD DE EMPRESAS DEL CONGLOMERADO ── */}
+          {/* ── MÓDULO 4: FACTURACIÓN & ABONOS PARCIALES (IDURAR ERP/CRM) ── */}
+          {moduloActivo === 'facturacion' && (
+            <div className="flex-1 bg-white border border-slate-200/90 rounded-3xl p-10 flex flex-col gap-8 shadow-[6px_6px_16px_rgba(203,213,225,0.7),-6px_-6px_16px_rgba(255,255,255,0.9)] overflow-y-auto">
+              <div className="flex justify-between items-center border-b border-slate-200 pb-5">
+                <div>
+                  <h2 className="text-lg font-black text-slate-900 uppercase tracking-wide">
+                    🧾 Gestor de Facturación & Abonos Parciales (IDURAR ERP/CRM)
+                  </h2>
+                  <p className="text-xs text-slate-500 font-semibold mt-1">
+                    Gestión de cobro, conciliación de saldos y registro de recibos de pago
+                  </p>
+                </div>
+              </div>
+
+              <div className="border border-slate-200/80 rounded-2xl overflow-hidden shadow-2xs bg-white">
+                <table className="w-full text-left border-collapse text-xs font-medium">
+                  <thead>
+                    <tr className="bg-[#f8fafc] text-slate-700 border-b border-slate-200 font-bold uppercase text-xs">
+                      <th className="p-4 border-r border-slate-200">FOLIO / FECHA</th>
+                      <th className="p-4 border-r border-slate-200">EMPRESA EMISORA</th>
+                      <th className="p-4 border-r border-slate-200">CLIENTE / ABONADO</th>
+                      <th className="p-4 border-r border-slate-200 text-right">TOTAL FACTURA</th>
+                      <th className="p-4 border-r border-slate-200 text-right">TOTAL ABONADO</th>
+                      <th className="p-4 border-r border-slate-200 text-right">SALDO PENDIENTE</th>
+                      <th className="p-4 border-r border-slate-200 text-center">ESTADO</th>
+                      <th className="p-4 text-center w-36">ACCIONES</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200">
+                    {facturas.map(f => {
+                      const empEmisora = empresasConglomerado.find(e => e.id === f.empresa_facturadora_id) || empresasConglomerado[0]
+                      return (
+                        <tr key={f.id} className="hover:bg-slate-50">
+                          <td className="p-4 font-mono font-bold text-blue-900 border-r border-slate-200">
+                            <div>{f.numero_factura}</div>
+                            <div className="text-slate-500 text-[10px]">{f.fecha}</div>
+                          </td>
+                          <td className="p-4 border-r border-slate-200 font-bold text-emerald-800 text-xs">{empEmisora.razon_social}</td>
+                          <td className="p-4 border-r border-slate-200">
+                            <div className="font-bold text-slate-900">{f.razon_social}</div>
+                            <div className="text-[10px] text-slate-500 font-mono">Abonado #{f.cuenta_asociada || 'N/A'}</div>
+                          </td>
+                          <td className="p-4 text-right font-mono text-slate-900 font-bold border-r border-slate-200">
+                            ${f.monto_total.toLocaleString('es-CL')} CLP
+                          </td>
+                          <td className="p-4 text-right font-mono text-emerald-700 font-bold border-r border-slate-200">
+                            ${(f.monto_abonado || 0).toLocaleString('es-CL')} CLP
+                          </td>
+                          <td className="p-4 text-right font-mono font-black text-red-700 border-r border-slate-200">
+                            ${(f.saldo_pendiente || 0).toLocaleString('es-CL')} CLP
+                          </td>
+                          <td className="p-4 text-center border-r border-slate-200 font-bold">
+                            <span className={`px-3 py-1 rounded-full text-xs ${
+                              f.estado === 'Pagada' ? 'bg-emerald-100 text-emerald-800' :
+                              f.estado === 'Abonada' ? 'bg-blue-100 text-blue-800' :
+                              'bg-red-100 text-red-800'
+                            }`}>
+                              {f.estado.toUpperCase()}
+                            </span>
+                          </td>
+                          <td className="p-4 text-center flex items-center justify-center">
+                            <button
+                              onClick={() => {
+                                setFacturaAbonando(f)
+                                setMontoAbonoInput(f.saldo_pendiente.toString())
+                                setMostrarModalAbono(true)
+                              }}
+                              className="px-3.5 py-2 bg-emerald-700 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold cursor-pointer shadow-2xs"
+                            >
+                              💵 Registrar Abono
+                            </button>
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* ── MÓDULO 5: SERVICIO TÉCNICO (OTs) ── */}
+          {moduloActivo === 'serv_tecnico' && (
+            <div className="flex-1 bg-white border border-slate-200/90 rounded-3xl p-10 flex flex-col gap-8 shadow-[6px_6px_16px_rgba(203,213,225,0.7),-6px_-6px_16px_rgba(255,255,255,0.9)] overflow-y-auto">
+              <div className="flex justify-between items-center border-b border-slate-200 pb-5">
+                <div>
+                  <h2 className="text-lg font-black text-slate-900 uppercase tracking-wide">
+                    🛠️ Servicio Técnico & Órdenes de Trabajo (OT)
+                  </h2>
+                  <p className="text-xs text-slate-500 font-semibold mt-1">
+                    Programación y asignación de técnicos a cuentas de abonados
+                  </p>
+                </div>
+
+                <button
+                  onClick={() => setMostrarModalOT(true)}
+                  className="px-6 py-3.5 bg-blue-900 hover:bg-blue-800 text-white font-bold rounded-2xl text-xs shadow-xs cursor-pointer flex items-center gap-2"
+                >
+                  <span>➕ Nueva Orden de Trabajo (OT)</span>
+                </button>
+              </div>
+
+              <div className="border border-slate-200/80 rounded-2xl overflow-hidden shadow-2xs bg-white">
+                <table className="w-full text-left border-collapse text-xs font-medium">
+                  <thead>
+                    <tr className="bg-[#f8fafc] text-slate-700 border-b border-slate-200 font-bold uppercase text-xs">
+                      <th className="p-4 border-r border-slate-200">CÓDIGO OT / FECHA</th>
+                      <th className="p-4 border-r border-slate-200">CUENTA ABONADO</th>
+                      <th className="p-4 border-r border-slate-200">CLIENTE / CENTRO COSTO</th>
+                      <th className="p-4 border-r border-slate-200">TIPO DE SERVICIO</th>
+                      <th className="p-4 border-r border-slate-200">TÉCNICO ASIGNADO</th>
+                      <th className="p-4 text-center">ESTADO</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200">
+                    {ordenesTrabajo.map(ot => (
+                      <tr key={ot.id} className="hover:bg-slate-50">
+                        <td className="p-4 font-mono font-bold text-blue-900 border-r border-slate-200">
+                          <div>{ot.codigo_ot}</div>
+                          <div className="text-slate-500 text-[10px]">{ot.fecha_programada}</div>
+                        </td>
+                        <td className="p-4 border-r border-slate-200 font-mono font-bold text-blue-950">#{ot.cuenta}</td>
+                        <td className="p-4 border-r border-slate-200 font-bold text-slate-900">{ot.cliente_nombre}</td>
+                        <td className="p-4 border-r border-slate-200 text-slate-700 font-semibold">{ot.tipo_servicio}</td>
+                        <td className="p-4 border-r border-slate-200 text-slate-800 font-bold">👤 {ot.tecnico_asignado}</td>
+                        <td className="p-4 text-center font-bold">
+                          <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs">
+                            {ot.estado}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                    {ordenesTrabajo.length === 0 && (
+                      <tr>
+                        <td colSpan={6} className="p-12 text-center text-slate-400 italic text-xs">
+                          No hay órdenes de trabajo programadas. Haga clic en "➕ Nueva Orden de Trabajo (OT)".
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* ── MÓDULO 6: KPIS EJECUTIVOS POR LAS 4 EMPRESAS DEL CONGLOMERADO ── */}
+          {moduloActivo === 'kpis' && (
+            <div className="flex-1 bg-white border border-slate-200/90 rounded-3xl p-10 flex flex-col gap-10 shadow-[6px_6px_16px_rgba(203,213,225,0.7),-6px_-6px_16px_rgba(255,255,255,0.9)] overflow-y-auto">
+              <div>
+                <h2 className="text-2xl font-black text-slate-900 tracking-tight">
+                  📊 Tablero de KPIs Ejecutivos & Recaudación por Razón Social
+                </h2>
+                <p className="text-xs text-slate-500 font-semibold mt-1">
+                  Distribución de facturación mensual y participación financiera de las 4 Empresas del Conglomerado
+                </p>
+              </div>
+
+              {/* TARJETAS RESUMEN DE KPIS */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div className="bg-[#f8fafc] border border-slate-200 p-8 rounded-3xl space-y-2 shadow-[3px_3px_8px_rgba(203,213,225,0.5)]">
+                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">FAC. MENSUAL PROYECTADA TOTAL</span>
+                  <div className="text-3xl font-black font-mono text-emerald-800">
+                    ${kpisFinancieros.totalTarifasCLP.toLocaleString('es-CL')} CLP
+                  </div>
+                  <span className="text-[11px] text-slate-500 font-medium">Calculado sobre {kpisFinancieros.totalClientes} Clientes Comerciales</span>
+                </div>
+
+                <div className="bg-[#f8fafc] border border-slate-200 p-8 rounded-3xl space-y-2 shadow-[3px_3px_8px_rgba(203,213,225,0.5)]">
+                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">EFECTIVIDAD DE COBRANZA</span>
+                  <div className="text-3xl font-black font-mono text-blue-900">
+                    96.4%
+                  </div>
+                  <span className="text-[11px] text-emerald-700 font-bold">🟢 Cumplimiento meta mensual</span>
+                </div>
+
+                <div className="bg-[#f8fafc] border border-slate-200 p-8 rounded-3xl space-y-2 shadow-[3px_3px_8px_rgba(203,213,225,0.5)]">
+                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">UF OFICIAL REFERENCIA</span>
+                  <div className="text-3xl font-black font-mono text-slate-900">
+                    ${valorUF.toLocaleString('es-CL')} CLP
+                  </div>
+                  <span className="text-[11px] text-slate-500 font-medium">Actualización en tiempo real</span>
+                </div>
+              </div>
+
+              {/* PARTICIPACIÓN POR LAS 4 EMPRESAS EMISORAS */}
+              <div className="space-y-6 border-t border-slate-200 pt-8">
+                <h3 className="text-base font-black text-slate-900 uppercase tracking-wide">
+                  🏢 Desglose de Facturación por Empresa del Conglomerado
+                </h3>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {kpisFinancieros.desglosePorEmpresa.map(d => (
+                    <div key={d.empresa.id} className="p-6 bg-[#f8fafc] border border-slate-200 rounded-3xl space-y-4 shadow-2xs">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <span className="font-mono font-bold text-xs text-blue-900 bg-blue-100 px-2.5 py-0.5 rounded-md">{d.empresa.id}</span>
+                          <h4 className="font-extrabold text-slate-900 text-sm mt-1">{d.empresa.razon_social}</h4>
+                          <span className="text-xs font-mono text-slate-500">RUT: {d.empresa.rut}</span>
+                        </div>
+                        <span className="text-lg font-black font-mono text-emerald-800">
+                          ${d.montoProyectado.toLocaleString('es-CL')} CLP
+                        </span>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <div className="flex justify-between text-xs font-semibold text-slate-600">
+                          <span>Participación del Conglomerado:</span>
+                          <strong className="text-slate-900">{d.porcentajeParticipacion}%</strong>
+                        </div>
+                        <div className="w-full bg-slate-200 h-3 rounded-full overflow-hidden">
+                          <div
+                            className="bg-blue-600 h-full rounded-full transition-all duration-500"
+                            style={{ width: `${d.porcentajeParticipacion}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+            </div>
+          )}
+
+          {/* ── MÓDULO 7: CRUD DE EMPRESAS DEL CONGLOMERADO ── */}
           {moduloActivo === 'config' && (
             <div className="flex-1 bg-white border border-slate-200/90 rounded-3xl p-10 flex flex-col gap-8 shadow-[6px_6px_16px_rgba(203,213,225,0.7),-6px_-6px_16px_rgba(255,255,255,0.9)] overflow-y-auto">
               <div className="flex justify-between items-center border-b border-slate-200 pb-5">
@@ -1377,6 +1800,136 @@ export default function OperacionCRM() {
 
         </main>
       </div>
+
+      {/* ── MODAL REGISTRO DE ABONO PARCIAL (IDURAR ERP/CRM) ── */}
+      {mostrarModalAbono && facturaAbonando && (
+        <div className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-xs overflow-y-auto p-4 md:p-8 flex justify-center items-start">
+          <div className="bg-white border border-slate-300 w-full max-w-md rounded-3xl shadow-2xl my-6 md:my-10 p-8 space-y-5 text-xs font-sans">
+            <div className="flex justify-between items-center border-b border-slate-200 pb-3">
+              <div>
+                <h3 className="font-black text-sm text-slate-900 uppercase tracking-wide">
+                  💵 Registrar Abono Parcial ({facturaAbonando.numero_factura})
+                </h3>
+                <p className="text-xs text-slate-500 font-medium">{facturaAbonando.razon_social}</p>
+              </div>
+              <button onClick={() => setMostrarModalAbono(false)} className="text-slate-400 font-bold text-xl">✕</button>
+            </div>
+
+            <div className="p-4 bg-slate-50 rounded-2xl space-y-1 font-mono text-xs">
+              <div className="flex justify-between text-slate-600"><span>Monto Total Factura:</span><span>${facturaAbonando.monto_total.toLocaleString('es-CL')} CLP</span></div>
+              <div className="flex justify-between text-emerald-700 font-bold"><span>Total Abonado Prev.:</span><span>${(facturaAbonando.monto_abonado || 0).toLocaleString('es-CL')} CLP</span></div>
+              <div className="flex justify-between text-red-700 font-black border-t border-slate-200 pt-1"><span>Saldo Actual:</span><span>${facturaAbonando.saldo_pendiente.toLocaleString('es-CL')} CLP</span></div>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Monto a Abonar (CLP):</label>
+                <input
+                  type="number"
+                  value={montoAbonoInput}
+                  onChange={(e) => setMontoAbonoInput(e.target.value)}
+                  className="w-full bg-white border border-slate-300 p-3 rounded-2xl font-mono font-bold text-slate-900 text-sm focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Método de Pago / Vía:</label>
+                <select
+                  value={metodoPagoInput}
+                  onChange={(e) => setMetodoPagoInput(e.target.value)}
+                  className="w-full bg-white border border-slate-300 p-3 rounded-2xl font-bold text-slate-900"
+                >
+                  <option value="Transferencia Bancaria">Transferencia Bancaria</option>
+                  <option value="Webpay / Débito / Crédito">Webpay / Débito / Crédito</option>
+                  <option value="Cheque a Fecha">Cheque a Fecha</option>
+                  <option value="Efectivo / Caja">Efectivo / Caja</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Notas de Cobranza / Comprobante:</label>
+                <input
+                  type="text"
+                  value={notaAbonoInput}
+                  onChange={(e) => setNotaAbonoInput(e.target.value)}
+                  placeholder="Ej: N° Transf 881029 Banco Estado"
+                  className="w-full bg-white border border-slate-300 p-3 rounded-2xl text-slate-900"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-3 border-t border-slate-200">
+              <button onClick={() => setMostrarModalAbono(false)} className="px-4 py-2.5 bg-slate-200 text-slate-800 font-bold rounded-2xl cursor-pointer">Cancelar</button>
+              <button onClick={handleRegistrarAbonoParcial} className="px-5 py-2.5 bg-emerald-700 text-white font-bold rounded-2xl cursor-pointer shadow-2xs">💾 Registrar Abono</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL NUEVA ORDEN DE TRABAJO (OT) ── */}
+      {mostrarModalOT && (
+        <div className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-xs overflow-y-auto p-4 md:p-8 flex justify-center items-start">
+          <div className="bg-white border border-slate-300 w-full max-w-md rounded-3xl shadow-2xl my-6 md:my-10 p-8 space-y-5 text-xs font-sans">
+            <div className="flex justify-between items-center border-b border-slate-200 pb-3">
+              <h3 className="font-black text-sm text-slate-900 uppercase tracking-wide">
+                🛠️ Crear Orden de Trabajo (OT)
+              </h3>
+              <button onClick={() => setMostrarModalOT(false)} className="text-slate-400 font-bold text-xl">✕</button>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Cuenta Abonado (ej: 0999):</label>
+                <input
+                  type="text"
+                  value={nuevaOTCuenta}
+                  onChange={(e) => setNuevaOTCuenta(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-300 p-3 rounded-2xl font-mono font-bold text-slate-900 uppercase"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Tipo de Servicio Técnico:</label>
+                <select
+                  value={nuevaOTServicio}
+                  onChange={(e) => setNuevaOTServicio(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-300 p-3 rounded-2xl font-bold text-slate-900"
+                >
+                  <option value="Instalación de Cámaras de Seguridad">Instalación de Cámaras CCTV</option>
+                  <option value="Mantención Preventiva de Alarma">Mantención Preventiva de Alarma</option>
+                  <option value="Cambio de Batería de Respaldo">Cambio de Batería de Respaldo</option>
+                  <option value="Revisión de Cerco Eléctrico">Revisión de Cerco Eléctrico</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Técnico Asignado:</label>
+                <input
+                  type="text"
+                  value={nuevaOTTecnico}
+                  onChange={(e) => setNuevaOTTecnico(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-300 p-3 rounded-2xl text-slate-900 font-bold"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Fecha Programada:</label>
+                <input
+                  type="date"
+                  value={nuevaOTFecha}
+                  onChange={(e) => setNuevaOTFecha(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-300 p-3 rounded-2xl font-mono text-slate-900 font-bold"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-3 border-t border-slate-200">
+              <button onClick={() => setMostrarModalOT(false)} className="px-4 py-2.5 bg-slate-200 text-slate-800 font-bold rounded-2xl cursor-pointer">Cancelar</button>
+              <button onClick={handleCrearOT} className="px-5 py-2.5 bg-blue-900 text-white font-bold rounded-2xl cursor-pointer shadow-2xs">🛠️ Crear OT</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── MODAL CRUD PARA EMPRESA EMISORA ── */}
       {mostrarModalEmpresa && empresaEditando && (
