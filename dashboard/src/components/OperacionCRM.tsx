@@ -56,8 +56,10 @@ import {
   Megaphone,
   Target,
   UserPlus,
-  Activity
+  Activity,
+  Smartphone
 } from 'lucide-react'
+import ServicioTecnicoModal from './ServicioTecnicoModal'
 
 const clientesFallback = clientesDataRaw as Record<string, Record<string, string>>
 
@@ -445,9 +447,10 @@ export default function OperacionCRM() {
     { id: '1', descripcion: 'Control remoto inalambrico RadioFrecuencia 4Botones Botón Pánico', cantidad: 1, precio_neto_unitario: 31000, descuento_valor: 0, tipo_descuento: 'porcentaje' }
   ])
 
-  // Modales OT & Formulario & Filtros Command Center
+  // Modales OT & Formulario & Filtros Command Center & Modal PWA Terreno
   const [mostrarModalOT, setMostrarModalOT] = useState(false)
   const [mostrarModalFirmaOT, setMostrarModalFirmaOT] = useState<OrdenDeTrabajo | null>(null)
+  const [mostrarModalPWATerreno, setMostrarModalPWATerreno] = useState(false)
   const [filtroOTCategoria, setFiltroOTCategoria] = useState<'todas' | 'central' | 'pendiente' | 'proceso' | 'finalizada'>('todas')
   const [filtroOTBusqueda, setFiltroOTBusqueda] = useState<string>('')
 
@@ -575,6 +578,33 @@ export default function OperacionCRM() {
             if (Array.isArray(parsed) && parsed.length > 0) {
               setCotizaciones(parsed)
               localStorage.setItem('gama_cotizaciones', JSON.stringify(parsed))
+            }
+          } catch (e) {}
+        }
+
+        const { data: dOT } = await supabase
+          .from('eventos_monitoreo')
+          .select('nombre_abonado')
+          .eq('cuenta', 'ORDENES_TRABAJO')
+          .order('id', { ascending: false })
+          .limit(1)
+        if (dOT && dOT.length > 0 && dOT[0].nombre_abonado) {
+          try {
+            const parsed = JSON.parse(dOT[0].nombre_abonado)
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              const otFormateadas = parsed.map((o: any) => ({
+                id: o.id || `OT-${Date.now()}`,
+                codigo_ot: o.codigo_ot || 'OT-2026-001',
+                cuenta: o.cuenta || '0999',
+                cliente_nombre: o.nombre_abonado || o.cliente_nombre || 'ABONADO GAMA',
+                tipo_servicio: o.tipo_visita || o.tipo_servicio || 'Mantención Perimetral',
+                tecnico_asignado: o.tecnico || o.tecnico_asignado || 'Técnico Juan Pérez',
+                fecha_programada: o.fecha_cita || o.fecha_programada || '2026-07-23',
+                prioridad_sla: o.prioridad_sla || 'Crítica (2h)',
+                estado: o.estado || 'Pendiente',
+                observaciones: o.problema || o.observaciones || ''
+              }))
+              setOrdenesTrabajo(otFormateadas)
             }
           } catch (e) {}
         }
@@ -813,13 +843,39 @@ export default function OperacionCRM() {
     return list
   }, [cotizaciones, filtroCotCategoria, filtroCotBusqueda, filtroCotDesde, filtroCotHasta, filtroCotEmpresa, filtroCotOrden])
 
-  // ── NOVEDADES TÉCNICAS Y ALERTAS EN VIVO DEL COMMAND CENTER PARA SERVICIO TÉCNICO ──
+  // ── FILTRO INTELIGENTE IA PARA INCIDENTES Y FALLAS TÉCNICAS REALES DE CENTRAL ──
   const alertasTecnicasCommandCenter = useMemo(() => {
-    const keywords = ['SERVICIO', 'TECNIC', 'FALLA', 'REVISION', 'BATERIA', 'CORTE', 'ZONA', 'PANEL', 'CAMARA', 'DESCONEXION', 'OBSERVACION', 'NOVEDAD']
+    const keywordsFallaReal = [
+      'FALLA DE BATERIA', 'CORTE DE ENERGIA', 'SABOTAJE', 'TAMPER',
+      'CORTE DE LINEA', 'ZONA EN FALLA', 'FALLA DE COMUNICACION',
+      'SOLICITUD SERVICIO TECNICO', 'DESCONEXION', 'CIRCUITO ABIERTO',
+      'FALLA RED', 'CAMARA DESCONECTADA', 'FALSO CONTACTO', 'REVISAR PANEL',
+      'HORA/FECHA ERRONEOS', 'FALLA ENERGIA', 'FALLA DE BATERÍA'
+    ]
+
+    const keywordsRutina = [
+      'VIA WHP QUE SE ENCUENTRAN REVISANDO EL ESTADO DEL JARDIN',
+      'AVISARA CUANDO SE RETIREN',
+      'CONFIRMADO CONEXION DE CIERRE',
+      'CONFIRMADO A DIRECTORA',
+      'INFORMADA VIA MENSAJE',
+      'SE HABLA CON CABO'
+    ]
+
     return bitacoraCommandCenter.filter(item => {
-      const txt = `${item.tipo_nombre || ''} ${item.comentario || ''}`.toUpperCase()
-      return keywords.some(kw => txt.includes(kw))
-    }).slice(0, 5)
+      const tipo = (item.tipo_nombre || '').toUpperCase()
+      const nota = (item.comentario || '').toUpperCase()
+      const combo = `${tipo} ${nota}`
+
+      if (tipo === 'CORTE DE ENERGIA' || tipo === 'FALLA DE BATERIA' || tipo === 'SERVICIO TECNICO') {
+        return true
+      }
+
+      const tieneFalla = keywordsFallaReal.some(kw => combo.includes(kw))
+      const esRutina = keywordsRutina.some(kw => combo.includes(kw))
+
+      return tieneFalla && !esRutina
+    }).slice(0, 6)
   }, [bitacoraCommandCenter])
 
   const ordenesTrabajoFiltradas = useMemo(() => {
@@ -1525,7 +1581,7 @@ export default function OperacionCRM() {
     setMostrarModalOT(true)
   }
 
-  const handleGuardarNuevaOT = () => {
+  const handleGuardarNuevaOT = async () => {
     const nextOtNum = ordenesTrabajo.length + 83
     const nuevaOT: OrdenDeTrabajo = {
       id: `OT-${Date.now()}`,
@@ -1540,9 +1596,42 @@ export default function OperacionCRM() {
       observaciones: otFormObservaciones
     }
 
-    setOrdenesTrabajo([nuevaOT, ...ordenesTrabajo])
+    const listaNueva = [nuevaOT, ...ordenesTrabajo]
+    setOrdenesTrabajo(listaNueva)
+    try { localStorage.setItem('gama_ordenes_trabajo', JSON.stringify(listaNueva)) } catch (e) {}
+
+    // Formatear para compatibilidad total con Command Center & ServicioTecnicoModal PWA
+    const listaFormatoCC = listaNueva.map(o => ({
+      id: Date.now(),
+      codigo_ot: o.codigo_ot,
+      cuenta: o.cuenta,
+      nombre_abonado: o.cliente_nombre,
+      direccion: 'Dirección Registrada',
+      telefono_contacto: '+56991016912',
+      tipo_visita: o.tipo_servicio.includes('Batería') ? 'Cambio de Batería' : o.tipo_servicio.includes('Cámara') ? 'Revisión de Cámaras' : 'Correctiva',
+      tecnico: o.tecnico_asignado,
+      fecha_cita: o.fecha_programada,
+      bloque_horario: 'Mañana (09:00 - 13:00)',
+      problema: o.observaciones,
+      estado: o.estado === 'Finalizada' ? 'Completada' : o.estado,
+      novedad: o.observaciones,
+      firma: '',
+      fecha_creacion: new Date().toISOString()
+    }))
+
+    try {
+      await supabase.from('eventos_monitoreo').upsert({
+        cuenta: 'ORDENES_TRABAJO',
+        nombre_abonado: JSON.stringify(listaFormatoCC),
+        evento: 'CREACION_OT_CRM',
+        fecha_hora: new Date().toISOString()
+      })
+    } catch (e: any) {
+      console.error('Error al guardar OT en Supabase:', e)
+    }
+
     setMostrarModalOT(false)
-    setToastNotificacion({ tipo: 'exito', texto: `¡Orden de Trabajo ${nuevaOT.codigo_ot} creada y asignada a ${otFormTecnico}!` })
+    setToastNotificacion({ tipo: 'exito', texto: `¡Orden de Trabajo ${nuevaOT.codigo_ot} guardada y sincronizada con Command Center 24/7!` })
   }
 
   const handleNotificarWhatsAppOT = async (ot: OrdenDeTrabajo) => {
@@ -2978,19 +3067,28 @@ export default function OperacionCRM() {
                     </p>
                   </div>
                 </div>
-                <button
-                  onClick={() => {
-                    setOtFormCuenta('0999')
-                    setOtFormClienteNombre('GAMA SEGURIDAD SPA DEMO')
-                    setOtFormTipoServicio('Mantención Perimetral Alarma')
-                    setOtFormObservaciones('')
-                    setMostrarModalOT(true)
-                  }}
-                  className="px-5 py-2.5 bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white font-bold rounded-xl text-xs shadow-[4px_4px_8px_#bec8d2,-4px_-4px_8px_#ffffff] active:scale-95 cursor-pointer flex items-center gap-2"
-                >
-                  <Plus className="h-4 w-4" />
-                  <span>Nueva Orden Técnica (OT)</span>
-                </button>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => setMostrarModalPWATerreno(true)}
+                    className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-xs shadow-[4px_4px_8px_#bec8d2,-4px_-4px_8px_#ffffff] active:scale-95 cursor-pointer flex items-center gap-2"
+                  >
+                    <Smartphone className="h-4 w-4 text-emerald-400" />
+                    <span>📱 App PWA Técnico en Terreno</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setOtFormCuenta('0999')
+                      setOtFormClienteNombre('GAMA SEGURIDAD SPA DEMO')
+                      setOtFormTipoServicio('Mantención Perimetral Alarma')
+                      setOtFormObservaciones('')
+                      setMostrarModalOT(true)
+                    }}
+                    className="px-5 py-2.5 bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white font-bold rounded-xl text-xs shadow-[4px_4px_8px_#bec8d2,-4px_-4px_8px_#ffffff] active:scale-95 cursor-pointer flex items-center gap-2"
+                  >
+                    <Plus className="h-4 w-4" />
+                    <span>Nueva Orden Técnica (OT)</span>
+                  </button>
+                </div>
               </div>
 
               {/* ── ALERTA DE NOVEDADES TÉCNICAS EN VIVO DESDE CENTRAL DE MONITOREO ── */}
@@ -5157,6 +5255,14 @@ export default function OperacionCRM() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* ── MODAL PWA COMPLETO DE SERVICIO TÉCNICO EN TERRENO (SCORPION FIELD SERVICE) ── */}
+      {mostrarModalPWATerreno && (
+        <ServicioTecnicoModal
+          onClose={() => setMostrarModalPWATerreno(false)}
+          clientesMap={abonadosCentrosCosto as any}
+        />
       )}
 
       {/* ── TOAST FLOATING NOTIFICATION ── */}
