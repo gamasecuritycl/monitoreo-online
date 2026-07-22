@@ -246,25 +246,48 @@ const EMPRESAS_INICIALES: EmpresaConglomerado[] = [
   }
 ]
 
+export interface BitacoraLead {
+  id: string
+  fecha: string
+  autor: string
+  tipo: 'Llamada' | 'Correo' | 'Visita' | 'WhatsApp'
+  nota: string
+}
+
 export interface LeadMarketing {
   id: string
   empresa: string
   rut?: string
+  comuna?: string
+  direccion?: string
   email: string
   telefono: string
   contacto: string
   segmento: 'Comercial B2B' | 'Industrial' | 'Condominios' | 'Particular'
   estado: 'Nuevo' | 'Contactado' | 'Interesado' | 'Cliente'
+  score_interes?: number
   fecha_ingreso: string
   notas?: string
+  bitacora?: BitacoraLead[]
+}
+
+export interface PiezaPublicitaria {
+  id: string
+  titulo: string
+  subtitulo: string
+  categoria: 'Monitoreo 24/7' | 'CCTVs & Video IA' | 'Cerco Eléctrico' | 'Control Acceso'
+  comunaTarget: string
+  imagenBanner: string
+  enlaceCta: string
+  cuponDescuento: string
 }
 
 const LEADS_INICIALES: LeadMarketing[] = [
-  { id: 'LEAD-101', empresa: 'Logística & Transportes del Norte SpA', rut: '76.890.123-5', email: 'adquisiciones@logisticanorte.cl', telefono: '+56 9 9123 4567', contacto: 'Don Roberto Morales', segmento: 'Industrial', estado: 'Nuevo', fecha_ingreso: '2026-07-20', notas: 'Interesados en monitoreo de bodegas y cerco eléctrico' },
-  { id: 'LEAD-102', empresa: 'Inmobiliaria Cordillera SpA', rut: '77.456.789-1', email: 'gerencia@inmobiliariacordillera.cl', telefono: '+56 32 245 8900', contacto: 'Dra. María Elena Silva', segmento: 'Comercial B2B', estado: 'Contactado', fecha_ingreso: '2026-07-18', notas: 'Cotización de 12 cámaras IP DarkFighter solicitada' },
-  { id: 'LEAD-103', empresa: 'Constructora San Pedro Limitada', rut: '76.111.222-3', email: 'operaciones@sanpedroconst.cl', telefono: '+56 9 8765 4321', contacto: 'Ing. Carlos Fuentealba', segmento: 'Industrial', estado: 'Interesado', fecha_ingreso: '2026-07-15', notas: 'Requieren kit de pánico e intrusión para faena' },
-  { id: 'LEAD-104', empresa: 'Clínica Privada El Roble', rut: '76.999.000-K', email: 'contacto@clinicaleroble.cl', telefono: '+56 2 2890 5500', contacto: 'Sra. Patricia Venegas', segmento: 'Comercial B2B', estado: 'Nuevo', fecha_ingreso: '2026-07-21', notas: 'Evaluando cambio de proveedor de monitoreo' },
-  { id: 'LEAD-105', empresa: 'Supermercados del Sur SpA', rut: '77.123.999-4', email: 'seguridad@superdelsur.cl', telefono: '+56 9 9444 3322', contacto: 'Sr. Hugo Alarcón', segmento: 'Comercial B2B', estado: 'Cliente', fecha_ingreso: '2026-07-10', notas: 'Monitoreo activo en 3 sucursales' }
+  { id: 'LEAD-101', empresa: 'Logística & Bodegaje El Salto SpA', rut: '76.890.123-5', comuna: 'Viña del Mar', direccion: 'Av. El Salto 1450, Viña del Mar', email: 'adquisiciones@logisticaelsalto.cl', telefono: '+56 32 268 9000', contacto: 'Don Roberto Morales', segmento: 'Industrial', estado: 'Nuevo', score_interes: 5, fecha_ingreso: '2026-07-20', notas: 'Interesados en monitoreo de bodegas y cerco eléctrico en El Salto', bitacora: [{ id: 'b1', fecha: '2026-07-20 14:30', autor: 'Ejecutivo Comercial', tipo: 'Llamada', nota: 'Primer contacto con Don Roberto. Mencionó requerir cotización de 16 cámaras.' }] },
+  { id: 'LEAD-102', empresa: 'Inmobiliaria Cordillera Reñaca SpA', rut: '77.456.789-1', comuna: 'Concón', direccion: 'Av. Borgoño 15200, Reñaca Concón', email: 'gerencia@inmobiliariacordillera.cl', telefono: '+56 32 245 8900', contacto: 'Dra. María Elena Silva', segmento: 'Comercial B2B', estado: 'Contactado', score_interes: 4, fecha_ingreso: '2026-07-18', notas: 'Cotización de 12 cámaras IP DarkFighter solicitada', bitacora: [{ id: 'b2', fecha: '2026-07-18 10:15', autor: 'Ejecutivo Comercial', tipo: 'Correo', nota: 'Se envió propuesta previa de CCTV para edificio de oficinas.' }] },
+  { id: 'LEAD-103', empresa: 'Constructora Puerto Valparaíso Limitada', rut: '76.111.222-3', comuna: 'Valparaíso', direccion: 'Camino La Pólvora Km 8.5, Valparaíso', email: 'operaciones@sanpedroconst.cl', telefono: '+56 9 8765 4321', contacto: 'Ing. Carlos Fuentealba', segmento: 'Industrial', estado: 'Interesado', score_interes: 5, fecha_ingreso: '2026-07-15', notas: 'Requieren kit de pánico e intrusión para faena en puerto', bitacora: [{ id: 'b3', fecha: '2026-07-16 16:45', autor: 'Jefe Técnico', tipo: 'Visita', nota: 'Visita técnica realizada en terreno La Pólvora.' }] },
+  { id: 'LEAD-104', empresa: 'Clínica Privada Jardín del Mar', rut: '76.999.000-K', comuna: 'Viña del Mar', direccion: 'Av. Libertad 940, Viña del Mar', email: 'contacto@clinicaleroble.cl', telefono: '+56 32 2890 550', contacto: 'Sra. Patricia Venegas', segmento: 'Comercial B2B', estado: 'Nuevo', score_interes: 4, fecha_ingreso: '2026-07-21', notas: 'Evaluando cambio de proveedor de monitoreo 24/7', bitacora: [] },
+  { id: 'LEAD-105', empresa: 'Centro Logístico Marga Marga SpA', rut: '77.123.999-4', comuna: 'Quilpué', direccion: 'Av. Los Carrera 2500, Quilpué', email: 'seguridad@margamargalog.cl', telefono: '+56 32 291 8800', contacto: 'Sr. Hugo Alarcón', segmento: 'Industrial', estado: 'Cliente', score_interes: 5, fecha_ingreso: '2026-07-10', notas: 'Monitoreo activo en 3 sucursales de Quilpué y Villa Alemana', bitacora: [{ id: 'b4', fecha: '2026-07-10 11:00', autor: 'Administración', tipo: 'Visita', nota: 'Firma de contrato de monitoreo 24/7.' }] }
 ]
 
 export default function OperacionCRM() {
@@ -309,22 +332,43 @@ export default function OperacionCRM() {
   const [enviandoEmailId, setEnviandoEmailId] = useState<number | null>(null)
 
   // ── MÓDULO MARKETING & COLD EMAIL OUTREACH VÍA RESEND ──
-  const [subTabMarketing, setSubTabMarketing] = useState<'leads' | 'campanas'>('leads')
+  const [subTabMarketing, setSubTabMarketing] = useState<'leads' | 'campanas' | 'publicidad'>('leads')
   const [leadsList, setLeadsList] = useState<LeadMarketing[]>(LEADS_INICIALES)
   const [busquedaLead, setBusquedaLead] = useState('')
   const [filtroEstadoLead, setFiltroEstadoLead] = useState<string>('Todos')
+
+  // Filtros V Región & Auto-Descubrimiento
+  const [filtroComunaVRegion, setFiltroComunaVRegion] = useState<string>('Todas')
+  const [cargandoScraperVRegion, setCargandoScraperVRegion] = useState(false)
+
+  // Drawer / Modal Tratamiento Prospecto
+  const [prospectoTratamiento, setProspectoTratamiento] = useState<LeadMarketing | null>(null)
+  const [nuevaNotaBitacora, setNuevaNotaBitacora] = useState('')
+  const [tipoNotaBitacora, setTipoNotaBitacora] = useState<'Llamada' | 'Correo' | 'Visita' | 'WhatsApp'>('Llamada')
 
   // Modal Nuevo Lead
   const [mostrarModalNuevoLead, setMostrarModalNuevoLead] = useState(false)
   const [leadEditandoId, setLeadEditandoId] = useState<string | null>(null)
   const [formLeadEmpresa, setFormLeadEmpresa] = useState('')
   const [formLeadRut, setFormLeadRut] = useState('')
+  const [formLeadComuna, setFormLeadComuna] = useState('Viña del Mar')
+  const [formLeadDireccion, setFormLeadDireccion] = useState('')
   const [formLeadEmail, setFormLeadEmail] = useState('')
   const [formLeadTelefono, setFormLeadTelefono] = useState('')
   const [formLeadContacto, setFormLeadContacto] = useState('')
   const [formLeadSegmento, setFormLeadSegmento] = useState<'Comercial B2B' | 'Industrial' | 'Condominios' | 'Particular'>('Comercial B2B')
   const [formLeadEstado, setFormLeadEstado] = useState<'Nuevo' | 'Contactado' | 'Interesado' | 'Cliente'>('Nuevo')
+  const [formLeadScore, setFormLeadScore] = useState<number>(4)
   const [formLeadNotas, setFormLeadNotas] = useState('')
+
+  // Diseñador de Publicidad & Banners B2B
+  const [pubTitulo, setPubTitulo] = useState('¡Protege tu Empresa en {{comuna}} con Monitoreo 24/7 y 2 Meses Gratis!')
+  const [pubSubtitulo, setPubSubtitulo] = useState('Cámaras DarkFighter 4K + Central de Alarma Inteligente sin costo de instalación para clientes B2B de la V Región.')
+  const [pubCategoria, setPubCategoria] = useState<'Monitoreo 24/7' | 'CCTVs & Video IA' | 'Cerco Eléctrico' | 'Control Acceso'>('Monitoreo 24/7')
+  const [pubComunaTarget, setPubComunaTarget] = useState('Viña del Mar')
+  const [pubCupon, setPubCupon] = useState('GAMA-VREGION-2026')
+  const [pubEnlaceCta, setPubEnlaceCta] = useState('https://www.gamasecurity.cl/auditoria-gratuita')
+  const [isDistribuyendoPublicidad, setIsDistribuyendoPublicidad] = useState(false)
 
   // Formulario Motor Campañas Resend
   const [campanaSegmento, setCampanaSegmento] = useState<string>('Todos')
@@ -1192,21 +1236,27 @@ export default function OperacionCRM() {
       setLeadEditandoId(lead.id)
       setFormLeadEmpresa(lead.empresa)
       setFormLeadRut(lead.rut || '')
+      setFormLeadComuna(lead.comuna || 'Viña del Mar')
+      setFormLeadDireccion(lead.direccion || '')
       setFormLeadEmail(lead.email)
       setFormLeadTelefono(lead.telefono)
       setFormLeadContacto(lead.contacto)
       setFormLeadSegmento(lead.segmento)
       setFormLeadEstado(lead.estado)
+      setFormLeadScore(lead.score_interes || 4)
       setFormLeadNotas(lead.notas || '')
     } else {
       setLeadEditandoId(null)
       setFormLeadEmpresa('')
       setFormLeadRut('')
+      setFormLeadComuna('Viña del Mar')
+      setFormLeadDireccion('')
       setFormLeadEmail('')
       setFormLeadTelefono('+56 9 ')
       setFormLeadContacto('')
       setFormLeadSegmento('Comercial B2B')
       setFormLeadEstado('Nuevo')
+      setFormLeadScore(4)
       setFormLeadNotas('')
     }
     setMostrarModalNuevoLead(true)
@@ -1222,13 +1272,17 @@ export default function OperacionCRM() {
       id: leadEditandoId || `LEAD-${Date.now()}`,
       empresa: formLeadEmpresa.trim(),
       rut: formLeadRut.trim(),
+      comuna: formLeadComuna,
+      direccion: formLeadDireccion.trim(),
       email: formLeadEmail.trim(),
       telefono: formLeadTelefono.trim() || '+56991016912',
       contacto: formLeadContacto.trim() || 'Encargado de Seguridad',
       segmento: formLeadSegmento,
       estado: formLeadEstado,
+      score_interes: formLeadScore,
       fecha_ingreso: new Date().toISOString().split('T')[0],
-      notas: formLeadNotas.trim()
+      notas: formLeadNotas.trim(),
+      bitacora: leadEditandoId ? (leadsList.find(l => l.id === leadEditandoId)?.bitacora || []) : []
     }
 
     let listaNueva: LeadMarketing[] = []
@@ -1252,8 +1306,131 @@ export default function OperacionCRM() {
 
     setMostrarModalNuevoLead(false)
     setLeadEditandoId(null)
-    setToastNotificacion({ tipo: 'exito', texto: `Lead "${nuevoLead.empresa}" guardado exitosamente.` })
+    setToastNotificacion({ tipo: 'exito', texto: `Lead "${nuevoLead.empresa}" (${nuevoLead.comuna}) guardado exitosamente.` })
     setTimeout(() => setToastNotificacion(null), 4000)
+  }
+
+  // Auto-Descubrimiento de Prospectos V Región
+  const handleAutoDescubrirVRegion = async () => {
+    setCargandoScraperVRegion(true)
+    try {
+      const res = await fetch(`/api/marketing/prospectos-v-region?comuna=${encodeURIComponent(filtroComunaVRegion)}`)
+      const data = await res.json()
+      if (data.success && data.prospectos) {
+        // Filtrar no duplicados por rut o email
+        const nuevos = data.prospectos.filter((p: LeadMarketing) => !leadsList.some(l => l.email === p.email || (l.rut && l.rut === p.rut)))
+        if (nuevos.length === 0) {
+          setToastNotificacion({ tipo: 'exito', texto: `No se encontraron prospectos nuevos en la comuna ${filtroComunaVRegion} (todos ya agregados).` })
+        } else {
+          const listaActualizada = [...nuevos, ...leadsList]
+          setLeadsList(listaActualizada)
+          try { localStorage.setItem('gama_leads', JSON.stringify(listaActualizada)) } catch (e) {}
+          setToastNotificacion({ tipo: 'exito', texto: `🔍 Auto-Descubiertos ${nuevos.length} prospectos de la V Región (${filtroComunaVRegion}).` })
+        }
+      }
+    } catch (err: any) {
+      alert(`Error descubriendo prospectos: ${err?.message || err}`)
+    } finally {
+      setCargandoScraperVRegion(false)
+      setTimeout(() => setToastNotificacion(null), 5000)
+    }
+  }
+
+  // Agregar Nota a la Bitácora de Tratamiento Individual
+  const handleAgregarNotaBitacora = () => {
+    if (!prospectoTratamiento || !nuevaNotaBitacora.trim()) return
+
+    const nuevaNota: BitacoraLead = {
+      id: `b-${Date.now()}`,
+      fecha: new Date().toISOString().replace('T', ' ').substring(0, 16),
+      autor: 'Ejecutivo Comercial',
+      tipo: tipoNotaBitacora,
+      nota: nuevaNotaBitacora.trim()
+    }
+
+    const bitacoraPrev = prospectoTratamiento.bitacora || []
+    const prospectoActualizado: LeadMarketing = {
+      ...prospectoTratamiento,
+      bitacora: [nuevaNota, ...bitacoraPrev]
+    }
+
+    setProspectoTratamiento(prospectoActualizado)
+    const listaActualizada = leadsList.map(l => l.id === prospectoActualizado.id ? prospectoActualizado : l)
+    setLeadsList(listaActualizada)
+    try { localStorage.setItem('gama_leads', JSON.stringify(listaActualizada)) } catch (e) {}
+
+    setNuevaNotaBitacora('')
+    setToastNotificacion({ tipo: 'exito', texto: 'Nota registrada en la bitácora comercial del prospecto.' })
+    setTimeout(() => setToastNotificacion(null), 3000)
+  }
+
+  // Distribuir Publicidad Diseñada B2B
+  const handleDistribuirPublicidad = async () => {
+    const leadsTarget = leadsList.filter(l => pubComunaTarget === 'Todas' || l.comuna === pubComunaTarget)
+    if (leadsTarget.length === 0) {
+      alert(`No hay prospectos registrados para la comuna de ${pubComunaTarget}.`)
+      return
+    }
+
+    if (!confirm(`¿Confirma el envío de la pieza publicitaria a ${leadsTarget.length} empresas de ${pubComunaTarget}?`)) return
+
+    setIsDistribuyendoPublicidad(true)
+    const tituloFinal = pubTitulo.replace(/\{\{comuna\}\}/g, pubComunaTarget)
+
+    const htmlPublicitario = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden; background: #ffffff;">
+        <div style="background: linear-gradient(135deg, #005bea 0%, #00c6fb 100%); padding: 32px 24px; text-align: center; color: #ffffff;">
+          <span style="background: rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: bold; text-transform: uppercase;">OFERTA EXCLUSIVA V REGIÓN</span>
+          <h2 style="margin: 16px 0 8px 0; font-size: 24px; font-weight: 900; line-height: 1.2;">${tituloFinal}</h2>
+          <p style="margin: 0; font-size: 14px; opacity: 0.95;">${pubSubtitulo}</p>
+        </div>
+
+        <div style="padding: 24px; text-align: center; background-color: #f8fafc;">
+          <p style="font-size: 13px; color: #475569; margin-bottom: 20px;">Use su cupón de bonificación empresarial al solicitar su factibilidad técnica:</p>
+          <div style="display: inline-block; background: #005bea; color: #ffffff; padding: 12px 24px; border-radius: 12px; font-size: 18px; font-weight: bold; letter-spacing: 2px;">
+            CUPÓN: ${pubCupon}
+          </div>
+          <div style="margin-top: 24px;">
+            <a href="${pubEnlaceCta}" style="background: #005bea; color: #ffffff; padding: 14px 28px; border-radius: 12px; text-decoration: none; font-weight: bold; font-size: 14px; display: inline-block;">
+              SOLICITAR EVALUACIÓN EN TERRENO →
+            </a>
+          </div>
+        </div>
+
+        <div style="padding: 20px 24px; background: #0f172a; color: #94a3b8; font-size: 11px; text-align: center;">
+          <p style="margin: 0; font-weight: bold; color: #ffffff;">GAMA SEGURIDAD CHILE - V REGIÓN VALPARAÍSO</p>
+          <p style="margin: 4px 0 0 0;">Av. Valparaíso 1183, Viña del Mar | Fono: +56 32 3276011</p>
+        </div>
+      </div>
+    `
+
+    try {
+      const res = await fetch('/api/marketing/outreach', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          leads: leadsTarget,
+          asunto: tituloFinal,
+          cuerpoHtml: htmlPublicitario,
+          remitente: campanaRemitente
+        })
+      })
+
+      const d = await res.json()
+      if (d.success) {
+        setToastNotificacion({
+          tipo: 'exito',
+          texto: `📢 Publicidad lanzada con éxito a ${d.totalExitosos} empresas de ${pubComunaTarget}.`
+        })
+      } else {
+        alert(`Error enviando publicidad: ${d.error}`)
+      }
+    } catch (e: any) {
+      alert(`Error en el servidor: ${e?.message || e}`)
+    } finally {
+      setIsDistribuyendoPublicidad(false)
+      setTimeout(() => setToastNotificacion(null), 5000)
+    }
   }
 
   const handleEliminarLead = async (id: string, empresa: string) => {
@@ -2496,10 +2673,10 @@ export default function OperacionCRM() {
                   </div>
                   <div>
                     <h2 className="text-base font-black text-slate-900 uppercase tracking-wide flex items-center gap-3">
-                      <span>Marketing & Cold Email Outreach (Resend API)</span>
+                      <span>Marketing & Prospección B2B V Región Valparaíso</span>
                     </h2>
                     <p className="text-xs text-slate-500 font-semibold mt-0.5">
-                      Captación de leads B2B, segmentación comercial y prospección masiva automatizada vía Resend
+                      Buscador de empresas por comuna, tratamiento individual de prospectos, diseñador de publicidad y envío masivo vía Resend
                     </p>
                   </div>
                 </div>
@@ -2511,14 +2688,21 @@ export default function OperacionCRM() {
                       className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${subTabMarketing === 'leads' ? 'bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white shadow-xs' : 'text-slate-700 hover:bg-[#d5dbe3]'}`}
                     >
                       <User className="h-4 w-4" />
-                      <span>Leads & Prospección ({leadsList.length})</span>
+                      <span>Prospectos V Región ({leadsList.length})</span>
                     </button>
                     <button
                       onClick={() => setSubTabMarketing('campanas')}
                       className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${subTabMarketing === 'campanas' ? 'bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white shadow-xs' : 'text-slate-700 hover:bg-[#d5dbe3]'}`}
                     >
                       <Send className="h-4 w-4" />
-                      <span>Motor Campañas Resend</span>
+                      <span>Campañas Outreach</span>
+                    </button>
+                    <button
+                      onClick={() => setSubTabMarketing('publicidad')}
+                      className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${subTabMarketing === 'publicidad' ? 'bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white shadow-xs' : 'text-slate-700 hover:bg-[#d5dbe3]'}`}
+                    >
+                      <Sparkles className="h-4 w-4" />
+                      <span>Diseñador Publicidad B2B</span>
                     </button>
                   </div>
 
@@ -2527,29 +2711,63 @@ export default function OperacionCRM() {
                     className="px-5 py-2.5 bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white font-bold rounded-xl text-xs shadow-[4px_4px_8px_#bec8d2,-4px_-4px_8px_#ffffff] active:scale-95 cursor-pointer transition-all flex items-center gap-2"
                   >
                     <UserPlus className="h-4 w-4" />
-                    <span>Añadir Nuevo Lead</span>
+                    <span>Añadir Lead Manual</span>
                   </button>
                 </div>
               </div>
 
-              {/* SECCIÓN 1: VISTA DE GESTIÓN DE LEADS */}
+              {/* SECCIÓN 1: VISTA DE GESTIÓN DE LEADS & BÚSQUEDA AUTOMÁTICA V REGIÓN */}
               {subTabMarketing === 'leads' && (
                 <div className="space-y-5">
-                  {/* BARRA DE BÚSQUEDA Y FILTRADO POR ESTADO */}
+                  
+                  {/* BARRA DE FILTRADO POR COMUNA DE LA V REGIÓN Y AUTO-DESCUBRIMIENTO */}
                   <div className="bg-[#E0E5EC] p-4 rounded-xl shadow-[inset_4px_4px_8px_#bec8d2,inset_-4px_-4px_8px_#ffffff] flex flex-col md:flex-row justify-between items-center gap-4">
-                    <div className="relative flex-1 w-full flex items-center">
+                    
+                    <div className="flex items-center gap-3 w-full md:w-auto">
+                      <MapPin className="h-5 w-5 text-[#005bea] shrink-0" />
+                      <div className="w-full md:w-64">
+                        <label className="text-[10px] font-bold text-slate-500 block mb-1">COMUNA V REGIÓN VALPARAÍSO:</label>
+                        <select
+                          value={filtroComunaVRegion}
+                          onChange={(e) => setFiltroComunaVRegion(e.target.value)}
+                          className="w-full bg-[#E0E5EC] shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] border-none p-2.5 rounded-xl font-bold text-xs text-slate-900"
+                        >
+                          <option value="Todas">Todas las Comunas (V Región)</option>
+                          <option value="Viña del Mar">Viña del Mar</option>
+                          <option value="Valparaíso">Valparaíso</option>
+                          <option value="Concón">Concón</option>
+                          <option value="Quilpué">Quilpué</option>
+                          <option value="Villa Alemana">Villa Alemana</option>
+                          <option value="San Antonio">San Antonio</option>
+                          <option value="Los Andes">Los Andes</option>
+                          <option value="Quillota">Quillota</option>
+                          <option value="Limache">Limache</option>
+                        </select>
+                      </div>
+
+                      <button
+                        disabled={cargandoScraperVRegion}
+                        onClick={handleAutoDescubrirVRegion}
+                        className="px-5 py-2.5 bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white font-bold rounded-xl text-xs shadow-[4px_4px_8px_#bec8d2,-4px_-4px_8px_#ffffff] active:scale-95 cursor-pointer transition-all flex items-center gap-2 shrink-0 disabled:opacity-50 mt-5 md:mt-4"
+                      >
+                        {cargandoScraperVRegion ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                        <span>🔍 Auto-Descubrir Prospectos V Región</span>
+                      </button>
+                    </div>
+
+                    <div className="relative flex-1 w-full flex items-center mt-2 md:mt-0">
                       <Search className="absolute left-4 h-4 w-4 text-slate-400 pointer-events-none" />
                       <input
                         type="text"
                         value={busquedaLead}
                         onChange={(e) => setBusquedaLead(e.target.value)}
-                        placeholder="Buscar lead por Empresa, RUT, Email o Contacto..."
+                        placeholder="Buscar por Nombre Empresa, RUT, Email, Dirección o Contacto..."
                         className="w-full bg-[#E0E5EC] shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] border-none rounded-xl pl-11 pr-4 py-2.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#005bea]"
                       />
                     </div>
 
-                    <div className="flex items-center gap-2 overflow-x-auto shrink-0">
-                      <span className="text-[11px] font-bold text-slate-500 uppercase">Filtrar Estado:</span>
+                    <div className="flex items-center gap-1.5 overflow-x-auto shrink-0">
+                      <span className="text-[11px] font-bold text-slate-500 uppercase">Estado:</span>
                       {['Todos', 'Nuevo', 'Contactado', 'Interesado', 'Cliente'].map(st => (
                         <button
                           key={st}
@@ -2562,34 +2780,44 @@ export default function OperacionCRM() {
                     </div>
                   </div>
 
-                  {/* TABLA DE LEADS CON BORDES REDONDEADOS Y VALIDACIÓN */}
+                  {/* TABLA DE LEADS V REGIÓN CON TRATAMIENTO Y BITÁCORA */}
                   <div className="bg-[#E0E5EC] shadow-[inset_5px_5px_10px_#bec8d2,inset_-5px_-5px_10px_#ffffff] rounded-2xl p-2 overflow-hidden">
                     <table className="w-full text-left border-collapse text-xs font-medium">
                       <thead>
                         <tr className="bg-[#E0E5EC] text-slate-700 border-b border-slate-300 font-bold uppercase text-[11px]">
                           <th className="p-3.5 border-r border-slate-300">EMPRESA / RUT</th>
-                          <th className="p-3.5 border-r border-slate-300">CORREO ELECTRÓNICO & VALIDACIÓN</th>
+                          <th className="p-3.5 border-r border-slate-300">COMUNA & DIRECCIÓN (V REGIÓN)</th>
+                          <th className="p-3.5 border-r border-slate-300">CORREO & VALIDACIÓN</th>
                           <th className="p-3.5 border-r border-slate-300">CONTACTO & TELÉFONO</th>
-                          <th className="p-3.5 border-r border-slate-300">SEGMENTO</th>
+                          <th className="p-3.5 border-r border-slate-300 text-center">INTERÉS</th>
                           <th className="p-3.5 border-r border-slate-300 text-center">ESTADO LEAD</th>
-                          <th className="p-3.5 text-center min-w-[200px]">ACCIONES RÁPIDAS</th>
+                          <th className="p-3.5 text-center min-w-[220px]">TRATAMIENTO & ACCIONES</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-300">
                         {leadsList
                           .filter(l => {
                             const q = busquedaLead.toLowerCase()
-                            const matchQ = l.empresa.toLowerCase().includes(q) || l.email.toLowerCase().includes(q) || l.contacto.toLowerCase().includes(q)
+                            const matchQ = l.empresa.toLowerCase().includes(q) || l.email.toLowerCase().includes(q) || l.contacto.toLowerCase().includes(q) || (l.comuna && l.comuna.toLowerCase().includes(q))
                             const matchF = filtroEstadoLead === 'Todos' || l.estado === filtroEstadoLead
-                            return matchQ && matchF
+                            const matchComuna = filtroComunaVRegion === 'Todas' || (l.comuna && l.comuna.toLowerCase() === filtroComunaVRegion.toLowerCase())
+                            return matchQ && matchF && matchComuna
                           })
                           .map(lead => {
                             const esEmailValido = lead.email && lead.email.includes('@') && lead.email.includes('.')
+                            const score = lead.score_interes || 4
                             return (
                               <tr key={lead.id} className="hover:bg-[#d5dbe3] transition-colors">
                                 <td className="p-3.5 border-r border-slate-300 font-bold text-slate-900">
                                   <div className="text-sm">{lead.empresa}</div>
                                   <div className="text-[10px] text-slate-500 font-mono">RUT: {lead.rut || 'S/RUT'}</div>
+                                </td>
+                                <td className="p-3.5 border-r border-slate-300 text-slate-800">
+                                  <div className="font-bold flex items-center gap-1 text-[#005bea]">
+                                    <MapPin className="h-3.5 w-3.5 shrink-0" />
+                                    <span>{lead.comuna || 'V Región'}</span>
+                                  </div>
+                                  <div className="text-[10px] text-slate-500 truncate max-w-[180px]">{lead.direccion || 'Chile'}</div>
                                 </td>
                                 <td className="p-3.5 border-r border-slate-300 font-mono">
                                   <div className="text-slate-900 font-bold">{lead.email}</div>
@@ -2597,12 +2825,12 @@ export default function OperacionCRM() {
                                     {esEmailValido ? (
                                       <span className="inline-flex items-center gap-1 text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-md font-bold">
                                         <CheckCircle2 className="h-3 w-3" />
-                                        <span>Formato Válido</span>
+                                        <span>Válido</span>
                                       </span>
                                     ) : (
                                       <span className="inline-flex items-center gap-1 text-[10px] bg-red-100 text-red-800 px-2 py-0.5 rounded-md font-bold">
                                         <AlertTriangle className="h-3 w-3" />
-                                        <span>Email Inválido</span>
+                                        <span>Email Error</span>
                                       </span>
                                     )}
                                   </div>
@@ -2611,10 +2839,10 @@ export default function OperacionCRM() {
                                   <div className="font-bold text-slate-800">{lead.contacto}</div>
                                   <div className="text-[11px] text-slate-600 font-mono">{lead.telefono}</div>
                                 </td>
-                                <td className="p-3.5 border-r border-slate-300 font-bold text-slate-700">
-                                  <span className="bg-[#E0E5EC] shadow-[inset_2px_2px_4px_#bec8d2,inset_-2px_-2px_4px_#ffffff] px-2.5 py-1 rounded-lg text-[11px]">
-                                    {lead.segmento}
-                                  </span>
+                                <td className="p-3.5 border-r border-slate-300 text-center font-bold">
+                                  <div className="text-amber-500 text-sm tracking-widest">
+                                    {'★'.repeat(score)}{'☆'.repeat(5 - score)}
+                                  </div>
                                 </td>
                                 <td className="p-3.5 border-r border-slate-300 text-center font-bold">
                                   <span className={`px-3 py-1 rounded-full text-[11px] font-bold ${
@@ -2628,6 +2856,14 @@ export default function OperacionCRM() {
                                 </td>
                                 <td className="p-3.5 text-center">
                                   <div className="flex items-center justify-center gap-2">
+                                    <button
+                                      onClick={() => setProspectoTratamiento(lead)}
+                                      title="Tratamiento Comercial & Bitácora"
+                                      className="px-2.5 py-1.5 bg-[#005bea] text-white rounded-xl font-bold text-[11px] cursor-pointer transition-all shadow-xs flex items-center gap-1 hover:brightness-110"
+                                    >
+                                      <ClipboardList className="h-3.5 w-3.5" />
+                                      <span>Tratamiento</span>
+                                    </button>
                                     <button
                                       onClick={async () => {
                                         const res = await fetch('/api/marketing/outreach', {
@@ -2677,10 +2913,7 @@ export default function OperacionCRM() {
               {/* SECCIÓN 2: MOTOR DE CAMPAÑAS Y ENVÍO MASIVO VÍA RESEND */}
               {subTabMarketing === 'campanas' && (
                 <div className="space-y-6">
-                  {/* GRID 3 COLUMNAS RESPONSIVO CON MARGENES p-6 / p-8 */}
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    
-                    {/* PANEL IZQUIERDO: CONFIGURACIÓN DE CAMPAÑA (COL 1) */}
                     <div className="bg-[#E0E5EC] p-6 rounded-2xl shadow-[6px_6px_12px_#bec8d2,-6px_-6px_12px_#ffffff] space-y-5">
                       <div className="flex items-center gap-2 border-b border-slate-300 pb-3">
                         <Target className="h-5 w-5 text-[#005bea]" />
@@ -2729,7 +2962,6 @@ export default function OperacionCRM() {
                           <span className="text-[10px] text-slate-500 mt-1 block font-semibold">Variables: <code className="text-[#005bea] font-bold font-mono">{"{{nombre_empresa}}"}</code>, <code className="text-[#005bea] font-bold font-mono">{"{{contacto}}"}</code></span>
                         </div>
 
-                        {/* PLANTILLAS RÁPIDAS */}
                         <div className="pt-2">
                           <label className="font-bold text-slate-700 block mb-2">PLANTILLAS PRECONFIGURADAS B2B:</label>
                           <div className="space-y-2">
@@ -2759,7 +2991,6 @@ export default function OperacionCRM() {
                       </div>
                     </div>
 
-                    {/* PANEL DERECHO: EDITOR Y VISTA PREVIA (COL 2 Y 3) */}
                     <div className="lg:col-span-2 bg-[#E0E5EC] p-6 md:p-8 rounded-2xl shadow-[6px_6px_12px_#bec8d2,-6px_-6px_12px_#ffffff] space-y-6 flex flex-col justify-between">
                       <div className="space-y-4">
                         <div className="flex justify-between items-center border-b border-slate-300 pb-3">
@@ -2782,7 +3013,6 @@ export default function OperacionCRM() {
                           />
                         </div>
 
-                        {/* TARJETA DE VISTA PREVIA EN TIEMPO REAL */}
                         <div className="bg-white rounded-xl border border-slate-300 p-5 space-y-3 text-xs shadow-inner">
                           <span className="text-[10px] font-black text-[#005bea] uppercase tracking-wider block">👁️ VISTA PREVIA DEL CORREO PARA EL PRIMER LEAD DE LA LISTA:</span>
                           <div className="font-bold text-slate-900 text-sm border-b border-slate-200 pb-2">
@@ -2798,7 +3028,6 @@ export default function OperacionCRM() {
                         </div>
                       </div>
 
-                      {/* INDICADOR DE PROGRESO DE ENVÍO Y BOTÓN CTA AZUL FRANCIA */}
                       <div className="space-y-3 pt-2">
                         {isSubmittingCampana && (
                           <div className="bg-blue-50 border border-blue-200 p-4 rounded-xl flex items-center gap-3 text-blue-900 font-bold text-xs">
@@ -2822,6 +3051,158 @@ export default function OperacionCRM() {
                         </button>
                       </div>
 
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* SECCIÓN 3: DISEÑADOR DE PUBLICIDAD & BANNERS B2B (¡NUEVO!) */}
+              {subTabMarketing === 'publicidad' && (
+                <div className="space-y-6">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    
+                    {/* PANEL IZQUIERDO: CONFIGURACIÓN Y EDITOR DE LA PIEZA PUBLICITARIA */}
+                    <div className="bg-[#E0E5EC] p-6 rounded-2xl shadow-[6px_6px_12px_#bec8d2,-6px_-6px_12px_#ffffff] space-y-5">
+                      <div className="flex items-center gap-2 border-b border-slate-300 pb-3">
+                        <Sparkles className="h-5 w-5 text-[#005bea]" />
+                        <h3 className="font-black text-xs text-slate-900 uppercase tracking-wider">🎨 EDITOR DE PIEZA PUBLICITARIA B2B</h3>
+                      </div>
+
+                      <div className="space-y-4 text-xs">
+                        <div>
+                          <label className="font-bold text-slate-700 block mb-1">TITULAR PRINCIPAL DEL BANNER / CORREO:</label>
+                          <input
+                            type="text"
+                            value={pubTitulo}
+                            onChange={(e) => setPubTitulo(e.target.value)}
+                            placeholder="ej: ¡Protege tu Empresa en {{comuna}}!"
+                            className="w-full bg-[#E0E5EC] shadow-[inset_4px_4px_8px_#bec8d2,inset_-4px_-4px_8px_#ffffff] border-none p-3 rounded-xl font-bold text-slate-900 focus:ring-2 focus:ring-[#005bea]"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="font-bold text-slate-700 block mb-1">SUBTÍTULO / DESCRIPCIÓN DE LA OFERTA:</label>
+                          <textarea
+                            rows={3}
+                            value={pubSubtitulo}
+                            onChange={(e) => setPubSubtitulo(e.target.value)}
+                            placeholder="ej: Cámaras DarkFighter 4K sin costo de instalación..."
+                            className="w-full bg-[#E0E5EC] shadow-[inset_4px_4px_8px_#bec8d2,inset_-4px_-4px_8px_#ffffff] border-none p-3 rounded-xl font-bold text-slate-900 focus:ring-2 focus:ring-[#005bea]"
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="font-bold text-slate-700 block mb-1">CATEGORÍA DE SEGURIDAD:</label>
+                            <select
+                              value={pubCategoria}
+                              onChange={(e: any) => setPubCategoria(e.target.value)}
+                              className="w-full bg-[#E0E5EC] shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] border-none p-2.5 rounded-xl font-bold text-slate-900"
+                            >
+                              <option value="Monitoreo 24/7">Monitoreo 24/7</option>
+                              <option value="CCTVs & Video IA">CCTVs & Video IA</option>
+                              <option value="Cerco Eléctrico">Cerco Eléctrico</option>
+                              <option value="Control Acceso">Control Acceso</option>
+                            </select>
+                          </div>
+
+                          <div>
+                            <label className="font-bold text-slate-700 block mb-1">COMUNA TARGET ENVÍO:</label>
+                            <select
+                              value={pubComunaTarget}
+                              onChange={(e) => setPubComunaTarget(e.target.value)}
+                              className="w-full bg-[#E0E5EC] shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] border-none p-2.5 rounded-xl font-bold text-slate-900"
+                            >
+                              <option value="Todas">Todas las Comunas (V Región)</option>
+                              <option value="Viña del Mar">Viña del Mar</option>
+                              <option value="Valparaíso">Valparaíso</option>
+                              <option value="Concón">Concón</option>
+                              <option value="Quilpué">Quilpué</option>
+                              <option value="Villa Alemana">Villa Alemana</option>
+                              <option value="San Antonio">San Antonio</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="font-bold text-slate-700 block mb-1">CUPÓN DE DESCUENTO:</label>
+                            <input
+                              type="text"
+                              value={pubCupon}
+                              onChange={(e) => setPubCupon(e.target.value)}
+                              className="w-full bg-[#E0E5EC] shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] border-none p-2.5 rounded-xl font-mono font-bold text-[#005bea]"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="font-bold text-slate-700 block mb-1">ENLACE DE LLAMADA (CTA):</label>
+                            <input
+                              type="text"
+                              value={pubEnlaceCta}
+                              onChange={(e) => setPubEnlaceCta(e.target.value)}
+                              className="w-full bg-[#E0E5EC] shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] border-none p-2.5 rounded-xl font-mono text-[11px] text-slate-900"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* PANEL DERECHO: VISTA PREVIA INTERACTIVA DE LA PUBLICIDAD */}
+                    <div className="bg-[#E0E5EC] p-6 rounded-2xl shadow-[6px_6px_12px_#bec8d2,-6px_-6px_12px_#ffffff] space-y-5 flex flex-col justify-between">
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-center border-b border-slate-300 pb-3">
+                          <h3 className="font-black text-xs text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                            <Sparkles className="h-5 w-5 text-[#005bea]" />
+                            <span>VISTA PREVIA DE LA PIEZA PUBLICITARIA</span>
+                          </h3>
+                          <span className="text-[11px] font-bold text-white bg-[#005bea] px-3 py-1 rounded-full">
+                            Target: {leadsList.filter(l => pubComunaTarget === 'Todas' || l.comuna === pubComunaTarget).length} Empresas ({pubComunaTarget})
+                          </span>
+                        </div>
+
+                        {/* FLYER / BANNER PREVIEW EN AZUL FRANCIA DEGRADADO */}
+                        <div className="bg-white rounded-2xl border border-slate-300 overflow-hidden shadow-lg">
+                          <div className="bg-gradient-to-r from-[#005bea] to-[#00c6fb] p-6 text-center text-white space-y-2">
+                            <span className="bg-white/20 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">OFERTA EXCLUSIVA V REGIÓN</span>
+                            <h2 className="text-xl font-black leading-tight pt-1">
+                              {pubTitulo.replace(/\{\{comuna\}\}/g, pubComunaTarget)}
+                            </h2>
+                            <p className="text-xs opacity-90">{pubSubtitulo}</p>
+                          </div>
+
+                          <div className="p-6 text-center bg-slate-50 space-y-4">
+                            <p className="text-xs text-slate-600 font-bold">Use su cupón de bonificación empresarial al solicitar su factibilidad técnica:</p>
+                            <div className="inline-block bg-[#005bea] text-white px-6 py-2.5 rounded-xl font-mono text-base font-bold shadow-md tracking-wider">
+                              CUPÓN: {pubCupon}
+                            </div>
+                            <div>
+                              <a
+                                href={pubEnlaceCta}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-block bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white font-bold px-6 py-3 rounded-xl text-xs shadow-md hover:opacity-95 transition-all cursor-pointer"
+                              >
+                                SOLICITAR EVALUACIÓN EN TERRENO →
+                              </a>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        disabled={isDistribuyendoPublicidad}
+                        onClick={handleDistribuirPublicidad}
+                        className="w-full bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white font-bold p-4 rounded-xl shadow-lg hover:opacity-95 transition-all text-sm cursor-pointer flex items-center justify-center gap-3 border-none disabled:opacity-50 mt-4"
+                      >
+                        {isDistribuyendoPublicidad ? (
+                          <Loader2 className="h-5 w-5 animate-spin" />
+                        ) : (
+                          <Megaphone className="h-5 w-5" />
+                        )}
+                        <span>📢 Distribuir Publicidad a Prospectos de {pubComunaTarget} (Resend)</span>
+                      </button>
                     </div>
 
                   </div>
@@ -3533,6 +3914,150 @@ export default function OperacionCRM() {
         </div>
       )}
 
+      {/* ── MODAL DRAWER DE TRATAMIENTO INDIVIDUAL Y BITÁCORA DEL PROSPECTO ── */}
+      {prospectoTratamiento && (
+        <div className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm p-4 md:p-6 flex justify-end items-stretch no-imprimir overflow-y-auto">
+          <div className="bg-[#E0E5EC] border-l border-slate-300 w-full max-w-2xl rounded-2xl shadow-2xl p-6 md:p-8 flex flex-col gap-5 text-xs text-slate-900 font-sans my-auto min-h-[85vh] overflow-y-auto">
+            
+            <div className="flex justify-between items-start pb-4 border-b border-slate-300">
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white rounded-xl shadow-xs">
+                  <ClipboardList className="h-6 w-6 stroke-[2]" />
+                </div>
+                <div>
+                  <h3 className="font-black text-lg text-slate-900 uppercase tracking-wider">
+                    {prospectoTratamiento.empresa}
+                  </h3>
+                  <p className="text-xs text-[#005bea] font-bold flex items-center gap-2 mt-0.5">
+                    <MapPin className="h-3.5 w-3.5" />
+                    <span>{prospectoTratamiento.comuna || 'V Región'} • RUT: {prospectoTratamiento.rut || 'S/RUT'}</span>
+                  </p>
+                </div>
+              </div>
+              <button onClick={() => setProspectoTratamiento(null)} className="text-slate-400 hover:text-slate-700 font-bold text-xl cursor-pointer">✕</button>
+            </div>
+
+            {/* RESUMEN DEL PROSPECTO Y SCORE */}
+            <div className="grid grid-cols-3 gap-3 bg-[#E0E5EC] p-4 rounded-xl shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff]">
+              <div>
+                <span className="text-[10px] font-bold text-slate-500 block">CONTACTO PRINCIPAL:</span>
+                <span className="font-bold text-slate-900 text-xs">{prospectoTratamiento.contacto}</span>
+                <span className="text-[10px] text-slate-500 block font-mono">{prospectoTratamiento.telefono}</span>
+              </div>
+              <div>
+                <span className="text-[10px] font-bold text-slate-500 block">CORREO ELECTRÓNICO:</span>
+                <span className="font-bold font-mono text-slate-900 text-xs truncate block">{prospectoTratamiento.email}</span>
+              </div>
+              <div>
+                <span className="text-[10px] font-bold text-slate-500 block">NIVEL DE INTERÉS:</span>
+                <div className="text-amber-500 text-sm font-bold tracking-widest">
+                  {'★'.repeat(prospectoTratamiento.score_interes || 4)}{'☆'.repeat(5 - (prospectoTratamiento.score_interes || 4))}
+                </div>
+              </div>
+            </div>
+
+            {/* BITÁCORA DE INTERACCIONES Y REGISTRO DE TRATAMIENTO */}
+            <div className="space-y-4 flex-1 flex flex-col justify-between">
+              <div className="space-y-3">
+                <h4 className="font-black text-xs text-slate-900 uppercase tracking-wider flex items-center gap-2 border-b border-slate-300 pb-2">
+                  <MessageSquare className="h-4 w-4 text-[#005bea]" />
+                  <span>REGISTRAR NUEVA INTERACCIÓN / NOTA COMERCIAL</span>
+                </h4>
+
+                <div className="space-y-3 bg-[#E0E5EC] p-4 rounded-xl shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff]">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-500 block mb-1">TIPO DE CONTACTO:</label>
+                      <select
+                        value={tipoNotaBitacora}
+                        onChange={(e: any) => setTipoNotaBitacora(e.target.value)}
+                        className="w-full bg-[#E0E5EC] shadow-[inset_2px_2px_4px_#bec8d2,inset_-2px_-2px_4px_#ffffff] border-none p-2 rounded-lg font-bold text-xs text-slate-900"
+                      >
+                        <option value="Llamada">📞 Llamada Telefónica</option>
+                        <option value="Correo">📧 Correo Comercial</option>
+                        <option value="Visita">🏢 Visita en Terreno</option>
+                        <option value="WhatsApp">💬 Mensaje WhatsApp</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-500 block mb-1">CAMBIAR ESTADO DEL PROSPECTO:</label>
+                      <select
+                        value={prospectoTratamiento.estado}
+                        onChange={(e: any) => {
+                          const nuevoEstado = e.target.value
+                          const act = { ...prospectoTratamiento, estado: nuevoEstado }
+                          setProspectoTratamiento(act)
+                          setLeadsList(leadsList.map(l => l.id === act.id ? act : l))
+                        }}
+                        className="w-full bg-[#E0E5EC] shadow-[inset_2px_2px_4px_#bec8d2,inset_-2px_-2px_4px_#ffffff] border-none p-2 rounded-lg font-bold text-xs text-slate-900"
+                      >
+                        <option value="Nuevo">Nuevo</option>
+                        <option value="Contactado">Contactado</option>
+                        <option value="Interesado">Interesado</option>
+                        <option value="Cliente">Cliente</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-500 block mb-1">DETALLE DE LA REUNIÓN / OBSERVACIÓN:</label>
+                    <textarea
+                      rows={3}
+                      value={nuevaNotaBitacora}
+                      onChange={(e) => setNuevaNotaBitacora(e.target.value)}
+                      placeholder="Escriba los acuerdos alcanzados o requerimientos de seguridad..."
+                      className="w-full bg-[#E0E5EC] shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] border-none p-3 rounded-xl text-xs text-slate-900 font-medium"
+                    />
+                  </div>
+
+                  <div className="flex justify-end">
+                    <button
+                      onClick={handleAgregarNotaBitacora}
+                      className="px-5 py-2 bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white font-bold rounded-xl text-xs shadow-md active:scale-95 cursor-pointer"
+                    >
+                      Guardar en Bitácora
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* CRONOLOGÍA DE INTERACCIONES DE LA BITÁCORA */}
+              <div className="space-y-3 pt-2">
+                <h4 className="font-black text-xs text-slate-900 uppercase tracking-wider border-b border-slate-300 pb-2">
+                  HISTORIAL DE INTERACCIONES ({prospectoTratamiento.bitacora?.length || 0})
+                </h4>
+
+                <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                  {(!prospectoTratamiento.bitacora || prospectoTratamiento.bitacora.length === 0) ? (
+                    <p className="text-[11px] text-slate-400 italic">No hay notas registradas aún en la bitácora de este prospecto.</p>
+                  ) : (
+                    prospectoTratamiento.bitacora.map(b => (
+                      <div key={b.id} className="bg-[#E0E5EC] p-3 rounded-xl shadow-[3px_3px_6px_#bec8d2,-3px_-3px_6px_#ffffff] text-xs space-y-1">
+                        <div className="flex justify-between items-center text-[10px] font-bold text-[#005bea]">
+                          <span>{b.tipo} • {b.autor}</span>
+                          <span className="font-mono text-slate-500">{b.fecha}</span>
+                        </div>
+                        <p className="text-slate-800 font-medium">{b.nota}</p>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-3 flex justify-end gap-3 border-t border-slate-300">
+              <button
+                onClick={() => setProspectoTratamiento(null)}
+                className="px-6 py-2.5 bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white font-bold rounded-xl text-xs shadow-md cursor-pointer"
+              >
+                Cerrar Tratamiento
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
       {/* ── MODAL AÑADIR / EDITAR NUEVO LEAD NEUMÓRFICO ── */}
       {mostrarModalNuevoLead && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm p-4 md:p-6 flex justify-center items-center overflow-y-auto no-imprimir">
@@ -3563,6 +4088,38 @@ export default function OperacionCRM() {
                   placeholder="ej: Transportes & Logística Norte SpA"
                   className="w-full bg-[#E0E5EC] shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] border-none p-3 rounded-xl font-bold text-xs text-slate-900 focus:ring-2 focus:ring-[#005bea]"
                 />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[10px] font-bold text-slate-500 block mb-1">COMUNA (V REGIÓN):</label>
+                  <select
+                    value={formLeadComuna}
+                    onChange={(e) => setFormLeadComuna(e.target.value)}
+                    className="w-full bg-[#E0E5EC] shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] border-none p-3 rounded-xl font-bold text-xs text-slate-900"
+                  >
+                    <option value="Viña del Mar">Viña del Mar</option>
+                    <option value="Valparaíso">Valparaíso</option>
+                    <option value="Concón">Concón</option>
+                    <option value="Quilpué">Quilpué</option>
+                    <option value="Villa Alemana">Villa Alemana</option>
+                    <option value="San Antonio">San Antonio</option>
+                    <option value="Los Andes">Los Andes</option>
+                    <option value="Quillota">Quillota</option>
+                    <option value="Limache">Limache</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold text-slate-500 block mb-1">DIRECCIÓN COMERCIAL:</label>
+                  <input
+                    type="text"
+                    value={formLeadDireccion}
+                    onChange={(e) => setFormLeadDireccion(e.target.value)}
+                    placeholder="ej: Av. Libertad 940, Of. 601"
+                    className="w-full bg-[#E0E5EC] shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] border-none p-3 rounded-xl font-bold text-xs text-slate-900"
+                  />
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
