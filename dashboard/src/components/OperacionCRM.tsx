@@ -604,10 +604,35 @@ export default function OperacionCRM() {
     return null
   }, [abonadoActivo, rutClienteSeleccionado, cuentaSeleccionada, clientesMaestros])
 
-  // ── SEÑALES DE ALARMA EN VIVO Y BITÁCORA REAL DEL ABONADO CONSULTADO ──
+  // ── SEÑALES DE ALARMA EN VIVO (DESDE SUPABASE) Y BITÁCORA REAL COMMAND CENTER ──
   const [senalesRealtime, setSenalesRealtime] = useState<any[]>([])
   const [cargandoSenales, setCargandoSenales] = useState<boolean>(false)
+  const [bitacoraCommandCenter, setBitacoraCommandCenter] = useState<any[]>([])
+  const [cargandoBitacoraCC, setCargandoBitacoraCC] = useState<boolean>(false)
 
+  // 1. Obtener Bitácora Real del Command Center (https://bitacora.gamasecurity.cl/api-bitacora.php)
+  useEffect(() => {
+    const fetchBitacoraCC = async () => {
+      setCargandoBitacoraCC(true)
+      try {
+        const res = await fetch('https://bitacora.gamasecurity.cl/api-bitacora.php?action=eventos')
+        if (res.ok) {
+          const data = await res.json()
+          if (Array.isArray(data)) {
+            setBitacoraCommandCenter(data)
+          }
+        }
+      } catch (e) {
+        console.error('Error al cargar bitácora Command Center:', e)
+      } finally {
+        setCargandoBitacoraCC(false)
+      }
+    }
+
+    fetchBitacoraCC()
+  }, [])
+
+  // 2. Obtener Señales Reales de Alarma para la Cuenta Seleccionada
   useEffect(() => {
     const cActiva = (cuentaSeleccionada || abonadoActivo?.cuenta || '').toUpperCase().trim()
     if (!cActiva && !rutClienteSeleccionado) {
@@ -630,66 +655,60 @@ export default function OperacionCRM() {
             id: ev.id || idx,
             fecha: ev.fecha_hora ? new Date(ev.fecha_hora).toLocaleString('es-CL') : 'En Vivo',
             codigo: ev.evento ? (ev.evento.includes('ROBO') ? 'E130' : ev.evento.includes('APERTURA') ? 'E401' : ev.evento.includes('FALLA') ? 'E301' : 'E602') : 'E602',
-            desc: ev.evento || 'TEST PERIÓDICO 24H (SISTEMA OPERATIVO)',
+            desc: ev.evento || 'TEST PERIÓDICO 24H',
             zona: ev.zona && ev.zona !== '----' ? `Zona ${ev.zona}` : (ev.usuario && ev.usuario !== '----' ? `Usuario ${ev.usuario}` : 'Consola Central'),
             prioridad: (ev.evento || '').includes('ROBO') || (ev.evento || '').includes('PANICO') || (ev.evento || '').includes('FALLA') ? 'Crítica' : ((ev.evento || '').includes('APERTURA') || (ev.evento || '').includes('CIERRE') ? 'Normal' : 'Informativa'),
             color: (ev.evento || '').includes('ROBO') || (ev.evento || '').includes('PANICO') || (ev.evento || '').includes('FALLA') ? 'bg-red-100 text-red-800 font-bold' : ((ev.evento || '').includes('APERTURA') || (ev.evento || '').includes('CIERRE') ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-100 text-blue-800')
           }))
           setSenalesRealtime(formateados)
         } else {
-          const nombreAb = abonadoActivo?.alias_centro_costo || clienteActivo?.razon_social || `Abonado ${cActiva}`
-          const tsBase = Date.now()
-          const dinami: any[] = [
-            { id: 1, fecha: new Date(tsBase - 1000 * 60 * 5).toLocaleString('es-CL'), codigo: 'E602', desc: `TEST PERIÓDICO 24H (#${cActiva} ${nombreAb})`, zona: 'Consola Central', prioridad: 'Informativa', color: 'bg-blue-100 text-blue-800' },
-            { id: 2, fecha: new Date(tsBase - 1000 * 60 * 120).toLocaleString('es-CL'), codigo: 'E402', desc: 'CIERRE DE SISTEMA (ARME TOTAL)', zona: 'Usuario 01 - Principal', prioridad: 'Normal', color: 'bg-emerald-100 text-emerald-800' },
-            { id: 3, fecha: new Date(tsBase - 1000 * 60 * 600).toLocaleString('es-CL'), codigo: 'E401', desc: 'APERTURA DE SISTEMA (DESARME)', zona: 'Usuario 02 - Supervisor', prioridad: 'Normal', color: 'bg-emerald-100 text-emerald-800' },
-            { id: 4, fecha: new Date(tsBase - 1000 * 60 * 1400).toLocaleString('es-CL'), codigo: 'E402', desc: 'CIERRE DE SISTEMA (ARME TOTAL)', zona: 'Usuario 01 - Principal', prioridad: 'Normal', color: 'bg-emerald-100 text-emerald-800' },
-            { id: 5, fecha: new Date(tsBase - 1000 * 60 * 2000).toLocaleString('es-CL'), codigo: 'E401', desc: 'APERTURA DE SISTEMA (DESARME)', zona: 'Usuario 01 - Principal', prioridad: 'Normal', color: 'bg-emerald-100 text-emerald-800' },
-            { id: 6, fecha: new Date(tsBase - 1000 * 60 * 2800).toLocaleString('es-CL'), codigo: 'E602', desc: 'TEST PERIÓDICO 24H (SISTEMA OPERATIVO)', zona: 'Consola Central', prioridad: 'Informativa', color: 'bg-blue-100 text-blue-800' },
-            { id: 7, fecha: new Date(tsBase - 1000 * 60 * 3500).toLocaleString('es-CL'), codigo: 'E301', desc: 'VERIFICACIÓN DE CONEXIÓN Y ENERGÍA OK', zona: 'Panel Alarma IP/GPRS', prioridad: 'Informativa', color: 'bg-blue-100 text-blue-800' },
-            { id: 8, fecha: new Date(tsBase - 1000 * 60 * 4200).toLocaleString('es-CL'), codigo: 'E402', desc: 'CIERRE DE SISTEMA (ARME TOTAL)', zona: 'Usuario 01 - Principal', prioridad: 'Normal', color: 'bg-emerald-100 text-emerald-800' },
-            { id: 9, fecha: new Date(tsBase - 1000 * 60 * 5000).toLocaleString('es-CL'), codigo: 'E401', desc: 'APERTURA DE SISTEMA (DESARME)', zona: 'Usuario 01 - Principal', prioridad: 'Normal', color: 'bg-emerald-100 text-emerald-800' },
-            { id: 10, fecha: new Date(tsBase - 1000 * 60 * 6000).toLocaleString('es-CL'), codigo: 'E602', desc: 'TEST PERIÓDICO 24H (SISTEMA OPERATIVO)', zona: 'Consola Central', prioridad: 'Informativa', color: 'bg-blue-100 text-blue-800' }
-          ]
-          setSenalesRealtime(dinami)
+          // NO se inventan datos simulados. Si no hay transmisiones en Supabase, la lista queda vacía.
+          setSenalesRealtime([])
         }
       } catch (e) {
         console.error('Error cargando señales:', e)
+        setSenalesRealtime([])
       } finally {
         setCargandoSenales(false)
       }
     }
 
     fetchSenalesAbonado()
-  }, [cuentaSeleccionada, rutClienteSeleccionado, abonadoActivo, clienteActivo])
+  }, [cuentaSeleccionada, rutClienteSeleccionado, abonadoActivo])
 
-  const bitacoraAbonadoConsultado = useMemo(() => {
+  // 3. Novedades de la Bitácora Real del Command Center
+  const bitacoraCommandCenterAbonado = useMemo(() => {
     const cActiva = (cuentaSeleccionada || abonadoActivo?.cuenta || '').toUpperCase().trim()
-    const nombreAb = abonadoActivo?.alias_centro_costo || clienteActivo?.razon_social || `Abonado ${cActiva}`
+    const nombreAb = (abonadoActivo?.alias_centro_costo || clienteActivo?.razon_social || '').toLowerCase().trim()
 
-    const leadEncontrado = leadsList.find(l => 
-      (l.rut && rutClienteSeleccionado && l.rut.trim() === rutClienteSeleccionado.trim()) ||
-      (l.empresa && nombreAb && l.empresa.toLowerCase().includes(nombreAb.toLowerCase()))
-    )
+    // Filtrar eventos de Command Center que correspondan específicamente al abonado consultado
+    const filtrados = bitacoraCommandCenter.filter(item => {
+      const cod = (item.abonado_cod || '').toUpperCase().trim()
+      const nom = (item.abonado_nombre || '').toLowerCase().trim()
+      return (cActiva && cod === cActiva) || (nombreAb && nom.includes(nombreAb))
+    })
 
-    if (leadEncontrado && leadEncontrado.bitacora && leadEncontrado.bitacora.length > 0) {
-      return leadEncontrado.bitacora.slice(0, 5).map(b => ({
-        id: b.id,
-        fecha: b.fecha,
-        autor: b.autor || 'Operador Central 24/7',
-        tipo: b.tipo === 'Llamada' ? '📞 Llamada Operativa' : (b.tipo === 'Visita' ? '🏢 Inspección Terreno' : (b.tipo === 'WhatsApp' ? '💬 Mensaje WhatsApp' : '📧 Correo Comercial')),
-        nota: b.nota
+    if (filtrados.length > 0) {
+      return filtrados.slice(0, 5).map(item => ({
+        id: item.id,
+        fecha: item.created_at || 'Reciente',
+        autor: item.responsable_nombre || 'Operador Command Center',
+        tipo: item.tipo_nombre || 'NOVEDAD COMMAND CENTER',
+        nota: item.comentario || 'Sin comentario registrado',
+        color: item.tipo_color ? `#${item.tipo_color}` : '#005bea'
       }))
     }
 
-    return [
-      { id: 1, fecha: new Date().toLocaleString('es-CL'), autor: 'Operador Central 24/7', tipo: '📞 Llamada Operativa', nota: `Se consulta expediente de ${nombreAb} (Abonado #${cActiva}). Estado de monitoreo 100% activo en central.` },
-      { id: 2, fecha: new Date(Date.now() - 1000*60*60*24).toLocaleString('es-CL'), autor: 'SRE Guardian Agent', tipo: '🤖 Verificación IA', nota: `Prueba automática de recepción IP/GPRS exitosa para la cuenta #${cActiva}. Sin caídas detectadas.` },
-      { id: 3, fecha: new Date(Date.now() - 1000*60*60*48).toLocaleString('es-CL'), autor: 'Operador Central 24/7', tipo: '🚨 Protocolo Alarma', nota: `Verificación rutinaria de armado/desarmado para ${nombreAb}. Contactos de clave vigentes.` },
-      { id: 4, fecha: new Date(Date.now() - 1000*60*60*72).toLocaleString('es-CL'), autor: 'Técnico Terreno', tipo: '🏢 Mantención Terreno', nota: `Inspección de batería de respaldo y sensores en ${abonadoActivo?.direccion || clienteActivo?.direccion_comercial || 'instalación'}. Todo OK.` },
-      { id: 5, fecha: new Date(Date.now() - 1000*60*60*120).toLocaleString('es-CL'), autor: 'Ejecutivo Comercial', tipo: '📧 Envío Presupuesto', nota: `Revisión de tarifa mensual (${clienteActivo?.moneda === 'UF' ? `${clienteActivo.tarifa_mensual} UF` : `$${(clienteActivo?.tarifa_mensual || 29900).toLocaleString('es-CL')} CLP`}) en cuenta #${cActiva}.` }
-    ]
-  }, [cuentaSeleccionada, rutClienteSeleccionado, abonadoActivo, clienteActivo, leadsList])
+    // Si el abonado no tiene notas específicas, desplegar las últimas 5 novedades reales registradas en Command Center
+    return bitacoraCommandCenter.slice(0, 5).map(item => ({
+      id: item.id,
+      fecha: item.created_at || 'Reciente',
+      autor: item.responsable_nombre || 'Operador Central 24/7',
+      tipo: `${item.tipo_nombre || 'NOVEDAD COMMAND CENTER'} (${item.abonado_cod || 'GENERAL'} - ${item.abonado_nombre || 'Sistema'})`,
+      nota: item.comentario || 'Sin detalle de comentario',
+      color: item.tipo_color ? `#${item.tipo_color}` : '#005bea'
+    }))
+  }, [cuentaSeleccionada, abonadoActivo, clienteActivo, bitacoraCommandCenter])
 
   const siguienteCorrelativoCode = useMemo(() => {
     let maxNum = 259
@@ -1270,6 +1289,7 @@ export default function OperacionCRM() {
   // ── BUSCADOR SEGURO INTELIGENTE 360° ──
   const resultadosBusqueda = useMemo(() => {
     const q = (busquedaClienteInput || '').toLowerCase().trim()
+    const qClean = q.replace(/[^a-z0-9]/gi, '')
     if (!q) return []
 
     const list: Array<{
@@ -1288,10 +1308,11 @@ export default function OperacionCRM() {
     Object.values(abonadosCentrosCosto || {}).forEach(cc => {
       if (!cc) return
       const cStr = String(cc.cuenta || '').toLowerCase()
+      const cClean = cStr.replace(/[^a-z0-9]/gi, '')
       const aStr = String(cc.alias_centro_costo || '').toLowerCase()
       const rStr = String(cc.rut_cliente || '').toLowerCase()
 
-      if (cStr.includes(q) || aStr.includes(q) || rStr.includes(q)) {
+      if (cStr.includes(q) || (qClean && cClean.includes(qClean)) || aStr.includes(q) || rStr.includes(q)) {
         const cli = clientesMaestros[cc.rut_cliente]
         list.push({
           id: `abonado-${cc.cuenta}`,
@@ -1315,7 +1336,7 @@ export default function OperacionCRM() {
       const eStr = String(cli.email_cobranza || '').toLowerCase()
       const cArr = (cli.cuentas_abonados || []).map(c => String(c).toLowerCase())
       
-      const matchCta = cArr.some(c => c.includes(q))
+      const matchCta = cArr.some(c => c.includes(q) || (qClean && c.replace(/[^a-z0-9]/gi, '').includes(qClean)))
       if (rStr.includes(q) || nStr.includes(q) || eStr.includes(q) || matchCta) {
         const yaExiste = list.some(l => l.rut === cli.rut)
         if (!yaExiste) {
@@ -2151,8 +2172,16 @@ export default function OperacionCRM() {
                             </tr>
                           ) : senalesRealtime.length === 0 ? (
                             <tr>
-                              <td colSpan={5} className="p-4 text-center text-slate-500 font-bold">
-                                No hay señales registradas aún para este abonado.
+                              <td colSpan={5} className="p-6 text-center">
+                                <div className="bg-[#E0E5EC] p-4 rounded-xl shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] space-y-1 inline-block max-w-xl">
+                                  <div className="flex items-center justify-center gap-2 text-amber-700 font-bold text-xs">
+                                    <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600" />
+                                    <span>Sin transmisiones recientes de señales de alarma</span>
+                                  </div>
+                                  <p className="text-[11px] text-slate-500 font-medium">
+                                    No se registran transmisiones de señales emitidas por el panel a la central para la cuenta #{(abonadoActivo?.cuenta || cuentaSeleccionada || '').toUpperCase()}.
+                                  </p>
+                                </div>
                               </td>
                             </tr>
                           ) : (
@@ -2175,27 +2204,43 @@ export default function OperacionCRM() {
                     </div>
                   </div>
 
-                  {/* ── ÚLTIMAS 5 NOVEDADES REGISTRADAS EN BITÁCORA ── */}
+                  {/* ── ÚLTIMAS 5 NOVEDADES REGISTRADAS EN BITÁCORA DEL COMMAND CENTER ── */}
                   <div className="bg-[#E0E5EC] shadow-[inset_4px_4px_8px_#bec8d2,inset_-4px_-4px_8px_#ffffff] p-5 rounded-xl space-y-3 text-xs">
-                    <h3 className="font-black text-slate-900 uppercase tracking-wider text-xs flex items-center gap-2 border-b border-slate-300 pb-2">
-                      <ClipboardList className="h-4 w-4 text-[#005bea]" />
-                      <span>ÚLTIMAS 5 NOVEDADES REGISTRADAS EN BITÁCORA OPERATIVA (#{(abonadoActivo?.cuenta || cuentaSeleccionada || 'ACTIVA').toUpperCase()})</span>
-                    </h3>
+                    <div className="flex justify-between items-center border-b border-slate-300 pb-2">
+                      <h3 className="font-black text-slate-900 uppercase tracking-wider text-xs flex items-center gap-2">
+                        <ClipboardList className="h-4 w-4 text-[#005bea]" />
+                        <span>ÚLTIMAS NOVEDADES REGISTRADAS EN BITÁCORA COMMAND CENTER (#{(abonadoActivo?.cuenta || cuentaSeleccionada || 'GENERAL').toUpperCase()})</span>
+                      </h3>
+                      <span className="text-[10px] font-bold text-slate-500 bg-[#E0E5EC] shadow-[2px_2px_4px_#bec8d2,-2px_-2px_4px_#ffffff] px-2 py-0.5 rounded-md">
+                        Central 24/7 API
+                      </span>
+                    </div>
 
                     <div className="space-y-2.5">
-                      {bitacoraAbonadoConsultado.map(b => (
-                        <div key={b.id} className="bg-[#E0E5EC] shadow-[3px_3px_6px_#bec8d2,-3px_-3px_6px_#ffffff] p-3.5 rounded-xl space-y-1">
-                          <div className="flex justify-between items-center text-[10px]">
-                            <span className="font-bold text-[#005bea] flex items-center gap-1.5">
-                              <span>{b.tipo}</span>
-                              <span>•</span>
-                              <span className="text-slate-700">{b.autor}</span>
-                            </span>
-                            <span className="font-mono text-slate-500 font-bold">{b.fecha}</span>
-                          </div>
-                          <p className="text-slate-800 font-medium leading-relaxed">{b.nota}</p>
+                      {cargandoBitacoraCC ? (
+                        <div className="text-center p-4 text-slate-500 font-bold text-xs">
+                          <Loader2 className="h-4 w-4 animate-spin inline mr-2" />
+                          Cargando novedades de la bitácora del Command Center...
                         </div>
-                      ))}
+                      ) : bitacoraCommandCenterAbonado.length === 0 ? (
+                        <div className="text-center p-4 text-slate-500 font-bold text-xs">
+                          No hay novedades registradas en la bitácora del Command Center.
+                        </div>
+                      ) : (
+                        bitacoraCommandCenterAbonado.map(b => (
+                          <div key={b.id} className="bg-[#E0E5EC] shadow-[3px_3px_6px_#bec8d2,-3px_-3px_6px_#ffffff] p-3.5 rounded-xl space-y-1">
+                            <div className="flex justify-between items-center text-[10px]">
+                              <span className="font-bold flex items-center gap-1.5" style={{ color: b.color || '#005bea' }}>
+                                <span>{b.tipo}</span>
+                                <span>•</span>
+                                <span className="text-slate-700">{b.autor}</span>
+                              </span>
+                              <span className="font-mono text-slate-500 font-bold">{b.fecha}</span>
+                            </div>
+                            <p className="text-slate-800 font-medium leading-relaxed whitespace-pre-line">{b.nota}</p>
+                          </div>
+                        ))
+                      )}
                     </div>
                   </div>
 
