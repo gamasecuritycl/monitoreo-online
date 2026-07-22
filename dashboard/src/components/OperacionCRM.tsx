@@ -1664,6 +1664,51 @@ export default function OperacionCRM() {
     }
   }
 
+  // ── GUARDA NUEVA RAZÓN SOCIAL RÁPIDA (PARA DEJARLA REGISTRADA EN DROPDOWN) ──
+  const handleCrearNuevaRazonSocialRapida = async () => {
+    if (!vincNuevoRut.trim() || !vincNuevaRazonSocial.trim()) {
+      alert('Por favor ingrese el RUT y la Razón Social Tributaria.')
+      return
+    }
+
+    const rutLimpio = cleanRut(vincNuevoRut)
+    const razonSocialLimpia = vincNuevaRazonSocial.trim()
+
+    const nuevoCliente: ClienteMaestro = {
+      rut: rutLimpio,
+      razon_social: razonSocialLimpia,
+      empresa_facturadora_id: 'EMP-1',
+      email_cobranza: 'cobranza@gamasecurity.cl',
+      telefono: '+56991016912',
+      direccion_comercial: 'Dirección Fiscal Registrada',
+      moneda: 'CLP',
+      tarifa_mensual: 29900,
+      dia_vencimiento: 5,
+      plan_monitoreo: 'MONITOREO ESTÁNDAR 24/7',
+      estado_pago: 'Al Día',
+      cuentas_abonados: []
+    }
+
+    const mapaNuevo = { ...clientesMaestros, [rutLimpio]: nuevoCliente }
+    setClientesMaestros(mapaNuevo)
+    try { localStorage.setItem('gama_clientes_maestros', JSON.stringify(mapaNuevo)) } catch (e) {}
+
+    try {
+      await supabase.from('eventos_monitoreo').upsert({
+        cuenta: 'CLIENTES_MAESTROS_CRM',
+        nombre_abonado: JSON.stringify(mapaNuevo),
+        evento: 'CREACION_RAZON_SOCIAL_RAPIDA',
+        fecha_hora: new Date().toISOString()
+      })
+    } catch (e) {}
+
+    setVincRutSeleccionado(rutLimpio)
+    setVincAbonadosSeleccionados([])
+    setVincNuevoRut('')
+    setVincNuevaRazonSocial('')
+    setToastNotificacion({ tipo: 'exito', texto: `¡Razón Social "${razonSocialLimpia}" (${rutLimpio}) registrada exitosamente!` })
+  }
+
   // ── GUARDA VINCULACIÓN TRIBUTARIA ADMINISTRADOR (ABONADOS ➔ RUT) ──
   const handleGuardarVinculacionTributaria = async () => {
     let targetRut = vincRutSeleccionado.trim()
@@ -1728,6 +1773,53 @@ export default function OperacionCRM() {
     })
     setVincAbonadosSeleccionados([])
   }
+
+  const handleDesvincularAbonadoIndividual = async (rut: string, ctaADesvincular: string) => {
+    if (!clientesMaestros[rut]) return
+    const cli = clientesMaestros[rut]
+    const cuentasNuevas = (cli.cuentas_abonados || []).filter(c => c.toUpperCase().trim() !== ctaADesvincular.toUpperCase().trim())
+
+    const mapaNuevo = {
+      ...clientesMaestros,
+      [rut]: { ...cli, cuentas_abonados: cuentasNuevas }
+    }
+
+    setClientesMaestros(mapaNuevo)
+    try { localStorage.setItem('gama_clientes_maestros', JSON.stringify(mapaNuevo)) } catch (e) {}
+
+    try {
+      await supabase.from('eventos_monitoreo').upsert({
+        cuenta: 'CLIENTES_MAESTROS_CRM',
+        nombre_abonado: JSON.stringify(mapaNuevo),
+        evento: 'DESVINCULACION_ABONADO_ADMIN',
+        fecha_hora: new Date().toISOString()
+      })
+    } catch (e) {}
+
+    setToastNotificacion({ tipo: 'exito', texto: `Abonado #${ctaADesvincular} desvinculado de ${cli.razon_social}` })
+  }
+
+  // ── CUENTAS YA ASIGNADAS PARA FILTRAR Y ELIMINAR DEL LISTADO PENDIENTE ──
+  const cuentasYaAsignadas = useMemo(() => {
+    const setAsig = new Set<string>()
+    Object.values(clientesMaestros).forEach(cli => {
+      if (cli.rut !== vincRutSeleccionado) {
+        (cli.cuentas_abonados || []).forEach(cta => setAsig.add(cta.toUpperCase().trim()))
+      }
+    })
+    return setAsig
+  }, [clientesMaestros, vincRutSeleccionado])
+
+  const abonadosParaVincular = useMemo(() => {
+    return Object.values(abonadosCentrosCosto).filter(cc => {
+      const cta = (cc.cuenta || '').toUpperCase().trim()
+      if (cuentasYaAsignadas.has(cta) && !vincAbonadosSeleccionados.includes(cta)) {
+        return false
+      }
+      const q = vincBusquedaAbonado.toLowerCase().trim()
+      return !q || cta.toLowerCase().includes(q) || (cc.alias_centro_costo || '').toLowerCase().includes(q)
+    })
+  }, [abonadosCentrosCosto, cuentasYaAsignadas, vincBusquedaAbonado, vincAbonadosSeleccionados])
 
   const empresaEmisoraSeleccionadaCot = empresasConglomerado.find(e => e.id === cotEmpresaEmisoraId) || empresasConglomerado[0]
 
@@ -3536,11 +3628,11 @@ export default function OperacionCRM() {
 
                   {/* SELECCIÓN O REGISTRO DE RUT */}
                   <div className="bg-[#E0E5EC] shadow-[inset_4px_4px_8px_#bec8d2,inset_-4px_-4px_8px_#ffffff] p-5 rounded-xl space-y-4">
-                    <h4 className="font-black text-xs text-slate-900 uppercase">PASO 1: SELECCIONAR RAZÓN SOCIAL / CLIENTE TRIBUTARIO:</h4>
+                    <h4 className="font-black text-xs text-slate-900 uppercase">PASO 1: SELECCIONAR O REGISTRAR RAZÓN SOCIAL / CLIENTE TRIBUTARIO:</h4>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label className="text-[10px] font-bold text-slate-500 block mb-1">RAZÓN SOCIAL REGISTRADA:</label>
+                        <label className="text-[10px] font-bold text-slate-500 block mb-1">RAZÓN SOCIAL REGISTRADA EN DROPDOWN:</label>
                         <select
                           value={vincRutSeleccionado}
                           onChange={(e) => {
@@ -3552,10 +3644,10 @@ export default function OperacionCRM() {
                           }}
                           className="w-full bg-[#E0E5EC] shadow-[inset_2px_2px_4px_#bec8d2,inset_-2px_-2px_4px_#ffffff] border-none p-3 rounded-xl font-bold text-xs text-slate-900"
                         >
-                          <option value="">-- Seleccionar Razón Social Existente --</option>
+                          <option value="">-- Seleccionar Razón Social Registrada --</option>
                           {Object.values(clientesMaestros).map(c => (
                             <option key={c.rut} value={c.rut}>
-                              {c.razon_social} (RUT: {c.rut}) - [{c.cuentas_abonados?.length || 1} abonados]
+                              {c.razon_social} (RUT: {c.rut}) - [{c.cuentas_abonados?.length || 0} abonados]
                             </option>
                           ))}
                         </select>
@@ -3563,50 +3655,61 @@ export default function OperacionCRM() {
 
                       {!vincRutSeleccionado && (
                         <div className="space-y-2">
-                          <label className="text-[10px] font-bold text-slate-500 block">O CREAR NUEVA RAZÓN SOCIAL TRIBUTARIA:</label>
-                          <div className="grid grid-cols-2 gap-2">
+                          <label className="text-[10px] font-bold text-slate-500 block">O CREAR Y GUARDAR NUEVA RAZÓN SOCIAL:</label>
+                          <div className="flex gap-2">
                             <input
                               type="text"
                               value={vincNuevoRut}
                               onChange={(e) => setVincNuevoRut(e.target.value)}
-                              placeholder="RUT: ej 65.155.616-3"
-                              className="bg-[#E0E5EC] shadow-[inset_2px_2px_4px_#bec8d2,inset_-2px_-2px_4px_#ffffff] border-none p-2.5 rounded-xl font-mono font-bold text-xs text-slate-900"
+                              placeholder="RUT: 65.155.616-3"
+                              className="w-1/3 bg-[#E0E5EC] shadow-[inset_2px_2px_4px_#bec8d2,inset_-2px_-2px_4px_#ffffff] border-none p-2.5 rounded-xl font-mono font-bold text-xs text-slate-900"
                             />
                             <input
                               type="text"
                               value={vincNuevaRazonSocial}
                               onChange={(e) => setVincNuevaRazonSocial(e.target.value)}
                               placeholder="ej: FUNDACION PRIMITIVA ECHEVERRIA"
-                              className="bg-[#E0E5EC] shadow-[inset_2px_2px_4px_#bec8d2,inset_-2px_-2px_4px_#ffffff] border-none p-2.5 rounded-xl font-bold text-xs text-slate-900"
+                              className="w-2/3 bg-[#E0E5EC] shadow-[inset_2px_2px_4px_#bec8d2,inset_-2px_-2px_4px_#ffffff] border-none p-2.5 rounded-xl font-bold text-xs text-slate-900"
                             />
+                            <button
+                              onClick={handleCrearNuevaRazonSocialRapida}
+                              className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs shadow-xs cursor-pointer shrink-0"
+                            >
+                              + Guardar Razón Social
+                            </button>
                           </div>
                         </div>
                       )}
                     </div>
                   </div>
 
-                  {/* MULTISELECCIÓN DE ABONADOS */}
+                  {/* MULTISELECCIÓN DE ABONADOS FILTRADOS (SOLO NO ASIGNADOS) */}
                   <div className="bg-[#E0E5EC] shadow-[inset_4px_4px_8px_#bec8d2,inset_-4px_-4px_8px_#ffffff] p-5 rounded-xl space-y-3">
-                    <div className="flex justify-between items-center">
-                      <h4 className="font-black text-xs text-slate-900 uppercase">
-                        PASO 2: MARCAR CUENTAS DE ABONADO PERTENECIENTES A ESTE CLIENTE ({vincAbonadosSeleccionados.length} Seleccionados):
-                      </h4>
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                      <div>
+                        <h4 className="font-black text-xs text-slate-900 uppercase">
+                          PASO 2: MARCAR CUENTAS PENDIENTES SIN ASIGNAR ({vincAbonadosSeleccionados.length} Seleccionados):
+                        </h4>
+                        <span className="text-[10px] text-slate-500 font-semibold">
+                          * Los abonados ya asignados a otras empresas se ocultan automáticamente del listado.
+                        </span>
+                      </div>
                       <input
                         type="text"
                         value={vincBusquedaAbonado}
                         onChange={(e) => setVincBusquedaAbonado(e.target.value)}
-                        placeholder="Filtrar por código (#C735) o nombre..."
-                        className="bg-[#E0E5EC] shadow-[inset_2px_2px_4px_#bec8d2,inset_-2px_-2px_4px_#ffffff] border-none px-3 py-1 rounded-lg text-xs font-mono"
+                        placeholder="Buscar por #C735 o alias..."
+                        className="bg-[#E0E5EC] shadow-[inset_2px_2px_4px_#bec8d2,inset_-2px_-2px_4px_#ffffff] border-none px-3 py-1.5 rounded-lg text-xs font-mono w-full sm:w-auto"
                       />
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 max-h-64 overflow-y-auto p-1">
-                      {Object.values(abonadosCentrosCosto)
-                        .filter(cc => {
-                          const q = vincBusquedaAbonado.toLowerCase()
-                          return !q || (cc.cuenta || '').toLowerCase().includes(q) || (cc.alias_centro_costo || '').toLowerCase().includes(q)
-                        })
-                        .map(cc => {
+                      {abonadosParaVincular.length === 0 ? (
+                        <div className="col-span-full p-6 text-center text-slate-500 text-xs font-bold bg-[#E0E5EC] shadow-[inset_2px_2px_4px_#bec8d2,inset_-2px_-2px_4px_#ffffff] rounded-xl">
+                          Todos los abonados registrados en el sistema ya han sido asociados a una Razón Social.
+                        </div>
+                      ) : (
+                        abonadosParaVincular.map(cc => {
                           const cta = (cc.cuenta || '').toUpperCase()
                           const estaMarcado = vincAbonadosSeleccionados.includes(cta)
                           return (
@@ -3637,11 +3740,12 @@ export default function OperacionCRM() {
                               />
                             </label>
                           )
-                        })}
+                        })
+                      )}
                     </div>
                   </div>
 
-                  <div className="pt-2 flex justify-end">
+                  <div className="pt-1 flex justify-end">
                     <button
                       onClick={handleGuardarVinculacionTributaria}
                       className="px-6 py-3 bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white font-bold rounded-xl text-xs shadow-[4px_4px_8px_#bec8d2,-4px_-4px_8px_#ffffff] active:scale-95 cursor-pointer flex items-center gap-2"
@@ -3649,6 +3753,67 @@ export default function OperacionCRM() {
                       <Building2 className="h-4 w-4" />
                       <span>💾 Guardar & Consolidar Vinculación Tributaria</span>
                     </button>
+                  </div>
+
+                  {/* ── CONSOLIDADO DE ASOCIACIONES EXISTENTES Y CORRECCIÓN DE ERRORES ── */}
+                  <div className="space-y-3 pt-4 border-t border-slate-300">
+                    <h4 className="font-black text-xs text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                      <FileCheck className="h-4 w-4 text-emerald-600" />
+                      <span>📋 CONSOLIDADO GENERAL DE ASOCIACIONES TRIBUTARIAS (RESUMEN DE RAZONES SOCIALES)</span>
+                    </h4>
+
+                    <div className="bg-[#E0E5EC] shadow-[inset_4px_4px_8px_#bec8d2,inset_-4px_-4px_8px_#ffffff] rounded-xl p-2 overflow-hidden">
+                      <table className="w-full text-left border-collapse text-xs font-medium">
+                        <thead>
+                          <tr className="bg-[#E0E5EC] text-slate-700 border-b border-slate-300 font-bold uppercase text-[11px]">
+                            <th className="p-3 border-r border-slate-300">RAZÓN SOCIAL TRIBUTARIA / RUT</th>
+                            <th className="p-3 border-r border-slate-300">ABONADOS VINCULADOS ({Object.values(clientesMaestros).reduce((a, b) => a + (b.cuentas_abonados?.length || 0), 0)})</th>
+                            <th className="p-3 text-center w-36">ACCIONES / CORREGIR</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-300">
+                          {Object.values(clientesMaestros).map(cli => (
+                            <tr key={cli.rut} className="hover:bg-[#d5dbe3] transition-colors">
+                              <td className="p-3 border-r border-slate-300 font-bold text-slate-900">
+                                <div>{cli.razon_social}</div>
+                                <div className="text-[10px] font-mono text-[#005bea]">RUT: {cli.rut}</div>
+                              </td>
+                              <td className="p-3 border-r border-slate-300">
+                                <div className="flex flex-wrap gap-1.5">
+                                  {(!cli.cuentas_abonados || cli.cuentas_abonados.length === 0) ? (
+                                    <span className="text-slate-400 italic text-[10px]">Sin abonados vinculados</span>
+                                  ) : (
+                                    cli.cuentas_abonados.map(cta => (
+                                      <span key={cta} className="inline-flex items-center gap-1 bg-[#E0E5EC] shadow-[2px_2px_4px_#bec8d2,-2px_-2px_4px_#ffffff] px-2 py-0.5 rounded text-[10px] font-mono font-bold text-slate-800">
+                                        #{cta}
+                                        <button
+                                          onClick={() => handleDesvincularAbonadoIndividual(cli.rut, cta)}
+                                          title={`Desvincular abonado #${cta}`}
+                                          className="text-red-500 hover:text-red-700 font-bold cursor-pointer ml-1"
+                                        >
+                                          ✕
+                                        </button>
+                                      </span>
+                                    ))
+                                  )}
+                                </div>
+                              </td>
+                              <td className="p-3 text-center">
+                                <button
+                                  onClick={() => {
+                                    setVincRutSeleccionado(cli.rut)
+                                    setVincAbonadosSeleccionados(cli.cuentas_abonados || [])
+                                  }}
+                                  className="px-3 py-1 bg-[#005bea] hover:bg-blue-600 text-white rounded-lg font-bold text-[11px] cursor-pointer shadow-xs"
+                                >
+                                  ✏️ Modificar
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 </div>
               )}
