@@ -2206,14 +2206,14 @@ export default function OperacionCRM() {
                       </span>
                     </div>
 
-                    <div className="space-y-2.5">
+                    <div className="relative pl-3 md:pl-6 border-l-2 border-slate-300/80 space-y-4 my-2">
                       {cargandoBitacoraCC ? (
-                        <div className="text-center p-4 text-slate-500 font-bold text-xs">
+                        <div className="text-center p-6 text-slate-500 font-bold text-xs">
                           <Loader2 className="h-4 w-4 animate-spin inline mr-2" />
                           Cargando novedades de la bitácora del Command Center...
                         </div>
                       ) : bitacoraCommandCenterAbonado.length === 0 ? (
-                        <div className="bg-[#E0E5EC] p-4 rounded-xl shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] text-center space-y-1">
+                        <div className="bg-[#E0E5EC] p-5 rounded-2xl shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] text-center space-y-1">
                           <p className="font-bold text-slate-700 text-xs flex items-center justify-center gap-2">
                             <ClipboardList className="h-4 w-4 text-slate-500" />
                             <span>Sin novedades registradas en la bitácora para la cuenta #{(abonadoActivo?.cuenta || cuentaSeleccionada || '').toUpperCase()}.</span>
@@ -2222,16 +2222,55 @@ export default function OperacionCRM() {
                         </div>
                       ) : (
                         bitacoraCommandCenterAbonado.map(b => (
-                          <div key={b.id} className="bg-[#E0E5EC] shadow-[3px_3px_6px_#bec8d2,-3px_-3px_6px_#ffffff] p-3.5 rounded-xl space-y-1">
-                            <div className="flex justify-between items-center text-[10px]">
-                              <span className="font-bold flex items-center gap-1.5" style={{ color: b.color || '#005bea' }}>
-                                <span>{b.tipo}</span>
-                                <span>•</span>
-                                <span className="text-slate-700">{b.autor}</span>
-                              </span>
-                              <span className="font-mono text-slate-500 font-bold">{b.fecha}</span>
+                          <div key={b.id} className="relative group">
+                            {/* PUNTAL DE LÍNEA DE TIEMPO */}
+                            <span 
+                              className="absolute -left-[19px] md:-left-[31px] top-4 h-3.5 w-3.5 rounded-full border-2 border-[#E0E5EC] shadow-xs" 
+                              style={{ backgroundColor: b.color || '#005bea' }}
+                            />
+
+                            {/* TARJETA NEUMÓRFICA DE NOVEDAD */}
+                            <div className="bg-[#E0E5EC] shadow-[5px_5px_10px_#bec8d2,-5px_-5px_10px_#ffffff] p-4 md:p-5 rounded-2xl space-y-3 hover:shadow-[7px_7px_14px_#bec8d2,-7px_-7px_14px_#ffffff] transition-all border-l-4" style={{ borderLeftColor: b.color || '#005bea' }}>
+                              
+                              {/* CABECERA ESTRUCTURADA */}
+                              <div className="flex flex-wrap justify-between items-center gap-2 border-b border-slate-300/60 pb-2.5">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  {/* BADGE DE TIPO DE NOVEDAD */}
+                                  <span 
+                                    className="px-3 py-1 rounded-xl text-[11px] font-black uppercase tracking-wider bg-[#E0E5EC] shadow-[inset_2px_2px_4px_#bec8d2,inset_-2px_-2px_4px_#ffffff] flex items-center gap-1.5"
+                                    style={{ color: b.color || '#005bea' }}
+                                  >
+                                    <MessageSquare className="h-3 w-3 stroke-[2.5]" />
+                                    <span>{b.tipo}</span>
+                                  </span>
+
+                                  {/* OPERADOR RESPONSABLE */}
+                                  <span className="bg-[#E0E5EC] shadow-[inset_2px_2px_4px_#bec8d2,inset_-2px_-2px_4px_#ffffff] text-slate-700 font-bold px-3 py-1 rounded-xl text-[11px] flex items-center gap-1.5">
+                                    <User className="h-3 w-3 text-slate-500 stroke-[2.5]" />
+                                    <span>{b.autor}</span>
+                                  </span>
+                                </div>
+
+                                {/* FECHA Y HORA FORMATO MONO */}
+                                <span className="bg-[#E0E5EC] shadow-[2px_2px_4px_#bec8d2,-2px_-2px_4px_#ffffff] text-slate-600 font-mono text-[11px] font-bold px-3 py-1 rounded-xl flex items-center gap-1.5">
+                                  <Clock className="h-3 w-3 text-slate-400" />
+                                  <span>{b.fecha}</span>
+                                </span>
+                              </div>
+
+                              {/* CUERPO DEL COMENTARIO ESTRUCTURADO EN BLOQUES */}
+                              <div className="space-y-1.5 pt-1">
+                                {b.nota.split(/\r?\n/).filter(Boolean).map((line: string, idx: number) => (
+                                  <div key={idx} className="flex items-start gap-2.5 text-xs text-slate-800 font-medium leading-relaxed">
+                                    <span className="text-[#005bea] font-black text-xs shrink-0 mt-0.5">•</span>
+                                    <span className="bg-[#E0E5EC] shadow-[inset_2px_2px_5px_#bec8d2,inset_-2px_-2px_5px_#ffffff] px-3 py-2 rounded-xl w-full text-slate-800 font-medium leading-relaxed">
+                                      {line.trim()}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+
                             </div>
-                            <p className="text-slate-800 font-medium leading-relaxed whitespace-pre-line">{b.nota}</p>
                           </div>
                         ))
                       )}
