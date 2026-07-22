@@ -87,6 +87,8 @@ export interface ItemCotizacion {
   descuento_porcentaje?: number
 }
 
+export type EtapaPipelineEspo = 'Lead' | 'Visita' | 'Cotizacion' | 'Negociacion' | 'Ganada' | 'Perdida'
+
 export interface CotizacionDolibarr {
   id: number
   codigo_cotizacion: string
@@ -102,6 +104,7 @@ export interface CotizacionDolibarr {
   contacto_persona?: string
   vendedor?: string
   tipo_receptor?: 'registrado' | 'prospecto'
+  etapa_pipeline?: EtapaPipelineEspo
   fecha: string
   validez_dias: number
   forma_pago?: string
@@ -126,6 +129,7 @@ export interface OrdenDeTrabajo {
   tipo_servicio: string
   tecnico_asignado: string
   fecha_programada: string
+  prioridad_sla?: 'Crítica (2h)' | 'Alta (6h)' | 'Normal (24h)'
   estado: 'Pendiente' | 'En Proceso' | 'Completada' | 'Cancelada'
   observaciones: string
 }
@@ -210,10 +214,16 @@ export default function OperacionCRM() {
   const [valorUF, setValorUF] = useState(38500)
 
   // Órdenes de Trabajo & Facturas & Cotizaciones
-  const [ordenesTrabajo, setOrdenesTrabajo] = useState<OrdenDeTrabajo[]>([])
+  const [ordenesTrabajo, setOrdenesTrabajo] = useState<OrdenDeTrabajo[]>([
+    { id: 'OT-1', codigo_ot: 'OT-2026-081', cuenta: '0999', cliente_nombre: 'GAMA SEGURIDAD SPA DEMO', tipo_servicio: 'Mantención Perimetral Alarma', tecnico_asignado: 'Técnico Juan Pérez', fecha_programada: '2026-07-22', prioridad_sla: 'Crítica (2h)', estado: 'En Proceso', observaciones: 'Revisión urgente de sensor infrarrojo' },
+    { id: 'OT-2', codigo_ot: 'OT-2026-082', cuenta: 'C774', cliente_nombre: 'CORPORACION PRODEL', tipo_servicio: 'Instalación Cámara IP DarkFighter', tecnico_asignado: 'Técnico Carlos Rojas', fecha_programada: '2026-07-23', prioridad_sla: 'Alta (6h)', estado: 'Pendiente', observaciones: 'Montaje de 2 cámaras en acceso principal' }
+  ])
   const [facturas, setFacturas] = useState<FacturaIndividual[]>([])
   const [cotizaciones, setCotizaciones] = useState<CotizacionDolibarr[]>([])
   
+  // Selector Vista Cotizaciones (Tabla DTE vs Kanban Pipeline EspoCRM)
+  const [vistaCotizaciones, setVistaCotizaciones] = useState<'tabla' | 'kanban'>('tabla')
+
   // Modales Facturación & Abonos Parciales
   const [mostrarModalAbono, setMostrarModalAbono] = useState(false)
   const [facturaAbonando, setFacturaAbonando] = useState<FacturaIndividual | null>(null)
@@ -239,6 +249,7 @@ export default function OperacionCRM() {
   const [cotEmailCliente, setCotEmailCliente] = useState('')
   const [cotTelefonoCliente, setCotTelefonoCliente] = useState('')
   const [cotVendedor, setCotVendedor] = useState('Ejecutivo Comercial Gama Seguridad')
+  const [cotEtapaPipeline, setCotEtapaPipeline] = useState<EtapaPipelineEspo>('Cotizacion')
   const [cotValidez, setCotValidez] = useState(15)
   const [cotFormaPago, setCotFormaPago] = useState('50% Anticipo / 50% Al Finalizar')
   const [cotMoneda, setCotMoneda] = useState<'CLP' | 'UF'>('CLP')
@@ -254,6 +265,7 @@ export default function OperacionCRM() {
 
   // Modales OT
   const [mostrarModalOT, setMostrarModalOT] = useState(false)
+  const [enviandoNotif, setEnviandoNotif] = useState(false)
 
   // ── MOTOR DE AGENTES DE IA AUTÓNOMOS 24/7 (AUTO-COMPANY ENGINE) ──
   const [logsConsenso, setLogsConsenso] = useState<string[]>([
@@ -464,6 +476,7 @@ export default function OperacionCRM() {
   const abrirModalNuevaCotizacion = () => {
     setCotEditandoId(null)
     setTipoReceptorCot('registrado')
+    setCotEtapaPipeline('Cotizacion')
     setDescuentoGlobalValor(0)
     setDescuentoGlobalTipo('porcentaje')
     const ruts = Object.keys(clientesMaestros)
@@ -496,6 +509,7 @@ export default function OperacionCRM() {
     setCotContactoPersona(cot.contacto_persona || cot.nombre_cliente || 'Atención Comercial')
     setCotGiroCliente(cot.giro_cliente || 'Servicios Integrales / Particular')
     setCotVendedor(cot.vendedor || 'Ejecutivo Comercial Gama Seguridad')
+    setCotEtapaPipeline(cot.etapa_pipeline || 'Cotizacion')
     setCotValidez(cot.validez_dias || 15)
     setCotFormaPago(cot.forma_pago || '50% Anticipo / 50% Al Finalizar')
     setCotMoneda(cot.moneda_cotizacion || 'CLP')
@@ -551,9 +565,51 @@ export default function OperacionCRM() {
     }
   }
 
+  const handleCambiarEtapaPipeline = async (cotId: number, nuevaEtapa: EtapaPipelineEspo) => {
+    const listaNueva = cotizaciones.map(c => c.id === cotId ? { ...c, etapa_pipeline: nuevaEtapa } : c)
+    setCotizaciones(listaNueva)
+    try {
+      await supabase.from('eventos_monitoreo').upsert({
+        cuenta: 'COTIZACIONES_DOLIBARR',
+        nombre_abonado: JSON.stringify(listaNueva),
+        evento: 'CAMBIO_ETAPA_PIPELINE',
+        fecha_hora: new Date().toISOString()
+      })
+    } catch (e: any) {
+      console.error('Error al actualizar etapa:', e)
+    }
+  }
+
+  const handleEnviarWhatsAppCotizacion = async (cot: CotizacionDolibarr) => {
+    const fono = cot.telefono_cliente || '+56991016912'
+    const emp = empresasConglomerado.find(e => e.id === cot.empresa_facturadora_id) || empresasConglomerado[0]
+    const mensaje = `Estimado(a) *${cot.contacto_persona || cot.nombre_cliente}*,\n\nJunto con saludarle de *${emp.razon_social}*, le adjuntamos la propuesta comercial N° *${cot.codigo_cotizacion}*.\n\n📌 *Monto Total:* $${Math.round(cot.monto_total_iva_incluido || 0).toLocaleString('es-CL')} ${cot.moneda_cotizacion || 'CLP'} (19% IVA Incluido)\n📅 *Validez:* ${cot.validez_dias || 15} días hábiles.\n📍 *Ciudad/Comuna:* ${cot.ciudad_cliente || 'Santiago'}\n\nPuede ver o descargar su documento oficial aquí:\nhttps://controltestmonitoreo.vercel.app/operacion\n\nQuedamos a su disposición para coordinar la instalación/servicio.\n*Gama Seguridad Chile*`
+
+    try {
+      setEnviandoNotif(true)
+      const res = await fetch('/api/whatsapp/send-direct', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: fono, message: mensaje })
+      })
+      const data = await res.json()
+      if (data.status === 'success' || data.success) {
+        alert(`💬 Notificación de cotización enviada exitosamente por WhatsApp a ${cot.nombre_cliente} (${fono}).`)
+      } else {
+        const link = `https://wa.me/${fono.replace(/\D/g, '')}?text=${encodeURIComponent(mensaje)}`
+        window.open(link, '_blank')
+      }
+    } catch (e) {
+      const link = `https://wa.me/${fono.replace(/\D/g, '')}?text=${encodeURIComponent(mensaje)}`
+      window.open(link, '_blank')
+    } finally {
+      setEnviandoNotif(false)
+    }
+  }
+
   const handleGuardarCotizacionDolibarr = async () => {
     let nombreFinal = cotNombreCliente.trim()
-    let rutFinal = cotRutCliente.trim() // GUARDA EXACTAMENTE EL RUT INGRESADO POR EL USUARIO
+    let rutFinal = cotRutCliente.trim()
 
     if (!nombreFinal || nombreFinal === 'Cliente Gama') {
       if (cotNombreCliente && cotNombreCliente !== 'Cliente Gama') {
@@ -573,7 +629,7 @@ export default function OperacionCRM() {
       id: cotEditandoId || Date.now(),
       codigo_cotizacion: codigoCot,
       cuenta: rutFinal || `PROSPECTO-${Date.now()}`,
-      rut_cliente: rutFinal, // PRESERVA EL RUT MANUALMENTE DIGITADO (CON GUION/PUNTOS)
+      rut_cliente: rutFinal,
       nombre_cliente: nombreFinal,
       empresa_facturadora_id: cotEmpresaEmisoraId,
       direccion: cotDireccion.trim() || 'Dirección de Entrega',
@@ -584,6 +640,7 @@ export default function OperacionCRM() {
       contacto_persona: cotContactoPersona.trim() || nombreFinal,
       vendedor: cotVendedor.trim() || 'Ejecutivo Comercial Gama Seguridad',
       tipo_receptor: tipoReceptorCot,
+      etapa_pipeline: cotEtapaPipeline,
       fecha: new Date().toLocaleDateString('es-CL'),
       validez_dias: cotValidez,
       forma_pago: cotFormaPago,
@@ -880,9 +937,9 @@ export default function OperacionCRM() {
             {[
               { id: 'ficha360', label: 'Ficha 360° del Cliente / Abonado', icon: '👤' },
               { id: 'autonomia', label: 'Agentes Autónomos 24/7', icon: '🤖' },
-              { id: 'presupuestos', label: 'Presupuestos & Cotizaciones DTE', icon: '📋' },
+              { id: 'presupuestos', label: 'Presupuestos & Pipeline CRM', icon: '📋' },
               { id: 'facturacion', label: 'Facturación & Abonos Parciales', icon: '🧾' },
-              { id: 'serv_tecnico', label: 'Servicio Técnico (OTs)', icon: '🛠️' },
+              { id: 'serv_tecnico', label: 'Servicio Técnico (OTs & SLA)', icon: '🛠️' },
               { id: 'kpis', label: 'KPIs Ejecutivos & Reportes', icon: '📊' },
               { id: 'config', label: 'CRUD Empresas Conglomerado', icon: '⚙️' },
             ].map(m => (
@@ -1044,78 +1101,181 @@ export default function OperacionCRM() {
             </div>
           )}
 
-          {/* ── MÓDULO 3: PRESUPUESTOS & COTIZACIONES DTE COMPLETO CHILENO ── */}
+          {/* ── MÓDULO 3: PRESUPUESTOS & PIPELINE CRM (ESPO-CRM INSPIRED) ── */}
           {moduloActivo === 'presupuestos' && (
             <div className="flex-1 bg-white border border-slate-200 rounded-2xl p-6 md:p-8 flex flex-col gap-6 shadow-md min-h-0 overflow-hidden">
+              
+              {/* ENCABEZADO Y ALTERNADOR DE VISTA TABLA / KANBAN */}
               <div className="bg-[#f8fafc] border border-slate-200 border-l-4 border-l-blue-600 p-5 rounded-xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
                   <h2 className="text-lg font-black text-slate-900 uppercase tracking-wide flex items-center gap-3">
-                    📋 Presupuestos & Cotizaciones DTE Chile
+                    📋 Presupuestos & Pipeline CRM (EspoCRM Engine)
                     <span className="bg-blue-100 text-blue-900 text-xs px-3 py-1 rounded-full font-mono font-bold border border-blue-200">
                       Siguiente: {siguienteCorrelativoCode}
                     </span>
                   </h2>
                   <p className="text-xs text-slate-500 font-semibold mt-0.5">
-                    Módulo industrial con desglose tributario chileno (19% IVA), ciudad/comuna, RUT personalizable y plantilla DTE oficial
+                    Pipeline comercial Kanban de oportunidades, integración de seguimiento por WhatsApp y DTE Chile
                   </p>
                 </div>
 
-                <button
-                  onClick={abrirModalNuevaCotizacion}
-                  className="px-6 py-3 bg-blue-900 hover:bg-blue-800 text-white font-bold rounded-xl text-xs shadow-md cursor-pointer transition-all flex items-center gap-2"
-                >
-                  <span>✨ Crear Presupuesto Profesional DTE</span>
-                </button>
+                <div className="flex items-center gap-3 flex-wrap">
+                  <div className="flex items-center gap-1 bg-white border border-slate-200 p-1 rounded-xl shadow-2xs">
+                    <button
+                      onClick={() => setVistaCotizaciones('tabla')}
+                      className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${vistaCotizaciones === 'tabla' ? 'bg-blue-900 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'}`}
+                    >
+                      📋 Tabla DTE
+                    </button>
+                    <button
+                      onClick={() => setVistaCotizaciones('kanban')}
+                      className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${vistaCotizaciones === 'kanban' ? 'bg-blue-900 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'}`}
+                    >
+                      📊 Pipeline Kanban
+                    </button>
+                  </div>
+
+                  <button
+                    onClick={abrirModalNuevaCotizacion}
+                    className="px-6 py-3 bg-blue-900 hover:bg-blue-800 text-white font-bold rounded-xl text-xs shadow-md cursor-pointer transition-all flex items-center gap-2"
+                  >
+                    <span>✨ Crear Presupuesto DTE</span>
+                  </button>
+                </div>
               </div>
 
-              <div className="flex-1 overflow-auto border border-slate-200 rounded-2xl bg-white p-3 shadow-2xs">
-                <table className="w-full text-left border-collapse text-xs font-medium">
-                  <thead>
-                    <tr className="bg-[#f8fafc] text-slate-700 border-b border-slate-200 font-bold uppercase text-xs">
-                      <th className="p-4 border-r border-slate-200">FOLIO / FECHA</th>
-                      <th className="p-4 border-r border-slate-200">EMPRESA EMISORA</th>
-                      <th className="p-4 border-r border-slate-200">RECEPTOR (CLIENTE / PROSPECTO)</th>
-                      <th className="p-4 border-r border-slate-200">CIUDAD / COMUNA</th>
-                      <th className="p-4 border-r border-slate-200 text-right">NETO AFECTO</th>
-                      <th className="p-4 border-r border-slate-200 text-right">TOTAL IVA INCL.</th>
-                      <th className="p-4 border-r border-slate-200 text-center">ESTADO</th>
-                      <th className="p-4 text-center w-48">ACCIONES</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-200">
-                    {cotizaciones.map(c => {
-                      const empEmisora = empresasConglomerado.find(e => e.id === c.empresa_facturadora_id) || empresasConglomerado[0]
+              {/* VISTA 1: TABLA GENERAL DTE */}
+              {vistaCotizaciones === 'tabla' && (
+                <div className="flex-1 overflow-auto border border-slate-200 rounded-2xl bg-white p-3 shadow-2xs">
+                  <table className="w-full text-left border-collapse text-xs font-medium">
+                    <thead>
+                      <tr className="bg-[#f8fafc] text-slate-700 border-b border-slate-200 font-bold uppercase text-xs">
+                        <th className="p-4 border-r border-slate-200">FOLIO / FECHA</th>
+                        <th className="p-4 border-r border-slate-200">EMPRESA EMISORA</th>
+                        <th className="p-4 border-r border-slate-200">RECEPTOR (CLIENTE / PROSPECTO)</th>
+                        <th className="p-4 border-r border-slate-200">CIUDAD / COMUNA</th>
+                        <th className="p-4 border-r border-slate-200 text-right">NETO AFECTO</th>
+                        <th className="p-4 border-r border-slate-200 text-right">TOTAL IVA INCL.</th>
+                        <th className="p-4 border-r border-slate-200 text-center">ETAPA PIPELINE</th>
+                        <th className="p-4 text-center w-52">ACCIONES</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200">
+                      {cotizaciones.map(c => {
+                        const empEmisora = empresasConglomerado.find(e => e.id === c.empresa_facturadora_id) || empresasConglomerado[0]
+                        return (
+                          <tr key={c.id} className="hover:bg-slate-50">
+                            <td className="p-4 font-mono font-bold text-blue-900 border-r border-slate-200">
+                              <div>{c.codigo_cotizacion}</div>
+                              <div className="text-[10px] text-slate-500 font-sans">{c.fecha}</div>
+                            </td>
+                            <td className="p-4 border-r border-slate-200 font-bold text-emerald-800 text-xs">{empEmisora.razon_social}</td>
+                            <td className="p-4 border-r border-slate-200 font-bold text-slate-900">
+                              <div>{c.nombre_cliente}</div>
+                              <div className="text-[10px] text-slate-500 font-mono">RUT: {c.rut_cliente}</div>
+                            </td>
+                            <td className="p-4 border-r border-slate-200 font-bold text-slate-700">{c.ciudad_cliente || 'Santiago'}</td>
+                            <td className="p-4 text-right font-mono border-r border-slate-200">${Math.round(c.neto_con_descuento || 0).toLocaleString('es-CL')}</td>
+                            <td className="p-4 text-right font-mono font-bold text-emerald-800 border-r border-slate-200">${Math.round(c.monto_total_iva_incluido || 0).toLocaleString('es-CL')}</td>
+                            <td className="p-4 text-center border-r border-slate-200 font-bold">
+                              <span className="px-3 py-1 bg-blue-50 text-blue-900 border border-blue-200 rounded-lg text-[11px]">
+                                {c.etapa_pipeline || 'Cotización'}
+                              </span>
+                            </td>
+                            <td className="p-4 text-center">
+                              <div className="flex items-center justify-center gap-1.5">
+                                <button onClick={() => handleEnviarWhatsAppCotizacion(c)} title="Enviar por WhatsApp" className="p-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-bold cursor-pointer text-xs">💬</button>
+                                <button onClick={() => setCotSeleccionada(c)} title="Ver e Imprimir DTE" className="p-2 bg-slate-900 text-white rounded-lg font-bold cursor-pointer text-xs">📄</button>
+                                <button onClick={() => handleEditarCotizacion(c)} title="Editar Cotización" className="p-2 bg-blue-900 text-white rounded-lg font-bold cursor-pointer text-xs">✏️</button>
+                                <button onClick={() => handleDuplicarCotizacion(c)} title="Copiar Cotización" className="p-2 bg-emerald-700 text-white rounded-lg font-bold cursor-pointer text-xs">📋</button>
+                                <button onClick={() => handleEliminarCotizacion(c.id, c.codigo_cotizacion)} title="Eliminar Cotización" className="p-2 bg-red-700 text-white rounded-lg font-bold cursor-pointer text-xs">🗑️</button>
+                              </div>
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {/* VISTA 2: TABLERO KANBAN DE PIPELINE (ESPO-CRM INSPIRED) */}
+              {vistaCotizaciones === 'kanban' && (
+                <div className="flex-1 overflow-x-auto border border-slate-200 rounded-2xl bg-slate-100 p-4 shadow-inner">
+                  <div className="flex gap-4 min-w-[1200px] h-full items-stretch">
+                    
+                    {[
+                      { key: 'Lead', label: '🟢 Prospecto / Lead', bg: 'bg-emerald-50 border-emerald-200' },
+                      { key: 'Visita', label: '🔍 Visita Técnica', bg: 'bg-amber-50 border-amber-200' },
+                      { key: 'Cotizacion', label: '📋 Cotización Enviada', bg: 'bg-blue-50 border-blue-200' },
+                      { key: 'Negociacion', label: '🤝 En Negociación', bg: 'bg-purple-50 border-purple-200' },
+                      { key: 'Ganada', label: '🎉 Aprobada / Ganada', bg: 'bg-green-50 border-green-200' }
+                    ].map(col => {
+                      const cotsEnCol = cotizaciones.filter(c => (c.etapa_pipeline || 'Cotizacion') === col.key)
+                      const totalMontoCol = cotsEnCol.reduce((acc, curr) => acc + (curr.monto_total_iva_incluido || 0), 0)
+
                       return (
-                        <tr key={c.id} className="hover:bg-slate-50">
-                          <td className="p-4 font-mono font-bold text-blue-900 border-r border-slate-200">
-                            <div>{c.codigo_cotizacion}</div>
-                            <div className="text-[10px] text-slate-500 font-sans">{c.fecha}</div>
-                          </td>
-                          <td className="p-4 border-r border-slate-200 font-bold text-emerald-800 text-xs">{empEmisora.razon_social}</td>
-                          <td className="p-4 border-r border-slate-200 font-bold text-slate-900">
-                            <div>{c.nombre_cliente}</div>
-                            <div className="text-[10px] text-slate-500 font-mono">RUT: {c.rut_cliente}</div>
-                          </td>
-                          <td className="p-4 border-r border-slate-200 font-bold text-slate-700">{c.ciudad_cliente || 'Santiago'}</td>
-                          <td className="p-4 text-right font-mono border-r border-slate-200">${Math.round(c.neto_con_descuento || 0).toLocaleString('es-CL')}</td>
-                          <td className="p-4 text-right font-mono font-bold text-emerald-800 border-r border-slate-200">${Math.round(c.monto_total_iva_incluido || 0).toLocaleString('es-CL')}</td>
-                          <td className="p-4 text-center border-r border-slate-200 font-bold">
-                            <span className="px-3 py-1 bg-slate-100 rounded-lg text-xs">{c.estado}</span>
-                          </td>
-                          <td className="p-4 text-center">
-                            <div className="flex items-center justify-center gap-1.5">
-                              <button onClick={() => setCotSeleccionada(c)} title="Ver e Imprimir DTE" className="p-2 bg-slate-900 text-white rounded-lg font-bold cursor-pointer text-xs">📄</button>
-                              <button onClick={() => handleEditarCotizacion(c)} title="Editar Cotización" className="p-2 bg-blue-900 text-white rounded-lg font-bold cursor-pointer text-xs">✏️</button>
-                              <button onClick={() => handleDuplicarCotizacion(c)} title="Copiar Cotización" className="p-2 bg-emerald-700 text-white rounded-lg font-bold cursor-pointer text-xs">📋</button>
-                              <button onClick={() => handleEliminarCotizacion(c.id, c.codigo_cotizacion)} title="Eliminar Cotización" className="p-2 bg-red-700 text-white rounded-lg font-bold cursor-pointer text-xs">🗑️</button>
-                            </div>
-                          </td>
-                        </tr>
+                        <div key={col.key} className={`w-1/5 ${col.bg} border rounded-2xl p-4 flex flex-col gap-3 shadow-xs`}>
+                          <div className="flex justify-between items-center pb-2 border-b border-slate-200">
+                            <span className="font-extrabold text-xs text-slate-900 uppercase tracking-tight">{col.label}</span>
+                            <span className="bg-white border border-slate-300 text-slate-800 text-[10px] font-bold px-2 py-0.5 rounded-full font-mono">
+                              {cotsEnCol.length}
+                            </span>
+                          </div>
+                          
+                          <div className="text-[11px] font-mono font-bold text-slate-600 bg-white/70 p-2 rounded-lg text-center border border-slate-200">
+                            Monto: ${Math.round(totalMontoCol).toLocaleString('es-CL')} CLP
+                          </div>
+
+                          <div className="flex-1 overflow-y-auto space-y-3 pt-1">
+                            {cotsEnCol.map(cot => (
+                              <div key={cot.id} className="bg-white border border-slate-200 p-4 rounded-xl shadow-md space-y-3 hover:shadow-lg transition-all">
+                                <div className="flex justify-between items-start">
+                                  <span className="font-mono font-bold text-xs text-blue-900">{cot.codigo_cotizacion}</span>
+                                  <span className="text-[10px] text-slate-400 font-medium">{cot.fecha}</span>
+                                </div>
+
+                                <div>
+                                  <h4 className="font-black text-xs text-slate-900 uppercase leading-snug">{cot.nombre_cliente}</h4>
+                                  <span className="text-[10px] text-slate-500 block font-mono">RUT: {cot.rut_cliente}</span>
+                                  <span className="text-[10px] text-slate-600 font-bold block">🏙️ {cot.ciudad_cliente || 'Santiago'}</span>
+                                </div>
+
+                                <div className="bg-[#f8fafc] border border-slate-200 p-2 rounded-lg flex justify-between items-center font-mono">
+                                  <span className="text-[10px] text-slate-500 font-sans">Total IVA Incl.</span>
+                                  <span className="font-bold text-xs text-emerald-800">${Math.round(cot.monto_total_iva_incluido || 0).toLocaleString('es-CL')}</span>
+                                </div>
+
+                                {/* ACCIONES DE PIPELINE Y WHATSAPP */}
+                                <div className="flex items-center justify-between pt-1 border-t border-slate-100">
+                                  <div className="flex gap-1">
+                                    <button onClick={() => handleEnviarWhatsAppCotizacion(cot)} title="Notificar por WhatsApp" className="p-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-md text-xs cursor-pointer">💬</button>
+                                    <button onClick={() => setCotSeleccionada(cot)} title="Ver DTE PDF" className="p-1.5 bg-slate-900 text-white rounded-md text-xs cursor-pointer">📄</button>
+                                  </div>
+
+                                  <select
+                                    value={cot.etapa_pipeline || 'Cotizacion'}
+                                    onChange={(e) => handleCambiarEtapaPipeline(cot.id, e.target.value as any)}
+                                    className="bg-slate-100 border border-slate-300 rounded-md text-[10px] font-bold p-1 text-slate-800"
+                                  >
+                                    <option value="Lead">🟢 Lead</option>
+                                    <option value="Visita">🔍 Visita</option>
+                                    <option value="Cotizacion">📋 Cotización</option>
+                                    <option value="Negociacion">🤝 Negociación</option>
+                                    <option value="Ganada">🎉 Ganada</option>
+                                  </select>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
                       )
                     })}
-                  </tbody>
-                </table>
-              </div>
+
+                  </div>
+                </div>
+              )}
+
             </div>
           )}
 
@@ -1198,16 +1358,16 @@ export default function OperacionCRM() {
             </div>
           )}
 
-          {/* ── MÓDULO 5: SERVICIO TÉCNICO (OTs) ── */}
+          {/* ── MÓDULO 5: SERVICIO TÉCNICO & SLAs (FIELD SERVICE ESPO-CRM) ── */}
           {moduloActivo === 'serv_tecnico' && (
             <div className="flex-1 bg-white border border-slate-200 rounded-2xl p-6 md:p-8 flex flex-col gap-6 shadow-md overflow-y-auto">
               <div className="bg-[#f8fafc] border border-slate-200 border-l-4 border-l-blue-600 p-5 rounded-xl flex justify-between items-center">
                 <div>
                   <h2 className="text-lg font-black text-slate-900 uppercase tracking-wide">
-                    🛠️ Servicio Técnico & Órdenes de Trabajo (OT)
+                    🛠️ Servicio Técnico & Órdenes de Trabajo (SLA & Field Service)
                   </h2>
                   <p className="text-xs text-slate-500 font-semibold mt-0.5">
-                    Programación y asignación de técnicos a cuentas de abonados
+                    Programación, asignación técnica y monitoreo de niveles de servicio (SLA 2h / 6h / 24h)
                   </p>
                 </div>
                 <button
@@ -1226,6 +1386,7 @@ export default function OperacionCRM() {
                       <th className="p-4 border-r border-slate-200">CUENTA ABONADO</th>
                       <th className="p-4 border-r border-slate-200">CLIENTE / CENTRO COSTO</th>
                       <th className="p-4 border-r border-slate-200">TIPO DE SERVICIO</th>
+                      <th className="p-4 border-r border-slate-200">SLA DE RESPUESTA</th>
                       <th className="p-4 border-r border-slate-200">TÉCNICO ASIGNADO</th>
                       <th className="p-4 text-center">ESTADO</th>
                     </tr>
@@ -1240,9 +1401,18 @@ export default function OperacionCRM() {
                         <td className="p-4 border-r border-slate-200 font-mono font-bold text-blue-950">#{ot.cuenta}</td>
                         <td className="p-4 border-r border-slate-200 font-bold text-slate-900">{ot.cliente_nombre}</td>
                         <td className="p-4 border-r border-slate-200 text-slate-700 font-semibold">{ot.tipo_servicio}</td>
+                        <td className="p-4 border-r border-slate-200 font-bold">
+                          <span className={`px-2.5 py-1 rounded-md text-[11px] font-mono ${
+                            ot.prioridad_sla?.includes('2h') ? 'bg-red-100 text-red-800 border border-red-200' :
+                            ot.prioridad_sla?.includes('6h') ? 'bg-amber-100 text-amber-800 border border-amber-200' :
+                            'bg-blue-100 text-blue-800 border border-blue-200'
+                          }`}>
+                            {ot.prioridad_sla || 'Normal (24h)'}
+                          </span>
+                        </td>
                         <td className="p-4 border-r border-slate-200 text-slate-800 font-bold">👤 {ot.tecnico_asignado}</td>
                         <td className="p-4 text-center font-bold">
-                          <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs">{ot.estado}</span>
+                          <span className="bg-slate-100 text-slate-800 px-3 py-1 rounded-full text-xs">{ot.estado}</span>
                         </td>
                       </tr>
                     ))}
@@ -1503,8 +1673,8 @@ export default function OperacionCRM() {
 
                 {/* EMISOR Y CONDICIONES */}
                 <div className="bg-[#f8fafc] p-4 rounded-xl border border-slate-200 space-y-3">
-                  <label className="font-black text-slate-900 text-xs uppercase tracking-wider block">2. RAZÓN SOCIAL EMISORA & MONEDA:</label>
-                  <div className="grid grid-cols-2 gap-3">
+                  <label className="font-black text-slate-900 text-xs uppercase tracking-wider block">2. RAZÓN SOCIAL EMISORA, MONEDA & PIPELINE:</label>
+                  <div className="grid grid-cols-3 gap-3">
                     <div>
                       <label className="text-[10px] font-bold text-slate-500 block mb-1">EMPRESA EMISORA:</label>
                       <select value={cotEmpresaEmisoraId} onChange={(e) => setCotEmpresaEmisoraId(e.target.value)} className="w-full bg-white border border-slate-300 p-2.5 rounded-lg font-bold text-xs">
@@ -1516,6 +1686,16 @@ export default function OperacionCRM() {
                       <select value={cotMoneda} onChange={(e: any) => setCotMoneda(e.target.value)} className="w-full bg-white border border-slate-300 p-2.5 rounded-lg font-bold text-xs">
                         <option value="CLP">CLP (Pesos Chilenos)</option>
                         <option value="UF">UF (Unidad de Fomento)</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-500 block mb-1">ETAPA PIPELINE:</label>
+                      <select value={cotEtapaPipeline} onChange={(e: any) => setCotEtapaPipeline(e.target.value)} className="w-full bg-white border border-slate-300 p-2.5 rounded-lg font-bold text-xs text-blue-900">
+                        <option value="Lead">🟢 Prospecto / Lead</option>
+                        <option value="Visita">🔍 Visita Técnica</option>
+                        <option value="Cotizacion">📋 Cotización Enviada</option>
+                        <option value="Negociacion">🤝 En Negociación</option>
+                        <option value="Ganada">🎉 Aprobada / Ganada</option>
                       </select>
                     </div>
                   </div>
@@ -1672,8 +1852,14 @@ export default function OperacionCRM() {
           
           <div className="no-imprimir fixed top-6 right-8 z-50 flex gap-3">
             <button
+              onClick={() => handleEnviarWhatsAppCotizacion(cotSeleccionada)}
+              className="px-5 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-xl cursor-pointer flex items-center gap-2"
+            >
+              <span>💬 Notificar por WhatsApp</span>
+            </button>
+            <button
               onClick={() => window.print()}
-              className="px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-xl cursor-pointer flex items-center gap-2"
+              className="px-6 py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-xl cursor-pointer flex items-center gap-2"
             >
               <span>🖨️ Imprimir / Guardar PDF Oficial</span>
             </button>
