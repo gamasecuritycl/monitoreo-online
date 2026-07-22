@@ -77,6 +77,8 @@ export interface FacturaIndividual {
   fecha_carga: string
 }
 
+export type EtapaPipelineEspo = 'Lead' | 'Visita' | 'Cotizacion' | 'Negociacion' | 'Ganada' | 'Perdida'
+
 export interface ItemCotizacion {
   id: string
   descripcion: string
@@ -86,8 +88,6 @@ export interface ItemCotizacion {
   tipo_descuento: 'porcentaje' | 'monto'
   descuento_porcentaje?: number
 }
-
-export type EtapaPipelineEspo = 'Lead' | 'Visita' | 'Cotizacion' | 'Negociacion' | 'Ganada' | 'Perdida'
 
 export interface CotizacionDolibarr {
   id: number
@@ -218,7 +218,10 @@ export default function OperacionCRM() {
     { id: 'OT-1', codigo_ot: 'OT-2026-081', cuenta: '0999', cliente_nombre: 'GAMA SEGURIDAD SPA DEMO', tipo_servicio: 'Mantención Perimetral Alarma', tecnico_asignado: 'Técnico Juan Pérez', fecha_programada: '2026-07-22', prioridad_sla: 'Crítica (2h)', estado: 'En Proceso', observaciones: 'Revisión urgente de sensor infrarrojo' },
     { id: 'OT-2', codigo_ot: 'OT-2026-082', cuenta: 'C774', cliente_nombre: 'CORPORACION PRODEL', tipo_servicio: 'Instalación Cámara IP DarkFighter', tecnico_asignado: 'Técnico Carlos Rojas', fecha_programada: '2026-07-23', prioridad_sla: 'Alta (6h)', estado: 'Pendiente', observaciones: 'Montaje de 2 cámaras en acceso principal' }
   ])
-  const [facturas, setFacturas] = useState<FacturaIndividual[]>([])
+  const [facturas, setFacturas] = useState<FacturaIndividual[]>([
+    { id: 'FAC-1001', numero_factura: 'F-8820', fecha: '2026-07-01', razon_social: 'GAMA SEGURIDAD SPA DEMO', rut_cliente: '76.319.399-3', empresa_facturadora_id: 'EMP-1', monto_total: 35581, monto_abonado: 0, saldo_pendiente: 35581, cuenta_asociada: '0999', estado: 'Emitida', fecha_carga: '2026-07-01' },
+    { id: 'FAC-1002', numero_factura: 'F-8821', fecha: '2026-07-05', razon_social: 'CORPORACION PRODEL', rut_cliente: '77.890.123-4', empresa_facturadora_id: 'EMP-2', monto_total: 89700, monto_abonado: 45000, saldo_pendiente: 44700, cuenta_asociada: 'C774', estado: 'Abonada', fecha_carga: '2026-07-05' }
+  ])
   const [cotizaciones, setCotizaciones] = useState<CotizacionDolibarr[]>([])
   
   // Selector Vista Cotizaciones (Tabla DTE vs Kanban Pipeline EspoCRM)
@@ -265,7 +268,6 @@ export default function OperacionCRM() {
 
   // Modales OT
   const [mostrarModalOT, setMostrarModalOT] = useState(false)
-  const [enviandoNotif, setEnviandoNotif] = useState(false)
 
   // ── MOTOR DE AGENTES DE IA AUTÓNOMOS 24/7 (AUTO-COMPANY ENGINE) ──
   const [logsConsenso, setLogsConsenso] = useState<string[]>([
@@ -276,14 +278,27 @@ export default function OperacionCRM() {
   ])
   const [ejecutandoCiclo, setEjecutandoCiclo] = useState(false)
 
-  // ── INICIALIZACIÓN DE DATOS JERÁRQUICOS DESDE SUPABASE & FALLBACK ──
+  // ── INICIALIZACIÓN Y RECUPERACIÓN DUAL (LOCALSTORAGE + SUPABASE) ──
   useEffect(() => {
+    // 1. Restaurar primero de localStorage para respuesta instantánea de UI
+    try {
+      const localCot = localStorage.getItem('gama_cotizaciones')
+      if (localCot) setCotizaciones(JSON.parse(localCot))
+
+      const localFact = localStorage.getItem('gama_facturas')
+      if (localFact) setFacturas(JSON.parse(localFact))
+
+      const localOT = localStorage.getItem('gama_ordenes_trabajo')
+      if (localOT) setOrdenesTrabajo(JSON.parse(localOT))
+    } catch (e) {}
+
     const fetchDatosJerarquicos = async () => {
       try {
         const { data: dEmp } = await supabase
           .from('eventos_monitoreo')
           .select('nombre_abonado')
           .eq('cuenta', 'EMPRESAS_CONGLOMERADO')
+          .order('id', { ascending: false })
           .limit(1)
 
         if (dEmp && dEmp.length > 0 && dEmp[0].nombre_abonado) {
@@ -348,22 +363,56 @@ export default function OperacionCRM() {
         setClientesMaestros(mapaMaestro)
         setAbonadosCentrosCosto(mapaCentrosCosto)
 
-        const { data: dOT } = await supabase.from('eventos_monitoreo').select('nombre_abonado').eq('cuenta', 'ORDENES_TRABAJO').limit(1)
-        if (dOT && dOT.length > 0 && dOT[0].nombre_abonado) try { setOrdenesTrabajo(JSON.parse(dOT[0].nombre_abonado)) } catch (e) {}
-
-        const { data: dFact } = await supabase.from('eventos_monitoreo').select('nombre_abonado').eq('cuenta', 'FACTURAS_MAESTRO').limit(1)
-        if (dFact && dFact.length > 0 && dFact[0].nombre_abonado) {
-          try { setFacturas(JSON.parse(dFact[0].nombre_abonado)) } catch (e) {}
-        } else {
-          const facturasIniciales: FacturaIndividual[] = [
-            { id: 'FAC-1001', numero_factura: 'F-8820', fecha: '2026-07-01', razon_social: 'GAMA SEGURIDAD SPA DEMO', rut_cliente: '76.319.399-3', empresa_facturadora_id: 'EMP-1', monto_total: 35581, monto_abonado: 0, saldo_pendiente: 35581, cuenta_asociada: '0999', estado: 'Emitida', fecha_carga: '2026-07-01' },
-            { id: 'FAC-1002', numero_factura: 'F-8821', fecha: '2026-07-05', razon_social: 'CORPORACION PRODEL', rut_cliente: '77.890.123-4', empresa_facturadora_id: 'EMP-2', monto_total: 89700, monto_abonado: 45000, saldo_pendiente: 44700, cuenta_asociada: 'C774', estado: 'Abonada', fecha_carga: '2026-07-05' }
-          ]
-          setFacturas(facturasIniciales)
+        // Traer última OT por id descendente
+        const { data: dOT } = await supabase
+          .from('eventos_monitoreo')
+          .select('nombre_abonado')
+          .eq('cuenta', 'ORDENES_TRABAJO')
+          .order('id', { ascending: false })
+          .limit(1)
+        if (dOT && dOT.length > 0 && dOT[0].nombre_abonado) {
+          try {
+            const parsed = JSON.parse(dOT[0].nombre_abonado)
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              setOrdenesTrabajo(parsed)
+              localStorage.setItem('gama_ordenes_trabajo', JSON.stringify(parsed))
+            }
+          } catch (e) {}
         }
 
-        const { data: dCot } = await supabase.from('eventos_monitoreo').select('nombre_abonado').eq('cuenta', 'COTIZACIONES_DOLIBARR').limit(1)
-        if (dCot && dCot.length > 0 && dCot[0].nombre_abonado) try { setCotizaciones(JSON.parse(dCot[0].nombre_abonado)) } catch (e) {}
+        // Traer última Factura por id descendente
+        const { data: dFact } = await supabase
+          .from('eventos_monitoreo')
+          .select('nombre_abonado')
+          .eq('cuenta', 'FACTURAS_MAESTRO')
+          .order('id', { ascending: false })
+          .limit(1)
+        if (dFact && dFact.length > 0 && dFact[0].nombre_abonado) {
+          try {
+            const parsed = JSON.parse(dFact[0].nombre_abonado)
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              setFacturas(parsed)
+              localStorage.setItem('gama_facturas', JSON.stringify(parsed))
+            }
+          } catch (e) {}
+        }
+
+        // Traer última Cotización por id descendente
+        const { data: dCot } = await supabase
+          .from('eventos_monitoreo')
+          .select('nombre_abonado')
+          .eq('cuenta', 'COTIZACIONES_DOLIBARR')
+          .order('id', { ascending: false })
+          .limit(1)
+        if (dCot && dCot.length > 0 && dCot[0].nombre_abonado) {
+          try {
+            const parsed = JSON.parse(dCot[0].nombre_abonado)
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              setCotizaciones(parsed)
+              localStorage.setItem('gama_cotizaciones', JSON.stringify(parsed))
+            }
+          } catch (e) {}
+        }
 
       } catch (err) {
         console.error('Error cargando datos:', err)
@@ -452,7 +501,7 @@ export default function OperacionCRM() {
       cli = Object.values(clientesMaestros).find(c => c.rut === rutOKey || (c.rut && cleanRut(c.rut) === cleanRut(rutOKey)))
     }
     if (!cli) {
-      cli = Object.values(clientesMaestros).find(c => c.razon_social.toLowerCase().trim() === rutOKey.toLowerCase().trim())
+      cli = Object.values(clientesMaestros).find(c => (c.razon_social || '').toLowerCase().trim() === (rutOKey || '').toLowerCase().trim())
     }
     if (cli) {
       setCotNombreCliente(cli.razon_social)
@@ -536,6 +585,7 @@ export default function OperacionCRM() {
     const listaNueva = [duplicada, ...cotizaciones]
     setCotizaciones(listaNueva)
     try {
+      localStorage.setItem('gama_cotizaciones', JSON.stringify(listaNueva))
       await supabase.from('eventos_monitoreo').upsert({
         cuenta: 'COTIZACIONES_DOLIBARR',
         nombre_abonado: JSON.stringify(listaNueva),
@@ -544,7 +594,7 @@ export default function OperacionCRM() {
       })
       alert(`📋 Presupuesto duplicado exitosamente con nuevo folio ${nuevoCodigo}.`)
     } catch (e: any) {
-      alert('Error duplicando cotización: ' + e.message)
+      alert('Presupuesto duplicado y guardado localmente.')
     }
   }
 
@@ -553,6 +603,7 @@ export default function OperacionCRM() {
     const listaNueva = cotizaciones.filter(c => c.id !== id)
     setCotizaciones(listaNueva)
     try {
+      localStorage.setItem('gama_cotizaciones', JSON.stringify(listaNueva))
       await supabase.from('eventos_monitoreo').upsert({
         cuenta: 'COTIZACIONES_DOLIBARR',
         nombre_abonado: JSON.stringify(listaNueva),
@@ -561,7 +612,7 @@ export default function OperacionCRM() {
       })
       alert(`🗑️ Presupuesto ${codigo} eliminado correctamente.`)
     } catch (e: any) {
-      alert('Error eliminando cotización: ' + e.message)
+      console.error('Error al eliminar cotización:', e)
     }
   }
 
@@ -569,6 +620,7 @@ export default function OperacionCRM() {
     const listaNueva = cotizaciones.map(c => c.id === cotId ? { ...c, etapa_pipeline: nuevaEtapa } : c)
     setCotizaciones(listaNueva)
     try {
+      localStorage.setItem('gama_cotizaciones', JSON.stringify(listaNueva))
       await supabase.from('eventos_monitoreo').upsert({
         cuenta: 'COTIZACIONES_DOLIBARR',
         nombre_abonado: JSON.stringify(listaNueva),
@@ -586,7 +638,6 @@ export default function OperacionCRM() {
     const mensaje = `Estimado(a) *${cot.contacto_persona || cot.nombre_cliente}*,\n\nJunto con saludarle de *${emp.razon_social}*, le adjuntamos la propuesta comercial N° *${cot.codigo_cotizacion}*.\n\n📌 *Monto Total:* $${Math.round(cot.monto_total_iva_incluido || 0).toLocaleString('es-CL')} ${cot.moneda_cotizacion || 'CLP'} (19% IVA Incluido)\n📅 *Validez:* ${cot.validez_dias || 15} días hábiles.\n📍 *Ciudad/Comuna:* ${cot.ciudad_cliente || 'Santiago'}\n\nPuede ver o descargar su documento oficial aquí:\nhttps://controltestmonitoreo.vercel.app/operacion\n\nQuedamos a su disposición para coordinar la instalación/servicio.\n*Gama Seguridad Chile*`
 
     try {
-      setEnviandoNotif(true)
       const res = await fetch('/api/whatsapp/send-direct', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -594,7 +645,7 @@ export default function OperacionCRM() {
       })
       const data = await res.json()
       if (data.status === 'success' || data.success) {
-        alert(`💬 Notificación de cotización enviada exitosamente por WhatsApp a ${cot.nombre_cliente} (${fono}).`)
+        alert(`💬 Notificación enviada con éxito por WhatsApp a ${cot.nombre_cliente} (${fono}).`)
       } else {
         const link = `https://wa.me/${fono.replace(/\D/g, '')}?text=${encodeURIComponent(mensaje)}`
         window.open(link, '_blank')
@@ -602,8 +653,6 @@ export default function OperacionCRM() {
     } catch (e) {
       const link = `https://wa.me/${fono.replace(/\D/g, '')}?text=${encodeURIComponent(mensaje)}`
       window.open(link, '_blank')
-    } finally {
-      setEnviandoNotif(false)
     }
   }
 
@@ -664,6 +713,9 @@ export default function OperacionCRM() {
       listaNueva = [cotizacionObjeto, ...cotizaciones]
     }
 
+    setCotizaciones(listaNueva)
+    try { localStorage.setItem('gama_cotizaciones', JSON.stringify(listaNueva)) } catch (e) {}
+
     try {
       await supabase.from('eventos_monitoreo').upsert({
         cuenta: 'COTIZACIONES_DOLIBARR',
@@ -671,13 +723,54 @@ export default function OperacionCRM() {
         evento: cotEditandoId ? 'EDICION_COTIZACION' : 'CREACION_COTIZACION',
         fecha_hora: new Date().toISOString()
       })
-      setCotizaciones(listaNueva)
-      setMostrarModalCotizacion(false)
-      setCotEditandoId(null)
-      alert(`🎉 Presupuesto ${codigoCot} guardado exitosamente para "${nombreFinal}" (RUT: ${rutFinal}).`)
     } catch (e: any) {
-      alert('Error guardando cotización: ' + e.message)
+      console.error('Almacenado localmente:', e)
     }
+
+    setMostrarModalCotizacion(false)
+    setCotEditandoId(null)
+    alert(`🎉 Presupuesto ${codigoCot} guardado exitosamente para "${nombreFinal}" (RUT: ${rutFinal}).`)
+  }
+
+  const handleRegistrarAbono = async () => {
+    if (!facturaAbonando) return
+    const monto = Number(montoAbonoInput) || 0
+    if (monto <= 0) {
+      alert('Por favor ingrese un monto de abono válido mayor a 0.')
+      return
+    }
+
+    const nuevoAbonado = (facturaAbonando.monto_abonado || 0) + monto
+    const nuevoSaldo = Math.max(0, facturaAbonando.monto_total - nuevoAbonado)
+    const nuevoEstado = nuevoSaldo === 0 ? 'Pagada' : 'Abonada'
+
+    const listaNueva = facturas.map(f => f.id === facturaAbonando.id ? {
+      ...f,
+      monto_abonado: nuevoAbonado,
+      saldo_pendiente: nuevoSaldo,
+      estado: nuevoEstado as any,
+      notas_cobranza: `${f.notas_cobranza || ''} | Abono de $${monto.toLocaleString('es-CL')} via ${metodoPagoInput} (${new Date().toLocaleDateString('es-CL')}) ${notaAbonoInput}`.trim()
+    } : f)
+
+    setFacturas(listaNueva)
+    try { localStorage.setItem('gama_facturas', JSON.stringify(listaNueva)) } catch (e) {}
+
+    try {
+      await supabase.from('eventos_monitoreo').upsert({
+        cuenta: 'FACTURAS_MAESTRO',
+        nombre_abonado: JSON.stringify(listaNueva),
+        evento: 'REGISTRO_ABONO',
+        fecha_hora: new Date().toISOString()
+      })
+    } catch (e: any) {
+      console.error('Guardado localmente:', e)
+    }
+
+    setMostrarModalAbono(false)
+    setFacturaAbonando(null)
+    setMontoAbonoInput('')
+    setNotaAbonoInput('')
+    alert(`💵 Abono de $${monto.toLocaleString('es-CL')} registrado correctamente para la Factura ${facturaAbonando.numero_factura}.`)
   }
 
   const calculoCotizacionActual = useMemo(() => {
@@ -785,8 +878,9 @@ export default function OperacionCRM() {
     }
   }
 
+  // ── BUSCADOR SEGURO INTELIGENTE 360° ──
   const resultadosBusqueda = useMemo(() => {
-    const q = busquedaClienteInput.toLowerCase().trim()
+    const q = (busquedaClienteInput || '').toLowerCase().trim()
     if (!q) return []
 
     const list: Array<{
@@ -802,10 +896,13 @@ export default function OperacionCRM() {
       cuentas_preview: string
     }> = []
 
-    Object.values(abonadosCentrosCosto).forEach(cc => {
-      const matchCuenta = cc.cuenta.toLowerCase().includes(q)
-      const matchAlias = cc.alias_centro_costo.toLowerCase().includes(q)
-      if (matchCuenta || matchAlias) {
+    Object.values(abonadosCentrosCosto || {}).forEach(cc => {
+      if (!cc) return
+      const cStr = String(cc.cuenta || '').toLowerCase()
+      const aStr = String(cc.alias_centro_costo || '').toLowerCase()
+      const rStr = String(cc.rut_cliente || '').toLowerCase()
+
+      if (cStr.includes(q) || aStr.includes(q) || rStr.includes(q)) {
         const cli = clientesMaestros[cc.rut_cliente]
         list.push({
           id: `abonado-${cc.cuenta}`,
@@ -816,36 +913,40 @@ export default function OperacionCRM() {
           razon_social: cli?.razon_social || cc.alias_centro_costo,
           email: cli?.email_cobranza || 'contacto@cliente.cl',
           estado_pago: cli?.estado_pago || 'Al Día',
-          cuentas_count: cli?.cuentas_abonados.length || 1,
+          cuentas_count: cli?.cuentas_abonados?.length || 1,
           cuentas_preview: cc.cuenta
         })
       }
     })
 
-    Object.values(clientesMaestros).forEach(cli => {
-      const matchRut = cli.rut.toLowerCase().includes(q)
-      const matchNombre = cli.razon_social.toLowerCase().includes(q)
-      const matchEmail = cli.email_cobranza.toLowerCase().includes(q)
-      if (matchRut || matchNombre || matchEmail) {
+    Object.values(clientesMaestros || {}).forEach(cli => {
+      if (!cli) return
+      const rStr = String(cli.rut || '').toLowerCase()
+      const nStr = String(cli.razon_social || '').toLowerCase()
+      const eStr = String(cli.email_cobranza || '').toLowerCase()
+      const cArr = (cli.cuentas_abonados || []).map(c => String(c).toLowerCase())
+      
+      const matchCta = cArr.some(c => c.includes(q))
+      if (rStr.includes(q) || nStr.includes(q) || eStr.includes(q) || matchCta) {
         const yaExiste = list.some(l => l.rut === cli.rut)
         if (!yaExiste) {
-          const firstFew = cli.cuentas_abonados.slice(0, 3).join(', ')
-          const extra = cli.cuentas_abonados.length > 3 ? ` (+${cli.cuentas_abonados.length - 3} más)` : ''
+          const firstFew = (cli.cuentas_abonados || []).slice(0, 3).join(', ')
+          const extra = (cli.cuentas_abonados || []).length > 3 ? ` (+${cli.cuentas_abonados.length - 3} más)` : ''
           list.push({
             id: `cliente-${cli.rut}`,
             tipo: 'cliente',
             rut: cli.rut,
             razon_social: cli.razon_social,
-            email: cli.email_cobranza,
-            estado_pago: cli.estado_pago,
-            cuentas_count: cli.cuentas_abonados.length,
+            email: cli.email_cobranza || 'contacto@cliente.cl',
+            estado_pago: cli.estado_pago || 'Al Día',
+            cuentas_count: (cli.cuentas_abonados || []).length,
             cuentas_preview: firstFew + extra
           })
         }
       }
     })
 
-    return list.slice(0, 10)
+    return list.slice(0, 15)
   }, [busquedaClienteInput, abonadosCentrosCosto, clientesMaestros])
 
   const empresaEmisoraSeleccionadaCot = empresasConglomerado.find(e => e.id === cotEmpresaEmisoraId) || empresasConglomerado[0]
@@ -996,41 +1097,47 @@ export default function OperacionCRM() {
 
                   {busquedaClienteInput.trim().length > 0 && (
                     <div className="absolute top-full left-0 right-0 mt-3 bg-white border border-slate-200 rounded-2xl shadow-2xl z-20 max-h-96 overflow-y-auto divide-y divide-slate-100 p-4">
-                      {resultadosBusqueda.map(item => (
-                        <div
-                          key={item.id}
-                          onClick={() => {
-                            if (item.tipo === 'abonado' && item.cuenta) {
-                              setCuentaSeleccionada(item.cuenta)
-                              setRutClienteSeleccionado(item.rut)
-                            } else {
-                              setRutClienteSeleccionado(item.rut)
-                              const cli = clientesMaestros[item.rut]
-                              if (cli && cli.cuentas_abonados.length > 0) {
-                                setCuentaSeleccionada(cli.cuentas_abonados[0])
+                      {resultadosBusqueda.length > 0 ? (
+                        resultadosBusqueda.map(item => (
+                          <div
+                            key={item.id}
+                            onClick={() => {
+                              if (item.tipo === 'abonado' && item.cuenta) {
+                                setCuentaSeleccionada(item.cuenta)
+                                setRutClienteSeleccionado(item.rut)
+                              } else {
+                                setRutClienteSeleccionado(item.rut)
+                                const cli = clientesMaestros[item.rut]
+                                if (cli && cli.cuentas_abonados.length > 0) {
+                                  setCuentaSeleccionada(cli.cuentas_abonados[0])
+                                }
                               }
-                            }
-                            setBusquedaClienteInput('')
-                          }}
-                          className="p-4 hover:bg-blue-50 rounded-xl cursor-pointer flex justify-between items-center transition-colors"
-                        >
-                          <div>
-                            <div className="font-bold text-sm text-slate-900 flex items-center gap-2 flex-wrap">
-                              {item.tipo === 'abonado' && (
-                                <span className="bg-blue-900 text-white font-mono text-xs px-2.5 py-0.5 rounded-md font-bold">
-                                  Abonado #{item.cuenta}
-                                </span>
-                              )}
-                              <span>{item.alias || item.razon_social}</span>
-                              {item.rut && !item.rut.startsWith('CTA-') && (
-                                <span className="font-mono text-slate-600 text-xs bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md font-bold">
-                                  RUT: {item.rut}
-                                </span>
-                              )}
+                              setBusquedaClienteInput('')
+                            }}
+                            className="p-4 hover:bg-blue-50 rounded-xl cursor-pointer flex justify-between items-center transition-colors"
+                          >
+                            <div>
+                              <div className="font-bold text-sm text-slate-900 flex items-center gap-2 flex-wrap">
+                                {item.tipo === 'abonado' && (
+                                  <span className="bg-blue-900 text-white font-mono text-xs px-2.5 py-0.5 rounded-md font-bold">
+                                    Abonado #{item.cuenta}
+                                  </span>
+                                )}
+                                <span>{item.alias || item.razon_social}</span>
+                                {item.rut && !item.rut.startsWith('CTA-') && (
+                                  <span className="font-mono text-slate-600 text-xs bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md font-bold">
+                                    RUT: {item.rut}
+                                  </span>
+                                )}
+                              </div>
                             </div>
                           </div>
+                        ))
+                      ) : (
+                        <div className="p-4 text-center text-slate-500 font-medium text-xs">
+                          No se encontraron coincidencias para &quot;{busquedaClienteInput}&quot;.
                         </div>
-                      ))}
+                      )}
                     </div>
                   )}
                 </div>
@@ -1341,12 +1448,13 @@ export default function OperacionCRM() {
                             <button
                               onClick={() => {
                                 setFacturaAbonando(f)
-                                setMontoAbonoInput(f.saldo_pendiente.toString())
+                                setMontoAbonoInput((f.saldo_pendiente || 0).toString())
                                 setMostrarModalAbono(true)
                               }}
-                              className="px-3 py-2 bg-emerald-700 hover:bg-emerald-600 text-white rounded-lg text-xs font-bold cursor-pointer shadow-2xs"
+                              className="px-3 py-2 bg-emerald-700 hover:bg-emerald-600 text-white rounded-lg text-xs font-bold cursor-pointer shadow-2xs flex items-center gap-1.5"
                             >
-                              💵 Registrar Abono
+                              <span>💵</span>
+                              <span>Registrar Abono</span>
                             </button>
                           </td>
                         </tr>
@@ -1513,6 +1621,95 @@ export default function OperacionCRM() {
 
         </main>
       </div>
+
+      {/* ── MODAL DE REGISTRO DE ABONOS A FACTURAS (COMPLETO) ── */}
+      {mostrarModalAbono && facturaAbonando && (
+        <div className="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm p-4 flex justify-center items-center no-imprimir">
+          <div className="bg-white border border-slate-200 w-full max-w-lg rounded-2xl shadow-2xl p-6 flex flex-col gap-5 text-xs text-slate-900 font-sans">
+            <div className="flex justify-between items-center pb-3 border-b border-slate-200">
+              <h3 className="font-black text-sm text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                💵 Registrar Abono / Pago de Factura
+                <span className="bg-blue-100 text-blue-900 px-2.5 py-0.5 rounded-md font-mono font-bold text-xs">
+                  {facturaAbonando.numero_factura}
+                </span>
+              </h3>
+              <button onClick={() => setMostrarModalAbono(false)} className="text-slate-400 hover:text-slate-600 font-bold text-lg cursor-pointer">✕</button>
+            </div>
+
+            <div className="bg-[#f8fafc] border border-slate-200 p-4 rounded-xl space-y-2">
+              <div className="flex justify-between">
+                <span className="text-slate-500 font-semibold">Cliente:</span>
+                <strong className="text-slate-900">{facturaAbonando.razon_social}</strong>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500 font-semibold">Monto Total Factura:</span>
+                <strong className="font-mono">${facturaAbonando.monto_total.toLocaleString('es-CL')} CLP</strong>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500 font-semibold">Abonado a la Fecha:</span>
+                <strong className="font-mono text-emerald-700">${(facturaAbonando.monto_abonado || 0).toLocaleString('es-CL')} CLP</strong>
+              </div>
+              <div className="flex justify-between pt-2 border-t border-slate-200 font-bold text-sm">
+                <span className="text-red-700">Saldo Pendiente Actual:</span>
+                <span className="font-mono text-red-700">${(facturaAbonando.saldo_pendiente || 0).toLocaleString('es-CL')} CLP</span>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Monto del Nuevo Abono ($ CLP):</label>
+                <input
+                  type="number"
+                  value={montoAbonoInput}
+                  onChange={(e) => setMontoAbonoInput(e.target.value)}
+                  placeholder="Ingrese el monto del abono..."
+                  className="w-full bg-white border border-slate-300 p-3 rounded-xl font-mono font-bold text-sm text-slate-900"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Método de Pago:</label>
+                <select
+                  value={metodoPagoInput}
+                  onChange={(e) => setMetodoPagoInput(e.target.value)}
+                  className="w-full bg-white border border-slate-300 p-3 rounded-xl font-bold text-xs text-slate-900"
+                >
+                  <option value="Transferencia Bancaria">Transferencia Bancaria (Banco Chile / Santander)</option>
+                  <option value="Cheque a Fecha">Cheque a Fecha / Al Día</option>
+                  <option value="WebPay / Tarjeta">WebPay / Tarjeta Débito-Crédito</option>
+                  <option value="Efectivo / Caja">Efectivo en Caja</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Observación / N° Comprobante:</label>
+                <input
+                  type="text"
+                  value={notaAbonoInput}
+                  onChange={(e) => setNotaAbonoInput(e.target.value)}
+                  placeholder="ej: N° Transferencia 889210..."
+                  className="w-full bg-white border border-slate-300 p-3 rounded-xl text-xs text-slate-900"
+                />
+              </div>
+            </div>
+
+            <div className="pt-3 flex justify-end gap-3 border-t border-slate-200">
+              <button
+                onClick={() => setMostrarModalAbono(false)}
+                className="px-5 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold rounded-xl text-xs cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleRegistrarAbono}
+                className="px-6 py-2.5 bg-emerald-700 hover:bg-emerald-600 text-white font-bold rounded-xl text-xs shadow-md cursor-pointer"
+              >
+                💾 Guardar Abono
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── CREADOR DE PRESUPUESTOS MODAL DTE CHILE ── */}
       {mostrarModalCotizacion && (
