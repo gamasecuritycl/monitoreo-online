@@ -1,0 +1,274 @@
+[
+  {
+    "fecha": "06/07/2026",
+    "numero": "13848",
+    "nombre": "CARLOS OLGUIN MARIN",
+    "monto": 71892,
+    "ctaSugerida": "13848",
+    "matchProb": 0.95
+  },
+  {
+    "fecha": "01/07/2026",
+    "numero": "11381",
+    "nombre": "CENTRO REGIONAL DE ESTUDIOS EN ALIMENTOS SALUDABLES ED CREAS",
+    "monto": 48579,
+    "ctaSugerida": "CREAS",
+    "matchProb": 0.9
+  },
+  {
+    "fecha": "01/07/2026",
+    "numero": "11367",
+    "nombre": "COLEGIO MONTESSORI",
+    "monto": 43722,
+    "ctaSugerida": "MONTESSORI",
+    "matchProb": 0.9
+  },
+  {
+    "fecha": "01/07/2026",
+    "numero": "11368",
+    "nombre": "COMERCIAL DORAL LTDA.",
+    "monto": 43718,
+    "ctaSugerida": "DORAL",
+    "matchProb": 0.9
+  },
+  {
+    "fecha": "01/07/2026",
+    "numero": "11369",
+    "nombre": "Corporación de Asistencia judicial de la región de Valparaíso",
+    "monto": 58291,
+    "ctaSugerida": "CAJ-VALPO",
+    "matchProb": 0.9
+  },
+  {
+    "fecha": "01/07/2026",
+    "numero": "11370",
+    "nombre": "CORPORACION EDUCACIONAL COLEGIO ARABE VIÑA DEL MAR",
+    "monto": 48579,
+    "ctaSugerida": "COLEGIO-ARABE",
+    "matchProb": 0.9
+  },
+  {
+    "fecha": "01/07/2026",
+    "numero": "11366",
+    "nombre": "Corporación Iglesia Cristiana Pentecostal de Valparaiso",
+    "monto": 38861,
+    "ctaSugerida": "PENTECOSTAL",
+    "matchProb": 0.9
+  },
+  {
+    "fecha": "06/07/2026",
+    "numero": "13847",
+    "nombre": "DOMINGA LUISA GALARCE BERRIOS",
+    "monto": 12000,
+    "ctaSugerida": "13847",
+    "matchProb": 0.95
+  },
+  {
+    "fecha": "03/07/2026",
+    "numero": "13831",
+    "nombre": "EDITH FERNANDEZ ASTORGA",
+    "monto": 29148,
+    "ctaSugerida": "13831",
+    "matchProb": 0.95
+  },
+  {
+    "fecha": "01/07/2026",
+    "numero": "11371",
+    "nombre": "FERNANDO RICARDO FUHRMANN SCHEUER",
+    "monto": 43722,
+    "ctaSugerida": "0002",
+    "matchProb": 0.98
+  },
+  {
+    "fecha": "01/07/2026",
+    "numero": "11372",
+    "nombre": "GONZALO CLAUDIO AYALA MORALES",
+    "monto": 43718,
+    "ctaSugerida": "11372",
+    "matchProb": 0.95
+  },
+  {
+    "fecha": "01/07/2026",
+    "numero": "11380",
+    "nombre": "Inmobiliaria Queltehue S.A.",
+    "monto": 48576,
+    "ctaSugerida": "QUELTEHUE",
+    "matchProb": 0.9
+  },
+  {
+    "fecha": "03/07/2026",
+    "numero": "13832",
+    "nombre": "Jacqueline Barra Gajardo",
+    "monto": 24288,
+    "ctaSugerida": "13832",
+    "matchProb": 0.95
+  },
+  {
+    "fecha": "06/07/2026",
+    "numero": "13846",
+    "nombre": "JOHANA ADRIANA VOLKER BIJVOET",
+    "monto": 47743,
+    "ctaSugerida": "C714",
+    "matchProb": 0.98
+  },
+  {
+    "fecha": "03/07/2026",
+    "numero": "13833",
+    "nombre": "LIDIA ANGELICA CASTILLO CHOUPAY",
+    "monto": 12000,
+    "ctaSugerida": "0565",
+    "matchProb": 0.98
+  },
+  {
+    "fecha": "01/07/2026",
+    "numero": "11375",
+    "nombre": "LUIS ALBERTO VERAGUA ARAYA",
+    "monto": 14573,
+    "ctaSugerida": "C754",
+    "matchProb": 0.98
+  },
+  {
+    "fecha": "06/07/2026",
+    "numero": "13839",
+    "nombre": "Macarena Peña",
+    "monto": 38861,
+    "ctaSugerida": "C729",
+    "matchProb": 0.95
+  },
+  {
+    "fecha": "06/07/2026",
+    "numero": "13845",
+    "nombre": "MARCELA ALEJANDRA SEPULVEDA TOLED",
+    "monto": 38661,
+    "ctaSugerida": "C734",
+    "matchProb": 0.98
+  },
+  {
+    "fecha": "01/07/2026",
+    "numero": "11376",
+    "nombre": "MARCELA PAZ CORRALES GONZALEZ",
+    "monto": 38861,
+    "ctaSugerida": "C755",
+    "matchProb": 0.98
+  },
+  {
+    "fecha": "01/07/2026",
+    "numero": "11373",
+    "nombre": "MARIA ELENA PROSCHLE ANGEL",
+    "monto": 43722,
+    "ctaSugerida": "C742",
+    "matchProb": 0.98
+  },
+  {
+    "fecha": "03/07/2026",
+    "numero": "13835",
+    "nombre": "MARIA EUGENIA FERNANDEZ SAA",
+    "monto": 42969,
+    "ctaSugerida": "C746",
+    "matchProb": 0.98
+  },
+  {
+    "fecha": "06/07/2026",
+    "numero": "13838",
+    "nombre": "Mariela Salazar Salas",
+    "monto": 38861,
+    "ctaSugerida": "0904",
+    "matchProb": 0.98
+  },
+  {
+    "fecha": "01/07/2026",
+    "numero": "11377",
+    "nombre": "MT INGENIERIA LTDA",
+    "monto": 38863,
+    "ctaSugerida": "0792",
+    "matchProb": 0.98
+  },
+  {
+    "fecha": "06/07/2026",
+    "numero": "13843",
+    "nombre": "OSCAR HETHUIN CEPEDA NAVARRO",
+    "monto": 24288,
+    "ctaSugerida": "0207",
+    "matchProb": 0.98
+  },
+  {
+    "fecha": "01/07/2026",
+    "numero": "11383",
+    "nombre": "PRODEL",
+    "monto": 43718,
+    "ctaSugerida": "C767",
+    "matchProb": 0.9
+  },
+  {
+    "fecha": "01/07/2026",
+    "numero": "11382",
+    "nombre": "PRODEL 2",
+    "monto": 43718,
+    "ctaSugerida": "C769",
+    "matchProb": 0.9
+  },
+  {
+    "fecha": "06/07/2026",
+    "numero": "13841",
+    "nombre": "RAUTER JORQUERA URSULA HELGA",
+    "monto": 33828,
+    "ctaSugerida": "0555",
+    "matchProb": 0.98
+  },
+  {
+    "fecha": "01/07/2026",
+    "numero": "11374",
+    "nombre": "RENDICH VERA LJUBICA ELIZABETH",
+    "monto": 28646,
+    "ctaSugerida": "C782",
+    "matchProb": 0.98
+  },
+  {
+    "fecha": "01/07/2026",
+    "numero": "11378",
+    "nombre": "RODRIGO CASTILLO RIQUELME",
+    "monto": 34005,
+    "ctaSugerida": "0524",
+    "matchProb": 0.98
+  },
+  {
+    "fecha": "06/07/2026",
+    "numero": "13842",
+    "nombre": "SHELLEY RICHARD",
+    "monto": 24288,
+    "ctaSugerida": "0566",
+    "matchProb": 0.98
+  },
+  {
+    "fecha": "01/07/2026",
+    "numero": "11379",
+    "nombre": "SOCIEDAD GODOY Y TORRES Y CIA. LTDA",
+    "monto": 34003,
+    "ctaSugerida": "11379",
+    "matchProb": 0.95
+  },
+  {
+    "fecha": "03/07/2026",
+    "numero": "13837",
+    "nombre": "VICTOR ALBERTO VICUÑA DIAZ",
+    "monto": 53437,
+    "ctaSugerida": "0805",
+    "matchProb": 0.98
+  },
+  {
+    "fecha": "06/07/2026",
+    "numero": "13840",
+    "nombre": "VICTOR CIFUENTES HERRERA",
+    "monto": 10000,
+    "ctaSugerida": "0378",
+    "matchProb": 0.98
+  },
+  {
+    "fecha": "03/07/2026",
+    "numero": "13836",
+    "nombre": "VICTOR EDUARDO WILSON BROWNE",
+    "monto": 48576,
+    "ctaSugerida": "0003",
+    "matchProb": 0.98
+  }
+]

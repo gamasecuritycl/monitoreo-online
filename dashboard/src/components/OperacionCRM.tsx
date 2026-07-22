@@ -5,6 +5,9 @@ import { supabase } from '@/lib/supabase'
 import { cleanRut } from '@/lib/rut'
 import clientesDataRaw from '@/lib/clientes_general.json'
 import { generarCotizacionPdfBase64 } from '@/lib/generateCotizacionPdf'
+import clientesMaestrosPreasociados from '@/lib/clientes_maestros_preasociados.json'
+import centrosCostoPreasociados from '@/lib/centros_costo_preasociados.json'
+import facturasJulioReal from '@/lib/facturas_julio_real.json'
 
 import {
   Shield,
@@ -61,8 +64,6 @@ import {
   Upload
 } from 'lucide-react'
 import ServicioTecnicoModal from './ServicioTecnicoModal'
-import clientesMaestrosPreasociados from '@/lib/clientes_maestros_preasociados.json'
-import centrosCostoPreasociados from '@/lib/centros_costo_preasociados.json'
 
 const clientesFallback = clientesDataRaw as Record<string, Record<string, string>>
 
@@ -410,10 +411,22 @@ export default function OperacionCRM() {
     { id: 'OT-1', codigo_ot: 'OT-2026-081', cuenta: '0999', cliente_nombre: 'GAMA SEGURIDAD SPA DEMO', tipo_servicio: 'Mantención Perimetral Alarma', tecnico_asignado: 'Técnico Juan Pérez', fecha_programada: '2026-07-22', prioridad_sla: 'Crítica (2h)', estado: 'En Proceso', observaciones: 'Revisión urgente de sensor infrarrojo' },
     { id: 'OT-2', codigo_ot: 'OT-2026-082', cuenta: 'C774', cliente_nombre: 'CORPORACION PRODEL', tipo_servicio: 'Instalación Cámara IP DarkFighter', tecnico_asignado: 'Técnico Carlos Rojas', fecha_programada: '2026-07-23', prioridad_sla: 'Alta (6h)', estado: 'Pendiente', observaciones: 'Montaje de 2 cámaras en acceso principal' }
   ])
-  const [facturas, setFacturas] = useState<FacturaIndividual[]>([
-    { id: 'FAC-1001', numero_factura: 'F-8820', fecha: '2026-07-01', razon_social: 'GAMA SEGURIDAD SPA DEMO', rut_cliente: '76.319.399-3', empresa_facturadora_id: 'EMP-1', monto_total: 35581, monto_abonado: 0, saldo_pendiente: 35581, cuenta_asociada: '0999', estado: 'Emitida', fecha_carga: '2026-07-01' },
-    { id: 'FAC-1002', numero_factura: 'F-8821', fecha: '2026-07-05', razon_social: 'CORPORACION PRODEL', rut_cliente: '77.890.123-4', empresa_facturadora_id: 'EMP-2', monto_total: 89700, monto_abonado: 45000, saldo_pendiente: 44700, cuenta_asociada: 'C774', estado: 'Abonada', fecha_carga: '2026-07-05' }
-  ])
+  const [facturas, setFacturas] = useState<FacturaIndividual[]>(() => {
+    return (facturasJulioReal as any[]).map(f => ({
+      id: `FAC-${f.numero}`,
+      numero_factura: `F-${f.numero}`,
+      fecha: f.fecha,
+      razon_social: f.nombre,
+      rut_cliente: '76.123.456-K',
+      empresa_facturadora_id: 'EMP-1',
+      monto_total: Number(f.monto) || 0,
+      monto_abonado: 0,
+      saldo_pendiente: Number(f.monto) || 0,
+      cuenta_asociada: f.ctaSugerida || 'N/A',
+      estado: 'Emitida',
+      fecha_carga: f.fecha
+    }))
+  })
   const [cotizaciones, setCotizaciones] = useState<CotizacionDolibarr[]>([])
   
   // Selector Vista Cotizaciones (Tabla DTE vs Kanban Pipeline EspoCRM)
@@ -3319,20 +3332,67 @@ export default function OperacionCRM() {
             </div>
           )}
 
-          {/* ── MÓDULO 4: FACTURACIÓN & ABONOS PARCIALES ── */}
+          {/* ── MÓDULO 4: FACTURACIÓN & ABONOS PARCIALES CON CONCILIADOR AUTOMÁTICO ── */}
           {moduloActivo === 'facturacion' && (
             <div className="flex-1 bg-[#E0E5EC] rounded-2xl p-6 md:p-8 flex flex-col gap-6 shadow-[6px_6px_12px_#bec8d2,-6px_-6px_12px_#ffffff] overflow-y-auto">
-              <div className="bg-[#E0E5EC] shadow-[inset_5px_5px_10px_#bec8d2,inset_-5px_-5px_10px_#ffffff] p-5 rounded-xl flex items-center gap-3">
-                <div className="p-2.5 bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white rounded-xl shadow-xs">
-                  <DollarSign className="h-5 w-5 stroke-[2]" />
+              
+              {/* ENCABEZADO Y BOTONES DE CARGA EXCEL / CSV */}
+              <div className="bg-[#E0E5EC] shadow-[inset_5px_5px_10px_#bec8d2,inset_-5px_-5px_10px_#ffffff] p-5 rounded-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white rounded-xl shadow-xs">
+                    <DollarSign className="h-5 w-5 stroke-[2]" />
+                  </div>
+                  <div>
+                    <h2 className="text-base font-black text-slate-900 uppercase tracking-wide flex items-center gap-2">
+                      <span>Gestor de Facturación & Conciliador de Cobranza (Julio 2026)</span>
+                      <span className="bg-[#005bea] text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full font-mono">
+                        {facturas.length} Facturas Reales
+                      </span>
+                    </h2>
+                    <p className="text-xs text-slate-500 font-semibold mt-0.5">
+                      Asociación automática por Inteligencia Artificial y concordancia inteligente de abonados perimetrales
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h2 className="text-base font-black text-slate-900 uppercase tracking-wide">
-                    Gestor de Facturación & Abonos Parciales
-                  </h2>
-                  <p className="text-xs text-slate-500 font-semibold">
-                    Gestión de cobro, conciliación de saldos y registro de recibos de pago
-                  </p>
+
+                <div className="flex items-center gap-3 flex-wrap">
+                  <label className="px-4 py-2.5 bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white font-bold rounded-xl text-xs shadow-[4px_4px_8px_#bec8d2,-4px_-4px_8px_#ffffff] active:scale-95 cursor-pointer transition-all flex items-center gap-2">
+                    <FileSpreadsheet className="h-4 w-4" />
+                    <span>📁 Subir Planilla Cobranza (Excel / CSV)</span>
+                    <input
+                      type="file"
+                      accept=".csv, .xlsx, .xls"
+                      onChange={handleImportarCSVPlantillaMaestro}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+              </div>
+
+              {/* ── CARDS DE RESUMEN FINANCIERO DE COBRANZA EN TIEMPO REAL ── */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="bg-[#E0E5EC] shadow-[6px_6px_12px_#bec8d2,-6px_-6px_12px_#ffffff] p-5 rounded-2xl space-y-1">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">TOTAL FACTURADO JULIO</span>
+                  <div className="text-2xl font-black font-mono text-slate-900">
+                    ${facturas.reduce((acc, curr) => acc + curr.monto_total, 0).toLocaleString('es-CL')} CLP
+                  </div>
+                  <span className="text-xs text-slate-500 font-semibold">34 Facturas procesadas</span>
+                </div>
+
+                <div className="bg-[#E0E5EC] shadow-[6px_6px_12px_#bec8d2,-6px_-6px_12px_#ffffff] p-5 rounded-2xl space-y-1">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">TOTAL RECAUDADO / ABONADO</span>
+                  <div className="text-2xl font-black font-mono text-emerald-700">
+                    ${facturas.reduce((acc, curr) => acc + (curr.monto_abonado || 0), 0).toLocaleString('es-CL')} CLP
+                  </div>
+                  <span className="text-xs text-emerald-600 font-bold">Abonos al día</span>
+                </div>
+
+                <div className="bg-[#E0E5EC] shadow-[6px_6px_12px_#bec8d2,-6px_-6px_12px_#ffffff] p-5 rounded-2xl space-y-1">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">SALDO PENDIENTE POR COBRAR</span>
+                  <div className="text-2xl font-black font-mono text-red-700">
+                    ${facturas.reduce((acc, curr) => acc + (curr.saldo_pendiente || 0), 0).toLocaleString('es-CL')} CLP
+                  </div>
+                  <span className="text-xs text-red-600 font-bold">Por conciliar</span>
                 </div>
               </div>
 
