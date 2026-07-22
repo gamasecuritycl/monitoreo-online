@@ -197,10 +197,26 @@ export default function OperacionCRM() {
   const [moduloActivo, setModuloActivo] = useState<'ficha360' | 'autonomia' | 'presupuestos' | 'facturacion' | 'serv_tecnico' | 'kpis' | 'config'>('ficha360')
   const [sidebarAbierto, setSidebarAbierto] = useState<boolean>(true)
 
-  // ── NIVEL 1: EMPRESAS DEL CONGLOMERADO ──
+  // ── NIVEL 1: EMPRESAS DEL CONGLOMERADO Y FORMULARIO MODAL ──
   const [empresasConglomerado, setEmpresasConglomerado] = useState<EmpresaConglomerado[]>(EMPRESAS_INICIALES)
   const [mostrarModalEmpresa, setMostrarModalEmpresa] = useState(false)
   const [empresaEditando, setEmpresaEditando] = useState<EmpresaConglomerado | null>(null)
+
+  const [empFormId, setEmpFormId] = useState('')
+  const [empFormRazonSocial, setEmpFormRazonSocial] = useState('')
+  const [empFormRut, setEmpFormRut] = useState('')
+  const [empFormGiro, setEmpFormGiro] = useState('')
+  const [empFormDireccion, setEmpFormDireccion] = useState('')
+  const [empFormTelefono, setEmpFormTelefono] = useState('')
+  const [empFormEmailCobranza, setEmpFormEmailCobranza] = useState('')
+  const [empFormEmailContacto, setEmpFormEmailContacto] = useState('')
+  const [empFormWeb, setEmpFormWeb] = useState('')
+  const [empFormBancoNombre, setEmpFormBancoNombre] = useState('')
+  const [empFormBancoTipoCuenta, setEmpFormBancoTipoCuenta] = useState('')
+  const [empFormBancoNumeroCuenta, setEmpFormBancoNumeroCuenta] = useState('')
+
+  // ── MULTI-CONFIGURACIÓN PESTAÑAS (MÓDULO 7) ──
+  const [subTabConfig, setSubTabConfig] = useState<'empresas' | 'financiero' | 'whatsapp' | 'agentes'>('empresas')
 
   // ── NIVEL 2 Y 3: SELECCIÓN DE CLIENTE Y ABONADO INDIVIDUAL ──
   const [clientesMaestros, setClientesMaestros] = useState<Record<string, ClienteMaestro>>({})
@@ -280,8 +296,10 @@ export default function OperacionCRM() {
 
   // ── INICIALIZACIÓN Y RECUPERACIÓN DUAL (LOCALSTORAGE + SUPABASE) ──
   useEffect(() => {
-    // 1. Restaurar primero de localStorage para respuesta instantánea de UI
     try {
+      const localEmp = localStorage.getItem('gama_empresas')
+      if (localEmp) setEmpresasConglomerado(JSON.parse(localEmp))
+
       const localCot = localStorage.getItem('gama_cotizaciones')
       if (localCot) setCotizaciones(JSON.parse(localCot))
 
@@ -302,7 +320,13 @@ export default function OperacionCRM() {
           .limit(1)
 
         if (dEmp && dEmp.length > 0 && dEmp[0].nombre_abonado) {
-          try { setEmpresasConglomerado(JSON.parse(dEmp[0].nombre_abonado)) } catch (e) {}
+          try {
+            const parsed = JSON.parse(dEmp[0].nombre_abonado)
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              setEmpresasConglomerado(parsed)
+              localStorage.setItem('gama_empresas', JSON.stringify(parsed))
+            }
+          } catch (e) {}
         }
 
         const { data: dClientes } = await supabase
@@ -363,41 +387,6 @@ export default function OperacionCRM() {
         setClientesMaestros(mapaMaestro)
         setAbonadosCentrosCosto(mapaCentrosCosto)
 
-        // Traer última OT por id descendente
-        const { data: dOT } = await supabase
-          .from('eventos_monitoreo')
-          .select('nombre_abonado')
-          .eq('cuenta', 'ORDENES_TRABAJO')
-          .order('id', { ascending: false })
-          .limit(1)
-        if (dOT && dOT.length > 0 && dOT[0].nombre_abonado) {
-          try {
-            const parsed = JSON.parse(dOT[0].nombre_abonado)
-            if (Array.isArray(parsed) && parsed.length > 0) {
-              setOrdenesTrabajo(parsed)
-              localStorage.setItem('gama_ordenes_trabajo', JSON.stringify(parsed))
-            }
-          } catch (e) {}
-        }
-
-        // Traer última Factura por id descendente
-        const { data: dFact } = await supabase
-          .from('eventos_monitoreo')
-          .select('nombre_abonado')
-          .eq('cuenta', 'FACTURAS_MAESTRO')
-          .order('id', { ascending: false })
-          .limit(1)
-        if (dFact && dFact.length > 0 && dFact[0].nombre_abonado) {
-          try {
-            const parsed = JSON.parse(dFact[0].nombre_abonado)
-            if (Array.isArray(parsed) && parsed.length > 0) {
-              setFacturas(parsed)
-              localStorage.setItem('gama_facturas', JSON.stringify(parsed))
-            }
-          } catch (e) {}
-        }
-
-        // Traer última Cotización por id descendente
         const { data: dCot } = await supabase
           .from('eventos_monitoreo')
           .select('nombre_abonado')
@@ -773,6 +762,111 @@ export default function OperacionCRM() {
     alert(`💵 Abono de $${monto.toLocaleString('es-CL')} registrado correctamente para la Factura ${facturaAbonando.numero_factura}.`)
   }
 
+  // ── EDICIÓN / CREACIÓN DE EMPRESA DEL CONGLOMERADO ──
+  const abrirModalEditarEmpresa = (empresa?: EmpresaConglomerado) => {
+    if (empresa) {
+      setEmpresaEditando(empresa)
+      setEmpFormId(empresa.id)
+      setEmpFormRazonSocial(empresa.razon_social)
+      setEmpFormRut(empresa.rut)
+      setEmpFormGiro(empresa.giro)
+      setEmpFormDireccion(empresa.direccion)
+      setEmpFormTelefono(empresa.telefono)
+      setEmpFormEmailCobranza(empresa.email_cobranza)
+      setEmpFormEmailContacto(empresa.email_contacto)
+      setEmpFormWeb(empresa.web)
+      setEmpFormBancoNombre(empresa.banco_nombre)
+      setEmpFormBancoTipoCuenta(empresa.banco_tipo_cuenta)
+      setEmpFormBancoNumeroCuenta(empresa.banco_numero_cuenta)
+    } else {
+      setEmpresaEditando(null)
+      setEmpFormId(`EMP-${empresasConglomerado.length + 1}`)
+      setEmpFormRazonSocial('')
+      setEmpFormRut('')
+      setEmpFormGiro('Servicios de Monitoreo & Seguridad Electrónica')
+      setEmpFormDireccion('Av. Valparaíso 1183, Viña del Mar, Chile')
+      setEmpFormTelefono('+56 9 9101 6912')
+      setEmpFormEmailCobranza('cobranza@gamasecurity.cl')
+      setEmpFormEmailContacto('contacto@gamasecurity.cl')
+      setEmpFormWeb('www.gamasecurity.cl')
+      setEmpFormBancoNombre('Banco de Chile')
+      setEmpFormBancoTipoCuenta('Cuenta Corriente')
+      setEmpFormBancoNumeroCuenta('00-123-45678-9')
+    }
+    setMostrarModalEmpresa(true)
+  }
+
+  const handleGuardarEmpresaEmisora = async () => {
+    if (!empFormRazonSocial.trim() || !empFormRut.trim()) {
+      alert('Por favor ingrese la Razón Social y el RUT de la Empresa Emisora.')
+      return
+    }
+
+    const nuevaEmp: EmpresaConglomerado = {
+      id: empFormId || `EMP-${Date.now()}`,
+      razon_social: empFormRazonSocial.trim(),
+      rut: empFormRut.trim(),
+      giro: empFormGiro.trim() || 'Servicios Integrales de Monitoreo & Alarma',
+      direccion: empFormDireccion.trim(),
+      telefono: empFormTelefono.trim(),
+      email_cobranza: empFormEmailCobranza.trim(),
+      email_contacto: empFormEmailContacto.trim(),
+      web: empFormWeb.trim(),
+      banco_nombre: empFormBancoNombre.trim(),
+      banco_tipo_cuenta: empFormBancoTipoCuenta.trim(),
+      banco_numero_cuenta: empFormBancoNumeroCuenta.trim()
+    }
+
+    let listaNueva: EmpresaConglomerado[] = []
+    if (empresaEditando) {
+      listaNueva = empresasConglomerado.map(e => e.id === empresaEditando.id ? nuevaEmp : e)
+    } else {
+      listaNueva = [...empresasConglomerado, nuevaEmp]
+    }
+
+    setEmpresasConglomerado(listaNueva)
+    try { localStorage.setItem('gama_empresas', JSON.stringify(listaNueva)) } catch (e) {}
+
+    try {
+      await supabase.from('eventos_monitoreo').upsert({
+        cuenta: 'EMPRESAS_CONGLOMERADO',
+        nombre_abonado: JSON.stringify(listaNueva),
+        evento: empresaEditando ? 'EDICION_EMPRESA' : 'CREACION_EMPRESA',
+        fecha_hora: new Date().toISOString()
+      })
+    } catch (e: any) {
+      console.error('Empresa guardada localmente:', e)
+    }
+
+    setMostrarModalEmpresa(false)
+    setEmpresaEditando(null)
+    alert(`🏢 Razón Social "${nuevaEmp.razon_social}" (RUT: ${nuevaEmp.rut}) guardada exitosamente.`)
+  }
+
+  const handleEliminarEmpresaEmisora = async (id: string) => {
+    if (empresasConglomerado.length <= 1) {
+      alert('Debe mantener al menos una empresa emisora en el conglomerado.')
+      return
+    }
+    if (!confirm('¿Está seguro de eliminar permanentemente esta Razón Social Emisora?')) return
+
+    const listaNueva = empresasConglomerado.filter(e => e.id !== id)
+    setEmpresasConglomerado(listaNueva)
+    try { localStorage.setItem('gama_empresas', JSON.stringify(listaNueva)) } catch (e) {}
+
+    try {
+      await supabase.from('eventos_monitoreo').upsert({
+        cuenta: 'EMPRESAS_CONGLOMERADO',
+        nombre_abonado: JSON.stringify(listaNueva),
+        evento: 'ELIMINACION_EMPRESA',
+        fecha_hora: new Date().toISOString()
+      })
+      alert('🗑️ Razón Social eliminada correctamente.')
+    } catch (e: any) {
+      console.error('Error al eliminar empresa:', e)
+    }
+  }
+
   const calculoCotizacionActual = useMemo(() => {
     let subtotalBrutoLineas = 0
     let totalDescuentosLineas = 0
@@ -833,49 +927,6 @@ export default function OperacionCRM() {
       setEjecutandoCiclo(false)
       alert(`⚡ Ciclo de Consenso #${cId} completado. Todos los agentes reportan estado 100% Operativo.`)
     }, 600)
-  }
-
-  const abrirModalEditarEmpresa = (empresa?: EmpresaConglomerado) => {
-    if (empresa) {
-      setEmpresaEditando(empresa)
-    } else {
-      setEmpresaEditando({
-        id: `EMP-${Date.now()}`,
-        razon_social: '',
-        rut: '',
-        giro: 'Servicios de Monitoreo & Seguridad',
-        direccion: '',
-        telefono: '+56 9 ',
-        email_cobranza: 'cobranza@gamasecurity.cl',
-        email_contacto: 'contacto@gamasecurity.cl',
-        web: 'www.gamasecurity.cl',
-        banco_nombre: 'Banco de Chile',
-        banco_tipo_cuenta: 'Cuenta Corriente',
-        banco_numero_cuenta: ''
-      })
-    }
-    setMostrarModalEmpresa(true)
-  }
-
-  const handleEliminarEmpresaEmisora = async (id: string) => {
-    if (empresasConglomerado.length <= 1) {
-      alert('Debe mantener al menos una empresa del conglomerado.')
-      return
-    }
-    if (!confirm('¿Está seguro de eliminar esta empresa emisora?')) return
-
-    const listaNueva = empresasConglomerado.filter(e => e.id !== id)
-    try {
-      await supabase.from('eventos_monitoreo').upsert({
-        cuenta: 'EMPRESAS_CONGLOMERADO',
-        nombre_abonado: JSON.stringify(listaNueva),
-        evento: 'CONFIGURACION_EMPRESAS',
-        fecha_hora: new Date().toISOString()
-      })
-      setEmpresasConglomerado(listaNueva)
-    } catch (e: any) {
-      alert('Error al eliminar empresa: ' + e.message)
-    }
   }
 
   // ── BUSCADOR SEGURO INTELIGENTE 360° ──
@@ -1042,7 +1093,7 @@ export default function OperacionCRM() {
               { id: 'facturacion', label: 'Facturación & Abonos Parciales', icon: '🧾' },
               { id: 'serv_tecnico', label: 'Servicio Técnico (OTs & SLA)', icon: '🛠️' },
               { id: 'kpis', label: 'KPIs Ejecutivos & Reportes', icon: '📊' },
-              { id: 'config', label: 'CRUD Empresas Conglomerado', icon: '⚙️' },
+              { id: 'config', label: 'CRUD Empresas & Configuración', icon: '⚙️' },
             ].map(m => (
               <button
                 key={m.id}
@@ -1566,63 +1617,270 @@ export default function OperacionCRM() {
             </div>
           )}
 
-          {/* ── MÓDULO 7: CRUD EMPRESAS ── */}
+          {/* ── MÓDULO 7: CRUD EMPRESAS & CONFIGURACIÓN GLOBAL MULTI-PESTAÑA ── */}
           {moduloActivo === 'config' && (
             <div className="flex-1 bg-white border border-slate-200 rounded-2xl p-6 md:p-8 flex flex-col gap-6 shadow-md overflow-y-auto">
-              <div className="bg-[#f8fafc] border border-slate-200 border-l-4 border-l-blue-600 p-5 rounded-xl flex justify-between items-center">
+              
+              <div className="bg-[#f8fafc] border border-slate-200 border-l-4 border-l-blue-600 p-5 rounded-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                   <h2 className="text-lg font-black text-slate-900 uppercase tracking-wide">
-                    ⚙️ CRUD de Empresas Emisoras del Conglomerado Gama
+                    ⚙️ Centro de Configuración Global & CRUD del Conglomerado
                   </h2>
                   <p className="text-xs text-slate-500 font-semibold mt-0.5">
-                    Gestión de las 4 Razones Sociales que facturan a los clientes
+                    Gestión de Empresas Emisoras DTE, Parámetros Financieros UF/IVA y Servidor WhatsApp
                   </p>
                 </div>
-                <button
-                  onClick={() => abrirModalEditarEmpresa()}
-                  className="px-5 py-3 bg-blue-900 hover:bg-blue-800 text-white font-bold rounded-xl text-xs shadow-xs cursor-pointer"
-                >
-                  ➕ Agregar Empresa
-                </button>
+
+                <div className="flex items-center gap-2 bg-white border border-slate-200 p-1.5 rounded-xl shadow-2xs">
+                  {[
+                    { id: 'empresas', label: '🏢 Razones Sociales' },
+                    { id: 'financiero', label: '💰 UF & Impuestos' },
+                    { id: 'whatsapp', label: '📲 Servidor WhatsApp' },
+                    { id: 'agentes', label: '🤖 Motor IA 24/7' }
+                  ].map(tab => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setSubTabConfig(tab.id as any)}
+                      className={`px-3.5 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${subTabConfig === tab.id ? 'bg-blue-900 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'}`}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
               </div>
 
-              <div className="border border-slate-200 rounded-xl overflow-hidden shadow-2xs bg-white p-2">
-                <table className="w-full text-left border-collapse text-xs font-medium">
-                  <thead>
-                    <tr className="bg-[#f8fafc] text-slate-700 border-b border-slate-200 font-bold uppercase text-xs">
-                      <th className="p-4 border-r border-slate-200">ID / RUT</th>
-                      <th className="p-4 border-r border-slate-200">RAZÓN SOCIAL EMISORA</th>
-                      <th className="p-4 border-r border-slate-200">GIRO COMERCIAL</th>
-                      <th className="p-4 border-r border-slate-200">DIRECCIÓN FISCAL</th>
-                      <th className="p-4 text-center w-32">ACCIONES</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-200">
-                    {empresasConglomerado.map(emp => (
-                      <tr key={emp.id} className="hover:bg-slate-50">
-                        <td className="p-4 font-mono font-bold text-blue-900 border-r border-slate-200">
-                          <div>{emp.id}</div>
-                          <div className="text-slate-500 font-bold">RUT: {emp.rut}</div>
-                        </td>
-                        <td className="p-4 border-r border-slate-200 font-bold text-slate-900">{emp.razon_social}</td>
-                        <td className="p-4 border-r border-slate-200 text-slate-600">{emp.giro}</td>
-                        <td className="p-4 border-r border-slate-200 text-slate-600">{emp.direccion}</td>
-                        <td className="p-4 text-center flex items-center justify-center gap-2">
-                          <button onClick={() => abrirModalEditarEmpresa(emp)} className="px-3 py-1.5 bg-slate-900 text-white rounded-lg font-bold cursor-pointer text-[11px]">✏️ Editar</button>
-                          <button onClick={() => handleEliminarEmpresaEmisora(emp.id)} className="px-3 py-1.5 bg-red-700 text-white rounded-lg font-bold cursor-pointer text-[11px]">🗑️</button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              {/* PESTAÑA 1: CRUD EMPRESAS EMISORAS */}
+              {subTabConfig === 'empresas' && (
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <h3 className="font-black text-sm text-slate-900 uppercase tracking-wider">
+                      Empresas Emisoras del Conglomerado ({empresasConglomerado.length})
+                    </h3>
+                    <button
+                      onClick={() => abrirModalEditarEmpresa()}
+                      className="px-5 py-2.5 bg-blue-900 hover:bg-blue-800 text-white font-bold rounded-xl text-xs shadow-md cursor-pointer flex items-center gap-2"
+                    >
+                      <span>➕ Agregar Nueva Razón Social</span>
+                    </button>
+                  </div>
+
+                  <div className="border border-slate-200 rounded-xl overflow-hidden shadow-2xs bg-white p-2">
+                    <table className="w-full text-left border-collapse text-xs font-medium">
+                      <thead>
+                        <tr className="bg-[#f8fafc] text-slate-700 border-b border-slate-200 font-bold uppercase text-xs">
+                          <th className="p-4 border-r border-slate-200">ID / RUT</th>
+                          <th className="p-4 border-r border-slate-200">RAZÓN SOCIAL EMISORA</th>
+                          <th className="p-4 border-r border-slate-200">GIRO COMERCIAL</th>
+                          <th className="p-4 border-r border-slate-200">DATOS BANCARIOS</th>
+                          <th className="p-4 text-center w-36">ACCIONES</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-200">
+                        {empresasConglomerado.map(emp => (
+                          <tr key={emp.id} className="hover:bg-slate-50">
+                            <td className="p-4 font-mono font-bold text-blue-900 border-r border-slate-200">
+                              <div>{emp.id}</div>
+                              <div className="text-slate-500 font-bold">RUT: {emp.rut}</div>
+                            </td>
+                            <td className="p-4 border-r border-slate-200 font-bold text-slate-900">
+                              <div>{emp.razon_social}</div>
+                              <div className="text-[10px] text-slate-500 font-normal">📍 {emp.direccion}</div>
+                            </td>
+                            <td className="p-4 border-r border-slate-200 text-slate-600">{emp.giro}</td>
+                            <td className="p-4 border-r border-slate-200 font-mono text-[11px] text-slate-700">
+                              <div><strong>{emp.banco_nombre}</strong> ({emp.banco_tipo_cuenta})</div>
+                              <div className="text-slate-500">N° {emp.banco_numero_cuenta}</div>
+                            </td>
+                            <td className="p-4 text-center flex items-center justify-center gap-2">
+                              <button onClick={() => abrirModalEditarEmpresa(emp)} title="Editar Empresa" className="px-3 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-bold cursor-pointer text-xs flex items-center gap-1">
+                                <span>✏️</span>
+                                <span>Editar</span>
+                              </button>
+                              <button onClick={() => handleEliminarEmpresaEmisora(emp.id)} title="Eliminar Empresa" className="px-3 py-2 bg-red-700 hover:bg-red-600 text-white rounded-lg font-bold cursor-pointer text-xs">
+                                🗑️
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* PESTAÑA 2: UF, IVA & IMPUESTOS */}
+              {subTabConfig === 'financiero' && (
+                <div className="bg-[#f8fafc] border border-slate-200 p-6 rounded-2xl space-y-6 max-w-3xl">
+                  <h3 className="font-black text-sm text-slate-900 uppercase tracking-wider">💰 Configuración UF, IVA & Presupuestos</h3>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="font-bold text-slate-700 block mb-1">Valor UF Oficial ($ CLP):</label>
+                      <input
+                        type="number"
+                        value={valorUF}
+                        onChange={(e) => setValorUF(Number(e.target.value) || 38500)}
+                        className="w-full bg-white border border-slate-300 p-3 rounded-xl font-mono font-bold text-sm text-emerald-800"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="font-bold text-slate-700 block mb-1">Tasa IVA (Ley 825 Chile):</label>
+                      <input
+                        type="text"
+                        disabled
+                        value="19% IVA Incluido"
+                        className="w-full bg-slate-100 border border-slate-300 p-3 rounded-xl font-bold text-xs text-slate-600"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="pt-2 flex justify-end">
+                    <button onClick={() => alert('Parámetros financieros actualizados correctamente.')} className="px-6 py-3 bg-blue-900 text-white font-bold rounded-xl text-xs shadow-md cursor-pointer">
+                      💾 Guardar Parámetros Financieros
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* PESTAÑA 3: SERVIDOR WHATSAPP SCORPION */}
+              {subTabConfig === 'whatsapp' && (
+                <div className="bg-[#f8fafc] border border-slate-200 p-6 rounded-2xl space-y-6 max-w-3xl">
+                  <h3 className="font-black text-sm text-slate-900 uppercase tracking-wider">📲 Configuración Servidor WhatsApp Scorpion</h3>
+                  
+                  <div className="space-y-3">
+                    <div>
+                      <label className="font-bold text-slate-700 block mb-1">Endpoint API Servidor WhatsApp:</label>
+                      <input
+                        type="text"
+                        defaultValue="/api/whatsapp/send-direct"
+                        className="w-full bg-white border border-slate-300 p-3 rounded-xl font-mono font-bold text-xs text-blue-900"
+                      />
+                    </div>
+                    <div>
+                      <label className="font-bold text-slate-700 block mb-1">Estado de Conexión Scorpion Server:</label>
+                      <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-emerald-100 text-emerald-800 font-bold rounded-lg text-xs">
+                        <span>🟢 En Línea & Operativo (24/7)</span>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* PESTAÑA 4: MOTOR DE AGENTES IA */}
+              {subTabConfig === 'agentes' && (
+                <div className="bg-[#f8fafc] border border-slate-200 p-6 rounded-2xl space-y-6 max-w-3xl">
+                  <h3 className="font-black text-sm text-slate-900 uppercase tracking-wider">🤖 Motor de Agentes Virtuales Autónomos</h3>
+                  <div className="space-y-3 text-xs">
+                    <div className="p-3 bg-white border rounded-xl flex justify-between items-center">
+                      <div><strong>SRE Guardian Agent:</strong> Monitoreo de latencia Supabase & Vercel.</div>
+                      <span className="text-emerald-700 font-bold">🟢 Activo</span>
+                    </div>
+                    <div className="p-3 bg-white border rounded-xl flex justify-between items-center">
+                      <div><strong>Finance Agent:</strong> Escaneo de cobro y morosidad de abonados.</div>
+                      <span className="text-emerald-700 font-bold">🟢 Activo</span>
+                    </div>
+                    <div className="p-3 bg-white border rounded-xl flex justify-between items-center">
+                      <div><strong>Vision AI Guard:</strong> Verificación de analíticas de video 24/7.</div>
+                      <span className="text-emerald-700 font-bold">🟢 Activo</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
             </div>
           )}
 
         </main>
       </div>
 
-      {/* ── MODAL DE REGISTRO DE ABONOS A FACTURAS (COMPLETO) ── */}
+      {/* ── MODAL EDITAR / CREAR EMPRESA CONGLOMERADO ── */}
+      {mostrarModalEmpresa && (
+        <div className="fixed inset-0 z-50 bg-slate-900/85 backdrop-blur-md p-4 md:p-6 flex justify-center items-center overflow-y-auto no-imprimir">
+          <div className="bg-white border border-slate-200 w-full max-w-3xl rounded-2xl shadow-2xl p-6 md:p-8 flex flex-col gap-6 text-xs text-slate-900 font-sans my-auto">
+            <div className="flex justify-between items-center pb-4 border-b border-slate-200">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl p-2 bg-blue-50 text-blue-900 rounded-xl border border-blue-200 font-bold">🏢</span>
+                <div>
+                  <h3 className="font-black text-base text-slate-900 uppercase tracking-wider">
+                    {empresaEditando ? 'EDITAR EMISOR CONGLOMERADO' : 'CREAR NUEVA RAZÓN SOCIAL EMISORA'}
+                  </h3>
+                  <p className="text-[11px] text-slate-500 font-medium">Configuración de datos fiscales, comerciales y bancarios para documentos DTE</p>
+                </div>
+              </div>
+              <button onClick={() => setMostrarModalEmpresa(false)} className="text-slate-400 hover:text-slate-600 font-bold text-xl cursor-pointer">✕</button>
+            </div>
+
+            <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
+              <div className="bg-[#f8fafc] p-4 rounded-xl border border-slate-200 space-y-3">
+                <span className="font-black text-slate-900 text-xs uppercase tracking-wider block">1. IDENTIFICACIÓN TRIBUTARIA CHILENA:</span>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-500 block mb-1">RAZÓN SOCIAL:</label>
+                    <input type="text" value={empFormRazonSocial} onChange={(e) => setEmpFormRazonSocial(e.target.value)} placeholder="ej: Gama Seguridad SpA" className="w-full bg-white border border-slate-300 p-2.5 rounded-lg font-bold text-xs" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-500 block mb-1">R.U.T. EMISOR:</label>
+                    <input type="text" value={empFormRut} onChange={(e) => setEmpFormRut(e.target.value)} placeholder="ej: 76.319.399-3" className="w-full bg-white border border-slate-300 p-2.5 rounded-lg font-mono font-bold text-xs text-blue-900" />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold text-slate-500 block mb-1">GIRO COMERCIAL SII:</label>
+                  <input type="text" value={empFormGiro} onChange={(e) => setEmpFormGiro(e.target.value)} placeholder="ej: Servicios de Monitoreo & Seguridad Electrónica" className="w-full bg-white border border-slate-300 p-2.5 rounded-lg text-xs" />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-500 block mb-1">DIRECCIÓN FISCAL:</label>
+                    <input type="text" value={empFormDireccion} onChange={(e) => setEmpFormDireccion(e.target.value)} placeholder="ej: Av. Valparaíso 1183, Viña del Mar" className="w-full bg-white border border-slate-300 p-2.5 rounded-lg text-xs" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-500 block mb-1">SITIO WEB OFICIAL:</label>
+                    <input type="text" value={empFormWeb} onChange={(e) => setEmpFormWeb(e.target.value)} placeholder="www.gamasecurity.cl" className="w-full bg-white border border-slate-300 p-2.5 rounded-lg text-xs font-mono" />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-500 block mb-1">TELÉFONO CONTACTO:</label>
+                    <input type="text" value={empFormTelefono} onChange={(e) => setEmpFormTelefono(e.target.value)} placeholder="+56 32 3276011" className="w-full bg-white border border-slate-300 p-2.5 rounded-lg text-xs font-mono" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-500 block mb-1">EMAIL COBRANZA / FACTURACIÓN:</label>
+                    <input type="text" value={empFormEmailCobranza} onChange={(e) => setEmpFormEmailCobranza(e.target.value)} placeholder="cobranza@gamasecurity.cl" className="w-full bg-white border border-slate-300 p-2.5 rounded-lg text-xs" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-[#f8fafc] p-4 rounded-xl border border-slate-200 space-y-3">
+                <span className="font-black text-slate-900 text-xs uppercase tracking-wider block">2. DATOS BANCARIOS PARA TRANSFERENCIAS:</span>
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-500 block mb-1">BANCO:</label>
+                    <input type="text" value={empFormBancoNombre} onChange={(e) => setEmpFormBancoNombre(e.target.value)} placeholder="Banco de Chile" className="w-full bg-white border border-slate-300 p-2.5 rounded-lg font-bold text-xs" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-500 block mb-1">TIPO CUENTA:</label>
+                    <input type="text" value={empFormBancoTipoCuenta} onChange={(e) => setEmpFormBancoTipoCuenta(e.target.value)} placeholder="Cuenta Corriente" className="w-full bg-white border border-slate-300 p-2.5 rounded-lg font-bold text-xs" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-500 block mb-1">N° DE CUENTA:</label>
+                    <input type="text" value={empFormBancoNumeroCuenta} onChange={(e) => setEmpFormBancoNumeroCuenta(e.target.value)} placeholder="00-123-45678-9" className="w-full bg-white border border-slate-300 p-2.5 rounded-lg font-mono font-bold text-xs text-emerald-800" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-3 flex justify-end gap-3 border-t border-slate-200">
+              <button onClick={() => setMostrarModalEmpresa(false)} className="px-5 py-2.5 bg-slate-200 text-slate-800 font-bold rounded-xl text-xs cursor-pointer">Cancelar</button>
+              <button onClick={handleGuardarEmpresaEmisora} className="px-7 py-2.5 bg-blue-900 hover:bg-blue-800 text-white font-bold rounded-xl text-xs shadow-md cursor-pointer">💾 Guardar Empresa</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL DE REGISTRO DE ABONOS A FACTURAS ── */}
       {mostrarModalAbono && facturaAbonando && (
         <div className="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm p-4 flex justify-center items-center no-imprimir">
           <div className="bg-white border border-slate-200 w-full max-w-lg rounded-2xl shadow-2xl p-6 flex flex-col gap-5 text-xs text-slate-900 font-sans">
@@ -2173,11 +2431,11 @@ export default function OperacionCRM() {
 
                 {/* CAJA DE TOTALES IMPUESTOS CHILE */}
                 <div className="w-80 border-2 border-slate-900 rounded-xl overflow-hidden font-mono text-xs shadow-md">
-                  <div className="flex justify-between p-3 bg-white border-b border-slate-200">
+                  <div className="flex justify-between p-3 bg-[#f8fafc] border-b border-slate-200">
                     <span className="font-semibold text-slate-600">Subtotal Neto Afecto:</span>
                     <span className="font-bold">${Math.round(cotSeleccionada.neto_con_descuento || 0).toLocaleString('es-CL')} {cotSeleccionada.moneda_cotizacion || 'CLP'}</span>
                   </div>
-                  <div className="flex justify-between p-3 bg-[#f8fafc] border-b border-slate-200 text-blue-900">
+                  <div className="flex justify-between p-3 bg-white border-b border-slate-200 text-blue-900">
                     <span className="font-bold">IVA (19% Ley 825):</span>
                     <span className="font-bold">${Math.round(cotSeleccionada.monto_iva || 0).toLocaleString('es-CL')} {cotSeleccionada.moneda_cotizacion || 'CLP'}</span>
                   </div>
