@@ -8,6 +8,7 @@ import { generarCotizacionPdfBase64 } from '@/lib/generateCotizacionPdf'
 import clientesMaestrosPreasociados from '@/lib/clientes_maestros_preasociados.json'
 import centrosCostoPreasociados from '@/lib/centros_costo_preasociados.json'
 import facturasJulioReal from '@/lib/facturas_julio_real.json'
+import { esAbonadoInactivo } from '@/lib/inactivos_filter'
 
 import {
   Shield,
@@ -575,6 +576,10 @@ export default function OperacionCRM() {
           if (!cCode) return
           
           const nombreAbonado = (raw.alias_unidad || raw.nombre || `Abonado ${cCode}`).trim()
+
+          // EXCLUIR ABONADOS INACTIVOS (SIN MONITOREO, RENUNCIA, RETIRADOS)
+          if (esAbonadoInactivo(cCode, nombreAbonado)) return
+
           const rutRaw = raw.rut ? cleanRut(raw.rut) : ''
           const rutKey = rutRaw && rutRaw !== '76123456K' ? rutRaw : `CTA-${cCode}`
 
@@ -609,18 +614,24 @@ export default function OperacionCRM() {
           }
         })
 
-        // Normalizar pre-asociaciones del CSV maestro
+        // Normalizar pre-asociaciones del CSV maestro filtrando inactivos
         const centrosPreNorm: Record<string, CentroDeCostoAbonado> = {}
         Object.entries(centrosCostoPreasociados).forEach(([k, v]) => {
           const norm = normalizeCuentaCode(k)
-          if (norm) centrosPreNorm[norm] = { ...(v as any), cuenta: norm }
+          const aliasText = (v as any).alias_centro_costo || (v as any).nombre || ''
+          if (norm && !esAbonadoInactivo(norm, aliasText)) {
+            centrosPreNorm[norm] = { ...(v as any), cuenta: norm }
+          }
         })
 
         const clientesPreNorm: Record<string, ClienteMaestro> = {}
         Object.entries(clientesMaestrosPreasociados).forEach(([k, v]) => {
           const cli = v as any
           const normCuentas: string[] = Array.from(new Set<string>((cli.cuentas_abonados || []).map(normalizeCuentaCode)))
-          clientesPreNorm[k] = { ...cli, cuentas_abonados: normCuentas }
+            .filter(c => !esAbonadoInactivo(c))
+          if (normCuentas.length > 0) {
+            clientesPreNorm[k] = { ...cli, cuentas_abonados: normCuentas }
+          }
         })
 
         // Combinar datos pre-asociados desduplicados
@@ -633,7 +644,7 @@ export default function OperacionCRM() {
           ...centrosPreNorm
         }
 
-        // Aplicar guardados desduplicando las cuentas
+        // Aplicar guardados desduplicando las cuentas e inactivos
         try {
           const localM = localStorage.getItem('gama_clientes_maestros')
           if (localM) {
@@ -641,10 +652,13 @@ export default function OperacionCRM() {
             Object.entries(parsed).forEach(([rutKey, cliVal]: [string, any]) => {
               if (cliVal && cliVal.cuentas_abonados) {
                 const normArr: string[] = Array.from(new Set<string>((cliVal.cuentas_abonados || []).map(normalizeCuentaCode)))
-                if (mapaMaestroCombinado[rutKey]) {
-                  mapaMaestroCombinado[rutKey].cuentas_abonados = Array.from(new Set<string>([...mapaMaestroCombinado[rutKey].cuentas_abonados, ...normArr]))
-                } else {
-                  mapaMaestroCombinado[rutKey] = { ...cliVal, cuentas_abonados: normArr }
+                  .filter(c => !esAbonadoInactivo(c))
+                if (normArr.length > 0) {
+                  if (mapaMaestroCombinado[rutKey]) {
+                    mapaMaestroCombinado[rutKey].cuentas_abonados = Array.from(new Set<string>([...mapaMaestroCombinado[rutKey].cuentas_abonados, ...normArr]))
+                  } else {
+                    mapaMaestroCombinado[rutKey] = { ...cliVal, cuentas_abonados: normArr }
+                  }
                 }
               }
             })
@@ -665,10 +679,13 @@ export default function OperacionCRM() {
               Object.entries(parsed).forEach(([rutKey, cliVal]: [string, any]) => {
                 if (cliVal && cliVal.cuentas_abonados) {
                   const normArr: string[] = Array.from(new Set<string>((cliVal.cuentas_abonados || []).map(normalizeCuentaCode)))
-                  if (mapaMaestroCombinado[rutKey]) {
-                    mapaMaestroCombinado[rutKey].cuentas_abonados = Array.from(new Set<string>([...mapaMaestroCombinado[rutKey].cuentas_abonados, ...normArr]))
-                  } else {
-                    mapaMaestroCombinado[rutKey] = { ...cliVal, cuentas_abonados: normArr }
+                    .filter(c => !esAbonadoInactivo(c))
+                  if (normArr.length > 0) {
+                    if (mapaMaestroCombinado[rutKey]) {
+                      mapaMaestroCombinado[rutKey].cuentas_abonados = Array.from(new Set<string>([...mapaMaestroCombinado[rutKey].cuentas_abonados, ...normArr]))
+                    } else {
+                      mapaMaestroCombinado[rutKey] = { ...cliVal, cuentas_abonados: normArr }
+                    }
                   }
                 }
               })
