@@ -52,7 +52,10 @@ import {
   FileSpreadsheet,
   Loader2,
   Receipt,
-  ClipboardList
+  ClipboardList,
+  Megaphone,
+  Target,
+  UserPlus
 } from 'lucide-react'
 
 const clientesFallback = clientesDataRaw as Record<string, Record<string, string>>
@@ -243,8 +246,29 @@ const EMPRESAS_INICIALES: EmpresaConglomerado[] = [
   }
 ]
 
+export interface LeadMarketing {
+  id: string
+  empresa: string
+  rut?: string
+  email: string
+  telefono: string
+  contacto: string
+  segmento: 'Comercial B2B' | 'Industrial' | 'Condominios' | 'Particular'
+  estado: 'Nuevo' | 'Contactado' | 'Interesado' | 'Cliente'
+  fecha_ingreso: string
+  notas?: string
+}
+
+const LEADS_INICIALES: LeadMarketing[] = [
+  { id: 'LEAD-101', empresa: 'Logística & Transportes del Norte SpA', rut: '76.890.123-5', email: 'adquisiciones@logisticanorte.cl', telefono: '+56 9 9123 4567', contacto: 'Don Roberto Morales', segmento: 'Industrial', estado: 'Nuevo', fecha_ingreso: '2026-07-20', notas: 'Interesados en monitoreo de bodegas y cerco eléctrico' },
+  { id: 'LEAD-102', empresa: 'Inmobiliaria Cordillera SpA', rut: '77.456.789-1', email: 'gerencia@inmobiliariacordillera.cl', telefono: '+56 32 245 8900', contacto: 'Dra. María Elena Silva', segmento: 'Comercial B2B', estado: 'Contactado', fecha_ingreso: '2026-07-18', notas: 'Cotización de 12 cámaras IP DarkFighter solicitada' },
+  { id: 'LEAD-103', empresa: 'Constructora San Pedro Limitada', rut: '76.111.222-3', email: 'operaciones@sanpedroconst.cl', telefono: '+56 9 8765 4321', contacto: 'Ing. Carlos Fuentealba', segmento: 'Industrial', estado: 'Interesado', fecha_ingreso: '2026-07-15', notas: 'Requieren kit de pánico e intrusión para faena' },
+  { id: 'LEAD-104', empresa: 'Clínica Privada El Roble', rut: '76.999.000-K', email: 'contacto@clinicaleroble.cl', telefono: '+56 2 2890 5500', contacto: 'Sra. Patricia Venegas', segmento: 'Comercial B2B', estado: 'Nuevo', fecha_ingreso: '2026-07-21', notas: 'Evaluando cambio de proveedor de monitoreo' },
+  { id: 'LEAD-105', empresa: 'Supermercados del Sur SpA', rut: '77.123.999-4', email: 'seguridad@superdelsur.cl', telefono: '+56 9 9444 3322', contacto: 'Sr. Hugo Alarcón', segmento: 'Comercial B2B', estado: 'Cliente', fecha_ingreso: '2026-07-10', notas: 'Monitoreo activo en 3 sucursales' }
+]
+
 export default function OperacionCRM() {
-  const [moduloActivo, setModuloActivo] = useState<'ficha360' | 'autonomia' | 'presupuestos' | 'facturacion' | 'serv_tecnico' | 'kpis' | 'config'>('ficha360')
+  const [moduloActivo, setModuloActivo] = useState<'ficha360' | 'autonomia' | 'presupuestos' | 'facturacion' | 'serv_tecnico' | 'kpis' | 'config' | 'marketing'>('ficha360')
   const [sidebarAbierto, setSidebarAbierto] = useState<boolean>(true)
 
   // ── NIVEL 1: EMPRESAS DEL CONGLOMERADO Y FORMULARIO MODAL ──
@@ -283,6 +307,45 @@ export default function OperacionCRM() {
 
   // Estado envio de correos por Resend
   const [enviandoEmailId, setEnviandoEmailId] = useState<number | null>(null)
+
+  // ── MÓDULO MARKETING & COLD EMAIL OUTREACH VÍA RESEND ──
+  const [subTabMarketing, setSubTabMarketing] = useState<'leads' | 'campanas'>('leads')
+  const [leadsList, setLeadsList] = useState<LeadMarketing[]>(LEADS_INICIALES)
+  const [busquedaLead, setBusquedaLead] = useState('')
+  const [filtroEstadoLead, setFiltroEstadoLead] = useState<string>('Todos')
+
+  // Modal Nuevo Lead
+  const [mostrarModalNuevoLead, setMostrarModalNuevoLead] = useState(false)
+  const [leadEditandoId, setLeadEditandoId] = useState<string | null>(null)
+  const [formLeadEmpresa, setFormLeadEmpresa] = useState('')
+  const [formLeadRut, setFormLeadRut] = useState('')
+  const [formLeadEmail, setFormLeadEmail] = useState('')
+  const [formLeadTelefono, setFormLeadTelefono] = useState('')
+  const [formLeadContacto, setFormLeadContacto] = useState('')
+  const [formLeadSegmento, setFormLeadSegmento] = useState<'Comercial B2B' | 'Industrial' | 'Condominios' | 'Particular'>('Comercial B2B')
+  const [formLeadEstado, setFormLeadEstado] = useState<'Nuevo' | 'Contactado' | 'Interesado' | 'Cliente'>('Nuevo')
+  const [formLeadNotas, setFormLeadNotas] = useState('')
+
+  // Formulario Motor Campañas Resend
+  const [campanaSegmento, setCampanaSegmento] = useState<string>('Todos')
+  const [campanaRemitente, setCampanaRemitente] = useState<string>('Gama Seguridad <contacto@gamasecurity.cl>')
+  const [campanaAsunto, setCampanaAsunto] = useState<string>('Propuesta de Monitoreo 24/7 & Seguridad Electrónica para {{nombre_empresa}}')
+  const [campanaContenido, setCampanaContenido] = useState<string>(
+`<p>Estimados <strong>{{nombre_empresa}}</strong>,</p>
+<p>Junto con saludarle de <strong>Gama Seguridad Chile</strong>, nos ponemos en contacto con el(la) Sr(a). <strong>{{contacto}}</strong> para presentarles nuestro servicio integral de <strong>Monitoreo de Alarma 24/7 y Verificación de Video con Inteligencia Artificial</strong>.</p>
+<p>Protegemos instalaciones comerciales e industriales con tecnología de punta:</p>
+<ul>
+  <li>Central Operativa 24/7 con respuesta en tiempo real.</li>
+  <li>Cámaras HD DarkFighter con visión nocturna a color.</li>
+  <li>Cercos eléctricos perimetrales de alta tensión.</li>
+  <li>Controlador directo en smartphone y botón de pánico.</li>
+</ul>
+<p>Le invitamos a agendar una <strong>auditoría de seguridad 100% gratuita</strong> en sus instalaciones.</p>
+<p>Atentamente,<br><strong>Equipo Comercial Gama Seguridad</strong><br>contacto@gamasecurity.cl</p>`
+  )
+  const [isSubmittingCampana, setIsSubmittingCampana] = useState(false)
+  const [progresoEnvioText, setProgresoEnvioText] = useState('')
+  const [toastNotificacion, setToastNotificacion] = useState<{ tipo: 'exito' | 'error', texto: string } | null>(null)
 
   // Órdenes de Trabajo & Facturas & Cotizaciones
   const [ordenesTrabajo, setOrdenesTrabajo] = useState<OrdenDeTrabajo[]>([
@@ -1123,6 +1186,150 @@ export default function OperacionCRM() {
     return Object.values(abonadosCentrosCosto).slice(0, 8)
   }, [abonadosCentrosCosto])
 
+  // ── MANEJADORES DE LEADS & MARKETING DE COLD EMAIL OUTREACH ──
+  const abrirModalNuevoLead = (lead?: LeadMarketing) => {
+    if (lead) {
+      setLeadEditandoId(lead.id)
+      setFormLeadEmpresa(lead.empresa)
+      setFormLeadRut(lead.rut || '')
+      setFormLeadEmail(lead.email)
+      setFormLeadTelefono(lead.telefono)
+      setFormLeadContacto(lead.contacto)
+      setFormLeadSegmento(lead.segmento)
+      setFormLeadEstado(lead.estado)
+      setFormLeadNotas(lead.notas || '')
+    } else {
+      setLeadEditandoId(null)
+      setFormLeadEmpresa('')
+      setFormLeadRut('')
+      setFormLeadEmail('')
+      setFormLeadTelefono('+56 9 ')
+      setFormLeadContacto('')
+      setFormLeadSegmento('Comercial B2B')
+      setFormLeadEstado('Nuevo')
+      setFormLeadNotas('')
+    }
+    setMostrarModalNuevoLead(true)
+  }
+
+  const handleGuardarLead = async () => {
+    if (!formLeadEmpresa.trim() || !formLeadEmail.trim() || !formLeadEmail.includes('@')) {
+      alert('Por favor ingrese un Nombre de Empresa válido y un Correo Electrónico con formato correcto (@).')
+      return
+    }
+
+    const nuevoLead: LeadMarketing = {
+      id: leadEditandoId || `LEAD-${Date.now()}`,
+      empresa: formLeadEmpresa.trim(),
+      rut: formLeadRut.trim(),
+      email: formLeadEmail.trim(),
+      telefono: formLeadTelefono.trim() || '+56991016912',
+      contacto: formLeadContacto.trim() || 'Encargado de Seguridad',
+      segmento: formLeadSegmento,
+      estado: formLeadEstado,
+      fecha_ingreso: new Date().toISOString().split('T')[0],
+      notas: formLeadNotas.trim()
+    }
+
+    let listaNueva: LeadMarketing[] = []
+    if (leadEditandoId) {
+      listaNueva = leadsList.map(l => l.id === leadEditandoId ? nuevoLead : l)
+    } else {
+      listaNueva = [nuevoLead, ...leadsList]
+    }
+
+    setLeadsList(listaNueva)
+    try { localStorage.setItem('gama_leads', JSON.stringify(listaNueva)) } catch (e) {}
+
+    try {
+      await supabase.from('eventos_monitoreo').upsert({
+        cuenta: 'LEADS_MARKETING',
+        nombre_abonado: JSON.stringify(listaNueva),
+        evento: leadEditandoId ? 'EDICION_LEAD' : 'CREACION_LEAD',
+        fecha_hora: new Date().toISOString()
+      })
+    } catch (e: any) {}
+
+    setMostrarModalNuevoLead(false)
+    setLeadEditandoId(null)
+    setToastNotificacion({ tipo: 'exito', texto: `Lead "${nuevoLead.empresa}" guardado exitosamente.` })
+    setTimeout(() => setToastNotificacion(null), 4000)
+  }
+
+  const handleEliminarLead = async (id: string, empresa: string) => {
+    if (!confirm(`¿Está seguro de eliminar el lead "${empresa}"?`)) return
+    const listaNueva = leadsList.filter(l => l.id !== id)
+    setLeadsList(listaNueva)
+    try { localStorage.setItem('gama_leads', JSON.stringify(listaNueva)) } catch (e) {}
+  }
+
+  const handleLanzarCampanaResend = async () => {
+    let targetLeads = leadsList
+    if (campanaSegmento !== 'Todos') {
+      targetLeads = leadsList.filter(l => l.estado === campanaSegmento || l.segmento === campanaSegmento)
+    }
+
+    if (targetLeads.length === 0) {
+      alert('No hay leads que coincidan con el segmento seleccionado para el envío.')
+      return
+    }
+
+    if (!campanaAsunto.trim()) {
+      alert('Por favor ingrese el asunto del correo de prospección.')
+      return
+    }
+
+    if (!confirm(`¿Confirma el disparo masivo vía Resend a ${targetLeads.length} leads del segmento "${campanaSegmento}"?`)) return
+
+    setIsSubmittingCampana(true)
+    setProgresoEnvioText(`Enviando 1 de ${targetLeads.length} correos con Resend API...`)
+
+    try {
+      const res = await fetch('/api/marketing/outreach', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          leads: targetLeads,
+          asunto: campanaAsunto,
+          cuerpoHtml: campanaContenido,
+          remitente: campanaRemitente
+        })
+      })
+
+      const data = await res.json()
+      if (data.success) {
+        setToastNotificacion({
+          tipo: 'exito',
+          texto: `🚀 Campaña de Outreach enviada con éxito. ${data.totalExitosos} de ${data.totalProcesados} correos procesados por Resend.`
+        })
+
+        const leadsActualizados = leadsList.map(l => {
+          if (targetLeads.some(tl => tl.id === l.id) && l.estado === 'Nuevo') {
+            return { ...l, estado: 'Contactado' as const }
+          }
+          return l
+        })
+        setLeadsList(leadsActualizados)
+        try { localStorage.setItem('gama_leads', JSON.stringify(leadsActualizados)) } catch (e) {}
+
+      } else {
+        setToastNotificacion({
+          tipo: 'error',
+          texto: `Error en la campaña Resend: ${data.error || 'Respuesta fallida de API'}`
+        })
+      }
+    } catch (e: any) {
+      setToastNotificacion({
+        tipo: 'error',
+        texto: `Excepción al conectar con API Resend: ${e?.message || e}`
+      })
+    } finally {
+      setIsSubmittingCampana(false)
+      setProgresoEnvioText('')
+      setTimeout(() => setToastNotificacion(null), 6000)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-[#E0E5EC] text-slate-800 font-sans flex flex-col select-none p-6 md:p-8 gap-6 antialiased">
       
@@ -1215,6 +1422,7 @@ export default function OperacionCRM() {
               { id: 'ficha360', label: 'Ficha 360° Cliente', icon: User },
               { id: 'autonomia', label: 'Agentes Autónomos IA', icon: Bot },
               { id: 'presupuestos', label: 'Presupuestos & Pipeline', icon: FileText },
+              { id: 'marketing', label: 'Marketing & Cold Email', icon: Megaphone },
               { id: 'facturacion', label: 'Facturación & Abonos', icon: DollarSign },
               { id: 'serv_tecnico', label: 'Servicio Técnico & SLA', icon: Wrench },
               { id: 'kpis', label: 'KPIs & Reportes', icon: BarChart3 },
@@ -2276,6 +2484,353 @@ export default function OperacionCRM() {
             </div>
           )}
 
+          {/* ── MÓDULO 8: MARKETING Y VENTAS: CAPTACIÓN DE LEADS Y COLD EMAIL OUTREACH VÍA RESEND ── */}
+          {moduloActivo === 'marketing' && (
+            <div className="flex-1 bg-[#E0E5EC] rounded-2xl p-6 md:p-8 flex flex-col gap-6 shadow-[6px_6px_12px_#bec8d2,-6px_-6px_12px_#ffffff] min-h-0 overflow-y-auto">
+              
+              {/* ENCABEZADO NEUMÓRFICO Y CAMBIO DE PESTAÑAS */}
+              <div className="bg-[#E0E5EC] shadow-[inset_5px_5px_10px_#bec8d2,inset_-5px_-5px_10px_#ffffff] p-5 rounded-xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white rounded-xl shadow-xs">
+                    <Megaphone className="h-5 w-5 stroke-[2]" />
+                  </div>
+                  <div>
+                    <h2 className="text-base font-black text-slate-900 uppercase tracking-wide flex items-center gap-3">
+                      <span>Marketing & Cold Email Outreach (Resend API)</span>
+                    </h2>
+                    <p className="text-xs text-slate-500 font-semibold mt-0.5">
+                      Captación de leads B2B, segmentación comercial y prospección masiva automatizada vía Resend
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 flex-wrap">
+                  <div className="flex items-center gap-1 bg-[#E0E5EC] p-1 rounded-xl shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff]">
+                    <button
+                      onClick={() => setSubTabMarketing('leads')}
+                      className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${subTabMarketing === 'leads' ? 'bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white shadow-xs' : 'text-slate-700 hover:bg-[#d5dbe3]'}`}
+                    >
+                      <User className="h-4 w-4" />
+                      <span>Leads & Prospección ({leadsList.length})</span>
+                    </button>
+                    <button
+                      onClick={() => setSubTabMarketing('campanas')}
+                      className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${subTabMarketing === 'campanas' ? 'bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white shadow-xs' : 'text-slate-700 hover:bg-[#d5dbe3]'}`}
+                    >
+                      <Send className="h-4 w-4" />
+                      <span>Motor Campañas Resend</span>
+                    </button>
+                  </div>
+
+                  <button
+                    onClick={() => abrirModalNuevoLead()}
+                    className="px-5 py-2.5 bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white font-bold rounded-xl text-xs shadow-[4px_4px_8px_#bec8d2,-4px_-4px_8px_#ffffff] active:scale-95 cursor-pointer transition-all flex items-center gap-2"
+                  >
+                    <UserPlus className="h-4 w-4" />
+                    <span>Añadir Nuevo Lead</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* SECCIÓN 1: VISTA DE GESTIÓN DE LEADS */}
+              {subTabMarketing === 'leads' && (
+                <div className="space-y-5">
+                  {/* BARRA DE BÚSQUEDA Y FILTRADO POR ESTADO */}
+                  <div className="bg-[#E0E5EC] p-4 rounded-xl shadow-[inset_4px_4px_8px_#bec8d2,inset_-4px_-4px_8px_#ffffff] flex flex-col md:flex-row justify-between items-center gap-4">
+                    <div className="relative flex-1 w-full flex items-center">
+                      <Search className="absolute left-4 h-4 w-4 text-slate-400 pointer-events-none" />
+                      <input
+                        type="text"
+                        value={busquedaLead}
+                        onChange={(e) => setBusquedaLead(e.target.value)}
+                        placeholder="Buscar lead por Empresa, RUT, Email o Contacto..."
+                        className="w-full bg-[#E0E5EC] shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] border-none rounded-xl pl-11 pr-4 py-2.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#005bea]"
+                      />
+                    </div>
+
+                    <div className="flex items-center gap-2 overflow-x-auto shrink-0">
+                      <span className="text-[11px] font-bold text-slate-500 uppercase">Filtrar Estado:</span>
+                      {['Todos', 'Nuevo', 'Contactado', 'Interesado', 'Cliente'].map(st => (
+                        <button
+                          key={st}
+                          onClick={() => setFiltroEstadoLead(st)}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-all ${filtroEstadoLead === st ? 'bg-[#005bea] text-white shadow-xs' : 'bg-[#E0E5EC] shadow-[3px_3px_6px_#bec8d2,-3px_-3px_6px_#ffffff] text-slate-700 hover:brightness-95'}`}
+                        >
+                          {st}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* TABLA DE LEADS CON BORDES REDONDEADOS Y VALIDACIÓN */}
+                  <div className="bg-[#E0E5EC] shadow-[inset_5px_5px_10px_#bec8d2,inset_-5px_-5px_10px_#ffffff] rounded-2xl p-2 overflow-hidden">
+                    <table className="w-full text-left border-collapse text-xs font-medium">
+                      <thead>
+                        <tr className="bg-[#E0E5EC] text-slate-700 border-b border-slate-300 font-bold uppercase text-[11px]">
+                          <th className="p-3.5 border-r border-slate-300">EMPRESA / RUT</th>
+                          <th className="p-3.5 border-r border-slate-300">CORREO ELECTRÓNICO & VALIDACIÓN</th>
+                          <th className="p-3.5 border-r border-slate-300">CONTACTO & TELÉFONO</th>
+                          <th className="p-3.5 border-r border-slate-300">SEGMENTO</th>
+                          <th className="p-3.5 border-r border-slate-300 text-center">ESTADO LEAD</th>
+                          <th className="p-3.5 text-center min-w-[200px]">ACCIONES RÁPIDAS</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-300">
+                        {leadsList
+                          .filter(l => {
+                            const q = busquedaLead.toLowerCase()
+                            const matchQ = l.empresa.toLowerCase().includes(q) || l.email.toLowerCase().includes(q) || l.contacto.toLowerCase().includes(q)
+                            const matchF = filtroEstadoLead === 'Todos' || l.estado === filtroEstadoLead
+                            return matchQ && matchF
+                          })
+                          .map(lead => {
+                            const esEmailValido = lead.email && lead.email.includes('@') && lead.email.includes('.')
+                            return (
+                              <tr key={lead.id} className="hover:bg-[#d5dbe3] transition-colors">
+                                <td className="p-3.5 border-r border-slate-300 font-bold text-slate-900">
+                                  <div className="text-sm">{lead.empresa}</div>
+                                  <div className="text-[10px] text-slate-500 font-mono">RUT: {lead.rut || 'S/RUT'}</div>
+                                </td>
+                                <td className="p-3.5 border-r border-slate-300 font-mono">
+                                  <div className="text-slate-900 font-bold">{lead.email}</div>
+                                  <div className="pt-0.5">
+                                    {esEmailValido ? (
+                                      <span className="inline-flex items-center gap-1 text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-md font-bold">
+                                        <CheckCircle2 className="h-3 w-3" />
+                                        <span>Formato Válido</span>
+                                      </span>
+                                    ) : (
+                                      <span className="inline-flex items-center gap-1 text-[10px] bg-red-100 text-red-800 px-2 py-0.5 rounded-md font-bold">
+                                        <AlertTriangle className="h-3 w-3" />
+                                        <span>Email Inválido</span>
+                                      </span>
+                                    )}
+                                  </div>
+                                </td>
+                                <td className="p-3.5 border-r border-slate-300">
+                                  <div className="font-bold text-slate-800">{lead.contacto}</div>
+                                  <div className="text-[11px] text-slate-600 font-mono">{lead.telefono}</div>
+                                </td>
+                                <td className="p-3.5 border-r border-slate-300 font-bold text-slate-700">
+                                  <span className="bg-[#E0E5EC] shadow-[inset_2px_2px_4px_#bec8d2,inset_-2px_-2px_4px_#ffffff] px-2.5 py-1 rounded-lg text-[11px]">
+                                    {lead.segmento}
+                                  </span>
+                                </td>
+                                <td className="p-3.5 border-r border-slate-300 text-center font-bold">
+                                  <span className={`px-3 py-1 rounded-full text-[11px] font-bold ${
+                                    lead.estado === 'Nuevo' ? 'bg-blue-100 text-blue-900 border border-blue-200' :
+                                    lead.estado === 'Contactado' ? 'bg-amber-100 text-amber-900 border border-amber-200' :
+                                    lead.estado === 'Interesado' ? 'bg-purple-100 text-purple-900 border border-purple-200' :
+                                    'bg-emerald-100 text-emerald-900 border border-emerald-200'
+                                  }`}>
+                                    {lead.estado}
+                                  </span>
+                                </td>
+                                <td className="p-3.5 text-center">
+                                  <div className="flex items-center justify-center gap-2">
+                                    <button
+                                      onClick={async () => {
+                                        const res = await fetch('/api/marketing/outreach', {
+                                          method: 'POST',
+                                          headers: { 'Content-Type': 'application/json' },
+                                          body: JSON.stringify({
+                                            leads: [lead],
+                                            asunto: `Propuesta de Monitoreo & Seguridad Electrónica para ${lead.empresa}`,
+                                            cuerpoHtml: campanaContenido,
+                                            remitente: campanaRemitente
+                                          })
+                                        })
+                                        const d = await res.json()
+                                        if (d.success) alert(`Correo de prospección enviado con éxito a ${lead.email} vía Resend!`)
+                                        else alert(`Error: ${d.error}`)
+                                      }}
+                                      title="Enviar Correo Directo vía Resend"
+                                      className="p-2 bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white rounded-xl font-bold cursor-pointer transition-all shadow-xs active:scale-95"
+                                    >
+                                      <Mail className="h-4 w-4" />
+                                    </button>
+                                    <button
+                                      onClick={() => abrirModalNuevoLead(lead)}
+                                      title="Editar Lead"
+                                      className="p-2 bg-amber-600 hover:bg-amber-500 text-white rounded-xl font-bold cursor-pointer transition-all shadow-xs"
+                                    >
+                                      <Pencil className="h-4 w-4" />
+                                    </button>
+                                    <button
+                                      onClick={() => handleEliminarLead(lead.id, lead.empresa)}
+                                      title="Eliminar Lead"
+                                      className="p-2 bg-red-700 hover:bg-red-600 text-white rounded-xl font-bold cursor-pointer transition-all shadow-xs"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            )
+                          })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* SECCIÓN 2: MOTOR DE CAMPAÑAS Y ENVÍO MASIVO VÍA RESEND */}
+              {subTabMarketing === 'campanas' && (
+                <div className="space-y-6">
+                  {/* GRID 3 COLUMNAS RESPONSIVO CON MARGENES p-6 / p-8 */}
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    
+                    {/* PANEL IZQUIERDO: CONFIGURACIÓN DE CAMPAÑA (COL 1) */}
+                    <div className="bg-[#E0E5EC] p-6 rounded-2xl shadow-[6px_6px_12px_#bec8d2,-6px_-6px_12px_#ffffff] space-y-5">
+                      <div className="flex items-center gap-2 border-b border-slate-300 pb-3">
+                        <Target className="h-5 w-5 text-[#005bea]" />
+                        <h3 className="font-black text-xs text-slate-900 uppercase tracking-wider">1. CONFIGURACIÓN DE CAMPAÑA</h3>
+                      </div>
+
+                      <div className="space-y-4 text-xs">
+                        <div>
+                          <label className="font-bold text-slate-700 block mb-1">SEGMENTO DE DESTINATARIOS:</label>
+                          <select
+                            value={campanaSegmento}
+                            onChange={(e) => setCampanaSegmento(e.target.value)}
+                            className="w-full bg-[#E0E5EC] shadow-[inset_4px_4px_8px_#bec8d2,inset_-4px_-4px_8px_#ffffff] border-none p-3 rounded-xl font-bold text-slate-900"
+                          >
+                            <option value="Todos">Todos los Leads ({leadsList.length})</option>
+                            <option value="Nuevo">Leads Nuevos Sin Contactar ({leadsList.filter(l => l.estado === 'Nuevo').length})</option>
+                            <option value="Contactado">Leads Contactados ({leadsList.filter(l => l.estado === 'Contactado').length})</option>
+                            <option value="Interesado">Leads Interesados ({leadsList.filter(l => l.estado === 'Interesado').length})</option>
+                            <option value="Comercial B2B">Segmento Comercial B2B ({leadsList.filter(l => l.segmento === 'Comercial B2B').length})</option>
+                            <option value="Industrial">Segmento Industrial ({leadsList.filter(l => l.segmento === 'Industrial').length})</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="font-bold text-slate-700 block mb-1">REMITENTE VERIFICADO (RESEND):</label>
+                          <select
+                            value={campanaRemitente}
+                            onChange={(e) => setCampanaRemitente(e.target.value)}
+                            className="w-full bg-[#E0E5EC] shadow-[inset_4px_4px_8px_#bec8d2,inset_-4px_-4px_8px_#ffffff] border-none p-3 rounded-xl font-bold text-slate-900 font-mono"
+                          >
+                            <option value="Gama Seguridad <contacto@gamasecurity.cl>">Gama Seguridad &lt;contacto@gamasecurity.cl&gt;</option>
+                            <option value="Gama Comercial <comercial@gamasecurity.cl>">Gama Comercial &lt;comercial@gamasecurity.cl&gt;</option>
+                            <option value="Resend Onboarding <onboarding@resend.dev>">Resend Onboarding &lt;onboarding@resend.dev&gt;</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="font-bold text-slate-700 block mb-1">ASUNTO DEL CORREO (DINÁMICO):</label>
+                          <input
+                            type="text"
+                            value={campanaAsunto}
+                            onChange={(e) => setCampanaAsunto(e.target.value)}
+                            placeholder="ej: Propuesta Monitoreo para {{nombre_empresa}}"
+                            className="w-full bg-[#E0E5EC] shadow-[inset_4px_4px_8px_#bec8d2,inset_-4px_-4px_8px_#ffffff] border-none p-3 rounded-xl font-bold text-slate-900 focus:ring-2 focus:ring-[#005bea]"
+                          />
+                          <span className="text-[10px] text-slate-500 mt-1 block font-semibold">Variables: <code className="text-[#005bea] font-bold font-mono">{"{{nombre_empresa}}"}</code>, <code className="text-[#005bea] font-bold font-mono">{"{{contacto}}"}</code></span>
+                        </div>
+
+                        {/* PLANTILLAS RÁPIDAS */}
+                        <div className="pt-2">
+                          <label className="font-bold text-slate-700 block mb-2">PLANTILLAS PRECONFIGURADAS B2B:</label>
+                          <div className="space-y-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setCampanaAsunto('Propuesta de Monitoreo 24/7 & Seguridad Electrónica para {{nombre_empresa}}')
+                                setCampanaContenido(`<p>Estimados <strong>{{nombre_empresa}}</strong>,</p><p>Junto con saludarle de <strong>Gama Seguridad Chile</strong>, nos ponemos en contacto con el(la) Sr(a). <strong>{{contacto}}</strong> para presentarles nuestro servicio integral de <strong>Monitoreo de Alarma 24/7 y Verificación por Video IA</strong>.</p><p>Protegemos sus instalaciones comerciales e industriales con respuesta inmediata en la Región de Valparaíso y Metropolitana.</p><p>Quedamos atentos para coordinar una reunión breve.</p><p>Atentamente,<br><strong>Equipo Comercial Gama Seguridad</strong></p>`)
+                              }}
+                              className="w-full p-2.5 bg-[#E0E5EC] shadow-[3px_3px_6px_#bec8d2,-3px_-3px_6px_#ffffff] hover:shadow-[inset_2px_2px_4px_#bec8d2,inset_-2px_-2px_4px_#ffffff] rounded-xl text-left font-bold text-[11px] text-slate-800 transition-all cursor-pointer"
+                            >
+                              📌 1. Monitoreo 24/7 & Video IA
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setCampanaAsunto('Auditoría Perimetral y Evaluación de Seguridad Gratuita — {{nombre_empresa}}')
+                                setCampanaContenido(`<p>Estimado(a) <strong>{{contacto}}</strong> en <strong>{{nombre_empresa}}</strong>,</p><p>Le escribimos de <strong>Gama Seguridad SpA</strong> para ofrecerle una <strong>Auditoría Técnica Perimetral Gratuita</strong> para verificar vulnerabilidades de intrusión en sus instalaciones.</p><p>Nuestros ingenieros especialistas revisarán puntos ciegos, cercos y centrales de alarma sin ningún costo.</p><p>Atentamente,<br><strong>Gama Seguridad Chile</strong></p>`)
+                              }}
+                              className="w-full p-2.5 bg-[#E0E5EC] shadow-[3px_3px_6px_#bec8d2,-3px_-3px_6px_#ffffff] hover:shadow-[inset_2px_2px_4px_#bec8d2,inset_-2px_-2px_4px_#ffffff] rounded-xl text-left font-bold text-[11px] text-slate-800 transition-all cursor-pointer"
+                            >
+                              🔍 2. Auditoría Perimetral Gratuita
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* PANEL DERECHO: EDITOR Y VISTA PREVIA (COL 2 Y 3) */}
+                    <div className="lg:col-span-2 bg-[#E0E5EC] p-6 md:p-8 rounded-2xl shadow-[6px_6px_12px_#bec8d2,-6px_-6px_12px_#ffffff] space-y-6 flex flex-col justify-between">
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-center border-b border-slate-300 pb-3">
+                          <h3 className="font-black text-xs text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                            <FileText className="h-5 w-5 text-[#005bea]" />
+                            <span>2. EDITOR DE CONTENIDO & VISTA PREVIA EN TIEMPO REAL</span>
+                          </h3>
+                          <span className="text-[11px] font-bold text-slate-500 bg-[#E0E5EC] shadow-[inset_2px_2px_4px_#bec8d2,inset_-2px_-2px_4px_#ffffff] px-3 py-1 rounded-full">
+                            Destinatarios Target: {leadsList.filter(l => campanaSegmento === 'Todos' || l.estado === campanaSegmento || l.segmento === campanaSegmento).length} Leads
+                          </span>
+                        </div>
+
+                        <div>
+                          <label className="font-bold text-slate-700 block mb-1 text-xs">CONTENIDO HTML DE LA CAMPAÑA:</label>
+                          <textarea
+                            rows={8}
+                            value={campanaContenido}
+                            onChange={(e) => setCampanaContenido(e.target.value)}
+                            className="w-full bg-[#E0E5EC] shadow-[inset_4px_4px_8px_#bec8d2,inset_-4px_-4px_8px_#ffffff] border-none p-4 rounded-xl font-mono text-xs text-slate-900 focus:ring-2 focus:ring-[#005bea]"
+                          />
+                        </div>
+
+                        {/* TARJETA DE VISTA PREVIA EN TIEMPO REAL */}
+                        <div className="bg-white rounded-xl border border-slate-300 p-5 space-y-3 text-xs shadow-inner">
+                          <span className="text-[10px] font-black text-[#005bea] uppercase tracking-wider block">👁️ VISTA PREVIA DEL CORREO PARA EL PRIMER LEAD DE LA LISTA:</span>
+                          <div className="font-bold text-slate-900 text-sm border-b border-slate-200 pb-2">
+                            Asunto: {campanaAsunto.replace(/\{\{nombre_empresa\}\}/g, leadsList[0]?.empresa || 'Empresa Target')}
+                          </div>
+                          <div
+                            className="text-slate-800 text-xs space-y-2 leading-relaxed"
+                            dangerouslySetInnerHTML={{
+                              __html: campanaContenido.replace(/\{\{nombre_empresa\}\}/g, leadsList[0]?.empresa || 'Empresa Target')
+                                                       .replace(/\{\{contacto\}\}/g, leadsList[0]?.contacto || 'Contacto Principal')
+                            }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* INDICADOR DE PROGRESO DE ENVÍO Y BOTÓN CTA AZUL FRANCIA */}
+                      <div className="space-y-3 pt-2">
+                        {isSubmittingCampana && (
+                          <div className="bg-blue-50 border border-blue-200 p-4 rounded-xl flex items-center gap-3 text-blue-900 font-bold text-xs">
+                            <Loader2 className="h-5 w-5 animate-spin text-[#005bea]" />
+                            <span>{progresoEnvioText || 'Procesando envío de correos vía Resend API...'}</span>
+                          </div>
+                        )}
+
+                        <button
+                          type="button"
+                          disabled={isSubmittingCampana}
+                          onClick={handleLanzarCampanaResend}
+                          className="w-full bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white font-bold p-4 rounded-xl shadow-lg hover:opacity-95 transition-all text-sm cursor-pointer flex items-center justify-center gap-3 border-none disabled:opacity-50"
+                        >
+                          {isSubmittingCampana ? (
+                            <Loader2 className="h-5 w-5 animate-spin" />
+                          ) : (
+                            <Send className="h-5 w-5" />
+                          )}
+                          <span>Lanzar Campaña de Correos con Resend</span>
+                        </button>
+                      </div>
+
+                    </div>
+
+                  </div>
+                </div>
+              )}
+
+            </div>
+          )}
+
         </main>
       </div>
 
@@ -2975,6 +3530,156 @@ export default function OperacionCRM() {
               <span>Página 1 de 1</span>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* ── MODAL AÑADIR / EDITAR NUEVO LEAD NEUMÓRFICO ── */}
+      {mostrarModalNuevoLead && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm p-4 md:p-6 flex justify-center items-center overflow-y-auto no-imprimir">
+          <div className="bg-[#E0E5EC] border border-slate-300 w-full max-w-xl rounded-2xl shadow-[12px_12px_24px_#bec8d2,-12px_-12px_24px_#ffffff] p-6 md:p-8 flex flex-col gap-5 text-xs text-slate-900 font-sans my-auto">
+            
+            <div className="flex justify-between items-center pb-3 border-b border-slate-300">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white rounded-xl shadow-xs">
+                  <UserPlus className="h-5 w-5 stroke-[2]" />
+                </div>
+                <div>
+                  <h3 className="font-black text-base text-slate-900 uppercase tracking-wider">
+                    {leadEditandoId ? 'EDITAR LEAD DE PROSPECCIÓN' : 'AÑADIR NUEVO LEAD COMERCIAL'}
+                  </h3>
+                  <p className="text-[11px] text-slate-500 font-semibold">Registro de prospecto para campañas masivas Resend</p>
+                </div>
+              </div>
+              <button onClick={() => setMostrarModalNuevoLead(false)} className="text-slate-400 hover:text-slate-700 font-bold text-lg cursor-pointer">✕</button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="text-[10px] font-bold text-slate-500 block mb-1">NOMBRE DE LA EMPRESA / CLIENTE (*):</label>
+                <input
+                  type="text"
+                  value={formLeadEmpresa}
+                  onChange={(e) => setFormLeadEmpresa(e.target.value)}
+                  placeholder="ej: Transportes & Logística Norte SpA"
+                  className="w-full bg-[#E0E5EC] shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] border-none p-3 rounded-xl font-bold text-xs text-slate-900 focus:ring-2 focus:ring-[#005bea]"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[10px] font-bold text-slate-500 block mb-1">RUT COMERCIAL:</label>
+                  <input
+                    type="text"
+                    value={formLeadRut}
+                    onChange={(e) => setFormLeadRut(e.target.value)}
+                    placeholder="ej: 76.123.456-7"
+                    className="w-full bg-[#E0E5EC] shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] border-none p-3 rounded-xl font-mono text-xs text-[#005bea] font-bold"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold text-slate-500 block mb-1">CORREO ELECTRÓNICO (*):</label>
+                  <input
+                    type="email"
+                    value={formLeadEmail}
+                    onChange={(e) => setFormLeadEmail(e.target.value)}
+                    placeholder="contacto@empresa.cl"
+                    className="w-full bg-[#E0E5EC] shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] border-none p-3 rounded-xl font-bold text-xs text-slate-900 focus:ring-2 focus:ring-[#005bea]"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[10px] font-bold text-slate-500 block mb-1">PERSONA DE CONTACTO:</label>
+                  <input
+                    type="text"
+                    value={formLeadContacto}
+                    onChange={(e) => setFormLeadContacto(e.target.value)}
+                    placeholder="ej: Don Carlos Fuentealba"
+                    className="w-full bg-[#E0E5EC] shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] border-none p-3 rounded-xl font-bold text-xs text-slate-900"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold text-slate-500 block mb-1">TELÉFONO DE CONTACTO:</label>
+                  <input
+                    type="text"
+                    value={formLeadTelefono}
+                    onChange={(e) => setFormLeadTelefono(e.target.value)}
+                    placeholder="+56 9 9123 4567"
+                    className="w-full bg-[#E0E5EC] shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] border-none p-3 rounded-xl font-mono text-xs text-slate-900 font-bold"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[10px] font-bold text-slate-500 block mb-1">SEGMENTO COMERCIAL:</label>
+                  <select
+                    value={formLeadSegmento}
+                    onChange={(e: any) => setFormLeadSegmento(e.target.value)}
+                    className="w-full bg-[#E0E5EC] shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] border-none p-3 rounded-xl font-bold text-xs text-slate-900"
+                  >
+                    <option value="Comercial B2B">Comercial B2B</option>
+                    <option value="Industrial">Industrial</option>
+                    <option value="Condominios">Condominios</option>
+                    <option value="Particular">Particular</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold text-slate-500 block mb-1">ESTADO DEL LEAD:</label>
+                  <select
+                    value={formLeadEstado}
+                    onChange={(e: any) => setFormLeadEstado(e.target.value)}
+                    className="w-full bg-[#E0E5EC] shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] border-none p-3 rounded-xl font-bold text-xs text-slate-900"
+                  >
+                    <option value="Nuevo">Nuevo</option>
+                    <option value="Contactado">Contactado</option>
+                    <option value="Interesado">Interesado</option>
+                    <option value="Cliente">Cliente</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold text-slate-500 block mb-1">NOTAS / REQUERIMIENTO:</label>
+                <textarea
+                  rows={2}
+                  value={formLeadNotas}
+                  onChange={(e) => setFormLeadNotas(e.target.value)}
+                  placeholder="ej: Interesados en monitoreo de bodegas y cámaras IP..."
+                  className="w-full bg-[#E0E5EC] shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] border-none p-3 rounded-xl text-xs text-slate-900 font-medium"
+                />
+              </div>
+            </div>
+
+            <div className="pt-3 flex justify-end gap-3 border-t border-slate-300">
+              <button
+                onClick={() => setMostrarModalNuevoLead(false)}
+                className="px-5 py-2.5 bg-[#E0E5EC] shadow-[4px_4px_8px_#bec8d2,-4px_-4px_8px_#ffffff] active:shadow-[inset_2px_2px_4px_#bec8d2,inset_-2px_-2px_4px_#ffffff] text-slate-800 font-bold rounded-xl text-xs cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleGuardarLead}
+                className="px-6 py-2.5 bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white font-bold rounded-xl text-xs shadow-[4px_4px_10px_#bec8d2,-4px_-4px_10px_#ffffff] active:scale-95 cursor-pointer"
+              >
+                Guardar Lead
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── TOAST FLOATING NOTIFICATION ── */}
+      {toastNotificacion && (
+        <div className={`fixed bottom-6 right-6 z-50 p-4 rounded-2xl shadow-2xl font-bold text-xs flex items-center gap-3 border text-white transition-all ${
+          toastNotificacion.tipo === 'exito' ? 'bg-slate-900 border-emerald-500' : 'bg-slate-900 border-red-500'
+        }`}>
+          {toastNotificacion.tipo === 'exito' ? <CheckCircle2 className="h-5 w-5 text-emerald-400" /> : <AlertTriangle className="h-5 w-5 text-red-400" />}
+          <span>{toastNotificacion.texto}</span>
         </div>
       )}
 
