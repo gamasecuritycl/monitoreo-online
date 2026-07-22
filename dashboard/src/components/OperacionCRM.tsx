@@ -2453,21 +2453,23 @@ export default function OperacionCRM() {
         {/* ── PANEL DERECHO PRINCIPAL NEUMÓRFICO ── */}
         <main className="flex-1 overflow-y-auto min-h-0 flex flex-col gap-6">
 
-          {/* ── MÓDULO 1: FICHA 360° DEL CLIENTE COMPLETA ── */}
+          {/* ── MÓDULO 1: FICHA 360° DEL CLIENTE COMPLETA (BENTO GRID NEUMÓRFICO) ── */}
           {moduloActivo === 'ficha360' && (
-            <div className="flex-1 flex flex-col gap-6 min-h-0">
+            <div className="flex-1 flex flex-col gap-6 sm:gap-8 min-h-0">
               
-              {/* BUSCADOR NEUMÓRFICO HUNDIDO CON BOTÓN INTEGRADO */}
-              <div className="bg-[#E0E5EC] p-6 rounded-2xl shadow-[6px_6px_12px_#bec8d2,-6px_-6px_12px_#ffffff] flex flex-col gap-4">
-                <div className="font-black text-xs text-slate-600 uppercase tracking-wider flex justify-between items-center">
-                  <span className="flex items-center gap-2">
-                    <Search className="h-4 w-4 text-[#005bea]" />
-                    <span>BUSCADOR INTELIGENTE 360° (CÓDIGO DE ABONADO C774, 0999, NOMBRE O RUT)</span>
+              {/* BUSCADOR NEUMÓRFICO SPOTLIGHT DE ALTA GAMA */}
+              <div className="bg-[#E0E5EC] p-6 sm:p-7 rounded-2xl shadow-[6px_6px_14px_#bec8d2,-6px_-6px_14px_#ffffff] border border-white/60 flex flex-col gap-4 transition-all">
+                <div className="font-extrabold text-xs text-slate-500 uppercase tracking-widest flex justify-between items-center">
+                  <span className="flex items-center gap-2 text-slate-700">
+                    <div className="p-1.5 bg-[#005bea]/10 text-[#005bea] rounded-lg">
+                      <Search className="h-4 w-4" />
+                    </div>
+                    <span>BUSCADOR INTELIGENTE 360° (CÓDIGO DE ABONADO, NOMBRE O RUT)</span>
                   </span>
                   {(cuentaSeleccionada || rutClienteSeleccionado) && (
                     <button
                       onClick={() => { setCuentaSeleccionada(''); setRutClienteSeleccionado(''); setBusquedaClienteInput('') }}
-                      className="text-xs text-red-600 hover:underline font-bold cursor-pointer flex items-center gap-1"
+                      className="text-xs text-red-600 hover:text-red-700 font-extrabold cursor-pointer flex items-center gap-1 bg-red-500/10 px-3 py-1 rounded-xl transition-all"
                     >
                       <X className="h-3.5 w-3.5" />
                       <span>Limpiar Selección</span>
@@ -2475,35 +2477,35 @@ export default function OperacionCRM() {
                   )}
                 </div>
 
-                <div className="relative flex items-center gap-3">
-                  <div className="relative flex-1 flex items-center">
-                    <Search className="absolute left-4 h-4 w-4 text-slate-400 pointer-events-none" />
+                <div className="relative flex flex-col sm:flex-row items-center gap-3">
+                  <div className="relative flex-1 w-full flex items-center">
+                    <Search className="absolute left-4 h-5 w-5 text-[#005bea] pointer-events-none" />
                     <input
                       type="text"
                       value={busquedaClienteInput}
                       onChange={(e) => setBusquedaClienteInput(e.target.value)}
                       onKeyDown={(e) => { if (e.key === 'Enter') handleDispararBusqueda() }}
-                      placeholder="Escriba código de Abonado (ej: 0999, C774), Nombre del Cliente o RUT..."
-                      className="w-full bg-[#E0E5EC] shadow-[inset_5px_5px_10px_#bec8d2,inset_-5px_-5px_10px_#ffffff] border-none rounded-xl pl-11 pr-4 py-3.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#005bea] font-mono"
+                      placeholder="Escriba código de Abonado (ej: 0999, C774, C7C5), Nombre del Cliente o RUT..."
+                      className="w-full bg-[#E0E5EC] shadow-[inset_4px_4px_8px_#bec8d2,inset_-4px_-4px_8px_#ffffff] border-none rounded-xl pl-12 pr-4 py-4 text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#005bea] font-mono tracking-wide"
                     />
                   </div>
 
                   <button
                     onClick={handleDispararBusqueda}
                     disabled={buscandoSpinner}
-                    className="bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white font-bold px-6 py-3.5 rounded-xl shadow-[4px_4px_10px_#bec8d2,-4px_-4px_10px_#ffffff] transition-all active:scale-95 cursor-pointer flex items-center gap-2 text-xs"
+                    className="w-full sm:w-auto bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white font-black px-7 py-4 rounded-xl shadow-md hover:shadow-lg hover:brightness-105 active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-2 text-xs uppercase tracking-wider shrink-0"
                   >
                     {buscandoSpinner ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
-                      <Search className="h-4 w-4" />
+                      <Search className="h-4 w-4 stroke-[2.5]" />
                     )}
-                    <span>BUSCAR</span>
+                    <span>BUSCAR 360°</span>
                   </button>
 
                   {/* DESPLEGABLE FLOTANTE DE RESULTADOS DE BÚSQUEDA */}
                   {busquedaClienteInput.trim().length > 0 && (
-                    <div className="absolute top-full left-0 right-0 mt-3 bg-[#E0E5EC] border border-slate-300 rounded-2xl shadow-[10px_10px_20px_#bec8d2,-10px_-10px_20px_#ffffff] z-30 max-h-96 overflow-y-auto p-3 space-y-2">
+                    <div className="absolute top-full left-0 right-0 mt-3 bg-[#E0E5EC] border border-slate-300 rounded-2xl shadow-[10px_10px_24px_#bec8d2,-10px_-10px_24px_#ffffff] z-30 max-h-96 overflow-y-auto p-3 space-y-2">
                       {resultadosBusqueda.length > 0 ? (
                         resultadosBusqueda.map(item => (
                           <div
@@ -2528,7 +2530,7 @@ export default function OperacionCRM() {
                               }
                               setBusquedaClienteInput('')
                             }}
-                            className="p-3.5 bg-[#E0E5EC] shadow-[4px_4px_8px_#bec8d2,-4px_-4px_8px_#ffffff] hover:shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] rounded-xl cursor-pointer flex justify-between items-center transition-all"
+                            className="p-4 bg-[#E0E5EC] shadow-[4px_4px_10px_#bec8d2,-4px_-4px_10px_#ffffff] hover:shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] rounded-xl cursor-pointer flex justify-between items-center transition-all border border-white/50"
                           >
                             <div className="space-y-1">
                               <div className="font-bold text-xs text-slate-900 flex items-center gap-2 flex-wrap">
@@ -2537,15 +2539,15 @@ export default function OperacionCRM() {
                                     Abonado #{item.cuenta}
                                   </span>
                                 )}
-                                <span>{item.alias || item.razon_social}</span>
-                                {item.rut && !item.rut.startsWith('CTA-') && (
-                                  <span className="font-mono text-slate-600 text-[10px] bg-[#E0E5EC] shadow-[inset_2px_2px_4px_#bec8d2,inset_-2px_-2px_4px_#ffffff] px-2 py-0.5 rounded-md font-bold">
+                                <span className="text-slate-900 font-extrabold">{item.alias || item.razon_social}</span>
+                                {item.rut && !item.rut.startsWith('CTA-') && !item.rut.startsWith('RUT-') && (
+                                  <span className="font-mono text-slate-700 text-[10px] bg-[#E0E5EC] shadow-[inset_2px_2px_4px_#bec8d2,inset_-2px_-2px_4px_#ffffff] px-2 py-0.5 rounded-md font-bold">
                                     RUT: {item.rut}
                                   </span>
                                 )}
                               </div>
                             </div>
-                            <ChevronRight className="h-4 w-4 text-[#005bea]" />
+                            <ChevronRight className="h-5 w-5 text-[#005bea]" />
                           </div>
                         ))
                       ) : (
@@ -2557,58 +2559,57 @@ export default function OperacionCRM() {
                   )}
                 </div>
 
-
               </div>
 
               {/* EXPEDIENTE COMPLETO DOSSIER FICHA 360° */}
               {clienteActivo || abonadoActivo ? (
-                <div className="bg-[#E0E5EC] rounded-2xl p-6 md:p-8 flex flex-col gap-6 shadow-[6px_6px_12px_#bec8d2,-6px_-6px_12px_#ffffff] overflow-y-auto">
+                <div className="bg-[#E0E5EC] rounded-2xl p-6 sm:p-8 flex flex-col gap-6 shadow-[6px_6px_14px_#bec8d2,-6px_-6px_14px_#ffffff] border border-white/60 overflow-y-auto">
                   
-                  {/* CABECERA EXPEDIENTE */}
-                  <div className="bg-[#E0E5EC] shadow-[inset_5px_5px_10px_#bec8d2,inset_-5px_-5px_10px_#ffffff] p-6 rounded-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2 flex-wrap">
+                  {/* CABECERA EXPEDIENTE VISTA 360° BENTO HERO */}
+                  <div className="bg-[#E0E5EC] shadow-[inset_4px_4px_8px_#bec8d2,inset_-4px_-4px_8px_#ffffff] p-6 sm:p-7 rounded-2xl flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 border border-slate-300/40">
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2.5 flex-wrap">
                         {abonadoActivo && (
-                          <span className="bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white font-mono text-xs font-bold px-3 py-1 rounded-lg shadow-xs">
+                          <span className="bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white font-mono text-xs font-bold px-3.5 py-1 rounded-xl shadow-sm">
                             CUENTA ABONADO #{abonadoActivo.cuenta}
                           </span>
                         )}
-                        {clienteActivo && clienteActivo.rut && !clienteActivo.rut.startsWith('CTA-') && (
-                          <span className="bg-slate-800 text-white font-mono text-xs font-bold px-3 py-1 rounded-lg shadow-xs">
+                        {clienteActivo && clienteActivo.rut && !clienteActivo.rut.startsWith('CTA-') && !clienteActivo.rut.startsWith('RUT-') && (
+                          <span className="bg-slate-900 text-white font-mono text-xs font-bold px-3.5 py-1 rounded-xl shadow-sm">
                             RUT: {clienteActivo.rut}
                           </span>
                         )}
-                        <span className="bg-emerald-100 text-emerald-800 font-bold px-2.5 py-1 rounded-lg text-xs">
-                          {clienteActivo?.estado_pago || 'Al Día'}
+                        <span className="bg-emerald-500/15 text-emerald-800 border border-emerald-300/60 font-black px-3 py-1 rounded-xl text-xs uppercase tracking-wider">
+                          🟢 {clienteActivo?.estado_pago || 'Al Día'}
                         </span>
                       </div>
 
-                      <h2 className="text-2xl font-black tracking-tight text-slate-900">
+                      <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
                         {abonadoActivo ? abonadoActivo.alias_centro_costo : clienteActivo?.razon_social}
                       </h2>
 
-                      <p className="text-xs text-slate-600 font-semibold flex items-center gap-3 flex-wrap">
-                        <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5 text-[#005bea]" /> {abonadoActivo ? abonadoActivo.direccion : clienteActivo?.direccion_comercial} ({clienteActivo?.ciudad || 'Santiago'})</span>
+                      <p className="text-xs text-slate-600 font-semibold flex items-center gap-4 flex-wrap">
+                        <span className="flex items-center gap-1.5"><MapPin className="h-4 w-4 text-[#005bea]" /> {abonadoActivo ? abonadoActivo.direccion : clienteActivo?.direccion_comercial} ({clienteActivo?.ciudad || 'Santiago'})</span>
                         <span>•</span>
-                        <span className="flex items-center gap-1"><Mail className="h-3.5 w-3.5 text-[#005bea]" /> {clienteActivo?.email_cobranza}</span>
+                        <span className="flex items-center gap-1.5"><Mail className="h-4 w-4 text-[#005bea]" /> {clienteActivo?.email_cobranza}</span>
                         <span>•</span>
-                        <span className="flex items-center gap-1"><Phone className="h-3.5 w-3.5 text-[#005bea]" /> {clienteActivo?.telefono}</span>
+                        <span className="flex items-center gap-1.5"><Phone className="h-4 w-4 text-[#005bea]" /> {clienteActivo?.telefono}</span>
                       </p>
                     </div>
 
-                    <div className="flex items-center gap-3 bg-[#E0E5EC] shadow-[4px_4px_8px_#bec8d2,-4px_-4px_8px_#ffffff] p-4 rounded-xl">
+                    <div className="flex items-center gap-4 bg-[#E0E5EC] shadow-[4px_4px_10px_#bec8d2,-4px_-4px_10px_#ffffff] p-5 rounded-2xl border border-white/60">
                       <div>
                         <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">TARIFA MONITOREO</span>
-                        <div className="text-lg font-black font-mono text-[#005bea]">
+                        <div className="text-xl font-black font-mono text-[#005bea]">
                           {clienteActivo?.moneda === 'UF' ? `${clienteActivo.tarifa_mensual} UF` : `$${(clienteActivo?.tarifa_mensual || 29900).toLocaleString('es-CL')} CLP`}
                         </div>
-                        <span className="text-[10px] text-slate-500 font-semibold">Plan: {clienteActivo?.plan_monitoreo || 'Estándar 24/7'}</span>
+                        <span className="text-[10px] text-slate-500 font-bold block mt-0.5">Plan: {clienteActivo?.plan_monitoreo || 'Estándar 24/7'}</span>
                       </div>
                     </div>
                   </div>
 
-                  {/* NAVEGACIÓN PESTAÑAS FICHA 360° RESPONSIVE */}
-                  <div className="flex items-center gap-2 bg-[#E0E5EC] p-1.5 rounded-xl shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] flex-wrap">
+                  {/* NAVEGACIÓN PESTAÑAS FICHA 360° BENTO */}
+                  <div className="flex items-center gap-2 bg-[#E0E5EC] p-2 rounded-2xl shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] flex-wrap">
                     {[
                       { id: 'datos', label: 'Datos Comerciales', icon: Building2 },
                       { id: 'abonados', label: `Centros de Costo (${clienteActivo?.cuentas_abonados.length || 1})`, icon: Layers },
@@ -2622,57 +2623,76 @@ export default function OperacionCRM() {
                         <button
                           key={tab.id}
                           onClick={() => setTabFicha360(tab.id as any)}
-                          className={`px-3.5 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${esActivo ? 'bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white shadow-xs' : 'text-slate-700 hover:bg-[#d5dbe3]'}`}
+                          className={`px-4 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-2 ${esActivo ? 'bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white shadow-md' : 'text-slate-700 hover:bg-[#d5dbe3]'}`}
                         >
-                          <TabIcon className="h-3.5 w-3.5" />
+                          <TabIcon className="h-4 w-4" />
                           <span>{tab.label}</span>
                         </button>
                       )
                     })}
                   </div>
 
-                  {/* SUB-SECCIÓN 1: DATOS COMERCIALES */}
+                  {/* SUB-SECCIÓN 1: DATOS COMERCIALES EN BENTO GRID MODULAR */}
                   {tabFicha360 === 'datos' && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="bg-[#E0E5EC] shadow-[inset_4px_4px_8px_#bec8d2,inset_-4px_-4px_8px_#ffffff] p-5 rounded-xl space-y-3 text-xs">
-                        <h3 className="font-black text-slate-900 uppercase tracking-wider text-xs border-b border-slate-300 pb-2">📍 DATOS DE CONTACTO & UBICACIÓN</h3>
-                        <div><strong className="text-slate-500">Razón Social:</strong> <span className="text-slate-900 font-bold">{clienteActivo?.razon_social}</span></div>
-                        <div><strong className="text-slate-500">RUT:</strong> <span className="text-slate-900 font-mono font-bold">{clienteActivo?.rut}</span></div>
-                        <div><strong className="text-slate-500">Dirección Comercial:</strong> <span className="text-slate-900">{clienteActivo?.direccion_comercial}</span></div>
-                        <div><strong className="text-slate-500">Ciudad / Comuna:</strong> <span className="text-slate-900 font-bold">{clienteActivo?.ciudad || 'Santiago'}</span></div>
-                        <div><strong className="text-slate-500">Teléfono Principal:</strong> <span className="text-slate-900 font-mono">{clienteActivo?.telefono}</span></div>
-                        <div><strong className="text-slate-500">Email Facturación:</strong> <span className="text-slate-900">{clienteActivo?.email_cobranza}</span></div>
+                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                      <div className="bg-[#E0E5EC] shadow-[6px_6px_14px_#bec8d2,-6px_-6px_14px_#ffffff] p-6 rounded-2xl border border-white/60 space-y-4 text-xs">
+                        <div className="flex items-center gap-2.5 border-b border-slate-300/70 pb-3">
+                          <div className="p-2 bg-blue-500/10 text-[#005bea] rounded-xl">
+                            <MapPin className="h-4 w-4" />
+                          </div>
+                          <span className="font-extrabold text-xs uppercase tracking-wider text-slate-700">📍 DATOS DE CONTACTO & UBICACIÓN</span>
+                        </div>
+                        <div className="space-y-2.5">
+                          <div className="flex justify-between items-center"><strong className="text-slate-500">Razón Social:</strong> <span className="text-slate-900 font-bold bg-[#E0E5EC] shadow-[inset_2px_2px_4px_#bec8d2,inset_-2px_-2px_4px_#ffffff] px-3 py-1 rounded-lg">{clienteActivo?.razon_social}</span></div>
+                          <div className="flex justify-between items-center"><strong className="text-slate-500">RUT Tributario:</strong> <span className="text-slate-900 font-mono font-bold bg-[#E0E5EC] shadow-[inset_2px_2px_4px_#bec8d2,inset_-2px_-2px_4px_#ffffff] px-3 py-1 rounded-lg">{clienteActivo?.rut}</span></div>
+                          <div className="flex justify-between items-center"><strong className="text-slate-500">Dirección Comercial:</strong> <span className="text-slate-900 font-medium">{clienteActivo?.direccion_comercial}</span></div>
+                          <div className="flex justify-between items-center"><strong className="text-slate-500">Ciudad / Comuna:</strong> <span className="text-slate-900 font-bold">{clienteActivo?.ciudad || 'Santiago'}</span></div>
+                          <div className="flex justify-between items-center"><strong className="text-slate-500">Teléfono Principal:</strong> <span className="text-slate-900 font-mono font-bold">{clienteActivo?.telefono}</span></div>
+                          <div className="flex justify-between items-center"><strong className="text-slate-500">Email Facturación:</strong> <span className="text-slate-900 font-medium">{clienteActivo?.email_cobranza}</span></div>
+                        </div>
                       </div>
 
-                      <div className="bg-[#E0E5EC] shadow-[inset_4px_4px_8px_#bec8d2,inset_-4px_-4px_8px_#ffffff] p-5 rounded-xl space-y-3 text-xs">
-                        <h3 className="font-black text-slate-900 uppercase tracking-wider text-xs border-b border-slate-300 pb-2">💳 CONDICIONES DE FACTURACIÓN & PLAN</h3>
-                        <div><strong className="text-slate-500">Razón Social Emisora Asignada:</strong> <span className="text-[#005bea] font-bold">Gama Seguridad SpA (EMP-1)</span></div>
-                        <div><strong className="text-slate-500">Moneda Pactada:</strong> <span className="text-slate-900 font-bold">{clienteActivo?.moneda}</span></div>
-                        <div><strong className="text-slate-500">Tarifa Mensual:</strong> <span className="text-emerald-800 font-mono font-bold">{clienteActivo?.moneda === 'UF' ? `${clienteActivo.tarifa_mensual} UF` : `$${(clienteActivo?.tarifa_mensual || 29900).toLocaleString('es-CL')} CLP`}</span></div>
-                        <div><strong className="text-slate-500">Día Vencimiento Mensual:</strong> <span className="text-slate-900 font-bold">Día {clienteActivo?.dia_vencimiento || 5} de cada mes</span></div>
-                        <div><strong className="text-slate-500">Plan de Monitoreo:</strong> <span className="text-slate-900 font-bold">{clienteActivo?.plan_monitoreo}</span></div>
-                        <div><strong className="text-slate-500">Estado de Cobranza:</strong> <span className="text-emerald-700 font-bold">🟢 {clienteActivo?.estado_pago}</span></div>
+                      <div className="bg-[#E0E5EC] shadow-[6px_6px_14px_#bec8d2,-6px_-6px_14px_#ffffff] p-6 rounded-2xl border border-white/60 space-y-4 text-xs">
+                        <div className="flex items-center gap-2.5 border-b border-slate-300/70 pb-3">
+                          <div className="p-2 bg-emerald-500/10 text-emerald-700 rounded-xl">
+                            <Receipt className="h-4 w-4" />
+                          </div>
+                          <span className="font-extrabold text-xs uppercase tracking-wider text-slate-700">💳 CONDICIONES DE FACTURACIÓN & PLAN</span>
+                        </div>
+                        <div className="space-y-2.5">
+                          <div className="flex justify-between items-center"><strong className="text-slate-500">Razón Social Emisora:</strong> <span className="text-[#005bea] font-extrabold bg-[#E0E5EC] shadow-[inset_2px_2px_4px_#bec8d2,inset_-2px_-2px_4px_#ffffff] px-3 py-1 rounded-lg">Gama Seguridad SpA (EMP-1)</span></div>
+                          <div className="flex justify-between items-center"><strong className="text-slate-500">Moneda Pactada:</strong> <span className="text-slate-900 font-bold">{clienteActivo?.moneda}</span></div>
+                          <div className="flex justify-between items-center"><strong className="text-slate-500">Tarifa Mensual:</strong> <span className="text-emerald-800 font-mono font-bold">{clienteActivo?.moneda === 'UF' ? `${clienteActivo.tarifa_mensual} UF` : `$${(clienteActivo?.tarifa_mensual || 29900).toLocaleString('es-CL')} CLP`}</span></div>
+                          <div className="flex justify-between items-center"><strong className="text-slate-500">Día Vencimiento:</strong> <span className="text-slate-900 font-bold">Día {clienteActivo?.dia_vencimiento || 5} de cada mes</span></div>
+                          <div className="flex justify-between items-center"><strong className="text-slate-500">Plan de Monitoreo:</strong> <span className="text-slate-900 font-bold">{clienteActivo?.plan_monitoreo}</span></div>
+                          <div className="flex justify-between items-center"><strong className="text-slate-500">Estado de Cobranza:</strong> <span className="text-emerald-700 font-bold">🟢 {clienteActivo?.estado_pago}</span></div>
+                        </div>
                       </div>
                     </div>
                   )}
 
-                  {/* SUB-SECCIÓN 2: CENTROS DE COSTO */}
+                  {/* SUB-SECCIÓN 2: CENTROS DE COSTO (BENTO CARDS) */}
                   {tabFicha360 === 'abonados' && (
-                    <div className="bg-[#E0E5EC] shadow-[inset_4px_4px_8px_#bec8d2,inset_-4px_-4px_8px_#ffffff] p-5 rounded-xl space-y-4 text-xs">
-                      <h3 className="font-black text-slate-900 uppercase tracking-wider text-xs">🏢 CENTROS DE COSTO & CUENTAS DE ABONADO ASOCIADAS</h3>
+                    <div className="bg-[#E0E5EC] shadow-[6px_6px_14px_#bec8d2,-6px_-6px_14px_#ffffff] p-6 rounded-2xl border border-white/60 space-y-5 text-xs">
+                      <div className="flex items-center gap-2.5 border-b border-slate-300/70 pb-3">
+                        <div className="p-2 bg-blue-500/10 text-[#005bea] rounded-xl">
+                          <Layers className="h-4 w-4" />
+                        </div>
+                        <span className="font-extrabold text-xs uppercase tracking-wider text-slate-700">🏢 CENTROS DE COSTO & CUENTAS DE ABONADO ASOCIADAS</span>
+                      </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {(clienteActivo?.cuentas_abonados || []).map(cta => {
                           const cc = abonadosCentrosCosto[cta]
                           return (
-                            <div key={cta} className="bg-[#E0E5EC] shadow-[4px_4px_8px_#bec8d2,-4px_-4px_8px_#ffffff] p-4 rounded-xl space-y-2">
+                            <div key={cta} className="bg-[#E0E5EC] shadow-[4px_4px_10px_#bec8d2,-4px_-4px_10px_#ffffff] p-5 rounded-2xl space-y-2 border border-white/50">
                               <div className="flex justify-between items-center">
-                                <span className="bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white font-mono font-bold text-xs px-2.5 py-0.5 rounded-md">
+                                <span className="bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white font-mono font-black text-xs px-3 py-1 rounded-xl shadow-xs">
                                   Abonado #{cta}
                                 </span>
-                                <span className="text-[10px] text-slate-500 font-bold">🟢 Monitoreo Activo 24/7</span>
+                                <span className="text-[10px] text-emerald-700 font-extrabold bg-emerald-500/10 border border-emerald-300/50 px-2.5 py-0.5 rounded-lg">🟢 Monitoreo Activo 24/7</span>
                               </div>
-                              <h4 className="font-bold text-slate-900 text-xs">{cc?.alias_centro_costo || `Abonado ${cta}`}</h4>
-                              <p className="text-slate-600 text-[11px]">📍 {cc?.direccion || 'Dirección Instalación'} ({cc?.ciudad || 'Santiago'})</p>
+                              <h4 className="font-extrabold text-slate-900 text-sm">{cc?.alias_centro_costo || `Abonado ${cta}`}</h4>
+                              <p className="text-slate-600 text-xs flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5 text-[#005bea]" /> {cc?.direccion || 'Dirección Instalación'} ({cc?.ciudad || 'Santiago'})</p>
                             </div>
                           )
                         })}
@@ -2680,23 +2700,28 @@ export default function OperacionCRM() {
                     </div>
                   )}
 
-                  {/* SUB-SECCIÓN 3: FACTURAS */}
+                  {/* SUB-SECCIÓN 3: FACTURAS (BENTO CARD) */}
                   {tabFicha360 === 'facturas' && (
-                    <div className="bg-[#E0E5EC] shadow-[inset_4px_4px_8px_#bec8d2,inset_-4px_-4px_8px_#ffffff] p-5 rounded-xl space-y-4 text-xs">
-                      <div className="flex justify-between items-center flex-wrap gap-2">
-                        <h3 className="font-black text-slate-900 uppercase tracking-wider text-xs">🧾 FACTURACIÓN & RECAUDACIÓN DE ESTE CLIENTE</h3>
+                    <div className="bg-[#E0E5EC] shadow-[6px_6px_14px_#bec8d2,-6px_-6px_14px_#ffffff] p-6 rounded-2xl border border-white/60 space-y-5 text-xs">
+                      <div className="flex justify-between items-center flex-wrap gap-3 border-b border-slate-300/70 pb-3">
+                        <div className="flex items-center gap-2.5">
+                          <div className="p-2 bg-emerald-500/10 text-emerald-700 rounded-xl">
+                            <Receipt className="h-4 w-4" />
+                          </div>
+                          <span className="font-extrabold text-xs uppercase tracking-wider text-slate-700">🧾 FACTURACIÓN & RECAUDACIÓN DE ESTE CLIENTE</span>
+                        </div>
                         <button
                           onClick={() => setModuloActivo('facturacion')}
-                          className="px-3.5 py-1.5 bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white font-bold rounded-lg text-xs shadow-xs active:scale-95 cursor-pointer flex items-center gap-1.5"
+                          className="px-4 py-2 bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white font-bold rounded-xl text-xs shadow-md hover:shadow-lg hover:brightness-105 active:scale-95 cursor-pointer flex items-center gap-2"
                         >
-                          <DollarSign className="h-3.5 w-3.5" />
+                          <DollarSign className="h-4 w-4" />
                           <span>💰 Ir a Gestor Global de Cobranzas (34 Facturas Real)</span>
                         </button>
                       </div>
-                      <div className="overflow-x-auto">
+                      <div className="overflow-x-auto rounded-xl shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] p-2 bg-[#E0E5EC]">
                         <table className="w-full text-left border-collapse text-xs">
                           <thead>
-                            <tr className="border-b border-slate-300 font-bold uppercase text-[10px] text-slate-600">
+                            <tr className="border-b border-slate-300 font-extrabold uppercase text-[11px] text-slate-600">
                               <th className="p-3">N° FACTURA</th>
                               <th className="p-3">FECHA EMISIÓN</th>
                               <th className="p-3 text-right">TOTAL</th>
@@ -2707,14 +2732,14 @@ export default function OperacionCRM() {
                           </thead>
                           <tbody className="divide-y divide-slate-300 font-medium">
                             {facturas.filter(f => f.rut_cliente === clienteActivo?.rut || f.cuenta_asociada === cuentaSeleccionada).map(f => (
-                              <tr key={f.id}>
+                              <tr key={f.id} className="hover:bg-slate-200/60 transition-colors">
                                 <td className="p-3 font-mono font-bold text-[#005bea]">{f.numero_factura}</td>
                                 <td className="p-3">{f.fecha}</td>
                                 <td className="p-3 text-right font-mono font-bold">${f.monto_total.toLocaleString('es-CL')}</td>
                                 <td className="p-3 text-right font-mono text-emerald-700 font-bold">${(f.monto_abonado || 0).toLocaleString('es-CL')}</td>
                                 <td className="p-3 text-right font-mono text-red-700 font-bold">${(f.saldo_pendiente || 0).toLocaleString('es-CL')}</td>
                                 <td className="p-3 text-center font-bold">
-                                  <span className="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-md text-[10px]">{f.estado}</span>
+                                  <span className="bg-emerald-500/15 text-emerald-800 border border-emerald-300 px-2.5 py-0.5 rounded-lg text-[10px] uppercase">{f.estado}</span>
                                 </td>
                               </tr>
                             ))}
@@ -2724,20 +2749,25 @@ export default function OperacionCRM() {
                     </div>
                   )}
 
-                  {/* SUB-SECCIÓN 4: COTIZACIONES */}
+                  {/* SUB-SECCIÓN 4: COTIZACIONES (BENTO CARD) */}
                   {tabFicha360 === 'cotizaciones' && (
-                    <div className="bg-[#E0E5EC] shadow-[inset_4px_4px_8px_#bec8d2,inset_-4px_-4px_8px_#ffffff] p-5 rounded-xl space-y-4 text-xs">
-                      <div className="flex justify-between items-center">
-                        <h3 className="font-black text-slate-900 uppercase tracking-wider text-xs">📋 PRESUPUESTOS & COTIZACIONES EMITIDAS</h3>
-                        <button onClick={abrirModalNuevaCotizacion} className="px-3 py-1.5 bg-[#005bea] text-white font-bold rounded-lg text-xs flex items-center gap-1">
-                          <Plus className="h-3.5 w-3.5" />
+                    <div className="bg-[#E0E5EC] shadow-[6px_6px_14px_#bec8d2,-6px_-6px_14px_#ffffff] p-6 rounded-2xl border border-white/60 space-y-5 text-xs">
+                      <div className="flex justify-between items-center border-b border-slate-300/70 pb-3">
+                        <div className="flex items-center gap-2.5">
+                          <div className="p-2 bg-indigo-500/10 text-indigo-700 rounded-xl">
+                            <FileText className="h-4 w-4" />
+                          </div>
+                          <span className="font-extrabold text-xs uppercase tracking-wider text-slate-700">📋 PRESUPUESTOS & COTIZACIONES EMITIDAS</span>
+                        </div>
+                        <button onClick={abrirModalNuevaCotizacion} className="px-4 py-2 bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-md hover:brightness-105 active:scale-95 cursor-pointer">
+                          <Plus className="h-4 w-4" />
                           <span>Nueva Cotización</span>
                         </button>
                       </div>
-                      <div className="overflow-x-auto">
+                      <div className="overflow-x-auto rounded-xl shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] p-2 bg-[#E0E5EC]">
                         <table className="w-full text-left border-collapse text-xs">
                           <thead>
-                            <tr className="border-b border-slate-300 font-bold uppercase text-[10px] text-slate-600">
+                            <tr className="border-b border-slate-300 font-extrabold uppercase text-[11px] text-slate-600">
                               <th className="p-3">FOLIO</th>
                               <th className="p-3">FECHA</th>
                               <th className="p-3 text-right">TOTAL IVA INCL.</th>
@@ -2747,15 +2777,15 @@ export default function OperacionCRM() {
                           </thead>
                           <tbody className="divide-y divide-slate-300 font-medium">
                             {cotizaciones.filter(c => c.rut_cliente === clienteActivo?.rut || c.cuenta === cuentaSeleccionada).map(c => (
-                              <tr key={c.id}>
+                              <tr key={c.id} className="hover:bg-slate-200/60 transition-colors">
                                 <td className="p-3 font-mono font-bold text-[#005bea]">{c.codigo_cotizacion}</td>
                                 <td className="p-3">{c.fecha}</td>
                                 <td className="p-3 text-right font-mono font-bold text-emerald-800">${Math.round(c.monto_total_iva_incluido || 0).toLocaleString('es-CL')}</td>
                                 <td className="p-3 text-center font-bold">
-                                  <span className="bg-[#E0E5EC] shadow-[inset_2px_2px_4px_#bec8d2,inset_-2px_-2px_4px_#ffffff] text-slate-800 px-2 py-0.5 rounded-md text-[10px]">{c.etapa_pipeline || 'Cotización'}</span>
+                                  <span className="bg-[#E0E5EC] shadow-[inset_2px_2px_4px_#bec8d2,inset_-2px_-2px_4px_#ffffff] text-slate-800 px-2.5 py-1 rounded-lg text-[10px]">{c.etapa_pipeline || 'Cotización'}</span>
                                 </td>
                                 <td className="p-3 text-center">
-                                  <button onClick={() => setCotSeleccionada(c)} className="px-2 py-1 bg-slate-900 text-white font-bold rounded-md text-[10px]">
+                                  <button onClick={() => setCotSeleccionada(c)} className="px-3 py-1 bg-slate-900 text-white font-bold rounded-lg text-[10px] hover:bg-slate-800 cursor-pointer shadow-xs">
                                     Ver DTE
                                   </button>
                                 </td>
@@ -2767,14 +2797,19 @@ export default function OperacionCRM() {
                     </div>
                   )}
 
-                  {/* SUB-SECCIÓN 5: ORDENES TÉCNICAS */}
+                  {/* SUB-SECCIÓN 5: ORDENES TÉCNICAS (BENTO CARD) */}
                   {tabFicha360 === 'ots' && (
-                    <div className="bg-[#E0E5EC] shadow-[inset_4px_4px_8px_#bec8d2,inset_-4px_-4px_8px_#ffffff] p-5 rounded-xl space-y-4 text-xs">
-                      <h3 className="font-black text-slate-900 uppercase tracking-wider text-xs">🛠️ ÓRDENES TÉCNICAS (SLA FIELD SERVICE)</h3>
-                      <div className="overflow-x-auto">
+                    <div className="bg-[#E0E5EC] shadow-[6px_6px_14px_#bec8d2,-6px_-6px_14px_#ffffff] p-6 rounded-2xl border border-white/60 space-y-5 text-xs">
+                      <div className="flex items-center gap-2.5 border-b border-slate-300/70 pb-3">
+                        <div className="p-2 bg-amber-500/10 text-amber-700 rounded-xl">
+                          <Wrench className="h-4 w-4" />
+                        </div>
+                        <span className="font-extrabold text-xs uppercase tracking-wider text-slate-700">🛠️ ÓRDENES TÉCNICAS (SLA FIELD SERVICE)</span>
+                      </div>
+                      <div className="overflow-x-auto rounded-xl shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] p-2 bg-[#E0E5EC]">
                         <table className="w-full text-left border-collapse text-xs">
                           <thead>
-                            <tr className="border-b border-slate-300 font-bold uppercase text-[10px] text-slate-600">
+                            <tr className="border-b border-slate-300 font-extrabold uppercase text-[11px] text-slate-600">
                               <th className="p-3">CÓDIGO OT</th>
                               <th className="p-3">SERVICIO</th>
                               <th className="p-3">SLA</th>
@@ -2784,13 +2819,13 @@ export default function OperacionCRM() {
                           </thead>
                           <tbody className="divide-y divide-slate-300 font-medium">
                           {ordenesTrabajo.filter(ot => ot.cuenta === cuentaSeleccionada || ot.cliente_nombre.includes(clienteActivo?.razon_social || '')).map(ot => (
-                              <tr key={ot.id}>
+                              <tr key={ot.id} className="hover:bg-slate-200/60 transition-colors">
                                 <td className="p-3 font-mono font-bold text-[#005bea]">{ot.codigo_ot}</td>
                                 <td className="p-3 font-semibold">{ot.tipo_servicio}</td>
                                 <td className="p-3 font-bold">{ot.prioridad_sla}</td>
                                 <td className="p-3">{ot.tecnico_asignado}</td>
                                 <td className="p-3 text-center font-bold">
-                                  <span className="bg-blue-100 text-blue-900 px-2 py-0.5 rounded-md text-[10px]">{ot.estado}</span>
+                                  <span className="bg-blue-500/15 text-blue-900 border border-blue-300 px-2.5 py-0.5 rounded-lg text-[10px]">{ot.estado}</span>
                                 </td>
                               </tr>
                             ))}
@@ -2800,46 +2835,50 @@ export default function OperacionCRM() {
                     </div>
                   )}
 
-                  {/* ── ÚLTIMAS 10 SEÑALES DE ALARMA RECEPTOR ── */}
-                  <div className="bg-[#E0E5EC] shadow-[inset_4px_4px_8px_#bec8d2,inset_-4px_-4px_8px_#ffffff] p-5 rounded-xl space-y-3 text-xs">
-                    <div className="flex justify-between items-center border-b border-slate-300 pb-2">
-                      <h3 className="font-black text-slate-900 uppercase tracking-wider text-xs flex items-center gap-2">
-                        <Activity className="h-4 w-4 text-[#005bea]" />
-                        <span>ÚLTIMAS 10 SEÑALES DE SU ALARMA (#{(abonadoActivo?.cuenta || cuentaSeleccionada || 'ACTIVA').toUpperCase()})</span>
-                      </h3>
-                      <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-md flex items-center gap-1">
-                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                  {/* ── BENTO CARD: ÚLTIMAS 10 SEÑALES DE ALARMA RECEPTOR ── */}
+                  <div className="bg-[#E0E5EC] shadow-[6px_6px_14px_#bec8d2,-6px_-6px_14px_#ffffff] p-6 rounded-2xl border border-white/60 space-y-4 text-xs transition-all">
+                    <div className="flex justify-between items-center border-b border-slate-300/70 pb-3">
+                      <div className="flex items-center gap-2.5">
+                        <div className="p-2 bg-blue-500/10 text-[#005bea] rounded-xl">
+                          <Activity className="h-4 w-4" />
+                        </div>
+                        <span className="font-extrabold text-xs uppercase tracking-wider text-slate-700">
+                          ÚLTIMAS 10 SEÑALES DE SU ALARMA (#{(abonadoActivo?.cuenta || cuentaSeleccionada || 'ACTIVA').toUpperCase()})
+                        </span>
+                      </div>
+                      <span className="bg-emerald-500/15 text-emerald-800 border border-emerald-300/60 text-[10px] font-black px-3 py-1 rounded-xl flex items-center gap-1.5 uppercase tracking-wider">
+                        <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
                         <span>Receptor en Línea</span>
                       </span>
                     </div>
 
-                    <div className="overflow-x-auto">
+                    <div className="overflow-x-auto rounded-xl shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] p-2 bg-[#E0E5EC]">
                       <table className="w-full text-left border-collapse text-xs">
                         <thead>
-                          <tr className="border-b border-slate-300 font-bold uppercase text-[10px] text-slate-500">
-                            <th className="p-2.5">FECHA Y HORA</th>
-                            <th className="p-2.5">DESCRIPCIÓN RECEPTOR</th>
-                            <th className="p-2.5">ZONA / USUARIO</th>
-                            <th className="p-2.5 text-center">PRIORIDAD</th>
+                          <tr className="border-b border-slate-300 font-extrabold uppercase text-[11px] text-slate-600">
+                            <th className="p-3">FECHA Y HORA</th>
+                            <th className="p-3">DESCRIPCIÓN RECEPTOR</th>
+                            <th className="p-3">ZONA / USUARIO</th>
+                            <th className="p-3 text-center">PRIORIDAD</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-300/60 font-medium">
                           {cargandoSenales ? (
                             <tr>
-                              <td colSpan={4} className="p-4 text-center text-slate-500 font-bold">
-                                <Loader2 className="h-4 w-4 animate-spin inline mr-2" />
+                              <td colSpan={4} className="p-6 text-center text-slate-500 font-bold">
+                                <Loader2 className="h-4 w-4 animate-spin inline mr-2 text-[#005bea]" />
                                 Cargando señales del abonado...
                               </td>
                             </tr>
                           ) : senalesRealtime.length === 0 ? (
                             <tr>
                               <td colSpan={4} className="p-6 text-center">
-                                <div className="bg-[#E0E5EC] p-4 rounded-xl shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] space-y-1 inline-block max-w-xl">
-                                  <div className="flex items-center justify-center gap-2 text-amber-700 font-bold text-xs">
+                                <div className="bg-[#E0E5EC] p-5 rounded-2xl shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] space-y-1 inline-block max-w-xl border border-slate-300/50">
+                                  <div className="flex items-center justify-center gap-2 text-amber-800 font-extrabold text-xs">
                                     <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600" />
                                     <span>Sin transmisiones recientes de señales de alarma</span>
                                   </div>
-                                  <p className="text-[11px] text-slate-500 font-medium">
+                                  <p className="text-[11px] text-slate-500 font-semibold">
                                     No se registran transmisiones de señales emitidas por el panel a la central para la cuenta #{(abonadoActivo?.cuenta || cuentaSeleccionada || '').toUpperCase()}.
                                   </p>
                                 </div>
@@ -2847,12 +2886,12 @@ export default function OperacionCRM() {
                             </tr>
                           ) : (
                             senalesRealtime.map(s => (
-                              <tr key={s.id} className="hover:bg-slate-200/50 transition-all">
-                                <td className="p-2.5 font-mono text-slate-600 text-[11px]">{s.fecha}</td>
-                                <td className="p-2.5 font-bold text-slate-800">{s.desc}</td>
-                                <td className="p-2.5 text-slate-700">{s.zona}</td>
-                                <td className="p-2.5 text-center">
-                                  <span className={`px-2 py-0.5 rounded-md text-[10px] ${s.color}`}>
+                              <tr key={s.id} className="hover:bg-slate-200/60 transition-all">
+                                <td className="p-3 font-mono text-slate-700 text-[11px] font-bold">{s.fecha}</td>
+                                <td className="p-3 font-bold text-slate-900">{s.desc}</td>
+                                <td className="p-3 text-slate-700 font-semibold">{s.zona}</td>
+                                <td className="p-3 text-center">
+                                  <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider ${s.color}`}>
                                     {s.prioridad}
                                   </span>
                                 </td>
@@ -2864,14 +2903,18 @@ export default function OperacionCRM() {
                     </div>
                   </div>
 
-                  {/* ── ÚLTIMAS 5 NOVEDADES REGISTRADAS EN BITÁCORA DEL COMMAND CENTER ── */}
-                  <div className="bg-[#E0E5EC] shadow-[inset_4px_4px_8px_#bec8d2,inset_-4px_-4px_8px_#ffffff] p-5 rounded-xl space-y-3 text-xs">
-                    <div className="flex justify-between items-center border-b border-slate-300 pb-2">
-                      <h3 className="font-black text-slate-900 uppercase tracking-wider text-xs flex items-center gap-2">
-                        <ClipboardList className="h-4 w-4 text-[#005bea]" />
-                        <span>ÚLTIMAS NOVEDADES REGISTRADAS EN BITÁCORA COMMAND CENTER (#{(abonadoActivo?.cuenta || cuentaSeleccionada || 'ACTIVA').toUpperCase()})</span>
-                      </h3>
-                      <span className="text-[10px] font-bold text-slate-500 bg-[#E0E5EC] shadow-[2px_2px_4px_#bec8d2,-2px_-2px_4px_#ffffff] px-2 py-0.5 rounded-md">
+                  {/* ── BENTO CARD: ÚLTIMAS 5 NOVEDADES REGISTRADAS EN BITÁCORA DEL COMMAND CENTER ── */}
+                  <div className="bg-[#E0E5EC] shadow-[6px_6px_14px_#bec8d2,-6px_-6px_14px_#ffffff] p-6 rounded-2xl border border-white/60 space-y-4 text-xs transition-all">
+                    <div className="flex justify-between items-center border-b border-slate-300/70 pb-3">
+                      <div className="flex items-center gap-2.5">
+                        <div className="p-2 bg-blue-500/10 text-[#005bea] rounded-xl">
+                          <ClipboardList className="h-4 w-4" />
+                        </div>
+                        <span className="font-extrabold text-xs uppercase tracking-wider text-slate-700">
+                          ÚLTIMAS NOVEDADES REGISTRADAS EN BITÁCORA COMMAND CENTER (#{(abonadoActivo?.cuenta || cuentaSeleccionada || 'ACTIVA').toUpperCase()})
+                        </span>
+                      </div>
+                      <span className="text-[10px] font-extrabold text-slate-600 bg-[#E0E5EC] shadow-[2px_2px_4px_#bec8d2,-2px_-2px_4px_#ffffff] px-3 py-1 rounded-xl">
                         Central 24/7 API
                       </span>
                     </div>
@@ -3350,18 +3393,18 @@ export default function OperacionCRM() {
 
           {/* ── MÓDULO 4: FACTURACIÓN & ABONOS PARCIALES CON CONCILIADOR AUTOMÁTICO ── */}
           {moduloActivo === 'facturacion' && (
-            <div className="flex-1 bg-[#E0E5EC] rounded-2xl p-6 md:p-8 flex flex-col gap-6 shadow-[6px_6px_12px_#bec8d2,-6px_-6px_12px_#ffffff] overflow-y-auto">
+            <div className="flex-1 bg-[#E0E5EC] rounded-2xl p-6 sm:p-8 flex flex-col gap-6 shadow-[6px_6px_14px_#bec8d2,-6px_-6px_14px_#ffffff] border border-white/60 overflow-y-auto">
               
               {/* ENCABEZADO Y BOTONES DE CARGA EXCEL / CSV */}
-              <div className="bg-[#E0E5EC] shadow-[inset_5px_5px_10px_#bec8d2,inset_-5px_-5px_10px_#ffffff] p-5 rounded-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-2.5 bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white rounded-xl shadow-xs">
-                    <DollarSign className="h-5 w-5 stroke-[2]" />
+              <div className="bg-[#E0E5EC] shadow-[inset_4px_4px_8px_#bec8d2,inset_-4px_-4px_8px_#ffffff] p-6 rounded-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border border-slate-300/40">
+                <div className="flex items-center gap-3.5">
+                  <div className="p-3 bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white rounded-xl shadow-md">
+                    <DollarSign className="h-6 w-6 stroke-[2.5]" />
                   </div>
                   <div>
-                    <h2 className="text-base font-black text-slate-900 uppercase tracking-wide flex items-center gap-2">
+                    <h2 className="text-base sm:text-lg font-black text-slate-900 uppercase tracking-wide flex items-center gap-2.5 flex-wrap">
                       <span>Gestor de Facturación & Conciliador de Cobranza (Julio 2026)</span>
-                      <span className="bg-[#005bea] text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full font-mono">
+                      <span className="bg-[#005bea] text-white text-[10px] font-black px-3 py-0.5 rounded-full font-mono shadow-xs">
                         {facturas.length} Facturas Reales
                       </span>
                     </h2>
@@ -3372,8 +3415,8 @@ export default function OperacionCRM() {
                 </div>
 
                 <div className="flex items-center gap-3 flex-wrap">
-                  <label className="px-4 py-2.5 bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white font-bold rounded-xl text-xs shadow-[4px_4px_8px_#bec8d2,-4px_-4px_8px_#ffffff] active:scale-95 cursor-pointer transition-all flex items-center gap-2">
-                    <FileSpreadsheet className="h-4 w-4" />
+                  <label className="px-5 py-3 bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white font-black rounded-xl text-xs shadow-md hover:shadow-lg hover:brightness-105 active:scale-95 cursor-pointer transition-all flex items-center gap-2 uppercase tracking-wider">
+                    <FileSpreadsheet className="h-4 w-4 stroke-[2.5]" />
                     <span>📁 Subir Planilla Cobranza (Excel / CSV)</span>
                     <input
                       type="file"
@@ -3385,34 +3428,34 @@ export default function OperacionCRM() {
                 </div>
               </div>
 
-              {/* ── CARDS DE RESUMEN FINANCIERO DE COBRANZA EN TIEMPO REAL ── */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="bg-[#E0E5EC] shadow-[6px_6px_12px_#bec8d2,-6px_-6px_12px_#ffffff] p-5 rounded-2xl space-y-1">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">TOTAL FACTURADO JULIO</span>
+              {/* ── CARDS DE RESUMEN FINANCIERO DE COBRANZA EN TIEMPO REAL BENTO ── */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                <div className="bg-[#E0E5EC] shadow-[6px_6px_14px_#bec8d2,-6px_-6px_14px_#ffffff] p-6 rounded-2xl border border-white/60 space-y-2 transition-all hover:shadow-[8px_8px_16px_#bec8d2,-8px_-8px_16px_#ffffff]">
+                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest block">TOTAL FACTURADO JULIO</span>
                   <div className="text-2xl font-black font-mono text-slate-900">
                     ${facturas.reduce((acc, curr) => acc + curr.monto_total, 0).toLocaleString('es-CL')} CLP
                   </div>
-                  <span className="text-xs text-slate-500 font-semibold">34 Facturas procesadas</span>
+                  <span className="text-xs text-slate-600 font-bold bg-slate-300/40 px-2.5 py-0.5 rounded-lg inline-block">34 Facturas procesadas</span>
                 </div>
 
-                <div className="bg-[#E0E5EC] shadow-[6px_6px_12px_#bec8d2,-6px_-6px_12px_#ffffff] p-5 rounded-2xl space-y-1">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">TOTAL RECAUDADO / ABONADO</span>
+                <div className="bg-[#E0E5EC] shadow-[6px_6px_14px_#bec8d2,-6px_-6px_14px_#ffffff] p-6 rounded-2xl border border-white/60 space-y-2 transition-all hover:shadow-[8px_8px_16px_#bec8d2,-8px_-8px_16px_#ffffff]">
+                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest block">TOTAL RECAUDADO / ABONADO</span>
                   <div className="text-2xl font-black font-mono text-emerald-700">
                     ${facturas.reduce((acc, curr) => acc + (curr.monto_abonado || 0), 0).toLocaleString('es-CL')} CLP
                   </div>
-                  <span className="text-xs text-emerald-600 font-bold">Abonos al día</span>
+                  <span className="text-xs text-emerald-800 font-extrabold bg-emerald-500/15 border border-emerald-300/60 px-2.5 py-0.5 rounded-lg inline-block">Abonos al día</span>
                 </div>
 
-                <div className="bg-[#E0E5EC] shadow-[6px_6px_12px_#bec8d2,-6px_-6px_12px_#ffffff] p-5 rounded-2xl space-y-1">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">SALDO PENDIENTE POR COBRAR</span>
+                <div className="bg-[#E0E5EC] shadow-[6px_6px_14px_#bec8d2,-6px_-6px_14px_#ffffff] p-6 rounded-2xl border border-white/60 space-y-2 transition-all hover:shadow-[8px_8px_16px_#bec8d2,-8px_-8px_16px_#ffffff]">
+                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest block">SALDO PENDIENTE POR COBRAR</span>
                   <div className="text-2xl font-black font-mono text-red-700">
                     ${facturas.reduce((acc, curr) => acc + (curr.saldo_pendiente || 0), 0).toLocaleString('es-CL')} CLP
                   </div>
-                  <span className="text-xs text-red-600 font-bold">Por conciliar</span>
+                  <span className="text-xs text-red-800 font-extrabold bg-red-500/15 border border-red-300/60 px-2.5 py-0.5 rounded-lg inline-block">Por conciliar</span>
                 </div>
               </div>
 
-              <div className="bg-[#E0E5EC] shadow-[inset_5px_5px_10px_#bec8d2,inset_-5px_-5px_10px_#ffffff] rounded-xl p-2 overflow-x-auto">
+              <div className="bg-[#E0E5EC] shadow-[inset_4px_4px_8px_#bec8d2,inset_-4px_-4px_8px_#ffffff] rounded-2xl p-3 overflow-x-auto border border-slate-300/40">
                 <table className="w-full text-left border-collapse text-xs font-medium">
                   <thead>
                     <tr className="bg-[#E0E5EC] text-slate-700 border-b border-slate-300 font-bold uppercase text-[11px]">
