@@ -715,6 +715,91 @@ export default function OperacionCRM() {
     return `PR2607-${nextNum.toString().padStart(4, '0')}`
   }, [cotizaciones])
 
+  // ── ESTADOS Y FILTROS DEL MÓDULO DE PRESUPUESTOS (DTE CHILE) ──
+  const [filtroCotCategoria, setFiltroCotCategoria] = useState<'todas' | 'borrador' | 'enviado' | 'aprobado' | 'rechazado'>('todas')
+  const [filtroCotBusqueda, setFiltroCotBusqueda] = useState<string>('')
+  const [filtroCotDesde, setFiltroCotDesde] = useState<string>('')
+  const [filtroCotHasta, setFiltroCotHasta] = useState<string>('')
+  const [filtroCotEmpresa, setFiltroCotEmpresa] = useState<string>('todas')
+  const [filtroCotOrden, setFiltroCotOrden] = useState<'recientes' | 'antiguos' | 'monto_desc' | 'monto_asc' | 'cliente_asc'>('recientes')
+
+  const resumenCotizacionesKPI = useMemo(() => {
+    const total = cotizaciones.length
+    let borradores = 0, enviados = 0, aprobados = 0, rechazados = 0
+    let montoTotal = 0, montoAprobados = 0
+
+    cotizaciones.forEach(c => {
+      const totalInc = c.monto_total_iva_incluido || 0
+      montoTotal += totalInc
+      const est = (c.etapa_pipeline || 'Cotización').toLowerCase()
+      if (est.includes('borrador')) borradores++
+      else if (est.includes('ganado') || est.includes('aprobado') || est.includes('aceptad')) {
+        aprobados++
+        montoAprobados += totalInc
+      } else if (est.includes('perdido') || est.includes('rechazad')) rechazados++
+      else enviados++
+    })
+
+    return { total, borradores, enviados, aprobados, rechazados, montoTotal, montoAprobados }
+  }, [cotizaciones])
+
+  const cotizacionesFiltradas = useMemo(() => {
+    let list = [...cotizaciones]
+
+    // 1. Filtro por Categoria / Estado (KPI Card click)
+    if (filtroCotCategoria !== 'todas') {
+      list = list.filter(c => {
+        const est = (c.etapa_pipeline || 'Cotización').toLowerCase()
+        if (filtroCotCategoria === 'borrador') return est.includes('borrador')
+        if (filtroCotCategoria === 'enviado') return est.includes('cotización') || est.includes('enviado') || est.includes('negociación')
+        if (filtroCotCategoria === 'aprobado') return est.includes('ganado') || est.includes('aprobado') || est.includes('aceptad')
+        if (filtroCotCategoria === 'rechazado') return est.includes('perdido') || est.includes('rechazad')
+        return true
+      })
+    }
+
+    // 2. Filtro por Búsqueda de Texto (Cliente, RUT, Folio, Comuna, Email)
+    if (filtroCotBusqueda.trim()) {
+      const q = filtroCotBusqueda.toLowerCase().trim()
+      const qClean = q.replace(/[^a-z0-9]/gi, '')
+      list = list.filter(c => {
+        const cod = (c.codigo_cotizacion || '').toLowerCase()
+        const cli = (c.nombre_cliente || '').toLowerCase()
+        const rut = (c.rut_cliente || '').toLowerCase()
+        const ciu = (c.ciudad_cliente || '').toLowerCase()
+        const em = (c.email_cliente || '').toLowerCase()
+
+        return cod.includes(q) || (qClean && cod.replace(/[^a-z0-9]/gi, '').includes(qClean)) ||
+               cli.includes(q) || rut.includes(q) || ciu.includes(q) || em.includes(q)
+      })
+    }
+
+    // 3. Filtro por Rango de Fechas
+    if (filtroCotDesde) {
+      list = list.filter(c => (c.fecha || '') >= filtroCotDesde)
+    }
+    if (filtroCotHasta) {
+      list = list.filter(c => (c.fecha || '') <= filtroCotHasta)
+    }
+
+    // 4. Filtro por Empresa Emisora
+    if (filtroCotEmpresa !== 'todas') {
+      list = list.filter(c => c.empresa_facturadora_id === filtroCotEmpresa)
+    }
+
+    // 5. Ordenamiento
+    list.sort((a, b) => {
+      if (filtroCotOrden === 'recientes') return (b.fecha || '').localeCompare(a.fecha || '') || b.id - a.id
+      if (filtroCotOrden === 'antiguos') return (a.fecha || '').localeCompare(b.fecha || '') || a.id - b.id
+      if (filtroCotOrden === 'monto_desc') return (b.monto_total_iva_incluido || 0) - (a.monto_total_iva_incluido || 0)
+      if (filtroCotOrden === 'monto_asc') return (a.monto_total_iva_incluido || 0) - (b.monto_total_iva_incluido || 0)
+      if (filtroCotOrden === 'cliente_asc') return (a.nombre_cliente || '').localeCompare(b.nombre_cliente || '')
+      return 0
+    })
+
+    return list
+  }, [cotizaciones, filtroCotCategoria, filtroCotBusqueda, filtroCotDesde, filtroCotHasta, filtroCotEmpresa, filtroCotOrden])
+
   const kpisFinancieros = useMemo(() => {
     let totalTarifasCLP = 0
     let totalClientes = Object.keys(clientesMaestros).length
@@ -2382,6 +2467,117 @@ export default function OperacionCRM() {
                 </div>
               </div>
 
+              {/* ── CARDS DE FILTRO RÁPIDO POR CATEGORÍA Y ESTADO (POR CLICK) ── */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
+                {[
+                  { id: 'todas', label: 'Todos los Presupuestos', count: resumenCotizacionesKPI.total, sub: `$${Math.round(resumenCotizacionesKPI.montoTotal).toLocaleString('es-CL')} CLP`, color: 'text-[#005bea]' },
+                  { id: 'enviado', label: 'Enviados / En Gestión', count: resumenCotizacionesKPI.enviados, sub: 'Cotizaciones activas', color: 'text-blue-600' },
+                  { id: 'aprobado', label: 'Aprobados / Ganados', count: resumenCotizacionesKPI.aprobados, sub: `$${Math.round(resumenCotizacionesKPI.montoAprobados).toLocaleString('es-CL')} CLP`, color: 'text-emerald-600' },
+                  { id: 'rechazado', label: 'Rechazados / Perdidos', count: resumenCotizacionesKPI.rechazados, sub: 'Descartados', color: 'text-red-600' },
+                  { id: 'borrador', label: 'Borradores', count: resumenCotizacionesKPI.borradores, sub: 'En edición', color: 'text-amber-600' },
+                ].map(cat => {
+                  const esSel = filtroCotCategoria === cat.id
+                  return (
+                    <button
+                      key={cat.id}
+                      onClick={() => setFiltroCotCategoria(cat.id as any)}
+                      className={`p-3.5 rounded-2xl text-left transition-all cursor-pointer flex flex-col justify-between ${
+                        esSel
+                          ? 'bg-[#E0E5EC] shadow-[inset_4px_4px_8px_#bec8d2,inset_-4px_-4px_8px_#ffffff] border-l-4 border-l-[#005bea]'
+                          : 'bg-[#E0E5EC] shadow-[4px_4px_8px_#bec8d2,-4px_-4px_8px_#ffffff] hover:brightness-95 active:scale-98'
+                      }`}
+                    >
+                      <div className="text-[10px] font-black uppercase tracking-wider text-slate-500">{cat.label}</div>
+                      <div className="flex justify-between items-baseline mt-2">
+                        <span className={`text-xl font-black font-mono ${cat.color}`}>{cat.count}</span>
+                        <span className="text-[10px] font-bold text-slate-500">{cat.sub}</span>
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+
+              {/* ── BARRA SUPERIOR DE FILTRO COMPLETO (MULTICRITERIO MULTI-FECHA Y BÚSQUEDA) ── */}
+              <div className="bg-[#E0E5EC] p-4 rounded-xl shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] flex flex-wrap items-center gap-3 text-xs">
+                {/* Buscador de Texto (Cliente, RUT, Folio) */}
+                <div className="relative flex-1 min-w-[220px]">
+                  <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-400" />
+                  <input
+                    type="text"
+                    value={filtroCotBusqueda}
+                    onChange={e => setFiltroCotBusqueda(e.target.value)}
+                    placeholder="Buscar por Cliente, RUT, Folio (#PR2607), Comuna..."
+                    className="w-full bg-[#E0E5EC] shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] rounded-lg pl-9 pr-3 py-2 text-xs font-mono text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-[#005bea]"
+                  />
+                </div>
+
+                {/* Fecha Desde */}
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <Calendar className="h-3.5 w-3.5 text-slate-500 shrink-0" />
+                  <span className="text-[10px] font-bold text-slate-600">Desde:</span>
+                  <input
+                    type="date"
+                    value={filtroCotDesde}
+                    onChange={e => setFiltroCotDesde(e.target.value)}
+                    className="bg-[#E0E5EC] shadow-[inset_2px_2px_4px_#bec8d2,inset_-2px_-2px_4px_#ffffff] px-2.5 py-1.5 rounded-lg text-xs font-mono text-slate-800 focus:outline-none"
+                  />
+                </div>
+
+                {/* Fecha Hasta */}
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <span className="text-[10px] font-bold text-slate-600">Hasta:</span>
+                  <input
+                    type="date"
+                    value={filtroCotHasta}
+                    onChange={e => setFiltroCotHasta(e.target.value)}
+                    className="bg-[#E0E5EC] shadow-[inset_2px_2px_4px_#bec8d2,inset_-2px_-2px_4px_#ffffff] px-2.5 py-1.5 rounded-lg text-xs font-mono text-slate-800 focus:outline-none"
+                  />
+                </div>
+
+                {/* Empresa Emisora */}
+                <select
+                  value={filtroCotEmpresa}
+                  onChange={e => setFiltroCotEmpresa(e.target.value)}
+                  className="bg-[#E0E5EC] shadow-[2px_2px_4px_#bec8d2,-2px_-2px_4px_#ffffff] px-3 py-2 rounded-lg text-xs font-bold text-slate-800 focus:outline-none"
+                >
+                  <option value="todas">Todas las Emisoras</option>
+                  {empresasConglomerado.map(emp => (
+                    <option key={emp.id} value={emp.id}>{emp.razon_social}</option>
+                  ))}
+                </select>
+
+                {/* Ordenamiento */}
+                <select
+                  value={filtroCotOrden}
+                  onChange={e => setFiltroCotOrden(e.target.value as any)}
+                  className="bg-[#E0E5EC] shadow-[2px_2px_4px_#bec8d2,-2px_-2px_4px_#ffffff] px-3 py-2 rounded-lg text-xs font-bold text-slate-800 focus:outline-none"
+                >
+                  <option value="recientes">Más Recientes</option>
+                  <option value="antiguos">Más Antiguos</option>
+                  <option value="monto_desc">Mayor Monto</option>
+                  <option value="monto_asc">Menor Monto</option>
+                  <option value="cliente_asc">Cliente (A-Z)</option>
+                </select>
+
+                {/* Botón Limpiar */}
+                {(filtroCotBusqueda || filtroCotDesde || filtroCotHasta || filtroCotCategoria !== 'todas' || filtroCotEmpresa !== 'todas' || filtroCotOrden !== 'recientes') && (
+                  <button
+                    onClick={() => {
+                      setFiltroCotCategoria('todas')
+                      setFiltroCotBusqueda('')
+                      setFiltroCotDesde('')
+                      setFiltroCotHasta('')
+                      setFiltroCotEmpresa('todas')
+                      setFiltroCotOrden('recientes')
+                    }}
+                    className="px-3 py-2 text-xs font-bold text-red-600 hover:underline cursor-pointer flex items-center gap-1 bg-[#E0E5EC] shadow-[2px_2px_4px_#bec8d2,-2px_-2px_4px_#ffffff] rounded-lg"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                    <span>Limpiar Filtros</span>
+                  </button>
+                )}
+              </div>
+
               {/* VISTA 1: TABLA GENERAL DTE */}
               {vistaCotizaciones === 'tabla' && (
                 <div className="flex-1 overflow-auto bg-[#E0E5EC] shadow-[inset_5px_5px_10px_#bec8d2,inset_-5px_-5px_10px_#ffffff] rounded-xl p-3">
@@ -2399,7 +2595,14 @@ export default function OperacionCRM() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-300">
-                      {cotizaciones.map(c => {
+                      {cotizacionesFiltradas.length === 0 ? (
+                        <tr>
+                          <td colSpan={8} className="p-8 text-center text-slate-500 font-bold">
+                            No se encontraron presupuestos que coincidan con los criterios de búsqueda o filtros seleccionados.
+                          </td>
+                        </tr>
+                      ) : (
+                        cotizacionesFiltradas.map(c => {
                         const empEmisora = empresasConglomerado.find(e => e.id === c.empresa_facturadora_id) || empresasConglomerado[0]
                         return (
                           <tr key={c.id} className="hover:bg-[#d5dbe3] transition-colors">
@@ -2469,7 +2672,7 @@ export default function OperacionCRM() {
                             </td>
                           </tr>
                         )
-                      })}
+                      }))}
                     </tbody>
                   </table>
                 </div>
@@ -2487,7 +2690,7 @@ export default function OperacionCRM() {
                       { key: 'Negociacion', label: 'En Negociación', border: 'border-purple-600' },
                       { key: 'Ganada', label: 'Aprobada / Ganada', border: 'border-emerald-600' }
                     ].map(col => {
-                      const cotsEnCol = cotizaciones.filter(c => (c.etapa_pipeline || 'Cotizacion') === col.key)
+                      const cotsEnCol = cotizacionesFiltradas.filter(c => (c.etapa_pipeline || 'Cotizacion') === col.key)
                       const totalMontoCol = cotsEnCol.reduce((acc, curr) => acc + (curr.monto_total_iva_incluido || 0), 0)
 
                       return (
