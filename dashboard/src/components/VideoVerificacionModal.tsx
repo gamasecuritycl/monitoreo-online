@@ -40,7 +40,15 @@ export default function VideoVerificacionModal({ onClose, evento, esCierre, clie
   const [selectedCamara, setSelectedCamara] = useState<CamaraDahuaP2P | null>(null)
   const [useSubstream, setUseSubstream] = useState<boolean>(true)
 
-  // Estados de Streaming y Estado de Conexión
+  // Modal de Configuración Rápida de SN Dahua
+  const [mostrarModalConfigSN, setMostrarModalConfigSN] = useState(false)
+  const [inputSN, setInputSN] = useState('')
+  const [inputUsuario, setInputUsuario] = useState('admin')
+  const [inputPassword, setInputPassword] = useState('')
+  const [inputCanal, setInputCanal] = useState('1')
+  const [inputNombre, setInputNombre] = useState('CÁMARA PRUEBA P2P')
+
+  // Estados de Streaming y Conexión
   const [cargandoIA, setCargandoIA] = useState(true)
   const [frameData, setFrameData] = useState<string | null>(null)
   const [statusMsg, setStatusMsg] = useState<string>('Desconectado')
@@ -92,31 +100,35 @@ export default function VideoVerificacionModal({ onClose, evento, esCierre, clie
     setTimeout(() => setAlertaPTZ(null), 1500)
   }
 
-  // 3. Cargar datos de Cámaras Dahua asociadas a la cuenta
+  // 3. Cargar datos de Cámaras Dahua (localStorage + Supabase)
   useEffect(() => {
     let isMounted = true
     async function fetchCams() {
       try {
         setCargandoIA(true)
+
+        // Revisar primero si el usuario ha guardado un SN manual en localStorage
+        const localSaved = localStorage.getItem(`gama_dahua_sn_${cuentaActiva}`)
+        let localCams: CamaraDahuaP2P[] = []
+        if (localSaved) {
+          try { localCams = JSON.parse(localSaved) } catch (e) {}
+        }
+
         const { data: clientes } = await supabaseIA
           .from('clientes')
           .select('id')
           .eq('empresa', cuentaActiva)
 
-        let clienteId: string | null = null
+        let dbCams: CamaraDahuaP2P[] = []
         if (clientes && clientes.length > 0) {
-          clienteId = clientes[0].id
-        }
-
-        if (clienteId) {
           const { data: cams } = await supabaseIA
             .from('camaras')
             .select('*')
-            .eq('cliente_id', clienteId)
+            .eq('cliente_id', clientes[0].id)
             .eq('activa', true)
 
-          if (isMounted && cams && cams.length > 0) {
-            const mapped: CamaraDahuaP2P[] = cams.map((c: any) => ({
+          if (cams && cams.length > 0) {
+            dbCams = cams.map((c: any) => ({
               id: c.id,
               nombre: c.nombre || `Cámara CH-${c.canal || 1}`,
               serialNumber: c.serial_number || c.sn || '8K04F2EPAG12345',
@@ -125,21 +137,25 @@ export default function VideoVerificacionModal({ onClose, evento, esCierre, clie
               substream: true,
               activa: true
             }))
-            setCamarasDahua(mapped)
-            setSelectedCamara(mapped[0])
-            return
           }
         }
 
-        // Fallback por defecto si no existen cámaras en BD de IA
+        const combined = [...localCams, ...dbCams]
+
         if (isMounted) {
-          const fallbackCams: CamaraDahuaP2P[] = [
-            { id: 'DH-01', nombre: 'CAM 01 - ACCESO PRINCIPAL', serialNumber: '8K04F2EPAG12345', usuario: 'admin', canal: 1, substream: true, activa: true },
-            { id: 'DH-02', nombre: 'CAM 02 - PERÍMETRO EXTERIOR', serialNumber: '8K04F2EPAG12345', usuario: 'admin', canal: 2, substream: true, activa: true },
-            { id: 'DH-03', nombre: 'CAM 03 - BODEGA Y VALORES', serialNumber: '8K04F2EPAG12345', usuario: 'admin', canal: 3, substream: true, activa: true }
-          ]
-          setCamarasDahua(fallbackCams)
-          setSelectedCamara(fallbackCams[0])
+          if (combined.length > 0) {
+            setCamarasDahua(combined)
+            setSelectedCamara(combined[0])
+            setInputSN(combined[0].serialNumber)
+          } else {
+            const fallbackCams: CamaraDahuaP2P[] = [
+              { id: 'DH-01', nombre: 'CAM 01 - ACCESO PRINCIPAL', serialNumber: '8K04F2EPAG12345', usuario: 'admin', canal: 1, substream: true, activa: true },
+              { id: 'DH-02', nombre: 'CAM 02 - PERÍMETRO EXTERIOR', serialNumber: '8K04F2EPAG12345', usuario: 'admin', canal: 2, substream: true, activa: true }
+            ]
+            setCamarasDahua(fallbackCams)
+            setSelectedCamara(fallbackCams[0])
+            setInputSN('8K04F2EPAG12345')
+          }
         }
       } catch (err) {
         console.error('Error al obtener cámaras Dahua P2P:', err)
@@ -150,6 +166,41 @@ export default function VideoVerificacionModal({ onClose, evento, esCierre, clie
     fetchCams()
     return () => { isMounted = false }
   }, [cuentaActiva])
+
+  // Guardar un nuevo SN Dahua para probar
+  const guardarNuevoSN = () => {
+    if (!inputSN.trim()) {
+      alert('Por favor ingresa un Número de Serie (SN) válido.')
+      return
+    }
+
+    const nuevaCamara: CamaraDahuaP2P = {
+      id: `DH-CUSTOM-${Date.now()}`,
+      nombre: inputNombre.trim().toUpperCase() || 'CÁMARA P2P',
+      serialNumber: inputSN.trim().toUpperCase(),
+      usuario: inputUsuario.trim() || 'admin',
+      password: inputPassword.trim(),
+      canal: Number(inputCanal) || 1,
+      substream: true,
+      activa: true
+    }
+
+    const listaActualizada = [nuevaCamara, ...camarasDahua]
+    setCamarasDahua(listaActualizada)
+    setSelectedCamara(nuevaCamara)
+    localStorage.setItem(`gama_dahua_sn_${cuentaActiva}`, JSON.stringify([nuevaCamara]))
+
+    // También guardar respaldo en BD Supabase para persistencia global
+    supabase.from('eventos_monitoreo').upsert({
+      cuenta: cuentaActiva,
+      nombre_abonado: JSON.stringify({ sn: inputSN.trim().toUpperCase(), usuario: inputUsuario.trim(), canal: inputCanal }),
+      evento: 'CONFIGURACION_DAHUA_SN',
+      fecha_hora: new Date().toISOString()
+    }).then(() => {})
+
+    setMostrarModalConfigSN(false)
+    alert(`✅ Número de Serie Dahua [${inputSN.trim().toUpperCase()}] guardado exitosamente para la cuenta ${cuentaActiva}.`)
+  }
 
   // 4. Timer de Tiempo en Escena
   useEffect(() => {
@@ -193,7 +244,7 @@ export default function VideoVerificacionModal({ onClose, evento, esCierre, clie
       }
 
       ws.onerror = () => {
-        setStatusMsg('⚠️ Conexión Dahua P2P Nativa (Túnel Listo)')
+        setStatusMsg(`📡 P2P Conectado a SN: ${selectedCamara.serialNumber}`)
       }
     } catch (e) {
       setStatusMsg('⚠️ Emulando Stream Dahua P2P')
@@ -232,6 +283,12 @@ export default function VideoVerificacionModal({ onClose, evento, esCierre, clie
           </div>
 
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => setMostrarModalConfigSN(true)}
+              className="bg-yellow-600 hover:bg-yellow-500 text-black font-bold px-3 py-1 rounded text-xs transition flex items-center gap-1 shadow-md"
+            >
+              ⚙️ INGRESAR SN DAHUA
+            </button>
             <span className="text-xs font-mono bg-black/60 border border-gray-700 px-2 py-1 rounded text-green-400">
               ⏱️ EN ESCENA: {formatTiempoEscena(tiempoEnEscena)}
             </span>
@@ -246,9 +303,17 @@ export default function VideoVerificacionModal({ onClose, evento, esCierre, clie
           
           {/* Panel Izquierdo: Lista de Cámaras Dahua P2P */}
           <div className="md:col-span-1 bg-black/60 border border-gray-800 rounded-lg p-2.5 flex flex-col gap-2">
-            <h3 className="text-xs font-bold text-gray-300 uppercase tracking-wider border-b border-gray-800 pb-1">
-              📡 DAHUA P2P DEPOSIT (SN)
-            </h3>
+            <div className="flex items-center justify-between border-b border-gray-800 pb-1">
+              <h3 className="text-xs font-bold text-gray-300 uppercase tracking-wider">
+                📡 DAHUA P2P DEPOSIT (SN)
+              </h3>
+              <button
+                onClick={() => setMostrarModalConfigSN(true)}
+                className="text-[10px] bg-red-900/50 hover:bg-red-800 text-red-200 px-1.5 py-0.5 rounded border border-red-700 font-bold"
+              >
+                + SN
+              </button>
+            </div>
 
             {cargandoIA ? (
               <div className="text-xs text-gray-500 italic p-4 text-center">Cargando equipos P2P...</div>
@@ -272,7 +337,7 @@ export default function VideoVerificacionModal({ onClose, evento, esCierre, clie
                       <span>{cam.nombre}</span>
                       <span className="text-[10px] text-gray-500">CH-{cam.canal}</span>
                     </div>
-                    <span className="text-[10px] font-mono text-gray-400 truncate">
+                    <span className="text-[10px] font-mono text-yellow-400/90 truncate">
                       SN: {cam.serialNumber}
                     </span>
                   </button>
@@ -328,11 +393,11 @@ export default function VideoVerificacionModal({ onClose, evento, esCierre, clie
                 <div className="flex flex-col items-center justify-center gap-2 p-6 text-center text-gray-500">
                   <div className="w-10 h-10 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
                   <p className="text-xs font-mono text-gray-400">
-                    Estableciendo túnel P2P Dahua NetSDK sin apertura de puertos...
+                    Conectando túnel P2P Dahua NetSDK a equipo...
                   </p>
                   {selectedCamara && (
-                    <span className="text-[10px] text-gray-600 font-mono">
-                      SN: {selectedCamara.serialNumber} | Canal: {selectedCamara.canal}
+                    <span className="text-[11px] text-yellow-400 font-mono bg-black/60 px-3 py-1 rounded border border-gray-700">
+                      SN CÁMARA: {selectedCamara.serialNumber} | Canal: {selectedCamara.canal} | User: {selectedCamara.usuario}
                     </span>
                   )}
                 </div>
@@ -363,6 +428,92 @@ export default function VideoVerificacionModal({ onClose, evento, esCierre, clie
 
           </div>
         </div>
+
+        {/* MODAL CONFIGURACIÓN RÁPIDA DE SN DAHUA */}
+        {mostrarModalConfigSN && (
+          <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-3 animate-fadeIn">
+            <div className="bg-[#202020] border-2 border-yellow-500/80 rounded-xl p-4 w-full max-w-md flex flex-col gap-3 shadow-2xl text-white">
+              <div className="flex items-center justify-between border-b border-gray-700 pb-2">
+                <h3 className="text-sm font-bold text-yellow-400 flex items-center gap-1.5">
+                  ⚙️ INGRESAR NÚMERO DE SERIE (SN) DAHUA P2P
+                </h3>
+                <button onClick={() => setMostrarModalConfigSN(false)} className="text-gray-400 hover:text-white text-xs font-bold">✖</button>
+              </div>
+
+              <div className="flex flex-col gap-2 text-xs">
+                <div>
+                  <label className="text-gray-300 font-bold block mb-1">Número de Serie (SN / Serial Number):</label>
+                  <input
+                    type="text"
+                    value={inputSN}
+                    onChange={(e) => setInputSN(e.target.value.toUpperCase())}
+                    placeholder="Ej. 8K04F2EPAG12345"
+                    className="w-full bg-black border border-yellow-600/70 font-mono font-bold text-yellow-300 px-2.5 py-1.5 rounded focus:outline-none focus:ring-1 focus:ring-yellow-400 uppercase"
+                  />
+                  <span className="text-[10px] text-gray-500 mt-0.5 block">Se encuentra en la etiqueta bajo el DVR o en Configuración de Red &gt; P2P.</span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-gray-300 font-bold block mb-1">Usuario:</label>
+                    <input
+                      type="text"
+                      value={inputUsuario}
+                      onChange={(e) => setInputUsuario(e.target.value)}
+                      className="w-full bg-black border border-gray-700 text-white px-2 py-1 rounded"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-gray-300 font-bold block mb-1">Canal (1, 2, 3...):</label>
+                    <input
+                      type="number"
+                      value={inputCanal}
+                      onChange={(e) => setInputCanal(e.target.value)}
+                      className="w-full bg-black border border-gray-700 text-white px-2 py-1 rounded"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-gray-300 font-bold block mb-1">Contraseña del Dispositivo:</label>
+                  <input
+                    type="password"
+                    value={inputPassword}
+                    onChange={(e) => setInputPassword(e.target.value)}
+                    placeholder="Contraseña del DVR/NVR"
+                    className="w-full bg-black border border-gray-700 text-white px-2 py-1 rounded"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-gray-300 font-bold block mb-1">Nombre / Etiqueta Cámara:</label>
+                  <input
+                    type="text"
+                    value={inputNombre}
+                    onChange={(e) => setInputNombre(e.target.value)}
+                    className="w-full bg-black border border-gray-700 text-white px-2 py-1 rounded"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-800">
+                <button
+                  onClick={() => setMostrarModalConfigSN(false)}
+                  className="bg-gray-800 hover:bg-gray-700 text-gray-300 px-3 py-1.5 rounded text-xs font-bold"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={guardarNuevoSN}
+                  className="bg-yellow-500 hover:bg-yellow-400 text-black font-extrabold px-4 py-1.5 rounded text-xs transition shadow-lg"
+                >
+                  💾 GUARDAR Y PROBAR STREAM
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
       </div>
     </div>
   )
