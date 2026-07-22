@@ -676,36 +676,25 @@ export default function OperacionCRM() {
     fetchSenalesAbonado()
   }, [cuentaSeleccionada, rutClienteSeleccionado, abonadoActivo])
 
-  // 3. Novedades de la Bitácora Real del Command Center
+  // 3. Novedades de la Bitácora Real del Command Center para el Abonado Consultado EXCLUSIVAMENTE
   const bitacoraCommandCenterAbonado = useMemo(() => {
     const cActiva = (cuentaSeleccionada || abonadoActivo?.cuenta || '').toUpperCase().trim()
     const nombreAb = (abonadoActivo?.alias_centro_costo || clienteActivo?.razon_social || '').toLowerCase().trim()
+    if (!cActiva && !nombreAb) return []
 
-    // Filtrar eventos de Command Center que correspondan específicamente al abonado consultado
+    // Filtrar eventos de Command Center que correspondan EXCLUSIVAMENTE al abonado consultado
     const filtrados = bitacoraCommandCenter.filter(item => {
       const cod = (item.abonado_cod || '').toUpperCase().trim()
       const nom = (item.abonado_nombre || '').toLowerCase().trim()
-      return (cActiva && cod === cActiva) || (nombreAb && nom.includes(nombreAb))
+      return (cActiva && cod === cActiva) || (nombreAb && nom.length > 3 && nom.includes(nombreAb))
     })
 
-    if (filtrados.length > 0) {
-      return filtrados.slice(0, 5).map(item => ({
-        id: item.id,
-        fecha: item.created_at || 'Reciente',
-        autor: item.responsable_nombre || 'Operador Command Center',
-        tipo: item.tipo_nombre || 'NOVEDAD COMMAND CENTER',
-        nota: item.comentario || 'Sin comentario registrado',
-        color: item.tipo_color ? `#${item.tipo_color}` : '#005bea'
-      }))
-    }
-
-    // Si el abonado no tiene notas específicas, desplegar las últimas 5 novedades reales registradas en Command Center
-    return bitacoraCommandCenter.slice(0, 5).map(item => ({
+    return filtrados.slice(0, 5).map(item => ({
       id: item.id,
       fecha: item.created_at || 'Reciente',
-      autor: item.responsable_nombre || 'Operador Central 24/7',
-      tipo: `${item.tipo_nombre || 'NOVEDAD COMMAND CENTER'} (${item.abonado_cod || 'GENERAL'} - ${item.abonado_nombre || 'Sistema'})`,
-      nota: item.comentario || 'Sin detalle de comentario',
+      autor: item.responsable_nombre || 'Operador Command Center',
+      tipo: item.tipo_nombre || 'NOVEDAD COMMAND CENTER',
+      nota: item.comentario || 'Sin comentario registrado',
       color: item.tipo_color ? `#${item.tipo_color}` : '#005bea'
     }))
   }, [cuentaSeleccionada, abonadoActivo, clienteActivo, bitacoraCommandCenter])
@@ -2156,7 +2145,6 @@ export default function OperacionCRM() {
                         <thead>
                           <tr className="border-b border-slate-300 font-bold uppercase text-[10px] text-slate-500">
                             <th className="p-2.5">FECHA Y HORA</th>
-                            <th className="p-2.5">CÓDIGO / EVENTO</th>
                             <th className="p-2.5">DESCRIPCIÓN RECEPTOR</th>
                             <th className="p-2.5">ZONA / USUARIO</th>
                             <th className="p-2.5 text-center">PRIORIDAD</th>
@@ -2165,14 +2153,14 @@ export default function OperacionCRM() {
                         <tbody className="divide-y divide-slate-300/60 font-medium">
                           {cargandoSenales ? (
                             <tr>
-                              <td colSpan={5} className="p-4 text-center text-slate-500 font-bold">
+                              <td colSpan={4} className="p-4 text-center text-slate-500 font-bold">
                                 <Loader2 className="h-4 w-4 animate-spin inline mr-2" />
                                 Cargando señales del abonado...
                               </td>
                             </tr>
                           ) : senalesRealtime.length === 0 ? (
                             <tr>
-                              <td colSpan={5} className="p-6 text-center">
+                              <td colSpan={4} className="p-6 text-center">
                                 <div className="bg-[#E0E5EC] p-4 rounded-xl shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] space-y-1 inline-block max-w-xl">
                                   <div className="flex items-center justify-center gap-2 text-amber-700 font-bold text-xs">
                                     <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600" />
@@ -2188,7 +2176,6 @@ export default function OperacionCRM() {
                             senalesRealtime.map(s => (
                               <tr key={s.id} className="hover:bg-slate-200/50 transition-all">
                                 <td className="p-2.5 font-mono text-slate-600 text-[11px]">{s.fecha}</td>
-                                <td className="p-2.5 font-mono font-bold text-[#005bea]">{s.codigo}</td>
                                 <td className="p-2.5 font-bold text-slate-800">{s.desc}</td>
                                 <td className="p-2.5 text-slate-700">{s.zona}</td>
                                 <td className="p-2.5 text-center">
@@ -2209,7 +2196,7 @@ export default function OperacionCRM() {
                     <div className="flex justify-between items-center border-b border-slate-300 pb-2">
                       <h3 className="font-black text-slate-900 uppercase tracking-wider text-xs flex items-center gap-2">
                         <ClipboardList className="h-4 w-4 text-[#005bea]" />
-                        <span>ÚLTIMAS NOVEDADES REGISTRADAS EN BITÁCORA COMMAND CENTER (#{(abonadoActivo?.cuenta || cuentaSeleccionada || 'GENERAL').toUpperCase()})</span>
+                        <span>ÚLTIMAS NOVEDADES REGISTRADAS EN BITÁCORA COMMAND CENTER (#{(abonadoActivo?.cuenta || cuentaSeleccionada || 'ACTIVA').toUpperCase()})</span>
                       </h3>
                       <span className="text-[10px] font-bold text-slate-500 bg-[#E0E5EC] shadow-[2px_2px_4px_#bec8d2,-2px_-2px_4px_#ffffff] px-2 py-0.5 rounded-md">
                         Central 24/7 API
@@ -2223,8 +2210,12 @@ export default function OperacionCRM() {
                           Cargando novedades de la bitácora del Command Center...
                         </div>
                       ) : bitacoraCommandCenterAbonado.length === 0 ? (
-                        <div className="text-center p-4 text-slate-500 font-bold text-xs">
-                          No hay novedades registradas en la bitácora del Command Center.
+                        <div className="bg-[#E0E5EC] p-4 rounded-xl shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] text-center space-y-1">
+                          <p className="font-bold text-slate-700 text-xs flex items-center justify-center gap-2">
+                            <ClipboardList className="h-4 w-4 text-slate-500" />
+                            <span>Sin novedades registradas en la bitácora para la cuenta #{(abonadoActivo?.cuenta || cuentaSeleccionada || '').toUpperCase()}.</span>
+                          </p>
+                          <p className="text-[11px] text-slate-500 font-medium">No existen registros ni novedades asociadas a este abonado en la bitácora del Command Center.</p>
                         </div>
                       ) : (
                         bitacoraCommandCenterAbonado.map(b => (
