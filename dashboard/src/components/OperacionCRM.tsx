@@ -2282,7 +2282,7 @@ export default function OperacionCRM() {
   }
 
   return (
-    <div className="min-h-screen bg-[#E0E5EC] text-slate-800 font-sans flex flex-col select-none p-6 md:p-8 gap-6 antialiased">
+    <div className="min-h-screen bg-[#E0E5EC] text-slate-800 font-sans flex flex-col select-none p-3 sm:p-6 md:p-8 gap-4 sm:gap-6 antialiased">
       
       {/* Estilos CSS para Impresión PDF Limpia (@media print) */}
       <style jsx global>{`
@@ -2314,43 +2314,46 @@ export default function OperacionCRM() {
         }
       `}</style>
 
-      {/* ── HEADER PRINCIPAL NEUMÓRFICO CORPORATIVO ── */}
-      <header className="bg-[#E0E5EC] rounded-2xl p-5 md:p-6 shadow-[6px_6px_12px_#bec8d2,-6px_-6px_12px_#ffffff] flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shrink-0 no-imprimir">
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => setSidebarAbierto(!sidebarAbierto)}
-            className="bg-[#E0E5EC] active:shadow-[inset_4px_4px_8px_#bec8d2,inset_-4px_-4px_8px_#ffffff] text-slate-700 p-3 rounded-xl shadow-[4px_4px_8px_#bec8d2,-4px_-4px_8px_#ffffff] transition-all cursor-pointer flex items-center justify-center"
-          >
-            <SlidersHorizontal className="h-5 w-5 text-[#005bea]" />
-          </button>
+      {/* ── HEADER PRINCIPAL NEUMÓRFICO CORPORATIVO RESPONSIVE ── */}
+      <header className="bg-[#E0E5EC] rounded-2xl p-4 sm:p-5 md:p-6 shadow-[6px_6px_12px_#bec8d2,-6px_-6px_12px_#ffffff] flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shrink-0 no-imprimir">
+        <div className="flex items-center gap-3 sm:gap-4 w-full md:w-auto justify-between md:justify-start">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setSidebarAbierto(!sidebarAbierto)}
+              className="bg-[#E0E5EC] active:shadow-[inset_4px_4px_8px_#bec8d2,inset_-4px_-4px_8px_#ffffff] text-slate-700 p-2.5 sm:p-3 rounded-xl shadow-[4px_4px_8px_#bec8d2,-4px_-4px_8px_#ffffff] transition-all cursor-pointer flex items-center justify-center"
+              title="Abrir/Cerrar Menú Lateral"
+            >
+              <SlidersHorizontal className="h-5 w-5 text-[#005bea]" />
+            </button>
 
-          <div className="bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white p-3 rounded-xl shadow-[4px_4px_10px_#bec8d2,-4px_-4px_10px_#ffffff] flex items-center justify-center">
-            <Shield className="h-6 w-6 stroke-[2]" />
-          </div>
-          <div>
-            <h1 className="text-lg md:text-xl font-black tracking-tight text-slate-900 flex items-center gap-3">
-              GAMA SEGURIDAD
-              <span className="bg-[#E0E5EC] text-slate-800 text-xs font-bold px-3 py-1 rounded-full shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] flex items-center gap-2">
-                <span className="h-2.5 w-2.5 rounded-full bg-[#005bea] animate-pulse"></span>
-                <span>PLATAFORMA CRM 360°</span>
-              </span>
-            </h1>
-            <p className="text-xs text-slate-500 font-semibold mt-0.5">
-              {empresasConglomerado.length} Razones Sociales Emisoras • Búsqueda por Abonado & Cliente
-            </p>
+            <div className="bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white p-2.5 sm:p-3 rounded-xl shadow-[4px_4px_10px_#bec8d2,-4px_-4px_10px_#ffffff] flex items-center justify-center shrink-0">
+              <Shield className="h-5 sm:h-6 w-5 sm:w-6 stroke-[2]" />
+            </div>
+            <div>
+              <h1 className="text-base sm:text-lg md:text-xl font-black tracking-tight text-slate-900 flex flex-wrap items-center gap-2">
+                GAMA SEGURIDAD
+                <span className="bg-[#E0E5EC] text-slate-800 text-[10px] sm:text-xs font-bold px-2.5 py-0.5 rounded-full shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-full bg-[#005bea] animate-pulse"></span>
+                  <span>PLATAFORMA CRM 360°</span>
+                </span>
+              </h1>
+              <p className="text-[10px] sm:text-xs text-slate-500 font-semibold mt-0.5">
+                {empresasConglomerado.length} Razones Sociales • Búsqueda por Abonado & Cliente
+              </p>
+            </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-4 text-xs font-semibold">
-          <div className="bg-[#E0E5EC] shadow-[inset_4px_4px_8px_#bec8d2,inset_-4px_-4px_8px_#ffffff] px-4 py-2.5 rounded-xl text-slate-700 font-mono flex items-center gap-2">
-            <DollarSign className="h-4 w-4 text-[#005bea]" />
+        <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs font-semibold w-full md:w-auto justify-between md:justify-end">
+          <div className="bg-[#E0E5EC] shadow-[inset_4px_4px_8px_#bec8d2,inset_-4px_-4px_8px_#ffffff] px-3.5 py-2 rounded-xl text-slate-700 font-mono flex items-center gap-2 text-[11px] sm:text-xs">
+            <DollarSign className="h-3.5 w-3.5 text-[#005bea]" />
             <span>UF HOY:</span>
             <strong className="text-emerald-700 font-bold">${valorUF.toLocaleString('es-CL')} CLP</strong>
           </div>
 
           <a
             href="/app"
-            className="bg-gradient-to-r from-[#005bea] to-[#00c6fb] hover:brightness-105 active:scale-95 text-white font-bold px-5 py-2.5 rounded-xl shadow-[4px_4px_10px_#bec8d2,-4px_-4px_10px_#ffffff] transition-all cursor-pointer text-xs flex items-center gap-2"
+            className="bg-gradient-to-r from-[#005bea] to-[#00c6fb] hover:brightness-105 active:scale-95 text-white font-bold px-4 py-2 sm:px-5 sm:py-2.5 rounded-xl shadow-[4px_4px_10px_#bec8d2,-4px_-4px_10px_#ffffff] transition-all cursor-pointer text-xs flex items-center gap-2"
           >
             <ExternalLink className="h-4 w-4 stroke-[2]" />
             <span>COMMAND CENTER</span>
@@ -2358,18 +2361,26 @@ export default function OperacionCRM() {
         </div>
       </header>
 
-      {/* ── CONTENEDOR PRINCIPAL ── */}
-      <div className="flex-1 flex gap-6 overflow-hidden min-h-0 no-imprimir">
+      {/* ── CONTENEDOR PRINCIPAL RESPONSIVE ── */}
+      <div className="flex-1 flex flex-col lg:flex-row gap-4 sm:gap-6 overflow-hidden min-h-0 no-imprimir relative">
         
-        {/* ── SIDEBAR NEUMÓRFICO LATERAL ── */}
+        {/* BACKDROP OVERLAY PARA MÓVIL/TABLET */}
         {sidebarAbierto && (
-          <aside className="w-72 bg-[#E0E5EC] p-6 rounded-2xl flex flex-col gap-6 shrink-0 shadow-[6px_6px_12px_#bec8d2,-6px_-6px_12px_#ffffff] transition-all overflow-hidden">
-            <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2 mb-2 flex justify-between items-center">
+          <div
+            className="fixed inset-0 bg-black/50 backdrop-blur-xs z-40 lg:hidden transition-opacity"
+            onClick={() => setSidebarAbierto(false)}
+          />
+        )}
+
+        {/* ── SIDEBAR NEUMÓRFICO LATERAL (ADAPTATIVO DESKTOP / DRAWER MÓVIL) ── */}
+        {sidebarAbierto && (
+          <aside className="fixed inset-y-0 left-0 z-50 lg:relative lg:inset-auto lg:z-auto w-72 bg-[#E0E5EC] p-5 sm:p-6 rounded-r-2xl lg:rounded-2xl flex flex-col gap-5 sm:gap-6 shrink-0 shadow-2xl lg:shadow-[6px_6px_12px_#bec8d2,-6px_-6px_12px_#ffffff] transition-all overflow-y-auto max-h-screen lg:max-h-none">
+            <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2 mb-1 flex justify-between items-center">
               <span>MÓDULOS DE GESTIÓN</span>
-              <button onClick={() => setSidebarAbierto(false)} className="text-slate-400 hover:text-slate-700 font-bold text-xs cursor-pointer">✕</button>
+              <button onClick={() => setSidebarAbierto(false)} className="text-slate-400 hover:text-slate-700 font-bold text-sm cursor-pointer p-1">✕</button>
             </div>
 
-            <div className="flex flex-col gap-5">
+            <div className="flex flex-col gap-3.5">
               {[
                 { id: 'ficha360', label: 'Ficha 360° Cliente', icon: User },
                 { id: 'presupuestos', label: 'Presupuestos', icon: FileText },
@@ -2385,8 +2396,13 @@ export default function OperacionCRM() {
                 return (
                   <button
                     key={m.id}
-                    onClick={() => setModuloActivo(m.id as any)}
-                    className={`w-full text-left p-4 rounded-xl font-bold text-xs transition-all flex items-center gap-3 cursor-pointer ${
+                    onClick={() => {
+                      setModuloActivo(m.id as any)
+                      if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+                        setSidebarAbierto(false)
+                      }
+                    }}
+                    className={`w-full text-left p-3.5 sm:p-4 rounded-xl font-bold text-xs transition-all flex items-center gap-3 cursor-pointer ${
                       esActivo
                         ? 'bg-[#E0E5EC] text-[#005bea] shadow-[inset_4px_4px_8px_#bec8d2,inset_-4px_-4px_8px_#ffffff] border-l-4 border-l-[#005bea]'
                         : 'bg-[#E0E5EC] text-slate-700 shadow-[4px_4px_8px_#bec8d2,-4px_-4px_8px_#ffffff] hover:brightness-95 active:shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff]'
@@ -2571,8 +2587,8 @@ export default function OperacionCRM() {
                     </div>
                   </div>
 
-                  {/* NAVEGACIÓN PESTAÑAS FICHA 360° */}
-                  <div className="flex items-center gap-2 bg-[#E0E5EC] p-1.5 rounded-xl shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff]">
+                  {/* NAVEGACIÓN PESTAÑAS FICHA 360° RESPONSIVE */}
+                  <div className="flex items-center gap-2 bg-[#E0E5EC] p-1.5 rounded-xl shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] flex-wrap">
                     {[
                       { id: 'datos', label: 'Datos Comerciales', icon: Building2 },
                       { id: 'abonados', label: `Centros de Costo (${clienteActivo?.cuentas_abonados.length || 1})`, icon: Layers },
@@ -2586,9 +2602,9 @@ export default function OperacionCRM() {
                         <button
                           key={tab.id}
                           onClick={() => setTabFicha360(tab.id as any)}
-                          className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${esActivo ? 'bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white shadow-xs' : 'text-slate-700 hover:bg-[#d5dbe3]'}`}
+                          className={`px-3.5 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${esActivo ? 'bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white shadow-xs' : 'text-slate-700 hover:bg-[#d5dbe3]'}`}
                         >
-                          <TabIcon className="h-4 w-4" />
+                          <TabIcon className="h-3.5 w-3.5" />
                           <span>{tab.label}</span>
                         </button>
                       )
@@ -3320,7 +3336,7 @@ export default function OperacionCRM() {
                 </div>
               </div>
 
-              <div className="bg-[#E0E5EC] shadow-[inset_5px_5px_10px_#bec8d2,inset_-5px_-5px_10px_#ffffff] rounded-xl p-2 overflow-hidden">
+              <div className="bg-[#E0E5EC] shadow-[inset_5px_5px_10px_#bec8d2,inset_-5px_-5px_10px_#ffffff] rounded-xl p-2 overflow-x-auto">
                 <table className="w-full text-left border-collapse text-xs font-medium">
                   <thead>
                     <tr className="bg-[#E0E5EC] text-slate-700 border-b border-slate-300 font-bold uppercase text-[11px]">
@@ -3525,7 +3541,7 @@ export default function OperacionCRM() {
               </div>
 
               {/* TABLA DE ÓRDENES DE TRABAJO */}
-              <div className="bg-[#E0E5EC] shadow-[inset_5px_5px_10px_#bec8d2,inset_-5px_-5px_10px_#ffffff] rounded-xl p-2 overflow-hidden">
+              <div className="bg-[#E0E5EC] shadow-[inset_5px_5px_10px_#bec8d2,inset_-5px_-5px_10px_#ffffff] rounded-xl p-2 overflow-x-auto">
                 <table className="w-full text-left border-collapse text-xs font-medium">
                   <thead>
                     <tr className="bg-[#E0E5EC] text-slate-700 border-b border-slate-300 font-bold uppercase text-[11px]">
@@ -3710,7 +3726,7 @@ export default function OperacionCRM() {
                     </button>
                   </div>
 
-                  <div className="bg-[#E0E5EC] shadow-[inset_5px_5px_10px_#bec8d2,inset_-5px_-5px_10px_#ffffff] rounded-xl p-2 overflow-hidden">
+                  <div className="bg-[#E0E5EC] shadow-[inset_5px_5px_10px_#bec8d2,inset_-5px_-5px_10px_#ffffff] rounded-xl p-2 overflow-x-auto">
                     <table className="w-full text-left border-collapse text-xs font-medium">
                       <thead>
                         <tr className="bg-[#E0E5EC] text-slate-700 border-b border-slate-300 font-bold uppercase text-[11px]">
