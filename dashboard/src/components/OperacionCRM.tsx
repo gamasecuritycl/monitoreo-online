@@ -573,22 +573,40 @@ export default function OperacionCRM() {
   }, [])
 
   const abonadoActivo = useMemo(() => {
-    if (cuentaSeleccionada && abonadosCentrosCosto[cuentaSeleccionada]) {
-      return abonadosCentrosCosto[cuentaSeleccionada]
-    }
-    return null
+    if (!cuentaSeleccionada) return null
+    const cClean = cuentaSeleccionada.toUpperCase().trim()
+    if (abonadosCentrosCosto[cClean]) return abonadosCentrosCosto[cClean]
+    if (abonadosCentrosCosto[cuentaSeleccionada]) return abonadosCentrosCosto[cuentaSeleccionada]
+
+    const foundKey = Object.keys(abonadosCentrosCosto).find(
+      k => k.toUpperCase().trim() === cClean || k.toUpperCase().trim().includes(cClean)
+    )
+    return foundKey ? abonadosCentrosCosto[foundKey] : null
   }, [cuentaSeleccionada, abonadosCentrosCosto])
 
   const clienteActivo = useMemo(() => {
-    if (abonadoActivo && abonadoActivo.rut_cliente && clientesMaestros[abonadoActivo.rut_cliente]) {
-      return clientesMaestros[abonadoActivo.rut_cliente]
+    if (abonadoActivo && abonadoActivo.rut_cliente) {
+      const rKey = abonadoActivo.rut_cliente
+      if (clientesMaestros[rKey]) return clientesMaestros[rKey]
+      const foundMaster = Object.keys(clientesMaestros).find(k => k.toUpperCase().trim() === rKey.toUpperCase().trim())
+      if (foundMaster) return clientesMaestros[foundMaster]
     }
-    if (rutClienteSeleccionado && clientesMaestros[rutClienteSeleccionado]) {
-      return clientesMaestros[rutClienteSeleccionado]
+
+    if (rutClienteSeleccionado) {
+      const rSel = rutClienteSeleccionado.toUpperCase().trim()
+      if (clientesMaestros[rutClienteSeleccionado]) return clientesMaestros[rutClienteSeleccionado]
+      if (clientesMaestros[rSel]) return clientesMaestros[rSel]
+      const foundMaster = Object.keys(clientesMaestros).find(k => k.toUpperCase().trim() === rSel)
+      if (foundMaster) return clientesMaestros[foundMaster]
     }
-    const primerClienteKey = Object.keys(clientesMaestros)[0]
-    return primerClienteKey ? clientesMaestros[primerClienteKey] : null
-  }, [abonadoActivo, rutClienteSeleccionado, clientesMaestros])
+
+    if (!cuentaSeleccionada && !rutClienteSeleccionado) {
+      const primerClienteKey = Object.keys(clientesMaestros)[0]
+      return primerClienteKey ? clientesMaestros[primerClienteKey] : null
+    }
+
+    return null
+  }, [abonadoActivo, rutClienteSeleccionado, cuentaSeleccionada, clientesMaestros])
 
   const siguienteCorrelativoCode = useMemo(() => {
     let maxNum = 259
@@ -1209,18 +1227,20 @@ export default function OperacionCRM() {
       setBuscandoSpinner(false)
       if (resultadosBusqueda.length > 0) {
         const item = resultadosBusqueda[0]
+        setModuloActivo('ficha360')
         if (item.tipo === 'abonado' && item.cuenta) {
-          setCuentaSeleccionada(item.cuenta)
+          setCuentaSeleccionada(item.cuenta.toUpperCase().trim())
           setRutClienteSeleccionado(item.rut)
         } else {
           setRutClienteSeleccionado(item.rut)
-          const cli = clientesMaestros[item.rut]
-          if (cli && cli.cuentas_abonados.length > 0) {
-            setCuentaSeleccionada(cli.cuentas_abonados[0])
+          const cli = clientesMaestros[item.rut] || Object.values(clientesMaestros).find(c => c.rut === item.rut)
+          if (cli && cli.cuentas_abonados && cli.cuentas_abonados.length > 0) {
+            setCuentaSeleccionada(cli.cuentas_abonados[0].toUpperCase().trim())
           }
         }
+        setBusquedaClienteInput('')
       }
-    }, 200)
+    }, 150)
   }
 
   const empresaEmisoraSeleccionadaCot = empresasConglomerado.find(e => e.id === cotEmpresaEmisoraId) || empresasConglomerado[0]
@@ -1703,14 +1723,15 @@ export default function OperacionCRM() {
                           <div
                             key={item.id}
                             onClick={() => {
+                              setModuloActivo('ficha360')
                               if (item.tipo === 'abonado' && item.cuenta) {
-                                setCuentaSeleccionada(item.cuenta)
+                                setCuentaSeleccionada(item.cuenta.toUpperCase().trim())
                                 setRutClienteSeleccionado(item.rut)
                               } else {
                                 setRutClienteSeleccionado(item.rut)
-                                const cli = clientesMaestros[item.rut]
-                                if (cli && cli.cuentas_abonados.length > 0) {
-                                  setCuentaSeleccionada(cli.cuentas_abonados[0])
+                                const cli = clientesMaestros[item.rut] || Object.values(clientesMaestros).find(c => c.rut === item.rut)
+                                if (cli && cli.cuentas_abonados && cli.cuentas_abonados.length > 0) {
+                                  setCuentaSeleccionada(cli.cuentas_abonados[0].toUpperCase().trim())
                                 }
                               }
                               setBusquedaClienteInput('')
