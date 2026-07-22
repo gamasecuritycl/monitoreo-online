@@ -1740,39 +1740,41 @@ export default function OperacionCRM() {
         
         {/* ── SIDEBAR NEUMÓRFICO LATERAL ── */}
         {sidebarAbierto && (
-          <aside className="w-72 bg-[#E0E5EC] p-5 rounded-2xl flex flex-col gap-3 shrink-0 shadow-[6px_6px_12px_#bec8d2,-6px_-6px_12px_#ffffff] transition-all overflow-hidden">
-            <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2 mb-1 flex justify-between items-center">
+          <aside className="w-72 bg-[#E0E5EC] p-6 rounded-2xl flex flex-col gap-6 shrink-0 shadow-[6px_6px_12px_#bec8d2,-6px_-6px_12px_#ffffff] transition-all overflow-hidden">
+            <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2 mb-2 flex justify-between items-center">
               <span>MÓDULOS DE GESTIÓN</span>
               <button onClick={() => setSidebarAbierto(false)} className="text-slate-400 hover:text-slate-700 font-bold text-xs cursor-pointer">✕</button>
             </div>
 
-            {[
-              { id: 'ficha360', label: 'Ficha 360° Cliente', icon: User },
-              { id: 'autonomia', label: 'Agentes Autónomos IA', icon: Bot },
-              { id: 'presupuestos', label: 'Presupuestos & Pipeline', icon: FileText },
-              { id: 'marketing', label: 'Marketing & Cold Email', icon: Megaphone },
-              { id: 'facturacion', label: 'Facturación & Abonos', icon: DollarSign },
-              { id: 'serv_tecnico', label: 'Servicio Técnico & SLA', icon: Wrench },
-              { id: 'kpis', label: 'KPIs & Reportes', icon: BarChart3 },
-              { id: 'config', label: 'CRUD Empresas & Config', icon: Settings },
-            ].map(m => {
-              const IconComp = m.icon
-              const esActivo = moduloActivo === m.id
-              return (
-                <button
-                  key={m.id}
-                  onClick={() => setModuloActivo(m.id as any)}
-                  className={`w-full text-left p-3.5 rounded-xl font-bold text-xs transition-all flex items-center gap-3 cursor-pointer ${
-                    esActivo
-                      ? 'bg-[#E0E5EC] text-[#005bea] shadow-[inset_4px_4px_8px_#bec8d2,inset_-4px_-4px_8px_#ffffff] border-l-4 border-l-[#005bea]'
-                      : 'bg-[#E0E5EC] text-slate-700 shadow-[4px_4px_8px_#bec8d2,-4px_-4px_8px_#ffffff] hover:brightness-95 active:shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff]'
-                  }`}
-                >
-                  <IconComp className={`h-4 w-4 stroke-[2] ${esActivo ? 'text-[#005bea]' : 'text-slate-500'}`} />
-                  <span>{m.label}</span>
-                </button>
-              )
-            })}
+            <div className="flex flex-col gap-5">
+              {[
+                { id: 'ficha360', label: 'Ficha 360° Cliente', icon: User },
+                { id: 'presupuestos', label: 'Presupuestos', icon: FileText },
+                { id: 'marketing', label: 'Marketing', icon: Megaphone },
+                { id: 'facturacion', label: 'Cobranza y abonos', icon: DollarSign },
+                { id: 'serv_tecnico', label: 'Servicios técnicos', icon: Wrench },
+                { id: 'kpis', label: 'Reportes', icon: BarChart3 },
+                { id: 'config', label: 'Configuración', icon: Settings },
+                { id: 'autonomia', label: 'Agentes Autónomos IA', icon: Bot },
+              ].map(m => {
+                const IconComp = m.icon
+                const esActivo = moduloActivo === m.id
+                return (
+                  <button
+                    key={m.id}
+                    onClick={() => setModuloActivo(m.id as any)}
+                    className={`w-full text-left p-4 rounded-xl font-bold text-xs transition-all flex items-center gap-3 cursor-pointer ${
+                      esActivo
+                        ? 'bg-[#E0E5EC] text-[#005bea] shadow-[inset_4px_4px_8px_#bec8d2,inset_-4px_-4px_8px_#ffffff] border-l-4 border-l-[#005bea]'
+                        : 'bg-[#E0E5EC] text-slate-700 shadow-[4px_4px_8px_#bec8d2,-4px_-4px_8px_#ffffff] hover:brightness-95 active:shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff]'
+                    }`}
+                  >
+                    <IconComp className={`h-4 w-4 stroke-[2] ${esActivo ? 'text-[#005bea]' : 'text-slate-500'}`} />
+                    <span>{m.label}</span>
+                  </button>
+                )
+              })}
+            </div>
 
             <div className="mt-auto bg-[#E0E5EC] shadow-[inset_4px_4px_8px_#bec8d2,inset_-4px_-4px_8px_#ffffff] p-4 rounded-xl text-xs space-y-1.5 text-slate-600">
               <div className="font-black text-slate-800 text-[10px] uppercase tracking-wider mb-1 flex items-center gap-1.5">
