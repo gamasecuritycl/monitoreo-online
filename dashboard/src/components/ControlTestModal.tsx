@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import clientesDataRaw from '@/lib/clientes_general.json'
+import { esAbonadoInactivo } from '@/lib/inactivos_filter'
 
 const clientesGeneralFallback = clientesDataRaw as Record<string, Record<string, string>>
 
@@ -72,9 +73,11 @@ export default function ControlTestModal({ onClose, clientesMap = {} }: Props) {
 
       const testEvents = (eventosData || []) as EventoMonitoreo[]
 
-      // 3. Procesar para cada cliente
+      // 3. Procesar para cada cliente activo
       const targetMap = Object.keys(clientesMap).length > 0 ? clientesMap : clientesGeneralFallback
-      const listaEstados = Object.entries(targetMap).map(([cuenta, c]) => {
+      const listaEstados = Object.entries(targetMap)
+        .filter(([cuenta, c]) => !esAbonadoInactivo(cuenta, (c as any)?.alias_unidad || (c as any)?.nombre || ''))
+        .map(([cuenta, c]) => {
         // Filtrar todos los eventos de tipo test para este abonado
         const eventsForClient = testEvents.filter(e => e.cuenta?.toUpperCase().trim() === cuenta.toUpperCase().trim())
         

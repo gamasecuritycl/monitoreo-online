@@ -5,6 +5,7 @@ import type { EventoMonitoreo } from '@/lib/supabase'
 import { supabase, supabaseIA } from '@/lib/supabase'
 
 import { cleanRut } from '@/lib/rut'
+import { esAbonadoInactivo } from '@/lib/inactivos_filter'
 
 // Base de datos de fallback precargada
 import clientesDataRaw from '@/lib/clientes_general.json'
@@ -406,11 +407,13 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
     return rActual && rComparar === rActual && cCode !== cuentaActiva
   })
 
-  // Lista de todos los clientes para el buscador inferior
-  const listaAbonados = Object.values(clientesMap).map(c => ({
-    cuenta: (c.cuenta || '').toUpperCase().trim(),
-    nombre: (c.nombre || '').toUpperCase().trim()
-  })).sort((a, b) => a.cuenta.localeCompare(b.cuenta))
+  // Lista de todos los clientes activos para el buscador inferior (excluyendo inactivos)
+  const listaAbonados = Object.values(clientesMap)
+    .filter(c => !esAbonadoInactivo(c.cuenta || '', c.nombre || ''))
+    .map(c => ({
+      cuenta: (c.cuenta || '').toUpperCase().trim(),
+      nombre: (c.nombre || '').toUpperCase().trim()
+    })).sort((a, b) => a.cuenta.localeCompare(b.cuenta))
 
   // Filtrar lista de abonados según el input de búsqueda
   const listaFiltrada = buscarCuentaInput.trim()
