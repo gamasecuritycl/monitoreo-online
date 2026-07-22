@@ -49,7 +49,9 @@ import {
   Building,
   Radio,
   FileSpreadsheet,
-  Loader2
+  Loader2,
+  Receipt,
+  ClipboardList
 } from 'lucide-react'
 
 const clientesFallback = clientesDataRaw as Record<string, Record<string, string>>
@@ -270,9 +272,10 @@ export default function OperacionCRM() {
   const [abonadosCentrosCosto, setAbonadosCentrosCosto] = useState<Record<string, CentroDeCostoAbonado>>({})
   
   const [rutClienteSeleccionado, setRutClienteSeleccionado] = useState<string>('')
-  const [cuentaSeleccionada, setCuentaSeleccionada] = useState<string>('')
+  const [cuentaSeleccionada, setCuentaSeleccionada] = useState<string>('0999')
   const [busquedaClienteInput, setBusquedaClienteInput] = useState<string>('')
   const [buscandoSpinner, setBuscandoSpinner] = useState<boolean>(false)
+  const [tabFicha360, setTabFicha360] = useState<'datos' | 'abonados' | 'facturas' | 'cotizaciones' | 'ots'>('datos')
 
   // UF Global
   const [valorUF, setValorUF] = useState(38500)
@@ -472,7 +475,8 @@ export default function OperacionCRM() {
     if (rutClienteSeleccionado && clientesMaestros[rutClienteSeleccionado]) {
       return clientesMaestros[rutClienteSeleccionado]
     }
-    return null
+    const primerClienteKey = Object.keys(clientesMaestros)[0]
+    return primerClienteKey ? clientesMaestros[primerClienteKey] : null
   }, [abonadoActivo, rutClienteSeleccionado, clientesMaestros])
 
   const siguienteCorrelativoCode = useMemo(() => {
@@ -1064,10 +1068,15 @@ export default function OperacionCRM() {
           }
         }
       }
-    }, 300)
+    }, 200)
   }
 
   const empresaEmisoraSeleccionadaCot = empresasConglomerado.find(e => e.id === cotEmpresaEmisoraId) || empresasConglomerado[0]
+
+  // Cuentas destacadas rápidas para hacer click de un vistazo
+  const abonadosDestacados = useMemo(() => {
+    return Object.values(abonadosCentrosCosto).slice(0, 8)
+  }, [abonadosCentrosCosto])
 
   return (
     <div className="min-h-screen bg-[#E0E5EC] text-slate-800 font-sans flex flex-col select-none p-6 md:p-8 gap-6 antialiased">
@@ -1208,12 +1217,12 @@ export default function OperacionCRM() {
         {/* ── PANEL DERECHO PRINCIPAL NEUMÓRFICO ── */}
         <main className="flex-1 overflow-y-auto min-h-0 flex flex-col gap-6">
 
-          {/* ── MÓDULO 1: FICHA 360° DEL CLIENTE ── */}
+          {/* ── MÓDULO 1: FICHA 360° DEL CLIENTE COMPLETA ── */}
           {moduloActivo === 'ficha360' && (
             <div className="flex-1 flex flex-col gap-6 min-h-0">
               
               {/* BUSCADOR NEUMÓRFICO HUNDIDO CON BOTÓN INTEGRADO */}
-              <div className="bg-[#E0E5EC] p-6 rounded-2xl shadow-[6px_6px_12px_#bec8d2,-6px_-6px_12px_#ffffff] flex flex-col gap-4 overflow-hidden">
+              <div className="bg-[#E0E5EC] p-6 rounded-2xl shadow-[6px_6px_12px_#bec8d2,-6px_-6px_12px_#ffffff] flex flex-col gap-4">
                 <div className="font-black text-xs text-slate-600 uppercase tracking-wider flex justify-between items-center">
                   <span className="flex items-center gap-2">
                     <Search className="h-4 w-4 text-[#005bea]" />
@@ -1256,7 +1265,7 @@ export default function OperacionCRM() {
                     <span>BUSCAR</span>
                   </button>
 
-                  {/* DESPLEGABLE FLOTANTE DE RESULTADOS */}
+                  {/* DESPLEGABLE FLOTANTE DE RESULTADOS DE BÚSQUEDA */}
                   {busquedaClienteInput.trim().length > 0 && (
                     <div className="absolute top-full left-0 right-0 mt-3 bg-[#E0E5EC] border border-slate-300 rounded-2xl shadow-[10px_10px_20px_#bec8d2,-10px_-10px_20px_#ffffff] z-30 max-h-96 overflow-y-auto p-3 space-y-2">
                       {resultadosBusqueda.length > 0 ? (
@@ -1304,11 +1313,30 @@ export default function OperacionCRM() {
                     </div>
                   )}
                 </div>
+
+                {/* ACCESOS RÁPIDOS A ABONADOS DESTACADOS */}
+                <div className="flex items-center gap-2 overflow-x-auto pt-1">
+                  <span className="text-[10px] font-black text-slate-400 uppercase shrink-0">Acceso Rápido:</span>
+                  {abonadosDestacados.map(ab => (
+                    <button
+                      key={ab.cuenta}
+                      onClick={() => {
+                        setCuentaSeleccionada(ab.cuenta)
+                        setRutClienteSeleccionado(ab.rut_cliente)
+                      }}
+                      className={`px-3 py-1.5 rounded-lg font-mono text-[11px] font-bold cursor-pointer transition-all shrink-0 ${cuentaSeleccionada === ab.cuenta ? 'bg-[#005bea] text-white shadow-xs' : 'bg-[#E0E5EC] shadow-[3px_3px_6px_#bec8d2,-3px_-3px_6px_#ffffff] text-slate-700 hover:brightness-95'}`}
+                    >
+                      #{ab.cuenta} — {ab.alias_centro_costo.slice(0, 18)}
+                    </button>
+                  ))}
+                </div>
               </div>
 
-              {/* FICHA EXPEDIENTE O ESTADO VACÍO NEUMÓRFICO */}
+              {/* EXPEDIENTE COMPLETO DOSSIER FICHA 360° */}
               {clienteActivo || abonadoActivo ? (
                 <div className="bg-[#E0E5EC] rounded-2xl p-6 md:p-8 flex flex-col gap-6 shadow-[6px_6px_12px_#bec8d2,-6px_-6px_12px_#ffffff] overflow-y-auto">
+                  
+                  {/* CABECERA EXPEDIENTE */}
                   <div className="bg-[#E0E5EC] shadow-[inset_5px_5px_10px_#bec8d2,inset_-5px_-5px_10px_#ffffff] p-6 rounded-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                     <div className="space-y-2">
                       <div className="flex items-center gap-2 flex-wrap">
@@ -1322,17 +1350,219 @@ export default function OperacionCRM() {
                             RUT: {clienteActivo.rut}
                           </span>
                         )}
+                        <span className="bg-emerald-100 text-emerald-800 font-bold px-2.5 py-1 rounded-lg text-xs">
+                          {clienteActivo?.estado_pago || 'Al Día'}
+                        </span>
                       </div>
-                      <h2 className="text-xl font-black tracking-tight text-slate-900">
+
+                      <h2 className="text-2xl font-black tracking-tight text-slate-900">
                         {abonadoActivo ? abonadoActivo.alias_centro_costo : clienteActivo?.razon_social}
                       </h2>
-                      <p className="text-xs text-slate-600 font-medium flex items-center gap-3 flex-wrap">
+
+                      <p className="text-xs text-slate-600 font-semibold flex items-center gap-3 flex-wrap">
                         <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5 text-[#005bea]" /> {abonadoActivo ? abonadoActivo.direccion : clienteActivo?.direccion_comercial} ({clienteActivo?.ciudad || 'Santiago'})</span>
                         <span>•</span>
                         <span className="flex items-center gap-1"><Mail className="h-3.5 w-3.5 text-[#005bea]" /> {clienteActivo?.email_cobranza}</span>
+                        <span>•</span>
+                        <span className="flex items-center gap-1"><Phone className="h-3.5 w-3.5 text-[#005bea]" /> {clienteActivo?.telefono}</span>
                       </p>
                     </div>
+
+                    <div className="flex items-center gap-3 bg-[#E0E5EC] shadow-[4px_4px_8px_#bec8d2,-4px_-4px_8px_#ffffff] p-4 rounded-xl">
+                      <div>
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">TARIFA MONITOREO</span>
+                        <div className="text-lg font-black font-mono text-[#005bea]">
+                          {clienteActivo?.moneda === 'UF' ? `${clienteActivo.tarifa_mensual} UF` : `$${(clienteActivo?.tarifa_mensual || 29900).toLocaleString('es-CL')} CLP`}
+                        </div>
+                        <span className="text-[10px] text-slate-500 font-semibold">Plan: {clienteActivo?.plan_monitoreo || 'Estándar 24/7'}</span>
+                      </div>
+                    </div>
                   </div>
+
+                  {/* NAVEGACIÓN PESTAÑAS FICHA 360° */}
+                  <div className="flex items-center gap-2 bg-[#E0E5EC] p-1.5 rounded-xl shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff]">
+                    {[
+                      { id: 'datos', label: 'Datos Comerciales', icon: Building2 },
+                      { id: 'abonados', label: `Centros de Costo (${clienteActivo?.cuentas_abonados.length || 1})`, icon: Layers },
+                      { id: 'facturas', label: `Facturas & Abonos`, icon: Receipt },
+                      { id: 'cotizaciones', label: `Presupuestos DTE`, icon: FileText },
+                      { id: 'ots', label: `Órdenes Técnicas (SLA)`, icon: Wrench },
+                    ].map(tab => {
+                      const TabIcon = tab.icon
+                      const esActivo = tabFicha360 === tab.id
+                      return (
+                        <button
+                          key={tab.id}
+                          onClick={() => setTabFicha360(tab.id as any)}
+                          className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${esActivo ? 'bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white shadow-xs' : 'text-slate-700 hover:bg-[#d5dbe3]'}`}
+                        >
+                          <TabIcon className="h-4 w-4" />
+                          <span>{tab.label}</span>
+                        </button>
+                      )
+                    })}
+                  </div>
+
+                  {/* SUB-SECCIÓN 1: DATOS COMERCIALES */}
+                  {tabFicha360 === 'datos' && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="bg-[#E0E5EC] shadow-[inset_4px_4px_8px_#bec8d2,inset_-4px_-4px_8px_#ffffff] p-5 rounded-xl space-y-3 text-xs">
+                        <h3 className="font-black text-slate-900 uppercase tracking-wider text-xs border-b border-slate-300 pb-2">📍 DATOS DE CONTACTO & UBICACIÓN</h3>
+                        <div><strong className="text-slate-500">Razón Social:</strong> <span className="text-slate-900 font-bold">{clienteActivo?.razon_social}</span></div>
+                        <div><strong className="text-slate-500">RUT:</strong> <span className="text-slate-900 font-mono font-bold">{clienteActivo?.rut}</span></div>
+                        <div><strong className="text-slate-500">Dirección Comercial:</strong> <span className="text-slate-900">{clienteActivo?.direccion_comercial}</span></div>
+                        <div><strong className="text-slate-500">Ciudad / Comuna:</strong> <span className="text-slate-900 font-bold">{clienteActivo?.ciudad || 'Santiago'}</span></div>
+                        <div><strong className="text-slate-500">Teléfono Principal:</strong> <span className="text-slate-900 font-mono">{clienteActivo?.telefono}</span></div>
+                        <div><strong className="text-slate-500">Email Facturación:</strong> <span className="text-slate-900">{clienteActivo?.email_cobranza}</span></div>
+                      </div>
+
+                      <div className="bg-[#E0E5EC] shadow-[inset_4px_4px_8px_#bec8d2,inset_-4px_-4px_8px_#ffffff] p-5 rounded-xl space-y-3 text-xs">
+                        <h3 className="font-black text-slate-900 uppercase tracking-wider text-xs border-b border-slate-300 pb-2">💳 CONDICIONES DE FACTURACIÓN & PLAN</h3>
+                        <div><strong className="text-slate-500">Razón Social Emisora Asignada:</strong> <span className="text-[#005bea] font-bold">Gama Seguridad SpA (EMP-1)</span></div>
+                        <div><strong className="text-slate-500">Moneda Pactada:</strong> <span className="text-slate-900 font-bold">{clienteActivo?.moneda}</span></div>
+                        <div><strong className="text-slate-500">Tarifa Mensual:</strong> <span className="text-emerald-800 font-mono font-bold">{clienteActivo?.moneda === 'UF' ? `${clienteActivo.tarifa_mensual} UF` : `$${(clienteActivo?.tarifa_mensual || 29900).toLocaleString('es-CL')} CLP`}</span></div>
+                        <div><strong className="text-slate-500">Día Vencimiento Mensual:</strong> <span className="text-slate-900 font-bold">Día {clienteActivo?.dia_vencimiento || 5} de cada mes</span></div>
+                        <div><strong className="text-slate-500">Plan de Monitoreo:</strong> <span className="text-slate-900 font-bold">{clienteActivo?.plan_monitoreo}</span></div>
+                        <div><strong className="text-slate-500">Estado de Cobranza:</strong> <span className="text-emerald-700 font-bold">🟢 {clienteActivo?.estado_pago}</span></div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* SUB-SECCIÓN 2: CENTROS DE COSTO */}
+                  {tabFicha360 === 'abonados' && (
+                    <div className="bg-[#E0E5EC] shadow-[inset_4px_4px_8px_#bec8d2,inset_-4px_-4px_8px_#ffffff] p-5 rounded-xl space-y-4 text-xs">
+                      <h3 className="font-black text-slate-900 uppercase tracking-wider text-xs">🏢 CENTROS DE COSTO & CUENTAS DE ABONADO ASOCIADAS</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {(clienteActivo?.cuentas_abonados || []).map(cta => {
+                          const cc = abonadosCentrosCosto[cta]
+                          return (
+                            <div key={cta} className="bg-[#E0E5EC] shadow-[4px_4px_8px_#bec8d2,-4px_-4px_8px_#ffffff] p-4 rounded-xl space-y-2">
+                              <div className="flex justify-between items-center">
+                                <span className="bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white font-mono font-bold text-xs px-2.5 py-0.5 rounded-md">
+                                  Abonado #{cta}
+                                </span>
+                                <span className="text-[10px] text-slate-500 font-bold">🟢 Monitoreo Activo 24/7</span>
+                              </div>
+                              <h4 className="font-bold text-slate-900 text-xs">{cc?.alias_centro_costo || `Abonado ${cta}`}</h4>
+                              <p className="text-slate-600 text-[11px]">📍 {cc?.direccion || 'Dirección Instalación'} ({cc?.ciudad || 'Santiago'})</p>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* SUB-SECCIÓN 3: FACTURAS */}
+                  {tabFicha360 === 'facturas' && (
+                    <div className="bg-[#E0E5EC] shadow-[inset_4px_4px_8px_#bec8d2,inset_-4px_-4px_8px_#ffffff] p-5 rounded-xl space-y-4 text-xs">
+                      <h3 className="font-black text-slate-900 uppercase tracking-wider text-xs">🧾 FACTURACIÓN & RECAUDACIÓN DE ESTE CLIENTE</h3>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse text-xs">
+                          <thead>
+                            <tr className="border-b border-slate-300 font-bold uppercase text-[10px] text-slate-600">
+                              <th className="p-3">N° FACTURA</th>
+                              <th className="p-3">FECHA EMISIÓN</th>
+                              <th className="p-3 text-right">TOTAL</th>
+                              <th className="p-3 text-right">ABONADO</th>
+                              <th className="p-3 text-right">SALDO PENDIENTE</th>
+                              <th className="p-3 text-center">ESTADO</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-300 font-medium">
+                            {facturas.filter(f => f.rut_cliente === clienteActivo?.rut || f.cuenta_asociada === cuentaSeleccionada).map(f => (
+                              <tr key={f.id}>
+                                <td className="p-3 font-mono font-bold text-[#005bea]">{f.numero_factura}</td>
+                                <td className="p-3">{f.fecha}</td>
+                                <td className="p-3 text-right font-mono font-bold">${f.monto_total.toLocaleString('es-CL')}</td>
+                                <td className="p-3 text-right font-mono text-emerald-700 font-bold">${(f.monto_abonado || 0).toLocaleString('es-CL')}</td>
+                                <td className="p-3 text-right font-mono text-red-700 font-bold">${(f.saldo_pendiente || 0).toLocaleString('es-CL')}</td>
+                                <td className="p-3 text-center font-bold">
+                                  <span className="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-md text-[10px]">{f.estado}</span>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* SUB-SECCIÓN 4: COTIZACIONES */}
+                  {tabFicha360 === 'cotizaciones' && (
+                    <div className="bg-[#E0E5EC] shadow-[inset_4px_4px_8px_#bec8d2,inset_-4px_-4px_8px_#ffffff] p-5 rounded-xl space-y-4 text-xs">
+                      <div className="flex justify-between items-center">
+                        <h3 className="font-black text-slate-900 uppercase tracking-wider text-xs">📋 PRESUPUESTOS & COTIZACIONES EMITIDAS</h3>
+                        <button onClick={abrirModalNuevaCotizacion} className="px-3 py-1.5 bg-[#005bea] text-white font-bold rounded-lg text-xs flex items-center gap-1">
+                          <Plus className="h-3.5 w-3.5" />
+                          <span>Nueva Cotización</span>
+                        </button>
+                      </div>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse text-xs">
+                          <thead>
+                            <tr className="border-b border-slate-300 font-bold uppercase text-[10px] text-slate-600">
+                              <th className="p-3">FOLIO</th>
+                              <th className="p-3">FECHA</th>
+                              <th className="p-3 text-right">TOTAL IVA INCL.</th>
+                              <th className="p-3 text-center">ETAPA PIPELINE</th>
+                              <th className="p-3 text-center">ACCIONES</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-300 font-medium">
+                            {cotizaciones.filter(c => c.rut_cliente === clienteActivo?.rut || c.cuenta === cuentaSeleccionada).map(c => (
+                              <tr key={c.id}>
+                                <td className="p-3 font-mono font-bold text-[#005bea]">{c.codigo_cotizacion}</td>
+                                <td className="p-3">{c.fecha}</td>
+                                <td className="p-3 text-right font-mono font-bold text-emerald-800">${Math.round(c.monto_total_iva_incluido || 0).toLocaleString('es-CL')}</td>
+                                <td className="p-3 text-center font-bold">
+                                  <span className="bg-[#E0E5EC] shadow-[inset_2px_2px_4px_#bec8d2,inset_-2px_-2px_4px_#ffffff] text-slate-800 px-2 py-0.5 rounded-md text-[10px]">{c.etapa_pipeline || 'Cotización'}</span>
+                                </td>
+                                <td className="p-3 text-center">
+                                  <button onClick={() => setCotSeleccionada(c)} className="px-2 py-1 bg-slate-900 text-white font-bold rounded-md text-[10px]">
+                                    Ver DTE
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* SUB-SECCIÓN 5: ORDENES TÉCNICAS */}
+                  {tabFicha360 === 'ots' && (
+                    <div className="bg-[#E0E5EC] shadow-[inset_4px_4px_8px_#bec8d2,inset_-4px_-4px_8px_#ffffff] p-5 rounded-xl space-y-4 text-xs">
+                      <h3 className="font-black text-slate-900 uppercase tracking-wider text-xs">🛠️ ÓRDENES TÉCNICAS (SLA FIELD SERVICE)</h3>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse text-xs">
+                          <thead>
+                            <tr className="border-b border-slate-300 font-bold uppercase text-[10px] text-slate-600">
+                              <th className="p-3">CÓDIGO OT</th>
+                              <th className="p-3">SERVICIO</th>
+                              <th className="p-3">SLA</th>
+                              <th className="p-3">TÉCNICO</th>
+                              <th className="p-3 text-center">ESTADO</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-300 font-medium">
+                            {ordenesTrabajo.filter(ot => ot.cuenta === cuentaSeleccionada || ot.cliente_nombre.includes(clienteActivo?.razon_social || '')).map(ot => (
+                              <tr key={ot.id}>
+                                <td className="p-3 font-mono font-bold text-[#005bea]">{ot.codigo_ot}</td>
+                                <td className="p-3 font-semibold">{ot.tipo_servicio}</td>
+                                <td className="p-3 font-bold">{ot.prioridad_sla}</td>
+                                <td className="p-3">{ot.tecnico_asignado}</td>
+                                <td className="p-3 text-center font-bold">
+                                  <span className="bg-blue-100 text-blue-900 px-2 py-0.5 rounded-md text-[10px]">{ot.estado}</span>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+
                 </div>
               ) : (
                 <div className="bg-[#E0E5EC] rounded-2xl p-16 text-center shadow-[6px_6px_12px_#bec8d2,-6px_-6px_12px_#ffffff] flex flex-col items-center justify-center gap-4">
