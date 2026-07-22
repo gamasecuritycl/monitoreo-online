@@ -665,15 +665,20 @@ export default function OperacionCRM() {
   }
 
   const handleSeleccionarClienteParaCotizacion = (rutOKey: string) => {
-    setCotClienteRutSeleccionado(rutOKey)
     let cli: ClienteMaestro | undefined = clientesMaestros[rutOKey]
     if (!cli) {
-      cli = Object.values(clientesMaestros).find(c => c.rut === rutOKey || (c.rut && cleanRut(c.rut) === cleanRut(rutOKey)))
+      cli = Object.values(clientesMaestros).find(
+        c => c.rut === rutOKey || 
+             (c.rut && cleanRut(c.rut) === cleanRut(rutOKey)) ||
+             (c.cuentas_abonados && c.cuentas_abonados.some(acc => acc.toUpperCase().trim() === rutOKey.toUpperCase().trim()))
+      )
     }
     if (!cli) {
       cli = Object.values(clientesMaestros).find(c => (c.razon_social || '').toLowerCase().trim() === (rutOKey || '').toLowerCase().trim())
     }
+
     if (cli) {
+      setCotClienteRutSeleccionado(cli.rut)
       setCotNombreCliente(cli.razon_social)
       setCotRutCliente(cli.rut)
       setCotDireccion(cli.direccion_comercial || 'Dirección Comercial Registrada')
@@ -682,13 +687,27 @@ export default function OperacionCRM() {
       setCotTelefonoCliente(cli.telefono || '+56 9 9101 6912')
       setCotContactoPersona(cli.razon_social)
     } else {
-      setCotNombreCliente(rutOKey && rutOKey !== 'Cliente Gama' ? rutOKey : 'CLIENTE REGISTRADO')
-      setCotRutCliente(rutOKey)
-      setCotDireccion('Dirección Registrada')
-      setCotCiudadCliente('Santiago')
-      setCotEmailCliente('contacto@gamasecurity.cl')
-      setCotTelefonoCliente('+56 9 9101 6912')
-      setCotContactoPersona('Atención Adquisiciones')
+      const ab = abonadosCentrosCosto[rutOKey.toUpperCase().trim()]
+      if (ab) {
+        const rutAb = `RUT-${ab.cuenta}`
+        setCotClienteRutSeleccionado(rutAb)
+        setCotNombreCliente(ab.alias_centro_costo)
+        setCotRutCliente(rutAb)
+        setCotDireccion(ab.direccion)
+        setCotCiudadCliente(ab.ciudad || 'Santiago')
+        setCotEmailCliente('contacto@gamasecurity.cl')
+        setCotTelefonoCliente('+56 9 9101 6912')
+        setCotContactoPersona(ab.alias_centro_costo)
+      } else {
+        setCotClienteRutSeleccionado(rutOKey)
+        setCotNombreCliente(rutOKey && rutOKey !== 'Cliente Gama' ? rutOKey : 'CLIENTE REGISTRADO')
+        setCotRutCliente(rutOKey)
+        setCotDireccion('Dirección Registrada')
+        setCotCiudadCliente('Santiago')
+        setCotEmailCliente('contacto@gamasecurity.cl')
+        setCotTelefonoCliente('+56 9 9101 6912')
+        setCotContactoPersona('Atención Adquisiciones')
+      }
     }
   }
 
@@ -698,18 +717,34 @@ export default function OperacionCRM() {
     setCotEtapaPipeline('Cotizacion')
     setDescuentoGlobalValor(0)
     setDescuentoGlobalTipo('porcentaje')
-    const ruts = Object.keys(clientesMaestros)
-    if (ruts.length > 0) {
-      const selectedRut = clienteActivo?.rut && clientesMaestros[clienteActivo.rut] ? clienteActivo.rut : ruts[0]
-      handleSeleccionarClienteParaCotizacion(selectedRut)
+
+    if (abonadoActivo || clienteActivo) {
+      const cli = clienteActivo
+      const ab = abonadoActivo
+      const nombreFinal = ab?.alias_centro_costo || cli?.razon_social || 'CLIENTE REGISTRADO'
+      const rutFinal = cli?.rut || (ab ? `RUT-${ab.cuenta}` : 'S/RUT')
+
+      setCotClienteRutSeleccionado(rutFinal)
+      setCotNombreCliente(nombreFinal)
+      setCotRutCliente(rutFinal)
+      setCotDireccion(ab?.direccion || cli?.direccion_comercial || 'Dirección Registrada')
+      setCotCiudadCliente(ab?.ciudad || cli?.ciudad || 'Santiago')
+      setCotEmailCliente(cli?.email_cobranza || 'contacto@gamasecurity.cl')
+      setCotTelefonoCliente(cli?.telefono || '+56 9 9101 6912')
+      setCotContactoPersona(nombreFinal)
     } else {
-      setCotNombreCliente('CLIENTE MODELO DEMO')
-      setCotRutCliente('76.319.399-3')
-      setCotDireccion('Av. Valparaíso 1183')
-      setCotCiudadCliente('Viña del Mar')
-      setCotEmailCliente('cobranza@gamasecurity.cl')
-      setCotTelefonoCliente('+56 32 3276011')
-      setCotContactoPersona('Sr(a). Encargado(a) de Adquisiciones')
+      const ruts = Object.keys(clientesMaestros)
+      if (ruts.length > 0) {
+        handleSeleccionarClienteParaCotizacion(ruts[0])
+      } else {
+        setCotNombreCliente('CLIENTE MODELO DEMO')
+        setCotRutCliente('76.319.399-3')
+        setCotDireccion('Av. Valparaíso 1183')
+        setCotCiudadCliente('Viña del Mar')
+        setCotEmailCliente('cobranza@gamasecurity.cl')
+        setCotTelefonoCliente('+56 32 3276011')
+        setCotContactoPersona('Sr(a). Encargado(a) de Adquisiciones')
+      }
     }
     setMostrarModalCotizacion(true)
   }
@@ -3452,29 +3487,35 @@ export default function OperacionCRM() {
                   <label className="font-black text-slate-900 text-xs uppercase tracking-wider block">1. RECEPTOR DE LA OFERTA COMERCIAL:</label>
                   <div className="grid grid-cols-2 gap-3">
                     <button
-                      type="button"
-                      onClick={() => {
-                        setTipoReceptorCot('registrado')
-                        const ruts = Object.keys(clientesMaestros)
-                        if (ruts.length > 0) handleSeleccionarClienteParaCotizacion(ruts[0])
-                      }}
-                      className={`p-3 rounded-xl font-bold text-xs cursor-pointer border transition-all ${tipoReceptorCot === 'registrado' ? 'bg-[#005bea] text-white border-[#005bea]' : 'bg-white text-slate-700 border-slate-300'}`}
-                    >
-                      Cliente Registrado
-                    </button>
+                        type="button"
+                        onClick={() => {
+                          setTipoReceptorCot('registrado')
+                          if (clienteActivo?.rut) {
+                            handleSeleccionarClienteParaCotizacion(clienteActivo.rut)
+                          } else if (abonadoActivo?.cuenta) {
+                            handleSeleccionarClienteParaCotizacion(abonadoActivo.cuenta)
+                          } else {
+                            const ruts = Object.keys(clientesMaestros)
+                            if (ruts.length > 0) handleSeleccionarClienteParaCotizacion(ruts[0])
+                          }
+                        }}
+                        className={`p-3 rounded-xl font-bold text-xs cursor-pointer border transition-all ${tipoReceptorCot === 'registrado' ? 'bg-[#005bea] text-white border-[#005bea]' : 'bg-white text-slate-700 border-slate-300'}`}
+                      >
+                        Cliente Registrado
+                      </button>
                     <button
-                      type="button"
-                      onClick={() => {
-                        setTipoReceptorCot('prospecto')
-                        setCotClienteRutSeleccionado('')
-                        setCotNombreCliente('NUEVO PROSPECTO COMERCIAL')
-                        setCotRutCliente('75.000.000-0')
-                        setCotContactoPersona('Sr(a). Director(a) / Adquisiciones')
-                      }}
-                      className={`p-3 rounded-xl font-bold text-xs cursor-pointer border transition-all ${tipoReceptorCot === 'prospecto' ? 'bg-[#005bea] text-white border-[#005bea]' : 'bg-white text-slate-700 border-slate-300'}`}
-                    >
-                      Nuevo Prospecto
-                    </button>
+                        type="button"
+                        onClick={() => {
+                          setTipoReceptorCot('prospecto')
+                          setCotClienteRutSeleccionado('')
+                          setCotNombreCliente('NUEVO PROSPECTO COMERCIAL')
+                          setCotRutCliente('75.000.000-0')
+                          setCotContactoPersona('Sr(a). Director(a) / Adquisiciones')
+                        }}
+                        className={`p-3 rounded-xl font-bold text-xs cursor-pointer border transition-all ${tipoReceptorCot === 'prospecto' ? 'bg-[#005bea] text-white border-[#005bea]' : 'bg-white text-slate-700 border-slate-300'}`}
+                      >
+                        Nuevo Prospecto
+                      </button>
                   </div>
 
                   {tipoReceptorCot === 'registrado' ? (
