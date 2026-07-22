@@ -183,8 +183,8 @@ export interface OrdenDeTrabajo {
   tipo_servicio: string
   tecnico_asignado: string
   fecha_programada: string
-  prioridad_sla?: 'Crítica (2h)' | 'Alta (6h)' | 'Normal (24h)'
-  estado: 'Pendiente' | 'En Proceso' | 'Completada' | 'Cancelada'
+  prioridad_sla?: 'Crítica (2h)' | 'Alta (6h)' | 'Normal (24h)' | 'Programada (48h)' | string
+  estado: 'Pendiente' | 'En Proceso' | 'Finalizada' | 'Completada' | 'Cancelada' | string
   observaciones: string
 }
 
@@ -445,8 +445,21 @@ export default function OperacionCRM() {
     { id: '1', descripcion: 'Control remoto inalambrico RadioFrecuencia 4Botones Botón Pánico', cantidad: 1, precio_neto_unitario: 31000, descuento_valor: 0, tipo_descuento: 'porcentaje' }
   ])
 
-  // Modales OT
+  // Modales OT & Formulario & Filtros Command Center
   const [mostrarModalOT, setMostrarModalOT] = useState(false)
+  const [mostrarModalFirmaOT, setMostrarModalFirmaOT] = useState<OrdenDeTrabajo | null>(null)
+  const [filtroOTCategoria, setFiltroOTCategoria] = useState<'todas' | 'central' | 'pendiente' | 'proceso' | 'finalizada'>('todas')
+  const [filtroOTBusqueda, setFiltroOTBusqueda] = useState<string>('')
+
+  // Campos Formulario OT
+  const [otFormCuenta, setOtFormCuenta] = useState('0999')
+  const [otFormClienteNombre, setOtFormClienteNombre] = useState('GAMA SEGURIDAD SPA DEMO')
+  const [otFormTipoServicio, setOtFormTipoServicio] = useState('Mantención Perimetral Alarma')
+  const [otFormTecnico, setOtFormTecnico] = useState('Técnico Juan Pérez')
+  const [otFormFecha, setOtFormFecha] = useState(new Date().toISOString().split('T')[0])
+  const [otFormSLA, setOtFormSLA] = useState('Crítica (2h)')
+  const [otFormEstado, setOtFormEstado] = useState<'Pendiente' | 'En Proceso' | 'Finalizada'>('Pendiente')
+  const [otFormObservaciones, setOtFormObservaciones] = useState('')
 
   // ── MOTOR DE AGENTES DE IA AUTÓNOMOS 24/7 (AUTO-COMPANY ENGINE) ──
   const [logsConsenso, setLogsConsenso] = useState<string[]>([
@@ -799,6 +812,42 @@ export default function OperacionCRM() {
 
     return list
   }, [cotizaciones, filtroCotCategoria, filtroCotBusqueda, filtroCotDesde, filtroCotHasta, filtroCotEmpresa, filtroCotOrden])
+
+  // ── NOVEDADES TÉCNICAS Y ALERTAS EN VIVO DEL COMMAND CENTER PARA SERVICIO TÉCNICO ──
+  const alertasTecnicasCommandCenter = useMemo(() => {
+    const keywords = ['SERVICIO', 'TECNIC', 'FALLA', 'REVISION', 'BATERIA', 'CORTE', 'ZONA', 'PANEL', 'CAMARA', 'DESCONEXION', 'OBSERVACION', 'NOVEDAD']
+    return bitacoraCommandCenter.filter(item => {
+      const txt = `${item.tipo_nombre || ''} ${item.comentario || ''}`.toUpperCase()
+      return keywords.some(kw => txt.includes(kw))
+    }).slice(0, 5)
+  }, [bitacoraCommandCenter])
+
+  const ordenesTrabajoFiltradas = useMemo(() => {
+    let list = [...ordenesTrabajo]
+
+    if (filtroOTCategoria !== 'todas') {
+      list = list.filter(ot => {
+        const est = (ot.estado || '').toLowerCase()
+        if (filtroOTCategoria === 'pendiente') return est.includes('pendiente')
+        if (filtroOTCategoria === 'proceso') return est.includes('proceso') || est.includes('progreso')
+        if (filtroOTCategoria === 'finalizada') return est.includes('finalizad') || est.includes('resuelt')
+        return true
+      })
+    }
+
+    if (filtroOTBusqueda.trim()) {
+      const q = filtroOTBusqueda.toLowerCase().trim()
+      list = list.filter(ot => 
+        (ot.codigo_ot || '').toLowerCase().includes(q) ||
+        (ot.cuenta || '').toLowerCase().includes(q) ||
+        (ot.cliente_nombre || '').toLowerCase().includes(q) ||
+        (ot.tecnico_asignado || '').toLowerCase().includes(q) ||
+        (ot.tipo_servicio || '').toLowerCase().includes(q)
+      )
+    }
+
+    return list
+  }, [ordenesTrabajo, filtroOTCategoria, filtroOTBusqueda])
 
   const kpisFinancieros = useMemo(() => {
     let totalTarifasCLP = 0
@@ -1457,6 +1506,66 @@ export default function OperacionCRM() {
         setBusquedaClienteInput('')
       }
     }, 150)
+  }
+
+  // ── FUNCIONES DE MANEJO DE ÓRDENES DE TRABAJO Y COMMAND CENTER ──
+  const handleCrearOTDesdeCentral = (item: any) => {
+    const cod = (item.abonado_cod || '').toUpperCase().trim()
+    const nom = (item.abonado_nombre || 'ABONADO MONITOREADO').trim()
+    const nota = item.comentario || 'Solicitud generada desde novedad de Command Center'
+
+    setOtFormCuenta(cod || '0999')
+    setOtFormClienteNombre(nom)
+    setOtFormTipoServicio(item.tipo_nombre === 'CORTE DE ENERGIA' ? 'Revisión de Fuente & Energía' : item.tipo_nombre === 'FALLA DE BATERIA' ? 'Cambio de Batería de Respaldo' : 'Revisión Técnica de Alarma / Zonas')
+    setOtFormObservaciones(`Reporte Command Center [${item.created_at || 'Reciente'}]: ${nota}`)
+    setOtFormSLA('Crítica (2h)')
+    setOtFormTecnico('Técnico Juan Pérez')
+    setOtFormFecha(new Date().toISOString().split('T')[0])
+    setOtFormEstado('Pendiente')
+    setMostrarModalOT(true)
+  }
+
+  const handleGuardarNuevaOT = () => {
+    const nextOtNum = ordenesTrabajo.length + 83
+    const nuevaOT: OrdenDeTrabajo = {
+      id: `OT-${Date.now()}`,
+      codigo_ot: `OT-2026-${nextOtNum.toString().padStart(3, '0')}`,
+      cuenta: otFormCuenta || '0999',
+      cliente_nombre: otFormClienteNombre || 'Cliente Monitoreado',
+      tipo_servicio: otFormTipoServicio,
+      tecnico_asignado: otFormTecnico,
+      fecha_programada: otFormFecha,
+      prioridad_sla: otFormSLA,
+      estado: otFormEstado,
+      observaciones: otFormObservaciones
+    }
+
+    setOrdenesTrabajo([nuevaOT, ...ordenesTrabajo])
+    setMostrarModalOT(false)
+    setToastNotificacion({ tipo: 'exito', texto: `¡Orden de Trabajo ${nuevaOT.codigo_ot} creada y asignada a ${otFormTecnico}!` })
+  }
+
+  const handleNotificarWhatsAppOT = async (ot: OrdenDeTrabajo) => {
+    const fono = '+56991016912'
+    const msg = `🚨 *ORDEN DE TRABAJO TÉCNICA (${ot.codigo_ot})*\n\nEstimado cliente *${ot.cliente_nombre}* (Cuenta #${ot.cuenta}):\nLe informamos que se ha programado la Orden Técnica *${ot.codigo_ot}* para la fecha *${ot.fecha_programada}*.\n\n🔧 *Servicio*: ${ot.tipo_servicio}\n👨‍🔧 *Técnico Asignado*: ${ot.tecnico_asignado}\n⏱️ *SLA de Atención*: ${ot.prioridad_sla || 'Normal (24h)'}\n📌 *Notas*: ${ot.observaciones || 'Revisión estándar'}\n\nGama Seguridad SpA - Central Operativa 24/7`
+
+    try {
+      const res = await fetch('/api/whatsapp/send-direct', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: fono, message: msg })
+      })
+      const data = await res.json()
+      if (data.status === 'success' || data.success) {
+        setToastNotificacion({ tipo: 'exito', texto: `¡Notificación de OT ${ot.codigo_ot} enviada por WhatsApp!` })
+      } else {
+        const link = `https://wa.me/${fono.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`
+        window.open(link, '_blank')
+      }
+    } catch (e) {
+      const link = `https://wa.me/${fono.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`
+      window.open(link, '_blank')
+    }
   }
 
   const empresaEmisoraSeleccionadaCot = empresasConglomerado.find(e => e.id === cotEmpresaEmisoraId) || empresasConglomerado[0]
@@ -2850,25 +2959,33 @@ export default function OperacionCRM() {
             </div>
           )}
 
-          {/* ── MÓDULO 5: SERVICIO TÉCNICO & SLAs (FIELD SERVICE ESPO-CRM) ── */}
+          {/* ── MÓDULO 5: SERVICIO TÉCNICO & SLAs (COMMAND CENTER 24/7 INTEGRATED) ── */}
           {moduloActivo === 'serv_tecnico' && (
             <div className="flex-1 bg-[#E0E5EC] rounded-2xl p-6 md:p-8 flex flex-col gap-6 shadow-[6px_6px_12px_#bec8d2,-6px_-6px_12px_#ffffff] overflow-y-auto">
-              <div className="bg-[#E0E5EC] shadow-[inset_5px_5px_10px_#bec8d2,inset_-5px_-5px_10px_#ffffff] p-5 rounded-xl flex justify-between items-center">
+              
+              {/* ENCABEZADO MÓDULO */}
+              <div className="bg-[#E0E5EC] shadow-[inset_5px_5px_10px_#bec8d2,inset_-5px_-5px_10px_#ffffff] p-5 rounded-xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div className="flex items-center gap-3">
                   <div className="p-2.5 bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white rounded-xl shadow-xs">
                     <Wrench className="h-5 w-5 stroke-[2]" />
                   </div>
                   <div>
                     <h2 className="text-base font-black text-slate-900 uppercase tracking-wide">
-                      Servicio Técnico & Órdenes de Trabajo (SLA & Field Service)
+                      Servicios Técnicos & Órdenes de Trabajo (Command Center 24/7)
                     </h2>
                     <p className="text-xs text-slate-500 font-semibold">
-                      Programación, asignación técnica y monitoreo de niveles de servicio (SLA 2h / 6h / 24h)
+                      Sincronización en tiempo real con bitácora central, asignación técnica y gestión de SLAs (2h / 6h / 24h)
                     </p>
                   </div>
                 </div>
                 <button
-                  onClick={() => setMostrarModalOT(true)}
+                  onClick={() => {
+                    setOtFormCuenta('0999')
+                    setOtFormClienteNombre('GAMA SEGURIDAD SPA DEMO')
+                    setOtFormTipoServicio('Mantención Perimetral Alarma')
+                    setOtFormObservaciones('')
+                    setMostrarModalOT(true)
+                  }}
                   className="px-5 py-2.5 bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white font-bold rounded-xl text-xs shadow-[4px_4px_8px_#bec8d2,-4px_-4px_8px_#ffffff] active:scale-95 cursor-pointer flex items-center gap-2"
                 >
                   <Plus className="h-4 w-4" />
@@ -2876,6 +2993,100 @@ export default function OperacionCRM() {
                 </button>
               </div>
 
+              {/* ── ALERTA DE NOVEDADES TÉCNICAS EN VIVO DESDE CENTRAL DE MONITOREO ── */}
+              <div className="bg-[#E0E5EC] shadow-[inset_4px_4px_8px_#bec8d2,inset_-4px_-4px_8px_#ffffff] p-5 rounded-2xl space-y-3">
+                <div className="flex justify-between items-center border-b border-slate-300 pb-2">
+                  <h3 className="font-black text-slate-900 uppercase tracking-wider text-xs flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4 text-amber-600 animate-pulse" />
+                    <span>NOVEDADES & ALERTAS TÉCNICAS RECIENTES DEL COMMAND CENTER (24/7 API)</span>
+                  </h3>
+                  <span className="text-[10px] font-bold text-slate-500 bg-[#E0E5EC] shadow-[2px_2px_4px_#bec8d2,-2px_-2px_4px_#ffffff] px-2.5 py-1 rounded-md">
+                    Central Operativa
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+                  {alertasTecnicasCommandCenter.length === 0 ? (
+                    <div className="col-span-full p-4 text-center text-slate-500 text-xs font-bold bg-[#E0E5EC] shadow-[inset_2px_2px_4px_#bec8d2,inset_-2px_-2px_4px_#ffffff] rounded-xl">
+                      No se registran alertas técnicas pendientes en la bitácora central.
+                    </div>
+                  ) : (
+                    alertasTecnicasCommandCenter.map(item => (
+                      <div key={item.id} className="bg-[#E0E5EC] shadow-[4px_4px_8px_#bec8d2,-4px_-4px_8px_#ffffff] p-4 rounded-xl flex flex-col justify-between space-y-3 border-l-4" style={{ borderLeftColor: item.tipo_color ? `#${item.tipo_color}` : '#005bea' }}>
+                        <div className="space-y-1.5">
+                          <div className="flex justify-between items-center text-[10px]">
+                            <span className="font-mono font-bold text-[#005bea] bg-[#E0E5EC] shadow-[inset_2px_2px_4px_#bec8d2,inset_-2px_-2px_4px_#ffffff] px-2 py-0.5 rounded">
+                              #{item.abonado_cod || 'N/A'}
+                            </span>
+                            <span className="font-mono text-slate-500 font-bold">{item.created_at}</span>
+                          </div>
+                          <h4 className="font-black text-xs text-slate-900 leading-snug">{item.abonado_nombre}</h4>
+                          <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase" style={{ color: `#${item.tipo_color || '005bea'}` }}>
+                            {item.tipo_nombre} • {item.responsable_nombre}
+                          </span>
+                          <p className="text-[11px] text-slate-700 font-medium line-clamp-3 bg-[#E0E5EC] shadow-[inset_2px_2px_4px_#bec8d2,inset_-2px_-2px_4px_#ffffff] p-2 rounded-lg">
+                            {item.comentario}
+                          </p>
+                        </div>
+
+                        <button
+                          onClick={() => handleCrearOTDesdeCentral(item)}
+                          className="w-full py-2 bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white text-xs font-bold rounded-lg shadow-[2px_2px_4px_#bec8d2,-2px_-2px_4px_#ffffff] hover:brightness-105 active:scale-98 cursor-pointer flex items-center justify-center gap-1.5"
+                        >
+                          <Plus className="h-3.5 w-3.5" />
+                          <span>Generar OT desde Alerta</span>
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              {/* ── CARDS DE FILTRO RÁPIDO DE ESTADO OT ── */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
+                {[
+                  { id: 'todas', label: 'Todas las OTs', count: ordenesTrabajo.length, sub: 'Registradas', color: 'text-[#005bea]' },
+                  { id: 'pendiente', label: 'Pendientes por Atender', count: ordenesTrabajo.filter(o => o.estado === 'Pendiente').length, sub: 'Por asignar', color: 'text-amber-600' },
+                  { id: 'proceso', label: 'En Proceso en Terreno', count: ordenesTrabajo.filter(o => o.estado === 'En Proceso').length, sub: 'Técnico en ruta', color: 'text-blue-600' },
+                  { id: 'finalizada', label: 'Finalizadas & Resueltas', count: ordenesTrabajo.filter(o => o.estado === 'Finalizada').length, sub: 'Conformidad cliente', color: 'text-emerald-600' },
+                ].map(cat => {
+                  const esSel = filtroOTCategoria === cat.id
+                  return (
+                    <button
+                      key={cat.id}
+                      onClick={() => setFiltroOTCategoria(cat.id as any)}
+                      className={`p-3.5 rounded-2xl text-left transition-all cursor-pointer flex flex-col justify-between ${
+                        esSel
+                          ? 'bg-[#E0E5EC] shadow-[inset_4px_4px_8px_#bec8d2,inset_-4px_-4px_8px_#ffffff] border-l-4 border-l-[#005bea]'
+                          : 'bg-[#E0E5EC] shadow-[4px_4px_8px_#bec8d2,-4px_-4px_8px_#ffffff] hover:brightness-95 active:scale-98'
+                      }`}
+                    >
+                      <div className="text-[10px] font-black uppercase tracking-wider text-slate-500">{cat.label}</div>
+                      <div className="flex justify-between items-baseline mt-2">
+                        <span className={`text-xl font-black font-mono ${cat.color}`}>{cat.count}</span>
+                        <span className="text-[10px] font-bold text-slate-500">{cat.sub}</span>
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+
+              {/* BARRA BÚSQUEDA OT */}
+              <div className="bg-[#E0E5EC] p-4 rounded-xl shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] flex items-center gap-3">
+                <Search className="h-4 w-4 text-slate-400 shrink-0" />
+                <input
+                  type="text"
+                  value={filtroOTBusqueda}
+                  onChange={e => setFiltroOTBusqueda(e.target.value)}
+                  placeholder="Buscar OT por código (#OT-2026-081), Abonado (#0999), Cliente, Técnico..."
+                  className="w-full bg-transparent text-xs font-mono text-slate-800 placeholder-slate-400 focus:outline-none"
+                />
+                {filtroOTBusqueda && (
+                  <button onClick={() => setFiltroOTBusqueda('')} className="text-slate-400 hover:text-slate-700 text-xs font-bold">✕</button>
+                )}
+              </div>
+
+              {/* TABLA DE ÓRDENES DE TRABAJO */}
               <div className="bg-[#E0E5EC] shadow-[inset_5px_5px_10px_#bec8d2,inset_-5px_-5px_10px_#ffffff] rounded-xl p-2 overflow-hidden">
                 <table className="w-full text-left border-collapse text-xs font-medium">
                   <thead>
@@ -2886,34 +3097,72 @@ export default function OperacionCRM() {
                       <th className="p-3.5 border-r border-slate-300">TIPO DE SERVICIO</th>
                       <th className="p-3.5 border-r border-slate-300">SLA DE RESPUESTA</th>
                       <th className="p-3.5 border-r border-slate-300">TÉCNICO ASIGNADO</th>
-                      <th className="p-3.5 text-center">ESTADO</th>
+                      <th className="p-3.5 border-r border-slate-300 text-center">ESTADO</th>
+                      <th className="p-3.5 text-center min-w-[200px]">ACCIONES (WHATSAPP • FIRMA)</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-300">
-                    {ordenesTrabajo.map(ot => (
-                      <tr key={ot.id} className="hover:bg-[#d5dbe3] transition-colors">
-                        <td className="p-3.5 font-mono font-bold text-[#005bea] border-r border-slate-300">
-                          <div>{ot.codigo_ot}</div>
-                          <div className="text-slate-500 text-[10px] font-sans">{ot.fecha_programada}</div>
-                        </td>
-                        <td className="p-3.5 border-r border-slate-300 font-mono font-bold text-slate-900">#{ot.cuenta}</td>
-                        <td className="p-3.5 border-r border-slate-300 font-bold text-slate-900">{ot.cliente_nombre}</td>
-                        <td className="p-3.5 border-r border-slate-300 text-slate-700 font-semibold">{ot.tipo_servicio}</td>
-                        <td className="p-3.5 border-r border-slate-300 font-bold">
-                          <span className={`px-2.5 py-1 rounded-md text-[10px] font-mono ${
-                            ot.prioridad_sla?.includes('2h') ? 'bg-red-100 text-red-800 border border-red-200' :
-                            ot.prioridad_sla?.includes('6h') ? 'bg-amber-100 text-amber-800 border border-amber-200' :
-                            'bg-blue-100 text-blue-800 border border-blue-200'
-                          }`}>
-                            {ot.prioridad_sla || 'Normal (24h)'}
-                          </span>
-                        </td>
-                        <td className="p-3.5 border-r border-slate-300 text-slate-800 font-bold">{ot.tecnico_asignado}</td>
-                        <td className="p-3.5 text-center font-bold">
-                          <span className="bg-[#E0E5EC] shadow-[inset_2px_2px_4px_#bec8d2,inset_-2px_-2px_4px_#ffffff] text-slate-800 px-2.5 py-1 rounded-md text-[10px]">{ot.estado}</span>
+                    {ordenesTrabajoFiltradas.length === 0 ? (
+                      <tr>
+                        <td colSpan={8} className="p-8 text-center text-slate-500 font-bold">
+                          No se encontraron órdenes de trabajo registradas con esos criterios.
                         </td>
                       </tr>
-                    ))}
+                    ) : (
+                      ordenesTrabajoFiltradas.map(ot => (
+                        <tr key={ot.id} className="hover:bg-[#d5dbe3] transition-colors">
+                          <td className="p-3.5 font-mono font-bold text-[#005bea] border-r border-slate-300">
+                            <div>{ot.codigo_ot}</div>
+                            <div className="text-slate-500 text-[10px] font-sans">{ot.fecha_programada}</div>
+                          </td>
+                          <td className="p-3.5 border-r border-slate-300 font-mono font-bold text-slate-900">#{ot.cuenta}</td>
+                          <td className="p-3.5 border-r border-slate-300 font-bold text-slate-900">{ot.cliente_nombre}</td>
+                          <td className="p-3.5 border-r border-slate-300 text-slate-700 font-semibold">{ot.tipo_servicio}</td>
+                          <td className="p-3.5 border-r border-slate-300 font-bold">
+                            <span className={`px-2.5 py-1 rounded-md text-[10px] font-mono ${
+                              ot.prioridad_sla?.includes('2h') ? 'bg-red-100 text-red-800 border border-red-200' :
+                              ot.prioridad_sla?.includes('6h') ? 'bg-amber-100 text-amber-800 border border-amber-200' :
+                              'bg-blue-100 text-blue-800 border border-blue-200'
+                            }`}>
+                              {ot.prioridad_sla || 'Normal (24h)'}
+                            </span>
+                          </td>
+                          <td className="p-3.5 border-r border-slate-300 text-slate-800 font-bold">{ot.tecnico_asignado}</td>
+                          <td className="p-3.5 text-center font-bold border-r border-slate-300">
+                            <select
+                              value={ot.estado}
+                              onChange={(e) => {
+                                const nuevoEst = e.target.value as any
+                                setOrdenesTrabajo(ordenesTrabajo.map(o => o.id === ot.id ? { ...o, estado: nuevoEst } : o))
+                              }}
+                              className="bg-[#E0E5EC] shadow-[inset_2px_2px_4px_#bec8d2,inset_-2px_-2px_4px_#ffffff] text-slate-800 px-2 py-1 rounded-md text-[10px] font-bold border-none cursor-pointer"
+                            >
+                              <option value="Pendiente">Pendiente</option>
+                              <option value="En Proceso">En Proceso</option>
+                              <option value="Finalizada">Finalizada</option>
+                            </select>
+                          </td>
+                          <td className="p-3.5 text-center">
+                            <div className="flex items-center justify-center gap-2">
+                              <button
+                                onClick={() => handleNotificarWhatsAppOT(ot)}
+                                title="Notificar Orden Técnica al Cliente por WhatsApp"
+                                className="p-2 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white rounded-xl font-bold cursor-pointer transition-all shadow-xs"
+                              >
+                                <MessageSquare className="h-4 w-4 stroke-[2]" />
+                              </button>
+                              <button
+                                onClick={() => setMostrarModalFirmaOT(ot)}
+                                title="Ver Pauta Técnica & Firma Digital"
+                                className="p-2 bg-[#005bea] hover:bg-blue-600 active:scale-95 text-white rounded-xl font-bold cursor-pointer transition-all shadow-xs"
+                              >
+                                <FileText className="h-4 w-4 stroke-[2]" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -4719,6 +4968,191 @@ export default function OperacionCRM() {
                 className="px-6 py-2.5 bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white font-bold rounded-xl text-xs shadow-[4px_4px_10px_#bec8d2,-4px_-4px_10px_#ffffff] active:scale-95 cursor-pointer"
               >
                 Guardar Lead
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL NUEVA ORDEN TÉCNICA (OT) CONECTADA CON COMMAND CENTER ── */}
+      {mostrarModalOT && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm p-4 md:p-6 flex justify-center items-center overflow-y-auto no-imprimir">
+          <div className="bg-[#E0E5EC] border border-slate-300 w-full max-w-lg rounded-2xl shadow-[12px_12px_24px_#bec8d2,-12px_-12px_24px_#ffffff] p-6 md:p-8 flex flex-col gap-5 text-xs text-slate-900 font-sans my-auto">
+            <div className="flex justify-between items-center pb-3 border-b border-slate-300">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white rounded-xl shadow-xs">
+                  <Wrench className="h-5 w-5 stroke-[2]" />
+                </div>
+                <div>
+                  <h3 className="font-black text-base text-slate-900 uppercase tracking-wider">
+                    NUEVA ORDEN TÉCNICA DE TERRENO (OT)
+                  </h3>
+                  <p className="text-[11px] text-slate-500 font-semibold">Integración de alertas de Central de Monitoreo & SLA</p>
+                </div>
+              </div>
+              <button onClick={() => setMostrarModalOT(false)} className="text-slate-400 hover:text-slate-700 font-bold text-lg cursor-pointer">✕</button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[10px] font-bold text-slate-500 block mb-1">CUENTA ABONADO (*):</label>
+                  <input
+                    type="text"
+                    value={otFormCuenta}
+                    onChange={(e) => setOtFormCuenta(e.target.value.toUpperCase())}
+                    placeholder="ej: #0999, #C725"
+                    className="w-full bg-[#E0E5EC] shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] border-none p-3 rounded-xl font-mono font-bold text-xs text-slate-900"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-slate-500 block mb-1">CLIENTE / RAZÓN SOCIAL (*):</label>
+                  <input
+                    type="text"
+                    value={otFormClienteNombre}
+                    onChange={(e) => setOtFormClienteNombre(e.target.value)}
+                    placeholder="ej: GAMA SEGURIDAD SPA"
+                    className="w-full bg-[#E0E5EC] shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] border-none p-3 rounded-xl font-bold text-xs text-slate-900"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[10px] font-bold text-slate-500 block mb-1">TIPO DE SERVICIO (*):</label>
+                  <select
+                    value={otFormTipoServicio}
+                    onChange={(e) => setOtFormTipoServicio(e.target.value)}
+                    className="w-full bg-[#E0E5EC] shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] border-none p-3 rounded-xl font-bold text-xs text-slate-900"
+                  >
+                    <option value="Mantención Perimetral Alarma">Mantención Perimetral Alarma</option>
+                    <option value="Cambio de Batería de Respaldo">Cambio de Batería de Respaldo</option>
+                    <option value="Revisión de Fuente & Energía">Revisión de Fuente & Energía</option>
+                    <option value="Revisión Técnica de Alarma / Zonas">Revisión Técnica de Alarma / Zonas</option>
+                    <option value="Instalación Cámara IP DarkFighter">Instalación Cámara IP DarkFighter</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-slate-500 block mb-1">SLA DE RESPUESTA (*):</label>
+                  <select
+                    value={otFormSLA}
+                    onChange={(e) => setOtFormSLA(e.target.value)}
+                    className="w-full bg-[#E0E5EC] shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] border-none p-3 rounded-xl font-bold text-xs text-slate-900"
+                  >
+                    <option value="Crítica (2h)">⚡ Crítica (2 Horas)</option>
+                    <option value="Alta (6h)">🟠 Alta (6 Horas)</option>
+                    <option value="Normal (24h)">🔵 Normal (24 Horas)</option>
+                    <option value="Programada (48h)">🟢 Programada (48 Horas)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[10px] font-bold text-slate-500 block mb-1">TÉCNICO ASIGNADO:</label>
+                  <select
+                    value={otFormTecnico}
+                    onChange={(e) => setOtFormTecnico(e.target.value)}
+                    className="w-full bg-[#E0E5EC] shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] border-none p-3 rounded-xl font-bold text-xs text-slate-900"
+                  >
+                    <option value="Técnico Juan Pérez">Técnico Juan Pérez</option>
+                    <option value="Técnico Carlos Rojas">Técnico Carlos Rojas</option>
+                    <option value="Técnico Esteban Soto">Técnico Esteban Soto</option>
+                    <option value="Técnico Matías Campos">Técnico Matías Campos</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-slate-500 block mb-1">FECHA PROGRAMADA:</label>
+                  <input
+                    type="date"
+                    value={otFormFecha}
+                    onChange={(e) => setOtFormFecha(e.target.value)}
+                    className="w-full bg-[#E0E5EC] shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] border-none p-3 rounded-xl font-mono text-xs text-slate-900"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold text-slate-500 block mb-1">OBSERVACIONES / REPORTE COMMAND CENTER:</label>
+                <textarea
+                  rows={3}
+                  value={otFormObservaciones}
+                  onChange={(e) => setOtFormObservaciones(e.target.value)}
+                  placeholder="Detalle técnico ingresado por el operador o cliente..."
+                  className="w-full bg-[#E0E5EC] shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] border-none p-3 rounded-xl text-xs text-slate-900 font-medium"
+                />
+              </div>
+            </div>
+
+            <div className="pt-3 flex justify-end gap-3 border-t border-slate-300">
+              <button
+                onClick={() => setMostrarModalOT(false)}
+                className="px-5 py-2.5 bg-[#E0E5EC] shadow-[4px_4px_8px_#bec8d2,-4px_-4px_8px_#ffffff] text-slate-800 font-bold rounded-xl text-xs cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleGuardarNuevaOT}
+                className="px-6 py-2.5 bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white font-bold rounded-xl text-xs shadow-[4px_4px_10px_#bec8d2,-4px_-4px_10px_#ffffff] active:scale-95 cursor-pointer"
+              >
+                Crear & Asignar OT
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL PAUTA TÉCNICA Y FIRMA DIGITAL ── */}
+      {mostrarModalFirmaOT && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm p-4 md:p-6 flex justify-center items-center overflow-y-auto no-imprimir">
+          <div className="bg-[#E0E5EC] border border-slate-300 w-full max-w-xl rounded-2xl shadow-[12px_12px_24px_#bec8d2,-12px_-12px_24px_#ffffff] p-6 md:p-8 flex flex-col gap-5 text-xs text-slate-900 font-sans my-auto">
+            <div className="flex justify-between items-center pb-3 border-b border-slate-300">
+              <div>
+                <h3 className="font-black text-base text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                  <FileText className="h-5 w-5 text-[#005bea]" />
+                  <span>PAUTA DE TERRENO Y FIRMA DIGITAL ({mostrarModalFirmaOT.codigo_ot})</span>
+                </h3>
+                <p className="text-[11px] text-slate-500 font-semibold">Recepción conforme del cliente para la cuenta #{mostrarModalFirmaOT.cuenta}</p>
+              </div>
+              <button onClick={() => setMostrarModalFirmaOT(null)} className="text-slate-400 hover:text-slate-700 font-bold text-lg cursor-pointer">✕</button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="bg-[#E0E5EC] p-4 rounded-xl shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] space-y-2">
+                <h4 className="font-black text-xs text-slate-900 uppercase">PAUTA DE CHEQUEO EN TERRENO:</h4>
+                <div className="grid grid-cols-2 gap-2 text-[11px] font-bold text-slate-700">
+                  <div className="flex items-center gap-2">✔ Voltaje Panel & Batería OK</div>
+                  <div className="flex items-center gap-2">✔ Prueba de Sirena 105dB OK</div>
+                  <div className="flex items-center gap-2">✔ Sensores Infrarrojos Limpios</div>
+                  <div className="flex items-center gap-2">✔ Señal GPRS/3G Transmitida</div>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold text-slate-500 block mb-1">FIRMA DIGITAL DE CONFORMIDAD DEL CLIENTE / ENCARGADO:</label>
+                <div className="bg-white rounded-xl border border-slate-300 p-4 text-center h-32 flex flex-col justify-center items-center shadow-inner relative">
+                  <div className="border-b-2 border-dashed border-slate-400 w-3/4 mb-2"></div>
+                  <span className="text-[11px] text-slate-400 font-bold uppercase tracking-wider">Firma Digital Registrada en Tablet</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-3 flex justify-end gap-3 border-t border-slate-300">
+              <button
+                onClick={() => setMostrarModalFirmaOT(null)}
+                className="px-5 py-2.5 bg-[#E0E5EC] shadow-[4px_4px_8px_#bec8d2,-4px_-4px_8px_#ffffff] text-slate-800 font-bold rounded-xl text-xs cursor-pointer"
+              >
+                Cerrar
+              </button>
+              <button
+                onClick={() => {
+                  setOrdenesTrabajo(ordenesTrabajo.map(o => o.id === mostrarModalFirmaOT.id ? { ...o, estado: 'Finalizada' } : o))
+                  setMostrarModalFirmaOT(null)
+                  setToastNotificacion({ tipo: 'exito', texto: `¡Orden de Trabajo ${mostrarModalFirmaOT.codigo_ot} finalizada con conformidad digital!` })
+                }}
+                className="px-6 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold rounded-xl text-xs shadow-[4px_4px_10px_#bec8d2,-4px_-4px_10px_#ffffff] active:scale-95 cursor-pointer"
+              >
+                Finalizar OT & Registrar Conformidad
               </button>
             </div>
           </div>
