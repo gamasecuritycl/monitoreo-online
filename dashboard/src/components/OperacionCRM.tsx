@@ -57,7 +57,8 @@ import {
   Target,
   UserPlus,
   Activity,
-  Smartphone
+  Smartphone,
+  Upload
 } from 'lucide-react'
 import ServicioTecnicoModal from './ServicioTecnicoModal'
 
@@ -324,6 +325,7 @@ export default function OperacionCRM() {
   const [vincAbonadosSeleccionados, setVincAbonadosSeleccionados] = useState<string[]>([])
   const [vincNuevaRazonSocial, setVincNuevaRazonSocial] = useState<string>('')
   const [vincNuevoRut, setVincNuevoRut] = useState<string>('')
+  const [desvinculadosHistorial, setDesvinculadosHistorial] = useState<{ cuenta: string, rutAnterior: string, razonSocialAnterior: string, fecha: string }[]>([])
 
   // ── NIVEL 2 Y 3: SELECCIÓN DE CLIENTE Y ABONADO INDIVIDUAL ──
   const [clientesMaestros, setClientesMaestros] = useState<Record<string, ClienteMaestro>>({})
@@ -1777,7 +1779,8 @@ export default function OperacionCRM() {
   const handleDesvincularAbonadoIndividual = async (rut: string, ctaADesvincular: string) => {
     if (!clientesMaestros[rut]) return
     const cli = clientesMaestros[rut]
-    const cuentasNuevas = (cli.cuentas_abonados || []).filter(c => c.toUpperCase().trim() !== ctaADesvincular.toUpperCase().trim())
+    const ctaNorm = ctaADesvincular.toUpperCase().trim()
+    const cuentasNuevas = (cli.cuentas_abonados || []).filter(c => c.toUpperCase().trim() !== ctaNorm)
 
     const mapaNuevo = {
       ...clientesMaestros,
@@ -1786,6 +1789,12 @@ export default function OperacionCRM() {
 
     setClientesMaestros(mapaNuevo)
     try { localStorage.setItem('gama_clientes_maestros', JSON.stringify(mapaNuevo)) } catch (e) {}
+
+    // Agregar al historial de desvinculados por si fue por error
+    setDesvinculadosHistorial(prev => [
+      { cuenta: ctaNorm, rutAnterior: rut, razonSocialAnterior: cli.razon_social, fecha: new Date().toLocaleTimeString('es-CL') },
+      ...prev
+    ])
 
     try {
       await supabase.from('eventos_monitoreo').upsert({
@@ -1796,7 +1805,137 @@ export default function OperacionCRM() {
       })
     } catch (e) {}
 
-    setToastNotificacion({ tipo: 'exito', texto: `Abonado #${ctaADesvincular} desvinculado de ${cli.razon_social}` })
+    setToastNotificacion({ tipo: 'exito', texto: `Abonado #${ctaNorm} desvinculado de ${cli.razon_social}. Se movió a la sección de Historial.` })
+  }
+
+  const handleRestaurarDesvinculacion = async (item: { cuenta: string, rutAnterior: string, razonSocialAnterior: string }) => {
+    const rut = item.rutAnterior
+    const cta = item.cuenta
+    if (!clientesMaestros[rut]) return
+
+    const cli = clientesMaestros[rut]
+    const cuentasNuevas = Array.from(new Set([...(cli.cuentas_abonados || []), cta]))
+
+    const mapaNuevo = {
+      ...clientesMaestros,
+      [rut]: { ...cli, cuentas_abonados: cuentasNuevas }
+    }
+
+    setClientesMaestros(mapaNuevo)
+    try { localStorage.setItem('gama_clientes_maestros', JSON.stringify(mapaNuevo)) } catch (e) {}
+
+    setDesvinculadosHistorial(prev => prev.filter(d => d.cuenta !== cta || d.rutAnterior !== rut))
+    setToastNotificacion({ tipo: 'exito', texto: `Abonado #${cta} restaurado exitosamente a ${cli.razon_social}` })
+  }
+
+  // ── CARGA E IMPORTACIÓN AUTOMÁTICA DE CSV PLANSILLA MAESTRO (Plantilla_Maestro_RUT_GamaSeguridad.csv) ──
+  const handleImportarCSVPlantillaMaestro = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    const reader = new FileReader()
+    reader.onload = async (event) => {
+      try {
+        const text = event.target?.result as string
+        if (!text) return
+
+        const lines = text.split(/\r?\n/).filter(l => l.trim().length > 0)
+        if (lines.length <= 1) {
+          alert('El archivo CSV está vacío o no posee datos.')
+          return
+        }
+
+        const header = lines[0]
+        const delimiter = header.includes(';') ? ';' : ','
+        const colNames = header.split(delimiter).map(c => c.trim().toUpperCase().replace(/[^A-Z_ ]/g, ''))
+
+        const idxAbonado = colNames.findIndex(c => c.includes('ABONADO') || c.includes('NABONADO') || c.includes('N_ABONADO'))
+        const idxNombre = colNames.findIndex(c => c.includes('NOMBRE'))
+        const idxRut = colNames.findIndex(c => c.includes('RUT'))
+        const idxSucursal = colNames.findIndex(c => c.includes('SUCURSAL'))
+        const idxRazonSocial = colNames.findIndex(c => c.includes('RAZON') || c.includes('SOCIAL'))
+
+        const mapaNuevoMaestro = { ...clientesMaestros }
+        const mapaNuevoCentrosCosto = { ...abonadosCentrosCosto }
+
+        let countProcesados = 0
+        let countRazonesSociales = 0
+
+        for (let i = 1; i < lines.length; i++) {
+          const row = lines[i].split(delimiter).map(r => r.trim())
+          if (row.length < 2) continue
+
+          const numAbonado = (row[idxAbonado] || '').toUpperCase().trim()
+          const nombreAbonado = row[idxNombre] || ''
+          const rawRut = row[idxRut] || ''
+          const sucursal = row[idxSucursal] || nombreAbonado
+          const razonSocial = row[idxRazonSocial] || nombreAbonado
+
+          if (!numAbonado) continue
+
+          const rutLimpio = cleanRut(rawRut) || `RUT-${numAbonado}`
+          const razonSocialFinal = razonSocial.trim() || nombreAbonado.trim() || `CLIENTE #${numAbonado}`
+
+          mapaNuevoCentrosCosto[numAbonado] = {
+            cuenta: numAbonado,
+            alias_centro_costo: sucursal ? `${nombreAbonado} (${sucursal})` : nombreAbonado,
+            direccion: sucursal || 'Dirección de Instalación',
+            ciudad: 'V Región / Chile',
+            rut_cliente: rutLimpio
+          }
+
+          if (!mapaNuevoMaestro[rutLimpio]) {
+            mapaNuevoMaestro[rutLimpio] = {
+              rut: rutLimpio,
+              razon_social: razonSocialFinal,
+              empresa_facturadora_id: 'EMP-1',
+              email_cobranza: 'cobranza@gamasecurity.cl',
+              telefono: '+56991016912',
+              direccion_comercial: sucursal || 'Dirección Fiscal',
+              moneda: 'CLP',
+              tarifa_mensual: 29900,
+              dia_vencimiento: 5,
+              plan_monitoreo: 'MONITOREO MULTI-ABONADO CONSOLIDADOR 24/7',
+              estado_pago: 'Al Día',
+              cuentas_abonados: [numAbonado]
+            }
+            countRazonesSociales++
+          } else {
+            const arr = mapaNuevoMaestro[rutLimpio].cuentas_abonados || []
+            if (!arr.includes(numAbonado)) {
+              mapaNuevoMaestro[rutLimpio].cuentas_abonados = [...arr, numAbonado]
+            }
+          }
+
+          countProcesados++
+        }
+
+        setClientesMaestros(mapaNuevoMaestro)
+        setAbonadosCentrosCosto(mapaNuevoCentrosCosto)
+
+        try {
+          localStorage.setItem('gama_clientes_maestros', JSON.stringify(mapaNuevoMaestro))
+          localStorage.setItem('gama_centros_costo', JSON.stringify(mapaNuevoCentrosCosto))
+        } catch (e) {}
+
+        try {
+          await supabase.from('eventos_monitoreo').upsert({
+            cuenta: 'CLIENTES_MAESTROS_CRM',
+            nombre_abonado: JSON.stringify(mapaNuevoMaestro),
+            evento: 'IMPORTACION_CSV_PLANTILLA_MAESTRO',
+            fecha_hora: new Date().toISOString()
+          })
+        } catch (e) {}
+
+        setToastNotificacion({
+          tipo: 'exito',
+          texto: `¡CSV Importado con Éxito! Procesados ${countProcesados} abonados y ${countRazonesSociales} Razones Sociales.`
+        })
+      } catch (err: any) {
+        alert(`Error al procesar archivo CSV: ${err?.message || err}`)
+      }
+    }
+    reader.readAsText(file, 'ISO-8859-1')
   }
 
   // ── CUENTAS YA ASIGNADAS PARA FILTRAR Y ELIMINAR DEL LISTADO PENDIENTE ──
@@ -3616,14 +3755,23 @@ export default function OperacionCRM() {
               {/* PESTAÑA 3: VINCULACIÓN TRIBUTARIA ADMINISTRATIVA (ABONADOS ➔ RUT) */}
               {subTabConfig === 'vinculacion' && (
                 <div className="bg-[#E0E5EC] shadow-[6px_6px_12px_#bec8d2,-6px_-6px_12px_#ffffff] p-6 rounded-2xl space-y-6 max-w-4xl">
-                  <div>
-                    <h3 className="font-black text-sm text-slate-900 uppercase tracking-wider flex items-center gap-2">
-                      <Building2 className="h-5 w-5 text-[#005bea]" />
-                      <span>HERRAMIENTA ADMINISTRATIVA: VINCULAR CUENTAS DE ABONADOS A RUT TRIBUTARIO</span>
-                    </h3>
-                    <p className="text-xs text-slate-500 font-semibold mt-1">
-                      Asocia múltiples cuentas de abonados de monitoreo (ej: #C735, #C736) a 1 sola Razón Social Tributaria (ej: Fundación Educacional Primitiva Echeverría RUT 65.155.616-3) para consolidar su cobranza y facturación DTE.
-                    </p>
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-[#E0E5EC] shadow-[inset_4px_4px_8px_#bec8d2,inset_-4px_-4px_8px_#ffffff] p-4 rounded-xl">
+                    <div>
+                      <h3 className="font-black text-sm text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                        <Building2 className="h-5 w-5 text-[#005bea]" />
+                        <span>HERRAMIENTA ADMINISTRATIVA: VINCULAR ABONADOS A RUT TRIBUTARIO</span>
+                      </h3>
+                      <p className="text-xs text-slate-500 font-semibold mt-1">
+                        Asocia abonados (ej: #C735, #C736) a 1 sola Razón Social Tributaria para consolidar su cobranza DTE.
+                      </p>
+                    </div>
+
+                    {/* BOTÓN CARGA AUTOMÁTICA CSV */}
+                    <label className="px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:brightness-105 text-white font-bold text-xs rounded-xl shadow-md cursor-pointer flex items-center gap-2 shrink-0 active:scale-95 transition-all">
+                      <Upload className="h-4 w-4" />
+                      <span>📁 Cargar CSV Maestro (.csv)</span>
+                      <input type="file" accept=".csv" onChange={handleImportarCSVPlantillaMaestro} className="hidden" />
+                    </label>
                   </div>
 
                   {/* SELECCIÓN O REGISTRO DE RUT */}
@@ -3675,7 +3823,7 @@ export default function OperacionCRM() {
                               onClick={handleCrearNuevaRazonSocialRapida}
                               className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs shadow-xs cursor-pointer shrink-0"
                             >
-                              + Guardar Razón Social
+                              + Guardar
                             </button>
                           </div>
                         </div>
@@ -3713,16 +3861,18 @@ export default function OperacionCRM() {
                           const cta = (cc.cuenta || '').toUpperCase()
                           const estaMarcado = vincAbonadosSeleccionados.includes(cta)
                           return (
-                            <label
+                            <div
                               key={cta}
-                              onClick={() => {
+                              onClick={(e) => {
+                                e.preventDefault()
+                                e.stopPropagation()
                                 if (estaMarcado) {
                                   setVincAbonadosSeleccionados(vincAbonadosSeleccionados.filter(a => a !== cta))
                                 } else {
                                   setVincAbonadosSeleccionados([...vincAbonadosSeleccionados, cta])
                                 }
                               }}
-                              className={`p-3 rounded-xl border text-xs cursor-pointer flex items-center justify-between transition-all ${
+                              className={`p-3 rounded-xl border text-xs cursor-pointer flex items-center justify-between transition-all select-none ${
                                 estaMarcado
                                   ? 'bg-blue-50 border-[#005bea] shadow-xs'
                                   : 'bg-[#E0E5EC] shadow-[3px_3px_6px_#bec8d2,-3px_-3px_6px_#ffffff] border-transparent hover:brightness-95'
@@ -3734,11 +3884,11 @@ export default function OperacionCRM() {
                               </div>
                               <input
                                 type="checkbox"
+                                readOnly
                                 checked={estaMarcado}
-                                onChange={() => {}}
-                                className="h-4 w-4 text-[#005bea] rounded focus:ring-[#005bea]"
+                                className="h-4 w-4 text-[#005bea] rounded focus:ring-[#005bea] pointer-events-none"
                               />
-                            </label>
+                            </div>
                           )
                         })
                       )}
@@ -3815,6 +3965,48 @@ export default function OperacionCRM() {
                       </table>
                     </div>
                   </div>
+
+                  {/* ── SECCIÓN HISTORIAL DE DESVINCULADOS (RESTAURACIÓN RÁPIDA POR ERROR) ── */}
+                  {desvinculadosHistorial.length > 0 && (
+                    <div className="space-y-3 pt-4 border-t border-slate-300">
+                      <h4 className="font-black text-xs text-red-700 uppercase tracking-wider flex items-center gap-2">
+                        <Trash2 className="h-4 w-4 text-red-600" />
+                        <span>🗑️ HISTORIAL DE ABONADOS DESVINCULADOS (SECCIÓN DE SEGURIDAD EN CASO DE ERROR)</span>
+                      </h4>
+
+                      <div className="bg-[#E0E5EC] shadow-[inset_4px_4px_8px_#bec8d2,inset_-4px_-4px_8px_#ffffff] rounded-xl p-2 overflow-hidden">
+                        <table className="w-full text-left border-collapse text-xs font-medium">
+                          <thead>
+                            <tr className="bg-[#E0E5EC] text-slate-700 border-b border-slate-300 font-bold uppercase text-[10px]">
+                              <th className="p-2.5 border-r border-slate-300">HORA DESVINCULACIÓN</th>
+                              <th className="p-2.5 border-r border-slate-300">ABONADO</th>
+                              <th className="p-2.5 border-r border-slate-300">EMPRESA ANTERIOR</th>
+                              <th className="p-2.5 text-center w-36">RESTAURAR</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-300">
+                            {desvinculadosHistorial.map((item, idx) => (
+                              <tr key={`${item.cuenta}-${idx}`} className="hover:bg-[#d5dbe3] transition-colors">
+                                <td className="p-2.5 font-mono text-slate-500 text-[10px] border-r border-slate-300">{item.fecha}</td>
+                                <td className="p-2.5 font-mono font-bold text-[#005bea] border-r border-slate-300">#{item.cuenta}</td>
+                                <td className="p-2.5 border-r border-slate-300 font-bold text-slate-800">
+                                  {item.razonSocialAnterior} <span className="text-slate-400 font-normal">({item.rutAnterior})</span>
+                                </td>
+                                <td className="p-2.5 text-center">
+                                  <button
+                                    onClick={() => handleRestaurarDesvinculacion(item)}
+                                    className="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-bold text-[10px] cursor-pointer shadow-xs"
+                                  >
+                                    ↩️ Restaurar
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
               {subTabConfig === 'whatsapp' && (
