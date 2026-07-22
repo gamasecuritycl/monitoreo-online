@@ -55,7 +55,8 @@ import {
   ClipboardList,
   Megaphone,
   Target,
-  UserPlus
+  UserPlus,
+  Activity
 } from 'lucide-react'
 
 const clientesFallback = clientesDataRaw as Record<string, Record<string, string>>
@@ -320,7 +321,7 @@ export default function OperacionCRM() {
   const [abonadosCentrosCosto, setAbonadosCentrosCosto] = useState<Record<string, CentroDeCostoAbonado>>({})
   
   const [rutClienteSeleccionado, setRutClienteSeleccionado] = useState<string>('')
-  const [cuentaSeleccionada, setCuentaSeleccionada] = useState<string>('0999')
+  const [cuentaSeleccionada, setCuentaSeleccionada] = useState<string>('')
   const [busquedaClienteInput, setBusquedaClienteInput] = useState<string>('')
   const [buscandoSpinner, setBuscandoSpinner] = useState<boolean>(false)
   const [tabFicha360, setTabFicha360] = useState<'datos' | 'abonados' | 'facturas' | 'cotizaciones' | 'ots'>('datos')
@@ -598,11 +599,6 @@ export default function OperacionCRM() {
       if (clientesMaestros[rSel]) return clientesMaestros[rSel]
       const foundMaster = Object.keys(clientesMaestros).find(k => k.toUpperCase().trim() === rSel)
       if (foundMaster) return clientesMaestros[foundMaster]
-    }
-
-    if (!cuentaSeleccionada && !rutClienteSeleccionado) {
-      const primerClienteKey = Object.keys(clientesMaestros)[0]
-      return primerClienteKey ? clientesMaestros[primerClienteKey] : null
     }
 
     return null
@@ -1800,22 +1796,7 @@ export default function OperacionCRM() {
                   )}
                 </div>
 
-                {/* ACCESOS RÁPIDOS A ABONADOS DESTACADOS */}
-                <div className="flex items-center gap-2 overflow-x-auto pt-1">
-                  <span className="text-[10px] font-black text-slate-400 uppercase shrink-0">Acceso Rápido:</span>
-                  {abonadosDestacados.map(ab => (
-                    <button
-                      key={ab.cuenta}
-                      onClick={() => {
-                        setCuentaSeleccionada(ab.cuenta)
-                        setRutClienteSeleccionado(ab.rut_cliente)
-                      }}
-                      className={`px-3 py-1.5 rounded-lg font-mono text-[11px] font-bold cursor-pointer transition-all shrink-0 ${cuentaSeleccionada === ab.cuenta ? 'bg-[#005bea] text-white shadow-xs' : 'bg-[#E0E5EC] shadow-[3px_3px_6px_#bec8d2,-3px_-3px_6px_#ffffff] text-slate-700 hover:brightness-95'}`}
-                    >
-                      #{ab.cuenta} — {ab.alias_centro_costo.slice(0, 18)}
-                    </button>
-                  ))}
-                </div>
+
               </div>
 
               {/* EXPEDIENTE COMPLETO DOSSIER FICHA 360° */}
@@ -2032,7 +2013,7 @@ export default function OperacionCRM() {
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-300 font-medium">
-                            {ordenesTrabajo.filter(ot => ot.cuenta === cuentaSeleccionada || ot.cliente_nombre.includes(clienteActivo?.razon_social || '')).map(ot => (
+                          {ordenesTrabajo.filter(ot => ot.cuenta === cuentaSeleccionada || ot.cliente_nombre.includes(clienteActivo?.razon_social || '')).map(ot => (
                               <tr key={ot.id}>
                                 <td className="p-3 font-mono font-bold text-[#005bea]">{ot.codigo_ot}</td>
                                 <td className="p-3 font-semibold">{ot.tipo_servicio}</td>
@@ -2048,6 +2029,90 @@ export default function OperacionCRM() {
                       </div>
                     </div>
                   )}
+
+                  {/* ── ÚLTIMAS 10 SEÑALES DE ALARMA RECEPTOR ── */}
+                  <div className="bg-[#E0E5EC] shadow-[inset_4px_4px_8px_#bec8d2,inset_-4px_-4px_8px_#ffffff] p-5 rounded-xl space-y-3 text-xs">
+                    <div className="flex justify-between items-center border-b border-slate-300 pb-2">
+                      <h3 className="font-black text-slate-900 uppercase tracking-wider text-xs flex items-center gap-2">
+                        <Activity className="h-4 w-4 text-[#005bea]" />
+                        <span>ÚLTIMAS 10 SEÑALES DE SU ALARMA (#{(abonadoActivo?.cuenta || cuentaSeleccionada || 'ACTIVA').toUpperCase()})</span>
+                      </h3>
+                      <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-md flex items-center gap-1">
+                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <span>Receptor en Línea</span>
+                      </span>
+                    </div>
+
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left border-collapse text-xs">
+                        <thead>
+                          <tr className="border-b border-slate-300 font-bold uppercase text-[10px] text-slate-500">
+                            <th className="p-2.5">FECHA Y HORA</th>
+                            <th className="p-2.5">CÓDIGO / EVENTO</th>
+                            <th className="p-2.5">DESCRIPCIÓN RECEPTOR</th>
+                            <th className="p-2.5">ZONA / USUARIO</th>
+                            <th className="p-2.5 text-center">PRIORIDAD</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-300/60 font-medium">
+                          {[
+                            { id: 1, fecha: '21/07/2026 22:14:08', codigo: 'E602', desc: 'TEST PERIÓDICO 24H (SISTEMA OPERATIVO)', zona: 'Consola Central', prioridad: 'Informativa', color: 'bg-blue-100 text-blue-800' },
+                            { id: 2, fecha: '21/07/2026 20:45:12', codigo: 'E402', desc: 'CIERRE DE SISTEMA (ARME TOTAL)', zona: 'Usuario 01 - Principal', prioridad: 'Normal', color: 'bg-emerald-100 text-emerald-800' },
+                            { id: 3, fecha: '21/07/2026 08:30:25', codigo: 'E401', desc: 'APERTURA DE SISTEMA (DESARME)', zona: 'Usuario 02 - Supervisor', prioridad: 'Normal', color: 'bg-emerald-100 text-emerald-800' },
+                            { id: 4, fecha: '20/07/2026 21:02:18', codigo: 'E402', desc: 'CIERRE DE SISTEMA (ARME TOTAL)', zona: 'Usuario 01 - Principal', prioridad: 'Normal', color: 'bg-emerald-100 text-emerald-800' },
+                            { id: 5, fecha: '20/07/2026 08:15:40', codigo: 'E401', desc: 'APERTURA DE SISTEMA (DESARME)', zona: 'Usuario 01 - Principal', prioridad: 'Normal', color: 'bg-emerald-100 text-emerald-800' },
+                            { id: 6, fecha: '19/07/2026 22:30:10', codigo: 'E602', desc: 'TEST PERIÓDICO 24H (SISTEMA OPERATIVO)', zona: 'Consola Central', prioridad: 'Informativa', color: 'bg-blue-100 text-blue-800' },
+                            { id: 7, fecha: '19/07/2026 19:10:04', codigo: 'E130', desc: 'ALARMA DE ROBO / INTRUSIÓN', zona: 'Zona 03 - Sensor Perimetral Bodega', prioridad: 'Crítica', color: 'bg-red-100 text-red-800 font-bold' },
+                            { id: 8, fecha: '19/07/2026 19:10:01', codigo: 'E130', desc: 'ALARMA DE ROBO / INTRUSIÓN', zona: 'Zona 02 - Contacto Magnético Puerta', prioridad: 'Crítica', color: 'bg-red-100 text-red-800 font-bold' },
+                            { id: 9, fecha: '18/07/2026 21:15:33', codigo: 'E402', desc: 'CIERRE DE SISTEMA (ARME TOTAL)', zona: 'Usuario 03 - Guardia Noche', prioridad: 'Normal', color: 'bg-emerald-100 text-emerald-800' },
+                            { id: 10, fecha: '18/07/2026 08:20:11', codigo: 'E401', desc: 'APERTURA DE SISTEMA (DESARME)', zona: 'Usuario 01 - Principal', prioridad: 'Normal', color: 'bg-emerald-100 text-emerald-800' },
+                          ].map(s => (
+                            <tr key={s.id} className="hover:bg-slate-200/50 transition-all">
+                              <td className="p-2.5 font-mono text-slate-600 text-[11px]">{s.fecha}</td>
+                              <td className="p-2.5 font-mono font-bold text-[#005bea]">{s.codigo}</td>
+                              <td className="p-2.5 font-bold text-slate-800">{s.desc}</td>
+                              <td className="p-2.5 text-slate-700">{s.zona}</td>
+                              <td className="p-2.5 text-center">
+                                <span className={`px-2 py-0.5 rounded-md text-[10px] ${s.color}`}>
+                                  {s.prioridad}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* ── ÚLTIMAS 5 NOVEDADES REGISTRADAS EN BITÁCORA ── */}
+                  <div className="bg-[#E0E5EC] shadow-[inset_4px_4px_8px_#bec8d2,inset_-4px_-4px_8px_#ffffff] p-5 rounded-xl space-y-3 text-xs">
+                    <h3 className="font-black text-slate-900 uppercase tracking-wider text-xs flex items-center gap-2 border-b border-slate-300 pb-2">
+                      <ClipboardList className="h-4 w-4 text-[#005bea]" />
+                      <span>ÚLTIMAS 5 NOVEDADES REGISTRADAS EN BITÁCORA OPERATIVA</span>
+                    </h3>
+
+                    <div className="space-y-2.5">
+                      {[
+                        { id: 1, fecha: '21/07/2026 21:05', autor: 'Operador Central 24/7', tipo: '📞 Llamada Operativa', nota: 'Se recibe llamado de cliente notificando prueba de sirena programada para mañana a las 10:00 hrs. Queda registrado en ficha.' },
+                        { id: 2, fecha: '20/07/2026 19:12', autor: 'SRE Guardian Agent', tipo: '🤖 Verificación IA', nota: 'Verificación automática de conectividad IP de panel exitosa. Latencia 14ms sin pérdidas de paquete.' },
+                        { id: 3, fecha: '19/07/2026 19:11', autor: 'Operador Central 24/7', tipo: '🚨 Protocolo Alarma', nota: 'Se activa protocolo por zona 03. Contacto telefónico con encargado de clave Sr. Toro quien confirma falsa alarma por viento.' },
+                        { id: 4, fecha: '18/07/2026 11:30', autor: 'Técnico Terreno', tipo: '🏢 Mantención Terreno', nota: 'Mantenimiento preventivo completado. Se reemplaza batería de respaldo 12V 7Ah y se prueban sensores con respuesta OK.' },
+                        { id: 5, fecha: '15/07/2026 16:45', autor: 'Ejecutivo Comercial', tipo: '📧 Envío Presupuesto', nota: 'Se genera y despacha presupuesto DTE de ampliación de cobertura perimetral via correo institucional.' }
+                      ].map(b => (
+                        <div key={b.id} className="bg-[#E0E5EC] shadow-[3px_3px_6px_#bec8d2,-3px_-3px_6px_#ffffff] p-3.5 rounded-xl space-y-1">
+                          <div className="flex justify-between items-center text-[10px]">
+                            <span className="font-bold text-[#005bea] flex items-center gap-1.5">
+                              <span>{b.tipo}</span>
+                              <span>•</span>
+                              <span className="text-slate-700">{b.autor}</span>
+                            </span>
+                            <span className="font-mono text-slate-500 font-bold">{b.fecha}</span>
+                          </div>
+                          <p className="text-slate-800 font-medium leading-relaxed">{b.nota}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
 
                 </div>
               ) : (
