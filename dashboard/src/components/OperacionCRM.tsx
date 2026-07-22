@@ -316,7 +316,14 @@ export default function OperacionCRM() {
   const [empFormBancoNumeroCuenta, setEmpFormBancoNumeroCuenta] = useState('')
 
   // ── MULTI-CONFIGURACIÓN PESTAÑAS (MÓDULO 7) ──
-  const [subTabConfig, setSubTabConfig] = useState<'empresas' | 'financiero' | 'whatsapp' | 'agentes'>('empresas')
+  const [subTabConfig, setSubTabConfig] = useState<'empresas' | 'financiero' | 'vinculacion' | 'whatsapp' | 'agentes'>('empresas')
+
+  // ── HERRAMIENTA ADMINISTRATIVA: VINCULACIÓN TRIBUTARIA DE ABONADOS A RUT ──
+  const [vincRutSeleccionado, setVincRutSeleccionado] = useState<string>('')
+  const [vincBusquedaAbonado, setVincBusquedaAbonado] = useState<string>('')
+  const [vincAbonadosSeleccionados, setVincAbonadosSeleccionados] = useState<string[]>([])
+  const [vincNuevaRazonSocial, setVincNuevaRazonSocial] = useState<string>('')
+  const [vincNuevoRut, setVincNuevoRut] = useState<string>('')
 
   // ── NIVEL 2 Y 3: SELECCIÓN DE CLIENTE Y ABONADO INDIVIDUAL ──
   const [clientesMaestros, setClientesMaestros] = useState<Record<string, ClienteMaestro>>({})
@@ -1655,6 +1662,71 @@ export default function OperacionCRM() {
       const link = `https://wa.me/${fono.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`
       window.open(link, '_blank')
     }
+  }
+
+  // ── GUARDA VINCULACIÓN TRIBUTARIA ADMINISTRADOR (ABONADOS ➔ RUT) ──
+  const handleGuardarVinculacionTributaria = async () => {
+    let targetRut = vincRutSeleccionado.trim()
+    let targetNombre = ''
+
+    if (!targetRut) {
+      if (!vincNuevoRut.trim() || !vincNuevaRazonSocial.trim()) {
+        alert('Por favor seleccione una Razón Social existente o ingrese el nuevo RUT y Razón Social Tributaria.')
+        return
+      }
+      targetRut = cleanRut(vincNuevoRut)
+      targetNombre = vincNuevaRazonSocial.trim()
+    } else {
+      targetNombre = clientesMaestros[targetRut]?.razon_social || targetRut
+    }
+
+    if (vincAbonadosSeleccionados.length === 0) {
+      alert('Por favor seleccione al menos un abonado (Centro de Costo) para vincular a esta Razón Social.')
+      return
+    }
+
+    const mapaNuevoMaestro = { ...clientesMaestros }
+    if (!mapaNuevoMaestro[targetRut]) {
+      mapaNuevoMaestro[targetRut] = {
+        rut: targetRut,
+        razon_social: targetNombre,
+        empresa_facturadora_id: 'EMP-1',
+        email_cobranza: 'cobranza@gamasecurity.cl',
+        telefono: '+56991016912',
+        direccion_comercial: 'Dirección Fiscal Registrada',
+        moneda: 'CLP',
+        tarifa_mensual: 29900 * vincAbonadosSeleccionados.length,
+        dia_vencimiento: 5,
+        plan_monitoreo: 'MONITOREO MULTI-ABONADO CONSOLIDADOR 24/7',
+        estado_pago: 'Al Día',
+        cuentas_abonados: vincAbonadosSeleccionados
+      }
+    } else {
+      mapaNuevoMaestro[targetRut] = {
+        ...mapaNuevoMaestro[targetRut],
+        cuentas_abonados: Array.from(new Set([...(mapaNuevoMaestro[targetRut].cuentas_abonados || []), ...vincAbonadosSeleccionados]))
+      }
+    }
+
+    setClientesMaestros(mapaNuevoMaestro)
+    try { localStorage.setItem('gama_clientes_maestros', JSON.stringify(mapaNuevoMaestro)) } catch (e) {}
+
+    try {
+      await supabase.from('eventos_monitoreo').upsert({
+        cuenta: 'CLIENTES_MAESTROS_CRM',
+        nombre_abonado: JSON.stringify(mapaNuevoMaestro),
+        evento: 'VINCULACION_TRIBUTARIA_ADMIN',
+        fecha_hora: new Date().toISOString()
+      })
+    } catch (e: any) {
+      console.error('Guardado localmente:', e)
+    }
+
+    setToastNotificacion({
+      tipo: 'exito',
+      texto: `¡Vinculación Tributaria Exitosa! ${targetNombre} (${targetRut}) consolidó ${vincAbonadosSeleccionados.length} abonados.`
+    })
+    setVincAbonadosSeleccionados([])
   }
 
   const empresaEmisoraSeleccionadaCot = empresasConglomerado.find(e => e.id === cotEmpresaEmisoraId) || empresasConglomerado[0]
@@ -3330,10 +3402,11 @@ export default function OperacionCRM() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-1.5 bg-[#E0E5EC] p-1 rounded-xl shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff]">
+                <div className="flex items-center gap-1.5 bg-[#E0E5EC] p-1 rounded-xl shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] flex-wrap">
                   {[
                     { id: 'empresas', label: 'Razones Sociales', icon: Building2 },
                     { id: 'financiero', label: 'UF & Impuestos', icon: DollarSign },
+                    { id: 'vinculacion', label: 'Vinculación Tributaria (Abonados ➔ RUT)', icon: Layers },
                     { id: 'whatsapp', label: 'WhatsApp Server', icon: MessageSquare },
                     { id: 'agentes', label: 'Motor IA 24/7', icon: Bot }
                   ].map(tab => {
@@ -3448,7 +3521,137 @@ export default function OperacionCRM() {
                 </div>
               )}
 
-              {/* PESTAÑA 3: SERVIDOR WHATSAPP SCORPION */}
+              {/* PESTAÑA 3: VINCULACIÓN TRIBUTARIA ADMINISTRATIVA (ABONADOS ➔ RUT) */}
+              {subTabConfig === 'vinculacion' && (
+                <div className="bg-[#E0E5EC] shadow-[6px_6px_12px_#bec8d2,-6px_-6px_12px_#ffffff] p-6 rounded-2xl space-y-6 max-w-4xl">
+                  <div>
+                    <h3 className="font-black text-sm text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                      <Building2 className="h-5 w-5 text-[#005bea]" />
+                      <span>HERRAMIENTA ADMINISTRATIVA: VINCULAR CUENTAS DE ABONADOS A RUT TRIBUTARIO</span>
+                    </h3>
+                    <p className="text-xs text-slate-500 font-semibold mt-1">
+                      Asocia múltiples cuentas de abonados de monitoreo (ej: #C735, #C736) a 1 sola Razón Social Tributaria (ej: Fundación Educacional Primitiva Echeverría RUT 65.155.616-3) para consolidar su cobranza y facturación DTE.
+                    </p>
+                  </div>
+
+                  {/* SELECCIÓN O REGISTRO DE RUT */}
+                  <div className="bg-[#E0E5EC] shadow-[inset_4px_4px_8px_#bec8d2,inset_-4px_-4px_8px_#ffffff] p-5 rounded-xl space-y-4">
+                    <h4 className="font-black text-xs text-slate-900 uppercase">PASO 1: SELECCIONAR RAZÓN SOCIAL / CLIENTE TRIBUTARIO:</h4>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-500 block mb-1">RAZÓN SOCIAL REGISTRADA:</label>
+                        <select
+                          value={vincRutSeleccionado}
+                          onChange={(e) => {
+                            const val = e.target.value
+                            setVincRutSeleccionado(val)
+                            if (val && clientesMaestros[val]) {
+                              setVincAbonadosSeleccionados(clientesMaestros[val].cuentas_abonados || [])
+                            }
+                          }}
+                          className="w-full bg-[#E0E5EC] shadow-[inset_2px_2px_4px_#bec8d2,inset_-2px_-2px_4px_#ffffff] border-none p-3 rounded-xl font-bold text-xs text-slate-900"
+                        >
+                          <option value="">-- Seleccionar Razón Social Existente --</option>
+                          {Object.values(clientesMaestros).map(c => (
+                            <option key={c.rut} value={c.rut}>
+                              {c.razon_social} (RUT: {c.rut}) - [{c.cuentas_abonados?.length || 1} abonados]
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {!vincRutSeleccionado && (
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-bold text-slate-500 block">O CREAR NUEVA RAZÓN SOCIAL TRIBUTARIA:</label>
+                          <div className="grid grid-cols-2 gap-2">
+                            <input
+                              type="text"
+                              value={vincNuevoRut}
+                              onChange={(e) => setVincNuevoRut(e.target.value)}
+                              placeholder="RUT: ej 65.155.616-3"
+                              className="bg-[#E0E5EC] shadow-[inset_2px_2px_4px_#bec8d2,inset_-2px_-2px_4px_#ffffff] border-none p-2.5 rounded-xl font-mono font-bold text-xs text-slate-900"
+                            />
+                            <input
+                              type="text"
+                              value={vincNuevaRazonSocial}
+                              onChange={(e) => setVincNuevaRazonSocial(e.target.value)}
+                              placeholder="ej: FUNDACION PRIMITIVA ECHEVERRIA"
+                              className="bg-[#E0E5EC] shadow-[inset_2px_2px_4px_#bec8d2,inset_-2px_-2px_4px_#ffffff] border-none p-2.5 rounded-xl font-bold text-xs text-slate-900"
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* MULTISELECCIÓN DE ABONADOS */}
+                  <div className="bg-[#E0E5EC] shadow-[inset_4px_4px_8px_#bec8d2,inset_-4px_-4px_8px_#ffffff] p-5 rounded-xl space-y-3">
+                    <div className="flex justify-between items-center">
+                      <h4 className="font-black text-xs text-slate-900 uppercase">
+                        PASO 2: MARCAR CUENTAS DE ABONADO PERTENECIENTES A ESTE CLIENTE ({vincAbonadosSeleccionados.length} Seleccionados):
+                      </h4>
+                      <input
+                        type="text"
+                        value={vincBusquedaAbonado}
+                        onChange={(e) => setVincBusquedaAbonado(e.target.value)}
+                        placeholder="Filtrar por código (#C735) o nombre..."
+                        className="bg-[#E0E5EC] shadow-[inset_2px_2px_4px_#bec8d2,inset_-2px_-2px_4px_#ffffff] border-none px-3 py-1 rounded-lg text-xs font-mono"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 max-h-64 overflow-y-auto p-1">
+                      {Object.values(abonadosCentrosCosto)
+                        .filter(cc => {
+                          const q = vincBusquedaAbonado.toLowerCase()
+                          return !q || (cc.cuenta || '').toLowerCase().includes(q) || (cc.alias_centro_costo || '').toLowerCase().includes(q)
+                        })
+                        .map(cc => {
+                          const cta = (cc.cuenta || '').toUpperCase()
+                          const estaMarcado = vincAbonadosSeleccionados.includes(cta)
+                          return (
+                            <label
+                              key={cta}
+                              onClick={() => {
+                                if (estaMarcado) {
+                                  setVincAbonadosSeleccionados(vincAbonadosSeleccionados.filter(a => a !== cta))
+                                } else {
+                                  setVincAbonadosSeleccionados([...vincAbonadosSeleccionados, cta])
+                                }
+                              }}
+                              className={`p-3 rounded-xl border text-xs cursor-pointer flex items-center justify-between transition-all ${
+                                estaMarcado
+                                  ? 'bg-blue-50 border-[#005bea] shadow-xs'
+                                  : 'bg-[#E0E5EC] shadow-[3px_3px_6px_#bec8d2,-3px_-3px_6px_#ffffff] border-transparent hover:brightness-95'
+                              }`}
+                            >
+                              <div className="space-y-0.5">
+                                <span className="font-mono font-black text-[#005bea] block">#{cta}</span>
+                                <span className="font-bold text-slate-800 text-[11px] block truncate max-w-[160px]">{cc.alias_centro_costo}</span>
+                              </div>
+                              <input
+                                type="checkbox"
+                                checked={estaMarcado}
+                                onChange={() => {}}
+                                className="h-4 w-4 text-[#005bea] rounded focus:ring-[#005bea]"
+                              />
+                            </label>
+                          )
+                        })}
+                    </div>
+                  </div>
+
+                  <div className="pt-2 flex justify-end">
+                    <button
+                      onClick={handleGuardarVinculacionTributaria}
+                      className="px-6 py-3 bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white font-bold rounded-xl text-xs shadow-[4px_4px_8px_#bec8d2,-4px_-4px_8px_#ffffff] active:scale-95 cursor-pointer flex items-center gap-2"
+                    >
+                      <Building2 className="h-4 w-4" />
+                      <span>💾 Guardar & Consolidar Vinculación Tributaria</span>
+                    </button>
+                  </div>
+                </div>
+              )}
               {subTabConfig === 'whatsapp' && (
                 <div className="bg-[#E0E5EC] shadow-[6px_6px_12px_#bec8d2,-6px_-6px_12px_#ffffff] p-6 rounded-2xl space-y-6 max-w-3xl">
                   <h3 className="font-black text-xs text-slate-900 uppercase tracking-wider">📲 Configuración Servidor WhatsApp Scorpion</h3>
