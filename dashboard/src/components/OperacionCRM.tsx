@@ -610,12 +610,12 @@ export default function OperacionCRM() {
   const [bitacoraCommandCenter, setBitacoraCommandCenter] = useState<any[]>([])
   const [cargandoBitacoraCC, setCargandoBitacoraCC] = useState<boolean>(false)
 
-  // 1. Obtener Bitácora Real del Command Center (https://bitacora.gamasecurity.cl/api-bitacora.php)
+  // 1. Obtener Bitácora Real del Command Center Histórica (https://bitacora.gamasecurity.cl/api-bitacora.php)
   useEffect(() => {
     const fetchBitacoraCC = async () => {
       setCargandoBitacoraCC(true)
       try {
-        const res = await fetch('https://bitacora.gamasecurity.cl/api-bitacora.php?action=eventos')
+        const res = await fetch('https://bitacora.gamasecurity.cl/api-bitacora.php?action=eventos&desde=2020-01-01%2000:00&hasta=2099-12-31%2023:59')
         if (res.ok) {
           const data = await res.json()
           if (Array.isArray(data)) {
@@ -676,17 +676,20 @@ export default function OperacionCRM() {
     fetchSenalesAbonado()
   }, [cuentaSeleccionada, rutClienteSeleccionado, abonadoActivo])
 
-  // 3. Novedades de la Bitácora Real del Command Center para el Abonado Consultado EXCLUSIVAMENTE
+  // 3. Novedades de la Bitácora Real del Command Center para el Abonado Consultado EXCLUSIVAMENTE (Sin Límite de Fecha)
   const bitacoraCommandCenterAbonado = useMemo(() => {
     const cActiva = (cuentaSeleccionada || abonadoActivo?.cuenta || '').toUpperCase().trim()
-    const nombreAb = (abonadoActivo?.alias_centro_costo || clienteActivo?.razon_social || '').toLowerCase().trim()
+    const nombreAb = (abonadoActivo?.alias_centro_costo || clienteActivo?.razon_social || '').toUpperCase().trim()
     if (!cActiva && !nombreAb) return []
 
     // Filtrar eventos de Command Center que correspondan EXCLUSIVAMENTE al abonado consultado
     const filtrados = bitacoraCommandCenter.filter(item => {
       const cod = (item.abonado_cod || '').toUpperCase().trim()
-      const nom = (item.abonado_nombre || '').toLowerCase().trim()
-      return (cActiva && cod === cActiva) || (nombreAb && nom.length > 3 && nom.includes(nombreAb))
+      const nom = (item.abonado_nombre || '').toUpperCase().trim()
+      
+      const matchCod = cActiva && (cod === cActiva || cod.includes(cActiva) || cActiva.includes(cod))
+      const matchNom = nombreAb && nombreAb.length > 3 && (nom.includes(nombreAb) || nombreAb.includes(nom))
+      return matchCod || matchNom
     })
 
     return filtrados.slice(0, 5).map(item => ({
