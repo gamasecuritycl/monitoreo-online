@@ -280,6 +280,9 @@ export default function OperacionCRM() {
   // UF Global
   const [valorUF, setValorUF] = useState(38500)
 
+  // Estado envio de correos por Resend
+  const [enviandoEmailId, setEnviandoEmailId] = useState<number | null>(null)
+
   // Órdenes de Trabajo & Facturas & Cotizaciones
   const [ordenesTrabajo, setOrdenesTrabajo] = useState<OrdenDeTrabajo[]>([
     { id: 'OT-1', codigo_ot: 'OT-2026-081', cuenta: '0999', cliente_nombre: 'GAMA SEGURIDAD SPA DEMO', tipo_servicio: 'Mantención Perimetral Alarma', tecnico_asignado: 'Técnico Juan Pérez', fecha_programada: '2026-07-22', prioridad_sla: 'Crítica (2h)', estado: 'En Proceso', observaciones: 'Revisión urgente de sensor infrarrojo' },
@@ -693,6 +696,38 @@ export default function OperacionCRM() {
     } catch (e) {
       const link = `https://wa.me/${fono.replace(/\D/g, '')}?text=${encodeURIComponent(mensaje)}`
       window.open(link, '_blank')
+    }
+  }
+
+  const handleEnviarEmailCotizacion = async (cot: CotizacionDolibarr) => {
+    const emailDest = cot.email_cliente || 'contacto@gamasecurity.cl'
+    const emp = empresasConglomerado.find(e => e.id === cot.empresa_facturadora_id) || empresasConglomerado[0]
+
+    const emailPrompt = prompt(`Enviar Presupuesto DTE ${cot.codigo_cotizacion} por Email (Resend desde contacto@gamasecurity.cl) a:`, emailDest)
+    if (!emailPrompt || !emailPrompt.trim()) return
+
+    setEnviandoEmailId(cot.id)
+    try {
+      const res = await fetch('/api/enviar-mail', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tipo_evento: 'COTIZACION',
+          destinatarios: [emailPrompt.trim()],
+          cotizacion: cot,
+          empresa_emisora: emp
+        })
+      })
+      const data = await res.json()
+      if (data.success) {
+        alert(`📧 Presupuesto ${cot.codigo_cotizacion} enviado exitosamente por Email desde contacto@gamasecurity.cl a ${emailPrompt.trim()} via Resend.`)
+      } else {
+        alert(`Error al enviar Email: ${data.error || 'Verifique la configuración Resend'}`)
+      }
+    } catch (e: any) {
+      alert(`Error enviando correo: ${e?.message || e}`)
+    } finally {
+      setEnviandoEmailId(null)
     }
   }
 
@@ -1678,8 +1713,8 @@ export default function OperacionCRM() {
                         <th className="p-3.5 border-r border-slate-300">CIUDAD / COMUNA</th>
                         <th className="p-3.5 border-r border-slate-300 text-right">NETO AFECTO</th>
                         <th className="p-3.5 border-r border-slate-300 text-right">TOTAL IVA INCL.</th>
-                        <th className="p-3.5 border-r border-slate-300 text-center">ETAPA PIPELINE</th>
-                        <th className="p-3.5 text-center w-52">ACCIONES</th>
+                        <th className="p-3.5 border-r border-slate-300 text-center uppercase">ETAPA PIPELINE</th>
+                        <th className="p-3.5 text-center min-w-[280px]">ACCIONES (WHATSAPP • EMAIL • DTE)</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-300">
@@ -1705,21 +1740,49 @@ export default function OperacionCRM() {
                               </span>
                             </td>
                             <td className="p-3.5 text-center">
-                              <div className="flex items-center justify-center gap-1.5">
-                                <button onClick={() => handleEnviarWhatsAppCotizacion(c)} title="Enviar por WhatsApp" className="p-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-bold cursor-pointer text-xs transition-colors shadow-xs">
-                                  <MessageSquare className="h-3.5 w-3.5" />
+                              <div className="flex items-center justify-center gap-2">
+                                <button
+                                  onClick={() => handleEnviarWhatsAppCotizacion(c)}
+                                  title="Enviar por WhatsApp"
+                                  className="p-2.5 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white rounded-xl font-bold cursor-pointer transition-all shadow-xs"
+                                >
+                                  <MessageSquare className="h-5 w-5 stroke-[2]" />
                                 </button>
-                                <button onClick={() => setCotSeleccionada(c)} title="Ver e Imprimir DTE" className="p-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-bold cursor-pointer text-xs transition-colors shadow-xs">
-                                  <FileText className="h-3.5 w-3.5" />
+                                <button
+                                  onClick={() => handleEnviarEmailCotizacion(c)}
+                                  disabled={enviandoEmailId === c.id}
+                                  title="Enviar Presupuesto por Email (contacto@gamasecurity.cl via Resend)"
+                                  className="p-2.5 bg-[#005bea] hover:bg-blue-600 active:scale-95 text-white rounded-xl font-bold cursor-pointer transition-all shadow-xs"
+                                >
+                                  {enviandoEmailId === c.id ? <Loader2 className="h-5 w-5 animate-spin" /> : <Mail className="h-5 w-5 stroke-[2]" />}
                                 </button>
-                                <button onClick={() => handleEditarCotizacion(c)} title="Editar Cotización" className="p-2 bg-[#005bea] hover:bg-blue-600 text-white rounded-lg font-bold cursor-pointer text-xs transition-colors shadow-xs">
-                                  <Pencil className="h-3.5 w-3.5" />
+                                <button
+                                  onClick={() => setCotSeleccionada(c)}
+                                  title="Ver e Imprimir DTE"
+                                  className="p-2.5 bg-slate-900 hover:bg-slate-800 active:scale-95 text-white rounded-xl font-bold cursor-pointer transition-all shadow-xs"
+                                >
+                                  <FileText className="h-5 w-5 stroke-[2]" />
                                 </button>
-                                <button onClick={() => handleDuplicarCotizacion(c)} title="Copiar Cotización" className="p-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-bold cursor-pointer text-xs transition-colors shadow-xs">
-                                  <Copy className="h-3.5 w-3.5" />
+                                <button
+                                  onClick={() => handleEditarCotizacion(c)}
+                                  title="Editar Cotización"
+                                  className="p-2.5 bg-amber-600 hover:bg-amber-500 active:scale-95 text-white rounded-xl font-bold cursor-pointer transition-all shadow-xs"
+                                >
+                                  <Pencil className="h-5 w-5 stroke-[2]" />
                                 </button>
-                                <button onClick={() => handleEliminarCotizacion(c.id, c.codigo_cotizacion)} title="Eliminar Cotización" className="p-2 bg-red-700 hover:bg-red-600 text-white rounded-lg font-bold cursor-pointer text-xs transition-colors shadow-xs">
-                                  <Trash2 className="h-3.5 w-3.5" />
+                                <button
+                                  onClick={() => handleDuplicarCotizacion(c)}
+                                  title="Copiar Cotización"
+                                  className="p-2.5 bg-slate-700 hover:bg-slate-600 active:scale-95 text-white rounded-xl font-bold cursor-pointer transition-all shadow-xs"
+                                >
+                                  <Copy className="h-5 w-5 stroke-[2]" />
+                                </button>
+                                <button
+                                  onClick={() => handleEliminarCotizacion(c.id, c.codigo_cotizacion)}
+                                  title="Eliminar Cotización"
+                                  className="p-2.5 bg-red-700 hover:bg-red-600 active:scale-95 text-white rounded-xl font-bold cursor-pointer transition-all shadow-xs"
+                                >
+                                  <Trash2 className="h-5 w-5 stroke-[2]" />
                                 </button>
                               </div>
                             </td>
@@ -1778,14 +1841,17 @@ export default function OperacionCRM() {
                                   <span className="font-bold text-emerald-800">${Math.round(cot.monto_total_iva_incluido || 0).toLocaleString('es-CL')}</span>
                                 </div>
 
-                                {/* ACCIONES DE PIPELINE Y WHATSAPP */}
+                                {/* ACCIONES DE PIPELINE Y WHATSAPP & EMAIL */}
                                 <div className="flex items-center justify-between pt-2 border-t border-slate-300">
-                                  <div className="flex gap-1.5">
-                                    <button onClick={() => handleEnviarWhatsAppCotizacion(cot)} title="Notificar por WhatsApp" className="p-1.5 bg-emerald-600 text-white rounded-lg text-xs cursor-pointer shadow-xs">
-                                      <MessageSquare className="h-3.5 w-3.5" />
+                                  <div className="flex gap-2">
+                                    <button onClick={() => handleEnviarWhatsAppCotizacion(cot)} title="Notificar por WhatsApp" className="p-2 bg-emerald-600 text-white rounded-xl text-xs cursor-pointer shadow-xs">
+                                      <MessageSquare className="h-4.5 w-4.5" />
                                     </button>
-                                    <button onClick={() => setCotSeleccionada(cot)} title="Ver DTE PDF" className="p-1.5 bg-slate-900 text-white rounded-lg text-xs cursor-pointer shadow-xs">
-                                      <FileText className="h-3.5 w-3.5" />
+                                    <button onClick={() => handleEnviarEmailCotizacion(cot)} disabled={enviandoEmailId === cot.id} title="Enviar por Email (contacto@gamasecurity.cl)" className="p-2 bg-[#005bea] text-white rounded-xl text-xs cursor-pointer shadow-xs">
+                                      {enviandoEmailId === cot.id ? <Loader2 className="h-4.5 w-4.5 animate-spin" /> : <Mail className="h-4.5 w-4.5" />}
+                                    </button>
+                                    <button onClick={() => setCotSeleccionada(cot)} title="Ver DTE PDF" className="p-2 bg-slate-900 text-white rounded-xl text-xs cursor-pointer shadow-xs">
+                                      <FileText className="h-4.5 w-4.5" />
                                     </button>
                                   </div>
 
@@ -2731,6 +2797,14 @@ export default function OperacionCRM() {
             >
               <MessageSquare className="h-4 w-4" />
               <span>Notificar por WhatsApp</span>
+            </button>
+            <button
+              onClick={() => handleEnviarEmailCotizacion(cotSeleccionada)}
+              disabled={enviandoEmailId === cotSeleccionada.id}
+              className="px-4 py-2.5 bg-[#005bea] hover:bg-blue-600 text-white font-bold text-xs rounded-xl shadow-xl cursor-pointer flex items-center gap-2"
+            >
+              {enviandoEmailId === cotSeleccionada.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+              <span>Enviar por Email</span>
             </button>
             <button
               onClick={() => window.print()}
