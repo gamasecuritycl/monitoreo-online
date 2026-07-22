@@ -1,0 +1,1696 @@
+{
+  "8": {
+    "cuenta": "8",
+    "alias_centro_costo": "JARDIN INFANTI INTEGRA GABRIELA MISTRAL (GABRIELA MISTRAL)",
+    "direccion": "GABRIELA MISTRAL",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.574.900-0"
+  },
+  "13": {
+    "cuenta": "13",
+    "alias_centro_costo": "JARDIN INF. INTEGRA  EL SOL (EL SOL)",
+    "direccion": "EL SOL",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.574.900-0"
+  },
+  "18": {
+    "cuenta": "18",
+    "alias_centro_costo": "JARDIN INF.INTEGRA EL CALERITO (EL CALERITO)",
+    "direccion": "EL CALERITO",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.574.900-0"
+  },
+  "20": {
+    "cuenta": "20",
+    "alias_centro_costo": "JARDIN INF. INTEGRA OVILLITO DE LANA (OVILLITO DE LANAS)",
+    "direccion": "OVILLITO DE LANAS",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.574.900-0"
+  },
+  "26": {
+    "cuenta": "26",
+    "alias_centro_costo": "JARDIN INTEGRA LOS GRANERITOS (LOS GRANERITOS)",
+    "direccion": "LOS GRANERITOS",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.574.900-0"
+  },
+  "40": {
+    "cuenta": "40",
+    "alias_centro_costo": "JARDIN INTEGRA TEJEDORES DE ILUSIONES (TEJEDORES DE ILUSIONES)",
+    "direccion": "TEJEDORES DE ILUSIONES",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.574.900-0"
+  },
+  "44": {
+    "cuenta": "44",
+    "alias_centro_costo": "JARDIN INFANTIL INTEGRA  ALTAMIRANO (ALTAMIRANO)",
+    "direccion": "ALTAMIRANO",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.574.900-0"
+  },
+  "45": {
+    "cuenta": "45",
+    "alias_centro_costo": "JARDIN INFANTIL INTEGRA AWKANTUN (AWKANTUN)",
+    "direccion": "AWKANTUN",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.574.900-0"
+  },
+  "49": {
+    "cuenta": "49",
+    "alias_centro_costo": "JARDIN Y SALA CUNA INTEGRA CERRO MAYACA (CERRO MAYACA)",
+    "direccion": "CERRO MAYACA",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.574.900-0"
+  },
+  "53": {
+    "cuenta": "53",
+    "alias_centro_costo": "JARDIN INFANTIL INTEGRA  ANULÉN . (INFANTIL INTEGRA  ANULÉN .)",
+    "direccion": "INFANTIL INTEGRA  ANULÉN .",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.574.900-0"
+  },
+  "54": {
+    "cuenta": "54",
+    "alias_centro_costo": "JARDIN INTEGRA GUACOLDA (GUACOLDA)",
+    "direccion": "GUACOLDA",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.574.900-0"
+  },
+  "55": {
+    "cuenta": "55",
+    "alias_centro_costo": "JAR INTEGRA NUESTRA SRA DE LAS MERCEDES (NUESTRA SRA DE LAS MERCEDES)",
+    "direccion": "NUESTRA SRA DE LAS MERCEDES",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.574.900-0"
+  },
+  "57": {
+    "cuenta": "57",
+    "alias_centro_costo": "JARDIN INF. INTEGRA LAS ROSAS (LAS ROSAS)",
+    "direccion": "LAS ROSAS",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.574.900-0"
+  },
+  "70": {
+    "cuenta": "70",
+    "alias_centro_costo": "JARDIN INF.INTEGRA LAS LOMITAS (INTEGRA LAS LOMITAS)",
+    "direccion": "INTEGRA LAS LOMITAS",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.574.900-0"
+  },
+  "93": {
+    "cuenta": "93",
+    "alias_centro_costo": "MARIA CECILIA ACUÑA MIRANDA",
+    "direccion": "Dirección de Instalación",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "RUT-93"
+  },
+  "98": {
+    "cuenta": "98",
+    "alias_centro_costo": "JARDIN INF.INTEGRA NUEVO AMANECER (NUEVO AMANECER)",
+    "direccion": "NUEVO AMANECER",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.574.900-0"
+  },
+  "99": {
+    "cuenta": "99",
+    "alias_centro_costo": "U.CATOLICA EDIFICIO I.B.C  AV  BRASIL (EDIFICIO IBC BRASIL)",
+    "direccion": "EDIFICIO IBC BRASIL",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "81.669.200-8"
+  },
+  "100": {
+    "cuenta": "100",
+    "alias_centro_costo": "U.CATOLICA I.B.C ANTIGUO (C ANTIGUO)",
+    "direccion": "C ANTIGUO",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "81.669.200-8"
+  },
+  "102": {
+    "cuenta": "102",
+    "alias_centro_costo": "U.CATOLICA  CASA VIANA (CASA VIANA)",
+    "direccion": "CASA VIANA",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "81.669.200-8"
+  },
+  "103": {
+    "cuenta": "103",
+    "alias_centro_costo": "U. CATOLICA LABORATORIO ED. FISICA (ED. FISICA)",
+    "direccion": "ED. FISICA",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "81.669.200-8"
+  },
+  "104": {
+    "cuenta": "104",
+    "alias_centro_costo": "U. CATOLICA EDIFICIO LA SOMBRA (LA SOMBRA)",
+    "direccion": "LA SOMBRA",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "81.669.200-8"
+  },
+  "105": {
+    "cuenta": "105",
+    "alias_centro_costo": "U. CATOLICA AVDA.BRASIL2060.IB. BODEGA. (BRASIL 2060 BODEGA.)",
+    "direccion": "BRASIL 2060 BODEGA.",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "81.669.200-8"
+  },
+  "106": {
+    "cuenta": "106",
+    "alias_centro_costo": "UCV ESCUELA CONSTRUCCION CIVIL (CONSTRUCCION CIVIL)",
+    "direccion": "CONSTRUCCION CIVIL",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "81.669.200-8"
+  },
+  "108": {
+    "cuenta": "108",
+    "alias_centro_costo": "U. CAT ESC. DE NEGOCIO EDIFICIO R.V.B (EDIFC. RVB)",
+    "direccion": "EDIFC. RVB",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "81.669.200-8"
+  },
+  "109": {
+    "cuenta": "109",
+    "alias_centro_costo": "GIMNASIO P.U.C.V (GIMNASIO PUCV)",
+    "direccion": "GIMNASIO PUCV",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "81.669.200-8"
+  },
+  "110": {
+    "cuenta": "110",
+    "alias_centro_costo": "U. CATOLICA CASA TRASLAVIÑA (CASA TRASLAVIÑA)",
+    "direccion": "CASA TRASLAVIÑA",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "81.669.200-8"
+  },
+  "190": {
+    "cuenta": "190",
+    "alias_centro_costo": "FUNDACION INTEGRA DIRECCION REGIONAL (DIRECCION REGIONAL)",
+    "direccion": "DIRECCION REGIONAL",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.574.900-0"
+  },
+  "191": {
+    "cuenta": "191",
+    "alias_centro_costo": "JARDIN INTEGRA RAYEN (RAYEN)",
+    "direccion": "RAYEN",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.574.900-0"
+  },
+  "207": {
+    "cuenta": "207",
+    "alias_centro_costo": "OSCAR CEPEDA NAVARRO (CASA)",
+    "direccion": "Dirección de Instalación",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "RUT-207"
+  },
+  "219": {
+    "cuenta": "219",
+    "alias_centro_costo": "U.CATOLICA SERVICIO MEDICO DAE (1) (DAE (1))",
+    "direccion": "DAE (1)",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "81.669.200-8"
+  },
+  "221": {
+    "cuenta": "221",
+    "alias_centro_costo": "UNIV.CATOLICA SERVICIO MEDICO DAE ( 2) (DAE ( 2))",
+    "direccion": "DAE ( 2)",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "81.669.200-8"
+  },
+  "222": {
+    "cuenta": "222",
+    "alias_centro_costo": "UNIV.CATOL.PLANIFICACION Y ESTUDIOS (PLANIFICACION Y ESTUDIOS)",
+    "direccion": "PLANIFICACION Y ESTUDIOS",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "81.669.200-8"
+  },
+  "223": {
+    "cuenta": "223",
+    "alias_centro_costo": "UCV.EDF.C.DEL MAR 1° PISO Y SUBTERRANEO (CS DEL MAR 1P Y SUB)",
+    "direccion": "CS DEL MAR 1P Y SUB",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "81.669.200-8"
+  },
+  "224": {
+    "cuenta": "224",
+    "alias_centro_costo": "UCV.EDIFICIO CIENCIAS DEL MAR 2°DO PISO (CS DEL MAR 2°DO PISO)",
+    "direccion": "CS DEL MAR 2°DO PISO",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "81.669.200-8"
+  },
+  "227": {
+    "cuenta": "227",
+    "alias_centro_costo": "U. CATOLICA CASA ARTES MIRAFLORES (CASA ARTES II)",
+    "direccion": "CASA ARTES II",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "81.669.200-8"
+  },
+  "229": {
+    "cuenta": "229",
+    "alias_centro_costo": "UCV.CAT.SECRETARIA GENER (EXCASA EXPL) (SECRETARIA GENERAL.)",
+    "direccion": "SECRETARIA GENERAL.",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "81.669.200-8"
+  },
+  "230": {
+    "cuenta": "230",
+    "alias_centro_costo": "PUCV EDIFICIO HUB GLOBAL (HUB GLOBAL)",
+    "direccion": "HUB GLOBAL",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "81.669.200-8"
+  },
+  "232": {
+    "cuenta": "232",
+    "alias_centro_costo": "UNIV. CATOLICA DEP. DE CONTRALORIA (CONTRALORIA)",
+    "direccion": "CONTRALORIA",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "81.669.200-8"
+  },
+  "233": {
+    "cuenta": "233",
+    "alias_centro_costo": "UNIVERSIDAD CATOLICA EDIFICIO NBC 1 (NBC 1)",
+    "direccion": "NBC 1",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "81.669.200-8"
+  },
+  "234": {
+    "cuenta": "234",
+    "alias_centro_costo": "UNIVERSIDAD CATOLICA EDIFICIO NBC 2 (NBC 2)",
+    "direccion": "NBC 2",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "81.669.200-8"
+  },
+  "236": {
+    "cuenta": "236",
+    "alias_centro_costo": "U.CAT.TALLER GLOBO ARQT.CASINO (TALL. GLOBO Y CASINO)",
+    "direccion": "TALL. GLOBO Y CASINO",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "81.669.200-8"
+  },
+  "237": {
+    "cuenta": "237",
+    "alias_centro_costo": "U.CATOLICA ESCUELA INGENIERIA MECANICA (INGENIERIA MECANICA)",
+    "direccion": "INGENIERIA MECANICA",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "81.669.200-8"
+  },
+  "238": {
+    "cuenta": "238",
+    "alias_centro_costo": "U. CATOLICA NBC 3 (NBC 3)",
+    "direccion": "NBC 3",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "81.669.200-8"
+  },
+  "244": {
+    "cuenta": "244",
+    "alias_centro_costo": "UNIVERSIDAD CATOLICA PROSECRETARIA (CATOLICA PROSECRETARIA)",
+    "direccion": "CATOLICA PROSECRETARIA",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "81.669.200-8"
+  },
+  "245": {
+    "cuenta": "245",
+    "alias_centro_costo": "U CATO CASA CENTRAL RECTORIA Y TEOLOGIA (RECTORIA Y TEOL)",
+    "direccion": "RECTORIA Y TEOL",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "81.669.200-8"
+  },
+  "246": {
+    "cuenta": "246",
+    "alias_centro_costo": "U CATO CASA CENTRAL DERECHO Y BIBLIOTEC (DERECHO Y BIBLIOT)",
+    "direccion": "DERECHO Y BIBLIOT",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "81.669.200-8"
+  },
+  "248": {
+    "cuenta": "248",
+    "alias_centro_costo": "UNIV. CATOLICA EDICION UNIVERSITARIA (EDICION UNIVERSITARIA)",
+    "direccion": "EDICION UNIVERSITARIA",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "81.669.200-8"
+  },
+  "253": {
+    "cuenta": "253",
+    "alias_centro_costo": "JARDIN INF.INTEGRA LOS MOLINOS (LOS MOLINOS)",
+    "direccion": "LOS MOLINOS",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.574.900-0"
+  },
+  "261": {
+    "cuenta": "261",
+    "alias_centro_costo": "JARDIN INF. INTEGRA  PUERTO AYSEN (PUERTO AYSEN)",
+    "direccion": "PUERTO AYSEN",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.574.900-0"
+  },
+  "277": {
+    "cuenta": "277",
+    "alias_centro_costo": "PATRICIA GIOVANETTI ANDRADES",
+    "direccion": "Dirección de Instalación",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "RUT-277"
+  },
+  "291": {
+    "cuenta": "291",
+    "alias_centro_costo": "MARCELA GRANIFO",
+    "direccion": "Dirección de Instalación",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "RUT-291"
+  },
+  "297": {
+    "cuenta": "297",
+    "alias_centro_costo": "ERIC SALINAS",
+    "direccion": "Dirección de Instalación",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "RUT-297"
+  },
+  "342": {
+    "cuenta": "342",
+    "alias_centro_costo": "MARIA LUZ JARUFE JARUFE",
+    "direccion": "Dirección de Instalación",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "RUT-342"
+  },
+  "345": {
+    "cuenta": "345",
+    "alias_centro_costo": "JARDIN INF.INTEGRA SANTA CRUZ LIMACHITO (SANTA CRUZ LIMACHITO)",
+    "direccion": "SANTA CRUZ LIMACHITO",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.574.900-0"
+  },
+  "378": {
+    "cuenta": "378",
+    "alias_centro_costo": "VICTOR CIFUENTES HERRERA",
+    "direccion": "Dirección de Instalación",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "RUT-378"
+  },
+  "419": {
+    "cuenta": "419",
+    "alias_centro_costo": "DOMINGA LUISA GALARCE BERRIOS",
+    "direccion": "Dirección de Instalación",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "RUT-419"
+  },
+  "420": {
+    "cuenta": "420",
+    "alias_centro_costo": "JARDIN INTEGRA MONTAÑITA SALACUNA (MONTAÑITA SALACUNA)",
+    "direccion": "MONTAÑITA SALACUNA",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.574.900-0"
+  },
+  "423": {
+    "cuenta": "423",
+    "alias_centro_costo": "JARDIN INTEGRA LAS MAQUINITAS (LAS MAQUINITAS)",
+    "direccion": "LAS MAQUINITAS",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.574.900-0"
+  },
+  "430": {
+    "cuenta": "430",
+    "alias_centro_costo": "PRODERE (ADM CENTRAL)",
+    "direccion": "ADM CENTRAL",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "RUT-430"
+  },
+  "432": {
+    "cuenta": "432",
+    "alias_centro_costo": "PRODEL SAN BERNARDO (SAN BERNARDO)",
+    "direccion": "SAN BERNARDO",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "65.628.810-8"
+  },
+  "480": {
+    "cuenta": "480",
+    "alias_centro_costo": "DAVID NARANJO",
+    "direccion": "Dirección de Instalación",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "RUT-480"
+  },
+  "504": {
+    "cuenta": "504",
+    "alias_centro_costo": "JARDIN INTEGRA SALA CUNA NIDITO (SALA CUNA NIDITO)",
+    "direccion": "SALA CUNA NIDITO",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.574.900-0"
+  },
+  "518": {
+    "cuenta": "518",
+    "alias_centro_costo": "UNIV.CATOLICA CLINICA  KINESIOLOGIA (CLINICA  KINESIOLOGIA)",
+    "direccion": "CLINICA  KINESIOLOGIA",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "81.669.200-8"
+  },
+  "524": {
+    "cuenta": "524",
+    "alias_centro_costo": "RODRIGO CASTILLO RIQUELME JOHNNY LETRER",
+    "direccion": "Dirección de Instalación",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "RUT-524"
+  },
+  "535": {
+    "cuenta": "535",
+    "alias_centro_costo": "CARMEN ALMONACID LUCKSIC",
+    "direccion": "Dirección de Instalación",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "3.398.320-4"
+  },
+  "555": {
+    "cuenta": "555",
+    "alias_centro_costo": "URSULA RAUTER",
+    "direccion": "Dirección de Instalación",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "RUT-555"
+  },
+  "558": {
+    "cuenta": "558",
+    "alias_centro_costo": "JARDIN INF.  INTEGRA CAMPANITA (CAMPANITA)",
+    "direccion": "CAMPANITA",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.574.900-0"
+  },
+  "564": {
+    "cuenta": "564",
+    "alias_centro_costo": "JARDIN INTEGRA MONTAÑITA (MONTAÑITA)",
+    "direccion": "MONTAÑITA",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.574.900-0"
+  },
+  "565": {
+    "cuenta": "565",
+    "alias_centro_costo": "LIDIA CASTILLO CHOUPAY",
+    "direccion": "Dirección de Instalación",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "RUT-565"
+  },
+  "566": {
+    "cuenta": "566",
+    "alias_centro_costo": "SHELLEY RICHARD HOWWARD",
+    "direccion": "Dirección de Instalación",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "RUT-566"
+  },
+  "584": {
+    "cuenta": "584",
+    "alias_centro_costo": "UNIV.CATOLICA ALIMENTO(ASIS,TEC) (ALIM. ASISTEC)",
+    "direccion": "ALIM. ASISTEC",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "81.669.200-8"
+  },
+  "606": {
+    "cuenta": "606",
+    "alias_centro_costo": "UNIV.CATOLICA EDICION UNIVERSIT(BODEGA) (EDIC UNIV. BODEGA)",
+    "direccion": "EDIC UNIV. BODEGA",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "81.669.200-8"
+  },
+  "607": {
+    "cuenta": "607",
+    "alias_centro_costo": "JARDIN INF. INTEGRA LOS LUCUMOS (LOS LUCUMOS)",
+    "direccion": "LOS LUCUMOS",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.574.900-0"
+  },
+  "617": {
+    "cuenta": "617",
+    "alias_centro_costo": "U.CATOLICA DPTO.MAGISTER-ARQUITECTURA 2 (DEPTO MAGISTER)",
+    "direccion": "DEPTO MAGISTER",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "81.669.200-8"
+  },
+  "668": {
+    "cuenta": "668",
+    "alias_centro_costo": "PAULINA ROJAS REBOLLEDO",
+    "direccion": "Dirección de Instalación",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "RUT-668"
+  },
+  "675": {
+    "cuenta": "675",
+    "alias_centro_costo": "JARDIN INTEGRA SONRISAS DE SAN JOSE (SONRISAS DE SAN JOSE)",
+    "direccion": "SONRISAS DE SAN JOSE",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.574.900-0"
+  },
+  "693": {
+    "cuenta": "693",
+    "alias_centro_costo": "JARDIN INTEGRA ESTRELLITAS  LUMINOSAS (ESTRELLITAS  LUMINOSAS)",
+    "direccion": "ESTRELLITAS  LUMINOSAS",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.574.900-0"
+  },
+  "696": {
+    "cuenta": "696",
+    "alias_centro_costo": "JARDIN INF.INTEGRA SEMILLITA (SEMILLITA)",
+    "direccion": "SEMILLITA",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.574.900-0"
+  },
+  "731": {
+    "cuenta": "731",
+    "alias_centro_costo": "JARDIN INFANTIL INTEGRA LAS PIEDRECITAS (LAS PIEDRECITAS)",
+    "direccion": "LAS PIEDRECITAS",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.574.900-0"
+  },
+  "732": {
+    "cuenta": "732",
+    "alias_centro_costo": "JARDIN INF.  INTEGRA CARRUSEL (CARRUSEL)",
+    "direccion": "CARRUSEL",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.574.900-0"
+  },
+  "738": {
+    "cuenta": "738",
+    "alias_centro_costo": "JAR INF. INTEGRA CLAVELITO (CLAVELITO)",
+    "direccion": "CLAVELITO",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.574.900-0"
+  },
+  "739": {
+    "cuenta": "739",
+    "alias_centro_costo": "JARDIN INF. INTEGRA ESTRELLA SOLITARIA (ESTRELLA SOLITARIA)",
+    "direccion": "ESTRELLA SOLITARIA",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.574.900-0"
+  },
+  "755": {
+    "cuenta": "755",
+    "alias_centro_costo": "IGLESIA CRISTIANA  PENTECOSTAL",
+    "direccion": "Dirección de Instalación",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "RUT-755"
+  },
+  "792": {
+    "cuenta": "792",
+    "alias_centro_costo": "MT . INGENIERIA",
+    "direccion": "Dirección de Instalación",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "RUT-792"
+  },
+  "801": {
+    "cuenta": "801",
+    "alias_centro_costo": "CRISTIAN MUÑOZ",
+    "direccion": "Dirección de Instalación",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "12.850.460-5"
+  },
+  "802": {
+    "cuenta": "802",
+    "alias_centro_costo": "JARDIN INF. Y SALA CUNA INTEGRA  FRESIA (FRESIA)",
+    "direccion": "FRESIA",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.574.900-0"
+  },
+  "805": {
+    "cuenta": "805",
+    "alias_centro_costo": "VICTOR VICUÑA DIAZ",
+    "direccion": "Dirección de Instalación",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "RUT-805"
+  },
+  "838": {
+    "cuenta": "838",
+    "alias_centro_costo": "UNIV.CATOLICA ESC.DE PSICOLOGIA CLINICA (PSICOLOGIA CLINICA)",
+    "direccion": "PSICOLOGIA CLINICA",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "81.669.200-8"
+  },
+  "859": {
+    "cuenta": "859",
+    "alias_centro_costo": "JARDIN INTEGRA  NUESTRA SRA DE FATIMA (NUESTRA SRA DE FATIMA)",
+    "direccion": "NUESTRA SRA DE FATIMA",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.574.900-0"
+  },
+  "861": {
+    "cuenta": "861",
+    "alias_centro_costo": "JARDIN INF. INT. MAGICO LUGAR DE SUEÑO (MAGICO LUGAR DE SUEÑOS)",
+    "direccion": "MAGICO LUGAR DE SUEÑOS",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.574.900-0"
+  },
+  "862": {
+    "cuenta": "862",
+    "alias_centro_costo": "JARDIN INF.INTEGRA  HEIDY (HEIDY)",
+    "direccion": "HEIDY",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.574.900-0"
+  },
+  "863": {
+    "cuenta": "863",
+    "alias_centro_costo": "JARDIN INFANTIL INTEGRA ANTU LIWEN (ANTU LIWEN)",
+    "direccion": "ANTU LIWEN",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.574.900-0"
+  },
+  "864": {
+    "cuenta": "864",
+    "alias_centro_costo": "JARDIN INF. INTEGRA LOS CARIÑOSITOS (LOS CARIÑOSITOS)",
+    "direccion": "LOS CARIÑOSITOS",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.574.900-0"
+  },
+  "865": {
+    "cuenta": "865",
+    "alias_centro_costo": "JARDIN INF. INTEGRA S.C. KAN UIQÚ. (S.C. KAN UIQÚ)",
+    "direccion": "S.C. KAN UIQÚ",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.574.900-0"
+  },
+  "867": {
+    "cuenta": "867",
+    "alias_centro_costo": "JARDIN INF. INTEGRA APRENDEMOS JUGANDO (APRENDEMOS JUGANDO)",
+    "direccion": "APRENDEMOS JUGANDO",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.574.900-0"
+  },
+  "868": {
+    "cuenta": "868",
+    "alias_centro_costo": "JARDIN INF.INT.  INTI RAYMI (EX NIÑO A) (INTI RAYM)",
+    "direccion": "INTI RAYM",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.574.900-0"
+  },
+  "871": {
+    "cuenta": "871",
+    "alias_centro_costo": "JARDIN INF.INTEGRA ANTU (ANTU)",
+    "direccion": "ANTU",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.574.900-0"
+  },
+  "872": {
+    "cuenta": "872",
+    "alias_centro_costo": "JARDIN INF.INTEGRA MILLARAY (MILLARAY)",
+    "direccion": "MILLARAY",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.574.900-0"
+  },
+  "873": {
+    "cuenta": "873",
+    "alias_centro_costo": "JARDIN INF.INTEGRA  LOS GORRIONES (LOS GORRIONES)",
+    "direccion": "LOS GORRIONES",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.574.900-0"
+  },
+  "874": {
+    "cuenta": "874",
+    "alias_centro_costo": "JARDIN INF.INTEGRA HORMIGUITA ACONCAGUA (HORMIGUITAS DE  ACONCAGUA)",
+    "direccion": "HORMIGUITAS DE  ACONCAGUA",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.574.900-0"
+  },
+  "875": {
+    "cuenta": "875",
+    "alias_centro_costo": "JARDIN INF.INTEGRA GOTITAS DE LUNA (GOTITAS DE LUNA)",
+    "direccion": "GOTITAS DE LUNA",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.574.900-0"
+  },
+  "876": {
+    "cuenta": "876",
+    "alias_centro_costo": "JARDIN INF.INTEGRA LUCERITO (LUCERITO)",
+    "direccion": "LUCERITO",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.574.900-0"
+  },
+  "877": {
+    "cuenta": "877",
+    "alias_centro_costo": "JARDIN INF.INTEGRA CRISTAL (CRISTAL)",
+    "direccion": "CRISTAL",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.574.900-0"
+  },
+  "878": {
+    "cuenta": "878",
+    "alias_centro_costo": "JARDIN INF.INTEGRA LA PIRQUITA, S/CUNA (SC LA PIRQUITA)",
+    "direccion": "SC LA PIRQUITA",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.574.900-0"
+  },
+  "881": {
+    "cuenta": "881",
+    "alias_centro_costo": "JARDIN INF.INTEGRA PAMPANITOS (PAMPANITOS)",
+    "direccion": "PAMPANITOS",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.574.900-0"
+  },
+  "883": {
+    "cuenta": "883",
+    "alias_centro_costo": "JARDIN INF.INTEGRA, SOL DE MEDIO DIA (SOL DE MEDIO DIA)",
+    "direccion": "SOL DE MEDIO DIA",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.574.900-0"
+  },
+  "886": {
+    "cuenta": "886",
+    "alias_centro_costo": "JARDIN INF.INTEGRA LA PALOMA (LA PALOMA)",
+    "direccion": "LA PALOMA",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.574.900-0"
+  },
+  "904": {
+    "cuenta": "904",
+    "alias_centro_costo": "MARIELA SALAZAR",
+    "direccion": "Dirección de Instalación",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "RUT-904"
+  },
+  "907": {
+    "cuenta": "907",
+    "alias_centro_costo": "U CATOLICA EDIFICIO CREAS (EDIFICIO CREAS)",
+    "direccion": "EDIFICIO CREAS",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "81.669.200-8"
+  },
+  "911": {
+    "cuenta": "911",
+    "alias_centro_costo": "CATOLICA . PLANTA PROCESO ALIMENTO (PROCESO ALIMENTO)",
+    "direccion": "PROCESO ALIMENTO",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "81.669.200-8"
+  },
+  "999": {
+    "cuenta": "999",
+    "alias_centro_costo": "DANIEL TORO- MORENO  ( CASA )",
+    "direccion": "Dirección de Instalación",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "11.111.111-2"
+  },
+  "C774": {
+    "cuenta": "C774",
+    "alias_centro_costo": "MARIA CECILIA ACUÑA MIRANDA",
+    "direccion": "Dirección de Instalación",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "11.657.716-K"
+  },
+  "C737": {
+    "cuenta": "C737",
+    "alias_centro_costo": "PATRICIA GIOVANETTI ANDRADES",
+    "direccion": "Dirección de Instalación",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "RUT-C737"
+  },
+  "C736": {
+    "cuenta": "C736",
+    "alias_centro_costo": "CASA SAGRADA FAMILIA O EDF MONJAS (CASA MADRES)",
+    "direccion": "CASA MADRES",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "65.155.616-3"
+  },
+  "C7AD": {
+    "cuenta": "C7AD",
+    "alias_centro_costo": "CASA SANTO DOMINGO",
+    "direccion": "Dirección de Instalación",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "4.531.254-2"
+  },
+  "C773": {
+    "cuenta": "C773",
+    "alias_centro_costo": "CLUB PADEL ESPACIO RINCON",
+    "direccion": "Dirección de Instalación",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "11.111.111-1"
+  },
+  "C735": {
+    "cuenta": "C735",
+    "alias_centro_costo": "COLEGIO SAGRADA FAMILIA (COLEGIO)",
+    "direccion": "COLEGIO",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "65.155.616-3"
+  },
+  "C711": {
+    "cuenta": "C711",
+    "alias_centro_costo": "EDIFICIO CREAS",
+    "direccion": "Dirección de Instalación",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "65.072.516-6"
+  },
+  "C760": {
+    "cuenta": "C760",
+    "alias_centro_costo": "PAULINA ROJAS REBOLLEDO",
+    "direccion": "Dirección de Instalación",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "13.633.727-0"
+  },
+  "C747": {
+    "cuenta": "C747",
+    "alias_centro_costo": "VICTOR VICUÑA",
+    "direccion": "Dirección de Instalación",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "10.379.376-9"
+  },
+  "C741": {
+    "cuenta": "C741",
+    "alias_centro_costo": "CARLOS OLGUIN MARIN (CASA)",
+    "direccion": "CASA",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "8.061.920-0"
+  },
+  "C738": {
+    "cuenta": "C738",
+    "alias_centro_costo": "CARLOS OLGUIN MARIN (EX LOCAL) (EX LOCAL)",
+    "direccion": "EX LOCAL",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "8.061.920-0"
+  },
+  "C713": {
+    "cuenta": "C713",
+    "alias_centro_costo": "CENTRO COMERCIAL QUILLOTA.",
+    "direccion": "Dirección de Instalación",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "76.855.279-7"
+  },
+  "C7C9": {
+    "cuenta": "C7C9",
+    "alias_centro_costo": "COANIL1 NORTE VIÑA DEL MAR",
+    "direccion": "Dirección de Instalación",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.267.000-4"
+  },
+  "C775": {
+    "cuenta": "C775",
+    "alias_centro_costo": "COLEGIO ARABE.",
+    "direccion": "Dirección de Instalación",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.607.500-3"
+  },
+  "C781": {
+    "cuenta": "C781",
+    "alias_centro_costo": "COLEGIO MONTESSORI",
+    "direccion": "Dirección de Instalación",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "77.075.932-3"
+  },
+  "C728": {
+    "cuenta": "C728",
+    "alias_centro_costo": "COMERCIAL DORAL ( SERVICENTRO COPEC)",
+    "direccion": "Dirección de Instalación",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "77.194.160-5"
+  },
+  "C721": {
+    "cuenta": "C721",
+    "alias_centro_costo": "CORPORACION DE ASISTENCIA JUDICIAL.",
+    "direccion": "Dirección de Instalación",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.816.800-9"
+  },
+  "C700": {
+    "cuenta": "C700",
+    "alias_centro_costo": "JARDIN INF INTEGRA SOL DE MEDIO DIA (SOL DE MEDIO DIA)",
+    "direccion": "SOL DE MEDIO DIA",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.574.900-0"
+  },
+  "C723": {
+    "cuenta": "C723",
+    "alias_centro_costo": "EDICION UNIVERSITARIA CASA RAWSON (CASA RAWSON)",
+    "direccion": "CASA RAWSON",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "RUT-C723"
+  },
+  "C778": {
+    "cuenta": "C778",
+    "alias_centro_costo": "EDITH FERNANDEZ ASTORGA.",
+    "direccion": "Dirección de Instalación",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "RUT-C778"
+  },
+  "C726": {
+    "cuenta": "C726",
+    "alias_centro_costo": "FERNANDO FUHRMANN SHEVERS",
+    "direccion": "Dirección de Instalación",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "RUT-C726"
+  },
+  "C708": {
+    "cuenta": "C708",
+    "alias_centro_costo": "FUNDACION INTEGRA DIRECCION REGIONAL. (DIRECCION REGIONAL.)",
+    "direccion": "DIRECCION REGIONAL.",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.574.900-0"
+  },
+  "C710": {
+    "cuenta": "C710",
+    "alias_centro_costo": "CLINICA JURIDICA PUCV (CLINICA JURIDICA)",
+    "direccion": "CLINICA JURIDICA",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "81.669.200-8"
+  },
+  "C792": {
+    "cuenta": "C792",
+    "alias_centro_costo": "GONZALO CLAUDIO AYALA MORALES.",
+    "direccion": "Dirección de Instalación",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "RUT-C792"
+  },
+  "C712": {
+    "cuenta": "C712",
+    "alias_centro_costo": "JARDIN INFANTIL INTEGRA EL CALERITO (EL CALERITO)",
+    "direccion": "EL CALERITO",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.574.900-0"
+  },
+  "C777": {
+    "cuenta": "C777",
+    "alias_centro_costo": "JACQUELINE BARRA",
+    "direccion": "Dirección de Instalación",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "RUT-C777"
+  },
+  "C715": {
+    "cuenta": "C715",
+    "alias_centro_costo": "JARDIN INTEGRA PUERTO AYSEN (PUERTO AYSEN)",
+    "direccion": "PUERTO AYSEN",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.574.900-0"
+  },
+  "C716": {
+    "cuenta": "C716",
+    "alias_centro_costo": "JARDIN INTEGRA APRENDAMOS JUGANDO (APRENDAMOS JUGANDO)",
+    "direccion": "APRENDAMOS JUGANDO",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.574.900-0"
+  },
+  "C717": {
+    "cuenta": "C717",
+    "alias_centro_costo": "JARDIN INFANTIL INTEGRA LOS MOLINOS (LOS MOLINOS)",
+    "direccion": "LOS MOLINOS",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.574.900-0"
+  },
+  "C718": {
+    "cuenta": "C718",
+    "alias_centro_costo": "JARDIN INFANTIL INTEGRA ALTAMIRANO (ALTAMIRANO)",
+    "direccion": "ALTAMIRANO",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.574.900-0"
+  },
+  "C719": {
+    "cuenta": "C719",
+    "alias_centro_costo": "JARDIN INFANTIL INTEGRA CLAVELITO (CLAVELITO)",
+    "direccion": "CLAVELITO",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.574.900-0"
+  },
+  "C720": {
+    "cuenta": "C720",
+    "alias_centro_costo": "JARDIN INTEGRA MAGICO LUGAR DE SUEÑO (MAGICO LUGAR DE SUEÑOS)",
+    "direccion": "MAGICO LUGAR DE SUEÑOS",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.574.900-0"
+  },
+  "C744": {
+    "cuenta": "C744",
+    "alias_centro_costo": "JARDIN INFANTIL MIO BAMBINO",
+    "direccion": "Dirección de Instalación",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "RUT-C744"
+  },
+  "C722": {
+    "cuenta": "C722",
+    "alias_centro_costo": "PUCV SIMON BOLIVAR 336 (SIMON BOLIVAR 336)",
+    "direccion": "SIMON BOLIVAR 336",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "81.669.200-8"
+  },
+  "C727": {
+    "cuenta": "C727",
+    "alias_centro_costo": "JIMENA GONZALEZ",
+    "direccion": "Dirección de Instalación",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "RUT-C727"
+  },
+  "C725": {
+    "cuenta": "C725",
+    "alias_centro_costo": "JARDIN INFANTIL INTEGRA AWKANTUN. (AWKANTUN.)",
+    "direccion": "AWKANTUN.",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.574.900-0"
+  },
+  "C714": {
+    "cuenta": "C714",
+    "alias_centro_costo": "JOHANNA VOLKER",
+    "direccion": "Dirección de Instalación",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "RUT-C714"
+  },
+  "C782": {
+    "cuenta": "C782",
+    "alias_centro_costo": "L JUBICA RENDIC ( ELIZABETH  VERA )",
+    "direccion": "Dirección de Instalación",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "RUT-C782"
+  },
+  "C754": {
+    "cuenta": "C754",
+    "alias_centro_costo": "LUIS VERAGUA ARAYA  (OPTICA BELLAMAR )",
+    "direccion": "Dirección de Instalación",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "RUT-C754"
+  },
+  "C730": {
+    "cuenta": "C730",
+    "alias_centro_costo": "PUCV EDIFICIO HUB GLOBAL. (HUB GLOBAL.)",
+    "direccion": "HUB GLOBAL.",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "81.669.200-8"
+  },
+  "C729": {
+    "cuenta": "C729",
+    "alias_centro_costo": "MACARENA PEÑA  LEPE",
+    "direccion": "Dirección de Instalación",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "RUT-C729"
+  },
+  "C755": {
+    "cuenta": "C755",
+    "alias_centro_costo": "MARCELA PAZ CORRALES",
+    "direccion": "Dirección de Instalación",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "RUT-C755"
+  },
+  "C734": {
+    "cuenta": "C734",
+    "alias_centro_costo": "MARCELA SEPULVEDA",
+    "direccion": "Dirección de Instalación",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "RUT-C734"
+  },
+  "C742": {
+    "cuenta": "C742",
+    "alias_centro_costo": "MARIA ELENA PROSCHLE ANGEL",
+    "direccion": "Dirección de Instalación",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "RUT-C742"
+  },
+  "C746": {
+    "cuenta": "C746",
+    "alias_centro_costo": "MARIA EUGENIA FERNANDEZ SAA",
+    "direccion": "Dirección de Instalación",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "RUT-C746"
+  },
+  "C739": {
+    "cuenta": "C739",
+    "alias_centro_costo": "U. CAT ESC. DE NEGOCIO EDIFICIO R.V.B (EDIFICIO RVB)",
+    "direccion": "EDIFICIO RVB",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "81.669.200-8"
+  },
+  "C740": {
+    "cuenta": "C740",
+    "alias_centro_costo": "U. CAT ESC DE NEGOCIOS Y ECONOMIA R D B (EDIFICIO RDB)",
+    "direccion": "EDIFICIO RDB",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "81.669.200-8"
+  },
+  "C745": {
+    "cuenta": "C745",
+    "alias_centro_costo": "MARIELA SALAZAR.",
+    "direccion": "Dirección de Instalación",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "RUT-C745"
+  },
+  "C701": {
+    "cuenta": "C701",
+    "alias_centro_costo": "MIRNA REBOLLEDO  NUÑEZ",
+    "direccion": "Dirección de Instalación",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "RUT-C701"
+  },
+  "C733": {
+    "cuenta": "C733",
+    "alias_centro_costo": "OCTAVIO HENRIQUEZ.",
+    "direccion": "Dirección de Instalación",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "RUT-C733"
+  },
+  "C753": {
+    "cuenta": "C753",
+    "alias_centro_costo": "ONOFRE ALFREDO KRÖGER PRADENA.",
+    "direccion": "Dirección de Instalación",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "RUT-C753"
+  },
+  "C750": {
+    "cuenta": "C750",
+    "alias_centro_costo": "JARDIN INFANTIL INTEGRA ANTU (ANTU)",
+    "direccion": "ANTU",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.574.900-0"
+  },
+  "C752": {
+    "cuenta": "C752",
+    "alias_centro_costo": "TALITA KUM (ADM CENTRAL)",
+    "direccion": "ADM CENTRAL",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "65.153.916-1"
+  },
+  "C751": {
+    "cuenta": "C751",
+    "alias_centro_costo": "P.T.A PILOTO DE PROC.METALURGICA-BODEGA",
+    "direccion": "Dirección de Instalación",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "RUT-C751"
+  },
+  "C732": {
+    "cuenta": "C732",
+    "alias_centro_costo": "PASTAMANIA",
+    "direccion": "Dirección de Instalación",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "RUT-C732"
+  },
+  "C756": {
+    "cuenta": "C756",
+    "alias_centro_costo": "U CATOLICA CASA TRASLAVIÑA (CASA TRASLAVIÑA)",
+    "direccion": "CASA TRASLAVIÑA",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "81.669.200-8"
+  },
+  "C757": {
+    "cuenta": "C757",
+    "alias_centro_costo": "CASA ARTES II PUCV (CASA ARTES II)",
+    "direccion": "CASA ARTES II",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "81.669.200-8"
+  },
+  "C759": {
+    "cuenta": "C759",
+    "alias_centro_costo": "U CATOLICA AVDA BRASIL 2060 IBQ BODEGA (IBQ BODEGA)",
+    "direccion": "IBQ BODEGA",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "81.669.200-8"
+  },
+  "C743": {
+    "cuenta": "C743",
+    "alias_centro_costo": "PAULINA GOMILA TAULER.",
+    "direccion": "Dirección de Instalación",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "RUT-C743"
+  },
+  "C761": {
+    "cuenta": "C761",
+    "alias_centro_costo": "FUNDACION TALITA KUM QUILICURA. (QUILICURA)",
+    "direccion": "QUILICURA",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "65.153.916-1"
+  },
+  "C763": {
+    "cuenta": "C763",
+    "alias_centro_costo": "JARDIN INTEGRA MILLARAY. (MILLARAY)",
+    "direccion": "MILLARAY",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.574.900-0"
+  },
+  "C764": {
+    "cuenta": "C764",
+    "alias_centro_costo": "GIMNASIO . P.U.C.V (GIMNASIO PUCV)",
+    "direccion": "GIMNASIO PUCV",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "81.669.200-8"
+  },
+  "C766": {
+    "cuenta": "C766",
+    "alias_centro_costo": "PUCV INDUSTRIAS CREATIVAS 1  (TORREON ) (IND CREATIVAS 1 TORREON)",
+    "direccion": "IND CREATIVAS 1 TORREON",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "81.669.200-8"
+  },
+  "C767": {
+    "cuenta": "C767",
+    "alias_centro_costo": "PRODEL LOS ANDES (LOS ANDES)",
+    "direccion": "LOS ANDES",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "65.628.810-8"
+  },
+  "C768": {
+    "cuenta": "C768",
+    "alias_centro_costo": "U CATOLICA EDIFICIO LA SOMBRA . (ED. LA SOMBRA)",
+    "direccion": "ED. LA SOMBRA",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "81.669.200-8"
+  },
+  "C769": {
+    "cuenta": "C769",
+    "alias_centro_costo": "PRODEL 2 (ADM CENTRAL)",
+    "direccion": "ADM CENTRAL",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "65.628.810-8"
+  },
+  "C770": {
+    "cuenta": "C770",
+    "alias_centro_costo": "U.CAT.SERV.MEDICO DAE 2. (DAE 2.)",
+    "direccion": "DAE 2.",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "81.669.200-8"
+  },
+  "C771": {
+    "cuenta": "C771",
+    "alias_centro_costo": "U.CAT.SERV.MEDICO DAE 1. (DAE 1.)",
+    "direccion": "DAE 1.",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "81.669.200-8"
+  },
+  "C772": {
+    "cuenta": "C772",
+    "alias_centro_costo": "U.CAT.EDICION UNIVERSITARIA. (EDICION UNIVERSITARIA.)",
+    "direccion": "EDICION UNIVERSITARIA.",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "81.669.200-8"
+  },
+  "C704": {
+    "cuenta": "C704",
+    "alias_centro_costo": "PRODERE BHUA PUENTE ALTO (BHUA)",
+    "direccion": "BHUA",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "RUT-C704"
+  },
+  "C705": {
+    "cuenta": "C705",
+    "alias_centro_costo": "PRODERE DYGGO PUENTE ALTO (DYGGO)",
+    "direccion": "DYGGO",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "RUT-C705"
+  },
+  "C707": {
+    "cuenta": "C707",
+    "alias_centro_costo": "PRODERE NAGARTA BUIN (NAGARTA)",
+    "direccion": "NAGARTA",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "RUT-C707"
+  },
+  "C795": {
+    "cuenta": "C795",
+    "alias_centro_costo": "PRODERE.",
+    "direccion": "Dirección de Instalación",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "RUT-C795"
+  },
+  "C779": {
+    "cuenta": "C779",
+    "alias_centro_costo": "PUCV DIRECC ANALISIS INSTITUC Y DESARRO (ANALISIS INSTITUCIONAL)",
+    "direccion": "ANALISIS INSTITUCIONAL",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "81.669.200-8"
+  },
+  "C780": {
+    "cuenta": "C780",
+    "alias_centro_costo": "P.U.C.V INDUST.CREATIVAS 2 ( CALETA) (IND CREATIVAS 2)",
+    "direccion": "IND CREATIVAS 2",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "81.669.200-8"
+  },
+  "C783": {
+    "cuenta": "C783",
+    "alias_centro_costo": "CANCHAS SAUSALITO (CANCHAS SAUSALITO)",
+    "direccion": "CANCHAS SAUSALITO",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "81.669.200-8"
+  },
+  "C784": {
+    "cuenta": "C784",
+    "alias_centro_costo": "UNV.CAT.DEP.CONTRALORIA. (DEP.CONTRALORIA.)",
+    "direccion": "DEP.CONTRALORIA.",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "81.669.200-8"
+  },
+  "C785": {
+    "cuenta": "C785",
+    "alias_centro_costo": "UNIV.CAT.PROSECRETARIA . (PROSECRETARIA)",
+    "direccion": "PROSECRETARIA",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "81.669.200-8"
+  },
+  "C786": {
+    "cuenta": "C786",
+    "alias_centro_costo": "UNV.CAT.SECRETARIA GENERAL. (SECRETARIA GENERAL.)",
+    "direccion": "SECRETARIA GENERAL.",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "81.669.200-8"
+  },
+  "C787": {
+    "cuenta": "C787",
+    "alias_centro_costo": "U. CATOLICA IBC AV BRASIL (IBC AV BRASIL)",
+    "direccion": "IBC AV BRASIL",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "81.669.200-8"
+  },
+  "C788": {
+    "cuenta": "C788",
+    "alias_centro_costo": "U. CATOLICA I.B.C ANTIGUO (IBC ANTIGUO)",
+    "direccion": "IBC ANTIGUO",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "81.669.200-8"
+  },
+  "C790": {
+    "cuenta": "C790",
+    "alias_centro_costo": "JARDIN INF.INTEGRA CAMPANITA. (CAMPANITA.)",
+    "direccion": "CAMPANITA.",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.574.900-0"
+  },
+  "C791": {
+    "cuenta": "C791",
+    "alias_centro_costo": "UCV, CLINICA KINESIOLOGIA (CLINICA KINESIOLOGIA)",
+    "direccion": "CLINICA KINESIOLOGIA",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "81.669.200-8"
+  },
+  "C765": {
+    "cuenta": "C765",
+    "alias_centro_costo": "TOYS MOTORS",
+    "direccion": "Dirección de Instalación",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "RUT-C765"
+  },
+  "C793": {
+    "cuenta": "C793",
+    "alias_centro_costo": "JARDIN INTEGRA TEJEDORES DE ILUSIONES. (TEJEDORES DE ILUSIONES)",
+    "direccion": "TEJEDORES DE ILUSIONES",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.574.900-0"
+  },
+  "C794": {
+    "cuenta": "C794",
+    "alias_centro_costo": "JARDIN INTEGRA ESTRELLA SOLITARIA . (ESTRELLA SOLITARIA)",
+    "direccion": "ESTRELLA SOLITARIA",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.574.900-0"
+  },
+  "C796": {
+    "cuenta": "C796",
+    "alias_centro_costo": "JARDIN.INF.INTEGRA LOS GORRIONES . (LOS GORRIONES .)",
+    "direccion": "LOS GORRIONES .",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.574.900-0"
+  },
+  "C798": {
+    "cuenta": "C798",
+    "alias_centro_costo": "TALITA  KUM  VELA , LA REINA (VELA LA REINA)",
+    "direccion": "VELA LA REINA",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "65.153.916-1"
+  },
+  "C799": {
+    "cuenta": "C799",
+    "alias_centro_costo": "PRODEL SAN BERNARDO (SAN BERNARDO)",
+    "direccion": "SAN BERNARDO",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "65.628.810-8"
+  },
+  "C7A0": {
+    "cuenta": "C7A0",
+    "alias_centro_costo": "PRODEL LOS ANDES. (LOS ANDES.)",
+    "direccion": "LOS ANDES.",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "65.628.810-8"
+  },
+  "C7A1": {
+    "cuenta": "C7A1",
+    "alias_centro_costo": "JARDIN INFANTIL INTEGRA LOS GRANERITOS (LOS GRANERITOS)",
+    "direccion": "LOS GRANERITOS",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.574.900-0"
+  },
+  "C7A2": {
+    "cuenta": "C7A2",
+    "alias_centro_costo": "JARDIN INTEGRA S.C KAN UIQU (KAN UIQU)",
+    "direccion": "KAN UIQU",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.574.900-0"
+  },
+  "C7A3": {
+    "cuenta": "C7A3",
+    "alias_centro_costo": "UNV.CATOLICA ESC.PSICOLOGIA CLINICA. (PSICOLOGIA CLINICA.)",
+    "direccion": "PSICOLOGIA CLINICA.",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "81.669.200-8"
+  },
+  "C7A4": {
+    "cuenta": "C7A4",
+    "alias_centro_costo": "JARDIN INFANTIL INTEGRA  PAMPANITOS (PAMPANITOS)",
+    "direccion": "PAMPANITOS",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.574.900-0"
+  },
+  "C7A5": {
+    "cuenta": "C7A5",
+    "alias_centro_costo": "JARDIN INFANTIL INTEGRA INTI RAYMI (INTI RAYMI)",
+    "direccion": "INTI RAYMI",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.574.900-0"
+  },
+  "C7A8": {
+    "cuenta": "C7A8",
+    "alias_centro_costo": "JARDIN INFANTIL SALACUNA INTEGRA FRESIA (FRESIA)",
+    "direccion": "FRESIA",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.574.900-0"
+  },
+  "C7A9": {
+    "cuenta": "C7A9",
+    "alias_centro_costo": "JARDIN INTEGRA NUESTRA SRA DE FATIMA (NUESTRA SRA DE FATIMA)",
+    "direccion": "NUESTRA SRA DE FATIMA",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.574.900-0"
+  },
+  "C7AA": {
+    "cuenta": "C7AA",
+    "alias_centro_costo": "JARDIN INTEGRA HORMIGUITA DE ACONCAGUA (HORMIGUITA DE ACONCAGUA)",
+    "direccion": "HORMIGUITA DE ACONCAGUA",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.574.900-0"
+  },
+  "C7AB": {
+    "cuenta": "C7AB",
+    "alias_centro_costo": "JARDIN  INFANTIL INTEGRA CARRUSEL (CARRUSEL)",
+    "direccion": "CARRUSEL",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.574.900-0"
+  },
+  "C7AC": {
+    "cuenta": "C7AC",
+    "alias_centro_costo": "JARDIN INTEGRA SALA CUNA NIDITO (SALA CUNA NIDITO)",
+    "direccion": "SALA CUNA NIDITO",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.574.900-0"
+  },
+  "C7AE": {
+    "cuenta": "C7AE",
+    "alias_centro_costo": "\"FUNDACION TALITA KUM \"\"KEFIR\"\" COPIAPO\" (KEFIR COPIAPO)",
+    "direccion": "KEFIR COPIAPO",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "65.153.916-1"
+  },
+  "C7B0": {
+    "cuenta": "C7B0",
+    "alias_centro_costo": "JARDIN INTEGRA LAS LOMITAS.- (LAS LOMITAS)",
+    "direccion": "LAS LOMITAS",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.574.900-0"
+  },
+  "C7B1": {
+    "cuenta": "C7B1",
+    "alias_centro_costo": "JARDIN INFANTIL INTEGRA NUEVO AMANECER (NUEVO AMANECER)",
+    "direccion": "NUEVO AMANECER",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.574.900-0"
+  },
+  "C7B2": {
+    "cuenta": "C7B2",
+    "alias_centro_costo": "OBSERVATORIO PUCV CURAUMA (PUCV CURAUMA)",
+    "direccion": "PUCV CURAUMA",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "81.669.200-8"
+  },
+  "C7B3": {
+    "cuenta": "C7B3",
+    "alias_centro_costo": "PUCV DPTO MAGISTER ARQUITECTURA  2 (DEPTO MAGISTER)",
+    "direccion": "DEPTO MAGISTER",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "81.669.200-8"
+  },
+  "C7B5": {
+    "cuenta": "C7B5",
+    "alias_centro_costo": "PRODEL CURACAVI AFT BADAQ (AFT BADAQ)",
+    "direccion": "AFT BADAQ",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "65.628.810-8"
+  },
+  "C7B6": {
+    "cuenta": "C7B6",
+    "alias_centro_costo": "\"FUNDACION TALITA KUM \"\"AMALTEA\"\" CHILLAN\" (AMALTEA CHILLAN)",
+    "direccion": "AMALTEA CHILLAN",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "65.153.916-1"
+  },
+  "C7B7": {
+    "cuenta": "C7B7",
+    "alias_centro_costo": "PRODEL ZERUA COPIAPO (ZERUA COPIAPO)",
+    "direccion": "ZERUA COPIAPO",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "65.628.810-8"
+  },
+  "C7B8": {
+    "cuenta": "C7B8",
+    "alias_centro_costo": "PRODEL EDASICH SAN VICENTE TAGUA TAGUA (EDASICH SV TAGUA TAGUA)",
+    "direccion": "EDASICH SV TAGUA TAGUA",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "65.628.810-8"
+  },
+  "C7B9": {
+    "cuenta": "C7B9",
+    "alias_centro_costo": "PRODEL NIKYON PICHILEMU (NIKYON PICHLEMU)",
+    "direccion": "NIKYON PICHLEMU",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "65.628.810-8"
+  },
+  "C7BA": {
+    "cuenta": "C7BA",
+    "alias_centro_costo": "TALITA KUM - ARIEL - TEMUCO (ARIEL TEMUCO)",
+    "direccion": "ARIEL TEMUCO",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "65.153.916-1"
+  },
+  "C7BB": {
+    "cuenta": "C7BB",
+    "alias_centro_costo": "PRM GHAN COPIAPO (GHAN COPIAPO)",
+    "direccion": "GHAN COPIAPO",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "65.153.916-1"
+  },
+  "C7BC": {
+    "cuenta": "C7BC",
+    "alias_centro_costo": "PRM PORTIA CALDERA (PORTIA CALDERA)",
+    "direccion": "PORTIA CALDERA",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "65.153.916-1"
+  },
+  "C7BD": {
+    "cuenta": "C7BD",
+    "alias_centro_costo": "PRODEL YAM TIERRA AMARILLA COPIAPO (YAM TIERRA AMARILLA)",
+    "direccion": "YAM TIERRA AMARILLA",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "65.628.810-8"
+  },
+  "C7BE": {
+    "cuenta": "C7BE",
+    "alias_centro_costo": "TALITA KUM YAFEH CHAÑARAL (YAFEH CHAÑARAL)",
+    "direccion": "YAFEH CHAÑARAL",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "65.153.916-1"
+  },
+  "C7BF": {
+    "cuenta": "C7BF",
+    "alias_centro_costo": "JARDIN INTEGRA EL SOL (EL SOL)",
+    "direccion": "EL SOL",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.574.900-0"
+  },
+  "C7C0": {
+    "cuenta": "C7C0",
+    "alias_centro_costo": "PRODEL JARED VALLENAR (JARED VALLENAR)",
+    "direccion": "JARED VALLENAR",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "65.628.810-8"
+  },
+  "C7C1": {
+    "cuenta": "C7C1",
+    "alias_centro_costo": "PRODEL ALNIYAT COPIAPO (ALNIYAT COPIAPO)",
+    "direccion": "ALNIYAT COPIAPO",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "65.628.810-8"
+  },
+  "C7C2": {
+    "cuenta": "C7C2",
+    "alias_centro_costo": "TALITA KUM SAIPH HUECHURABA (SAIPH HUECHURABA)",
+    "direccion": "SAIPH HUECHURABA",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "65.153.916-1"
+  },
+  "C7C3": {
+    "cuenta": "C7C3",
+    "alias_centro_costo": "TALITA KUM - SOL - PUCON (SOL PUCON)",
+    "direccion": "SOL PUCON",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "65.153.916-1"
+  },
+  "C7C4": {
+    "cuenta": "C7C4",
+    "alias_centro_costo": "TALITA KUM - NASHIRA - PUERTO SAAVEDRA (NASHIRA PUERTO SAAVEDRA)",
+    "direccion": "NASHIRA PUERTO SAAVEDRA",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "65.153.916-1"
+  },
+  "C7C5": {
+    "cuenta": "C7C5",
+    "alias_centro_costo": "TALITA KUM - OFELIA - CUNCO (OFELIA CUNCO)",
+    "direccion": "OFELIA CUNCO",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "65.153.916-1"
+  },
+  "C7C6": {
+    "cuenta": "C7C6",
+    "alias_centro_costo": "TALITA KUM - ALPHA - TEMUCO (ALPHA TEMUCO)",
+    "direccion": "ALPHA TEMUCO",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "65.153.916-1"
+  },
+  "C7C7": {
+    "cuenta": "C7C7",
+    "alias_centro_costo": "JARDIN INFANTIL INTEGRA ANULÉN (ANULÉN)",
+    "direccion": "ANULÉN",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "70.574.900-0"
+  },
+  "C7C8": {
+    "cuenta": "C7C8",
+    "alias_centro_costo": "TALITA KUM FAE DRACO ANTOFAGASTA (DRACO ANTOFAGASTA)",
+    "direccion": "DRACO ANTOFAGASTA",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "65.153.916-1"
+  },
+  "C7B4": {
+    "cuenta": "C7B4",
+    "alias_centro_costo": "VICTOR WILSON  BROWNE.",
+    "direccion": "Dirección de Instalación",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "RUT-C7B4"
+  },
+  "C7CA": {
+    "cuenta": "C7CA",
+    "alias_centro_costo": "TALITA KUM DAFNE TOCOPILLA (DAFNE TOCOPILLA)",
+    "direccion": "DAFNE TOCOPILLA",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "65.153.916-1"
+  },
+  "C7CB": {
+    "cuenta": "C7CB",
+    "alias_centro_costo": "TALITA KUM FAE DIANA  ANTOFAGASTA (DIANA ANTOFAGASTA)",
+    "direccion": "DIANA ANTOFAGASTA",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "65.153.916-1"
+  },
+  "C7CC": {
+    "cuenta": "C7CC",
+    "alias_centro_costo": "TALITA KUM AQUARIUS ILLAPEL (AQUARIUS ILLAPEL)",
+    "direccion": "AQUARIUS ILLAPEL",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "65.153.916-1"
+  },
+  "C7CD": {
+    "cuenta": "C7CD",
+    "alias_centro_costo": "TALITA KUM ERIS ILLAPEL (ERIS ILLAPEL)",
+    "direccion": "ERIS ILLAPEL",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "65.153.916-1"
+  },
+  "C7CE": {
+    "cuenta": "C7CE",
+    "alias_centro_costo": "PRODEL 2.- NORTE (ADM CENTRAL)",
+    "direccion": "ADM CENTRAL",
+    "ciudad": "V Región / Chile",
+    "rut_cliente": "65.628.810-8"
+  }
+}

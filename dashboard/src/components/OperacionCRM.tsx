@@ -61,6 +61,8 @@ import {
   Upload
 } from 'lucide-react'
 import ServicioTecnicoModal from './ServicioTecnicoModal'
+import clientesMaestrosPreasociados from '@/lib/clientes_maestros_preasociados.json'
+import centrosCostoPreasociados from '@/lib/centros_costo_preasociados.json'
 
 const clientesFallback = clientesDataRaw as Record<string, Record<string, string>>
 
@@ -327,9 +329,9 @@ export default function OperacionCRM() {
   const [vincNuevoRut, setVincNuevoRut] = useState<string>('')
   const [desvinculadosHistorial, setDesvinculadosHistorial] = useState<{ cuenta: string, rutAnterior: string, razonSocialAnterior: string, fecha: string }[]>([])
 
-  // ── NIVEL 2 Y 3: SELECCIÓN DE CLIENTE Y ABONADO INDIVIDUAL ──
-  const [clientesMaestros, setClientesMaestros] = useState<Record<string, ClienteMaestro>>({})
-  const [abonadosCentrosCosto, setAbonadosCentrosCosto] = useState<Record<string, CentroDeCostoAbonado>>({})
+  // ── NIVEL 2 Y 3: SELECCIÓN DE CLIENTE Y ABONADO INDIVIDUAL (PRE-ASOCIADOS DESDE ARCHIVO MAESTRO) ──
+  const [clientesMaestros, setClientesMaestros] = useState<Record<string, ClienteMaestro>>(clientesMaestrosPreasociados as any)
+  const [abonadosCentrosCosto, setAbonadosCentrosCosto] = useState<Record<string, CentroDeCostoAbonado>>(centrosCostoPreasociados as any)
   
   const [rutClienteSeleccionado, setRutClienteSeleccionado] = useState<string>('')
   const [cuentaSeleccionada, setCuentaSeleccionada] = useState<string>('')
@@ -572,8 +574,43 @@ export default function OperacionCRM() {
           }
         })
 
-        setClientesMaestros(mapaMaestro)
-        setAbonadosCentrosCosto(mapaCentrosCosto)
+        // Combinar datos pre-asociados desde el CSV Maestro (242 abonados, 69 Razones Sociales)
+        const mapaMaestroCombinado: Record<string, ClienteMaestro> = {
+          ...clientesMaestrosPreasociados as any,
+          ...mapaMaestro
+        }
+        const mapaCentrosCombinado: Record<string, CentroDeCostoAbonado> = {
+          ...centrosCostoPreasociados as any,
+          ...mapaCentrosCosto
+        }
+
+        // Si existen guardados en localStorage o Supabase CLIENTES_MAESTROS_CRM, aplicarlos encima
+        try {
+          const localM = localStorage.getItem('gama_clientes_maestros')
+          if (localM) {
+            const parsed = JSON.parse(localM)
+            Object.assign(mapaMaestroCombinado, parsed)
+          }
+        } catch (e) {}
+
+        const { data: dMaestrosSupabase } = await supabase
+          .from('eventos_monitoreo')
+          .select('nombre_abonado')
+          .eq('cuenta', 'CLIENTES_MAESTROS_CRM')
+          .order('id', { ascending: false })
+          .limit(1)
+
+        if (dMaestrosSupabase && dMaestrosSupabase.length > 0 && dMaestrosSupabase[0].nombre_abonado) {
+          try {
+            const parsed = JSON.parse(dMaestrosSupabase[0].nombre_abonado)
+            if (typeof parsed === 'object' && parsed !== null) {
+              Object.assign(mapaMaestroCombinado, parsed)
+            }
+          } catch (e) {}
+        }
+
+        setClientesMaestros(mapaMaestroCombinado)
+        setAbonadosCentrosCosto(mapaCentrosCombinado)
 
         const { data: dCot } = await supabase
           .from('eventos_monitoreo')
