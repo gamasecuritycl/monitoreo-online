@@ -588,13 +588,14 @@ export default function OperacionCRM() {
         })
 
         // Combinar datos pre-asociados desde el CSV Maestro (242 abonados, 69 Razones Sociales)
+        // Se colocan a la DERECHA para garantizar precedencia sobre los ruts temporales (CTA-C7C5 -> 65.153.916-1)
         const mapaMaestroCombinado: Record<string, ClienteMaestro> = {
-          ...clientesMaestrosPreasociados as any,
-          ...mapaMaestro
+          ...mapaMaestro,
+          ...(clientesMaestrosPreasociados as any)
         }
         const mapaCentrosCombinado: Record<string, CentroDeCostoAbonado> = {
-          ...centrosCostoPreasociados as any,
-          ...mapaCentrosCosto
+          ...mapaCentrosCosto,
+          ...(centrosCostoPreasociados as any)
         }
 
         // Si existen guardados en localStorage o Supabase CLIENTES_MAESTROS_CRM, aplicarlos encima
@@ -2510,8 +2511,14 @@ export default function OperacionCRM() {
                             onClick={() => {
                               setModuloActivo('ficha360')
                               if (item.tipo === 'abonado' && item.cuenta) {
-                                setCuentaSeleccionada(item.cuenta.toUpperCase().trim())
-                                setRutClienteSeleccionado(item.rut)
+                                const ctaCode = item.cuenta.toUpperCase().trim()
+                                setCuentaSeleccionada(ctaCode)
+                                const cc = abonadosCentrosCosto[ctaCode] || centrosCostoPreasociados[ctaCode as keyof typeof centrosCostoPreasociados]
+                                if (cc && cc.rut_cliente) {
+                                  setRutClienteSeleccionado(cc.rut_cliente)
+                                } else {
+                                  setRutClienteSeleccionado(item.rut)
+                                }
                               } else {
                                 setRutClienteSeleccionado(item.rut)
                                 const cli = clientesMaestros[item.rut] || Object.values(clientesMaestros).find(c => c.rut === item.rut)
@@ -2676,7 +2683,16 @@ export default function OperacionCRM() {
                   {/* SUB-SECCIÓN 3: FACTURAS */}
                   {tabFicha360 === 'facturas' && (
                     <div className="bg-[#E0E5EC] shadow-[inset_4px_4px_8px_#bec8d2,inset_-4px_-4px_8px_#ffffff] p-5 rounded-xl space-y-4 text-xs">
-                      <h3 className="font-black text-slate-900 uppercase tracking-wider text-xs">🧾 FACTURACIÓN & RECAUDACIÓN DE ESTE CLIENTE</h3>
+                      <div className="flex justify-between items-center flex-wrap gap-2">
+                        <h3 className="font-black text-slate-900 uppercase tracking-wider text-xs">🧾 FACTURACIÓN & RECAUDACIÓN DE ESTE CLIENTE</h3>
+                        <button
+                          onClick={() => setModuloActivo('facturacion')}
+                          className="px-3.5 py-1.5 bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white font-bold rounded-lg text-xs shadow-xs active:scale-95 cursor-pointer flex items-center gap-1.5"
+                        >
+                          <DollarSign className="h-3.5 w-3.5" />
+                          <span>💰 Ir a Gestor Global de Cobranzas (34 Facturas Real)</span>
+                        </button>
+                      </div>
                       <div className="overflow-x-auto">
                         <table className="w-full text-left border-collapse text-xs">
                           <thead>
