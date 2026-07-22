@@ -6,7 +6,7 @@ const resend = new Resend(process.env.RESEND_API_KEY)
 export async function POST(req: Request) {
   try {
     const body = await req.json()
-    const { cuenta, nombre_cliente, tipo_evento, fecha_hora, destinatarios, cotizacion, empresa_emisora } = body
+    const { cuenta, nombre_cliente, tipo_evento, fecha_hora, destinatarios, cotizacion, empresa_emisora, pdf_base64 } = body
 
     if (!destinatarios || (Array.isArray(destinatarios) && destinatarios.length === 0)) {
       return NextResponse.json({ error: 'No recipients provided' }, { status: 400 })
@@ -18,6 +18,13 @@ export async function POST(req: Request) {
     if (tipo_evento === 'COTIZACION' || cotizacion) {
       const cot = cotizacion || {}
       const emp = empresa_emisora || { razon_social: 'Gama Seguridad SpA', rut: '76.319.399-3', banco_nombre: 'Banco de Chile', banco_tipo_cuenta: 'Cuenta Corriente', banco_numero_cuenta: '00-123-45678-9', email_cobranza: 'cobranza@gamasecurity.cl' }
+
+      const attachments = pdf_base64 ? [
+        {
+          filename: `Presupuesto_${cot.codigo_cotizacion || 'PR2607'}.pdf`,
+          content: pdf_base64
+        }
+      ] : []
 
       const itemsHtml = (cot.items || []).map((it: any, idx: number) => `
         <tr>
@@ -48,7 +55,7 @@ export async function POST(req: Request) {
             </div>
 
             <p style="font-size: 13px; color: #334155; line-height: 1.5;">
-              Junto con saludarle, nos complace adjuntar la propuesta comercial oficial para los servicios y equipos solicitados:
+              Junto con saludarle, nos complace adjuntar en este correo la propuesta comercial oficial en formato PDF 📄 (y a continuación su desglose):
             </p>
 
             <table style="width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 12px;">
@@ -88,7 +95,7 @@ export async function POST(req: Request) {
               <p style="margin: 2px 0;">Banco: <strong>${emp.banco_nombre || 'Banco de Chile'}</strong> — ${emp.banco_tipo_cuenta || 'Cuenta Corriente'}</p>
               <p style="margin: 2px 0;">N° Cuenta: <strong>${emp.banco_numero_cuenta || '00-123-45678-9'}</strong> | RUT: <strong>${emp.rut}</strong></p>
               <p style="margin: 2px 0;">Correo de Cobranza: <strong>${emp.email_cobranza || 'cobranza@gamasecurity.cl'}</strong></p>
-              <p style="margin: 8px 0 0 0; font-size: 11px; color: #3b82f6;">• Validez de la oferta: ${cot.validez_dias || 15} días hábiles.</p>
+              <p style="margin: 8px 0 0 0; font-size: 11px; color: #3b82f6;">• Validez de la oferta: ${cot.validez_dias || 15} días hábiles. Se adjunta PDF oficial en este correo.</p>
             </div>
           </div>
 
@@ -104,6 +111,7 @@ export async function POST(req: Request) {
         to: toList,
         subject: `Presupuesto DTE N° ${cot.codigo_cotizacion || 'PR2607'} — ${emp.razon_social}`,
         html: htmlContent,
+        attachments: attachments
       })
 
       return NextResponse.json({ success: true, data })

@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
 import { cleanRut } from '@/lib/rut'
 import clientesDataRaw from '@/lib/clientes_general.json'
+import { generarCotizacionPdfBase64 } from '@/lib/generateCotizacionPdf'
 
 import {
   Shield,
@@ -703,11 +704,19 @@ export default function OperacionCRM() {
     const emailDest = cot.email_cliente || 'contacto@gamasecurity.cl'
     const emp = empresasConglomerado.find(e => e.id === cot.empresa_facturadora_id) || empresasConglomerado[0]
 
-    const emailPrompt = prompt(`Enviar Presupuesto DTE ${cot.codigo_cotizacion} por Email (Resend desde contacto@gamasecurity.cl) a:`, emailDest)
+    const emailPrompt = prompt(`Enviar Presupuesto DTE ${cot.codigo_cotizacion} por Email con PDF Adjunto (Resend desde contacto@gamasecurity.cl) a:`, emailDest)
     if (!emailPrompt || !emailPrompt.trim()) return
 
     setEnviandoEmailId(cot.id)
     try {
+      // Generar documento PDF A4 en base64
+      let pdfBase64 = ''
+      try {
+        pdfBase64 = generarCotizacionPdfBase64(cot, emp)
+      } catch (pdfErr) {
+        console.error('Error generando PDF:', pdfErr)
+      }
+
       const res = await fetch('/api/enviar-mail', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -715,12 +724,13 @@ export default function OperacionCRM() {
           tipo_evento: 'COTIZACION',
           destinatarios: [emailPrompt.trim()],
           cotizacion: cot,
-          empresa_emisora: emp
+          empresa_emisora: emp,
+          pdf_base64: pdfBase64
         })
       })
       const data = await res.json()
       if (data.success) {
-        alert(`📧 Presupuesto ${cot.codigo_cotizacion} enviado exitosamente por Email desde contacto@gamasecurity.cl a ${emailPrompt.trim()} via Resend.`)
+        alert(`📧 Presupuesto ${cot.codigo_cotizacion} (con PDF adjunto 📄) enviado exitosamente por Email desde contacto@gamasecurity.cl a ${emailPrompt.trim()} via Resend.`)
       } else {
         alert(`Error al enviar Email: ${data.error || 'Verifique la configuración Resend'}`)
       }
