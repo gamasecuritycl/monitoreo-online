@@ -201,10 +201,10 @@ export default function FooterActions({ onModalOpen, unreadWhatsAppCount }: Foot
         - En PC / Escritorio (md): Muestra los 10 botones tradicionales en fila directamente
         - En Móvil / Tablet (<md): Muestra únicamente el botón de Menú Scorpion
       */}
-      <footer className="shrink-0 bg-[#d4d0c8] border-t-2 border-white px-2 py-1.5 flex justify-between items-center select-none z-30">
+      <footer className="shrink-0 bg-[#d4d0c8] border-t-2 border-white px-2 py-1.5 flex items-center justify-center select-none z-30 relative w-full">
         
-        {/* VERSIÓN DE ESCRITORIO (PC): Fila de 10 botones horizontales */}
-        <div className="hidden md:flex items-center gap-1.5 mx-auto">
+        {/* VERSIÓN DE ESCRITORIO (PC): Fila de botones perfectamente centrada horizontalmente al medio */}
+        <div className="hidden md:flex items-center justify-center gap-2 mx-auto">
           {/* Botón BITÁCORA (rectangular con texto) */}
           <button
             onClick={() => onModalOpen('bitacora')}
