@@ -58,7 +58,6 @@ export default function VideoVerificacionModal({ onClose, evento, esCierre, clie
   const [alertaPTZ, setAlertaPTZ] = useState<string | null>(null)
   const [tiempoEnEscena, setTiempoEnEscena] = useState(0)
 
-  const wsRef = useRef<WebSocket | null>(null)
   const channelRef = useRef<any>(null)
   const logTerminalRef = useRef<HTMLDivElement | null>(null)
 
@@ -184,27 +183,27 @@ export default function VideoVerificacionModal({ onClose, evento, esCierre, clie
     return () => clearInterval(timer)
   }, [])
 
-  // 5. Conexión P2P Dahua (Snapshot / Stream en Vivo por SN Nube)
+  // 5. Captura y Streaming de Video REAL de la cámara Dahua DH-H3A
   useEffect(() => {
     if (!selectedCamara) return
 
     let activePolling = true
     const sn = selectedCamara.serialNumber
     const user = selectedCamara.usuario || 'admin'
-    const pass = selectedCamara.password || ''
+    const pass = selectedCamara.password || 'L2D55413'
     const canal = selectedCamara.canal || 1
 
-    addLog(`🔌 Iniciando túnel P2P Dahua por Número de Serie (SN)...`, 'info')
-    addLog(`🔑 Parámetros: SN=[${sn}] | Usuario=[${user}] | Password=[••••••••] | Canal=[${canal}]`, 'info')
+    addLog(`🔌 Conectando con cámara Dahua DH-H3A [SN: ${sn}]...`, 'info')
+    addLog(`🔑 Credenciales: Usuario=[${user}] | Password=[••••••••] | Canal=[${canal}]`, 'info')
 
     setStatusMsg(`Conectando P2P (SN: ${sn})...`)
 
-    // Polling de cuadros de video P2P
+    // Polling de imágenes reales de la cámara
     const fetchFrame = async () => {
       if (!activePolling) return
 
       const targets = [
-        `http://192.168.1.19/cgi-bin/snapshot.cgi?channel=${canal}`,
+        `http://192.168.1.19:80/onvifsnapshot/media_service/snapshot?channel=${canal}&subtype=0`,
         `http://localhost:8000/snapshot?sn=${sn}&user=${user}&pass=${encodeURIComponent(pass)}&canal=${canal}`,
         `/api/dahua-stream?sn=${sn}&user=${user}&pass=${encodeURIComponent(pass)}&canal=${canal}&t=${Date.now()}`
       ]
@@ -224,22 +223,20 @@ export default function VideoVerificacionModal({ onClose, evento, esCierre, clie
 
           if (res.ok) {
             const blob = await res.blob()
-            if (blob.size > 200) {
+            if (blob.size > 500) {
               const reader = new FileReader()
               reader.onloadend = () => {
                 if (activePolling && reader.result) {
                   setFrameData(reader.result as string)
-                  setStatusMsg('🔴 TRANSMISIÓN P2P DAHUA EN VIVO')
-                  addLog(`🟢 Cuadro P2P recibido de cámara Dahua [SN: ${sn}] (${blob.size} bytes).`, 'success')
+                  setStatusMsg('🔴 TRANSMISIÓN EN VIVO DAHUA DH-H3A')
+                  addLog(`🟢 Imagen real recibida de cámara Dahua DH-H3A [SN: ${sn}] (${blob.size} bytes).`, 'success')
                 }
               }
               reader.readAsDataURL(blob)
               return
             }
           }
-        } catch (e) {
-          // Probar siguiente target
-        }
+        } catch (e) {}
       }
     }
 
@@ -351,13 +348,13 @@ export default function VideoVerificacionModal({ onClose, evento, esCierre, clie
                   onClick={() => setUseSubstream(true)}
                   className={`py-1 rounded font-bold transition ${useSubstream ? 'bg-green-700 text-white' : 'bg-gray-800 text-gray-400'}`}
                 >
-                  ⚡ SubStream
+                  ⚡ SubStream (H.264 NHD)
                 </button>
                 <button
                   onClick={() => setUseSubstream(false)}
                   className={`py-1 rounded font-bold transition ${!useSubstream ? 'bg-blue-700 text-white' : 'bg-gray-800 text-gray-400'}`}
                 >
-                  HD MainStream
+                  HD Main (H.265 2K)
                 </button>
               </div>
             </div>
@@ -380,28 +377,19 @@ export default function VideoVerificacionModal({ onClose, evento, esCierre, clie
                 </div>
               )}
 
-              {/* Render de Video Frame */}
+              {/* Render de Video Frame REAL */}
               {frameData ? (
                 <img
                   src={frameData.startsWith('data:') ? frameData : `data:image/jpeg;base64,${frameData}`}
-                  alt="Dahua P2P Stream"
+                  alt="Dahua DH-H3A Camera Stream"
                   className="w-full h-full object-contain"
                 />
               ) : (
                 <div className="flex flex-col items-center justify-center gap-2 p-6 text-center text-gray-500">
                   <div className="w-10 h-10 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
                   <p className="text-xs font-mono text-gray-400">
-                    Estableciendo túnel P2P Dahua NetSDK sin apertura de puertos...
+                    Conectando con cámara Dahua DH-H3A (SN: {selectedCamara?.serialNumber})...
                   </p>
-                  {selectedCamara ? (
-                    <span className="text-[11px] text-yellow-400 font-mono bg-black/60 px-3 py-1 rounded border border-gray-700">
-                      SN CÁMARA: {selectedCamara.serialNumber} | Canal: {selectedCamara.canal} | User: {selectedCamara.usuario}
-                    </span>
-                  ) : (
-                    <span className="text-[11px] text-yellow-500 font-mono bg-yellow-950/40 px-3 py-1 rounded border border-yellow-700">
-                      Sin cámaras registradas en la Ficha de este abonado.
-                    </span>
-                  )}
                 </div>
               )}
             </div>
