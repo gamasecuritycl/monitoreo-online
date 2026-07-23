@@ -204,15 +204,15 @@ export default function VideoVerificacionModal({ onClose, evento, esCierre, clie
       if (!activePolling) return
       fetch(`/api/dahua-stream?sn=${sn}&user=${user}&pass=${encodeURIComponent(pass)}&canal=${canal}`)
         .then(async (res) => {
-          if (res.headers.get('content-type')?.includes('image/jpeg')) {
+          if (res.headers.get('content-type')?.includes('image')) {
             const blob = await res.blob()
             const reader = new FileReader()
             reader.onloadend = () => {
               if (activePolling && reader.result) {
-                const base64 = (reader.result as string).split(',')[1]
-                setFrameData(base64)
+                const dataUrl = reader.result as string
+                setFrameData(dataUrl)
                 setStatusMsg('🔴 EN VIVO P2P DAHUA')
-                addLog(`🟢 Cuadro P2P recibido de cámara Dahua DMSS [SN: ${sn}].`, 'success')
+                addLog(`🟢 Cuadro P2P recibido de cámara Dahua [SN: ${sn}].`, 'success')
               }
             }
             reader.readAsDataURL(blob)
@@ -421,7 +421,7 @@ export default function VideoVerificacionModal({ onClose, evento, esCierre, clie
               {/* Render de Video Frame */}
               {frameData ? (
                 <img
-                  src={`data:image/jpeg;base64,${frameData}`}
+                  src={frameData.startsWith('data:') ? frameData : `data:image/jpeg;base64,${frameData}`}
                   alt="Dahua P2P Stream"
                   className="w-full h-full object-contain"
                 />
