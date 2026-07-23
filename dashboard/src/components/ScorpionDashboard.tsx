@@ -302,8 +302,8 @@ export default function ScorpionDashboard() {
       let query = supabase
         .from('eventos_monitoreo')
         .select('*')
-        .order('fecha_hora', { ascending: false })
-        .limit(1000)
+        .order('id', { ascending: false })
+        .limit(300)
 
       if (busqueda.trim()) {
         query = query.or(`cuenta.ilike.%${busqueda}%,nombre_abonado.ilike.%${busqueda}%`)
@@ -328,20 +328,20 @@ export default function ScorpionDashboard() {
 
   // Polling cada 3 segundos
   useEffect(() => {
-    let latestTime = ''
+    let latestId = 0
     const poll = async () => {
       try {
         const { data } = await supabase
           .from('eventos_monitoreo')
           .select('*')
-          .order('fecha_hora', { ascending: false })
-          .limit(1000)
+          .order('id', { ascending: false })
+          .limit(300)
 
         if (!data || data.length === 0) return
-        const maxTime = data[0].fecha_hora
-        if (maxTime <= latestTime) return
+        const maxId = data[0].id
+        if (maxId <= latestId) return
 
-        latestTime = maxTime
+        latestId = maxId
         const filtered = busqueda.trim()
           ? data.filter(e =>
               e.cuenta?.toLowerCase().includes(busqueda.toLowerCase()) ||
