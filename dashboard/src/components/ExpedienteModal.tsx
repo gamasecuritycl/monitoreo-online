@@ -1317,11 +1317,11 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
               </div>
             </div>
 
-            {/* BOTÓN SALIR (PC: 110px, Móvil: Completo) */}
-            <div className="w-full md:w-[110px] flex flex-col justify-end shrink-0 h-10 md:h-full">
+            {/* BOTÓN SALIR (Centrado horizontalmente) */}
+            <div className="w-full md:w-[110px] flex items-center justify-center shrink-0 h-10 md:h-full">
               <button 
                 onClick={onClose}
-                className="w-full h-8 bg-[#d4d0c8] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 text-gray-800 font-bold active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white cursor-pointer select-none hover:bg-gray-200 text-[11px]"
+                className="w-full h-9 bg-[#d4d0c8] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 text-gray-800 font-extrabold active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white cursor-pointer select-none hover:bg-gray-200 text-[11px] shadow-sm flex items-center justify-center"
               >
                 SALIR
               </button>
