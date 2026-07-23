@@ -302,8 +302,11 @@ export default function ScorpionDashboard() {
       let query = supabase
         .from('eventos_monitoreo')
         .select('*')
+        .not('cuenta', 'in', '(CLIENTES,CODIGOS,ZONAS,__SINCRONIZADOR__,CONFIG_OPERADORES,CLIENTES_MAESTROS_CRM,EMPRESAS_CONGLOMERADO,COTIZACIONES_DOLIBARR,ORDENES_TRABAJO)')
+        .not('cuenta', 'like', 'CAMARAS_DAHUA_%')
+        .not('cuenta', 'like', 'DAHUA_FRAME_%')
         .order('id', { ascending: false })
-        .limit(300)
+        .limit(200)
 
       if (busqueda.trim()) {
         query = query.or(`cuenta.ilike.%${busqueda}%,nombre_abonado.ilike.%${busqueda}%`)
@@ -334,8 +337,11 @@ export default function ScorpionDashboard() {
         const { data } = await supabase
           .from('eventos_monitoreo')
           .select('*')
+          .not('cuenta', 'in', '(CLIENTES,CODIGOS,ZONAS,__SINCRONIZADOR__,CONFIG_OPERADORES,CLIENTES_MAESTROS_CRM,EMPRESAS_CONGLOMERADO,COTIZACIONES_DOLIBARR,ORDENES_TRABAJO)')
+          .not('cuenta', 'like', 'CAMARAS_DAHUA_%')
+          .not('cuenta', 'like', 'DAHUA_FRAME_%')
           .order('id', { ascending: false })
-          .limit(300)
+          .limit(200)
 
         if (!data || data.length === 0) return
         const maxId = data[0].id
