@@ -303,7 +303,7 @@ export default function ScorpionDashboard() {
         .from('eventos_monitoreo')
         .select('*')
         .order('fecha_hora', { ascending: false })
-        .limit(100)
+        .limit(1000)
 
       if (busqueda.trim()) {
         query = query.or(`cuenta.ilike.%${busqueda}%,nombre_abonado.ilike.%${busqueda}%`)
@@ -312,7 +312,7 @@ export default function ScorpionDashboard() {
       const { data } = await query
       if (data) {
         const limpios = data.filter(ev => !esCuentaInternaOFrame(ev.cuenta, ev.evento))
-        const ordenados = limpios.slice(0, 50).reverse()
+        const ordenados = limpios.slice(0, 100).reverse()
         setEventos(ordenados)
         // Seleccionar por defecto el evento más reciente de la lista al cargar
         if (ordenados.length > 0 && !eventoSeleccionado) {
@@ -335,7 +335,7 @@ export default function ScorpionDashboard() {
           .from('eventos_monitoreo')
           .select('*')
           .order('fecha_hora', { ascending: false })
-          .limit(100)
+          .limit(1000)
 
         if (!data || data.length === 0) return
         const maxTime = data[0].fecha_hora
@@ -350,7 +350,7 @@ export default function ScorpionDashboard() {
           : data
 
         const limpios = filtered.filter(ev => !esCuentaInternaOFrame(ev.cuenta, ev.evento))
-        const ordenados = [...limpios].slice(0, 50).reverse()
+        const ordenados = [...limpios].slice(0, 100).reverse()
         setEventos(ordenados)
         
         // Auto-seleccionar el evento que va llegando si no hay selección manual activa
