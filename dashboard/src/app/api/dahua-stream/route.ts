@@ -41,6 +41,23 @@ export async function GET(request: NextRequest) {
     })
   }
 
+  // Registrar petición activa en Supabase de forma asíncrona para activar el capturador local (Bridge)
+  const streamKey = `DAHUA_STREAM_REQ_${sn}_CH_${canal}`
+  try {
+    const { data } = await supabase.from('eventos_monitoreo').update({
+      fecha_hora: new Date().toISOString()
+    }).eq('cuenta', streamKey).select()
+
+    if (!data || data.length === 0) {
+      await supabase.from('eventos_monitoreo').insert({
+        cuenta: streamKey,
+        nombre_abonado: 'ACTIVE_PING',
+        evento: 'STREAM_REQ',
+        fecha_hora: new Date().toISOString()
+      })
+    }
+  } catch (e) {}
+
   // 1. Probar captura de bridge local para el SN y Canal de NVR
   try {
     const controller = new AbortController()
