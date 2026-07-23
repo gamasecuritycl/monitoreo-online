@@ -584,7 +584,7 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
       <div
         ref={modalRef}
         tabIndex={-1}
-        className="w-full md:w-[980px] h-[95vh] md:h-[610px] bg-[#d4d0c8] text-black border-2 border-t-white border-l-white border-b-[#808080] border-r-[#808080] p-1 shadow-[4px_4px_12px_rgba(0,0,0,0.6)] focus:outline-none flex flex-col justify-between select-none"
+        className="w-full max-w-[1700px] h-[94vh] bg-[#d4d0c8] text-black border-2 border-t-white border-l-white border-b-[#808080] border-r-[#808080] p-1.5 shadow-[4px_4px_16px_rgba(0,0,0,0.8)] focus:outline-none flex flex-col justify-between select-none"
         style={{ fontSize: '11px' }}
       >
         {/* Barra de Título */}
