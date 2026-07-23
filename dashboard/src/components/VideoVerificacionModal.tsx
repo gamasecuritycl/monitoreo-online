@@ -198,45 +198,33 @@ export default function VideoVerificacionModal({ onClose, evento, esCierre, clie
 
     setStatusMsg(`Conectando P2P (SN: ${sn})...`)
 
-    // Polling de imágenes reales de la cámara
+    // Polling de imágenes y señal en vivo de la cámara P2P
     const fetchFrame = async () => {
       if (!activePolling) return
 
-      const targets = [
-        `http://192.168.1.19:80/onvifsnapshot/media_service/snapshot?channel=${canal}&subtype=0`,
-        `http://localhost:8000/snapshot?sn=${sn}&user=${user}&pass=${encodeURIComponent(pass)}&canal=${canal}`,
-        `/api/dahua-stream?sn=${sn}&user=${user}&pass=${encodeURIComponent(pass)}&canal=${canal}&t=${Date.now()}`
-      ]
+      const targetUrl = `/api/dahua-stream?sn=${sn}&user=${user}&pass=${encodeURIComponent(pass)}&canal=${canal}&t=${Date.now()}`
 
-      for (const targetUrl of targets) {
-        try {
-          const controller = new AbortController()
-          const timeoutId = setTimeout(() => controller.abort(), 2000)
+      try {
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), 2500)
 
-          const res = await fetch(targetUrl, {
-            signal: controller.signal,
-            headers: {
-              'Authorization': 'Basic ' + btoa(`${user}:${pass}`)
-            }
-          })
-          clearTimeout(timeoutId)
+        const res = await fetch(targetUrl, { signal: controller.signal })
+        clearTimeout(timeoutId)
 
-          if (res.ok) {
-            const blob = await res.blob()
-            if (blob.size > 500) {
-              const reader = new FileReader()
-              reader.onloadend = () => {
-                if (activePolling && reader.result) {
-                  setFrameData(reader.result as string)
-                  setStatusMsg('🔴 TRANSMISIÓN EN VIVO DAHUA DH-H3A')
-                  addLog(`🟢 Imagen real recibida de cámara Dahua DH-H3A [SN: ${sn}] (${blob.size} bytes).`, 'success')
-                }
-              }
-              reader.readAsDataURL(blob)
-              return
+        if (res.ok) {
+          const blob = await res.blob()
+          const reader = new FileReader()
+          reader.onloadend = () => {
+            if (activePolling && reader.result) {
+              setFrameData(reader.result as string)
+              setStatusMsg('🔴 TRANSMISIÓN P2P DAHUA EN VIVO')
+              addLog(`🟢 Cuadro P2P recibido de cámara Dahua DH-H3A [SN: ${sn}] (${blob.size} bytes).`, 'success')
             }
           }
-        } catch (e) {}
+          reader.readAsDataURL(blob)
+        }
+      } catch (e) {
+        addLog(`⚠️ Reintentando túnel P2P con equipo Dahua [SN: ${sn}]...`, 'warn')
       }
     }
 
