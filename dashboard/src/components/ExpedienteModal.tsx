@@ -319,6 +319,42 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
     }
   }
 
+  const generarNVRMulticanalDahuaP2P = async (cantCanales: number = 10) => {
+    const snPrompt = prompt('Ingrese el Número de Serie (SN) del NVR / DVR / XVR Dahua:', inputDahuaSN.trim() || '2B02339PAYPW68F')
+    if (!snPrompt) return
+    const userPrompt = prompt('Usuario del NVR / DVR:', inputDahuaUser.trim() || 'admin') || 'admin'
+    const passPrompt = prompt('Contraseña del NVR / DVR:', inputDahuaPass.trim() || 'L2D55413') || ''
+
+    const canalesNuevos: any[] = []
+    for (let ch = 1; ch <= cantCanales; ch++) {
+      canalesNuevos.push({
+        id: `DH-NVR-${snPrompt.trim()}-CH${ch}`,
+        nombre: `CÁMARA ${ch} (CH-${ch})`,
+        serialNumber: snPrompt.trim().toUpperCase(),
+        usuario: userPrompt.trim(),
+        password: passPrompt.trim(),
+        canal: ch,
+        substream: true,
+        activa: true
+      })
+    }
+
+    setDahuaCams(canalesNuevos)
+    localStorage.setItem(`gama_dahua_sn_${cuentaActiva}`, JSON.stringify(canalesNuevos))
+
+    try {
+      await supabase.from('eventos_monitoreo').upsert({
+        cuenta: `CAMARAS_DAHUA_${cuentaActiva}`,
+        nombre_abonado: JSON.stringify(canalesNuevos),
+        evento: 'GENERACION_NVR_MULTICANAL',
+        fecha_hora: new Date().toISOString()
+      })
+      alert(`✅ NVR/DVR multicanal con ${cantCanales} canales cargado exitosamente para la cuenta ${cuentaActiva}.`)
+    } catch (err: any) {
+      alert('Error guardando NVR en BD: ' + err.message)
+    }
+  }
+
   const eliminarCamaraDahuaP2P = async (id: string) => {
     if (!confirm('¿Seguro que deseas eliminar esta cámara Dahua P2P?')) return
     const filtrada = dahuaCams.filter(c => c.id !== id)
@@ -977,12 +1013,21 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
 
                             <div className="flex items-center justify-between">
                               <span className="text-[9px] text-gray-400 italic">Equipos Dahua P2P registrados en esta cuenta:</span>
-                              <button
-                                onClick={guardarCamaraDahuaP2P}
-                                className="bg-yellow-500 hover:bg-yellow-400 text-black font-extrabold px-3 py-1 text-[10px] rounded cursor-pointer transition shadow"
-                              >
-                                {editingDahuaId ? '✏️ ACTUALIZAR CÁMARA' : '➕ GUARDAR CÁMARA P2P'}
-                              </button>
+                              <div className="flex items-center gap-1.5">
+                                <button
+                                  onClick={() => generarNVRMulticanalDahuaP2P(10)}
+                                  className="bg-purple-900 hover:bg-purple-800 text-purple-200 font-bold px-2.5 py-1 text-[10px] rounded border border-purple-600 cursor-pointer transition shadow"
+                                  title="Generar automáticamente los 10 canales de un NVR / DVR Dahua"
+                                >
+                                  📦 GENERAR NVR/DVR (10 CH)
+                                </button>
+                                <button
+                                  onClick={guardarCamaraDahuaP2P}
+                                  className="bg-yellow-500 hover:bg-yellow-400 text-black font-extrabold px-3 py-1 text-[10px] rounded cursor-pointer transition shadow"
+                                >
+                                  {editingDahuaId ? '✏️ ACTUALIZAR CÁMARA' : '➕ GUARDAR CÁMARA P2P'}
+                                </button>
+                              </div>
                             </div>
 
                             {/* Tabla/Lista CRUD */}

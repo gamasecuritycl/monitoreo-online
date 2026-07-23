@@ -10,22 +10,20 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 /**
  * ===============================================================================
- *  GAMA SEGURIDAD - DAHUA P2P DYNAMIC STREAM ROUTE (MULTI-ABONADO)
+ *  GAMA SEGURIDAD - DAHUA NVR / DVR / XVR MULTI-CHANNEL STREAM ROUTE
  * ===============================================================================
- *  Propósito: Transmisión dinámica por Número de Serie (SN) para TODOS los abonados.
- *  Si el abonado no tiene cámara registrada, muestra advertencia de configuración.
+ *  Propósito: Transmisión multicanal para NVRs, DVRs y XVRs Dahua (Canales 1 al 32).
  * ===============================================================================
  */
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
-  const sn = searchParams.get('sn') || ''
+  const sn = (searchParams.get('sn') || '').trim().toUpperCase()
   const user = searchParams.get('user') || 'admin'
-  const pass = searchParams.get('pass') || ''
+  const pass = searchParams.get('pass') || 'L2D55413'
   const canal = searchParams.get('canal') || '1'
 
-  // Si no se proporcionó un SN válido para este abonado
-  if (!sn || sn.trim() === '') {
+  if (!sn) {
     const timeStr = new Date().toLocaleTimeString('es-CL', { hour12: false })
     const svgEmpty = `
     <svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" viewBox="0 0 640 360">
@@ -34,7 +32,7 @@ export async function GET(request: NextRequest) {
       <circle cx="320" cy="140" r="30" fill="none" stroke="#eab308" stroke-width="2"/>
       <path d="M 310 140 L 330 140 M 320 130 L 320 150" stroke="#eab308" stroke-width="2"/>
       <text x="320" y="200" fill="#fef08a" font-family="sans-serif" font-size="15" font-weight="bold" text-anchor="middle">SIN CÁMARA CONFIGURADA PARA ESTE ABONADO</text>
-      <text x="320" y="225" fill="#94a3b8" font-family="sans-serif" font-size="12" text-anchor="middle">Ingrese a Expediente > Cámara de Verificación para registrar el SN, usuario y clave.</text>
+      <text x="320" y="225" fill="#94a3b8" font-family="sans-serif" font-size="12" text-anchor="middle">Ingrese a Expediente > Cámara de Verificación para registrar el NVR/DVR o Cámara.</text>
       <text x="500" y="335" fill="#334155" font-family="monospace" font-size="11">${timeStr}</text>
     </svg>
     `
@@ -43,7 +41,7 @@ export async function GET(request: NextRequest) {
     })
   }
 
-  // 1. Probar captura de bridge local para el SN solicitado
+  // 1. Probar captura de bridge local para el SN y Canal de NVR
   try {
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), 1200)
@@ -75,36 +73,40 @@ export async function GET(request: NextRequest) {
     }
   } catch (e) {}
 
-  // 2. Consultar la trama del SN específico en Supabase Cloud
-  try {
-    const { data: dbFrame } = await supabase
-      .from('eventos_monitoreo')
-      .select('nombre_abonado, fecha_hora')
-      .eq('cuenta', `DAHUA_FRAME_${sn}`)
-      .order('id', { ascending: false })
-      .limit(1)
+  // 2. Consulta Nube en Supabase Cloud por canal específico de NVR (DAHUA_FRAME_SN_CH_1) y genérica (DAHUA_FRAME_SN)
+  const cuentasConsultar = [`DAHUA_FRAME_${sn}_CH_${canal}`, `DAHUA_FRAME_${sn}`]
 
-    if (dbFrame && dbFrame.length > 0 && dbFrame[0].nombre_abonado) {
-      const b64Data = dbFrame[0].nombre_abonado
-      if (b64Data.startsWith('data:image/')) {
-        const parts = b64Data.split(',')
-        if (parts.length === 2) {
-          const buffer = Buffer.from(parts[1], 'base64')
-          return new NextResponse(buffer, {
-            headers: {
-              'Content-Type': 'image/jpeg',
-              'Cache-Control': 'no-cache, no-store, must-revalidate',
-              'X-Dahua-P2P-Status': 'ONLINE_CONNECTED_REALTIME_CLOUD',
-              'X-Dahua-Image-Bytes': buffer.byteLength.toString(),
-              'X-Dahua-Frame-Time': dbFrame[0].fecha_hora || ''
-            }
-          })
+  for (const cta of cuentasConsultar) {
+    try {
+      const { data: dbFrame } = await supabase
+        .from('eventos_monitoreo')
+        .select('nombre_abonado, fecha_hora')
+        .eq('cuenta', cta)
+        .order('id', { ascending: false })
+        .limit(1)
+
+      if (dbFrame && dbFrame.length > 0 && dbFrame[0].nombre_abonado) {
+        const b64Data = dbFrame[0].nombre_abonado
+        if (b64Data.startsWith('data:image/')) {
+          const parts = b64Data.split(',')
+          if (parts.length === 2) {
+            const buffer = Buffer.from(parts[1], 'base64')
+            return new NextResponse(buffer, {
+              headers: {
+                'Content-Type': 'image/jpeg',
+                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                'X-Dahua-P2P-Status': 'ONLINE_CONNECTED_REALTIME_CLOUD',
+                'X-Dahua-Image-Bytes': buffer.byteLength.toString(),
+                'X-Dahua-Frame-Time': dbFrame[0].fecha_hora || ''
+              }
+            })
+          }
         }
       }
-    }
-  } catch (err) {}
+    } catch (err) {}
+  }
 
-  // 3. Fallback de cámara conectando
+  // 3. Fallback de cámara/NVR conectando
   const now = new Date()
   const dateStr = now.toISOString().slice(0, 10)
   const timeStr = now.toLocaleTimeString('es-CL', { hour12: false })
@@ -120,16 +122,16 @@ export async function GET(request: NextRequest) {
     <rect width="640" height="360" fill="url(#bg)"/>
     <rect x="8" y="8" width="624" height="344" fill="none" stroke="#22c55e" stroke-width="1.5" rx="6"/>
     
-    <text x="30" y="32" fill="#ffffff" font-family="monospace" font-size="14" font-weight="bold">alhua</text>
+    <text x="30" y="32" fill="#ffffff" font-family="monospace" font-size="14" font-weight="bold">alhua NVR/DVR</text>
     <text x="470" y="32" fill="#ffffff" font-family="monospace" font-size="13" font-weight="bold">${dateStr} ${timeStr}</text>
     
     <circle cx="30" cy="52" r="6" fill="#ef4444"/>
-    <text x="44" y="56" fill="#ef4444" font-family="monospace" font-size="11" font-weight="bold">● LIVE P2P</text>
+    <text x="44" y="56" fill="#ef4444" font-family="monospace" font-size="11" font-weight="bold">● LIVE P2P (CANAL ${canal})</text>
     
     <rect x="24" y="260" width="460" height="75" fill="#000000" opacity="0.88" rx="6" stroke="#1e293b"/>
-    <text x="38" y="282" fill="#ffffff" font-family="sans-serif" font-size="13" font-weight="bold">CÁMARA P2P DAHUA NATIVA</text>
-    <text x="38" y="301" fill="#eab308" font-family="monospace" font-size="11">SN: ${sn} | CANAL: ${canal}</text>
-    <text x="38" y="319" fill="#22c55e" font-family="monospace" font-size="11">ESTADO P2P: CONECTADO | BUSCANDO SEÑAL EN VIVO...</text>
+    <text x="38" y="282" fill="#ffffff" font-family="sans-serif" font-size="13" font-weight="bold">NVR / DVR DAHUA MULTICANAL</text>
+    <text x="38" y="301" fill="#eab308" font-family="monospace" font-size="11">SN: ${sn} | CANAL ACTIVO: ${canal}</text>
+    <text x="38" y="319" fill="#22c55e" font-family="monospace" font-size="11">ESTADO P2P: CONECTADO | CONECTANDO CON CANAL ${canal}...</text>
   </svg>
   `
 
