@@ -82,11 +82,11 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
     canal: number
     substream: boolean
   }>>([])
-  const [inputDahuaSN, setInputDahuaSN] = useState('AE0970BPAG00815')
+  const [inputDahuaSN, setInputDahuaSN] = useState('')
   const [inputDahuaUser, setInputDahuaUser] = useState('admin')
-  const [inputDahuaPass, setInputDahuaPass] = useState('L2D55413')
+  const [inputDahuaPass, setInputDahuaPass] = useState('')
   const [inputDahuaCanal, setInputDahuaCanal] = useState('1')
-  const [inputDahuaNombre, setInputDahuaNombre] = useState('CÁMARA ENTRADA P2P')
+  const [inputDahuaNombre, setInputDahuaNombre] = useState('')
   const [editingDahuaId, setEditingDahuaId] = useState<string | null>(null)
 
   // Estados para RUT y Alias de Unidad (Edición restringida a Administrador)
@@ -255,22 +255,11 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
           }
         }
 
-        // Fallback inicial con parámetros de prueba del usuario
-        const initialFallback = [
-          {
-            id: `DH-${cuentaActiva}-1`,
-            nombre: 'CÁMARA ACCESO PRINCIPAL P2P',
-            serialNumber: 'AE0970BPAG00815',
-            usuario: 'admin',
-            password: 'L2D55413',
-            canal: 1,
-            substream: true,
-            activa: true
-          }
-        ]
-        setDahuaCams(initialFallback)
+        // Por defecto para abonados nuevos o sin cámaras registradas: Lista vacía
+        setDahuaCams([])
       } catch (err) {
         console.warn('Error cargando cámaras Dahua:', err)
+        setDahuaCams([])
       }
     }
     fetchDahuaCams()
@@ -959,15 +948,16 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
                                 />
                               </div>
 
-                              <div>
-                                <label className="text-gray-300 font-bold block mb-0.5">Contraseña (L2D55413):</label>
-                                <input
-                                  type="password"
-                                  value={inputDahuaPass}
-                                  onChange={(e) => setInputDahuaPass(e.target.value)}
-                                  className="w-full bg-[#111] border border-gray-700 p-1 font-mono text-white text-[10px]"
-                                />
-                              </div>
+                                <div>
+                                  <label className="text-gray-300 font-bold block mb-0.5">Contraseña del Dispositivo:</label>
+                                  <input
+                                    type="password"
+                                    value={inputDahuaPass}
+                                    onChange={(e) => setInputDahuaPass(e.target.value)}
+                                    placeholder="••••••••"
+                                    className="w-full bg-[#111] border border-gray-700 p-1 font-mono text-white text-[10px]"
+                                  />
+                                </div>
                             </div>
 
                             <div className="flex items-center justify-between">
