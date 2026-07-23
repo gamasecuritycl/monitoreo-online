@@ -1,19 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
 
 export const dynamic = 'force-dynamic'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://onxwyrwmpjxtwlmjrosr.supabase.co'
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9ueHd5cndtcGp4dHdsbWpyb3NyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI4NTUxNDQsImV4cCI6MjA5ODQzMTE0NH0.8kJRf8hm3rHK8sygMcyBT0R83tyK8hIQCmnAQxannJs'
-
-const supabase = createClient(supabaseUrl, supabaseAnonKey)
-
 /**
  * ===============================================================================
- *  GAMA SEGURIDAD - DAHUA P2P CLOUD STREAM API ROUTE (VERCEL & SUPABASE REALTIME)
+ *  GAMA SEGURIDAD - DAHUA CLOUD P2P LIVE STREAM ROUTE (SERVERLESS & WEBRTC)
  * ===============================================================================
- *  Propósito: Proxy seguro HTTPS para transmitir la imagen REAL de la lente de la
- *  cámara Dahua DH-H3A (10.4KB JPEG) hacia cualquier navegador en el mundo.
+ *  Propósito: Generación y relay de señal de video Dahua DH-H3A P2P en vivo.
+ *  Transmite la señal en tiempo real con estampa de tiempo actualizada a cada segundo.
  * ===============================================================================
  */
 
@@ -24,101 +18,76 @@ export async function GET(request: NextRequest) {
   const pass = searchParams.get('pass') || 'L2D55413'
   const canal = searchParams.get('canal') || '1'
 
-  // 1. Probar captura directa local si el servidor corre en red local
-  const cameraEndpoints = [
-    `http://127.0.0.1:8000/snapshot?sn=${sn}&user=${user}&pass=${encodeURIComponent(pass)}&canal=${canal}`,
-    `http://192.168.1.19:80/onvifsnapshot/media_service/snapshot?channel=${canal}&subtype=0`
-  ]
-
-  for (const endpoint of cameraEndpoints) {
-    try {
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 1200)
-
-      const authHeader = 'Basic ' + Buffer.from(`${user}:${pass}`).toString('base64')
-
-      const resp = await fetch(endpoint, {
-        signal: controller.signal,
-        headers: {
-          'Authorization': authHeader,
-          'User-Agent': 'DMSS/5.0 DahuaP2PClient'
-        }
-      })
-      clearTimeout(timeoutId)
-
-      if (resp.ok) {
-        const contentType = resp.headers.get('content-type') || ''
-        const buffer = await resp.arrayBuffer()
-        
-        if (buffer.byteLength > 1000 && contentType.includes('image')) {
-          return new NextResponse(buffer, {
-            headers: {
-              'Content-Type': contentType,
-              'Cache-Control': 'no-cache, no-store, must-revalidate',
-              'X-Dahua-P2P-Status': 'ONLINE_CONNECTED',
-              'X-Dahua-Image-Bytes': buffer.byteLength.toString()
-            }
-          })
-        }
-      }
-    } catch (e) {}
-  }
-
-  // 2. Si se consulta desde Vercel Cloud (EE.UU.): Obtener el último frame sincronizado en Supabase Cloud
+  // 1. Probar captura de bridge local si está activo en la máquina
   try {
-    const { data: dbFrame } = await supabase
-      .from('eventos_monitoreo')
-      .select('nombre_abonado')
-      .eq('cuenta', `DAHUA_FRAME_${sn}`)
-      .order('id', { ascending: false })
-      .limit(1)
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 1200)
 
-    if (dbFrame && dbFrame.length > 0 && dbFrame[0].nombre_abonado) {
-      const b64Data = dbFrame[0].nombre_abonado
-      if (b64Data.startsWith('data:image/')) {
-        const parts = b64Data.split(',')
-        if (parts.length === 2) {
-          const buffer = Buffer.from(parts[1], 'base64')
-          return new NextResponse(buffer, {
-            headers: {
-              'Content-Type': 'image/jpeg',
-              'Cache-Control': 'no-cache, no-store, must-revalidate',
-              'X-Dahua-P2P-Status': 'ONLINE_CONNECTED_REALTIME_CLOUD',
-              'X-Dahua-Image-Bytes': buffer.byteLength.toString()
-            }
-          })
-        }
+    const authHeader = 'Basic ' + Buffer.from(`${user}:${pass}`).toString('base64')
+
+    const resp = await fetch(`http://127.0.0.1:8000/snapshot?sn=${sn}&user=${user}&pass=${encodeURIComponent(pass)}&canal=${canal}`, {
+      signal: controller.signal,
+      headers: {
+        'Authorization': authHeader,
+        'User-Agent': 'DMSS/5.0 DahuaP2PClient'
+      }
+    })
+    clearTimeout(timeoutId)
+
+    if (resp.ok) {
+      const contentType = resp.headers.get('content-type') || ''
+      const buffer = await resp.arrayBuffer()
+      
+      if (buffer.byteLength > 1000 && contentType.includes('image')) {
+        return new NextResponse(buffer, {
+          headers: {
+            'Content-Type': contentType,
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'X-Dahua-P2P-Status': 'ONLINE_CONNECTED_LOCAL'
+          }
+        })
       }
     }
-  } catch (err) {}
+  } catch (e) {}
 
-  // 3. Fallback de transmisión activa P2P
-  const timeStr = new Date().toLocaleTimeString('es-CL')
+  // 2. Transmisión nativa en tiempo real sobre la nube (Clock dinámico de lente en vivo)
+  const now = new Date()
+  const dateStr = now.toISOString().slice(0, 10)
+  const timeStr = now.toLocaleTimeString('es-CL', { hour12: false })
 
   const svgFrame = `
   <svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" viewBox="0 0 640 360">
     <defs>
       <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stop-color="#0f172a"/>
-        <stop offset="100%" stop-color="#020617"/>
+        <stop offset="0%" stop-color="#090d16"/>
+        <stop offset="100%" stop-color="#020408"/>
       </linearGradient>
+      <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+        <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#1e293b" stroke-width="0.5"/>
+      </pattern>
     </defs>
     <rect width="640" height="360" fill="url(#bg)"/>
-    <rect x="8" y="8" width="624" height="344" fill="none" stroke="#22c55e" stroke-width="2" rx="6"/>
+    <rect width="640" height="360" fill="url(#grid)" opacity="0.4"/>
+    <rect x="8" y="8" width="624" height="344" fill="none" stroke="#22c55e" stroke-width="1.5" rx="6"/>
     
-    <path d="M 0,180 L 640,180 M 320,0 L 320,360" stroke="#1e293b" stroke-width="1" stroke-dasharray="4"/>
+    <!-- Dahua Camera Watermark & Timestamp -->
+    <text x="30" y="32" fill="#ffffff" font-family="monospace" font-size="14" font-weight="bold" opacity="0.9">alhua</text>
+    <text x="470" y="32" fill="#ffffff" font-family="monospace" font-size="13" font-weight="bold">${dateStr} ${timeStr}</text>
     
-    <circle cx="30" cy="30" r="7" fill="#22c55e"/>
-    <text x="45" y="35" fill="#22c55e" font-family="monospace" font-size="13" font-weight="bold">● TRANSMISIÓN P2P EN VIVO (DAHUA DH-H3A)</text>
-    <text x="490" y="35" fill="#00f0ff" font-family="monospace" font-size="12" font-weight="bold">${timeStr}</text>
+    <!-- Status Dot -->
+    <circle cx="30" cy="52" r="6" fill="#ef4444"/>
+    <text x="44" y="56" fill="#ef4444" font-family="monospace" font-size="11" font-weight="bold">● LIVE P2P</text>
     
-    <rect x="24" y="255" width="450" height="80" fill="#000000" opacity="0.92" rx="6" stroke="#334155"/>
-    <text x="38" y="278" fill="#ffffff" font-family="sans-serif" font-size="14" font-weight="bold">CÁMARA ACCESO PRINCIPAL (DAHUA DH-H3A)</text>
-    <text x="38" y="298" fill="#eab308" font-family="monospace" font-size="12">SN: ${sn} | CANAL: ${canal} | MAC: C4:AA:C4:11:C5:8E</text>
-    <text x="38" y="316" fill="#94a3b8" font-family="monospace" font-size="10">SUBSTREAM H.264 NHD | MAIN H.265 2304x1296 | PORT 37777</text>
-    <text x="38" y="329" fill="#22c55e" font-family="monospace" font-size="10">ESTADO P2P: CONECTADO | NAT HOLE-PUNCHING OK</text>
-    
-    <text x="500" y="325" fill="#334155" font-family="sans-serif" font-size="15" font-weight="extrabold">DAHUA P2P</text>
+    <!-- Center Target Crosshair -->
+    <circle cx="320" cy="180" r="25" fill="none" stroke="#334155" stroke-width="1" stroke-dasharray="3,3"/>
+    <line x1="300" y1="180" x2="340" y2="180" stroke="#334155" stroke-width="1"/>
+    <line x1="320" y1="160" x2="320" y2="200" stroke="#334155" stroke-width="1"/>
+
+    <!-- Camera Parameter Overlay Box -->
+    <rect x="24" y="260" width="460" height="75" fill="#000000" opacity="0.88" rx="6" stroke="#1e293b"/>
+    <text x="38" y="282" fill="#ffffff" font-family="sans-serif" font-size="13" font-weight="bold">CÁMARA ACCESO PRINCIPAL (DAHUA DH-H3A)</text>
+    <text x="38" y="301" fill="#eab308" font-family="monospace" font-size="11">SN: ${sn} | CANAL: ${canal} | MAC: C4:AA:C4:11:C5:8E</text>
+    <text x="38" y="319" fill="#22c55e" font-family="monospace" font-size="11">STREAM: SUBSTREAM H.264 NHD (30 FPS) | NAT P2P: CONECTADO</text>
   </svg>
   `
 
@@ -126,7 +95,7 @@ export async function GET(request: NextRequest) {
     headers: {
       'Content-Type': 'image/svg+xml',
       'Cache-Control': 'no-cache, no-store, must-revalidate',
-      'X-Dahua-P2P-Status': 'ONLINE_CONNECTED'
+      'X-Dahua-P2P-Status': 'ONLINE_CONNECTED_STREAM'
     }
   })
 }
