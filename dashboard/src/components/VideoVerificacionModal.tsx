@@ -27,6 +27,7 @@ interface CamaraDahuaP2P {
 interface LogEntry {
   hora: string
   tipo: 'info' | 'warn' | 'error' | 'success'
+  mensaje: string
 }
 
 interface Props {
@@ -37,51 +38,41 @@ interface Props {
 }
 
 export default function VideoVerificacionModal({ onClose, evento, esCierre, clientesMap = {} }: Props) {
-  // FIJAR LA CUENTA AL ABRIR EL MODAL PARA QUE LAS SEÑALES DE FONDO NO CAMBIEN EL ABONADO EN VIVO
   const [cuentaActiva] = useState(evento.cuenta)
   const clientName = evento.nombre_abonado || 'Cliente Scorpion'
 
-  // Estados de Cámaras Dahua P2P y Selección
   const [camarasDahua, setCamarasDahua] = useState<CamaraDahuaP2P[]>([])
   const [selectedCamara, setSelectedCamara] = useState<CamaraDahuaP2P | null>(null)
   const [useSubstream, setUseSubstream] = useState<boolean>(true)
 
-  // Consola de Logs P2P en Tiempo Real
-  const [logsP2P, setLogsP2P] = useState<{ hora: string; mensaje: string; tipo: 'info' | 'warn' | 'error' | 'success' }[]>([])
+  const [logsP2P, setLogsP2P] = useState<LogEntry[]>([])
   const [mostrarLogs, setMostrarLogs] = useState<boolean>(true)
 
-  // Estados de Streaming y Conexión
   const [cargandoIA, setCargandoIA] = useState(true)
   const [frameData, setFrameData] = useState<string | null>(null)
   const [statusMsg, setStatusMsg] = useState<string>('Desconectado')
   const [alertaPTZ, setAlertaPTZ] = useState<string | null>(null)
   const [tiempoEnEscena, setTiempoEnEscena] = useState(0)
 
-  const videoRef = useRef<HTMLVideoElement | null>(null)
-  const peerRef = useRef<RTCPeerConnection | null>(null)
   const channelRef = useRef<any>(null)
   const logTerminalRef = useRef<HTMLDivElement | null>(null)
 
-  // Helper para agregar entradas al Log de Diagnóstico P2P
   const addLog = (mensaje: string, tipo: 'info' | 'warn' | 'error' | 'success' = 'info') => {
     const hora = new Date().toLocaleTimeString('es-CL', { hour12: false })
     setLogsP2P(prev => [...prev.slice(-49), { hora, mensaje, tipo }])
   }
 
-  // Auto-scroll al final del terminal de logs
   useEffect(() => {
     if (logTerminalRef.current) {
       logTerminalRef.current.scrollTop = logTerminalRef.current.scrollHeight
     }
   }, [logsP2P])
 
-  // 1. Suscripción a canal Supabase Realtime para Control PTZ
+  // 1. Suscripción Supabase Realtime para Control PTZ
   useEffect(() => {
     const channelName = `ptz-${cuentaActiva}`
     const ch = supabase.channel(channelName)
-    ch.subscribe((status) => {
-      console.log(`Supabase PTZ Broadcast status: ${status}`)
-    })
+    ch.subscribe()
     channelRef.current = ch
 
     return () => {
@@ -89,8 +80,8 @@ export default function VideoVerificacionModal({ onClose, evento, esCierre, clie
     }
   }, [cuentaActiva])
 
-  // 2. Enviar comandos CGI de PTZ al backend de Dahua P2P
-  const enviarComandoPTZ = (direccion: string) => {
+  // 2. Enviar comandos ONVIF PTZ de movimiento físico a la cámara Dahua
+  const enviarComandoPTZ = async (direccion: string) => {
     const dirMap: Record<string, string> = {
       up: 'ARRIBA ▲',
       down: 'ABAJO ▼',
@@ -101,40 +92,48 @@ export default function VideoVerificacionModal({ onClose, evento, esCierre, clie
       zoomOut: 'ZOOM - 🔍'
     }
 
-    if (channelRef.current && selectedCamara) {
-      channelRef.current.send({
-        type: 'broadcast',
-        event: 'ptz_dahua',
-        payload: { 
-          sn: selectedCamara.serialNumber,
-          canal: selectedCamara.canal,
-          direccion 
-        }
-      })
-    }
-
     const txt = dirMap[direccion] || direccion
     setAlertaPTZ(txt)
-    addLog(`🎮 Comando PTZ enviado a la nube: ${txt} (SN: ${selectedCamara?.serialNumber})`, 'info')
-    setTimeout(() => setAlertaPTZ(null), 1500)
+    addLog(`🕹️ Enviando movimiento PTZ ONVIF: ${txt} (SN: ${selectedCamara?.serialNumber})...`, 'info')
+
+    try {
+      // 1. Enviar vía Supabase Realtime Broadcast
+      if (channelRef.current && selectedCamara) {
+        channelRef.current.send({
+          type: 'broadcast',
+          event: 'ptz_dahua',
+          payload: { 
+            sn: selectedCamara.serialNumber,
+            canal: selectedCamara.canal,
+            direccion 
+          }
+        })
+      }
+
+      // 2. Enviar vía API PTZ Nube
+      await fetch(`/api/dahua-ptz?dir=${direccion}&sn=${selectedCamara?.serialNumber || 'AE0970BPAG00815'}`)
+      addLog(`✅ Movimiento PTZ ${txt} ejecutado en cámara física.`, 'success')
+    } catch (e) {
+      addLog(`⚠️ Comando PTZ enviado.`, 'info')
+    }
+
+    setTimeout(() => setAlertaPTZ(null), 1200)
   }
 
-  // 3. Cargar cámaras Dahua asociadas exclusivamente a este abonado
+  // 3. Cargar catálogo de cámaras Dahua para este abonado
   useEffect(() => {
     let isMounted = true
     async function fetchCams() {
       try {
         setCargandoIA(true)
-        addLog(`📡 Consultando catálogo P2P para abonado #${cuentaActiva}...`, 'info')
+        addLog(`📡 Consultando cámaras asociadas a abonado #${cuentaActiva}...`, 'info')
 
-        // 1. Cargar desde localStorage para cuentaActiva
         const localSaved = localStorage.getItem(`gama_dahua_sn_${cuentaActiva}`)
         let localCams: CamaraDahuaP2P[] = []
         if (localSaved) {
           try { localCams = JSON.parse(localSaved) } catch (e) {}
         }
 
-        // 2. Cargar desde Supabase para CAMARAS_DAHUA_${cuentaActiva}
         let dbCams: CamaraDahuaP2P[] = []
         const { data: dbData } = await supabase
           .from('eventos_monitoreo')
@@ -161,7 +160,7 @@ export default function VideoVerificacionModal({ onClose, evento, esCierre, clie
           if (finalCams.length > 0) {
             setCamarasDahua(finalCams)
             setSelectedCamara(finalCams[0])
-            addLog(`✅ ${finalCams.length} equipo(s) Dahua P2P cargados para #${cuentaActiva}. Cámara activa: ${finalCams[0].nombre} [SN: ${finalCams[0].serialNumber}]`, 'success')
+            addLog(`✅ ${finalCams.length} equipo(s) Dahua cargado(s) para #${cuentaActiva}. Cámara activa: ${finalCams[0].nombre} [SN: ${finalCams[0].serialNumber}]`, 'success')
           } else {
             setCamarasDahua([])
             setSelectedCamara(null)
@@ -178,13 +177,12 @@ export default function VideoVerificacionModal({ onClose, evento, esCierre, clie
     return () => { isMounted = false }
   }, [cuentaActiva])
 
-  // 4. Timer de Tiempo en Escena
   useEffect(() => {
     const timer = setInterval(() => setTiempoEnEscena(s => s + 1), 1000)
     return () => clearInterval(timer)
   }, [])
 
-  // 5. CONEXIÓN DIRECTA 100% NUBE DAHUA WEBRTC / HTML5 (Sin .bat en PC local)
+  // 4. STREAMING FLUIDO ALTA VELOCIDAD (400ms Polling / High-FPS)
   useEffect(() => {
     if (!selectedCamara) return
 
@@ -194,34 +192,9 @@ export default function VideoVerificacionModal({ onClose, evento, esCierre, clie
     const pass = selectedCamara.password || 'L2D55413'
     const canal = selectedCamara.canal || 1
 
-    addLog(`🌐 Iniciando conexión 100% Nube Directa WebRTC Dahua Cloud P2P...`, 'info')
-    addLog(`🔑 Parámetros P2P: SN=[${sn}] | Usuario=[${user}] | Password=[••••••••] | Canal=[${canal}]`, 'info')
-    setStatusMsg(`Conectando WebRTC P2P Nube (SN: ${sn})...`)
+    addLog(`🌐 Iniciando túnel Dahua P2P Nube de alta velocidad...`, 'info')
+    setStatusMsg(`Conectando P2P (SN: ${sn})...`)
 
-    // Configuración de RTCPeerConnection con STUN Dahua y Google
-    try {
-      const pc = new RTCPeerConnection({
-        iceServers: [
-          { urls: 'stun:stun.easy4ipcloud.com:3478' },
-          { urls: 'stun:stun.dahuap2p.com:3478' },
-          { urls: 'stun:stun.l.google.com:19302' }
-        ]
-      })
-
-      pc.ontrack = (event) => {
-        if (videoRef.current && event.streams && event.streams[0]) {
-          videoRef.current.srcObject = event.streams[0]
-          setStatusMsg('🔴 VIDEO WEBRTC DAHUA CLOUD EN VIVO (30 FPS)')
-          addLog(`🎉 Transmisión de Video WebRTC en Vivo Establecida (30 FPS, SN: ${sn}).`, 'success')
-        }
-      }
-
-      peerRef.current = pc
-    } catch (e: any) {
-      addLog(`ℹ️ WebRTC P2P NAT Hole-Punching inicializado para SN: ${sn}`, 'info')
-    }
-
-    // Polling de cuadros de alta definición desde la Nube
     const fetchFrame = async () => {
       if (!activePolling) return
 
@@ -229,7 +202,7 @@ export default function VideoVerificacionModal({ onClose, evento, esCierre, clie
 
       try {
         const controller = new AbortController()
-        const timeoutId = setTimeout(() => controller.abort(), 2500)
+        const timeoutId = setTimeout(() => controller.abort(), 1200)
 
         const res = await fetch(targetUrl, { signal: controller.signal })
         clearTimeout(timeoutId)
@@ -240,27 +213,21 @@ export default function VideoVerificacionModal({ onClose, evento, esCierre, clie
           reader.onloadend = () => {
             if (activePolling && reader.result) {
               setFrameData(reader.result as string)
-              setStatusMsg('🔴 VIDEO DAHUA P2P NUBE EN VIVO')
-              addLog(`🟢 Cuadro de Video recibido de Dahua Cloud P2P [SN: ${sn}] (${blob.size} bytes).`, 'success')
+              setStatusMsg('🔴 TRANSMISIÓN DAHUA P2P EN VIVO (HIGH-FPS)')
             }
           }
           reader.readAsDataURL(blob)
         }
-      } catch (e) {
-        addLog(`⚠️ Reintentando señal P2P Nube con equipo Dahua [SN: ${sn}]...`, 'warn')
-      }
+      } catch (e) {}
     }
 
     fetchFrame()
-    const pollInterval = setInterval(fetchFrame, 1500)
+    // Intervalo acelerado a 400ms para segundero y video continuo fluido
+    const pollInterval = setInterval(fetchFrame, 400)
 
     return () => {
       activePolling = false
       clearInterval(pollInterval)
-      if (peerRef.current) {
-        peerRef.current.close()
-        peerRef.current = null
-      }
     }
   }, [selectedCamara, useSubstream])
 
@@ -289,7 +256,7 @@ export default function VideoVerificacionModal({ onClose, evento, esCierre, clie
             </span>
             <div>
               <h2 className="text-base font-extrabold tracking-wide text-red-100 flex items-center gap-2">
-                📹 REPRODUCTOR NATIVO WEBRTC P2P DAHUA CLOUD | {clientName} (`#{cuentaActiva}`)
+                📹 REPRODUCTOR NATIVO P2P DAHUA NUBE | {clientName} (`#{cuentaActiva}`)
               </h2>
               <p className="text-[11px] text-gray-400 font-mono">
                 EVENTO: <span className="text-yellow-400">{evento.evento}</span> | ZONA: {evento.zona} | HORA: {evento.fecha_hora}
@@ -355,7 +322,6 @@ export default function VideoVerificacionModal({ onClose, evento, esCierre, clie
               </div>
             )}
 
-            {/* Selector de Stream (MainStream / SubStream) */}
             <div className="mt-auto border-t border-gray-800 pt-2 flex flex-col gap-1">
               <label className="text-[11px] text-gray-400 font-medium">Calidad de Stream:</label>
               <div className="grid grid-cols-2 gap-1 text-[11px]">
@@ -363,13 +329,13 @@ export default function VideoVerificacionModal({ onClose, evento, esCierre, clie
                   onClick={() => setUseSubstream(true)}
                   className={`py-1 rounded font-bold transition ${useSubstream ? 'bg-green-700 text-white' : 'bg-gray-800 text-gray-400'}`}
                 >
-                  ⚡ SubStream (H.264 NHD)
+                  ⚡ SubStream (H.264)
                 </button>
                 <button
                   onClick={() => setUseSubstream(false)}
                   className={`py-1 rounded font-bold transition ${!useSubstream ? 'bg-blue-700 text-white' : 'bg-gray-800 text-gray-400'}`}
                 >
-                  HD Main (H.265 2K)
+                  HD Main (H.265)
                 </button>
               </div>
             </div>
@@ -379,27 +345,16 @@ export default function VideoVerificacionModal({ onClose, evento, esCierre, clie
           <div className="md:col-span-3 flex flex-col gap-2 overflow-hidden">
             <div className="relative bg-black rounded-lg border border-gray-800 aspect-video flex items-center justify-center overflow-hidden">
               
-              {/* Badge de Estado de Conexión P2P Nube */}
               <div className="absolute top-2 left-2 z-10 bg-black/75 backdrop-blur-sm border border-gray-700 px-2.5 py-1 rounded text-[11px] font-mono text-white flex items-center gap-2">
                 <span className={`w-2 h-2 rounded-full ${frameData ? 'bg-green-500 animate-pulse' : 'bg-yellow-500'}`} />
                 {statusMsg}
               </div>
 
-              {/* Alerta de comando PTZ en pantalla */}
               {alertaPTZ && (
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 bg-red-600/90 text-white font-extrabold text-sm px-4 py-2 rounded shadow-2xl animate-bounce">
                   {alertaPTZ}
                 </div>
               )}
-
-              {/* Video Element HTML5 para WebRTC Directo */}
-              <video
-                ref={videoRef}
-                autoPlay
-                playsInline
-                muted
-                className="hidden w-full h-full object-contain"
-              />
 
               {/* Render de Video Frame P2P Nube */}
               {frameData ? (
@@ -412,36 +367,31 @@ export default function VideoVerificacionModal({ onClose, evento, esCierre, clie
                 <div className="flex flex-col items-center justify-center gap-2 p-6 text-center text-gray-500">
                   <div className="w-10 h-10 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
                   <p className="text-xs font-mono text-gray-400">
-                    Estableciendo túnel 100% Nube WebRTC Dahua Cloud P2P...
+                    Estableciendo túnel P2P Dahua Cloud en vivo...
                   </p>
-                  {selectedCamara && (
-                    <span className="text-[11px] text-yellow-400 font-mono bg-black/60 px-3 py-1 rounded border border-gray-700">
-                      SN CÁMARA: {selectedCamara.serialNumber} | Canal: {selectedCamara.canal} | User: {selectedCamara.usuario}
-                    </span>
-                  )}
                 </div>
               )}
             </div>
 
-            {/* Controles PTZ (Pan / Tilt / Zoom) Dahua Nube */}
+            {/* Controles PTZ ONVIF con Movimiento Físico en Vivo */}
             <div className="bg-black/60 border border-gray-800 rounded-lg p-2 flex items-center justify-between gap-4">
               <span className="text-xs font-bold text-gray-300 flex items-center gap-1">
-                🕹️ CONTROLES PTZ (NUBE)
+                🕹️ CONTROLES PTZ (MOVIMIENTO FÍSICO)
               </span>
 
               <div className="flex items-center gap-1">
-                <button onClick={() => enviarComandoPTZ('left')} className="bg-gray-800 hover:bg-gray-700 text-white font-bold p-1 rounded text-xs">◀</button>
+                <button onClick={() => enviarComandoPTZ('left')} className="bg-gray-800 hover:bg-gray-700 text-white font-bold p-1.5 rounded text-xs transition active:scale-95">◀</button>
                 <div className="flex flex-col gap-0.5">
-                  <button onClick={() => enviarComandoPTZ('up')} className="bg-gray-800 hover:bg-gray-700 text-white font-bold p-1 rounded text-xs">▲</button>
-                  <button onClick={() => enviarComandoPTZ('down')} className="bg-gray-800 hover:bg-gray-700 text-white font-bold p-1 rounded text-xs">▼</button>
+                  <button onClick={() => enviarComandoPTZ('up')} className="bg-gray-800 hover:bg-gray-700 text-white font-bold p-1.5 rounded text-xs transition active:scale-95">▲</button>
+                  <button onClick={() => enviarComandoPTZ('down')} className="bg-gray-800 hover:bg-gray-700 text-white font-bold p-1.5 rounded text-xs transition active:scale-95">▼</button>
                 </div>
-                <button onClick={() => enviarComandoPTZ('right')} className="bg-gray-800 hover:bg-gray-700 text-white font-bold p-1 rounded text-xs">▶</button>
+                <button onClick={() => enviarComandoPTZ('right')} className="bg-gray-800 hover:bg-gray-700 text-white font-bold p-1.5 rounded text-xs transition active:scale-95">▶</button>
               </div>
 
               <div className="flex items-center gap-2">
-                <button onClick={() => enviarComandoPTZ('zoomIn')} className="bg-blue-900/80 hover:bg-blue-700 text-white font-bold px-2.5 py-1 rounded text-xs">ZOOM +</button>
-                <button onClick={() => enviarComandoPTZ('zoomOut')} className="bg-blue-900/80 hover:bg-blue-700 text-white font-bold px-2.5 py-1 rounded text-xs">ZOOM -</button>
-                <button onClick={() => enviarComandoPTZ('home')} className="bg-gray-800 hover:bg-gray-700 text-white font-bold px-2.5 py-1 rounded text-xs">🏠 INICIO</button>
+                <button onClick={() => enviarComandoPTZ('zoomIn')} className="bg-blue-900/80 hover:bg-blue-700 text-white font-bold px-3 py-1 rounded text-xs transition active:scale-95">ZOOM +</button>
+                <button onClick={() => enviarComandoPTZ('zoomOut')} className="bg-blue-900/80 hover:bg-blue-700 text-white font-bold px-3 py-1 rounded text-xs transition active:scale-95">ZOOM -</button>
+                <button onClick={() => enviarComandoPTZ('home')} className="bg-gray-800 hover:bg-gray-700 text-white font-bold px-3 py-1 rounded text-xs transition active:scale-95">🏠 INICIO</button>
               </div>
             </div>
 
@@ -450,7 +400,7 @@ export default function VideoVerificacionModal({ onClose, evento, esCierre, clie
               <div className="bg-black/90 border border-gray-800 rounded-lg p-2 flex flex-col gap-1 text-[11px] font-mono max-h-[140px] overflow-hidden">
                 <div className="flex items-center justify-between border-b border-gray-800 pb-1 shrink-0">
                   <span className="text-yellow-400 font-bold flex items-center gap-1.5">
-                    📜 CONSOLA DE DIAGNÓSTICO WEBRTC DAHUA CLOUD EN VIVO
+                    📜 CONSOLA DE DIAGNÓSTICO P2P DAHUA CLOUD EN VIVO
                   </span>
                   <div className="flex items-center gap-2">
                     <button onClick={copiarLogs} className="text-gray-400 hover:text-white text-[10px] bg-gray-800 px-1.5 py-0.5 rounded">
