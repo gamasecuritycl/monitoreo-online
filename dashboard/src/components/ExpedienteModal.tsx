@@ -260,9 +260,25 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
           }
         }
 
-        // Por defecto para abonados nuevos o sin cámaras registradas: Lista vacía
-        setDahuaCams([])
-        setSelectedDahuaCamId('')
+        // Por defecto para abonados nuevos o sin cámaras registradas: Lista vacía (salvo C701)
+        if (cuentaActiva === 'C701') {
+          const preloaded = [{
+            id: 'DH-C701-1',
+            nombre: 'CÁMARA ACCESO PRINCIPAL P2P',
+            serialNumber: 'AE0970BPAG00815',
+            usuario: 'admin',
+            password: 'L2D55413',
+            canal: 1,
+            substream: true,
+            activa: true
+          }]
+          setDahuaCams(preloaded)
+          setSelectedDahuaCamId('DH-C701-1')
+          localStorage.setItem(`gama_dahua_sn_${cuentaActiva}`, JSON.stringify(preloaded))
+        } else {
+          setDahuaCams([])
+          setSelectedDahuaCamId('')
+        }
       } catch (err) {
         console.warn('Error cargando cámaras Dahua:', err)
         setDahuaCams([])

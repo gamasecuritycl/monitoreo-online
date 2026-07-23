@@ -157,20 +157,18 @@ export default function VideoVerificacionModal({ onClose, evento, esCierre, clie
 
         let finalCams = Array.from(combinedMap.values())
 
-        // Fallback dinámico especial si la cuenta tiene NVR de 10 canales
-        if (finalCams.length === 0 && cuentaActiva === '0034') {
-          for (let ch = 1; ch <= 10; ch++) {
-            finalCams.push({
-              id: `DH-0034-CH${ch}`,
-              nombre: `CÁMARA ${ch} (CH-${ch})`,
-              serialNumber: '2B02339PAYPW68F',
-              usuario: 'admin',
-              password: 'L2D55413',
-              canal: ch,
-              substream: true,
-              activa: true
-            })
-          }
+        // Fallback especial SOLO para C701 (Preloaded Test Camera)
+        if (finalCams.length === 0 && cuentaActiva === 'C701') {
+          finalCams.push({
+            id: 'DH-C701-1',
+            nombre: 'CÁMARA ACCESO PRINCIPAL P2P',
+            serialNumber: 'AE0970BPAG00815',
+            usuario: 'admin',
+            password: 'L2D55413',
+            canal: 1,
+            substream: true,
+            activa: true
+          })
         }
 
         if (isMounted) {
