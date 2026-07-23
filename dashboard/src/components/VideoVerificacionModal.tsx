@@ -54,6 +54,7 @@ export default function VideoVerificacionModal({ onClose, evento, esCierre, clie
   const [statusMsg, setStatusMsg] = useState<string>('Desconectado')
   const [alertaPTZ, setAlertaPTZ] = useState<string | null>(null)
   const [tiempoEnEscena, setTiempoEnEscena] = useState(0)
+  const [localBridgeActive, setLocalBridgeActive] = useState<boolean>(false)
 
   const channelRef = useRef<any>(null)
   const logTerminalRef = useRef<HTMLDivElement | null>(null)
@@ -68,6 +69,20 @@ export default function VideoVerificacionModal({ onClose, evento, esCierre, clie
       logTerminalRef.current.scrollTop = logTerminalRef.current.scrollHeight
     }
   }, [logsP2P])
+
+  // Test local bridge status once on mount
+  useEffect(() => {
+    fetch('http://127.0.0.1:8000/', { mode: 'cors' })
+      .then(res => {
+        if (res.status === 200) {
+          setLocalBridgeActive(true)
+          addLog('⚡ Conexión directa ultra rápida a Dahua Local Bridge (Puerto 8000) ACTIVA.', 'success')
+        }
+      })
+      .catch(() => {
+        setLocalBridgeActive(false)
+      })
+  }, [])
 
   // 1. Suscripción Supabase Realtime para Control PTZ
   useEffect(() => {
@@ -213,7 +228,9 @@ export default function VideoVerificacionModal({ onClose, evento, esCierre, clie
         const user = cam.usuario || 'admin'
         const pass = cam.password || 'L2D55413'
         const canal = cam.canal || 1
-        const targetUrl = `/api/dahua-stream?sn=${sn}&user=${user}&pass=${encodeURIComponent(pass)}&canal=${canal}&t=${Date.now()}`
+        const targetUrl = localBridgeActive
+          ? `http://127.0.0.1:8000/snapshot?sn=${sn}&user=${user}&pass=${encodeURIComponent(pass)}&canal=${canal}&t=${Date.now()}`
+          : `/api/dahua-stream?sn=${sn}&user=${user}&pass=${encodeURIComponent(pass)}&canal=${canal}&t=${Date.now()}`
 
         try {
           const controller = new AbortController()
@@ -231,7 +248,10 @@ export default function VideoVerificacionModal({ onClose, evento, esCierre, clie
                   ...prev,
                   [`${cam.serialNumber}_${cam.canal}`]: reader.result as string
                 }))
-                setStatusMsg('🔴 TRANSMISIÓN NVR / P2P MULTICANAL EN VIVO (HIGH-FPS)')
+                setStatusMsg(localBridgeActive 
+                  ? '🔴 TRANSMISIÓN LOCAL DIRECTA (HIGH-FPS - PUERTO 8000)' 
+                  : '☁️ TRANSMISIÓN CLOUD (SUPABASE SYNC - LATENCIA 1s)'
+                )
               }
             }
             reader.readAsDataURL(blob)
