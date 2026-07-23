@@ -199,34 +199,40 @@ export default function VideoVerificacionModal({ onClose, evento, esCierre, clie
 
     setStatusMsg(`Conectando P2P (SN: ${sn})...`)
 
-    // 1. Probar conexión HTTPS Serverless Proxy /api/dahua-stream
-    fetch(`/api/dahua-stream?sn=${sn}&user=${user}&pass=${encodeURIComponent(pass)}&canal=${canal}`)
-      .then(async (res) => {
-        if (res.headers.get('content-type')?.includes('image/jpeg')) {
-          const blob = await res.blob()
-          const reader = new FileReader()
-          reader.onloadend = () => {
-            if (activePolling && reader.result) {
-              const base64 = (reader.result as string).split(',')[1]
-              setFrameData(base64)
-              setStatusMsg('🔴 EN VIVO P2P DAHUA')
-              addLog(`🟢 Cuadro de video P2P recibido correctamente desde el equipo Dahua [SN: ${sn}].`, 'success')
+    // 1. Polling continuo HTTPS Serverless Proxy /api/dahua-stream cada 2 segundos
+    const fetchFrame = () => {
+      if (!activePolling) return
+      fetch(`/api/dahua-stream?sn=${sn}&user=${user}&pass=${encodeURIComponent(pass)}&canal=${canal}`)
+        .then(async (res) => {
+          if (res.headers.get('content-type')?.includes('image/jpeg')) {
+            const blob = await res.blob()
+            const reader = new FileReader()
+            reader.onloadend = () => {
+              if (activePolling && reader.result) {
+                const base64 = (reader.result as string).split(',')[1]
+                setFrameData(base64)
+                setStatusMsg('🔴 EN VIVO P2P DAHUA')
+                addLog(`🟢 Cuadro P2P recibido de cámara Dahua DMSS [SN: ${sn}].`, 'success')
+              }
+            }
+            reader.readAsDataURL(blob)
+          } else {
+            const json = await res.json().catch(() => ({}))
+            if (json.status === 'DIAGNOSTICO_P2P') {
+              addLog(`📡 Solicitud P2P enviada para SN [${sn}]. Conexión DMSS activa.`, 'info')
+              if (json.causas && Array.isArray(json.causas)) {
+                json.causas.forEach((c: string) => addLog(`📌 ${c}`, 'warn'))
+              }
             }
           }
-          reader.readAsDataURL(blob)
-        } else {
-          const json = await res.json().catch(() => ({}))
-          if (json.status === 'DIAGNOSTICO_P2P') {
-            addLog(`📡 Solicitud P2P enviada para SN [${sn}]. Negociando túnel NAT con servidor de señalización...`, 'info')
-            if (json.causas && Array.isArray(json.causas)) {
-              json.causas.forEach((c: string) => addLog(`📌 NOTA: ${c}`, 'warn'))
-            }
-          }
-        }
-      })
-      .catch((e) => {
-        addLog(`⚠️ Consulta API HTTPS /api/dahua-stream: ${e.message}`, 'warn')
-      })
+        })
+        .catch((e) => {
+          addLog(`⚠️ Consulta API HTTPS /api/dahua-stream: ${e.message}`, 'warn')
+        })
+    }
+
+    fetchFrame()
+    const pollInterval = setInterval(fetchFrame, 2500)
 
     // 2. Probar túnel WebSocket directo si está disponible en la red
     const apiHost = process.env.NEXT_PUBLIC_IA_API_URL || '10.99.0.1:8000'
@@ -276,6 +282,7 @@ export default function VideoVerificacionModal({ onClose, evento, esCierre, clie
 
     return () => {
       activePolling = false
+      clearInterval(pollInterval)
       if (wsRef.current) {
         wsRef.current.close()
         wsRef.current = null
