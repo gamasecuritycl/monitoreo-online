@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, Fragment } from 'react'
 import type { EventoMonitoreo } from '@/lib/supabase'
 import { supabase, supabaseIA } from '@/lib/supabase'
+import VideoVerificacionModal from './VideoVerificacionModal'
 
 import { cleanRut } from '@/lib/rut'
 import { esAbonadoInactivo } from '@/lib/inactivos_filter'
@@ -88,6 +89,8 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
   const [inputDahuaCanal, setInputDahuaCanal] = useState('1')
   const [inputDahuaNombre, setInputDahuaNombre] = useState('')
   const [editingDahuaId, setEditingDahuaId] = useState<string | null>(null)
+  const [selectedDahuaCamId, setSelectedDahuaCamId] = useState<string>('')
+  const [testingDahuaCam, setTestingDahuaCam] = useState<any | null>(null)
 
   // Estados para RUT y Alias de Unidad (Edición restringida a Administrador)
   const [inputRut, setInputRut] = useState('')
@@ -234,6 +237,7 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
             const parsed = JSON.parse(localSaved)
             if (Array.isArray(parsed) && parsed.length > 0) {
               setDahuaCams(parsed)
+              setSelectedDahuaCamId(parsed[0].id)
               return
             }
           } catch (e) {}
@@ -248,8 +252,9 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
 
         if (data && data.length > 0 && data[0].nombre_abonado) {
           const parsed = JSON.parse(data[0].nombre_abonado)
-          if (Array.isArray(parsed)) {
+          if (Array.isArray(parsed) && parsed.length > 0) {
             setDahuaCams(parsed)
+            setSelectedDahuaCamId(parsed[0].id)
             localStorage.setItem(`gama_dahua_sn_${cuentaActiva}`, JSON.stringify(parsed))
             return
           }
@@ -257,9 +262,11 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
 
         // Por defecto para abonados nuevos o sin cámaras registradas: Lista vacía
         setDahuaCams([])
+        setSelectedDahuaCamId('')
       } catch (err) {
         console.warn('Error cargando cámaras Dahua:', err)
         setDahuaCams([])
+        setSelectedDahuaCamId('')
       }
     }
     fetchDahuaCams()
@@ -864,31 +871,39 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
                     
                     {/* Controls Row */}
                     <div className="flex items-center justify-between bg-[#111] p-1 border-b border-gray-700 text-[10px] shrink-0">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-gray-400 font-bold">CANAL:</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-gray-400 font-bold">CÁMARA:</span>
                         {cargandoIA ? (
-                          <span className="text-yellow-400 text-[9px]">⏳ Cargando BD-IA...</span>
-                        ) : camarasIA.length > 0 ? (
-                          <select
-                            value={selectedCamaraIAId}
-                            onChange={(e) => { setSelectedCamaraIAId(e.target.value); setClipSeleccionado(null) }}
-                            className="bg-[#222] text-green-300 border border-green-800 font-bold py-0.5 px-1 focus:outline-none text-[9px]"
-                          >
-                            {camarasIA.map(c => <option key={c.id} value={c.id}>{c.nombre.toUpperCase()}</option>)}
-                          </select>
+                          <span className="text-yellow-400 text-[9px]">⏳ Cargando BD...</span>
+                        ) : dahuaCams.length > 0 ? (
+                          <div className="flex items-center gap-1.5">
+                            <select
+                              value={selectedDahuaCamId}
+                              disabled={editandoCamaras}
+                              onChange={(e) => setSelectedDahuaCamId(e.target.value)}
+                              className="bg-[#222] text-yellow-300 border border-yellow-600 font-bold py-0.5 px-1 focus:outline-none text-[9px]"
+                            >
+                              {dahuaCams.map(c => (
+                                <option key={c.id} value={c.id}>
+                                  {c.nombre} (SN: {c.serialNumber} | CH-{c.canal})
+                                </option>
+                              ))}
+                            </select>
+                            <button
+                              onClick={() => {
+                                const targetCam = dahuaCams.find(c => c.id === selectedDahuaCamId) || dahuaCams[0]
+                                if (targetCam) setTestingDahuaCam(targetCam)
+                              }}
+                              className="bg-green-700 hover:bg-green-600 text-white font-extrabold px-2 py-0.5 rounded text-[9px] cursor-pointer shadow flex items-center gap-1"
+                            >
+                              ▶ PROBAR CÁMARA P2P
+                            </button>
+                          </div>
                         ) : (
-                          <select
-                            value={activeCamera}
-                            disabled={editandoCamaras}
-                            onChange={(e) => setActiveCamera(e.target.value as any)}
-                            className="bg-[#222] text-white border border-gray-600 font-bold py-0.5 px-1 focus:outline-none text-[9px] disabled:opacity-50"
-                          >
-                            <option value="CAM-01">CAM-01 (Entrada Frontis)</option>
-                            <option value="CAM-02">CAM-02 (Patio Lateral)</option>
-                            <option value="CAM-03">CAM-03 (Bodega Interna)</option>
-                          </select>
+                          <span className="text-yellow-500 font-bold text-[9px] bg-yellow-950/50 px-2 py-0.5 border border-yellow-800 rounded">
+                            ⚠️ Sin cámaras Dahua registradas
+                          </span>
                         )}
-                        {camarasIA.length > 0 && <span className="text-green-500 text-[8px] font-bold">● IA REAL</span>}
                       </div>
 
                       <div className="flex items-center gap-2">
@@ -981,6 +996,12 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
                                     <span className="text-gray-500">User: {c.usuario}</span>
                                   </div>
                                   <div className="flex items-center gap-1">
+                                    <button
+                                      onClick={() => setTestingDahuaCam(c)}
+                                      className="bg-green-800 text-white hover:bg-green-700 border border-green-600 px-2 py-0.5 rounded text-[9px] font-bold"
+                                    >
+                                      ▶ PROBAR CONEXIÓN P2P
+                                    </button>
                                     <button
                                       onClick={() => {
                                         setEditingDahuaId(c.id)
@@ -1316,6 +1337,22 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
             </div>
           </div>
         </div>
+      )}
+
+      {testingDahuaCam && (
+        <VideoVerificacionModal
+          onClose={() => setTestingDahuaCam(null)}
+          evento={{
+            id: 99999,
+            fecha_hora: new Date().toISOString(),
+            cuenta: cuentaActiva,
+            nombre_abonado: `${clientesMap[cuentaActiva]?.nombre || evento.nombre_abonado || 'Abonado'} [PRUEBA P2P: ${testingDahuaCam.nombre}]`,
+            evento: 'TEST_CONEXION_P2P',
+            zona: `CH-${testingDahuaCam.canal}`,
+            usuario: 'ADMINISTRADOR'
+          }}
+          esCierre={false}
+        />
       )}
     </div>
   )
