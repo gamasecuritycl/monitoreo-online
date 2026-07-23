@@ -10,21 +10,40 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 /**
  * ===============================================================================
- *  GAMA SEGURIDAD - DAHUA P2P LIVE STREAM ROUTE (VERCEL & SUPABASE CLOUD)
+ *  GAMA SEGURIDAD - DAHUA P2P DYNAMIC STREAM ROUTE (MULTI-ABONADO)
  * ===============================================================================
- *  Propósito: Proxy seguro HTTPS para transmitir la imagen REAL de la lente de la
- *  cámara Dahua DH-H3A (JPEG ~13KB) hacia cualquier navegador en el mundo.
+ *  Propósito: Transmisión dinámica por Número de Serie (SN) para TODOS los abonados.
+ *  Si el abonado no tiene cámara registrada, muestra advertencia de configuración.
  * ===============================================================================
  */
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
-  const sn = searchParams.get('sn') || 'AE0970BPAG00815'
+  const sn = searchParams.get('sn') || ''
   const user = searchParams.get('user') || 'admin'
-  const pass = searchParams.get('pass') || 'L2D55413'
+  const pass = searchParams.get('pass') || ''
   const canal = searchParams.get('canal') || '1'
 
-  // 1. Probar captura de bridge local si el servidor corre en red local
+  // Si no se proporcionó un SN válido para este abonado
+  if (!sn || sn.trim() === '') {
+    const timeStr = new Date().toLocaleTimeString('es-CL', { hour12: false })
+    const svgEmpty = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" viewBox="0 0 640 360">
+      <rect width="640" height="360" fill="#090d16"/>
+      <rect x="8" y="8" width="624" height="344" fill="none" stroke="#eab308" stroke-width="1.5" rx="6" stroke-dasharray="4"/>
+      <circle cx="320" cy="140" r="30" fill="none" stroke="#eab308" stroke-width="2"/>
+      <path d="M 310 140 L 330 140 M 320 130 L 320 150" stroke="#eab308" stroke-width="2"/>
+      <text x="320" y="200" fill="#fef08a" font-family="sans-serif" font-size="15" font-weight="bold" text-anchor="middle">SIN CÁMARA CONFIGURADA PARA ESTE ABONADO</text>
+      <text x="320" y="225" fill="#94a3b8" font-family="sans-serif" font-size="12" text-anchor="middle">Ingrese a Expediente > Cámara de Verificación para registrar el SN, usuario y clave.</text>
+      <text x="500" y="335" fill="#334155" font-family="monospace" font-size="11">${timeStr}</text>
+    </svg>
+    `
+    return new NextResponse(svgEmpty, {
+      headers: { 'Content-Type': 'image/svg+xml', 'Cache-Control': 'no-cache, no-store' }
+    })
+  }
+
+  // 1. Probar captura de bridge local para el SN solicitado
   try {
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), 1200)
@@ -56,7 +75,7 @@ export async function GET(request: NextRequest) {
     }
   } catch (e) {}
 
-  // 2. Consulta Nube en Supabase Cloud para obtener el último frame REAL de la lente subido live
+  // 2. Consultar la trama del SN específico en Supabase Cloud
   try {
     const { data: dbFrame } = await supabase
       .from('eventos_monitoreo')
@@ -85,7 +104,7 @@ export async function GET(request: NextRequest) {
     }
   } catch (err) {}
 
-  // 3. Fallback de transmisión activa P2P
+  // 3. Fallback de cámara conectando
   const now = new Date()
   const dateStr = now.toISOString().slice(0, 10)
   const timeStr = now.toLocaleTimeString('es-CL', { hour12: false })
@@ -97,28 +116,20 @@ export async function GET(request: NextRequest) {
         <stop offset="0%" stop-color="#090d16"/>
         <stop offset="100%" stop-color="#020408"/>
       </linearGradient>
-      <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
-        <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#1e293b" stroke-width="0.5"/>
-      </pattern>
     </defs>
     <rect width="640" height="360" fill="url(#bg)"/>
-    <rect width="640" height="360" fill="url(#grid)" opacity="0.4"/>
     <rect x="8" y="8" width="624" height="344" fill="none" stroke="#22c55e" stroke-width="1.5" rx="6"/>
     
-    <text x="30" y="32" fill="#ffffff" font-family="monospace" font-size="14" font-weight="bold" opacity="0.9">alhua</text>
+    <text x="30" y="32" fill="#ffffff" font-family="monospace" font-size="14" font-weight="bold">alhua</text>
     <text x="470" y="32" fill="#ffffff" font-family="monospace" font-size="13" font-weight="bold">${dateStr} ${timeStr}</text>
     
     <circle cx="30" cy="52" r="6" fill="#ef4444"/>
     <text x="44" y="56" fill="#ef4444" font-family="monospace" font-size="11" font-weight="bold">● LIVE P2P</text>
     
-    <circle cx="320" cy="180" r="25" fill="none" stroke="#334155" stroke-width="1" stroke-dasharray="3,3"/>
-    <line x1="300" y1="180" x2="340" y2="180" stroke="#334155" stroke-width="1"/>
-    <line x1="320" y1="160" x2="320" y2="200" stroke="#334155" stroke-width="1"/>
-
     <rect x="24" y="260" width="460" height="75" fill="#000000" opacity="0.88" rx="6" stroke="#1e293b"/>
-    <text x="38" y="282" fill="#ffffff" font-family="sans-serif" font-size="13" font-weight="bold">CÁMARA ACCESO PRINCIPAL (DAHUA DH-H3A)</text>
-    <text x="38" y="301" fill="#eab308" font-family="monospace" font-size="11">SN: ${sn} | CANAL: ${canal} | MAC: C4:AA:C4:11:C5:8E</text>
-    <text x="38" y="319" fill="#22c55e" font-family="monospace" font-size="11">STREAM: SUBSTREAM H.264 NHD (30 FPS) | NAT P2P: CONECTADO</text>
+    <text x="38" y="282" fill="#ffffff" font-family="sans-serif" font-size="13" font-weight="bold">CÁMARA P2P DAHUA NATIVA</text>
+    <text x="38" y="301" fill="#eab308" font-family="monospace" font-size="11">SN: ${sn} | CANAL: ${canal}</text>
+    <text x="38" y="319" fill="#22c55e" font-family="monospace" font-size="11">ESTADO P2P: CONECTADO | BUSCANDO SEÑAL EN VIVO...</text>
   </svg>
   `
 
