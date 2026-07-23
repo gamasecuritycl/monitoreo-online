@@ -775,8 +775,8 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
           {/* FILA 2: PESTAÑAS MEDIAS (Emergentes y Características) */}
           <div className="h-auto md:h-[170px] flex flex-col md:flex-row gap-2 shrink-0">
             
-            {/* Lado Izquierdo: Teléfonos Emergentes (PC: Ancho 530px, Móvil: Completo) */}
-            <div className="w-full md:w-[530px] flex flex-col shrink-0">
+            {/* Lado Izquierdo: Teléfonos Emergentes y Cámara de Verificación (MÁXIMO ESPACIO HORIZONTAL flex-1) */}
+            <div className="w-full flex-1 flex flex-col min-w-0">
               <div className="flex flex-wrap gap-0.5 text-[9px]">
                 <button
                   onClick={() => setTabEmergentes('telefonos')}
@@ -1177,8 +1177,8 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
               </div>
             </div>
 
-            {/* Lado Derecho: Características (PC: Lado Derecho, Móvil: Abajo) */}
-            <div className="flex-1 flex flex-col shrink-0">
+            {/* Lado Derecho: Características / Referencias / Observaciones (Ancho Compacto 280px) */}
+            <div className="w-full md:w-[280px] flex flex-col shrink-0">
               <div className="flex gap-0.5 text-[9px]">
                 <button
                   onClick={() => setTabInfo('caracteristicas')}
