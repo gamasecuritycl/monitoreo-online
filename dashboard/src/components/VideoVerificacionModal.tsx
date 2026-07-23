@@ -125,7 +125,7 @@ export default function VideoVerificacionModal({ onClose, evento, esCierre, clie
     async function fetchCams() {
       try {
         setCargandoIA(true)
-        addLog(`📡 Buscando cámaras Dahua P2P configuradas para la cuenta #${cuentaActiva}...`, 'info')
+        addLog(`📡 Consultando base de datos de abonado #${cuentaActiva}...`, 'info')
 
         // 1. Cargar desde localStorage para cuentaActiva
         const localSaved = localStorage.getItem(`gama_dahua_sn_${cuentaActiva}`)
@@ -161,12 +161,11 @@ export default function VideoVerificacionModal({ onClose, evento, esCierre, clie
           if (finalCams.length > 0) {
             setCamarasDahua(finalCams)
             setSelectedCamara(finalCams[0])
-            addLog(`✅ ${finalCams.length} cámara(s) Dahua cargada(s) para #${cuentaActiva}. Equipo activo: ${finalCams[0].nombre} [SN: ${finalCams[0].serialNumber}]`, 'success')
+            addLog(`✅ ${finalCams.length} equipo(s) Dahua cargado(s) para #${cuentaActiva}. Cámara activa: ${finalCams[0].nombre} [SN: ${finalCams[0].serialNumber}]`, 'success')
           } else {
-            // SIN CÁMARAS CONFIGURADAS: LISTA VACÍA
             setCamarasDahua([])
             setSelectedCamara(null)
-            addLog(`⚠️ ATENCIÓN: No hay cámaras Dahua P2P registradas para el abonado #${cuentaActiva}. Ingrese a Expediente > Cámara de Verificación para registrar el Número de Serie (SN).`, 'warn')
+            addLog(`⚠️ ATENCIÓN: No hay cámaras Dahua P2P registradas para la cuenta #${cuentaActiva}. Registre el Número de Serie (SN) en Expediente > Cámara de Verificación.`, 'warn')
           }
         }
       } catch (err: any) {
@@ -185,65 +184,102 @@ export default function VideoVerificacionModal({ onClose, evento, esCierre, clie
     return () => clearInterval(timer)
   }, [])
 
-  // 5. Conexión WebSocket P2P y Diagnóstico de Log en Vivo
+  // 5. Conexión P2P (WebSocket + HTTPS Fallback Proxy) y Diagnóstico de Log en Vivo
   useEffect(() => {
     if (!selectedCamara) return
 
-    const apiHost = process.env.NEXT_PUBLIC_IA_API_URL || '10.99.0.1:8000'
-    const wsProto = apiHost.startsWith('https') || apiHost.includes(':443') ? 'wss' : 'ws'
-    const cleanHost = apiHost.replace(/^https?:\/\//, '')
-    const wsUrl = `${wsProto}://${cleanHost}/ws/dahua-p2p?sn=${selectedCamara.serialNumber}&user=${selectedCamara.usuario}&pass=${encodeURIComponent(selectedCamara.password || '')}&canal=${selectedCamara.canal}&stream=${useSubstream ? 1 : 0}`
+    let activePolling = true
+    const sn = selectedCamara.serialNumber
+    const user = selectedCamara.usuario || 'admin'
+    const pass = selectedCamara.password || ''
+    const canal = selectedCamara.canal || 1
 
-    addLog(`🔌 Estableciendo conexión P2P...`, 'info')
-    addLog(`⚙️ Parámetros: SN=[${selectedCamara.serialNumber}] | Canal=[${selectedCamara.canal}] | User=[${selectedCamara.usuario}] | Stream=[${useSubstream ? 'SubStream ⚡' : 'HD MainStream 🎬'}]`, 'info')
-    addLog(`🌐 Túnel WebSocket P2P: ${wsUrl}`, 'info')
+    addLog(`🔌 Iniciando prueba de conexión P2P Dahua NetSDK...`, 'info')
+    addLog(`🔑 Credenciales: SN=[${sn}] | Usuario=[${user}] | Password=[••••••••] | Canal=[${canal}]`, 'info')
 
-    setStatusMsg(`Conectando P2P (SN: ${selectedCamara.serialNumber})...`)
-    
-    let ws: WebSocket | null = null
-    try {
-      ws = new WebSocket(wsUrl)
-      wsRef.current = ws
+    setStatusMsg(`Conectando P2P (SN: ${sn})...`)
 
-      ws.onopen = () => {
-        addLog(`🟢 Socket P2P abierto. Negociando "hole punching" NAT con Dahua NetSDK...`, 'success')
-      }
-
-      ws.onmessage = (event) => {
-        try {
-          const msg = JSON.parse(event.data)
-          if (msg.type === 'frame') {
-            setFrameData(msg.data)
-            setStatusMsg('🔴 EN VIVO P2P DAHUA')
-          } else if (msg.type === 'status') {
-            setStatusMsg(msg.msg || msg.estado)
-            addLog(`ℹ️ Estado SDK Dahua: ${msg.msg || msg.estado}`, 'info')
-          } else if (msg.type === 'error') {
-            addLog(`🔴 DIAGNÓSTICO ERROR P2P: ${msg.msg || 'Fallo de autenticación o equipo offline'}`, 'error')
+    // 1. Probar conexión HTTPS Serverless Proxy /api/dahua-stream
+    fetch(`/api/dahua-stream?sn=${sn}&user=${user}&pass=${encodeURIComponent(pass)}&canal=${canal}`)
+      .then(async (res) => {
+        if (res.headers.get('content-type')?.includes('image/jpeg')) {
+          const blob = await res.blob()
+          const reader = new FileReader()
+          reader.onloadend = () => {
+            if (activePolling && reader.result) {
+              const base64 = (reader.result as string).split(',')[1]
+              setFrameData(base64)
+              setStatusMsg('🔴 EN VIVO P2P DAHUA')
+              addLog(`🟢 Cuadro de video P2P recibido correctamente desde el equipo Dahua [SN: ${sn}].`, 'success')
+            }
           }
-        } catch (err) {
-          console.error('Error procesando frame Dahua:', err)
+          reader.readAsDataURL(blob)
+        } else {
+          const json = await res.json().catch(() => ({}))
+          if (json.status === 'DIAGNOSTICO_P2P') {
+            addLog(`📡 Solicitud P2P enviada para SN [${sn}]. Negociando túnel NAT con servidor de señalización...`, 'info')
+            if (json.causas && Array.isArray(json.causas)) {
+              json.causas.forEach((c: string) => addLog(`📌 NOTA: ${c}`, 'warn'))
+            }
+          }
         }
-      }
+      })
+      .catch((e) => {
+        addLog(`⚠️ Consulta API HTTPS /api/dahua-stream: ${e.message}`, 'warn')
+      })
 
-      ws.onclose = (evt) => {
-        setStatusMsg('Desconectado')
-        setFrameData(null)
-        addLog(`🟡 Túnel P2P cerrado (Código: ${evt.code}, Limpio: ${evt.wasClean})`, 'warn')
-      }
+    // 2. Probar túnel WebSocket directo si está disponible en la red
+    const apiHost = process.env.NEXT_PUBLIC_IA_API_URL || '10.99.0.1:8000'
+    const cleanHost = apiHost.replace(/^https?:\/\//, '')
+    const wsProto = window.location.protocol === 'https:' ? 'wss' : 'ws'
+    
+    // Solo intentar WebSocket directo si no se usa localhost/ip privada en https
+    if (window.location.protocol !== 'https:' || !cleanHost.startsWith('10.')) {
+      const wsUrl = `${wsProto}://${cleanHost}/ws/dahua-p2p?sn=${sn}&user=${user}&pass=${encodeURIComponent(pass)}&canal=${canal}&stream=${useSubstream ? 1 : 0}`
+      addLog(`🌐 Intentando WebSocket P2P directo: ${wsUrl}`, 'info')
 
-      ws.onerror = (err) => {
-        setStatusMsg(`📡 P2P Conectado a SN: ${selectedCamara.serialNumber}`)
-        addLog(`🔴 ERROR P2P NETSDK: Imposible enlazar con el DVR/NVR SN [${selectedCamara.serialNumber}].`, 'error')
-        addLog(`🔍 POSIBLES CAUSAS: 1) DVR Offline o sin internet. 2) Número de Serie (SN) incorrecto. 3) Contraseña inválida. 4) Servidor Bridge P2P sin reiniciar.`, 'warn')
+      try {
+        const ws = new WebSocket(wsUrl)
+        wsRef.current = ws
+
+        ws.onopen = () => {
+          addLog(`🟢 Socket P2P abierto. Hole punching en ejecución con Dahua NetSDK...`, 'success')
+        }
+
+        ws.onmessage = (event) => {
+          try {
+            const msg = JSON.parse(event.data)
+            if (msg.type === 'frame') {
+              setFrameData(msg.data)
+              setStatusMsg('🔴 EN VIVO P2P DAHUA')
+            } else if (msg.type === 'status') {
+              setStatusMsg(msg.msg || msg.estado)
+              addLog(`ℹ️ Estado SDK Dahua: ${msg.msg || msg.estado}`, 'info')
+            }
+          } catch (err) {}
+        }
+
+        ws.onerror = () => {
+          addLog(`🔴 AVISO SEGURIDAD NAVEGADOR: El navegador web (HTTPS Vercel) bloqueó la conexión insegura al puerto local ws://${cleanHost}.`, 'error')
+          addLog(`💡 SOLUCIÓN: La prueba P2P está usando el túnel seguro HTTPS /api/dahua-stream. Para video en tiempo real continuo, asegúrese de ejecutar el servicio dahua_p2p_bridge.py en la central.`, 'info')
+        }
+
+        ws.onclose = () => {
+          if (wsRef.current === ws) wsRef.current = null
+        }
+      } catch (err: any) {
+        addLog(`⚠️ Excepción WebSocket: ${err.message}`, 'warn')
       }
-    } catch (e: any) {
-      setStatusMsg('⚠️ Error en Túnel Dahua P2P')
-      addLog(`❌ Excepción de Conexión: ${e.message}`, 'error')
+    } else {
+      addLog(`ℹ️ Navegador en modo HTTPS seguro. Transmitiendo por túnel de diagnóstico /api/dahua-stream.`, 'info')
     }
 
     return () => {
-      if (ws) ws.close()
+      activePolling = false
+      if (wsRef.current) {
+        wsRef.current.close()
+        wsRef.current = null
+      }
     }
   }, [selectedCamara, useSubstream])
 
