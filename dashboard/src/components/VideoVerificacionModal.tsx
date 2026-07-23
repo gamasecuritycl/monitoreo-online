@@ -184,7 +184,7 @@ export default function VideoVerificacionModal({ onClose, evento, esCierre, clie
     return () => clearInterval(timer)
   }, [])
 
-  // 5. Conexión P2P (WebSocket + HTTPS Fallback Proxy) y Diagnóstico de Log en Vivo
+  // 5. Conexión P2P Dahua (Snapshot / Stream en Vivo por SN Nube)
   useEffect(() => {
     if (!selectedCamara) return
 
@@ -194,19 +194,19 @@ export default function VideoVerificacionModal({ onClose, evento, esCierre, clie
     const pass = selectedCamara.password || ''
     const canal = selectedCamara.canal || 1
 
-    addLog(`🔌 Iniciando prueba de conexión P2P Dahua NetSDK...`, 'info')
-    addLog(`🔑 Credenciales: SN=[${sn}] | Usuario=[${user}] | Password=[••••••••] | Canal=[${canal}]`, 'info')
+    addLog(`🔌 Iniciando túnel P2P Dahua por Número de Serie (SN)...`, 'info')
+    addLog(`🔑 Parámetros: SN=[${sn}] | Usuario=[${user}] | Password=[••••••••] | Canal=[${canal}]`, 'info')
 
     setStatusMsg(`Conectando P2P (SN: ${sn})...`)
 
-    // 1. Polling continuo: Intentar captura directa desde Cámara IP (192.168.1.19), Servidor Local (8000) o Vercel Proxy
+    // Polling de cuadros de video P2P
     const fetchFrame = async () => {
       if (!activePolling) return
 
       const targets = [
         `http://192.168.1.19/cgi-bin/snapshot.cgi?channel=${canal}`,
         `http://localhost:8000/snapshot?sn=${sn}&user=${user}&pass=${encodeURIComponent(pass)}&canal=${canal}`,
-        `/api/dahua-stream?sn=${sn}&user=${user}&pass=${encodeURIComponent(pass)}&canal=${canal}`
+        `/api/dahua-stream?sn=${sn}&user=${user}&pass=${encodeURIComponent(pass)}&canal=${canal}&t=${Date.now()}`
       ]
 
       for (const targetUrl of targets) {
@@ -224,13 +224,13 @@ export default function VideoVerificacionModal({ onClose, evento, esCierre, clie
 
           if (res.ok) {
             const blob = await res.blob()
-            if (blob.size > 500 && blob.type.includes('image')) {
+            if (blob.size > 200) {
               const reader = new FileReader()
               reader.onloadend = () => {
                 if (activePolling && reader.result) {
                   setFrameData(reader.result as string)
-                  setStatusMsg('🔴 EN VIVO P2P DAHUA')
-                  addLog(`🟢 Imagen en vivo recibida de la cámara Dahua [SN: ${sn}] desde ${targetUrl}.`, 'success')
+                  setStatusMsg('🔴 TRANSMISIÓN P2P DAHUA EN VIVO')
+                  addLog(`🟢 Cuadro P2P recibido de cámara Dahua [SN: ${sn}] (${blob.size} bytes).`, 'success')
                 }
               }
               reader.readAsDataURL(blob)
@@ -238,67 +238,17 @@ export default function VideoVerificacionModal({ onClose, evento, esCierre, clie
             }
           }
         } catch (e) {
-          // Intentar siguiente endpoint
+          // Probar siguiente target
         }
       }
     }
 
     fetchFrame()
-    const pollInterval = setInterval(fetchFrame, 2000)
-
-    // 2. Probar túnel WebSocket directo si está disponible en la red
-    const apiHost = process.env.NEXT_PUBLIC_IA_API_URL || '10.99.0.1:8000'
-    const cleanHost = apiHost.replace(/^https?:\/\//, '')
-    const wsProto = window.location.protocol === 'https:' ? 'wss' : 'ws'
-    
-    // Solo intentar WebSocket directo si no se usa localhost/ip privada en https
-    if (window.location.protocol !== 'https:' || !cleanHost.startsWith('10.')) {
-      const wsUrl = `${wsProto}://${cleanHost}/ws/dahua-p2p?sn=${sn}&user=${user}&pass=${encodeURIComponent(pass)}&canal=${canal}&stream=${useSubstream ? 1 : 0}`
-      addLog(`🌐 Intentando WebSocket P2P directo: ${wsUrl}`, 'info')
-
-      try {
-        const ws = new WebSocket(wsUrl)
-        wsRef.current = ws
-
-        ws.onopen = () => {
-          addLog(`🟢 Socket P2P abierto. Hole punching en ejecución con Dahua NetSDK...`, 'success')
-        }
-
-        ws.onmessage = (event) => {
-          try {
-            const msg = JSON.parse(event.data)
-            if (msg.type === 'frame') {
-              setFrameData(msg.data)
-              setStatusMsg('🔴 EN VIVO P2P DAHUA')
-            } else if (msg.type === 'status') {
-              setStatusMsg(msg.msg || msg.estado)
-              addLog(`ℹ️ Estado SDK Dahua: ${msg.msg || msg.estado}`, 'info')
-            }
-          } catch (err) {}
-        }
-
-        ws.onerror = () => {
-          addLog(`🔴 AVISO SEGURIDAD NAVEGADOR: El navegador web (HTTPS Vercel) bloqueó la conexión insegura al puerto local ws://${cleanHost}.`, 'error')
-          addLog(`💡 SOLUCIÓN: La prueba P2P está usando el túnel seguro HTTPS /api/dahua-stream. Para video en tiempo real continuo, asegúrese de ejecutar el servicio dahua_p2p_bridge.py en la central.`, 'info')
-        }
-
-        ws.onclose = () => {
-          if (wsRef.current === ws) wsRef.current = null
-        }
-      } catch (err: any) {
-        addLog(`⚠️ Excepción WebSocket: ${err.message}`, 'warn')
-      }
-    } else {
-      addLog(`ℹ️ Navegador en modo HTTPS seguro. Transmitiendo por túnel de diagnóstico /api/dahua-stream.`, 'info')
-    }
+    const pollInterval = setInterval(fetchFrame, 1500)
 
     return () => {
       activePolling = false
       clearInterval(pollInterval)
-      if (wsRef.current) {
-        wsRef.current.close()
-        wsRef.current = null
-      }
     }
   }, [selectedCamara, useSubstream])
 
