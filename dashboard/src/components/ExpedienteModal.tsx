@@ -72,6 +72,23 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
   const [inputCam02, setInputCam02] = useState('')
   const [inputCam03, setInputCam03] = useState('')
 
+  // Dahua P2P Cameras CRUD State
+  const [dahuaCams, setDahuaCams] = useState<Array<{
+    id: string
+    nombre: string
+    serialNumber: string
+    usuario: string
+    password?: string
+    canal: number
+    substream: boolean
+  }>>([])
+  const [inputDahuaSN, setInputDahuaSN] = useState('AE0970BPAG00815')
+  const [inputDahuaUser, setInputDahuaUser] = useState('admin')
+  const [inputDahuaPass, setInputDahuaPass] = useState('L2D55413')
+  const [inputDahuaCanal, setInputDahuaCanal] = useState('1')
+  const [inputDahuaNombre, setInputDahuaNombre] = useState('CÁMARA ENTRADA P2P')
+  const [editingDahuaId, setEditingDahuaId] = useState<string | null>(null)
+
   // Estados para RUT y Alias de Unidad (Edición restringida a Administrador)
   const [inputRut, setInputRut] = useState('')
   const [inputAlias, setInputAlias] = useState('')
@@ -207,35 +224,116 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
 
 
 
-  const guardarCamaras = async () => {
-    const updated = {
-      ...todasLasCamaras,
-      [cuentaActiva]: {
-        cam01: inputCam01.trim(),
-        cam02: inputCam02.trim(),
-        cam03: inputCam03.trim()
+  // Cargar cámaras Dahua P2P asociadas al abonado activo
+  useEffect(() => {
+    const fetchDahuaCams = async () => {
+      try {
+        const localSaved = localStorage.getItem(`gama_dahua_sn_${cuentaActiva}`)
+        if (localSaved) {
+          try {
+            const parsed = JSON.parse(localSaved)
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              setDahuaCams(parsed)
+              return
+            }
+          } catch (e) {}
+        }
+
+        const { data } = await supabase
+          .from('eventos_monitoreo')
+          .select('nombre_abonado')
+          .eq('cuenta', `CAMARAS_DAHUA_${cuentaActiva}`)
+          .order('id', { ascending: false })
+          .limit(1)
+
+        if (data && data.length > 0 && data[0].nombre_abonado) {
+          const parsed = JSON.parse(data[0].nombre_abonado)
+          if (Array.isArray(parsed)) {
+            setDahuaCams(parsed)
+            localStorage.setItem(`gama_dahua_sn_${cuentaActiva}`, JSON.stringify(parsed))
+            return
+          }
+        }
+
+        // Fallback inicial con parámetros de prueba del usuario
+        const initialFallback = [
+          {
+            id: `DH-${cuentaActiva}-1`,
+            nombre: 'CÁMARA ACCESO PRINCIPAL P2P',
+            serialNumber: 'AE0970BPAG00815',
+            usuario: 'admin',
+            password: 'L2D55413',
+            canal: 1,
+            substream: true,
+            activa: true
+          }
+        ]
+        setDahuaCams(initialFallback)
+      } catch (err) {
+        console.warn('Error cargando cámaras Dahua:', err)
       }
     }
-    
+    fetchDahuaCams()
+  }, [cuentaActiva])
+
+  const guardarCamaraDahuaP2P = async () => {
+    if (!inputDahuaSN.trim()) {
+      alert('Por favor ingresa un Número de Serie (SN) Dahua válido.')
+      return
+    }
+
+    let listActualizada = [...dahuaCams]
+    if (editingDahuaId) {
+      listActualizada = listActualizada.map(c => c.id === editingDahuaId ? {
+        ...c,
+        nombre: inputDahuaNombre.trim().toUpperCase(),
+        serialNumber: inputDahuaSN.trim().toUpperCase(),
+        usuario: inputDahuaUser.trim() || 'admin',
+        password: inputDahuaPass.trim(),
+        canal: Number(inputDahuaCanal) || 1
+      } : c)
+    } else {
+      const nueva: any = {
+        id: `DH-${Date.now()}`,
+        nombre: inputDahuaNombre.trim().toUpperCase() || 'CÁMARA P2P',
+        serialNumber: inputDahuaSN.trim().toUpperCase(),
+        usuario: inputDahuaUser.trim() || 'admin',
+        password: inputDahuaPass.trim(),
+        canal: Number(inputDahuaCanal) || 1,
+        substream: true,
+        activa: true
+      }
+      listActualizada.push(nueva)
+    }
+
+    setDahuaCams(listActualizada)
+    localStorage.setItem(`gama_dahua_sn_${cuentaActiva}`, JSON.stringify(listActualizada))
+
     try {
-      const { error } = await supabase
-        .from('eventos_monitoreo')
-        .upsert({
-          cuenta: 'CAMARAS',
-          nombre_abonado: JSON.stringify(updated),
-          evento: 'CONFIGURACION',
-          fecha_hora: new Date().toISOString()
-        })
-      if (!error) {
-        setTodasLasCamaras(updated)
-        setEditandoCamaras(false)
-        alert('Cámaras guardadas exitosamente en la base de datos.')
-      } else {
-        throw error
-      }
+      await supabase.from('eventos_monitoreo').upsert({
+        cuenta: `CAMARAS_DAHUA_${cuentaActiva}`,
+        nombre_abonado: JSON.stringify(listActualizada),
+        evento: 'CONFIGURACION_DAHUA_CRUD',
+        fecha_hora: new Date().toISOString()
+      })
+      alert(`✅ Configuración P2P Dahua guardada para la cuenta ${cuentaActiva}.`)
+      setEditingDahuaId(null)
     } catch (err: any) {
-      alert('Error al guardar cámaras: ' + err.message)
+      alert('Error guardando en BD: ' + err.message)
     }
+  }
+
+  const eliminarCamaraDahuaP2P = async (id: string) => {
+    if (!confirm('¿Seguro que deseas eliminar esta cámara Dahua P2P?')) return
+    const filtrada = dahuaCams.filter(c => c.id !== id)
+    setDahuaCams(filtrada)
+    localStorage.setItem(`gama_dahua_sn_${cuentaActiva}`, JSON.stringify(filtrada))
+    await supabase.from('eventos_monitoreo').upsert({
+      cuenta: `CAMARAS_DAHUA_${cuentaActiva}`,
+      nombre_abonado: JSON.stringify(filtrada),
+      evento: 'ELIMINACION_DAHUA_CRUD',
+      fecha_hora: new Date().toISOString()
+    })
   }
 
   // Sincronizar inputs de RUT y Alias al cambiar de cuenta
@@ -805,12 +903,12 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
                       </div>
 
                       <div className="flex items-center gap-2">
-                        {camarasIA.length === 0 && !editandoCamaras && usuarioRol !== 'Operadora' && (
+                        {!editandoCamaras && usuarioRol !== 'Operadora' && (
                           <button
                             onClick={() => setEditandoCamaras(true)}
-                            className="bg-gray-800 hover:bg-gray-700 text-gray-300 font-bold border border-gray-600 px-2 py-0.5 rounded-xs cursor-pointer text-[9px]"
+                            className="bg-yellow-600 hover:bg-yellow-500 text-black font-extrabold border border-yellow-400 px-2 py-0.5 rounded cursor-pointer text-[9px] shadow"
                           >
-                            ⚙️ CONFIGURAR
+                            ⚙️ CONFIGURAR P2P DAHUA / NVR
                           </button>
                         )}
                       </div>
@@ -822,30 +920,106 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
                       {editandoCamaras ? (
                         <div className="flex-1 bg-[#12141c] p-3 text-xs space-y-3 overflow-y-auto flex flex-col justify-between">
                           <div className="space-y-2">
-                            <div className="text-green-400 font-bold border-b border-gray-800 pb-1 uppercase tracking-wider text-[10px]">
-                              ⚙️ GESTIÓN DE CÁMARAS MANUALES (CTA: {cuentaActiva})
+                            <div className="text-yellow-400 font-bold border-b border-gray-800 pb-1 uppercase tracking-wider text-[10px] flex items-center justify-between">
+                              <span>⚙️ GESTIÓN CRUD DE CÁMARAS & DVR/NVR DAHUA P2P (CTA: {cuentaActiva})</span>
+                              <span className="text-[9px] text-gray-400 font-normal">Soporte nativo SN sin apertura de puertos</span>
                             </div>
-                            <p className="text-[9px] text-gray-400 leading-tight">
-                              Asocia cámaras manuales para verlas en vivo (URL de imagen, MP4 o iframe). Para cámaras IA con clips automáticos, use el módulo USUARIOS.
-                            </p>
-                            <div className="space-y-2 pt-1">
-                              {['CAM-01 (Entrada/Frontis)', 'CAM-02 (Patio Lateral)', 'CAM-03 (Bodega Interna)'].map((label, idx) => (
-                                <div key={idx} className="flex flex-col gap-0.5">
-                                  <span className="font-bold text-gray-300 text-[10px]">{label}:</span>
-                                  <input
-                                    type="text"
-                                    value={idx === 0 ? inputCam01 : idx === 1 ? inputCam02 : inputCam03}
-                                    onChange={(e) => idx === 0 ? setInputCam01(e.target.value) : idx === 1 ? setInputCam02(e.target.value) : setInputCam03(e.target.value)}
-                                    placeholder="URL de imagen, video MP4 o enlace CCTV..."
-                                    className="bg-[#111] border border-gray-700 p-1 font-mono text-[10px] text-white focus:outline-none focus:border-green-500 w-full"
-                                  />
+                            
+                            {/* Formulario CRUD */}
+                            <div className="bg-black/50 border border-gray-800 p-2 rounded grid grid-cols-2 md:grid-cols-4 gap-2 text-[10px]">
+                              <div>
+                                <label className="text-gray-300 font-bold block mb-0.5">Nombre/Ubicación:</label>
+                                <input
+                                  type="text"
+                                  value={inputDahuaNombre}
+                                  onChange={(e) => setInputDahuaNombre(e.target.value)}
+                                  placeholder="Ej: ENTRADA PRINCIPAL"
+                                  className="w-full bg-[#111] border border-gray-700 p-1 font-mono text-white text-[10px]"
+                                />
+                              </div>
+
+                              <div>
+                                <label className="text-yellow-400 font-bold block mb-0.5">Número de Serie (SN):</label>
+                                <input
+                                  type="text"
+                                  value={inputDahuaSN}
+                                  onChange={(e) => setInputDahuaSN(e.target.value.toUpperCase())}
+                                  placeholder="Ej: AE0970BPAG00815"
+                                  className="w-full bg-[#111] border border-yellow-600/70 p-1 font-mono text-yellow-300 font-bold text-[10px] uppercase"
+                                />
+                              </div>
+
+                              <div>
+                                <label className="text-gray-300 font-bold block mb-0.5">Usuario (admin):</label>
+                                <input
+                                  type="text"
+                                  value={inputDahuaUser}
+                                  onChange={(e) => setInputDahuaUser(e.target.value)}
+                                  className="w-full bg-[#111] border border-gray-700 p-1 font-mono text-white text-[10px]"
+                                />
+                              </div>
+
+                              <div>
+                                <label className="text-gray-300 font-bold block mb-0.5">Contraseña (L2D55413):</label>
+                                <input
+                                  type="password"
+                                  value={inputDahuaPass}
+                                  onChange={(e) => setInputDahuaPass(e.target.value)}
+                                  className="w-full bg-[#111] border border-gray-700 p-1 font-mono text-white text-[10px]"
+                                />
+                              </div>
+                            </div>
+
+                            <div className="flex items-center justify-between">
+                              <span className="text-[9px] text-gray-400 italic">Equipos Dahua P2P registrados en esta cuenta:</span>
+                              <button
+                                onClick={guardarCamaraDahuaP2P}
+                                className="bg-yellow-500 hover:bg-yellow-400 text-black font-extrabold px-3 py-1 text-[10px] rounded cursor-pointer transition shadow"
+                              >
+                                {editingDahuaId ? '✏️ ACTUALIZAR CÁMARA' : '➕ GUARDAR CÁMARA P2P'}
+                              </button>
+                            </div>
+
+                            {/* Tabla/Lista CRUD */}
+                            <div className="space-y-1 pt-1 max-h-[140px] overflow-y-auto">
+                              {dahuaCams.map((c) => (
+                                <div key={c.id} className="bg-black/40 border border-gray-800 p-1.5 rounded flex items-center justify-between text-[10px]">
+                                  <div className="flex items-center gap-2 font-mono">
+                                    <span className="text-white font-bold">{c.nombre}</span>
+                                    <span className="text-yellow-400">SN: {c.serialNumber}</span>
+                                    <span className="text-gray-400">CH-{c.canal}</span>
+                                    <span className="text-gray-500">User: {c.usuario}</span>
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <button
+                                      onClick={() => {
+                                        setEditingDahuaId(c.id)
+                                        setInputDahuaNombre(c.nombre)
+                                        setInputDahuaSN(c.serialNumber)
+                                        setInputDahuaUser(c.usuario)
+                                        setInputDahuaPass(c.password || '')
+                                        setInputDahuaCanal(c.canal.toString())
+                                      }}
+                                      className="bg-blue-950 text-blue-300 hover:bg-blue-900 border border-blue-700 px-2 py-0.5 rounded text-[9px]"
+                                    >
+                                      ✏️ Editar
+                                    </button>
+                                    <button
+                                      onClick={() => eliminarCamaraDahuaP2P(c.id)}
+                                      className="bg-red-950 text-red-300 hover:bg-red-900 border border-red-700 px-2 py-0.5 rounded text-[9px]"
+                                    >
+                                      🗑️ Eliminar
+                                    </button>
+                                  </div>
                                 </div>
                               ))}
+                              {dahuaCams.length === 0 && (
+                                <div className="text-[10px] text-gray-500 italic p-2 text-center">No hay cámaras Dahua P2P registradas para esta cuenta.</div>
+                              )}
                             </div>
                           </div>
                           <div className="flex justify-end gap-2 border-t border-gray-800 pt-2 shrink-0">
-                            <button onClick={() => setEditandoCamaras(false)} className="bg-gray-800 hover:bg-gray-700 text-white font-bold border border-gray-600 px-4 py-1 text-[10px] cursor-pointer">CANCELAR</button>
-                            <button onClick={guardarCamaras} className="bg-green-700 hover:bg-green-600 text-white font-bold border border-green-500 px-6 py-1 text-[10px] cursor-pointer">GUARDAR</button>
+                            <button onClick={() => setEditandoCamaras(false)} className="bg-gray-800 hover:bg-gray-700 text-white font-bold border border-gray-600 px-4 py-1 text-[10px] cursor-pointer">CERRAR CONFIGURACIÓN</button>
                           </div>
                         </div>
                       ) : (
