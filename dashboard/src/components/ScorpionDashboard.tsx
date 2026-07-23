@@ -630,7 +630,8 @@ export default function ScorpionDashboard() {
           const hbTime = new Date(data[0].fecha_hora).getTime()
           const now = Date.now()
           const diffSec = (now - hbTime) / 1000
-          setSincronizadorVivo(diffSec < 60)
+          // Margen de tolerancia de 5 minutos para prevenir falsos positivos por latencia
+          setSincronizadorVivo(diffSec < 300)
           setUltimoHeartbeat(data[0].fecha_hora)
         } else {
           setSincronizadorVivo(false)
