@@ -287,14 +287,23 @@ export default function ScorpionDashboard() {
   }, [])
 
   // Fetch inicial ordenado por ID (para evitar problemas de desfase de hora de red)
+  // Cargar lista de eventos iniciales ignorando filas internas de configuración y fotogramas
+  const esCuentaInternaOFrame = (cuentaRaw: string = '', eventoRaw: string = '') => {
+    const c = (cuentaRaw || '').toUpperCase().trim()
+    const e = (eventoRaw || '').toUpperCase().trim()
+    if (c.startsWith('CAMARAS_DAHUA_') || c.startsWith('DAHUA_FRAME_')) return true
+    if (['CLIENTES', 'CODIGOS', 'ZONAS', '__SINCRONIZADOR__', 'EMPRESAS_CONGLOMERADO', 'COTIZACIONES_DOLIBARR', 'ORDENES_TRABAJO', 'CONFIG_OPERADORES', 'CLIENTES_MAESTROS_CRM'].includes(c)) return true
+    if (['ELIMINACION_DAHUA_CRUD', 'GENERACION_NVR_MULTICANAL', 'FRAME_SYNC', 'NVR_DVR_FRAME_SYNC', 'CAMERA_FRAME_SYNC'].includes(e)) return true
+    return false
+  }
+
   const fetchEventos = useCallback(async () => {
     try {
       let query = supabase
         .from('eventos_monitoreo')
         .select('*')
-        .not('cuenta', 'in', '(CLIENTES,CODIGOS,ZONAS,__SINCRONIZADOR__)')
         .order('fecha_hora', { ascending: false })
-        .limit(50)
+        .limit(100)
 
       if (busqueda.trim()) {
         query = query.or(`cuenta.ilike.%${busqueda}%,nombre_abonado.ilike.%${busqueda}%`)
@@ -302,7 +311,8 @@ export default function ScorpionDashboard() {
 
       const { data } = await query
       if (data) {
-        const ordenados = data.reverse()
+        const limpios = data.filter(ev => !esCuentaInternaOFrame(ev.cuenta, ev.evento))
+        const ordenados = limpios.slice(0, 50).reverse()
         setEventos(ordenados)
         // Seleccionar por defecto el evento más reciente de la lista al cargar
         if (ordenados.length > 0 && !eventoSeleccionado) {
@@ -324,9 +334,8 @@ export default function ScorpionDashboard() {
         const { data } = await supabase
           .from('eventos_monitoreo')
           .select('*')
-          .not('cuenta', 'in', '(CLIENTES,CODIGOS,ZONAS,__SINCRONIZADOR__)')
           .order('fecha_hora', { ascending: false })
-          .limit(50)
+          .limit(100)
 
         if (!data || data.length === 0) return
         const maxTime = data[0].fecha_hora
@@ -340,7 +349,8 @@ export default function ScorpionDashboard() {
             )
           : data
 
-        const ordenados = [...filtered].reverse()
+        const limpios = filtered.filter(ev => !esCuentaInternaOFrame(ev.cuenta, ev.evento))
+        const ordenados = [...limpios].slice(0, 50).reverse()
         setEventos(ordenados)
         
         // Auto-seleccionar el evento que va llegando si no hay selección manual activa
@@ -360,9 +370,8 @@ export default function ScorpionDashboard() {
       .channel('eventos-live')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'eventos_monitoreo' }, async (payload) => {
         const newEvent = payload.new as EventoMonitoreo
-        // Ignorar filas especiales de sincronización
-        const cuentasEspeciales = ['CLIENTES', 'CODIGOS', 'ZONAS', '__SINCRONIZADOR__']
-        if (cuentasEspeciales.includes((newEvent.cuenta || '').toUpperCase().trim())) return
+        // Ignorar filas especiales de sincronización y configuración de cámaras
+        if (esCuentaInternaOFrame(newEvent.cuenta, newEvent.evento)) return
         
         setEventos((prev) => {
           if (prev.some(e => e.id === newEvent.id)) return prev
