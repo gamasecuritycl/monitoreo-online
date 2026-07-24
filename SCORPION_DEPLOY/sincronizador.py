@@ -31,7 +31,7 @@ except Exception:
 
 # ============================================================
 #  GAMA COMMAND CENTER - Sincronizador para PC Scorpion
-#  Versión: 3.1 - Heartbeat constante + Rutas dinámicas
+#  Versión: 2.2 - Rutas dinámicas y fix timezone Chile
 # ============================================================
 
 SUPABASE_URL = "https://onxwyrwmpjxtwlmjrosr.supabase.co"
@@ -46,45 +46,51 @@ else:
 
 # Lista ordenada de posibles directorios que contienen bases de datos de eventos .MDB
 candidatos_rutas = [
-    # Rutas estándar en PC Scorpion (unidad C:) - DEBEN IR PRIMERO EN PRODUCCIÓN
+    # Directorio relativo al script en desarrollo/producción
+    os.path.join(root_dir, 'BASES DE DATOS', 'EVENTOS'),
+    os.path.join(root_dir, 'EVENTOS'),
+    root_dir,
+    # Rutas estándar en PC Scorpion (unidad C:)
     r'C:\SCORPION\BASES DE DATOS\EVENTOS',
     r'C:\SCORPION\BASE DE DATOS\EVENTOS',
     r'C:\SCORPION\BASES DE DATOS',
     r'C:\SCORPION\BASE DE DATOS',
     r'C:\SCORPION',
-    # Directorio relativo al script en desarrollo/producción
-    os.path.join(root_dir, 'BASES DE DATOS', 'EVENTOS'),
-    os.path.join(root_dir, 'EVENTOS'),
-    root_dir,
     # Unidad E: (antigua, mantenida como fallback secundario)
     r'E:\MONITOREO ONLINE\BASES DE DATOS\EVENTOS',
 ]
 
+# Filtrar duplicados y normalizar
 rutas_unicas = []
 for p in candidatos_rutas:
     p_norm = os.path.normpath(p)
     if p_norm.lower() not in [r.lower() for r in rutas_unicas]:
         rutas_unicas.append(p_norm)
 
+# Buscar el primer directorio que exista y contenga archivos .MDB reales
 CARPETA_EVENTOS = None
 for ruta in rutas_unicas:
     if os.path.exists(ruta):
         try:
+            # Comprobar si hay algún archivo .MDB (ignorando temporales)
             if any(f.upper().endswith('.MDB') and not f.startswith('_') for f in os.listdir(ruta)):
                 CARPETA_EVENTOS = ruta
                 break
         except Exception:
             pass
 
+# Si no encontramos ningún directorio con archivos .MDB, tomamos el primero que exista
 if not CARPETA_EVENTOS:
     for ruta in rutas_unicas:
         if os.path.exists(ruta):
             CARPETA_EVENTOS = ruta
             break
 
+# Si nada de lo anterior existe, usar ruta por defecto en el root_dir
 if not CARPETA_EVENTOS:
     CARPETA_EVENTOS = os.path.join(root_dir, 'BASES DE DATOS', 'EVENTOS')
 
+# Los archivos de control (temp y cache) se guardan siempre en la carpeta del script (seguro para escritura)
 RUTA_COPIA_TEMP = os.path.join(script_dir, '_EVENTOS_TEMP.MDB')
 RUTA_CACHE      = os.path.join(script_dir, '_sincronizador_cache.json')
 
@@ -107,6 +113,7 @@ def check_for_updates():
         with urllib.request.urlopen(req, timeout=10) as response:
             new_code = response.read().decode('utf-8')
             
+        # Validar que el código descargado sea un script de Python válido y compile correctamente
         if "import pyodbc" in new_code and "SUPABASE_URL" in new_code:
             try:
                 compile(new_code, "<string>", "exec")
@@ -120,29 +127,32 @@ def check_for_updates():
                 
             if new_code.strip() != current_code.strip():
                 print("[UPDATE] ¡Nueva versión detectada! Actualizando...")
+                # Escribir el nuevo código
                 with open(current_script, "w", encoding="utf-8") as f:
                     f.write(new_code)
                 print("[UPDATE] Código actualizado con éxito. Reiniciando proceso...")
                 
+                # Cerrar handle de bloqueo
                 try:
                     lock_handle.close()
                 except Exception:
                     pass
                 
+                # Ejecutar la nueva versión reemplazando el proceso actual
                 os.execv(sys.executable, [sys.executable] + sys.argv)
             else:
                 print("[UPDATE] El sincronizador está en la versión más reciente.")
         else:
-            print("[UPDATE] Código descargado inválido.")
+            print("[UPDATE] Código descargado inválido (no pasó la validación de firmas).")
     except Exception as e:
         print(f"[UPDATE] Error al comprobar actualizaciones: {e}")
 
 def get_chile_offset() -> str:
     """Retorna el offset UTC de Chile (-04:00 invierno / -03:00 verano)."""
     if time.daylight and time.localtime().tm_isdst:
-        offset_hours = -3
+        offset_hours = -3   # CLST (horario verano)
     else:
-        offset_hours = -4
+        offset_hours = -4   # CLT  (horario invierno)
     sign = '+' if offset_hours >= 0 else '-'
     return f"{sign}{abs(offset_hours):02d}:00"
 
@@ -167,6 +177,7 @@ def save_cache(cache):
 
 def get_ultimo_mdb():
     try:
+        # Filtrar archivos .MDB que no empiecen con guion bajo (_) para evitar leer el archivo temporal
         archivos = [f for f in os.listdir(CARPETA_EVENTOS) if f.upper().endswith('.MDB') and not f.startswith('_')]
     except Exception as e:
         print(f"[ERROR] No se puede leer EVENTOS: {e}")
@@ -176,25 +187,8 @@ def get_ultimo_mdb():
     archivos.sort(reverse=True)
     return os.path.join(CARPETA_EVENTOS, archivos[0])
 
-def enviar_heartbeat():
-    """ Envía señal continua de heartbeat para mantener status VERDE en la central web """
-    try:
-        now_iso = datetime.now(timezone.utc).isoformat()
-        supabase.table("eventos_monitoreo").upsert({
-            "cuenta": "__SINCRONIZADOR__",
-            "nombre_abonado": "PC SCORPION CENTRAL",
-            "evento": "HEARTBEAT",
-            "fecha_hora": now_iso,
-            "zona": "000",
-            "usuario": "SYSTEM"
-        }).execute()
-    except Exception as e:
-        pass
-
 def sincronizar(cache):
     print("--- Verificando nuevos eventos ---")
-    enviar_heartbeat()
-    
     ruta_original = get_ultimo_mdb()
     if not ruta_original:
         print("[INFO] No hay archivos .MDB.")
@@ -218,6 +212,12 @@ def sincronizar(cache):
         rows = cursor.fetchall()
         conn.close()
 
+        print(f"  [DEBUG] Filas en MDB: {len(rows)}")
+        if rows:
+            print(f"  [DEBUG] Más reciente: Dia={str(rows[0][0]).strip()} | Hora={str(rows[0][1]).strip()}")
+            print(f"  [DEBUG] Más antiguo: Dia={str(rows[-1][0]).strip()} | Hora={str(rows[-1][1]).strip()}")
+
+        # Mapear índices de columnas de forma dinámica y robusta
         columns = [col[0].upper() for col in cursor.description]
         
         def get_val(r, col_names, default_idx):
@@ -234,36 +234,52 @@ def sincronizar(cache):
         cache_modificada = False
 
         for row in rows:
-            dia     = get_val(row, ['DIA'], 0)
-            hora    = get_val(row, ['HORA'], 1)
-            cuenta  = get_val(row, ['CUENTA'], 2)
-            nombre  = get_val(row, ['NOMBRE', 'ABONADO', 'NOMBRE_ABONADO'], 3)
-            evento  = get_val(row, ['EVENTO'], 4)
-            zona    = get_val(row, ['ZONA'], 6)
-            usuario = get_val(row, ['USUARIO'], 7)
+            dia     = get_val(row, ['DIA', 'FECHA', 'DATE', 'DIA_FECHA'], 0)
+            hora    = get_val(row, ['HORA', 'HOUR', 'TIME', 'HORA_HORA'], 1)
+            cuenta  = get_val(row, ['CUENTA', 'ACCOUNT', 'NUMERO', 'NUMBER', 'ID_CUENTA'], 2)
+            nombre  = get_val(row, ['NOMBRE', 'ABONADO', 'NOMBRE_ABONADO', 'NOMBRE_CLIENTE', 'CLIENTE_NAME'], 3)
+            # Try to get event type - expanded search terms
+            evento  = get_val(row, ['EVENTO', 'TIPO_EVENTO', 'EVENT_TYPE', 'EVENT_DESCRIPTION', 'DESCRIPCION', 'DESCRIPTION', 'ALARMA', 'ALARM', 'TIPO_ALARMA'], 4)
+            # Try to get zone - expanded search terms
+            zona    = get_val(row, ['ZONA', 'ZONE', 'ZONA_ALARMA', 'ALARM_ZONE', 'AREA', 'AREA_MONITOR'], 6)
+            # Try to get user - expanded search terms
+            usuario = get_val(row, ['USUARIO', 'USER', 'OPERADOR', 'OPERATOR', 'USUARIO_OPERADOR', 'ATTENDANT'], 7)
+            # Try to get stream information - for potential stream_req field
+            stream_info = get_val(row, ['STREAM', 'STREAM_ID', 'TIPO_STREAM', 'CANAL', 'CHANNEL', 'CANAL_CAMARA', 'CH', 'CAMARA'], 8)
+
+            # Debug output for first few records to help diagnose field mapping
+            if nuevos < 3:
+                print(f"  [DEBUG MAPEO] dia='{dia}' | hora='{hora}' | cuenta='{cuenta}' | nombre='{nombre}' | evento='{evento}' | zona='{zona}' | usuario='{usuario}' | stream='{stream_info}'")
 
             event_key = f"{dia}_{hora}_{cuenta}_{evento}_{zona}_{usuario}"
             if event_key in cache:
                 continue
 
+            # Sanitizar componentes de hora (ej: "0:8:26" -> "00:08:26")
             partes_hora = hora.split(':')
             if len(partes_hora) == 3:
                 hora_clean = f"{partes_hora[0].zfill(2)}:{partes_hora[1].zfill(2)}:{partes_hora[2].zfill(2)}"
             else:
                 hora_clean = hora
 
+            # Construir timestamp con offset Chile explícito
+            # Soportar separadores de fecha tanto '-' como '/'
             dia_clean = dia.replace('/', '-')
             partes_dia = dia_clean.split('-')
             
             fecha_hora = None
             if len(partes_dia) == 3:
                 if len(partes_dia[0]) == 4:
+                    # Formato YYYY-MM-DD
                     year, month, day = partes_dia[0], partes_dia[1], partes_dia[2]
                 else:
+                    # Formato DD-MM-YYYY (o MM-DD-YYYY, asumimos DD-MM-YYYY por Chile)
                     day, month, year = partes_dia[0], partes_dia[1], partes_dia[2]
                 
+                # Formatear a estándar ISO con ceros a la izquierda
                 fecha_hora = f"{year}-{month.zfill(2)}-{day.zfill(2)}T{hora_clean}{chile_tz}"
             
+            # Si no se pudo parsear, usar fecha actual para evitar errores en Supabase
             if not fecha_hora:
                 hoy_iso = datetime.now().strftime('%Y-%m-%d')
                 fecha_hora = f"{hoy_iso}T{hora_clean}{chile_tz}"
@@ -275,6 +291,7 @@ def sincronizar(cache):
                 "evento":         evento,
                 "zona":           zona,
                 "usuario":        usuario,
+                "stream_req":     stream_info,
             }
 
             try:
@@ -285,6 +302,7 @@ def sincronizar(cache):
                 nuevos += 1
             except Exception as e:
                 err_str = str(e).lower()
+                # 23505 es el código de violación de clave única en PostgreSQL (Supabase)
                 if "duplicate" in err_str or "23505" in err_str or "already exists" in err_str:
                     cache.add(event_key)
                     cache_modificada = True
@@ -311,11 +329,12 @@ def sincronizar(cache):
 
 if __name__ == "__main__":
     print("=" * 55)
-    print("  GAMA COMMAND CENTER - Sincronizador v3.1")
+    print("  GAMA COMMAND CENTER - Sincronizador v3.2")
     print(f"  Carpeta: {CARPETA_EVENTOS}")
     print(f"  Timezone: Chile ({get_chile_offset()})")
     print("=" * 55)
     
+    # Comprobación inicial de actualizaciones al arrancar
     check_for_updates()
     last_update_check = time.time()
     
@@ -323,6 +342,7 @@ if __name__ == "__main__":
     while True:
         cache = sincronizar(cache)
         
+        # Comprobar actualizaciones cada 30 minutos (1800 segundos)
         if time.time() - last_update_check > 1800:
             check_for_updates()
             last_update_check = time.time()
