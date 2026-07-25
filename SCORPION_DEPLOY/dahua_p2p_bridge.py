@@ -474,8 +474,7 @@ class DahuaBridgeRequestHandler(BaseHTTPRequestHandler):
                 "frame_keys": list(engine.latest_frames.keys()),
                 "uptime": time.time() - engine.start_time if hasattr(engine, "start_time") else 0,
             }
-            import json
-import json as json_mod
+            import json as json_mod
             payload = json_mod.dumps(status_info, indent=2)
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
