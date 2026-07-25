@@ -1,13 +1,13 @@
-"""
+﻿"""
 ===============================================================================
  GAMA SEGURIDAD - DAHUA NVR / DVR / XVR MULTI-CHANNEL ENGINE (CONCURRENT ENGINE)
  ===============================================================================
  Arquitectura: Concurrente y BAJO DEMANDA (On-Demand).
- PropÃƒÂ³sito: Evita bloqueos y saturaciÃƒÂ³n de conexiones P2P en cÃƒÂ¡maras y NVRs.
- REGLAS DE LIFECYCLE DE TRANSMISIÃƒâ€œN:
- - SOLO inicia la captura de un canal cuando hay una peticiÃƒÂ³n activa local o en la nube.
- - Detiene la captura automÃƒÂ¡ticamente despuÃƒÂ©s de 30 segundos de inactividad (sin peticiones).
- - Actualiza en-sitio (update) una ÃƒÅ¡NICA fila por cÃƒÂ¡mara en Supabase (cuenta = DAHUA_FRAME_{SN}_CH_{canal}).
+ PropÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â³sito: Evita bloqueos y saturaciÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â³n de conexiones P2P en cÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡maras y NVRs.
+ REGLAS DE LIFECYCLE DE TRANSMISIÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“N:
+ - SOLO inicia la captura de un canal cuando hay una peticiÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â³n activa local o en la nube.
+ - Detiene la captura automÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ticamente despuÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â©s de 30 segundos de inactividad (sin peticiones).
+ - Actualiza en-sitio (update) una ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡NICA fila por cÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡mara en Supabase (cuenta = DAHUA_FRAME_{SN}_CH_{canal}).
  - Los frames incluyen timestamp ISO para que el dashboard pueda verificar frescura.
  ===============================================================================
 """
@@ -17,6 +17,7 @@ import sys
 import time
 import base64
 import json
+import socket
 import logging
 import threading
 import requests
@@ -43,7 +44,7 @@ logger.addHandler(console)
 
 
 class CameraWorker(threading.Thread):
-    """Worker que captura frames de una cÃƒÂ¡mara/NVR Dahua especÃƒÂ­fico."""
+    """Worker que captura frames de una cÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡mara/NVR Dahua especÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â­fico."""
 
     def __init__(self, engine, sn, user, pas, canal):
         super().__init__(daemon=True)
@@ -79,11 +80,20 @@ class CameraWorker(threading.Thread):
             # Local IPs (try custom first, then defaults)
         ]
         if local_ip:
-            endpoints.insert(0, f"http://{local_ip}/cgi-bin/snapshot.cgi?channel={self.canal}")
-            endpoints.insert(0, f"https://{local_ip}/cgi-bin/snapshot.cgi?channel={self.canal}")
+            endpoints.append(f"http://{local_ip}/cgi-bin/snapshot.cgi?channel={self.canal}")
+            endpoints.append(f"https://{local_ip}/cgi-bin/snapshot.cgi?channel={self.canal}")
         endpoints.append(f"http://192.168.1.19/cgi-bin/snapshot.cgi?channel={self.canal}")
+        endpoints.append(f"http://192.168.1.2/cgi-bin/snapshot.cgi?channel={self.canal}")
         endpoints.append(f"http://192.168.1.18/cgi-bin/snapshot.cgi?channel={self.canal}")
         endpoints.append(f"http://192.168.0.19/cgi-bin/snapshot.cgi?channel={self.canal}")
+
+        # DNS pre-check: Verificar si la camara esta registrada en P2P
+        try:
+            p2p_test = f"{self.sn}.dahuap2p.com"
+            socket.gethostbyname(p2p_test)
+            logger.info(f"[WORKER] P2P DNS OK: {p2p_test} resuelve correctamente")
+        except socket.gaierror:
+            logger.warning(f"[WORKER] P2P DNS FALLA: {p2p_test} NO resuelve - camara podria no estar en P2P")
 
         consecutive_failures = 0
 
@@ -294,7 +304,8 @@ class DahuaBridgeRequestHandler(BaseHTTPRequestHandler):
                 "frame_keys": list(engine.latest_frames.keys()),
                 "uptime": time.time() - engine.start_time if hasattr(engine, "start_time") else 0,
             }
-            import json as json_mod
+            import json
+import json as json_mod
             payload = json_mod.dumps(status_info, indent=2)
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
@@ -403,3 +414,8 @@ def start_server(port=8000):
 
 if __name__ == "__main__":
     start_server(8000)
+
+
+
+
+
