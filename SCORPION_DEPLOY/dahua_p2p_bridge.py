@@ -3,11 +3,11 @@
  GAMA SEGURIDAD - DAHUA NVR / DVR / XVR MULTI-CHANNEL ENGINE (CONCURRENT ENGINE)
  ===============================================================================
  Arquitectura: Concurrente y BAJO DEMANDA (On-Demand).
- Propósito: Evita bloqueos y saturación de conexiones P2P en cámaras y NVRs.
- REGLAS DE LIFECYCLE DE TRANSMISIÓN:
- - SOLO inicia la captura de un canal cuando hay una petición activa local o en la nube.
- - Detiene la captura automáticamente después de 30 segundos de inactividad (sin peticiones).
- - Actualiza en-sitio (update) una ÚNICA fila por cámara en Supabase (cuenta = DAHUA_FRAME_{SN}_CH_{canal}).
+ PropÃ³sito: Evita bloqueos y saturaciÃ³n de conexiones P2P en cÃ¡maras y NVRs.
+ REGLAS DE LIFECYCLE DE TRANSMISIÃ“N:
+ - SOLO inicia la captura de un canal cuando hay una peticiÃ³n activa local o en la nube.
+ - Detiene la captura automÃ¡ticamente despuÃ©s de 30 segundos de inactividad (sin peticiones).
+ - Actualiza en-sitio (update) una ÃšNICA fila por cÃ¡mara en Supabase (cuenta = DAHUA_FRAME_{SN}_CH_{canal}).
  - Los frames incluyen timestamp ISO para que el dashboard pueda verificar frescura.
  ===============================================================================
 """
@@ -43,7 +43,7 @@ logger.addHandler(console)
 
 
 class CameraWorker(threading.Thread):
-    """Worker que captura frames de una cámara/NVR Dahua específico."""
+    """Worker que captura frames de una cÃ¡mara/NVR Dahua especÃ­fico."""
 
     def __init__(self, engine, sn, user, pas, canal):
         super().__init__(daemon=True)
@@ -127,6 +127,7 @@ class DahuaMultiDeviceEngine:
         self.last_request_times = {}
         self.registered_devices = []
         self.running = True
+        self.start_time = time.time()
 
     def fetch_all_registered_devices(self):
         devices = []
@@ -261,6 +262,27 @@ class DahuaBridgeRequestHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         parsed = urlparse(self.path)
         params = parse_qs(parsed.query)
+
+        if parsed.path == "/status":
+            status_info = {
+                "workers": len(engine.workers),
+                "workers_active": [k for k, v in engine.workers.items() if v.is_alive()],
+                "registered_devices": len(engine.registered_devices),
+                "devices": [{"sn": d["sn"], "canal": d["canal"]} for d in engine.registered_devices],
+                "last_requests": {k: datetime.fromtimestamp(v).isoformat() if v else None for k, v in engine.last_request_times.items()},
+                "running": engine.running,
+                "frames_in_memory": len(engine.latest_frames),
+                "frame_keys": list(engine.latest_frames.keys()),
+                "uptime": time.time() - engine.start_time if hasattr(engine, "start_time") else 0,
+            }
+            import json as json_mod
+            payload = json_mod.dumps(status_info, indent=2)
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            self.wfile.write(payload.encode("utf-8"))
+            return
 
         if parsed.path in ["/snapshot", "/api/snapshot"]:
             sn = params.get("sn", [""])[0].strip().upper()

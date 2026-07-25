@@ -16,11 +16,11 @@ interface EventoMonitoreo {
 interface CamaraDahuaP2P {
   id: string
   nombre: string
-  serialNumber: string   // NÃºmero de Serie Dahua (SN)
+  serialNumber: string   // NÃƒÂºmero de Serie Dahua (SN)
   usuario: string        // admin
-  password?: string      // ContraseÃ±a protegida
+  password?: string      // ContraseÃƒÂ±a protegida
   canal: number          // 1, 2, 3...
-  substream: boolean     // true = SubStream rÃ¡pido de bajo consumo
+  substream: boolean     // true = SubStream rÃƒÂ¡pido de bajo consumo
   activa: boolean
 }
 
@@ -79,7 +79,7 @@ export default function VideoVerificacionModal({ onClose, evento, esCierre, clie
       .then(res => {
         if (res.status === 200) {
           setLocalBridgeActive(true)
-          addLog('âš¡ ConexiÃ³n directa ultra rÃ¡pida a Dahua Local Bridge (Puerto 8000) ACTIVA.', 'success')
+          addLog('Ã¢Å¡Â¡ ConexiÃƒÂ³n directa ultra rÃƒÂ¡pida a Dahua Local Bridge (Puerto 8000) ACTIVA.', 'success')
         }
       })
       .catch(() => {
@@ -87,7 +87,7 @@ export default function VideoVerificacionModal({ onClose, evento, esCierre, clie
       })
   }, [])
 
-  // 1. SuscripciÃ³n Supabase Realtime para Control PTZ
+  // 1. SuscripciÃƒÂ³n Supabase Realtime para Control PTZ
   useEffect(() => {
     const channelName = `ptz-${cuentaActiva}`
     const ch = supabase.channel(channelName)
@@ -99,21 +99,21 @@ export default function VideoVerificacionModal({ onClose, evento, esCierre, clie
     }
   }, [cuentaActiva])
 
-  // 2. Enviar comandos ONVIF PTZ de movimiento fÃ­sico a la cÃ¡mara Dahua
+  // 2. Enviar comandos ONVIF PTZ de movimiento fÃƒÂ­sico a la cÃƒÂ¡mara Dahua
   const enviarComandoPTZ = async (direccion: string) => {
     const dirMap: Record<string, string> = {
-      up: 'ARRIBA â–²',
-      down: 'ABAJO â–¼',
-      left: 'IZQUIERDA â—€',
-      right: 'DERECHA â–¶',
-      home: 'INICIAL ðŸ ',
-      zoomIn: 'ZOOM + ðŸ”',
-      zoomOut: 'ZOOM - ðŸ”'
+      up: 'ARRIBA Ã¢â€“Â²',
+      down: 'ABAJO Ã¢â€“Â¼',
+      left: 'IZQUIERDA Ã¢â€”â‚¬',
+      right: 'DERECHA Ã¢â€“Â¶',
+      home: 'INICIAL Ã°Å¸ÂÂ ',
+      zoomIn: 'ZOOM + Ã°Å¸â€Â',
+      zoomOut: 'ZOOM - Ã°Å¸â€Â'
     }
 
     const txt = dirMap[direccion] || direccion
     setAlertaPTZ(txt)
-    addLog(`ðŸ•¹ï¸ Enviando movimiento PTZ ONVIF: ${txt} (SN: ${selectedCamara?.serialNumber})...`, 'info')
+    addLog(`Ã°Å¸â€¢Â¹Ã¯Â¸Â Enviando movimiento PTZ ONVIF: ${txt} (SN: ${selectedCamara?.serialNumber})...`, 'info')
 
     try {
       if (channelRef.current && selectedCamara) {
@@ -128,21 +128,21 @@ export default function VideoVerificacionModal({ onClose, evento, esCierre, clie
         })
       }
       await fetch(`/api/dahua-ptz?dir=${direccion}&sn=${selectedCamara?.serialNumber || ''}`)
-      addLog(`âœ… Movimiento PTZ ${txt} ejecutado en cÃ¡mara fÃ­sica.`, 'success')
+      addLog(`Ã¢Å“â€¦ Movimiento PTZ ${txt} ejecutado en cÃƒÂ¡mara fÃƒÂ­sica.`, 'success')
     } catch (e) {
-      addLog(`âš ï¸ Comando PTZ enviado.`, 'info')
+      addLog(`Ã¢Å¡Â Ã¯Â¸Â Comando PTZ enviado.`, 'info')
     }
 
     setTimeout(() => setAlertaPTZ(null), 1200)
   }
 
-  // 3. Cargar catÃ¡logo de cÃ¡maras Dahua P2P / NVR para este abonado
+  // 3. Cargar catÃƒÂ¡logo de cÃƒÂ¡maras Dahua P2P / NVR para este abonado
   useEffect(() => {
     let isMounted = true
     async function fetchCams() {
       try {
         setCargandoIA(true)
-        addLog(`ðŸ“¡ Consultando equipos NVR/DVR y cÃ¡maras asociadas a abonado #${cuentaActiva}...`, 'info')
+        addLog(`Ã°Å¸â€œÂ¡ Consultando equipos NVR/DVR y cÃƒÂ¡maras asociadas a abonado #${cuentaActiva}...`, 'info')
 
         const localSaved = localStorage.getItem(`gama_dahua_sn_${cuentaActiva}`)
         let localCams: CamaraDahuaP2P[] = []
@@ -179,7 +179,7 @@ export default function VideoVerificacionModal({ onClose, evento, esCierre, clie
         if (finalCams.length === 0 && cuentaActiva === 'C701') {
           finalCams.push({
             id: 'DH-C701-1',
-            nombre: 'CÃMARA ACCESO PRINCIPAL P2P',
+            nombre: 'CÃƒÂMARA ACCESO PRINCIPAL P2P',
             serialNumber: 'AE0970BPAG00815',
             usuario: 'admin',
             password: 'L2D55413',
@@ -193,15 +193,15 @@ export default function VideoVerificacionModal({ onClose, evento, esCierre, clie
           if (finalCams.length > 0) {
             setCamarasDahua(finalCams)
             setSelectedCamara(finalCams[0])
-            addLog(`âœ… ${finalCams.length} canal(es) de video cargado(s) para #${cuentaActiva}.`, 'success')
+            addLog(`Ã¢Å“â€¦ ${finalCams.length} canal(es) de video cargado(s) para #${cuentaActiva}.`, 'success')
           } else {
             setCamarasDahua([])
             setSelectedCamara(null)
-            addLog(`âš ï¸ ATENCIÃ“N: No hay cÃ¡maras o NVR registrados para la cuenta #${cuentaActiva}. Registre los datos en Expediente > CÃ¡mara de VerificaciÃ³n.`, 'warn')
+            addLog(`Ã¢Å¡Â Ã¯Â¸Â ATENCIÃƒâ€œN: No hay cÃƒÂ¡maras o NVR registrados para la cuenta #${cuentaActiva}. Registre los datos en Expediente > CÃƒÂ¡mara de VerificaciÃƒÂ³n.`, 'warn')
           }
         }
       } catch (err: any) {
-        addLog(`âŒ Error consultando cÃ¡maras Dahua: ${err.message}`, 'error')
+        addLog(`Ã¢ÂÅ’ Error consultando cÃƒÂ¡maras Dahua: ${err.message}`, 'error')
       } finally {
         if (isMounted) setCargandoIA(false)
       }
@@ -217,7 +217,7 @@ export default function VideoVerificacionModal({ onClose, evento, esCierre, clie
         const nueva = prev + 1
         if (nueva > 3 && !senalPerdida) {
           setSenalPerdida(true)
-          addLog('SEÑAL PERDIDA - Sin frame nuevo por ' + nueva + 's', 'warn')
+          addLog('SEÃ‘AL PERDIDA - Sin frame nuevo por ' + nueva + 's', 'warn')
         }
         return nueva
       })
@@ -262,18 +262,18 @@ export default function VideoVerificacionModal({ onClose, evento, esCierre, clie
                   [`${cam.serialNumber}_${cam.canal}`]: reader.result as string
                 }))
                 setStatusMsg(localBridgeActive
-                  ? 'ðŸ”´ TRANSMISIÃ“N LOCAL DIRECTA (HIGH-FPS - PUERTO 8000)'
-                  : 'â˜ï¸ TRANSMISIÃ“N CLOUD (SUPABASE SYNC - LATENCIA 1s)')
+                  ? 'Ã°Å¸â€Â´ TRANSMISIÃƒâ€œN LOCAL DIRECTA (HIGH-FPS - PUERTO 8000)'
+                  : 'Ã¢ËœÂÃ¯Â¸Â TRANSMISIÃƒâ€œN CLOUD (SUPABASE SYNC - LATENCIA 1s)')
               }
             }
             reader.readAsDataURL(blob)
           } else {
             // Log HTTP error status
-            addLog(`âŒ Error HTTP ${res.status} al obtener frame de ${cam.serialNumber} CH-${cam.canal}`, 'error')
+            addLog(`Ã¢ÂÅ’ Error HTTP ${res.status} al obtener frame de ${cam.serialNumber} CH-${cam.canal}`, 'error')
           }
         } catch (e) {
           // Log network or fetch errors
-          addLog(`âŒ Error de conexiÃ³n al obtener frame de ${cam.serialNumber} CH-${cam.canal}: ${e instanceof Error ? e.message : String(e)}`, 'error')
+          addLog(`Ã¢ÂÅ’ Error de conexiÃƒÂ³n al obtener frame de ${cam.serialNumber} CH-${cam.canal}: ${e instanceof Error ? e.message : String(e)}`, 'error')
         }
       }
     }
@@ -296,22 +296,22 @@ export default function VideoVerificacionModal({ onClose, evento, esCierre, clie
   const copiarLogs = () => {
     const texto = logsP2P.map(l => `[${l.hora}] [${l.tipo.toUpperCase()}] ${l.mensaje}`).join('\n')
     navigator.clipboard.writeText(texto)
-    alert('ðŸ“‹ Logs de conexiÃ³n P2P copiados al portapapeles.')
+    alert('Ã°Å¸â€œâ€¹ Logs de conexiÃƒÂ³n P2P copiados al portapapeles.')
   }
 
   // Doble Clic para Maximizar o Regresar al Mosaico
   const handleDoubleClickCamara = (cam: CamaraDahuaP2P) => {
     if (modoMaximizado) {
       setModoMaximizado(false)
-      addLog(`ðŸ” Regresando a vista Matriz MulticÃ¡mara (${camarasDahua.length} canales)...`, 'info')
+      addLog(`Ã°Å¸â€Â Regresando a vista Matriz MulticÃƒÂ¡mara (${camarasDahua.length} canales)...`, 'info')
     } else {
       setSelectedCamara(cam)
       setModoMaximizado(true)
-      addLog(`ðŸ” Maximizando cÃ¡mara ${cam.nombre} [CH-${cam.canal}] (Doble Clic para volver)...`, 'info')
+      addLog(`Ã°Å¸â€Â Maximizando cÃƒÂ¡mara ${cam.nombre} [CH-${cam.canal}] (Doble Clic para volver)...`, 'info')
     }
   }
 
-  // Calcular columnas dinÃ¡micas para la Matriz segÃºn cantidad de canales
+  // Calcular columnas dinÃƒÂ¡micas para la Matriz segÃƒÂºn cantidad de canales
   const gridColsClass = camarasDahua.length <= 2 ? 'grid-cols-1 md:grid-cols-2' :
                         camarasDahua.length <= 4 ? 'grid-cols-2 md:grid-cols-2' :
                         camarasDahua.length <= 9 ? 'grid-cols-2 md:grid-cols-3' : 'grid-cols-2 md:grid-cols-4 lg:grid-cols-5'
@@ -329,7 +329,7 @@ export default function VideoVerificacionModal({ onClose, evento, esCierre, clie
             </span>
             <div>
               <h2 className="text-base font-extrabold tracking-wide text-red-100 flex items-center gap-2">
-                ðŸ“¹ NVR / XVR / DAHUA P2P LIVE STREAM MATRIX | {clientName} (`#{cuentaActiva}`)
+                Ã°Å¸â€œÂ¹ NVR / XVR / DAHUA P2P LIVE STREAM MATRIX | {clientName} (`#{cuentaActiva}`)
               </h2>
               <p className="text-[11px] text-gray-400 font-mono">
                 EVENTO: <span className="text-yellow-400">{evento.evento}</span> | ZONA: {evento.zona} | HORA: {evento.fecha_hora}
@@ -342,19 +342,19 @@ export default function VideoVerificacionModal({ onClose, evento, esCierre, clie
               onClick={() => setModoMaximizado(!modoMaximizado)}
               className="bg-yellow-500 hover:bg-yellow-400 text-black font-extrabold font-mono border border-yellow-300 px-3 py-1 rounded text-xs transition cursor-pointer"
             >
-              {modoMaximizado ? 'ðŸ”² VER MATRIZ MOSAICO (TODAS)' : 'ðŸ” VER CÃMARA INDIVIDUAL (PTZ)'}
+              {modoMaximizado ? 'Ã°Å¸â€Â² VER MATRIZ MOSAICO (TODAS)' : 'Ã°Å¸â€Â VER CÃƒÂMARA INDIVIDUAL (PTZ)'}
             </button>
             <button
               onClick={() => setMostrarLogs(!mostrarLogs)}
               className="bg-gray-800 hover:bg-gray-700 text-yellow-300 font-mono border border-gray-700 px-2 py-1 rounded text-xs transition"
             >
-              {mostrarLogs ? 'ðŸ“œ OCULTAR LOGS' : 'ðŸ“œ LOGS'}
+              {mostrarLogs ? 'Ã°Å¸â€œÅ“ OCULTAR LOGS' : 'Ã°Å¸â€œÅ“ LOGS'}
             </button>
             <span className="text-xs font-mono bg-black/60 border border-gray-700 px-2 py-1 rounded text-green-400">
-              â±ï¸ EN ESCENA: {formatTiempoEscena(tiempoEnEscena)}
+              Ã¢ÂÂ±Ã¯Â¸Â EN ESCENA: {formatTiempoEscena(tiempoEnEscena)}
             </span>
             <button onClick={onClose} className="bg-red-900/80 hover:bg-red-700 text-white font-bold px-3 py-1 rounded text-xs transition cursor-pointer">
-              âœ– CERRAR
+              Ã¢Å“â€“ CERRAR
             </button>
           </div>
         </div>
@@ -362,11 +362,11 @@ export default function VideoVerificacionModal({ onClose, evento, esCierre, clie
         {/* Cuerpo Principal */}
         <div className="grid grid-cols-1 md:grid-cols-5 gap-3 p-3 flex-1 overflow-hidden min-h-0">
           
-          {/* Panel Izquierdo: Lista de Canales / Selector de CÃ¡mara */}
+          {/* Panel Izquierdo: Lista de Canales / Selector de CÃƒÂ¡mara */}
           <div className="md:col-span-1 bg-black/70 border border-gray-800 rounded-lg p-2.5 flex flex-col gap-2 overflow-hidden">
             <div className="flex items-center justify-between border-b border-gray-800 pb-1">
               <h3 className="text-xs font-bold text-gray-300 uppercase tracking-wider">
-                ðŸ“¡ CANALES DETECTADOS (`#{cuentaActiva}`)
+                Ã°Å¸â€œÂ¡ CANALES DETECTADOS (`#{cuentaActiva}`)
               </h3>
               <span className="text-[10px] bg-red-900 text-red-200 px-1.5 py-0.5 rounded font-bold">
                 {camarasDahua.length} CH
@@ -377,8 +377,8 @@ export default function VideoVerificacionModal({ onClose, evento, esCierre, clie
               <div className="text-xs text-gray-500 italic p-4 text-center">Consultando NVR/DVR...</div>
             ) : camarasDahua.length === 0 ? (
               <div className="text-xs text-yellow-500/80 p-3 bg-yellow-950/20 border border-yellow-800/40 rounded text-center leading-relaxed">
-                âš ï¸ Sin NÃºmero de Serie (SN) ni cÃ¡maras registradas para la cuenta #{cuentaActiva}.<br/>
-                <span className="text-[10px] text-gray-400 mt-1 block">Configure los datos desde Expediente &gt; CÃ¡mara de VerificaciÃ³n.</span>
+                Ã¢Å¡Â Ã¯Â¸Â Sin NÃƒÂºmero de Serie (SN) ni cÃƒÂ¡maras registradas para la cuenta #{cuentaActiva}.<br/>
+                <span className="text-[10px] text-gray-400 mt-1 block">Configure los datos desde Expediente &gt; CÃƒÂ¡mara de VerificaciÃƒÂ³n.</span>
               </div>
             ) : (
               <div className="flex flex-col gap-1.5 overflow-y-auto flex-1 pr-1">
@@ -415,7 +415,7 @@ export default function VideoVerificacionModal({ onClose, evento, esCierre, clie
                   onClick={() => setUseSubstream(true)}
                   className={`py-1 rounded font-bold transition ${useSubstream ? 'bg-green-700 text-white' : 'bg-gray-800 text-gray-400'}`}
                 >
-                  âš¡ SubStream (H.264)
+                  Ã¢Å¡Â¡ SubStream (H.264)
                 </button>
                 <button
                   onClick={() => setUseSubstream(false)}
@@ -427,22 +427,22 @@ export default function VideoVerificacionModal({ onClose, evento, esCierre, clie
             </div>
           </div>
 
-          {/* Panel Central: VisualizaciÃ³n MulticÃ¡mara Matriz / Vista Maximizada */}
+          {/* Panel Central: VisualizaciÃƒÂ³n MulticÃƒÂ¡mara Matriz / Vista Maximizada */}
           <div className="md:col-span-4 flex flex-col gap-2 overflow-hidden h-full">
             
-            {/* Si estÃ¡ en Modo Maximizado: Muestra 1 sola cÃ¡mara gigante con Controles PTZ */}
+            {/* Si estÃƒÂ¡ en Modo Maximizado: Muestra 1 sola cÃƒÂ¡mara gigante con Controles PTZ */}
             {modoMaximizado && selectedCamara ? (
               <div className="flex-1 flex flex-col gap-2 overflow-hidden min-h-0">
                 <div 
                   onDoubleClick={() => handleDoubleClickCamara(selectedCamara)}
                   className="relative bg-black rounded-lg border-2 border-red-500 flex-1 flex items-center justify-center overflow-hidden cursor-pointer select-none"
-                  title="Haz Doble Clic para regresar a la vista de Matriz MulticÃ¡mara"
+                  title="Haz Doble Clic para regresar a la vista de Matriz MulticÃƒÂ¡mara"
                 >
                   <div className="absolute top-2 left-2 z-10 bg-black/80 backdrop-blur-sm border border-gray-700 px-2.5 py-1 rounded text-[11px] font-mono text-white flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
                     <span>{selectedCamara.nombre} [CH-{selectedCamara.canal}]</span>
                     {senalPerdida ? (
-                      <span className="ml-2 text-red-400 font-bold animate-pulse text-[10px]">SIN SEÑAL ({edadFrameActual}s)</span>
+                      <span className="ml-2 text-red-400 font-bold animate-pulse text-[10px]">SIN SEÃ‘AL ({edadFrameActual}s)</span>
                     ) : (
                       <span className="ml-2 text-green-400 text-[10px]">{edadFrameActual <= 1 ? 'EN VIVO' : edadFrameActual + 's'}</span>
                     )}
@@ -473,27 +473,27 @@ export default function VideoVerificacionModal({ onClose, evento, esCierre, clie
                 {/* Controles PTZ */}
                 <div className="bg-black/80 border border-gray-800 rounded-lg p-2 flex items-center justify-between gap-4 shrink-0">
                   <span className="text-xs font-bold text-gray-300 flex items-center gap-1">
-                    ðŸ•¹ï¸ CONTROLES PTZ (MOVIMIENTO FÃSICO CANAL {selectedCamara.canal})
+                    Ã°Å¸â€¢Â¹Ã¯Â¸Â CONTROLES PTZ (MOVIMIENTO FÃƒÂSICO CANAL {selectedCamara.canal})
                   </span>
 
                   <div className="flex items-center gap-1">
-                    <button onClick={() => enviarComandoPTZ('left')} className="bg-gray-800 hover:bg-gray-700 text-white font-bold p-1.5 rounded text-xs transition active:scale-95">â—€</button>
+                    <button onClick={() => enviarComandoPTZ('left')} className="bg-gray-800 hover:bg-gray-700 text-white font-bold p-1.5 rounded text-xs transition active:scale-95">Ã¢â€”â‚¬</button>
                     <div className="flex flex-col gap-0.5">
-                      <button onClick={() => enviarComandoPTZ('up')} className="bg-gray-800 hover:bg-gray-700 text-white font-bold p-1.5 rounded text-xs transition active:scale-95">â–²</button>
-                      <button onClick={() => enviarComandoPTZ('down')} className="bg-gray-800 hover:bg-gray-700 text-white font-bold p-1.5 rounded text-xs transition active:scale-95">â–¼</button>
+                      <button onClick={() => enviarComandoPTZ('up')} className="bg-gray-800 hover:bg-gray-700 text-white font-bold p-1.5 rounded text-xs transition active:scale-95">Ã¢â€“Â²</button>
+                      <button onClick={() => enviarComandoPTZ('down')} className="bg-gray-800 hover:bg-gray-700 text-white font-bold p-1.5 rounded text-xs transition active:scale-95">Ã¢â€“Â¼</button>
                     </div>
-                    <button onClick={() => enviarComandoPTZ('right')} className="bg-gray-800 hover:bg-gray-700 text-white font-bold p-1.5 rounded text-xs transition active:scale-95">â–¶</button>
+                    <button onClick={() => enviarComandoPTZ('right')} className="bg-gray-800 hover:bg-gray-700 text-white font-bold p-1.5 rounded text-xs transition active:scale-95">Ã¢â€“Â¶</button>
                   </div>
 
                   <div className="flex items-center gap-2">
                     <button onClick={() => enviarComandoPTZ('zoomIn')} className="bg-blue-900/80 hover:bg-blue-700 text-white font-bold px-3 py-1 rounded text-xs transition active:scale-95">ZOOM +</button>
                     <button onClick={() => enviarComandoPTZ('zoomOut')} className="bg-blue-900/80 hover:bg-blue-700 text-white font-bold px-3 py-1 rounded text-xs transition active:scale-95">ZOOM -</button>
-                    <button onClick={() => setModoMaximizado(false)} className="bg-yellow-600 hover:bg-yellow-500 text-black font-extrabold px-3 py-1 rounded text-xs transition cursor-pointer">ðŸ”² VOLVER A MOSAICO</button>
+                    <button onClick={() => setModoMaximizado(false)} className="bg-yellow-600 hover:bg-yellow-500 text-black font-extrabold px-3 py-1 rounded text-xs transition cursor-pointer">Ã°Å¸â€Â² VOLVER A MOSAICO</button>
                   </div>
                 </div>
               </div>
             ) : (
-              /* Modo Matriz MulticÃ¡mara: Grilla completa con divisiÃ³n de canales y doble clic para maximizar */
+              /* Modo Matriz MulticÃƒÂ¡mara: Grilla completa con divisiÃƒÂ³n de canales y doble clic para maximizar */
               <div className="flex-1 flex flex-col gap-2 overflow-hidden min-h-0">
                 <div className={`grid ${gridColsClass} gap-2 flex-1 overflow-y-auto p-1 bg-black/60 rounded-lg border border-gray-800`}>
                   {camarasDahua.map((cam) => {
@@ -503,7 +503,7 @@ export default function VideoVerificacionModal({ onClose, evento, esCierre, clie
                         key={cam.id}
                         onDoubleClick={() => handleDoubleClickCamara(cam)}
                         className="relative bg-black border border-gray-800 hover:border-red-500 rounded-lg overflow-hidden flex flex-col items-center justify-center cursor-pointer transition group aspect-video shadow-md hover:shadow-red-900/40"
-                        title="Haz Doble Clic para maximizar esta cÃ¡mara a pantalla completa"
+                        title="Haz Doble Clic para maximizar esta cÃƒÂ¡mara a pantalla completa"
                       >
                         <div className="absolute top-1 left-1 z-10 bg-black/80 backdrop-blur-sm border border-gray-700 px-2 py-0.5 rounded text-[10px] font-mono text-white flex items-center gap-1.5">
                           <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
@@ -525,14 +525,14 @@ export default function VideoVerificacionModal({ onClose, evento, esCierre, clie
                         )}
 
                         <div className="absolute bottom-1 right-1 opacity-0 group-hover:opacity-100 transition bg-red-600/90 text-white font-bold text-[9px] px-1.5 py-0.5 rounded">
-                          ðŸ” Doble Clic Ampliar
+                          Ã°Å¸â€Â Doble Clic Ampliar
                         </div>
                       </div>
                     )
                   })}
                   {camarasDahua.length === 0 && (
                     <div className="col-span-full flex flex-col items-center justify-center p-12 text-center text-gray-500">
-                      <p className="text-sm font-mono text-yellow-400">Sin cÃ¡maras o NVRs configurados para este abonado.</p>
+                      <p className="text-sm font-mono text-yellow-400">Sin cÃƒÂ¡maras o NVRs configurados para este abonado.</p>
                     </div>
                   )}
                 </div>
@@ -544,14 +544,14 @@ export default function VideoVerificacionModal({ onClose, evento, esCierre, clie
               <div className="bg-black/90 border border-gray-800 rounded-lg p-2 flex flex-col gap-1 text-[11px] font-mono max-h-[120px] overflow-hidden shrink-0">
                 <div className="flex items-center justify-between border-b border-gray-800 pb-1 shrink-0">
                   <span className="text-yellow-400 font-bold flex items-center gap-1.5">
-                    ðŸ“œ CONSOLA DE DIAGNÃ“STICO NVR P2P DAHUA EN VIVO
+                    Ã°Å¸â€œÅ“ CONSOLA DE DIAGNÃƒâ€œSTICO NVR P2P DAHUA EN VIVO
                   </span>
                   <div className="flex items-center gap-2">
                     <button onClick={copiarLogs} className="text-gray-400 hover:text-white text-[10px] bg-gray-800 px-1.5 py-0.5 rounded">
-                      ðŸ“‹ Copiar
+                      Ã°Å¸â€œâ€¹ Copiar
                     </button>
                     <button onClick={() => setLogsP2P([])} className="text-gray-400 hover:text-white text-[10px] bg-gray-800 px-1.5 py-0.5 rounded">
-                      ðŸ§¹ Limpiar
+                      Ã°Å¸Â§Â¹ Limpiar
                     </button>
                   </div>
                 </div>
