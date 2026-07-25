@@ -463,11 +463,58 @@ export default function VideoVerificacionModal({ onClose, evento, esCierre, clie
                       className="w-full h-full object-contain"
                     />
                   ) : (
-                    <div className="flex flex-col items-center justify-center gap-2 p-6 text-center text-gray-500">
-                      <div className="w-10 h-10 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
-                      <p className="text-xs font-mono text-gray-400">
-                        Cargando canal {selectedCamara.canal} de NVR Dahua P2P...
-                      </p>
+                    <div className="flex flex-col items-center justify-center gap-3 p-6 text-center w-full max-w-md">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 border-2 border-red-500 border-t-transparent rounded-full animate-spin shrink-0" />
+                        <span className="text-xs font-mono text-yellow-300 font-bold">BUSCANDO SEÑAL P2P...</span>
+                      </div>
+                      <div className="w-full bg-black/60 border border-gray-700 rounded-lg p-3 text-left space-y-2 text-[11px] font-mono">
+                        <div className="flex items-center justify-between border-b border-gray-800 pb-1">
+                          <span className="text-gray-400 font-bold uppercase">Diagnóstico Conexión</span>
+                          <span className="text-gray-600">SN: {selectedCamara.serialNumber}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className={`w-2 h-2 rounded-full shrink-0 ${localBridgeActive ? 'bg-green-500' : 'bg-red-500'}`} />
+                          <span className="text-gray-300">Bridge local (puerto 8000):</span>
+                          <span className={localBridgeActive ? 'text-green-400' : 'text-red-400'}>
+                            {localBridgeActive ? 'ACTIVO' : 'OFFLINE'}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className={`w-2 h-2 rounded-full shrink-0 ${
+                            Object.values(bridgeDnsOk).some(v => v === 'OK') ? 'bg-green-500' :
+                            Object.keys(bridgeDnsOk).length > 0 ? 'bg-red-500' : 'bg-yellow-500 animate-pulse'
+                          }`} />
+                          <span className="text-gray-300">Servicio P2P cloud:</span>
+                          <span className={Object.values(bridgeDnsOk).some(v => v === 'OK') ? 'text-green-400' : Object.keys(bridgeDnsOk).length > 0 ? 'text-red-400' : 'text-yellow-400'}>
+                            {Object.keys(bridgeDnsOk).length === 0 ? 'Verificando...' :
+                             Object.values(bridgeDnsOk).some(v => v === 'OK') ? 'ONLINE ✓' : 'SIN SEÑAL ✗'}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className={`w-2 h-2 rounded-full shrink-0 ${edadFrameActual < 10 ? 'bg-yellow-500 animate-pulse' : 'bg-red-500'}`} />
+                          <span className="text-gray-300">Esperando frame:</span>
+                          <span className={edadFrameActual < 10 ? 'text-yellow-400' : 'text-red-400'}>{edadFrameActual}s</span>
+                        </div>
+                      </div>
+                      {edadFrameActual > 8 && Object.keys(bridgeDnsOk).length > 0 && !Object.values(bridgeDnsOk).some(v => v === 'OK') && (
+                        <div className="w-full bg-red-950/40 border border-red-800/50 rounded-lg p-3 text-left text-[10px] font-mono space-y-1.5">
+                          <p className="text-red-300 font-bold text-[11px]">⚠️ Cámara no detectada en ningún servicio P2P</p>
+                          <ul className="text-gray-400 space-y-0.5 ml-1">
+                            <li>• Cámara offline o sin Internet</li>
+                            <li>• P2P no activado → Red → P2P → Habilitar</li>
+                            <li>• SN incorrecto en Expediente del abonado</li>
+                          </ul>
+                          <p className="text-yellow-400 font-bold mt-1">¿La app DMSS ve la cámara con este SN?</p>
+                          {localBridgeActive && (
+                            <a href={`http://127.0.0.1:8000/dns-check?sn=${selectedCamara.serialNumber}`}
+                               target="_blank" rel="noreferrer"
+                               className="block text-blue-400 hover:text-blue-300 underline mt-1">
+                              🔍 Ver diagnóstico DNS completo →
+                            </a>
+                          )}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
