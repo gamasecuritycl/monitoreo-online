@@ -3,11 +3,11 @@
  GAMA SEGURIDAD - DAHUA NVR / DVR / XVR MULTI-CHANNEL ENGINE (CONCURRENT ENGINE)
  ===============================================================================
  Arquitectura: Concurrente y BAJO DEMANDA (On-Demand).
- PropÃ³sito: Evita bloqueos y saturaciÃ³n de conexiones P2P en cÃ¡maras y NVRs.
- REGLAS DE LIFECYCLE DE TRANSMISIÃ“N:
- - SOLO inicia la captura de un canal cuando hay una peticiÃ³n activa local o en la nube.
- - Detiene la captura automÃ¡ticamente despuÃ©s de 30 segundos de inactividad (sin peticiones).
- - Actualiza en-sitio (update) una ÃšNICA fila por cÃ¡mara en Supabase (cuenta = DAHUA_FRAME_{SN}_CH_{canal}).
+ PropÃƒÂ³sito: Evita bloqueos y saturaciÃƒÂ³n de conexiones P2P en cÃƒÂ¡maras y NVRs.
+ REGLAS DE LIFECYCLE DE TRANSMISIÃƒâ€œN:
+ - SOLO inicia la captura de un canal cuando hay una peticiÃƒÂ³n activa local o en la nube.
+ - Detiene la captura automÃƒÂ¡ticamente despuÃƒÂ©s de 30 segundos de inactividad (sin peticiones).
+ - Actualiza en-sitio (update) una ÃƒÅ¡NICA fila por cÃƒÂ¡mara en Supabase (cuenta = DAHUA_FRAME_{SN}_CH_{canal}).
  - Los frames incluyen timestamp ISO para que el dashboard pueda verificar frescura.
  ===============================================================================
 """
@@ -43,7 +43,7 @@ logger.addHandler(console)
 
 
 class CameraWorker(threading.Thread):
-    """Worker que captura frames de una cÃ¡mara/NVR Dahua especÃ­fico."""
+    """Worker que captura frames de una cÃƒÂ¡mara/NVR Dahua especÃƒÂ­fico."""
 
     def __init__(self, engine, sn, user, pas, canal):
         super().__init__(daemon=True)
@@ -53,6 +53,7 @@ class CameraWorker(threading.Thread):
         self.pas = pas
         self.canal = canal
         self.running = True
+        self.local_ip = None
         self.last_upload_time = 0
         self.backoff = 0.3
 
@@ -61,11 +62,28 @@ class CameraWorker(threading.Thread):
         logger.info(f"[WORKER] Iniciado para {self.sn} CH-{self.canal}")
         auth = HTTPDigestAuth(self.user, self.pas)
 
+        # Intentar resolver IP local desde parametros o usar defaults
+        local_ip = getattr(self.engine, "local_ip", None)
+        
         endpoints = [
+            # P2P cloud endpoints
             f"http://{self.sn}.easy4ipcloud.com/onvifsnapshot/media_service/snapshot?channel={self.canal}",
+            f"https://{self.sn}.easy4ipcloud.com/onvifsnapshot/media_service/snapshot?channel={self.canal}",
             f"http://{self.sn}.dahuap2p.com/cgi-bin/snapshot.cgi?channel={self.canal}",
-            f"http://192.168.1.19/cgi-bin/snapshot.cgi?channel={self.canal}",
+            f"https://{self.sn}.dahuap2p.com/cgi-bin/snapshot.cgi?channel={self.canal}",
+            # Alternative P2P clouds
+            f"http://{self.sn}.myp2pcloud.com/cgi-bin/snapshot.cgi?channel={self.canal}",
+            f"https://{self.sn}.myp2pcloud.com/cgi-bin/snapshot.cgi?channel={self.canal}",
+            f"http://{self.sn}.mypeoplecloud.com/cgi-bin/snapshot.cgi?channel={self.canal}",
+            f"http://{self.sn}.ipcver.com/cgi-bin/snapshot.cgi?channel={self.canal}",
+            # Local IPs (try custom first, then defaults)
         ]
+        if local_ip:
+            endpoints.insert(0, f"http://{local_ip}/cgi-bin/snapshot.cgi?channel={self.canal}")
+            endpoints.insert(0, f"https://{local_ip}/cgi-bin/snapshot.cgi?channel={self.canal}")
+        endpoints.append(f"http://192.168.1.19/cgi-bin/snapshot.cgi?channel={self.canal}")
+        endpoints.append(f"http://192.168.1.18/cgi-bin/snapshot.cgi?channel={self.canal}")
+        endpoints.append(f"http://192.168.0.19/cgi-bin/snapshot.cgi?channel={self.canal}")
 
         consecutive_failures = 0
 
@@ -127,6 +145,7 @@ class DahuaMultiDeviceEngine:
         self.last_request_times = {}
         self.registered_devices = []
         self.running = True
+        self.local_ip = None
         self.start_time = time.time()
 
     def fetch_all_registered_devices(self):
@@ -313,8 +332,13 @@ class DahuaBridgeRequestHandler(BaseHTTPRequestHandler):
                 engine.workers[key] = worker
                 worker.start()
 
+            # Guardar IP local si viene en el request
+            local_ip = params.get("ip", [""])[0].strip()
+            if local_ip:
+                engine.local_ip = local_ip
+
             frame = None
-            for _ in range(35):
+            for _ in range(15):  # Esperar max 1.5s por el primer frame (15 x 0.1s)
                 frame = engine.latest_frames.get(key)
                 if frame:
                     break
@@ -325,14 +349,27 @@ class DahuaBridgeRequestHandler(BaseHTTPRequestHandler):
                 self.send_header("Content-Type", "image/jpeg")
                 self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
                 self.send_header("Access-Control-Allow-Origin", "*")
+                self.send_header("X-Dahua-Status", "FRAME_OK")
                 self.end_headers()
                 self.wfile.write(frame)
             else:
+                # Devolver SVG de "conectando" en vez de bytes vacios
+                svg = f'''<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" viewBox="0 0 640 360">
+  <rect width="640" height="360" fill="#090d16"/>
+  <rect x="8" y="8" width="624" height="344" fill="none" stroke="#eab308" stroke-width="1.5" rx="6" stroke-dasharray="4"/>
+  <circle cx="320" cy="120" r="20" fill="none" stroke="#eab308" stroke-width="2">
+    <animateTransform attributeName="transform" type="rotate" from="0 320 120" to="360 320 120" dur="1s" repeatCount="indefinite"/>
+  </circle>
+  <text x="320" y="175" fill="#fef08a" font-family="monospace" font-size="14" font-weight="bold" text-anchor="middle">CONECTANDO CON CAMARA {sn} CH-{canal_int}...</text>
+  <text x="320" y="200" fill="#94a3b8" font-family="monospace" font-size="11" text-anchor="middle">PID: {key}</text>
+</svg>'''
                 self.send_response(200)
-                self.send_header("Content-Type", "image/jpeg")
+                self.send_header("Content-Type", "image/svg+xml")
+                self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
                 self.send_header("Access-Control-Allow-Origin", "*")
+                self.send_header("X-Dahua-Status", "CONNECTING")
                 self.end_headers()
-                self.wfile.write(b"")
+                self.wfile.write(svg.encode("utf-8"))
         else:
             self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8")
