@@ -1,4 +1,4 @@
-﻿"""
+"""
 ===============================================================================
  GAMA SEGURIDAD - DAHUA NVR / DVR / XVR MULTI-CHANNEL ENGINE (CONCURRENT ENGINE)
  ===============================================================================
@@ -43,6 +43,151 @@ console.setFormatter(logging.Formatter('%(asctime)s [%(levelname)s] %(message)s'
 logger.addHandler(console)
 
 
+
+# ==============================================================================
+#  DAHUA NETSDK P2P TUNNEL - CAPTURA NATIVA VIA DLL (ctypes)
+# ==============================================================================
+#  Usa dhnetsdk.dll para conectar vía P2P directo como lo hace DMSS.
+#  No depende de DNS HTTP ni IPs locales.
+# ==============================================================================
+
+import ctypes
+import ctypes.util
+from ctypes import c_char_p, c_int, c_void_p, c_ubyte, c_long, c_bool, byref, create_string_buffer, POINTER, Structure, CFUNCTYPE
+
+class SDK_P2PEngine:
+    """Motor P2P nativo usando dhnetsdk.dll - captura frames sin HTTP."""
+    
+    DLL_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dhnetsdk.dll")
+    
+    def __init__(self):
+        self.dll = None
+        self.login_handle = None
+        self.initialized = False
+        self._load_dll()
+    
+    def _load_dll(self):
+        try:
+            if os.path.exists(self.DLL_PATH):
+                self.dll = ctypes.WinDLL(self.DLL_PATH)
+                logger.info(f"[SDK] dhnetsdk.dll cargado correctamente ({os.path.getsize(self.DLL_PATH)} bytes)")
+                
+                # Definir prototipos de funciones SDK
+                self.dll.CLIENT_Init.argtypes = [c_void_p, c_void_p, c_void_p]
+                self.dll.CLIENT_Init.restype = c_bool
+                
+                self.dll.CLIENT_SetConnectTime.argtypes = [c_int]
+                self.dll.CLIENT_SetConnectTime.restype = None
+                
+                self.dll.CLIENT_LoginByIP.argtypes = [c_char_p, c_int, c_char_p, c_char_p, c_int, c_void_p, c_void_p]
+                self.dll.CLIENT_LoginByIP.restype = c_long
+                
+                self.dll.CLIENT_Logout.argtypes = [c_long]
+                self.dll.CLIENT_Logout.restype = c_bool
+                
+                self.dll.CLIENT_Cleanup.argtypes = []
+                self.dll.CLIENT_Cleanup.restype = None
+                
+                # Inicializar SDK
+                result = self.dll.CLIENT_Init(None, None, None)
+                if result:
+                    self.initialized = True
+                    self.dll.CLIENT_SetConnectTime(3000)  # 3s timeout
+                    logger.info("[SDK] SDK Dahua inicializado exitosamente")
+                else:
+                    logger.error("[SDK] Fallo CLIENT_Init")
+            else:
+                logger.warning(f"[SDK] dhnetsdk.dll NO encontrado en {self.DLL_PATH}")
+        except Exception as e:
+            logger.error(f"[SDK] Error cargando DLL: {e}")
+    
+    def login_p2p(self, sn, user="admin", password="", port=37777):
+        """Conecta a camara via P2P usando numero de serie."""
+        if not self.initialized:
+            logger.error("[SDK] SDK no inicializado")
+            return False
+        
+        try:
+            sn_bytes = sn.encode('utf-8')
+            user_bytes = user.encode('utf-8')
+            pass_bytes = password.encode('utf-8')
+            
+            device_info = create_string_buffer(1024)
+            error = c_int(0)
+            
+            logger.info(f"[SDK] Conectando P2P a SN: {sn} (puerto {port})...")
+            handle = self.dll.CLIENT_LoginByIP(sn_bytes, port, user_bytes, pass_bytes, 0, device_info, byref(error))
+            
+            if handle != 0:
+                self.login_handle = handle
+                logger.info(f"[SDK] P2P Login OK! SN: {sn}, Handle: {handle}")
+                return True
+            else:
+                logger.warning(f"[SDK] P2P Login FALLIDO SN: {sn}, error={error.value}")
+                return False
+        except Exception as e:
+            logger.error(f"[SDK] Error en login P2P: {e}")
+            return False
+    
+    def capture_snapshot(self, channel=1):
+        """Captura un frame via tunnel P2P."""
+        if not self.login_handle:
+            logger.error("[SDK] No hay sesion P2P activa")
+            return None
+        
+        try:
+            # Buffer para la imagen (2MB)
+            img_buf = create_string_buffer(2 * 1024 * 1024)
+            img_len = c_int(0)
+            
+            # Intentar CLIENT_SnapPicture si existe
+            if hasattr(self.dll, 'CLIENT_SnapPicture'):
+                self.dll.CLIENT_SnapPicture.argtypes = [c_long, c_int, c_void_p, POINTER(c_int), c_int]
+                self.dll.CLIENT_SnapPicture.restype = c_bool
+                
+                result = self.dll.CLIENT_SnapPicture(self.login_handle, channel-1, img_buf, byref(img_len), 2000)
+                if result and img_len.value > 100:
+                    return bytes(img_buf[:img_len.value])
+            
+            # Fallback: intentar CLIENT_SnapPictureEx
+            if hasattr(self.dll, 'CLIENT_SnapPictureEx'):
+                logger.info(f"[SDK] Intentando SnapPictureEx CH-{channel}...")
+            
+            logger.warning("[SDK] No se pudo capturar snapshot via SDK")
+            return None
+        except Exception as e:
+            logger.error(f"[SDK] Error capturando snapshot: {e}")
+            return None
+    
+    def logout(self):
+        if self.login_handle:
+            try:
+                self.dll.CLIENT_Logout(self.login_handle)
+                logger.info("[SDK] Logout P2P exitoso")
+            except:
+                pass
+            self.login_handle = None
+    
+    def cleanup(self):
+        self.logout()
+        if self.initialized:
+            try:
+                self.dll.CLIENT_Cleanup()
+                logger.info("[SDK] SDK cleanup completado")
+            except:
+                pass
+            self.initialized = False
+
+# Instancia global del SDK engine
+_sdk_engine = None
+
+def get_sdk_engine():
+    global _sdk_engine
+    if _sdk_engine is None:
+        _sdk_engine = SDK_P2PEngine()
+    return _sdk_engine
+
+
 class CameraWorker(threading.Thread):
     """Worker que captura frames de una cÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡mara/NVR Dahua especÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â­fico."""
 
@@ -57,10 +202,13 @@ class CameraWorker(threading.Thread):
         self.local_ip = None
         self.last_upload_time = 0
         self.backoff = 0.3
+        self.sdk_tried = False
 
     def run(self):
         key = f"{self.sn}_{self.canal}"
         logger.info(f"[WORKER] Iniciado para {self.sn} CH-{self.canal}")
+        sdk_engine = get_sdk_engine()
+        sdk_logged_in = False
         auth = HTTPDigestAuth(self.user, self.pas)
 
         # Intentar resolver IP local desde parametros o usar defaults
@@ -134,13 +282,35 @@ class CameraWorker(threading.Thread):
                     logger.warning(f"[WORKER] Error en {url}: {e} (fallo #{consecutive_failures})")
 
             if not frame_fetched:
-                consecutive_failures += 1
-                self.backoff = min(1.0 + (consecutive_failures * 0.5), 30.0)
-                if consecutive_failures >= 3:
-                    logger.warning(f"[WORKER] {consecutive_failures} fallos consecutivos {key}, backoff={self.backoff:.1f}s")
-
+                # SDK P2P nativo como respaldo cada 10 fallos
+                if consecutive_failures > 5 and consecutive_failures % 10 == 0 and sdk_engine.initialized:
+                    if not sdk_logged_in:
+                        logger.info(f"[WORKER] Intentando SDK P2P para {self.sn}...")
+                        if sdk_engine.login_p2p(self.sn, self.user, self.pas):
+                            sdk_logged_in = True
+                        else:
+                            logger.warning(f"[WORKER] SDK P2P no disponible para {self.sn}")
+                    if sdk_logged_in:
+                        logger.info(f"[WORKER] Capturando via SDK P2P {self.sn} CH-{self.canal}...")
+                        img_data = sdk_engine.capture_snapshot(self.canal)
+                        if img_data and len(img_data) > 1000:
+                            self.engine.latest_frames[key] = img_data
+                            consecutive_failures = 0
+                            self.backoff = 0.3
+                            ts = datetime.now(timezone.utc).isoformat()
+                            t = threading.Thread(target=self.engine.upload_to_supabase_with_ts, args=(self.sn, self.canal, img_data, ts), daemon=True)
+                            t.start()
+                            logger.info(f"[WORKER] SDK P2P OK! {len(img_data)} bytes - {self.sn} CH-{self.canal}")
+                            frame_fetched = True
+                if not frame_fetched:
+                    consecutive_failures += 1
+                    self.backoff = min(1.0 + (consecutive_failures * 0.5), 30.0)
+                    if consecutive_failures >= 3:
+                        logger.warning(f"[WORKER] {consecutive_failures} fallos consecutivos {key}, backoff={self.backoff:.1f}s")
             time.sleep(0.3 if frame_fetched else self.backoff)
 
+        if sdk_logged_in:
+            sdk_engine.logout()
         self.engine.workers.pop(key, None)
         logger.info(f"[WORKER] Finalizado {self.sn} CH-{self.canal}")
 
@@ -414,6 +584,7 @@ def start_server(port=8000):
 
 if __name__ == "__main__":
     start_server(8000)
+
 
 
 
