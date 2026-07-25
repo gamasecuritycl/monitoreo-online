@@ -58,6 +58,8 @@ export default function VideoVerificacionModal({ onClose, evento, esCierre, clie
   const [edadFrameActual, setEdadFrameActual] = useState(0)
   const [senalPerdida, setSenalPerdida] = useState(false)
   const [localBridgeActive, setLocalBridgeActive] = useState<boolean>(false)
+  const [bridgeDnsOk, setBridgeDnsOk] = useState<Record<string, string>>({})
+  const [urlExitosa, setUrlExitosa] = useState<string>('')
 
   const channelRef = useRef<any>(null)
   const logTerminalRef = useRef<HTMLDivElement | null>(null)
