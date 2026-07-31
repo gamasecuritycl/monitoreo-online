@@ -10,6 +10,7 @@ const clientesFallback = clientesDataRaw as Record<string, Record<string, string
 interface ZonificacionModalProps {
   onClose: () => void
   eventoInicial?: EventoMonitoreo
+  usuarioRol?: string
 }
 
 interface Zona {
@@ -18,8 +19,10 @@ interface Zona {
   area: string
 }
 
-export default function ZonificacionModal({ onClose, eventoInicial }: ZonificacionModalProps) {
+export default function ZonificacionModal({ onClose, eventoInicial, usuarioRol }: ZonificacionModalProps) {
   const modalRef = useRef<HTMLDivElement>(null)
+
+  const esAdmin = usuarioRol === 'Administrador'
 
   const [cuentaActiva, setCuentaActiva] = useState(
     eventoInicial?.cuenta?.toUpperCase().trim() || ''
@@ -28,6 +31,9 @@ export default function ZonificacionModal({ onClose, eventoInicial }: Zonificaci
   const [clientesMap, setClientesMap] = useState<Record<string, Record<string, string>>>(clientesFallback)
   const [zonasMap, setZonasMap] = useState<Record<string, Zona[]>>({})
   const [zonaSeleccionada, setZonaSeleccionada] = useState<Zona | null>(null)
+  const [zonaEnEdicion, setZonaEnEdicion] = useState<Zona | null>(null)
+  const [guardando, setGuardando] = useState(false)
+  const [mensajeError, setMensajeError] = useState('')
   const [loading, setLoading] = useState(true)
 
   // Cargar clientes y zonas desde Supabase al iniciar
@@ -51,6 +57,7 @@ export default function ZonificacionModal({ onClose, eventoInicial }: Zonificaci
           .from('eventos_monitoreo')
           .select('*')
           .eq('cuenta', 'ZONAS')
+          .order('id', { ascending: false })
           .limit(1)
         if (dataZonas && dataZonas.length > 0) {
           const mz = JSON.parse(dataZonas[0].nombre_abonado)
@@ -88,8 +95,23 @@ export default function ZonificacionModal({ onClose, eventoInicial }: Zonificaci
       )
     : listaAbonados
 
-  // Zonas del abonado activo
-  const zonasAbonado: Zona[] = zonasMap[cuentaActiva] || []
+  // Zonas del abonado activo (lookup robusto: "C769", "769", "0769" y defensa ante objeto único)
+  const zonasAbonado: Zona[] = (() => {
+    const k = (cuentaActiva || '').toUpperCase().trim()
+    if (!k) return []
+    const candidatas = [k, k.replace(/^C/, ''), k.replace(/^C/, '').replace(/^0+/, '')]
+    for (const c of candidatas) {
+      const v = zonasMap[c]
+      if (v) return Array.isArray(v) ? v : [v as any]
+    }
+    const soloDigitos = k.replace(/^C/, '').replace(/^0+/, '')
+    for (const [clave, valor] of Object.entries(zonasMap)) {
+      if (clave.toUpperCase().replace(/^C/, '').replace(/^0+/, '') === soloDigitos) {
+        return Array.isArray(valor) ? valor : [valor as any]
+      }
+    }
+    return []
+  })()
 
   // Datos del cliente activo
   const clienteActivo = clientesMap[cuentaActiva] || { cuenta: cuentaActiva, nombre: '' }
@@ -97,11 +119,72 @@ export default function ZonificacionModal({ onClose, eventoInicial }: Zonificaci
   const handleSeleccionarCuenta = (cuenta: string) => {
     setCuentaActiva(cuenta)
     setZonaSeleccionada(null)
+    setZonaEnEdicion(null)
     setBuscarInput('')
+    setMensajeError('')
   }
 
   const handleSeleccionarZona = (zona: Zona) => {
     setZonaSeleccionada(zona)
+    setZonaEnEdicion(null)
+    setMensajeError('')
+  }
+
+  // Persistir zonificación del abonado activo en la fila especial ZONAS (mismo patrón que CLIENTES)
+  const persistirZonas = async (nuevasZonas: Zona[]) => {
+    if (!cuentaActiva) { setMensajeError('No hay cuenta activa seleccionada.'); return }
+    setGuardando(true)
+    setMensajeError('')
+    try {
+      const nuevoMap: Record<string, Zona[]> = { ...zonasMap, [cuentaActiva]: nuevasZonas }
+      const { error } = await supabase
+        .from('eventos_monitoreo')
+        .upsert({
+          cuenta: 'ZONAS',
+          nombre_abonado: JSON.stringify(nuevoMap),
+          evento: 'CONFIGURACION_ZONAS',
+          fecha_hora: new Date().toISOString()
+        })
+      if (error) throw error
+      setZonasMap(nuevoMap)
+      setZonaEnEdicion(null)
+      if (nuevasZonas.length > 0) setZonaSeleccionada(nuevasZonas[nuevasZonas.length - 1])
+    } catch (err: any) {
+      setMensajeError('Error al guardar: ' + (err?.message || 'desconocido'))
+    } finally {
+      setGuardando(false)
+    }
+  }
+
+  const handleAgregar = () => {
+    if (!esAdmin) { setMensajeError('Acción denegada: solo Administrador puede editar la zonificación.'); return }
+    setZonaEnEdicion({ numero: '', dispositivo: '', area: '' })
+    setMensajeError('')
+  }
+
+  const handleEditar = () => {
+    if (!esAdmin) { setMensajeError('Acción denegada: solo Administrador puede editar la zonificación.'); return }
+    if (!zonaSeleccionada) { setMensajeError('Seleccione una zona para editar.'); return }
+    setZonaEnEdicion({ ...zonaSeleccionada })
+    setMensajeError('')
+  }
+
+  const handleBorrar = () => {
+    if (!esAdmin) { setMensajeError('Acción denegada: solo Administrador puede editar la zonificación.'); return }
+    if (!zonaSeleccionada) { setMensajeError('Seleccione una zona para borrar.'); return }
+    if (!window.confirm(`¿Eliminar la zona ${zonaSeleccionada.numero} (${zonaSeleccionada.area || 'sin área'})?`)) return
+    persistirZonas(zonasAbonado.filter(z => z.numero !== zonaSeleccionada.numero))
+    setZonaSeleccionada(null)
+  }
+
+  const handleGuardarEdicion = () => {
+    if (!zonaEnEdicion) return
+    if (!zonaEnEdicion.numero.trim()) { setMensajeError('La zona debe tener número.'); return }
+    const existente = zonasAbonado.find(z => z.numero === zonaEnEdicion.numero)
+    const nuevas = existente
+      ? zonasAbonado.map(z => (z.numero === existente.numero ? zonaEnEdicion : z))
+      : [...zonasAbonado, zonaEnEdicion]
+    persistirZonas(nuevas)
   }
 
   return (
@@ -245,9 +328,10 @@ export default function ZonificacionModal({ onClose, eventoInicial }: Zonificaci
                     <span className="font-bold text-gray-700 w-[45px] shrink-0">Zona Nº:</span>
                     <input
                       type="text"
-                      readOnly
-                      value={zonaSeleccionada?.numero || ''}
-                      className="w-[40px] bg-[#ffffd0] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white px-1 py-0.5 font-bold text-center text-gray-800 text-[10px]"
+                      readOnly={!zonaEnEdicion}
+                      value={zonaEnEdicion?.numero ?? zonaSeleccionada?.numero ?? ''}
+                      onChange={(e) => setZonaEnEdicion(prev => prev ? { ...prev, numero: e.target.value } : prev)}
+                      className="w-[40px] bg-[#ffffd0] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white px-1 py-0.5 font-bold text-center text-gray-800 text-[10px] focus:outline-none"
                     />
                   </div>
                   <div className="flex items-center gap-1">
@@ -263,39 +347,66 @@ export default function ZonificacionModal({ onClose, eventoInicial }: Zonificaci
                     <span className="font-bold text-gray-700 w-[60px] shrink-0">Dispositivo:</span>
                     <input
                       type="text"
-                      readOnly
-                      value={zonaSeleccionada?.dispositivo || ''}
-                      className="flex-1 bg-[#ffffd0] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white px-1.5 py-0.5 font-bold text-gray-800 text-[10px] truncate"
+                      readOnly={!zonaEnEdicion}
+                      value={zonaEnEdicion?.dispositivo ?? zonaSeleccionada?.dispositivo ?? ''}
+                      onChange={(e) => setZonaEnEdicion(prev => prev ? { ...prev, dispositivo: e.target.value } : prev)}
+                      className="flex-1 bg-[#ffffd0] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white px-1.5 py-0.5 font-bold text-gray-800 text-[10px] truncate focus:outline-none"
                     />
                   </div>
                   <div className="col-span-2 flex items-center gap-1">
                     <span className="font-bold text-gray-700 w-[60px] shrink-0">Area cubierta:</span>
                     <input
                       type="text"
-                      readOnly
-                      value={zonaSeleccionada?.area || ''}
-                      className="flex-1 bg-[#ffffd0] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white px-1.5 py-0.5 font-bold text-gray-800 text-[10px] truncate"
+                      readOnly={!zonaEnEdicion}
+                      value={zonaEnEdicion?.area ?? zonaSeleccionada?.area ?? ''}
+                      onChange={(e) => setZonaEnEdicion(prev => prev ? { ...prev, area: e.target.value } : prev)}
+                      className="flex-1 bg-[#ffffd0] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white px-1.5 py-0.5 font-bold text-gray-800 text-[10px] truncate focus:outline-none"
                     />
                   </div>
                 </div>
+                {mensajeError && (
+                  <div className="text-red-700 font-bold text-[9px] mt-1">{mensajeError}</div>
+                )}
               </div>
 
               {/* Botones (solo lectura - igual que Scorpion pero deshabilitados) */}
               <div className="w-full md:w-[90px] flex flex-row md:flex-col justify-end gap-1 shrink-0">
-                {['Agregar', 'Editar', 'Borrar', 'Salir'].map((label) => (
+                {zonaEnEdicion ? (
                   <button
-                    key={label}
-                    onClick={label === 'Salir' ? onClose : undefined}
-                    disabled={label !== 'Salir'}
-                    className={`flex-1 md:flex-none h-7 md:h-auto px-2 py-1 bg-[#d4d0c8] border-2 font-bold text-[10px] select-none ${
-                      label === 'Salir'
-                        ? 'border-t-white border-l-white border-b-gray-700 border-r-gray-700 cursor-pointer hover:bg-gray-200 active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white text-gray-800'
-                        : 'border-t-white border-l-white border-b-gray-500 border-r-gray-500 text-gray-400 cursor-not-allowed'
-                    }`}
+                    onClick={handleGuardarEdicion}
+                    disabled={guardando}
+                    className="flex-1 md:flex-none h-7 md:h-auto px-2 py-1 bg-[#d4d0c8] border-2 font-bold text-[10px] select-none border-t-white border-l-white border-b-gray-700 border-r-gray-700 cursor-pointer hover:bg-gray-200 active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white text-gray-800 disabled:opacity-50"
                   >
-                    {label}
+                    {guardando ? 'Guardando...' : 'Guardar'}
                   </button>
-                ))}
+                ) : (
+                  <>
+                    <button
+                      onClick={handleAgregar}
+                      className="flex-1 md:flex-none h-7 md:h-auto px-2 py-1 bg-[#d4d0c8] border-2 font-bold text-[10px] select-none border-t-white border-l-white border-b-gray-700 border-r-gray-700 cursor-pointer hover:bg-gray-200 active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white text-gray-800"
+                    >
+                      Agregar
+                    </button>
+                    <button
+                      onClick={handleEditar}
+                      className="flex-1 md:flex-none h-7 md:h-auto px-2 py-1 bg-[#d4d0c8] border-2 font-bold text-[10px] select-none border-t-white border-l-white border-b-gray-700 border-r-gray-700 cursor-pointer hover:bg-gray-200 active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white text-gray-800"
+                    >
+                      Editar
+                    </button>
+                    <button
+                      onClick={handleBorrar}
+                      className="flex-1 md:flex-none h-7 md:h-auto px-2 py-1 bg-[#d4d0c8] border-2 font-bold text-[10px] select-none border-t-white border-l-white border-b-gray-700 border-r-gray-700 cursor-pointer hover:bg-gray-200 active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white text-gray-800"
+                    >
+                      Borrar
+                    </button>
+                  </>
+                )}
+                <button
+                  onClick={onClose}
+                  className="flex-1 md:flex-none h-7 md:h-auto px-2 py-1 bg-[#d4d0c8] border-2 font-bold text-[10px] select-none border-t-white border-l-white border-b-gray-700 border-r-gray-700 cursor-pointer hover:bg-gray-200 active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white text-gray-800"
+                >
+                  Salir
+                </button>
               </div>
 
             </div>

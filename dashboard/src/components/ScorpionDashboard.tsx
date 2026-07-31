@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase, type EventoMonitoreo } from '@/lib/supabase'
 import EventGrid from './EventGrid'
 import FooterActions from './FooterActions'
@@ -19,6 +19,7 @@ import ControlTestModal from './ControlTestModal'
 import ReportesModal from './ReportesModal'
 import ConfigModal from './ConfigModal'
 import VideoVerificacionModal from './VideoVerificacionModal'
+import CamaraGridModal from './CamaraGridModal'
 import { lookupContactId } from '@/lib/contact_id_library'
 import { sendMessage, generarMensajeAlerta, generarMensajeEnergia, detectarPatronEvento, type EventInfo } from '@/lib/whatsapp'
 
@@ -69,6 +70,7 @@ export default function ScorpionDashboard() {
   const [busqueda, setBusqueda] = useState('')
   const [eventoSeleccionado, setEventoSeleccionado] = useState<EventoMonitoreo | null>(null)
   const [modalActivo, setModalActivo] = useState<string | null>(null)
+  const [camaraGridCuenta, setCamaraGridCuenta] = useState<string | null>(null)
   const [expedientePestana, setExpedientePestana] = useState<'telefonos' | 'horarios' | 'camara'>('telefonos')
   const [horaLocal, setHoraLocal] = useState('')
   const [mostrarMenuNotificaciones, setMostrarMenuNotificaciones] = useState(false)
@@ -83,6 +85,27 @@ export default function ScorpionDashboard() {
 
   // Mapa de zonificación por abonado desde ZONIFICACION MDB
   const [zonasMap, setZonasMap] = useState<Record<string, { numero: string; dispositivo: string; area: string }[]>>({})
+
+  // Lookup robusto de zonificación: acepta claves "C769", "769", "0769", "0769 "
+  const buscarZonasAbonado = useCallback((cuentaRaw: string | null | undefined) => {
+    const k = (cuentaRaw || '').toUpperCase().trim()
+    if (!k) return [] as { numero: string; dispositivo: string; area: string }[]
+    const candidatas = [k, k.replace(/^C/, ''), k.replace(/^C/, '').replace(/^0+/, '')]
+    for (const c of candidatas) {
+      if (zonasMap[c]) {
+        const v = zonasMap[c]
+        return Array.isArray(v) ? v : [v as any]
+      }
+    }
+    const soloDigitos = k.replace(/^C/, '').replace(/^0+/, '')
+    for (const [clave, valor] of Object.entries(zonasMap)) {
+      const claveNorm = clave.toUpperCase().replace(/^C/, '').replace(/^0+/, '')
+      if (claveNorm === soloDigitos) {
+        return Array.isArray(valor) ? valor : [valor as any]
+      }
+    }
+    return []
+  }, [zonasMap])
 
   // Gestión de Usuarios y Roles (RBAC)
   interface Operator {
@@ -103,34 +126,42 @@ export default function ScorpionDashboard() {
   const [usuarioActivo, setUsuarioActivo] = useState<Operator>(OPERADORES_FALLBACK[0])
   const [sesionIniciada, setSesionIniciada] = useState(false)
   const [unreadWhatsAppCount, setUnreadWhatsAppCount] = useState(0)
+  const [armadoMap, setArmadoMap] = useState<Record<string, boolean>>({})
+  const armadoMapRef = useRef<Record<string, boolean>>({})
+  const clientesConCamarasRef = useRef<Set<string>>(new Set())
 
   // Suscripción Realtime a mensajes entrantes de WhatsApp
   useEffect(() => {
-    const channel = supabase
-      .channel('whatsapp_inbound_realtime')
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'conversaciones_whatsapp' },
-        () => {
-          setUnreadWhatsAppCount((prev) => prev + 1)
-          try {
-            const ctx = new (window.AudioContext || (window as any).webkitAudioContext)()
-            const osc = ctx.createOscillator()
-            const gain = ctx.createGain()
-            osc.type = 'sine'
-            osc.frequency.setValueAtTime(880, ctx.currentTime)
-            gain.gain.setValueAtTime(0.12, ctx.currentTime)
-            osc.connect(gain)
-            gain.connect(ctx.destination)
-            osc.start()
-            osc.stop(ctx.currentTime + 0.15)
-          } catch {}
-        }
-      )
-      .subscribe()
+    let channel: any
+    try {
+      channel = supabase
+        .channel('whatsapp_inbound_realtime')
+        .on(
+          'postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'conversaciones_whatsapp' },
+          () => {
+            setUnreadWhatsAppCount((prev) => prev + 1)
+            try {
+              const ctx = new (window.AudioContext || (window as any).webkitAudioContext)()
+              const osc = ctx.createOscillator()
+              const gain = ctx.createGain()
+              osc.type = 'sine'
+              osc.frequency.setValueAtTime(880, ctx.currentTime)
+              gain.gain.setValueAtTime(0.12, ctx.currentTime)
+              osc.connect(gain)
+              gain.connect(ctx.destination)
+              osc.start()
+              osc.stop(ctx.currentTime + 0.15)
+            } catch {}
+          }
+        )
+        .subscribe()
+    } catch (e) {
+      console.warn('[SUPABASE] WhatsApp channel no disponible')
+    }
 
     return () => {
-      supabase.removeChannel(channel)
+      if (channel) try { supabase.removeChannel(channel) } catch {}
     }
   }, [])
 
@@ -157,7 +188,8 @@ export default function ScorpionDashboard() {
           }
         }
       } catch (err) {
-        console.warn('Error loading operators list:', err)
+        console.warn('Error loading operators list, using fallback:', err)
+        try { const r = await fetch('/api/dahua-eventos?tipo=operadores'); const j = await r.json(); if (j.data?.[0]?.nombre_abonado) { const p = JSON.parse(j.data[0].nombre_abonado); if (p.length > 0) { setOperadores(p); const m = p.find((o: any) => o.codigo === usuarioActivo.codigo); setUsuarioActivo(m || p[0]) } } } catch {}
       }
     }
     fetchOperadores()
@@ -202,6 +234,7 @@ export default function ScorpionDashboard() {
         }
       } catch (err) {
         console.warn('[SUPABASE DASHBOARD] Error cargando clientes, usando fallback.')
+        try { const r = await fetch('/api/dahua-eventos?tipo=clientes'); const j = await r.json(); if (j.data?.[0]?.nombre_abonado) { const p = JSON.parse(j.data[0].nombre_abonado); setClientesMap(p) } } catch {}
       }
     }
     fetchClientes()
@@ -226,12 +259,13 @@ export default function ScorpionDashboard() {
         }
       } catch (err) {
         console.warn('[SUPABASE DASHBOARD] Error cargando codigos de color.')
+        try { const r = await fetch('/api/dahua-eventos?tipo=codigos'); const j = await r.json(); if (j.data?.[0]?.nombre_abonado) { const p = JSON.parse(j.data[0].nombre_abonado); setCodigosMap(p) } } catch {}
       }
     }
     fetchCodigos()
   }, [])
 
-  // Cargar mapa de zonificación de abonados
+  // Cargar mapa de zonificación de abonados (auto-refresh cada 60s + Realtime)
   useEffect(() => {
     const fetchZonas = async () => {
       try {
@@ -239,6 +273,7 @@ export default function ScorpionDashboard() {
           .from('eventos_monitoreo')
           .select('*')
           .eq('cuenta', 'ZONAS')
+          .order('id', { ascending: false })
           .limit(1)
         if (data && data.length > 0) {
           const rawJson = data[0].nombre_abonado
@@ -250,9 +285,27 @@ export default function ScorpionDashboard() {
         }
       } catch (err) {
         console.warn('[SUPABASE DASHBOARD] Error cargando zonificación.')
+        try { const r = await fetch('/api/dahua-eventos?tipo=zonas'); const j = await r.json(); if (j.data?.[0]?.nombre_abonado) { const p = JSON.parse(j.data[0].nombre_abonado); setZonasMap(p) } } catch {}
       }
     }
     fetchZonas()
+    const timer = setInterval(fetchZonas, 60_000)
+
+    // Realtime: refrescar al instante cuando el sincronizador actualice la fila ZONAS
+    let channel: any
+    try {
+      channel = supabase
+        .channel('zonas-live')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'eventos_monitoreo', filter: 'cuenta=eq.ZONAS' }, () => {
+          fetchZonas()
+        })
+        .subscribe()
+    } catch {}
+
+    return () => {
+      clearInterval(timer)
+      if (channel) supabase.removeChannel(channel)
+    }
   }, [])
 
   // Suscripción Realtime a mensajes entrantes de WhatsApp para el badge rojo
@@ -291,9 +344,9 @@ export default function ScorpionDashboard() {
   const esCuentaInternaOFrame = (cuentaRaw: string = '', eventoRaw: string = '') => {
     const c = (cuentaRaw || '').toUpperCase().trim()
     const e = (eventoRaw || '').toUpperCase().trim()
-    if (c.startsWith('CAMARAS_DAHUA_') || c.startsWith('DAHUA_FRAME_')) return true
+    if (c.startsWith('CAMARAS_DAHUA_') || c.startsWith('DAHUA_FRAME_') || c.startsWith('DAHUA_STREAM_REQ_') || c.startsWith('SNAPSHOT_') || c.startsWith('CLIP_') || c.startsWith('CONFIG_WHATSAPP_')) return true
     if (['CLIENTES', 'CODIGOS', 'ZONAS', '__SINCRONIZADOR__', 'EMPRESAS_CONGLOMERADO', 'COTIZACIONES_DOLIBARR', 'ORDENES_TRABAJO', 'CONFIG_OPERADORES', 'CLIENTES_MAESTROS_CRM'].includes(c)) return true
-    if (['ELIMINACION_DAHUA_CRUD', 'GENERACION_NVR_MULTICANAL', 'FRAME_SYNC', 'NVR_DVR_FRAME_SYNC', 'CAMERA_FRAME_SYNC'].includes(e)) return true
+    if (['ELIMINACION_DAHUA_CRUD', 'GENERACION_NVR_MULTICANAL', 'FRAME_SYNC', 'NVR_DVR_FRAME_SYNC', 'CAMERA_FRAME_SYNC', 'STREAM_REQ', 'SNAPSHOT_OPERADOR', 'CLIP_VIDEO_OPERADOR'].includes(e)) return true
     return false
   }
 
@@ -305,6 +358,9 @@ export default function ScorpionDashboard() {
         .not('cuenta', 'in', '(CLIENTES,CODIGOS,ZONAS,__SINCRONIZADOR__,CONFIG_OPERADORES,CLIENTES_MAESTROS_CRM,EMPRESAS_CONGLOMERADO,COTIZACIONES_DOLIBARR,ORDENES_TRABAJO)')
         .not('cuenta', 'like', 'CAMARAS_DAHUA_%')
         .not('cuenta', 'like', 'DAHUA_FRAME_%')
+        .not('cuenta', 'like', 'DAHUA_STREAM_REQ_%')
+        .not('cuenta', 'like', 'SNAPSHOT_%')
+        .not('cuenta', 'like', 'CONFIG_WHATSAPP_%')
         .order('id', { ascending: false })
         .limit(200)
 
@@ -312,18 +368,32 @@ export default function ScorpionDashboard() {
         query = query.or(`cuenta.ilike.%${busqueda}%,nombre_abonado.ilike.%${busqueda}%`)
       }
 
-      const { data } = await query
+      const { data, error } = await query
+      if (error) throw error
       if (data) {
         const limpios = data.filter(ev => !esCuentaInternaOFrame(ev.cuenta, ev.evento))
-        const ordenados = limpios.slice(0, 100).reverse()
+        // Orden cronológico ascendente: el más reciente SIEMPRE abajo
+        const ordenados = limpios
+          .slice(0, 100)
+          .sort((a, b) => new Date(a.fecha_hora).getTime() - new Date(b.fecha_hora).getTime())
         setEventos(ordenados)
-        // Seleccionar por defecto el evento más reciente de la lista al cargar
         if (ordenados.length > 0 && !eventoSeleccionado) {
           setEventoSeleccionado(ordenados[ordenados.length - 1])
         }
       }
     } catch (err) {
-      console.error('Error:', err)
+      console.warn('[SUPABASE] Error en fetchEventos, usando fallback PG directo:', err)
+      try {
+        const r = await fetch(`/api/dahua-eventos?tipo=eventos&limit=100`)
+        const json = await r.json()
+        if (json.data && json.data.length > 0) {
+          // API devuelve oldest-first (ascendente)
+          setEventos(json.data)
+          if (!eventoSeleccionado) setEventoSeleccionado(json.data[json.data.length - 1])
+        }
+      } catch (e) {
+        console.error('[FALLBACK] Error en fallback PG:', e)
+      }
     }
   }, [busqueda, eventoSeleccionado])
 
@@ -334,15 +404,19 @@ export default function ScorpionDashboard() {
     let latestId = 0
     const poll = async () => {
       try {
-        const { data } = await supabase
+        const { data, error } = await supabase
           .from('eventos_monitoreo')
           .select('*')
           .not('cuenta', 'in', '(CLIENTES,CODIGOS,ZONAS,__SINCRONIZADOR__,CONFIG_OPERADORES,CLIENTES_MAESTROS_CRM,EMPRESAS_CONGLOMERADO,COTIZACIONES_DOLIBARR,ORDENES_TRABAJO)')
           .not('cuenta', 'like', 'CAMARAS_DAHUA_%')
           .not('cuenta', 'like', 'DAHUA_FRAME_%')
+          .not('cuenta', 'like', 'DAHUA_STREAM_REQ_%')
+          .not('cuenta', 'like', 'SNAPSHOT_%')
+          .not('cuenta', 'like', 'CONFIG_WHATSAPP_%')
           .order('id', { ascending: false })
           .limit(200)
 
+        if (error) throw error
         if (!data || data.length === 0) return
         const maxId = data[0].id
         if (maxId <= latestId) return
@@ -356,14 +430,28 @@ export default function ScorpionDashboard() {
           : data
 
         const limpios = filtered.filter(ev => !esCuentaInternaOFrame(ev.cuenta, ev.evento))
-        const ordenados = [...limpios].slice(0, 100).reverse()
+        const ordenados = [...limpios]
+          .slice(0, 100)
+          .sort((a, b) => new Date(a.fecha_hora).getTime() - new Date(b.fecha_hora).getTime())
         setEventos(ordenados)
         
-        // Auto-seleccionar el evento que va llegando si no hay selección manual activa
         if (ordenados.length > 0) {
           setEventoSeleccionado(ordenados[ordenados.length - 1])
         }
-      } catch (_) {}
+      } catch (_) {
+        // Si Supabase falla, intentar polling via PG directo cada 5s
+        try {
+          const r = await fetch(`/api/dahua-eventos?tipo=eventos&limit=100`)
+          const json = await r.json()
+          if (json.data && json.data.length > 0) {
+            const maxId = json.data[json.data.length - 1].id  // último = más reciente
+            if (maxId <= latestId) return
+            latestId = maxId
+            setEventos(json.data)  // oldest-first
+            if (json.data.length > 0) setEventoSeleccionado(json.data[json.data.length - 1])
+          }
+        } catch {}
+      }
     }
     poll()
     const timer = setInterval(poll, 3000)
@@ -372,9 +460,11 @@ export default function ScorpionDashboard() {
 
   // WebSocket instantáneo
   useEffect(() => {
-    const channel = supabase
-      .channel('eventos-live')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'eventos_monitoreo' }, async (payload) => {
+    let channel: any
+    try {
+      channel = supabase
+        .channel('eventos-live')
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'eventos_monitoreo' }, async (payload) => {
         const newEvent = payload.new as EventoMonitoreo
         // Ignorar filas especiales de sincronización y configuración de cámaras
         if (esCuentaInternaOFrame(newEvent.cuenta, newEvent.evento)) return
@@ -403,8 +493,37 @@ export default function ScorpionDashboard() {
           } catch {}
         }
 
+        // Rastreo de estado armado/cerrado por cuenta
+        const esCierre = eventoUpper.includes('CIERRE') || eventoUpper === 'CLOSE' || eventoUpper.includes('ARME')
+        const esApertura = eventoUpper.includes('APERTURA') || eventoUpper === 'OPEN' || eventoUpper.includes('DESARME')
+        if (esCierre) { const next = { ...armadoMapRef.current, [newEvent.cuenta]: true }; armadoMapRef.current = next; setArmadoMap(next) }
+        if (esApertura) { const next = { ...armadoMapRef.current, [newEvent.cuenta]: false }; armadoMapRef.current = next; setArmadoMap(next) }
+
+        // Auto-apertura de videoverificación: ROBO + sistema armado + cliente con cámara
+        const esRobo = eventoUpper.includes('ALARMA') && (eventoUpper.includes('ROBO') || eventoUpper.includes('INTRUSIÓN') || eventoUpper.includes('INTRUSION') || eventoUpper.includes('PERIMETRAL'))
+        if (esRobo && armadoMapRef.current[newEvent.cuenta] === true) {
+          ;(async () => {
+            try {
+              if (!clientesConCamarasRef.current.has(newEvent.cuenta)) {
+                const { data } = await supabase
+                  .from('eventos_monitoreo')
+                  .select('id')
+                  .eq('cuenta', `CAMARAS_DAHUA_${newEvent.cuenta}`)
+                  .limit(1)
+                if (data && data.length > 0) {
+                  clientesConCamarasRef.current.add(newEvent.cuenta)
+                }
+              }
+              if (clientesConCamarasRef.current.has(newEvent.cuenta)) {
+                setEventoSeleccionado(newEvent)
+                setModalActivo('video-verificacion')
+              }
+            } catch {}
+          })()
+        }
+
         // Verificación de Notificaciones (Apertura o Cierre)
-        const isAperturaCierre = eventoUpper.includes('APERTURA') || eventoUpper.includes('CIERRE') || (cidInfo && cidInfo.categoria === 'APERTURA')
+        const isAperturaCierre = esApertura || esCierre || (cidInfo && cidInfo.categoria === 'APERTURA')
         
         if (isAperturaCierre) {
           try {
@@ -580,7 +699,7 @@ export default function ScorpionDashboard() {
 
               const zonasUnicas = [...new Set([...(eventosRecientes || []).map((e: any) => e.zona)])].filter(Boolean)
               const cuentaKey = (newEvent.cuenta || '').toUpperCase().trim()
-              const zonasAbonado = zonasMap[cuentaKey] || []
+              const zonasAbonado = buscarZonasAbonado(newEvent.cuenta)
 
               let detalleZonas = ''
               if (zonasAbonado.length > 0) {
@@ -618,7 +737,10 @@ export default function ScorpionDashboard() {
         }
       })
       .subscribe()
-    return () => { supabase.removeChannel(channel) }
+    } catch (e) {
+      console.warn('[SUPABASE] Realtime channel no disponible (Supabase caído)')
+    }
+    return () => { if (channel) supabase.removeChannel(channel) }
   }, [])
 
   // Monitorear heartbeat del sincronizador en PC Scorpion
@@ -850,6 +972,7 @@ export default function ScorpionDashboard() {
           { label: 'NOTIFICACIONES', id: 'menu-notificaciones', hasDropdown: true },
           { label: 'REPORTES',       id: 'menu-reportes', hasDropdown: true },
           { label: 'EVENTOS',        id: 'menu-eventos' },
+          { label: 'CAMARAS',       id: 'menu-camaras' },
           { label: 'AYUDA',          id: 'menu-ayuda' },
         ].filter(item => {
           if (item.id === 'menu-configuracion') return usuarioActivo.rol === 'Administrador'
@@ -898,6 +1021,14 @@ export default function ScorpionDashboard() {
                   setMostrarMenuReportes(false)
                 } else if (item.id === 'menu-utilidades') {
                   setModalActivo('tools')
+                  setMostrarMenuNotificaciones(false)
+                  setMostrarMenuReportes(false)
+                } else if (item.id === 'menu-camaras') {
+                  const cuenta = prompt('Ingresa numero de cuenta (ej: 0034):')
+                  if (cuenta) {
+                    const padded = cuenta.padStart(4, '0')
+                    setCamaraGridCuenta(`CAMARAS_DAHUA_${padded}`)
+                  }
                   setMostrarMenuNotificaciones(false)
                   setMostrarMenuReportes(false)
                 } else if (item.id === 'menu-eventos') {
@@ -1090,7 +1221,7 @@ export default function ScorpionDashboard() {
             </div>
             <div className="flex-1 overflow-y-auto">
               {(() => {
-                const zonasAbonado = cuentaKey ? (zonasMap[cuentaKey] || []) : []
+                const zonasAbonado = buscarZonasAbonado(activeEvent?.cuenta)
                 if (!activeEvent) {
                   return (
                     <div className="p-1 text-center text-gray-400 text-[10px] italic">Seleccione un abonado</div>
@@ -1184,6 +1315,7 @@ export default function ScorpionDashboard() {
         <ZonificacionModal
           eventoInicial={activeEvent || undefined}
           onClose={() => setModalActivo(null)}
+          usuarioRol={usuarioActivo.rol}
         />
       )}
 
@@ -1276,6 +1408,14 @@ export default function ScorpionDashboard() {
       {/* Configuración Modal */}
       {modalActivo === 'configuracion' && (
         <ConfigModal onClose={() => setModalActivo(null)} />
+      )}
+
+      {/* Camara Grid Modal */}
+      {camaraGridCuenta && (
+        <CamaraGridModal
+          cuenta={camaraGridCuenta}
+          onClose={() => setCamaraGridCuenta(null)}
+        />
       )}
 
       {/* Login / Operator Switch Modal */}
