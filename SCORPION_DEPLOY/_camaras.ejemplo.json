@@ -1,0 +1,20 @@
+[
+  {
+    "sn": "AE0970BPAG00815",
+    "canal": 1,
+    "user": "admin",
+    "pass": "L2D55413",
+    "local_ip": "192.168.1.2",
+    "stream_type": "sub",
+    "activa": true
+  },
+  {
+    "sn": "2B02339PAYPW68F",
+    "canal": 1,
+    "user": "admin",
+    "pass": "Patuto1965.",
+    "local_ip": "",
+    "stream_type": "sub",
+    "activa": false
+  }
+]

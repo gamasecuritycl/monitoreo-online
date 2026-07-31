@@ -1,0 +1,39 @@
+============================================
+ INSTRUCCIONES FACILES - PC SCORPION
+============================================
+(Esto es para que lo haga cualquier persona,
+sin saber de computacion)
+
+PASO 1: Copiar los archivos
+   Copiar TODOS los archivos de esta carpeta
+   a la carpeta SCORPION_DEPLOY del PC Scorpion
+   (normalmente en C:\SCORPION_DEPLOY\)
+
+PASO 2: Hacer doble click a _LIMPIAR_Y_REINICIAR.bat
+   Eso solo se hace UNA VEZ.
+   Automaticamente va a:
+   - Detener los procesos viejos
+   - Borrar el acceso directo viejo del inicio
+   - Iniciar el watchdog NUEVO
+
+PASO 3: Cerrar la ventana que aparece
+   (es solo un mensaje de confirmacion)
+
+PASO 4: LISTO
+   De ahora en adelante, cuando encienda el PC,
+   el watchdog arranca solo y cuida los servicios.
+
+============================================
+ ARCHIVOS INCLUIDOS
+============================================
+
+sincronizador.py    - Version reparada del sincronizador
+                    (ya no se cuelga solo)
+
+watchdog_total.vbs  - Watchdog nuevo (un solo archivo)
+                    Corre invisible, monitorea todo
+                    Se instala solo en inicio de Windows
+
+_LIMPIAR_Y_REINICIAR.bat
+                   - Ejecutar UNA VEZ para limpiar
+                     procesos viejos y arrancar el nuevo

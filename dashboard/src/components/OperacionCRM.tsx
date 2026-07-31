@@ -841,7 +841,7 @@ export default function OperacionCRM() {
             desc: ev.evento || 'TEST PERIÓDICO 24H',
             zona: ev.zona && ev.zona !== '----' ? `Zona ${ev.zona}` : (ev.usuario && ev.usuario !== '----' ? `Usuario ${ev.usuario}` : 'Consola Central'),
             prioridad: (ev.evento || '').includes('ROBO') || (ev.evento || '').includes('PANICO') || (ev.evento || '').includes('FALLA') ? 'Crítica' : ((ev.evento || '').includes('APERTURA') || (ev.evento || '').includes('CIERRE') ? 'Normal' : 'Informativa'),
-            color: (ev.evento || '').includes('ROBO') || (ev.evento || '').includes('PANICO') || (ev.evento || '').includes('FALLA') ? 'bg-red-100 text-red-800 font-bold' : ((ev.evento || '').includes('APERTURA') || (ev.evento || '').includes('CIERRE') ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-100 text-blue-800')
+            color: (ev.evento || '').includes('ROBO') || (ev.evento || '').includes('PANICO') || (ev.evento || '').includes('FALLA') ? 'bg-red-100 text-red-800 font-bold' : ((ev.evento || '').includes('APERTURA') || (ev.evento || '').includes('CIERRE') ? ((ev.evento || '').split('').reduce((a: number, c: string) => a + c.charCodeAt(0), 0) % 2 === 0 ? 'bg-white text-gray-800' : 'bg-blue-50 text-gray-800') : 'bg-blue-100 text-blue-800')
           }))
           setSenalesRealtime(formateados)
         } else {

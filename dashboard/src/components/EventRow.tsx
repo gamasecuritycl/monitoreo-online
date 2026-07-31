@@ -55,9 +55,12 @@ function getScorpionStyleFallback(evento: string): { bg: string; text: string } 
   if (upper.includes('ROBO') || upper.includes('ALARMA') || upper.includes('INTRUSION') || upper.includes('SABOTAJE') || upper.includes('TAMPER')) {
     return { bg: '#FFC0CB', text: '#000000' }
   }
-  // Aperturas -> Azul
-  if (upper.includes('APERTURA')) {
-    return { bg: '#0000FF', text: '#FFFFFF' }
+  // Cierres y Aperturas -> blanco o celeste aleatorio (anti-saturacion)
+  if (upper.includes('CIERRE') || upper.includes('APERTURA')) {
+    const hash = upper.split('').reduce((a, c) => a + c.charCodeAt(0), 0)
+    return hash % 2 === 0
+      ? { bg: '#FFFFFF', text: '#000000' }
+      : { bg: '#E0F0FF', text: '#000000' }
   }
   // Autotests -> Celeste
   if (upper.includes('AUTOTEST')) {

@@ -8,9 +8,9 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }
   'ALARMA DE ROBO': { label: 'ALERTA', color: 'text-white', bg: 'bg-[#FF4D4D]' },
   'PANICO': { label: 'PANICO', color: 'text-white', bg: 'bg-[#FF4D4D]' },
   'INCENDIO': { label: 'INCENDIO', color: 'text-white', bg: 'bg-[#FF4D4D]' },
-  'CIERRE': { label: 'CIERRE', color: 'text-white', bg: 'bg-[#3B82F6]' },
-  'CIERRE ESPECIAL': { label: 'CIERRE ESP', color: 'text-white', bg: 'bg-[#3B82F6]' },
-  'APERTURA': { label: 'APERTURA', color: 'text-white', bg: 'bg-[#22C55E]' },
+  'CIERRE': { label: 'CIERRE', color: 'text-gray-700', bg: 'bg-gray-100' },
+  'CIERRE ESPECIAL': { label: 'CIERRE ESP', color: 'text-gray-700', bg: 'bg-gray-100' },
+  'APERTURA': { label: 'APERTURA', color: 'text-gray-700', bg: 'bg-gray-100' },
   'AUTOTEST': { label: 'AUTOTEST', color: 'text-white', bg: 'bg-[#9CA3AF]' },
 }
 

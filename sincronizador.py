@@ -316,15 +316,15 @@ if __name__ == "__main__":
     print(f"  Timezone: Chile ({get_chile_offset()})")
     print("=" * 55)
     
-    check_for_updates()
+    # check_for_updates()  # Auto-update deshabilitado — causaba cuelgues por os.execv() en Windows
     last_update_check = time.time()
     
     cache = load_cache()
     while True:
         cache = sincronizar(cache)
         
-        if time.time() - last_update_check > 1800:
-            check_for_updates()
-            last_update_check = time.time()
+        # if time.time() - last_update_check > 1800:
+        #     check_for_updates()  # Auto-update deshabilitado
+        #     last_update_check = time.time()
             
         time.sleep(INTERVALO_SEG)

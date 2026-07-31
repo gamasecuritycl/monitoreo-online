@@ -7,7 +7,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
 export async function POST(req: Request) {
   try {
-    const { telefono, texto, cuenta } = await req.json()
+    const { telefono, texto, cuenta, imagen_base64, video_base64 } = await req.json()
     if (!telefono || !texto) {
       return NextResponse.json({ ok: false, error: 'Faltan parámetros de envío' }, { status: 400 })
     }
@@ -30,11 +30,25 @@ export async function POST(req: Request) {
 
     const cuentaFinal = cuenta ? String(cuenta).trim() : (telLimpio.includes('@g.us') ? 'GRUPO' : 'CENTRAL')
 
-    // Insertar en conversaciones_whatsapp con estado pendiente y cuenta válida (Not-Null constraint fix)
+    // Guardar mensaje con metadata de media
+    // Formato: { t: texto, i: base64_imagen } para imágenes
+    //          { t: texto, v: base64_video } para videos
+    //          texto plano para mensajes de texto
+    let payload = texto
+    let tipoMedia = null
+    if (imagen_base64) {
+      payload = JSON.stringify({ t: texto, i: imagen_base64 })
+      tipoMedia = 'imagen'
+    } else if (video_base64) {
+      payload = JSON.stringify({ t: texto, v: video_base64 })
+      tipoMedia = 'video'
+    }
+
     const { error } = await supabase.from('conversaciones_whatsapp').insert({
       cuenta: cuentaFinal,
       numero: telLimpio,
-      mensaje_enviado: texto,
+      mensaje_enviado: payload,
+      tipo_media: tipoMedia,
       estado: 'pendiente',
       created_at: new Date().toISOString()
     })
@@ -44,7 +58,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: error.message }, { status: 500 })
     }
 
-    return NextResponse.json({ ok: true, proveedor: 'whatsapp_database_bridge' })
+    console.log(`[WHATSAPP SEND-DIRECT] Mensaje encolado para ${telLimpio} (cuenta: ${cuentaFinal}, media: ${tipoMedia || 'texto'})`)
+    return NextResponse.json({ ok: true, proveedor: 'whatsapp_database_bridge', numero: telLimpio, cuenta: cuentaFinal, tipo_media: tipoMedia })
   } catch (err: any) {
     console.error('[SEND-DIRECT API ERROR]:', err.message)
     return NextResponse.json({ ok: false, error: err.message }, { status: 500 })

@@ -28,3 +28,36 @@ BASES DE DATOS/**/*.MDB
 
 # Vercel
 .vercel
+
+# Python
+__pycache__/
+*.pyc
+
+# Binarios SDK Dahua
+*.dll
+
+# Logs, lock y archivos de diagnostico/estado
+*.log.bak
+SCORPION_DEPLOY/_gama_log.txt
+SCORPION_DEPLOY/_watchdog_log.txt
+SCORPION_DEPLOY/_sincronizador.lock
+SCORPION_DEPLOY/_dev_*.txt
+SCORPION_DEPLOY/_test_*.txt
+SCORPION_DEPLOY/_status*.json
+SCORPION_DEPLOY/_api_test.json
+SCORPION_DEPLOY/_final_status.json
+SCORPION_DEPLOY/_rpc2_login.json
+SCORPION_DEPLOY/_stream_headers.txt
+SCORPION_DEPLOY/_update_camaras*.json
+SCORPION_DEPLOY/_camaras_local.json
+SCORPION_DEPLOY/_dashboard_page.html
+SCORPION_DEPLOY/_dashboard_stream.jpg
+SCORPION_DEPLOY/_snap_*.jpg
+SCORPION_DEPLOY/_test_pixel.jpg
+
+# Planillas temporales de trabajo
+*.csv
+*.xlsx
+
+# Herramientas locales
+.claude/

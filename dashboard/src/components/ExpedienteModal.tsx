@@ -91,6 +91,11 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
   const [editingDahuaId, setEditingDahuaId] = useState<string | null>(null)
   const [selectedDahuaCamId, setSelectedDahuaCamId] = useState<string>('')
   const [testingDahuaCam, setTestingDahuaCam] = useState<any | null>(null)
+  const [emailsVideo, setEmailsVideo] = useState<string[]>([])
+  const [inputEmailVideo, setInputEmailVideo] = useState('')
+  const [whatsappsVideo, setWhatsappsVideo] = useState<{ telefono: string, nombre: string }[]>([])
+  const [inputWhatsappTel, setInputWhatsappTel] = useState('')
+  const [inputWhatsappNombre, setInputWhatsappNombre] = useState('')
 
   // Estados para RUT y Alias de Unidad (Edición restringida a Administrador)
   const [inputRut, setInputRut] = useState('')
@@ -286,6 +291,26 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
       }
     }
     fetchDahuaCams()
+    ;(async () => {
+      try {
+        const { data } = await supabase
+          .from('notificaciones_mail')
+          .select('emails')
+          .eq('cuenta', cuentaActiva)
+          .single()
+        if (data?.emails) setEmailsVideo(data.emails)
+      } catch {}
+      try {
+        const { data: waData } = await supabase
+          .from('notificaciones_whatsapp')
+          .select('contactos_escalamiento')
+          .eq('cuenta', cuentaActiva)
+          .single()
+        const contactos = (waData?.contactos_escalamiento as any[]) || []
+        const snapshotContacts = contactos.filter((c: any) => c.parentesco === 'SNAPSHOT')
+        if (snapshotContacts.length > 0) setWhatsappsVideo(snapshotContacts.map((c: any) => ({ telefono: c.telefono, nombre: c.nombre || '' })))
+      } catch {}
+    })()
   }, [cuentaActiva])
 
   const guardarCamaraDahuaP2P = async () => {
@@ -328,6 +353,14 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
         evento: 'CONFIGURACION_DAHUA_CRUD',
         fecha_hora: new Date().toISOString()
       })
+      await supabase.from('notificaciones_mail').upsert(
+        { cuenta: cuentaActiva, emails: emailsVideo },
+        { onConflict: 'cuenta' }
+      )
+      await supabase.from('notificaciones_whatsapp').upsert(
+        { cuenta: cuentaActiva, telefono: whatsappsVideo[0]?.telefono || '0000000000', contactos_escalamiento: whatsappsVideo.map(w => ({ nombre: w.nombre || 'SNAPSHOT', telefono: w.telefono, parentesco: 'SNAPSHOT' })), activo: true },
+        { onConflict: 'cuenta' }
+      )
       alert(`✅ Configuración P2P Dahua guardada para la cuenta ${cuentaActiva}.`)
       setEditingDahuaId(null)
     } catch (err: any) {
@@ -1089,6 +1122,141 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
                                 <div className="text-[10px] text-gray-500 italic p-2 text-center">No hay cámaras Dahua P2P registradas para esta cuenta.</div>
                               )}
                             </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2">
+                              <div className="border border-gray-700 rounded p-3 bg-black/40">
+                                <div className="text-[11px] text-blue-400 font-bold mb-2">📧 CORREOS ELECTRÓNICOS</div>
+                                <div className="flex gap-1 mb-2">
+                                  <input
+                                    type="email"
+                                    value={inputEmailVideo}
+                                    onChange={(e) => setInputEmailVideo(e.target.value)}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter' && inputEmailVideo.includes('@')) {
+                                        const email = inputEmailVideo.trim().toLowerCase()
+                                        setEmailsVideo(prev => [...prev.filter(e => e !== email), email])
+                                        setInputEmailVideo('')
+                                        ;(async () => { await supabase.from('notificaciones_mail').upsert(
+                                          { cuenta: cuentaActiva, emails: [...emailsVideo.filter(e => e !== email), email] },
+                                          { onConflict: 'cuenta' }
+                                        ) })()
+                                      }
+                                    }}
+                                    placeholder="correo@ejemplo.com"
+                                    className="flex-1 bg-[#111] border border-gray-700 p-1.5 font-mono text-white text-[11px]"
+                                  />
+                                  <button
+                                    onClick={() => {
+                                      if (!inputEmailVideo.includes('@')) return
+                                      const email = inputEmailVideo.trim().toLowerCase()
+                                      setEmailsVideo(prev => [...prev.filter(e => e !== email), email])
+                                      setInputEmailVideo('')
+                                      ;(async () => { await supabase.from('notificaciones_mail').upsert(
+                                        { cuenta: cuentaActiva, emails: [...emailsVideo.filter(e => e !== email), email] },
+                                        { onConflict: 'cuenta' }
+                                      ) })()
+                                    }}
+                                    className="bg-blue-800 hover:bg-blue-700 text-white font-bold px-3 py-1.5 text-[11px] rounded cursor-pointer"
+                                  >
+                                    + Agregar
+                                  </button>
+                                </div>
+                                <div className="flex flex-wrap gap-1.5 max-h-[100px] overflow-y-auto">
+                                  {emailsVideo.length === 0 ? (
+                                    <span className="text-[10px] text-gray-600 italic">Sin correos registrados</span>
+                                  ) : emailsVideo.map((email, i) => (
+                                    <span key={i} className="bg-blue-950/60 border border-blue-800 text-blue-300 text-[10px] px-2 py-1 rounded flex items-center gap-1.5">
+                                      {email}
+                                      <button
+                                        onClick={() => {
+                                          const nuevos = emailsVideo.filter(e => e !== email)
+                                          setEmailsVideo(nuevos)
+                                          ;(async () => { await supabase.from('notificaciones_mail').upsert(
+                                            { cuenta: cuentaActiva, emails: nuevos },
+                                            { onConflict: 'cuenta' }
+                                          ) })()
+                                        }}
+                                        className="text-red-400 hover:text-red-300 font-bold leading-none"
+                                      >
+                                        ×
+                                      </button>
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+
+                              <div className="border border-gray-700 rounded p-3 bg-black/40">
+                                <div className="text-[11px] text-green-400 font-bold mb-2">📱 WHATSAPP</div>
+                                <div className="flex gap-1 mb-2">
+                                  <input
+                                    type="text"
+                                    value={inputWhatsappNombre}
+                                    onChange={(e) => setInputWhatsappNombre(e.target.value)}
+                                    placeholder="Nombre"
+                                    className="w-24 bg-[#111] border border-gray-700 p-1.5 font-mono text-white text-[11px]"
+                                  />
+                                  <input
+                                    type="tel"
+                                    value={inputWhatsappTel}
+                                    onChange={(e) => setInputWhatsappTel(e.target.value.replace(/[^0-9+]/g, ''))}
+                                    placeholder="+56 9 1234 5678"
+                                    className="flex-1 bg-[#111] border border-gray-700 p-1.5 font-mono text-white text-[11px]"
+                                  />
+                                  <button
+                                    onClick={async () => {
+                                      if (!inputWhatsappTel.trim()) return
+                                      const tel = inputWhatsappTel.trim()
+                                      const nombre = inputWhatsappNombre.trim()
+                                      setWhatsappsVideo(prev => [...prev, { telefono: tel, nombre }])
+                                      setInputWhatsappTel('')
+                                      setInputWhatsappNombre('')
+                                      try {
+                                        const { data: existing } = await supabase.from('notificaciones_whatsapp').select('contactos_escalamiento').eq('cuenta', cuentaActiva).maybeSingle()
+                                        const contactos = (existing?.contactos_escalamiento as any[]) || []
+                                        contactos.push({ nombre: nombre || 'SNAPSHOT', telefono: tel, parentesco: 'SNAPSHOT' })
+                                        await supabase.from('notificaciones_whatsapp').upsert(
+                                          { cuenta: cuentaActiva, telefono: tel, contactos_escalamiento: contactos, activo: true },
+                                          { onConflict: 'cuenta' }
+                                        )
+                                      } catch (e) { console.warn('Error guardando WhatsApp:', e) }
+                                    }}
+                                    className="bg-green-800 hover:bg-green-700 text-white font-bold px-3 py-1.5 text-[11px] rounded cursor-pointer"
+                                  >
+                                    + Agregar
+                                  </button>
+                                </div>
+                                <div className="flex flex-col gap-1 max-h-[100px] overflow-y-auto">
+                                  {whatsappsVideo.length === 0 ? (
+                                    <span className="text-[10px] text-gray-600 italic">Sin teléfonos registrados</span>
+                                  ) : whatsappsVideo.map((wa, i) => (
+                                    <div key={i} className="bg-green-950/40 border border-green-800 text-green-300 text-[10px] px-2 py-1 rounded flex items-center justify-between">
+                                      <span>{wa.nombre ? `${wa.nombre}: ` : ''}{wa.telefono}</span>
+                                      <button
+                                        onClick={async () => {
+                                          const nuevos = whatsappsVideo.filter((_, j) => j !== i)
+                                          setWhatsappsVideo(nuevos)
+                                          try {
+                                            const { data: existing } = await supabase.from('notificaciones_whatsapp').select('contactos_escalamiento').eq('cuenta', cuentaActiva).maybeSingle()
+                                            const contactos = ((existing?.contactos_escalamiento as any[]) || []).filter((c: any) => c.telefono !== wa.telefono || c.parentesco !== 'SNAPSHOT')
+                                            if (contactos.length > 0) {
+                                              await supabase.from('notificaciones_whatsapp').upsert(
+                                                { cuenta: cuentaActiva, telefono: contactos[0].telefono, contactos_escalamiento: contactos, activo: true },
+                                                { onConflict: 'cuenta' }
+                                              )
+                                            } else {
+                                              await supabase.from('notificaciones_whatsapp').delete().eq('cuenta', cuentaActiva)
+                                            }
+                                          } catch (e) { console.warn('Error eliminando WhatsApp:', e) }
+                                        }}
+                                        className="text-red-400 hover:text-red-300 font-bold leading-none ml-2"
+                                      >
+                                        ×
+                                      </button>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
                           </div>
                           <div className="flex justify-end gap-2 border-t border-gray-800 pt-2 shrink-0">
                             <button onClick={() => setEditandoCamaras(false)} className="bg-gray-800 hover:bg-gray-700 text-white font-bold border border-gray-600 px-4 py-1 text-[10px] cursor-pointer">CERRAR CONFIGURACIÓN</button>
@@ -1412,7 +1580,7 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
             zona: `CH-${testingDahuaCam.canal}`,
             usuario: 'ADMINISTRADOR'
           }}
-          esCierre={false}
+          esCierre={true}
         />
       )}
     </div>

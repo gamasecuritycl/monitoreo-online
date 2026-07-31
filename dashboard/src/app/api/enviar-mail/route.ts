@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server'
 import { Resend } from 'resend'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+function getResend() {
+  return new Resend(process.env.RESEND_API_KEY || '')
+}
 
 export async function POST(req: Request) {
   try {
@@ -106,7 +108,7 @@ export async function POST(req: Request) {
         </div>
       `
 
-      const data = await resend.emails.send({
+      const data = await getResend().emails.send({
         from: 'Gama Security <contacto@gamasecurity.cl>',
         to: toList,
         subject: `Presupuesto DTE N° ${cot.codigo_cotizacion || 'PR2607'} — ${emp.razon_social}`,
@@ -161,11 +163,19 @@ export async function POST(req: Request) {
       </div>
     `
 
-    const data = await resend.emails.send({
+    const attachments = pdf_base64 ? [
+      {
+        filename: `${(tipo_evento || 'evento').toLowerCase().replace(/\s+/g, '_')}_${cuenta}.jpg`,
+        content: pdf_base64
+      }
+    ] : []
+
+    const data = await getResend().emails.send({
       from: 'Gama Security <contacto@gamasecurity.cl>',
       to: toList,
       subject: `Notificación de ${(tipo_evento || 'Evento').toUpperCase()}`,
       html: htmlContent,
+      attachments
     })
 
     return NextResponse.json({ success: true, data })

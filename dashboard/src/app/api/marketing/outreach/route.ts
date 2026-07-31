@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server'
 import { Resend } from 'resend'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+function getResend() {
+  if (!process.env.RESEND_API_KEY) return null
+  return new Resend(process.env.RESEND_API_KEY)
+}
 
 export async function POST(req: Request) {
   try {
@@ -53,7 +56,9 @@ export async function POST(req: Request) {
       `
 
       try {
-        const resendRes = await resend.emails.send({
+        const r = getResend()
+        if (!r) throw new Error('RESEND_API_KEY no configurada')
+        const resendRes = await r.emails.send({
           from: senderEmail,
           to: [emailTarget],
           subject: asuntoPersonalizado,

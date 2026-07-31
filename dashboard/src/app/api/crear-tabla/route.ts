@@ -91,6 +91,8 @@ export async function GET() {
       estado VARCHAR(20) DEFAULT 'pendiente',
       mensaje_enviado TEXT,
       respuesta_recibida TEXT,
+      error_msg TEXT,
+      nombre_grupo VARCHAR(255),
       created_at TIMESTAMP DEFAULT NOW(),
       responded_at TIMESTAMP DEFAULT null
   );

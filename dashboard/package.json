@@ -10,8 +10,12 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@mediapipe/tasks-vision": "^1.0.0",
     "@open-wa/wa-automate": "^4.76.0",
     "@supabase/supabase-js": "^2.110.7",
+    "@tensorflow-models/coco-ssd": "^2.2.3",
+    "@tensorflow/tfjs": "^4.22.0",
+    "@vercel/blob": "^2.6.1",
     "express": "^4.22.2",
     "framer-motion": "^12.42.2",
     "jspdf": "^4.2.1",

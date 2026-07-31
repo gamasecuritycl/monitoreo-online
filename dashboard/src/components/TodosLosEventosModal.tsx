@@ -55,9 +55,12 @@ function formatTrama(cuenta: string, eventoText: string, zona: string, usuario: 
 function getRowStyle(eventoTexto: string) {
   const upper = eventoTexto.toUpperCase()
 
-  // 1. Aperturas / Cierres -> Fondo celeste/cyan
+  // 1. Aperturas / Cierres -> Fondo blanco o celeste aleatorio
   if (upper.includes('APERTURA') || upper.includes('CIERRE') || upper.includes('DESARMADO') || upper.includes('ARMADO')) {
-    return { bg: '#00ffff', text: '#000000' }
+    const hash = eventoTexto.split('').reduce((a, c) => a + c.charCodeAt(0), 0)
+    return hash % 2 === 0
+      ? { bg: '#FFFFFF', text: '#000000' }
+      : { bg: '#E0F0FF', text: '#000000' }
   }
   // 2. Fuego / Incendio Falla -> Fondo verde
   if ((upper.includes('FUEGO') || upper.includes('INCENDIO') || upper.includes('HUMO')) && upper.includes('FALLA')) {

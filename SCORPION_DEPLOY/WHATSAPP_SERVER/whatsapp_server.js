@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════
- *  GAMA SEGURIDAD - SERVIDOR WHATSAPP v3.0 (Baileys Edition)
+ *  GAMA SEGURIDAD - SERVIDOR WHATSAPP v3.1 (Baileys Edition)
  *  Motor: @whiskeysockets/baileys (WebSocket puro, sin Chromium)
  *  Puerto: 3015
  * ═══════════════════════════════════════════════════════════════════════
@@ -19,6 +19,7 @@ const express = require('express')
 const cors    = require('cors')
 const path    = require('path')
 const fs      = require('fs')
+const { randomBytes } = require('crypto')
 const QRCode  = require('qrcode')
 
 const {
@@ -43,8 +44,8 @@ const MAX_RETRIES  = 3           // reconexiones rápidas antes de backoff
 const PHONE_PAIR   = '56948855190'  // número para pairing code
 
 const SUPABASE_URL  = 'https://onxwyrwmpjxtwlmjrosr.supabase.co'
-const SUPABASE_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9ueHd5cndtcGp4dHdsbWpyb3NyIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4Mjg1NTE0NCwiZXhwIjoyMDk4NDMxMTQ0fQ.z1g6qH3-m18hRk9383t_Y7hIQCMnaqxAnnJ_key_service_role' // Master Bypass Service Role Key
-const supabase     = createClient(SUPABASE_URL, 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9ueHd5cndtcGp4dHdsbWpyb3NyIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MTQ0NTY0MCwiZXhwIjoyMDk5NzIxNjQwfQ.ZN2sw5R4K5EHuttLzDguKnsF1KBgqUKqOpipB7dGR1Y')
+const SUPABASE_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9ueHd5cndtcGp4dHdsbWpyb3NyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI4NTUxNDQsImV4cCI6MjA5ODQzMTE0NH0.8kJRf8hm3rHK8sygMcyBT0R83tyK8hIQCmnAQxannJs' // Anon Key
+const supabase     = createClient(SUPABASE_URL, SUPABASE_KEY)
 
 // ──────────────────────────────────────────────
 //  ESTADO GLOBAL
@@ -129,16 +130,42 @@ function log(msg, nivel = 'INFO') {
 }
 
 // ──────────────────────────────────────────────
-//  NORMALIZAR NÚMERO
+//  RECONEXIÓN FORZADA (reemplaza process.exit)
 // ──────────────────────────────────────────────
-function normalizarJID(phone) {
-  // Quitar todo excepto dígitos y +
-  let digits = phone.toString().replace(/[^0-9]/g, '')
-  // Chile: 9 dígitos empezando en 9 → agregar 56
-  if (digits.length === 9 && digits.startsWith('9')) digits = '56' + digits
-  // Chile: 8 dígitos → agregar 569
-  else if (digits.length === 8) digits = '569' + digits
-  return digits.endsWith('@s.whatsapp.net') ? digits : `${digits}@s.whatsapp.net`
+async function reconectarForzado() {
+  log('🔄 WATCHDOG: Forzando reconexión del socket...', 'WARN')
+  detenerHeartbeat()
+  try {
+    if (sock) { sock.end(); sock = null }
+  } catch {}
+  isReady = false
+  if (reconnectTimer) clearTimeout(reconnectTimer)
+  reconnectTimer = setTimeout(conectar, 3_000)
+}
+
+// ──────────────────────────────────────────────
+//  SUBIR MEDIA A SUPABASE STORAGE
+// ──────────────────────────────────────────────
+async function subirMediaASupabase(base64, prefix) {
+  const token = process.env.SUPABASE_SERVICE_KEY || SUPABASE_KEY
+  const ts = Date.now()
+  const rand = randomBytes(4).toString('hex')
+  const ext = prefix === 'video' ? 'mp4' : 'jpg'
+  const fileName = `${prefix || 'media'}_${ts}_${rand}.${ext}`
+  try {
+    const buffer = Buffer.from(base64, 'base64')
+    const contentType = prefix === 'video' ? 'video/mp4' : 'image/jpeg'
+    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/snapshots/${fileName}`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': contentType },
+      body: buffer
+    })
+    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+    return `${SUPABASE_URL}/storage/v1/object/public/snapshots/${fileName}`
+  } catch (err) {
+    log(`Error subiendo media a Supabase Storage: ${err.message}`, 'WARN')
+    return null
+  }
 }
 
 // ──────────────────────────────────────────────
@@ -152,16 +179,14 @@ function iniciarHeartbeat() {
   heartbeatTimer = setInterval(async () => {
     if (!sock) return
     
-    // Si la cola crece demasiado, el socket está bloqueado/congelado. Forzar autoreinicio.
     if (messageQueue.length > 20) {
-      log(`🚨 WATCHDOG: Cola saturada con ${messageQueue.length} mensajes. Reiniciando servidor...`, 'ERROR')
-      process.exit(1)
+      log(`🚨 WATCHDOG: Cola saturada con ${messageQueue.length} mensajes. Reconectando...`, 'ERROR')
+      return reconectarForzado()
     }
 
     if (!isReady) return
 
     try {
-      // Verificar que la sesión sigue viva consultando el estado
       const state = await Promise.race([
         sock.query({ tag: 'iq', attrs: { to: '@s.whatsapp.net', type: 'get', xmlns: 'w:p' }, content: [] }),
         new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 15_000))
@@ -171,8 +196,8 @@ function iniciarHeartbeat() {
         watchdogFailures++
         log(`⚠️  WATCHDOG: Chequeo de conexión fallido (${watchdogFailures}/4)`, 'WARN')
         if (watchdogFailures >= 4) {
-          log('🚨 WATCHDOG: Conexión congelada detectada por 120s. Forzando reinicio...', 'ERROR')
-          process.exit(1)
+          log('🚨 WATCHDOG: Conexión congelada. Reconectando...', 'ERROR')
+          return reconectarForzado()
         }
       } else {
         watchdogFailures = 0
@@ -180,8 +205,8 @@ function iniciarHeartbeat() {
     } catch {
       watchdogFailures++
       if (watchdogFailures >= 4) {
-        log('🚨 WATCHDOG: Conexión en error detectada por 120s. Forzando reinicio...', 'ERROR')
-        process.exit(1)
+        log('🚨 WATCHDOG: Conexión en error. Reconectando...', 'ERROR')
+        return reconectarForzado()
       }
     }
   }, HEARTBEAT_MS)
@@ -393,22 +418,26 @@ async function conectar() {
         const body = msg.message?.conversation
           || msg.message?.extendedTextMessage?.text
           || msg.message?.imageMessage?.caption
+          || msg.message?.videoMessage?.caption
           || ''
-        if (!body) continue
+        const tipoMedia = msg.message?.imageMessage ? 'imagen' : msg.message?.videoMessage ? 'video' : null
+        if (!body && !tipoMedia) continue
 
         const jid = msg.key.remoteJid || ''
         const numero = jid.replace('@s.whatsapp.net', '')
         const fechaMsg = msg.messageTimestamp ? new Date(msg.messageTimestamp * 1000).toISOString() : new Date().toISOString()
 
         try {
-          await supabase.from('conversaciones_whatsapp').insert({
+          const insertData = {
             numero,
             tipo_evento: msg.key.fromMe ? 'mensaje_enviado' : 'mensaje_entrante',
             estado: 'enviado',
             respuesta_recibida: msg.key.fromMe ? null : body,
             mensaje_enviado: msg.key.fromMe ? body : null,
             created_at: fechaMsg,
-          })
+          }
+          if (tipoMedia) insertData.tipo_media = tipoMedia
+          await supabase.from('conversaciones_whatsapp').insert(insertData)
         } catch {}
       }
       log(`✅ Sincronización de historial de ${messages.length} mensaje(s) completada.`)
@@ -500,6 +529,7 @@ async function conectar() {
         const body = msg.message?.conversation
           || msg.message?.extendedTextMessage?.text
           || msg.message?.imageMessage?.caption
+          || msg.message?.videoMessage?.caption
           || ''
 
         if (!body) continue
@@ -518,7 +548,6 @@ async function conectar() {
             estado: 'enviado',
             respuesta_recibida: msg.key.fromMe ? null : body,
             mensaje_enviado: msg.key.fromMe ? body : null,
-            nombre_grupo: isGroup ? nombre : null,
             created_at: msg.messageTimestamp ? new Date(msg.messageTimestamp * 1000).toISOString() : new Date().toISOString(),
           })
         } catch (err) {
@@ -594,18 +623,46 @@ async function despacharCola() {
 // ──────────────────────────────────────────────
 async function enviarMensaje(phone, text) {
   const jid = normalizarJID(phone)
+  let payload
+  let storageUrl = null
+  try {
+    const parsed = JSON.parse(text)
+    if (parsed.i) {
+      storageUrl = await subirMediaASupabase(parsed.i, 'imagen')
+      if (storageUrl) {
+        const res = await fetch(storageUrl)
+        const buffer = Buffer.from(await res.arrayBuffer())
+        payload = { image: buffer, caption: parsed.t || '' }
+      } else {
+        payload = { image: Buffer.from(parsed.i, 'base64'), caption: parsed.t || '' }
+      }
+    } else if (parsed.u) {
+      const res = await fetch(parsed.u)
+      const buffer = Buffer.from(await res.arrayBuffer())
+      payload = { image: buffer, caption: parsed.t || '' }
+    } else if (parsed.v) {
+      payload = { video: Buffer.from(parsed.v, 'base64'), caption: parsed.t || '' }
+    } else {
+      payload = { text: parsed.t || text }
+    }
+  } catch {
+    payload = { text }
+  }
 
   if (isReady && sock) {
     try {
-      await sock.sendMessage(jid, { text })
-      log(`✅ Mensaje enviado a ${phone}: "${text.slice(0, 40)}..."`)
+      await sock.sendMessage(jid, payload)
+      log(`✅ Mensaje enviado a ${phone}: "${(payload.caption || payload.text || '').slice(0, 40)}..."`)
+      if (storageUrl) {
+        const phoneClean = jid.replace('@s.whatsapp.net', '').replace(/[^0-9]/g, '')
+        supabase.from('conversaciones_whatsapp').update({ storage_url: storageUrl }).eq('numero', phoneClean).is('storage_url', null).catch(() => {})
+      }
       return { ok: true, fuente: 'directo' }
     } catch (err) {
       log(`❌ Error enviando a ${phone}: ${err.message}`, 'ERROR')
       throw err
     }
   } else {
-    // Encolar
     if (messageQueue.length >= MAX_QUEUE) {
       log('⚠️  Cola llena. Descartando mensaje más antiguo.', 'WARN')
       const old = messageQueue.shift()
@@ -741,7 +798,7 @@ function suscribirSupabaseRealtime() {
           log(`❌ Error despachando fila ID: ${row.id} - ${err.message}`, 'ERROR')
           await supabase
             .from('conversaciones_whatsapp')
-            .update({ estado: 'error', error_msg: err.message })
+            .update({ estado: 'error' })
             .eq('id', row.id)
         }
       })
@@ -765,7 +822,7 @@ function suscribirSupabaseRealtime() {
               log(`✅ Polling Worker: Fila ID: ${row.id} enviada con éxito a +${row.numero}`)
             } catch (err) {
               log(`❌ Polling Worker: Error enviando a ID ${row.id}: ${err.message}`, 'ERROR')
-              await supabase.from('conversaciones_whatsapp').update({ estado: 'error', error_msg: err.message }).eq('id', row.id)
+              await supabase.from('conversaciones_whatsapp').update({ estado: 'error' }).eq('id', row.id)
             }
           }
         }
@@ -1108,8 +1165,8 @@ async function responderConIA(sock, jid, numero, bodyCliente, promptMaestro, nom
       }
     }
 
-    // Autenticación por RUT en estado AWAITING_RUT / AWAITING_NAME_OR_ADDRESS
-    else if (authSession?.state === 'AWAITING_RUT' || authSession?.state === 'AWAITING_NAME_OR_ADDRESS') {
+    // Autenticación por RUT
+    else if (authSession?.state === 'AWAITING_RUT') {
       // Limpiar formato de RUT
       const cleanRutStr = (str) => {
         if (!str) return ''
@@ -1233,23 +1290,6 @@ async function responderConIA(sock, jid, numero, bodyCliente, promptMaestro, nom
       respuestaDirecta = `Consultas comerciales - Gama Seguridad 24/7\n\nEstimado cliente, le informamos que el módulo de consultas comerciales se encuentra actualmente en desarrollo.\n\nSi requiere atención o cotizaciones, por favor responde con el número 4 o presiona el enlace para comunicarse con un especialista.\n\n¿Tienes alguna otra duda o consulta?\n• Escribe "menú" para volver al menú principal.`
     }
 
-    // Opción 4: TRANSFERENCIA A OPERADOR HUMANO (Con enlace directo de chat)
-    else if (textClean === '4' || textClean.includes('humano') || textClean.includes('operador') || textClean.includes('especialista')) {
-      respuestaDirecta = `Atención directa con especialista en vivo\n\nUn especialista de nuestra Central de Monitoreo Gama Seguridad 24/7 está disponible para atenderle directamente.\n\nPresiona el siguiente enlace para abrir el chat directo:\nhttps://wa.me/56991016912`
-
-      // Marcar en Supabase para alertar al operador en la pantalla web
-      try {
-        await supabase.from('conversaciones_whatsapp').insert({
-          numero: numero,
-          tipo_evento: 'solicitud_humana',
-          estado: 'requiere_atencion_humana',
-          respuesta_recibida: '⚠️ CLIENTE SOLICITA ATENCIÓN HUMANA EN VIVO',
-          cuenta: cuentaActiva || 'ESPECIALISTA',
-          created_at: new Date().toISOString()
-        })
-      } catch (e) {}
-    }
-
     // Opción 2A: Soporte Teclado DSC (Diagnóstico *2)
     else if (textClean === '2a' || textClean.includes('falla') || (textClean.includes('luz') && textClean.includes('amarilla'))) {
       respuestaDirecta = `Soporte técnico - Teclado DSC (Diagnóstico *2)\n\nSi el teclado mantiene un doble pitido cada 10 segundos y la luz amarilla o triángulo de SISTEMA encendido:\n\n1. Diríjase al teclado de su propiedad.\n2. Presione [*][2].\n3. Verifique el número iluminado:\n   - Luz 1: Batería baja (revisión si persiste >24h tras corte de luz).\n   - Luz 2: Falta de energía eléctrica CA (verifique transformador o enchufe).\n   - Luz 3: Falla en línea telefónica o internet.\n   - Luz 4: Falla de comunicación con la central (requiere revisión técnica).\n   - Luz 5: Falla de zona o cableado en sensor.\n   - Luz 7: Memoria de alarma (presione # para borrar aviso).\n   - Luz 8: Pérdida de hora del reloj (responda 2d para reprogramar).\n\n¿Tienes alguna otra duda o consulta?\n• Responde 2b, 2c, 2d o 4\n• O escribe "menú" para volver al menú principal.`
@@ -1273,21 +1313,6 @@ async function responderConIA(sock, jid, numero, bodyCliente, promptMaestro, nom
     // Opción 2: Menú Soporte Técnico DSC
     else if (textClean === '2' || textClean.includes('soporte') || textClean.includes('tecnico') || textClean.includes('técnico')) {
       respuestaDirecta = `Soporte técnico y guía de teclado DSC - Gama Seguridad 24/7\n\nPor favor responde con la letra de la opción deseada:\n\n2a. Teclado pita o tiene luz amarilla (Diagnóstico *2)\n2b. No puedo armar / Luz verde apagada (Zona abierta)\n2c. Exclusión / Anulación de sensor dañado (*1)\n2d. Programar hora y fecha del teclado (*6)\n4. Hablar con un especialista técnico`
-    }
-
-    // Saludo inicial o palabra de inicio: Entregar Menú Principal Limpio
-    else if (
-      textClean === 'hola' ||
-      textClean === 'buenas' ||
-      textClean.includes('hola') ||
-      textClean.includes('buenas') ||
-      textClean.includes('prueba') ||
-      textClean.includes('menu') ||
-      textClean.includes('menú') ||
-      textClean.includes('inicio') ||
-      textClean.includes('ayuda')
-    ) {
-      respuestaDirecta = `🛡️ Hola, te comunicas con el Asistente Virtual de Gama Seguridad 24/7 🚨\nPor favor responde con el número de la opción deseada:\n\n1️⃣ Consulta de mi alarma y bitácora\n2️⃣ Soporte técnico y guía de teclado DSC\n3️⃣ Consultas comerciales\n4️⃣ Hablar con un operador o especialista en vivo`
     }
 
     // Si hubo una respuesta directa del menú interactivo, enviarla sin llamar a Gemini
@@ -1327,7 +1352,12 @@ async function responderConIA(sock, jid, numero, bodyCliente, promptMaestro, nom
     }
 
     // 4. Consultar Gemini API
-    const GEMINI_KEY = process.env.GEMINI_API_KEY || 'AIzaSyA'
+    const GEMINI_KEY = process.env.GEMINI_API_KEY
+    if (!GEMINI_KEY) {
+      log('⚠️ GEMINI_API_KEY no configurada en entorno. Omitiendo respuesta IA.', 'WARN')
+      return
+    }
+
     const fullPrompt = `${promptMaestro || 'Eres el Asistente Virtual de Gama Seguridad 24/7.'}
 
 MENÚ INTERACTIVO Y REGLAS DE ATENCIÓN:

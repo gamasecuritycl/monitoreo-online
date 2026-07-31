@@ -1,3 +1,8 @@
+// ════════════════════════════════════════════════════════════════════
+//  🔒 LOCKED — NO MODIFICAR
+//  Grid de eventos del dashboard. Recibe eventos por props desde
+//  ScorpionDashboard.tsx. Renderiza cualquier evento. No tocar.
+// ════════════════════════════════════════════════════════════════════
 'use client'
 
 // ════════════════════════════════════════════════════════════════════════════

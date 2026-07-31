@@ -16,6 +16,7 @@ interface EventosPorUsuarioModalProps {
 
 export default function EventosPorUsuarioModal({ onClose, eventoInicial }: EventosPorUsuarioModalProps) {
   const modalRef = useRef<HTMLDivElement>(null)
+  const eventosScrollRef = useRef<HTMLDivElement>(null)
   
   // Cuenta seleccionada activa
   const [cuentaActiva, setCuentaActiva] = useState(eventoInicial?.cuenta.toUpperCase().trim() || 'C735')
@@ -32,6 +33,20 @@ export default function EventosPorUsuarioModal({ onClose, eventoInicial }: Event
   const [todosEventosAbonado, setTodosEventosAbonado] = useState<EventoMonitoreo[]>([])
   const [eventosMostrados, setEventosMostrados] = useState<EventoMonitoreo[]>([])
   const [loading, setLoading] = useState(false)
+
+  // Normalizar fecha ISO → YYYY-MM-DD (robusto a formatos mixtos)
+  const getDiaLocal = (iso: string): string => {
+    try {
+      const d = new Date(iso)
+      const anio = d.getFullYear().toString().padStart(4, '0')
+      const mes = (d.getMonth() + 1).toString().padStart(2, '0')
+      const dia = d.getDate().toString().padStart(2, '0')
+      return `${anio}-${mes}-${dia}`
+    } catch {
+      const partes = iso.split('T')[0]
+      return partes || ''
+    }
+  }
 
   // 1. Cargar la base de datos de clientes desde Supabase en la inicialización
   useEffect(() => {
@@ -74,20 +89,22 @@ export default function EventosPorUsuarioModal({ onClose, eventoInicial }: Event
         if (data && !error) {
           setTodosEventosAbonado(data)
           
-          // Agrupar fechas únicas en formato YYYY-MM-DD
+          // Agrupar fechas únicas en formato YYYY-MM-DD (robusto)
           const diasSet = new Set<string>()
           data.forEach((ev: EventoMonitoreo) => {
             if (ev.fecha_hora) {
-              const fechaSolo = ev.fecha_hora.split('T')[0]
-              diasSet.add(fechaSolo)
+              diasSet.add(getDiaLocal(ev.fecha_hora))
             }
           })
           
           const listaDias = Array.from(diasSet).sort((a, b) => b.localeCompare(a)) // Orden descendente
           setDiasDisponibles(listaDias)
           
-          // Seleccionar por defecto el día más reciente
-          if (listaDias.length > 0) {
+          // Seleccionar por defecto HOY si existe, si no el día más reciente con eventos
+          const hoy = getDiaLocal(new Date().toISOString())
+          if (listaDias.includes(hoy)) {
+            setDiaSeleccionado(hoy)
+          } else if (listaDias.length > 0) {
             setDiaSeleccionado(listaDias[0])
           } else {
             setDiaSeleccionado('')
@@ -110,11 +127,21 @@ export default function EventosPorUsuarioModal({ onClose, eventoInicial }: Event
       return
     }
     const filtrados = todosEventosAbonado.filter(ev => {
-      return ev.fecha_hora && ev.fecha_hora.startsWith(diaSeleccionado)
+      return ev.fecha_hora && getDiaLocal(ev.fecha_hora) === diaSeleccionado
     })
-    const ordenAsc = [...filtrados].sort((a, b) => a.fecha_hora.localeCompare(b.fecha_hora))
+    // Orden cronológico ascendente por timestamp: el más reciente SIEMPRE abajo
+    const ordenAsc = [...filtrados].sort((a, b) => {
+      return new Date(a.fecha_hora).getTime() - new Date(b.fecha_hora).getTime()
+    })
     setEventosMostrados(ordenAsc)
   }, [diaSeleccionado, todosEventosAbonado])
+
+  // Scroll al fondo cuando cambian los eventos del día (ver lo último)
+  useEffect(() => {
+    if (eventosScrollRef.current) {
+      eventosScrollRef.current.scrollTop = eventosScrollRef.current.scrollHeight
+    }
+  }, [eventosMostrados])
 
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
@@ -224,7 +251,7 @@ export default function EventosPorUsuarioModal({ onClose, eventoInicial }: Event
                 DIA: {diaSeleccionado || '------'}
               </div>
               
-              <div className="flex-1 overflow-y-auto">
+              <div ref={eventosScrollRef} className="flex-1 overflow-y-auto">
                 <table className="w-full border-collapse text-[10px] text-left">
                   <thead>
                     <tr className="bg-[#e0e0e0] border-b border-gray-400 font-bold sticky top-0 text-gray-700">

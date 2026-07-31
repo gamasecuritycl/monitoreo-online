@@ -1,6 +1,6 @@
 {
   "name": "gama-whatsapp-server",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "description": "GAMA SEGURIDAD - Servidor WhatsApp Corporativo v3.0 (Baileys, sin Chromium)",
   "main": "whatsapp_server.js",
   "scripts": {
