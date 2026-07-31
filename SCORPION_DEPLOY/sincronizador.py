@@ -1,4 +1,4 @@
-import time, pyodbc, shutil, os, json, sys
+import time, pyodbc, shutil, os, json, sys, signal
 from datetime import datetime, timezone, timedelta
 from supabase import create_client
 
@@ -11,22 +11,32 @@ if sys.executable.lower().endswith("pythonw.exe"):
     except Exception:
         pass
 
-# Evitar múltiples instancias del sincronizador a la vez en el mismo PC
-LOCK_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "_sincronizador.lock")
+# Evitar múltiples instancias del sincronizador a la vez
+# Lock GLOBAL en %TEMP% para que funcione desde cualquier carpeta
+LOCK_FILE = os.path.join(os.environ.get('TEMP', os.path.dirname(os.path.abspath(__file__))), "_gama_sincronizador.lock")
 try:
     if os.path.exists(LOCK_FILE):
+        with open(LOCK_FILE, "r") as f:
+            old_pid_str = f.read().strip()
+        if old_pid_str:
+            try:
+                old_pid = int(old_pid_str)
+                if old_pid > 0:
+                    os.kill(old_pid, 0)
+                    print(f"[LOCK] PID {old_pid} ya ejecutando sincronizador. Saliendo...")
+                    sys.exit(0)
+            except (ValueError, OSError):
+                pass
         os.remove(LOCK_FILE)
 except Exception:
-    print("[ERROR] El sincronizador ya esta en ejecucion en segundo plano. Saliendo...")
-    sys.exit(0)
+    pass
 
 try:
-    # Mantener el archivo abierto para bloquearlo en Windows
-    lock_handle = open(LOCK_FILE, "w")
-    lock_handle.write(str(os.getpid()))
-    lock_handle.flush()
+    with open(LOCK_FILE, "w") as lf:
+        lf.write(str(os.getpid()))
+        lf.flush()
 except Exception:
-    print("[ERROR] No se pudo crear el archivo de bloqueo.")
+    print("[ERROR] No se pudo crear lock global.")
     sys.exit(0)
 
 # ============================================================
@@ -39,8 +49,11 @@ SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 
 # Detectar rutas dinámicas
 script_dir = os.path.dirname(os.path.abspath(__file__))
-if os.path.basename(script_dir).upper() == "SCORPION_DEPLOY":
+base_name = os.path.basename(script_dir).upper()
+if base_name == "SCORPION_DEPLOY":
     root_dir = os.path.dirname(script_dir)
+elif base_name.endswith("_PARA_PC_SCORPION") or base_name == "_PARA_PC_SCORPION":
+    root_dir = os.path.dirname(os.path.dirname(script_dir))
 else:
     root_dir = script_dir
 
@@ -187,6 +200,21 @@ def get_ultimo_mdb():
     archivos.sort(reverse=True)
     return os.path.join(CARPETA_EVENTOS, archivos[0])
 
+def enviar_heartbeat():
+    """ Envía señal continua de heartbeat para mantener status VERDE en la central web """
+    try:
+        now_iso = datetime.now(timezone.utc).isoformat()
+        supabase.table("eventos_monitoreo").upsert({
+            "cuenta": "__SINCRONIZADOR__",
+            "nombre_abonado": "PC SCORPION CENTRAL",
+            "evento": "HEARTBEAT",
+            "fecha_hora": now_iso,
+            "zona": "000",
+            "usuario": "SYSTEM"
+        }).execute()
+    except Exception as e:
+        pass
+
 def sincronizar(cache):
     print("--- Verificando nuevos eventos ---")
     ruta_original = get_ultimo_mdb()
@@ -244,13 +272,6 @@ def sincronizar(cache):
             zona    = get_val(row, ['ZONA', 'ZONE', 'ZONA_ALARMA', 'ALARM_ZONE', 'AREA', 'AREA_MONITOR'], 6)
             # Try to get user - expanded search terms
             usuario = get_val(row, ['USUARIO', 'USER', 'OPERADOR', 'OPERATOR', 'USUARIO_OPERADOR', 'ATTENDANT'], 7)
-            # Try to get stream information - for potential stream_req field
-            stream_info = get_val(row, ['STREAM', 'STREAM_ID', 'TIPO_STREAM', 'CANAL', 'CHANNEL', 'CANAL_CAMARA', 'CH', 'CAMARA'], 8)
-
-            # Debug output for first few records to help diagnose field mapping
-            if nuevos < 3:
-                print(f"  [DEBUG MAPEO] dia='{dia}' | hora='{hora}' | cuenta='{cuenta}' | nombre='{nombre}' | evento='{evento}' | zona='{zona}' | usuario='{usuario}' | stream='{stream_info}'")
-
             event_key = f"{dia}_{hora}_{cuenta}_{evento}_{zona}_{usuario}"
             if event_key in cache:
                 continue
@@ -291,7 +312,6 @@ def sincronizar(cache):
                 "evento":         evento,
                 "zona":           zona,
                 "usuario":        usuario,
-                "stream_req":     stream_info,
             }
 
             try:
@@ -327,24 +347,163 @@ def sincronizar(cache):
     return cache
 
 
+def sincronizar_zonas():
+    """Lee la carpeta ZONIFICACION de la PC Scorpion (clave SCORPION29) y sube el mapa completo
+    de zonas a la fila especial 'ZONAS' en Supabase, igual que se sincronizan los eventos."""
+    # Posibles rutas de la carpeta de zonificación
+    candidatos_zonas = [
+        os.path.join(root_dir, 'BASES DE DATOS', 'ZONIFICACION'),
+        os.path.join(root_dir, 'BASE DE DATOS', 'ZONIFICACION'),
+        os.path.join(root_dir, 'ZONIFICACION'),
+        r'C:\SCORPION\BASES DE DATOS\ZONIFICACION',
+        r'C:\SCORPION\BASE DE DATOS\ZONIFICACION',
+        r'C:\SCORPION\ZONIFICACION',
+    ]
+    carpeta_zonas = None
+    for ruta in candidatos_zonas:
+        if os.path.isdir(ruta):
+            archivos_mdb = [f for f in os.listdir(ruta) if f.upper().endswith('.MDB') and not f.startswith('_')]
+            if archivos_mdb:
+                carpeta_zonas = ruta
+                break
+    if not carpeta_zonas:
+        return False
+
+    claves_try = ['SCORPION29', 'Administ', '']
+    mapa_nuevo = {}
+    archivos = [f for f in os.listdir(carpeta_zonas) if f.upper().endswith('.MDB') and not f.startswith('_')]
+    for archivo in archivos:
+        ruta_mdb = os.path.join(carpeta_zonas, archivo)
+        nombre_sin_ext = os.path.splitext(archivo)[0].strip().upper()
+        try:
+            import shutil as _sh
+            copia_temp = os.path.join(script_dir, '_ZONAS_TEMP.MDB')
+            if os.path.exists(copia_temp):
+                os.remove(copia_temp)
+            _sh.copy2(ruta_mdb, copia_temp)
+
+            conn = None
+            for clave in claves_try:
+                try:
+                    conn = pyodbc.connect(
+                        f'DRIVER={{Microsoft Access Driver (*.mdb, *.accdb)}};'
+                        f'DBQ={copia_temp};PWD={clave};ReadOnly=1;'
+                    )
+                    break
+                except Exception:
+                    conn = None
+            if conn is None:
+                continue
+
+            cursor = conn.cursor()
+            tablas = [t.table_name for t in cursor.tables(tableType='TABLE')]
+            tabla = None
+            for t in tablas:
+                if any(k in t.upper() for k in ['ZONA', 'ZONIF']):
+                    tabla = t
+                    break
+            if tabla is None and tablas:
+                tabla = tablas[0]
+            if tabla is None:
+                conn.close()
+                continue
+
+            cursor.execute(f'SELECT * FROM [{tabla}]')
+            filas = cursor.fetchall()
+            columnas = [c[0].upper() for c in cursor.description]
+
+            def get_val(r, names, default_idx):
+                for name in names:
+                    if name in columnas:
+                        idx = columnas.index(name)
+                        v = r[idx]
+                        return str(v).strip() if v is not None else ""
+                if default_idx < len(r):
+                    v = r[default_idx]
+                    return str(v).strip() if v is not None else ""
+                return ""
+
+            cuenta_detectada = None
+            for fila in filas:
+                num   = get_val(fila, ['NUMERO', 'ZONA', 'ZONE', 'N_ZONA', 'ZONA_NUM', 'CODIGO'], 0)
+                disp  = get_val(fila, ['DISPOSITIVO', 'DEVICE', 'TIPO', 'TIPO_DISPOSITIVO', 'DESCRIPCION'], 1)
+                area  = get_val(fila, ['AREA', 'UBICACION', 'DESCRIPCION_AREA', 'LUGAR', 'SECTOR'], 2)
+                # La cuenta puede venir en una columna o deducirse del nombre del archivo
+                cuenta_col = get_val(fila, ['CUENTA', 'ABONADO', 'N_ABONADO', 'NRO_ABONADO'], 3)
+                cuenta = cuenta_col or nombre_sin_ext or cuenta_detectada
+                if not cuenta:
+                    continue
+                cuenta = cuenta.upper().strip()
+                cuenta_detectada = cuenta
+                if not num:
+                    continue
+                mapa_nuevo.setdefault(cuenta, []).append({
+                    "numero": num,
+                    "dispositivo": disp,
+                    "area": area
+                })
+            conn.close()
+        except Exception as e:
+            print(f"  [ZONAS] Error con {archivo}: {e}")
+
+    if not mapa_nuevo:
+        return False
+
+    # Fusionar con el mapa existente en Supabase (no borrar cuentas ya sincronizadas)
+    try:
+        resp = supabase.table("eventos_monitoreo").select("nombre_abonado").eq("cuenta", "ZONAS").limit(1).execute()
+        mapa_actual = {}
+        if resp.data and resp.data[0].get("nombre_abonado"):
+            try:
+                mapa_actual = json.loads(resp.data[0]["nombre_abonado"])
+            except Exception:
+                mapa_actual = {}
+    except Exception:
+        mapa_actual = {}
+
+    mapa_final = dict(mapa_actual)
+    for cuenta, zonas in mapa_nuevo.items():
+        mapa_final[cuenta] = zonas
+
+    try:
+        supabase.table("eventos_monitoreo").upsert({
+            "cuenta": "ZONAS",
+            "nombre_abonado": json.dumps(mapa_final, ensure_ascii=False),
+            "evento": "SINCRONIZACION_ZONAS",
+            "fecha_hora": datetime.now(timezone.utc).isoformat()
+        }).execute()
+        print(f"  [ZONAS] {len(mapa_nuevo)} abonado(s) sincronizado(s) desde {carpeta_zonas} (total {len(mapa_final)} en Supabase).")
+        return True
+    except Exception as e:
+        print(f"  [ZONAS] Error al subir: {e}")
+        return False
+
+
 if __name__ == "__main__":
     print("=" * 55)
-    print("  GAMA COMMAND CENTER - Sincronizador v3.2")
+    print("  GAMA COMMAND CENTER - Sincronizador v3.3")
     print(f"  Carpeta: {CARPETA_EVENTOS}")
     print(f"  Timezone: Chile ({get_chile_offset()})")
     print("=" * 55)
     
-    # Comprobación inicial de actualizaciones al arrancar
-    check_for_updates()
+    # check_for_updates()  # Auto-update deshabilitado — causaba cuelgues por os.execv() en Windows
     last_update_check = time.time()
     
     cache = load_cache()
+    heartbeat_counter = 0
+    ultima_zonas = 0
     while True:
+        if heartbeat_counter % 10 == 0:
+            enviar_heartbeat()
+        heartbeat_counter += 1
         cache = sincronizar(cache)
-        
-        # Comprobar actualizaciones cada 30 minutos (1800 segundos)
-        if time.time() - last_update_check > 1800:
-            check_for_updates()
-            last_update_check = time.time()
+
+        # Sincronización de zonificación cada ~20 ciclos (60s), solo si la carpeta existe
+        if heartbeat_counter - ultima_zonas >= 20:
+            ultima_zonas = heartbeat_counter
+            try:
+                sincronizar_zonas()
+            except Exception as e:
+                print(f"  [ZONAS] Error: {e}")
             
         time.sleep(INTERVALO_SEG)
