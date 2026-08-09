@@ -1,36 +1,46 @@
 @echo off
-title GAMA SEGURIDAD - Apagar WhatsApp Local de Forma Segura
+title GAMA SEGURIDAD - Apagar WhatsApp Local (Neonize)
 color 0C
 cls
 cd /d "%~dp0"
 
 echo =======================================================
-echo    APAGANDO WHATSAPP CORE LOCAL SIN INTERFERENCIAS
+echo    APAGANDO WHATSAPP v4.0 Neonize
 echo =======================================================
 echo.
 
-:: 1. Detener el bucle infinito INICIAR_WHATSAPP_LOOP.bat si esta corriendo
-echo [*] Deteniendo bucles de consola cmd.exe asociados a WhatsApp...
-wmic process where "CommandLine like '%%INICIAR_WHATSAPP_LOOP.bat%%'" call terminate >nul 2>&1
-wmic process where "CommandLine like '%%1_PROBAR_LOGS.bat%%'" call terminate >nul 2>&1
+:: 1. Detener bucles de consola
+echo [*] Deteniendo bucles de consola...
+wmic process where "CommandLine like '%%INICIAR_WHATSAPP%%'" call terminate >nul 2>&1
 
-:: 2. Buscar exactamente qué Node.js está escuchando en el puerto 3015 y cerrarlo
-echo [*] Buscando proceso Node.js en puerto 3015...
+:: 2. Detener Neonize (Python - puerto 3016)
+echo [*] Deteniendo Neonize service (puerto 3016)...
+set "foundPID="
+for /f "tokens=5" %%a in ('netstat -aon ^| findstr :3016') do (
+    set "foundPID=%%a"
+)
+if defined foundPID (
+    echo [!] Encontrado Neonize PID %foundPID%
+    taskkill /f /pid %foundPID% >nul 2>&1
+)
+
+:: 3. Detener Node.js (puerto 3015)
+echo [*] Deteniendo Node.js server (puerto 3015)...
 set "foundPID="
 for /f "tokens=5" %%a in ('netstat -aon ^| findstr :3015') do (
     set "foundPID=%%a"
 )
-
 if defined foundPID (
-    echo [!] Encontrado proceso con PID %foundPID% en puerto 3015.
-    echo [*] Finalizando proceso Node de WhatsApp de forma segura...
+    echo [!] Encontrado Node.js PID %foundPID%
     taskkill /f /pid %foundPID% >nul 2>&1
-    echo [OK] WhatsApp local apagado correctamente.
-) else (
-    echo [OK] No se detecto ningun proceso de WhatsApp corriendo en el puerto 3015.
 )
 
+:: 4. Matar procesos python de Neonize
+echo [*] Limpiando procesos Python residuales...
+taskkill /f /im python.exe /fi "WINDOWTITLE eq Neonize*" >nul 2>&1
+
 echo.
-echo Operacion completada. La ventana se cerrara sola en 3 segundos...
+echo [OK] WhatsApp v4.0 Neonize apagado correctamente.
+echo Operacion completada. Cerrando en 3 segundos...
 timeout /t 3 >nul
 exit
