@@ -1,4 +1,4 @@
-import time, pyodbc, shutil, os, json, sys
+import time, pyodbc, shutil, os, json, sys, re
 from datetime import datetime, timezone, timedelta
 from supabase import create_client
 
@@ -30,7 +30,7 @@ except Exception:
 
 # ============================================================
 #  GAMA COMMAND CENTER - Sincronizador para PC Scorpion
-#  Versión: 3.7 - Batching Ultra Rápido (50x) + Persistencia Inmediata de Cache
+#  Versión: 3.8 - Parsing de Horas 12h AM/PM / 24h + Batching 50x
 # ============================================================
 
 SUPABASE_URL = "https://onxwyrwmpjxtwlmjrosr.supabase.co"
@@ -96,6 +96,54 @@ def get_chile_offset() -> str:
     sign = '+' if offset_hours >= 0 else '-'
     return f"{sign}{abs(offset_hours):02d}:00"
 
+def parse_fecha_hora(dia_str, hora_str, chile_tz):
+    """
+    Convierte cualquier formato de fecha/hora de Access (12h AM/PM, 24h, DD/MM/YYYY, YYYY-MM-DD)
+    a ISO 8601 estricto compatible con PostgreSQL timestamptz.
+    Ejemplo: '2026-08-09T19:32:15-04:00'
+    """
+    now_dt = datetime.now()
+    year, month, day = now_dt.year, now_dt.month, now_dt.day
+
+    # 1. Parsear Día
+    if dia_str:
+        dia_clean = str(dia_str).strip().replace('/', '-')
+        partes_d = dia_clean.split('-')
+        if len(partes_d) == 3:
+            p0, p1, p2 = partes_d[0], partes_d[1], partes_d[2]
+            try:
+                if len(p0) == 4: # YYYY-MM-DD
+                    year, month, day = int(p0), int(p1), int(p2)
+                elif len(p2) == 4: # DD-MM-YYYY
+                    day, month, year = int(p0), int(p1), int(p2)
+                elif len(p2) == 2: # DD-MM-YY
+                    day, month, year = int(p0), int(p1), 2000 + int(p2)
+            except Exception:
+                pass
+
+    # 2. Parsear Hora (convertir AM/PM a 24 Horas)
+    h, m, s = 0, 0, 0
+    if hora_str:
+        hora_clean = str(hora_str).strip()
+        is_pm = 'PM' in hora_clean.upper() or 'P.M.' in hora_clean.upper()
+        is_am = 'AM' in hora_clean.upper() or 'A.M.' in hora_clean.upper()
+
+        hora_nums = re.sub(r'[^\d:]', '', hora_clean)
+        partes_h = hora_nums.split(':')
+        try:
+            if len(partes_h) >= 1 and partes_h[0]: h = int(partes_h[0])
+            if len(partes_h) >= 2 and partes_h[1]: m = int(partes_h[1])
+            if len(partes_h) >= 3 and partes_h[2]: s = int(partes_h[2])
+        except Exception:
+            pass
+
+        if is_pm and h < 12:
+            h += 12
+        elif is_am and h == 12:
+            h = 0
+
+    return f"{year:04d}-{month:02d}-{day:02d}T{h:02d}:{m:02d}:{s:02d}{chile_tz}"
+
 def load_cache():
     if os.path.exists(RUTA_CACHE):
         try:
@@ -118,7 +166,7 @@ def save_cache(cache):
 def get_archivos_mdb_activos():
     """
     Obtiene los MDBs activos ordenados por mtime ascendente (más antiguo primero -> más reciente al final).
-    Procesa solo archivos modificados en los últimos 7 días o los 5 MDBs más recientes para máxima velocidad.
+    Procesa solo archivos modificados en los últimos 7 días.
     """
     try:
         if not os.path.exists(CARPETA_EVENTOS):
@@ -132,13 +180,11 @@ def get_archivos_mdb_activos():
                 full_path = os.path.join(CARPETA_EVENTOS, f)
                 try:
                     mtime = os.path.getmtime(full_path)
-                    # Incluir si fue modificado en los últimos 7 días
                     if (ahora - mtime) <= siete_dias_sec:
                         archivos.append((mtime, full_path))
                 except Exception:
                     pass
 
-        # Si no hay MDBs recientes, tomar los últimos 3 MDBs cualesquiera por mtime
         if not archivos:
             all_files = []
             for f in os.listdir(CARPETA_EVENTOS):
@@ -161,7 +207,7 @@ def enviar_heartbeat():
         now_iso = datetime.now(timezone.utc).isoformat()
         supabase.table("eventos_monitoreo").upsert({
             "cuenta": "__SINCRONIZADOR__",
-            "nombre_abonado": "PC SCORPION CENTRAL (v3.7 Batch)",
+            "nombre_abonado": "PC SCORPION CENTRAL (v3.8 Time24h)",
             "evento": "HEARTBEAT",
             "fecha_hora": now_iso,
             "zona": "000",
@@ -245,27 +291,7 @@ def sincronizar(cache):
                 if event_key in cache:
                     continue
 
-                partes_hora = hora.split(':')
-                if len(partes_hora) == 3:
-                    hora_clean = f"{partes_hora[0].zfill(2)}:{partes_hora[1].zfill(2)}:{partes_hora[2].zfill(2)}"
-                else:
-                    hora_clean = hora
-
-                dia_clean = dia.replace('/', '-')
-                partes_dia = dia_clean.split('-')
-                
-                fecha_hora = None
-                if len(partes_dia) == 3:
-                    if len(partes_dia[0]) == 4:
-                        year, month, day = partes_dia[0], partes_dia[1], partes_dia[2]
-                    else:
-                        day, month, year = partes_dia[0], partes_dia[1], partes_dia[2]
-                    
-                    fecha_hora = f"{year}-{month.zfill(2)}-{day.zfill(2)}T{hora_clean}{chile_tz}"
-                
-                if not fecha_hora:
-                    hoy_iso = datetime.now().strftime('%Y-%m-%d')
-                    fecha_hora = f"{hoy_iso}T{hora_clean}{chile_tz}"
+                fecha_hora = parse_fecha_hora(dia, hora, chile_tz)
 
                 batch_data.append({
                     "fecha_hora":     fecha_hora,
@@ -282,17 +308,18 @@ def sincronizar(cache):
                     try:
                         supabase.table("eventos_monitoreo").insert(batch_data).execute()
                         for k in batch_keys: cache.add(k)
-                        save_cache(cache)  # Persistencia inmediata en disco
+                        save_cache(cache)
                         enviar_heartbeat()
                         nuevos_este_mdb += len(batch_data)
                         nuevos_totales += len(batch_data)
                     except Exception as e:
-                        # Si falla el lote completo por duplicado, fallback 1 a 1
+                        # Fallback 1 a 1 en caso de cualquier detalle
                         for d, k in zip(batch_data, batch_keys):
                             try:
                                 supabase.table("eventos_monitoreo").insert(d).execute()
                                 cache.add(k)
-                            except Exception:
+                            except Exception as ex:
+                                print(f"  [ERROR INSERT] {d['cuenta']} | {d['evento']} | {d['fecha_hora']}: {ex}")
                                 cache.add(k)
                         save_cache(cache)
                         enviar_heartbeat()
@@ -313,7 +340,8 @@ def sincronizar(cache):
                         try:
                             supabase.table("eventos_monitoreo").insert(d).execute()
                             cache.add(k)
-                        except Exception:
+                        except Exception as ex:
+                            print(f"  [ERROR INSERT] {d['cuenta']} | {d['evento']} | {d['fecha_hora']}: {ex}")
                             cache.add(k)
                     save_cache(cache)
                     enviar_heartbeat()
@@ -334,7 +362,7 @@ def sincronizar(cache):
 
 if __name__ == "__main__":
     print("=" * 60)
-    print("  GAMA COMMAND CENTER - Sincronizador v3.7 (Batching 50x + Persistence)")
+    print("  GAMA COMMAND CENTER - Sincronizador v3.8 (ISO Time 24h + Batch)")
     print(f"  Carpeta: {CARPETA_EVENTOS}")
     print(f"  Timezone: Chile ({get_chile_offset()})")
     print("=" * 60)
