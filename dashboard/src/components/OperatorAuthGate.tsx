@@ -10,7 +10,7 @@ export interface Operator {
   clave: string
 }
 
-export const OPERADORES_SISTEMA: Operator[] = [
+export const OPERADORES_PREDETERMINADOS: Operator[] = [
   { codigo: '01', nombre: 'Central Operativa GAMA Security', rol: 'Administrador', clave: 'gama2026' },
   { codigo: '02', nombre: 'Supervisor de Turno Central', rol: 'Supervisor', clave: 'gama8899' },
   { codigo: '03', nombre: 'Operador de Monitoreo 24/7', rol: 'Operador', clave: 'gama1234' },
@@ -18,39 +18,64 @@ export const OPERADORES_SISTEMA: Operator[] = [
 
 interface OperatorAuthGateProps {
   children: React.ReactNode
-  onOperatorLogin?: (op: Operator) => void
 }
 
 export default function OperatorAuthGate({ children }: OperatorAuthGateProps) {
+  const [operatorList, setOperatorList] = useState<Operator[]>(OPERADORES_PREDETERMINADOS)
   const [operator, setOperator] = useState<Operator | null>(null)
   const [checking, setChecking] = useState(true)
 
+  // Login form state
   const [selectedCod, setSelectedCod] = useState('01')
   const [claveInput, setClaveInput] = useState('')
   const [errorMsg, setErrorMsg] = useState('')
   const [showPass, setShowPass] = useState(false)
 
+  // Admin Modal state
+  const [mostrarModalGestion, setMostrarModalGestion] = useState(false)
+  const [editandoCod, setEditandoCod] = useState<string | null>(null)
+  const [formCodigo, setFormCodigo] = useState('')
+  const [formNombre, setFormNombre] = useState('')
+  const [formRol, setFormRol] = useState<'Administrador' | 'Supervisor' | 'Operador'>('Operador')
+  const [formClave, setFormClave] = useState('')
+  const [gestionError, setGestionError] = useState('')
+  const [gestionExito, setGestionExito] = useState('')
+
+  // Cargar lista de operadores desde localStorage
   useEffect(() => {
     try {
-      const saved = sessionStorage.getItem('gama_operator_auth') || localStorage.getItem('gama_operator_auth')
-      if (saved) {
-        setOperator(JSON.parse(saved))
+      const savedList = localStorage.getItem('gama_operadores_list')
+      if (savedList) {
+        const parsed = JSON.parse(savedList)
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setOperatorList(parsed)
+        }
+      }
+
+      const savedAuth = sessionStorage.getItem('gama_operator_auth') || localStorage.getItem('gama_operator_auth')
+      if (savedAuth) {
+        setOperator(JSON.parse(savedAuth))
       }
     } catch (e) {}
     setChecking(false)
   }, [])
 
+  // Guardar lista en localStorage
+  const guardarLista = (nuevaLista: Operator[]) => {
+    setOperatorList(nuevaLista)
+    localStorage.setItem('gama_operadores_list', JSON.stringify(nuevaLista))
+  }
+
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault()
     setErrorMsg('')
 
-    const op = OPERADORES_SISTEMA.find(o => o.codigo === selectedCod)
+    const op = operatorList.find(o => o.codigo === selectedCod)
     if (!op) {
       setErrorMsg('Operador no encontrado.')
       return
     }
 
-    // Permitir clave con o sin prefijo "gama" (ej. "2026" o "gama2026")
     const claveLimpia = claveInput.trim().toLowerCase()
     const claveEsperada = op.clave.toLowerCase()
     const pinEsperado = claveEsperada.replace('gama', '')
@@ -60,7 +85,6 @@ export default function OperatorAuthGate({ children }: OperatorAuthGateProps) {
       return
     }
 
-    // Guardar sesión
     sessionStorage.setItem('gama_operator_auth', JSON.stringify(op))
     localStorage.setItem('gama_operator_auth', JSON.stringify(op))
     setOperator(op)
@@ -71,6 +95,78 @@ export default function OperatorAuthGate({ children }: OperatorAuthGateProps) {
     localStorage.removeItem('gama_operator_auth')
     setOperator(null)
     setClaveInput('')
+    setMostrarModalGestion(false)
+  }
+
+  // Guardar o Editar Operador
+  const handleGuardarOperador = (e: React.FormEvent) => {
+    e.preventDefault()
+    setGestionError('')
+    setGestionExito('')
+
+    const codClean = formCodigo.trim().padStart(2, '0')
+    const nomClean = formNombre.trim()
+    const claClean = formClave.trim()
+
+    if (!codClean || !nomClean || !claClean) {
+      setGestionError('Todos los campos son obligatorios.')
+      return
+    }
+
+    if (editandoCod) {
+      // Actualizar existente
+      const nuevaLista = operatorList.map(op => {
+        if (op.codigo === editandoCod) {
+          return { ...op, codigo: codClean, nombre: nomClean, rol: formRol, clave: claClean }
+        }
+        return op
+      })
+      guardarLista(nuevaLista)
+      setGestionExito(`Operador ${codClean} actualizado con éxito.`)
+    } else {
+      // Crear nuevo
+      if (operatorList.some(op => op.codigo === codClean)) {
+        setGestionError(`El código de operador ${codClean} ya existe.`)
+        return
+      }
+      const nuevo: Operator = { codigo: codClean, nombre: nomClean, rol: formRol, clave: claClean }
+      const nuevaLista = [...operatorList, nuevo]
+      guardarLista(nuevaLista)
+      setGestionExito(`Nuevo operador ${codClean} - ${nomClean} agregado con éxito.`)
+    }
+
+    limpiarFormularioGestion()
+  }
+
+  const handleEditarClick = (op: Operator) => {
+    setEditandoCod(op.codigo)
+    setFormCodigo(op.codigo)
+    setFormNombre(op.nombre)
+    setFormRol(op.rol)
+    setFormClave(op.clave)
+    setGestionError('')
+    setGestionExito('')
+  }
+
+  const handleEliminarClick = (cod: string) => {
+    if (operatorList.length <= 1) {
+      setGestionError('Debe existir al menos un operador registrado en el sistema.')
+      return
+    }
+    if (confirm(`¿Estás seguro de eliminar el operador código ${cod}?`)) {
+      const nuevaLista = operatorList.filter(o => o.codigo !== cod)
+      guardarLista(nuevaLista)
+      setGestionExito(`Operador ${cod} eliminado con éxito.`)
+      if (editandoCod === cod) limpiarFormularioGestion()
+    }
+  }
+
+  const limpiarFormularioGestion = () => {
+    setEditandoCod(null)
+    setFormCodigo('')
+    setFormNombre('')
+    setFormRol('Operador')
+    setFormClave('')
   }
 
   if (checking) {
@@ -130,7 +226,7 @@ export default function OperatorAuthGate({ children }: OperatorAuthGateProps) {
                 onChange={(e) => setSelectedCod(e.target.value)}
                 className="w-full bg-[#050d1a] border border-[#1e3a5f] rounded-xl px-4 py-3 text-white text-sm font-medium focus:outline-none focus:border-[#2997ff] transition-colors"
               >
-                {OPERADORES_SISTEMA.map(op => (
+                {operatorList.map(op => (
                   <option key={op.codigo} value={op.codigo}>
                     {op.codigo} — {op.nombre} ({op.rol})
                   </option>
@@ -187,7 +283,7 @@ export default function OperatorAuthGate({ children }: OperatorAuthGateProps) {
     )
   }
 
-  // Render CRM with Logout Header Strip
+  // Render CRM with Operator Control Header Strip
   return (
     <div className="relative">
       
@@ -202,13 +298,208 @@ export default function OperatorAuthGate({ children }: OperatorAuthGateProps) {
           </span>
         </div>
 
-        <button
-          onClick={handleLogout}
-          className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 text-xs font-semibold transition-colors cursor-pointer"
-        >
-          🔒 Cerrar Sesión
-        </button>
+        <div className="flex items-center gap-2">
+          {/* Managed Password & Operators Button */}
+          <button
+            onClick={() => setMostrarModalGestion(true)}
+            className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[#0066cc]/20 hover:bg-[#0066cc]/30 border border-[#0066cc]/40 text-[#2997ff] text-xs font-semibold transition-colors cursor-pointer"
+          >
+            🔑 Gestionar Claves & Operadores
+          </button>
+
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 text-xs font-semibold transition-colors cursor-pointer"
+          >
+            🔒 Cerrar Sesión
+          </button>
+        </div>
       </div>
+
+      {/* Admin / Key Management Modal */}
+      {mostrarModalGestion && (
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex items-center justify-center p-4 font-sans text-white">
+          <div className="bg-[#0a1628] border border-[#1e3a5f] rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+            
+            {/* Modal Header */}
+            <div className="bg-[#050d1a] px-6 py-4 border-b border-[#1e3a5f] flex justify-between items-center">
+              <div>
+                <h3 className="text-base font-bold text-white flex items-center gap-2">
+                  <span>🔑</span> Gestión de Operadores & Claves de Acceso
+                </h3>
+                <p className="text-xs text-slate-400">
+                  Crea, edita claves o elimina usuarios autorizados de la Central Operativa.
+                </p>
+              </div>
+              <button
+                onClick={() => setMostrarModalGestion(false)}
+                className="w-8 h-8 rounded-full bg-[#162a4a] hover:bg-red-500/20 text-slate-400 hover:text-red-400 flex items-center justify-center font-bold text-sm transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 overflow-y-auto space-y-6 flex-1 text-left">
+              
+              {/* Form Crear / Editar */}
+              <form onSubmit={handleGuardarOperador} className="bg-[#050d1a] border border-[#1e3a5f] rounded-2xl p-4 space-y-4">
+                <div className="flex items-center justify-between border-b border-[#1e3a5f]/60 pb-2">
+                  <h4 className="text-xs font-bold text-[#2997ff] uppercase tracking-wider">
+                    {editandoCod ? `✏️ Editar Operador Código ${editandoCod}` : '➕ Registrar Nuevo Operador'}
+                  </h4>
+                  {editandoCod && (
+                    <button
+                      type="button"
+                      onClick={limpiarFormularioGestion}
+                      className="text-[10px] text-slate-400 hover:text-white underline"
+                    >
+                      Cancelar Edición
+                    </button>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div>
+                    <label className="block text-[10px] font-semibold text-slate-400 mb-1">Código</label>
+                    <input
+                      type="text"
+                      placeholder="04"
+                      value={formCodigo}
+                      onChange={(e) => setFormCodigo(e.target.value)}
+                      disabled={!!editandoCod}
+                      required
+                      className="w-full bg-[#0a1628] border border-[#1e3a5f] rounded-lg px-3 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-[#2997ff]"
+                    />
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <label className="block text-[10px] font-semibold text-slate-400 mb-1">Nombre Operador</label>
+                    <input
+                      type="text"
+                      placeholder="Ej: Pedro Morales"
+                      value={formNombre}
+                      onChange={(e) => setFormNombre(e.target.value)}
+                      required
+                      className="w-full bg-[#0a1628] border border-[#1e3a5f] rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-[#2997ff]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-semibold text-slate-400 mb-1">Rol</label>
+                    <select
+                      value={formRol}
+                      onChange={(e: any) => setFormRol(e.target.value)}
+                      className="w-full bg-[#0a1628] border border-[#1e3a5f] rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-[#2997ff]"
+                    >
+                      <option value="Operador">Operador</option>
+                      <option value="Supervisor">Supervisor</option>
+                      <option value="Administrador">Administrador</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-semibold text-slate-400 mb-1">Clave de Acceso / PIN</label>
+                  <input
+                    type="text"
+                    placeholder="Ej: gama5544 o 5544"
+                    value={formClave}
+                    onChange={(e) => setFormClave(e.target.value)}
+                    required
+                    className="w-full bg-[#0a1628] border border-[#1e3a5f] rounded-lg px-3 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-[#2997ff]"
+                  />
+                </div>
+
+                {gestionError && (
+                  <div className="text-red-400 text-xs font-semibold p-2 rounded-lg bg-red-500/10 border border-red-500/20">
+                    ⚠️ {gestionError}
+                  </div>
+                )}
+                {gestionExito && (
+                  <div className="text-green-400 text-xs font-semibold p-2 rounded-lg bg-green-500/10 border border-green-500/20">
+                    ✓ {gestionExito}
+                  </div>
+                )}
+
+                <div className="flex justify-end gap-2 pt-1">
+                  <button
+                    type="submit"
+                    className="btn-apple-primary text-xs py-2 px-5"
+                  >
+                    {editandoCod ? 'Guardar Cambios' : 'Guardar Nuevo Operador'}
+                  </button>
+                </div>
+              </form>
+
+              {/* Tabla de Operadores */}
+              <div>
+                <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider mb-3">
+                  Operadores Registrados ({operatorList.length})
+                </h4>
+
+                <div className="bg-[#050d1a] border border-[#1e3a5f] rounded-2xl overflow-hidden">
+                  <table className="w-full text-xs text-left">
+                    <thead className="bg-[#0a1628] border-b border-[#1e3a5f] text-slate-400 font-mono uppercase text-[10px]">
+                      <tr>
+                        <th className="px-4 py-2.5">Código</th>
+                        <th className="px-4 py-2.5">Nombre</th>
+                        <th className="px-4 py-2.5">Rol</th>
+                        <th className="px-4 py-2.5">Clave Acceso</th>
+                        <th className="px-4 py-2.5 text-right">Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#1e3a5f]/40">
+                      {operatorList.map(op => (
+                        <tr key={op.codigo} className="hover:bg-[#0f2240]/30 transition-colors">
+                          <td className="px-4 py-3 font-mono font-bold text-[#2997ff]">{op.codigo}</td>
+                          <td className="px-4 py-3 font-semibold text-white">{op.nombre}</td>
+                          <td className="px-4 py-3">
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+                              op.rol === 'Administrador' ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40' :
+                              op.rol === 'Supervisor' ? 'bg-blue-500/20 text-blue-300 border border-blue-500/40' :
+                              'bg-green-500/20 text-green-300 border border-green-500/40'
+                            }`}>
+                              {op.rol}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 font-mono text-slate-300">{op.clave}</td>
+                          <td className="px-4 py-3 text-right space-x-2">
+                            <button
+                              onClick={() => handleEditarClick(op)}
+                              className="px-2 py-1 rounded bg-[#1e3a5f] hover:bg-[#2997ff] text-white text-[10px] font-semibold transition-colors"
+                            >
+                              ✏️ Editar
+                            </button>
+                            <button
+                              onClick={() => handleEliminarClick(op.codigo)}
+                              className="px-2 py-1 rounded bg-red-500/20 hover:bg-red-500 text-red-300 hover:text-white text-[10px] font-semibold transition-colors"
+                            >
+                              🗑️ Eliminar
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+            </div>
+
+            {/* Modal Footer */}
+            <div className="bg-[#050d1a] px-6 py-3 border-t border-[#1e3a5f] flex justify-end">
+              <button
+                onClick={() => setMostrarModalGestion(false)}
+                className="btn-apple-secondary-dark text-xs py-2 px-5"
+              >
+                Cerrar Ventana
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
 
       {children}
     </div>
