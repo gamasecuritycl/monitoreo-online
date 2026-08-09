@@ -15,7 +15,7 @@ export default function Footer() {
         {/* ── Tier 1: Micro-Legal & Fine Print (Apple Fine Print Style) ── */}
         <div className="space-y-3 pb-8 border-b border-slate-300/60 text-[11px] leading-relaxed text-[#7a7a7a] text-left">
           <p>
-            1. <strong>GAMA Security:</strong> Empresa especialista en monitoreo electrónico perimetral, instalación de sistemas de seguridad y protección patrimonial a nivel nacional.
+            1. <strong>GAMA Security:</strong> Empresa líder con más de 20 años de experiencia en monitoreo electrónico perimetral, Alarma Inteligente Vetti con App NT CLICK y protección patrimonial a nivel nacional.
           </p>
           <p>
             2. <strong>Central de Operaciones Redundante:</strong> La recepción y verificación de eventos opera de forma continua las 24 horas del día, garantizando trazabilidad y registro auditado de cada señal procesada.
@@ -28,7 +28,7 @@ export default function Footer() {
         {/* ── Tier 2: Categorized Navigation Grid ── */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-left">
           
-          {/* Column 1: Brand & Direct Contact */}
+          {/* Column 1: Brand & Direct Contact (Direct WhatsApp Action) */}
           <div className="space-y-4 col-span-2 md:col-span-1">
             <div className="flex items-center gap-2.5">
               <div className="relative w-7 h-7">
@@ -45,22 +45,21 @@ export default function Footer() {
               </span>
             </div>
 
-            <div className="space-y-2 pt-1 text-slate-600">
+            <div className="space-y-2.5 pt-1 text-slate-600">
               <div className="font-medium text-[#1d1d1f]">
-                Atención y Emergencias 24/7:
+                Atención Inmediata 24/7:
               </div>
               <div>
-                Fono / WhatsApp:{' '}
                 <a
                   href="https://wa.me/56991016912"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-[#0066cc] font-semibold hover:underline"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#25D366] text-white font-medium text-xs shadow-sm hover:opacity-90 transition-opacity"
                 >
-                  +56 9 9101 6912
+                  Contactar por WhatsApp →
                 </a>
               </div>
-              <div>
+              <div className="pt-1">
                 Correo:{' '}
                 <a
                   href="mailto:contacto@gamasecurity.cl"
@@ -75,7 +74,7 @@ export default function Footer() {
                   href="https://www.gamasecurity.cl"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-[#0066cc] hover:underline"
+                  className="text-[#0066cc] hover:underline font-medium"
                 >
                   www.gamasecurity.cl
                 </a>
@@ -83,15 +82,25 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* Column 2: Servicios (Funcionales) */}
+          {/* Column 2: Productos y Servicios (Funcionales) */}
           <div className="space-y-3">
             <h4 className="font-semibold text-[#1d1d1f] text-xs tracking-tight uppercase">
-              Servicios
+              Productos y Servicios
             </h4>
             <ul className="space-y-2">
               <li>
+                <button onClick={() => scrollTo('servicios')} className="hover:text-[#0066cc] transition-colors text-left text-semibold text-[#0066cc]">
+                  ★ Alarma Vetti & App NT CLICK
+                </button>
+              </li>
+              <li>
                 <button onClick={() => scrollTo('servicios')} className="hover:text-[#0066cc] transition-colors text-left">
                   Monitoreo Central 24/7
+                </button>
+              </li>
+              <li>
+                <button onClick={() => scrollTo('servicios')} className="hover:text-[#0066cc] transition-colors text-left">
+                  Teclados LCD DSC PK5501
                 </button>
               </li>
               <li>
@@ -102,16 +111,6 @@ export default function Footer() {
               <li>
                 <button onClick={() => scrollTo('servicios')} className="hover:text-[#0066cc] transition-colors text-left">
                   Cercos Eléctricos
-                </button>
-              </li>
-              <li>
-                <button onClick={() => scrollTo('servicios')} className="hover:text-[#0066cc] transition-colors text-left">
-                  Alarmas DSC Power Series
-                </button>
-              </li>
-              <li>
-                <button onClick={() => scrollTo('servicios')} className="hover:text-[#0066cc] transition-colors text-left">
-                  Prevención de Robo GAMA
                 </button>
               </li>
               <li>
@@ -135,7 +134,7 @@ export default function Footer() {
               </li>
               <li>
                 <button onClick={() => scrollTo('tecnologia')} className="hover:text-[#0066cc] transition-colors text-left">
-                  Tecnología y Equipamiento
+                  Tecnología y Equipos
                 </button>
               </li>
               <li>
@@ -145,12 +144,12 @@ export default function Footer() {
               </li>
               <li>
                 <a
-                  href="https://wa.me/56991016912"
+                  href="https://apps.apple.com/ar/app/nt-click/id1440514183"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="hover:text-[#0066cc] transition-colors"
+                  className="hover:text-[#0066cc] transition-colors text-left block"
                 >
-                  Contacto WhatsApp Directo
+                  App NT CLICK (iOS App Store)
                 </a>
               </li>
             </ul>
