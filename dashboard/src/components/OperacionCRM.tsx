@@ -2395,7 +2395,7 @@ export default function OperacionCRM() {
   }
 
   return (
-    <div className="min-h-screen bg-[#E0E5EC] text-slate-800 font-sans flex flex-col select-none p-3 sm:p-6 md:p-8 gap-4 sm:gap-6 antialiased">
+    <div className="min-h-screen bg-[#050d1a] text-slate-100 font-sans flex flex-col select-none p-3 sm:p-5 md:p-6 gap-4 sm:gap-6 antialiased">
       
       {/* Estilos CSS para Impresión PDF Limpia (@media print) */}
       <style jsx global>{`
@@ -2427,49 +2427,49 @@ export default function OperacionCRM() {
         }
       `}</style>
 
-      {/* ── HEADER PRINCIPAL NEUMÓRFICO CORPORATIVO RESPONSIVE ── */}
-      <header className="bg-[#E0E5EC] rounded-2xl p-4 sm:p-5 md:p-6 shadow-[6px_6px_12px_#bec8d2,-6px_-6px_12px_#ffffff] flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shrink-0 no-imprimir">
+      {/* ── HEADER PRINCIPAL APPLE HIG CORPORATIVO RESPONSIVE ── */}
+      <header className="bg-[#0a1628]/80 backdrop-blur-xl border border-[#1e3a5f]/60 rounded-2xl p-4 sm:p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shrink-0 no-imprimir shadow-xl">
         <div className="flex items-center gap-3 sm:gap-4 w-full md:w-auto justify-between md:justify-start">
           <div className="flex items-center gap-3">
             <button
               onClick={() => setSidebarAbierto(!sidebarAbierto)}
-              className="bg-[#E0E5EC] active:shadow-[inset_4px_4px_8px_#bec8d2,inset_-4px_-4px_8px_#ffffff] text-slate-700 p-2.5 sm:p-3 rounded-xl shadow-[4px_4px_8px_#bec8d2,-4px_-4px_8px_#ffffff] transition-all cursor-pointer flex items-center justify-center"
+              className="bg-[#0f2240] hover:bg-[#162a4a] text-slate-300 hover:text-white p-2.5 rounded-xl border border-[#1e3a5f] transition-all cursor-pointer flex items-center justify-center"
               title="Abrir/Cerrar Menú Lateral"
             >
-              <SlidersHorizontal className="h-5 w-5 text-[#005bea]" />
+              <SlidersHorizontal className="h-4 w-4 text-[#2997ff] stroke-[1.5]" />
             </button>
 
-            <div className="bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white p-2.5 sm:p-3 rounded-xl shadow-[4px_4px_10px_#bec8d2,-4px_-4px_10px_#ffffff] flex items-center justify-center shrink-0">
-              <Shield className="h-5 sm:h-6 w-5 sm:w-6 stroke-[2]" />
+            <div className="w-10 h-10 rounded-xl bg-[#0066cc]/20 border border-[#0066cc]/40 text-[#2997ff] flex items-center justify-center shrink-0 shadow-inner">
+              <Shield className="h-5 w-5 stroke-[1.5]" />
             </div>
             <div>
-              <h1 className="text-base sm:text-lg md:text-xl font-black tracking-tight text-slate-900 flex flex-wrap items-center gap-2">
-                GAMA SEGURIDAD
-                <span className="bg-[#E0E5EC] text-slate-800 text-[10px] sm:text-xs font-bold px-2.5 py-0.5 rounded-full shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] flex items-center gap-1.5">
-                  <span className="h-2 w-2 rounded-full bg-[#005bea] animate-pulse"></span>
+              <h1 className="text-base sm:text-lg font-semibold tracking-tight text-white flex flex-wrap items-center gap-2">
+                GAMA SECURITY
+                <span className="bg-[#0066cc]/20 text-[#2997ff] border border-[#0066cc]/40 text-[10px] sm:text-xs font-semibold px-2.5 py-0.5 rounded-full flex items-center gap-1.5 font-sans">
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#2997ff] animate-pulse"></span>
                   <span>PLATAFORMA CRM 360°</span>
                 </span>
               </h1>
-              <p className="text-[10px] sm:text-xs text-slate-500 font-semibold mt-0.5">
+              <p className="text-[10px] sm:text-xs text-slate-400 font-sans mt-0.5">
                 {empresasConglomerado.length} Razones Sociales • Búsqueda por Abonado & Cliente
               </p>
             </div>
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs font-semibold w-full md:w-auto justify-between md:justify-end">
-          <div className="bg-[#E0E5EC] shadow-[inset_4px_4px_8px_#bec8d2,inset_-4px_-4px_8px_#ffffff] px-3.5 py-2 rounded-xl text-slate-700 font-mono flex items-center gap-2 text-[11px] sm:text-xs">
-            <DollarSign className="h-3.5 w-3.5 text-[#005bea]" />
-            <span>UF HOY:</span>
-            <strong className="text-emerald-700 font-bold">${valorUF.toLocaleString('es-CL')} CLP</strong>
+        <div className="flex flex-wrap items-center gap-3 text-xs font-medium w-full md:w-auto justify-between md:justify-end">
+          <div className="bg-[#050d1a] border border-[#1e3a5f] px-3.5 py-2 rounded-xl text-slate-300 font-mono flex items-center gap-2 text-[11px] sm:text-xs">
+            <DollarSign className="h-3.5 w-3.5 text-[#2997ff] stroke-[1.5]" />
+            <span className="text-slate-400">UF HOY:</span>
+            <strong className="text-emerald-400 font-bold">${valorUF.toLocaleString('es-CL')} CLP</strong>
           </div>
 
           <a
             href="/app"
-            className="bg-gradient-to-r from-[#005bea] to-[#00c6fb] hover:brightness-105 active:scale-95 text-white font-bold px-4 py-2 sm:px-5 sm:py-2.5 rounded-xl shadow-[4px_4px_10px_#bec8d2,-4px_-4px_10px_#ffffff] transition-all cursor-pointer text-xs flex items-center gap-2"
+            className="btn-apple-primary text-xs py-2 px-4 flex items-center gap-1.5 font-sans shadow-md shadow-[#0066cc]/20"
           >
-            <ExternalLink className="h-4 w-4 stroke-[2]" />
-            <span>COMMAND CENTER</span>
+            <ExternalLink className="h-3.5 w-3.5 stroke-[1.5]" />
+            <span>Command Center →</span>
           </a>
         </div>
       </header>
@@ -2480,27 +2480,27 @@ export default function OperacionCRM() {
         {/* BACKDROP OVERLAY PARA MÓVIL/TABLET */}
         {sidebarAbierto && (
           <div
-            className="fixed inset-0 bg-black/50 backdrop-blur-xs z-40 lg:hidden transition-opacity"
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden transition-opacity"
             onClick={() => setSidebarAbierto(false)}
           />
         )}
 
-        {/* ── SIDEBAR NEUMÓRFICO LATERAL (ADAPTATIVO DESKTOP / DRAWER MÓVIL) ── */}
+        {/* ── SIDEBAR APPLE GLASSMORPHISM LATERAL ── */}
         {sidebarAbierto && (
-          <aside className="fixed inset-y-0 left-0 z-50 lg:relative lg:inset-auto lg:z-auto w-72 bg-[#E0E5EC] p-5 sm:p-6 rounded-r-2xl lg:rounded-2xl flex flex-col gap-5 sm:gap-6 shrink-0 shadow-2xl lg:shadow-[6px_6px_12px_#bec8d2,-6px_-6px_12px_#ffffff] transition-all overflow-y-auto max-h-screen lg:max-h-none">
-            <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2 mb-1 flex justify-between items-center">
+          <aside className="fixed inset-y-0 left-0 z-50 lg:relative lg:inset-auto lg:z-auto w-72 bg-[#0a1628]/95 backdrop-blur-xl border border-[#1e3a5f]/60 p-5 rounded-r-2xl lg:rounded-2xl flex flex-col gap-4 shrink-0 shadow-2xl transition-all overflow-y-auto max-h-screen lg:max-h-none">
+            <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider px-2 mb-1 flex justify-between items-center font-sans">
               <span>MÓDULOS DE GESTIÓN</span>
-              <button onClick={() => setSidebarAbierto(false)} className="text-slate-400 hover:text-slate-700 font-bold text-sm cursor-pointer p-1">✕</button>
+              <button onClick={() => setSidebarAbierto(false)} className="text-slate-400 hover:text-white font-bold text-sm cursor-pointer p-1">✕</button>
             </div>
 
-            <div className="flex flex-col gap-3.5">
+            <div className="flex flex-col gap-2">
               {[
                 { id: 'ficha360', label: 'Ficha 360° Cliente', icon: User },
                 { id: 'presupuestos', label: 'Presupuestos', icon: FileText },
-                { id: 'marketing', label: 'Marketing', icon: Megaphone },
-                { id: 'facturacion', label: 'Cobranza y abonos', icon: DollarSign },
-                { id: 'serv_tecnico', label: 'Servicios técnicos', icon: Wrench },
-                { id: 'kpis', label: 'Reportes', icon: BarChart3 },
+                { id: 'marketing', label: 'Marketing B2B', icon: Megaphone },
+                { id: 'facturacion', label: 'Cobranza y Abonos', icon: DollarSign },
+                { id: 'serv_tecnico', label: 'Servicios Técnicos', icon: Wrench },
+                { id: 'kpis', label: 'Reportes & KPIs', icon: BarChart3 },
                 { id: 'config', label: 'Configuración', icon: Settings },
                 { id: 'autonomia', label: 'Agentes Autónomos IA', icon: Bot },
               ].map(m => {
@@ -2515,62 +2515,62 @@ export default function OperacionCRM() {
                         setSidebarAbierto(false)
                       }
                     }}
-                    className={`w-full text-left p-3.5 sm:p-4 rounded-xl font-bold text-xs transition-all flex items-center gap-3 cursor-pointer ${
+                    className={`w-full text-left p-3.5 rounded-xl font-medium text-xs transition-all flex items-center gap-3 cursor-pointer ${
                       esActivo
-                        ? 'bg-[#E0E5EC] text-[#005bea] shadow-[inset_4px_4px_8px_#bec8d2,inset_-4px_-4px_8px_#ffffff] border-l-4 border-l-[#005bea]'
-                        : 'bg-[#E0E5EC] text-slate-700 shadow-[4px_4px_8px_#bec8d2,-4px_-4px_8px_#ffffff] hover:brightness-95 active:shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff]'
+                        ? 'bg-[#0066cc] text-white shadow-lg shadow-[#0066cc]/30'
+                        : 'bg-[#0f2240]/40 text-slate-300 hover:bg-[#162a4a] hover:text-white border border-[#1e3a5f]/40'
                     }`}
                   >
-                    <IconComp className={`h-4 w-4 stroke-[2] ${esActivo ? 'text-[#005bea]' : 'text-slate-500'}`} />
+                    <IconComp className={`h-4 w-4 stroke-[1.5] ${esActivo ? 'text-white' : 'text-[#2997ff]'}`} />
                     <span>{m.label}</span>
                   </button>
                 )
               })}
             </div>
 
-            <div className="mt-auto bg-[#E0E5EC] shadow-[inset_4px_4px_8px_#bec8d2,inset_-4px_-4px_8px_#ffffff] p-4 rounded-xl text-xs space-y-1.5 text-slate-600">
-              <div className="font-black text-slate-800 text-[10px] uppercase tracking-wider mb-1 flex items-center gap-1.5">
-                <Layers className="h-3.5 w-3.5 text-[#005bea]" />
+            <div className="mt-auto bg-[#050d1a] border border-[#1e3a5f] p-4 rounded-xl text-xs space-y-2 text-slate-400">
+              <div className="font-semibold text-white text-[10px] uppercase tracking-wider mb-1 flex items-center gap-1.5 font-sans">
+                <Layers className="h-3.5 w-3.5 text-[#2997ff] stroke-[1.5]" />
                 <span>ESTRUCTURA DE DATOS</span>
               </div>
               <div className="flex justify-between">
                 <span>Empresas Emisoras:</span>
-                <strong className="text-slate-900 font-mono font-bold">{empresasConglomerado.length}</strong>
+                <strong className="text-white font-mono font-semibold">{empresasConglomerado.length}</strong>
               </div>
               <div className="flex justify-between">
                 <span>Clientes Registrados:</span>
-                <strong className="text-slate-900 font-mono font-bold">{Object.keys(clientesMaestros).length}</strong>
+                <strong className="text-white font-mono font-semibold">{Object.keys(clientesMaestros).length}</strong>
               </div>
               <div className="flex justify-between">
                 <span>Centros de Costo:</span>
-                <strong className="text-slate-900 font-mono font-bold">{Object.keys(abonadosCentrosCosto).length}</strong>
+                <strong className="text-white font-mono font-semibold">{Object.keys(abonadosCentrosCosto).length}</strong>
               </div>
             </div>
           </aside>
         )}
 
-        {/* ── PANEL DERECHO PRINCIPAL NEUMÓRFICO ── */}
+        {/* ── PANEL DERECHO PRINCIPAL APPLE HIG ── */}
         <main className="flex-1 overflow-y-auto min-h-0 flex flex-col gap-6">
 
-          {/* ── MÓDULO 1: FICHA 360° DEL CLIENTE COMPLETA (BENTO GRID NEUMÓRFICO) ── */}
+          {/* ── MÓDULO 1: FICHA 360° DEL CLIENTE COMPLETA (BENTO GRID APPLE) ── */}
           {moduloActivo === 'ficha360' && (
             <div className="flex-1 flex flex-col gap-6 sm:gap-8 min-h-0">
               
-              {/* BUSCADOR NEUMÓRFICO SPOTLIGHT DE ALTA GAMA */}
-              <div className="bg-[#E0E5EC] p-6 sm:p-7 rounded-2xl shadow-[6px_6px_14px_#bec8d2,-6px_-6px_14px_#ffffff] border border-white/60 flex flex-col gap-4 transition-all">
-                <div className="font-extrabold text-xs text-slate-500 uppercase tracking-widest flex justify-between items-center">
-                  <span className="flex items-center gap-2 text-slate-700">
-                    <div className="p-1.5 bg-[#005bea]/10 text-[#005bea] rounded-lg">
-                      <Search className="h-4 w-4" />
+              {/* BUSCADOR SPOTLIGHT APPLE HIG */}
+              <div className="bg-[#0a1628]/80 backdrop-blur-md border border-[#1e3a5f]/60 p-5 sm:p-6 rounded-2xl shadow-lg flex flex-col gap-4 transition-all">
+                <div className="font-semibold text-xs text-slate-400 uppercase tracking-wider flex justify-between items-center font-sans">
+                  <span className="flex items-center gap-2 text-slate-300">
+                    <div className="p-1.5 bg-[#0066cc]/20 text-[#2997ff] rounded-lg border border-[#0066cc]/30">
+                      <Search className="h-4 w-4 stroke-[1.5]" />
                     </div>
                     <span>BUSCADOR INTELIGENTE 360° (CÓDIGO DE ABONADO, NOMBRE O RUT)</span>
                   </span>
                   {(cuentaSeleccionada || rutClienteSeleccionado) && (
                     <button
                       onClick={() => { setCuentaSeleccionada(''); setRutClienteSeleccionado(''); setBusquedaClienteInput('') }}
-                      className="text-xs text-red-600 hover:text-red-700 font-extrabold cursor-pointer flex items-center gap-1 bg-red-500/10 px-3 py-1 rounded-xl transition-all"
+                      className="text-xs text-red-400 hover:text-red-300 font-semibold cursor-pointer flex items-center gap-1 bg-red-500/10 border border-red-500/20 px-3 py-1 rounded-xl transition-all"
                     >
-                      <X className="h-3.5 w-3.5" />
+                      <X className="h-3.5 w-3.5 stroke-[1.5]" />
                       <span>Limpiar Selección</span>
                     </button>
                   )}
@@ -2578,33 +2578,33 @@ export default function OperacionCRM() {
 
                 <div className="relative flex flex-col sm:flex-row items-center gap-3">
                   <div className="relative flex-1 w-full flex items-center">
-                    <Search className="absolute left-4 h-5 w-5 text-[#005bea] pointer-events-none" />
+                    <Search className="absolute left-4 h-4 w-4 text-[#2997ff] pointer-events-none stroke-[1.5]" />
                     <input
                       type="text"
                       value={busquedaClienteInput}
                       onChange={(e) => setBusquedaClienteInput(e.target.value)}
                       onKeyDown={(e) => { if (e.key === 'Enter') handleDispararBusqueda() }}
                       placeholder="Escriba código de Abonado (ej: 0999, C774, C7C5), Nombre del Cliente o RUT..."
-                      className="w-full bg-[#E0E5EC] shadow-[inset_4px_4px_8px_#bec8d2,inset_-4px_-4px_8px_#ffffff] border-none rounded-xl pl-12 pr-4 py-4 text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#005bea] font-mono tracking-wide"
+                      className="w-full bg-[#050d1a] border border-[#1e3a5f] rounded-xl pl-11 pr-4 py-3.5 text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-[#2997ff] font-mono tracking-wide transition-colors"
                     />
                   </div>
 
                   <button
                     onClick={handleDispararBusqueda}
                     disabled={buscandoSpinner}
-                    className="w-full sm:w-auto bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white font-black px-7 py-4 rounded-xl shadow-md hover:shadow-lg hover:brightness-105 active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-2 text-xs uppercase tracking-wider shrink-0"
+                    className="w-full sm:w-auto btn-apple-primary text-xs py-3.5 px-6 font-semibold shadow-lg shadow-[#0066cc]/20 shrink-0"
                   >
                     {buscandoSpinner ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
-                      <Search className="h-4 w-4 stroke-[2.5]" />
+                      <Search className="h-4 w-4 stroke-[1.5]" />
                     )}
-                    <span>BUSCAR 360°</span>
+                    <span>Buscar 360°</span>
                   </button>
 
-                  {/* DESPLEGABLE FLOTANTE DE RESULTADOS DE BÚSQUEDA */}
+                  {/* DESPLEGABLE FLOTANTE DE RESULTADOS DE BÚSQUEDA APPLE HIG */}
                   {busquedaClienteInput.trim().length > 0 && (
-                    <div className="absolute top-full left-0 right-0 mt-3 bg-[#E0E5EC] border border-slate-300 rounded-2xl shadow-[10px_10px_24px_#bec8d2,-10px_-10px_24px_#ffffff] z-30 max-h-96 overflow-y-auto p-3 space-y-2">
+                    <div className="absolute top-full left-0 right-0 mt-3 bg-[#0a1628]/95 backdrop-blur-xl border border-[#1e3a5f] rounded-2xl shadow-2xl z-30 max-h-96 overflow-y-auto p-2 space-y-1 text-left">
                       {resultadosBusqueda.length > 0 ? (
                         resultadosBusqueda.map(item => (
                           <div
