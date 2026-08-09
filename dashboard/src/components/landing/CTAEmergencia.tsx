@@ -29,7 +29,7 @@ export default function CTAEmergencia() {
           <div className="relative z-10 max-w-3xl mx-auto space-y-6">
             
             <span className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#0f2240] border border-[#1e3a5f] text-xs font-mono text-[#2997ff]">
-              <span className="live-dot" /> ATENCIÓN Y VERIFICACIÓN 24 HORAS
+              <span className="live-dot" /> ATENCIÓN Y MONITOREO 24 HORAS
             </span>
 
             <h2 className="apple-display-lg text-white">
@@ -50,17 +50,17 @@ export default function CTAEmergencia() {
               </button>
 
               <a
-                href="https://wa.me/56948855190"
+                href="https://wa.me/56991016912"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="btn-apple-secondary-dark text-base py-3 px-6"
               >
-                Hablar por WhatsApp →
+                Hablar por WhatsApp (+56 9 9101 6912) →
               </a>
             </div>
 
             <p className="text-xs text-slate-400 font-sans pt-2">
-              Respuesta garantizada en menos de 24 horas laborables · Asesoría personalizada
+              Respuesta garantizada · Asesoría personalizada en Chile
             </p>
           </div>
         </motion.div>

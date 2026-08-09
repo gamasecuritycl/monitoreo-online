@@ -37,10 +37,10 @@ export default function Navbar() {
           <div className="flex items-center gap-6">
             <span className="text-slate-300 font-medium tracking-tight flex items-center gap-2">
               <span className="live-dot" />
-              Central Monitoreo 24/7 · Chile
+              Central de Monitoreo 24/7 · Chile
             </span>
             <span className="hidden md:inline text-[#2997ff] text-[11px] font-mono font-semibold">
-              OS-10 Certificado
+              Estándar de Alta Seguridad Enterprise
             </span>
           </div>
 
@@ -56,7 +56,7 @@ export default function Navbar() {
               href="/operacion"
               className="text-[#2997ff] hover:underline font-medium transition-colors"
             >
-              Acceso Plataforma Scorpion →
+              Acceso Operadores →
             </Link>
           </div>
         </div>
@@ -84,7 +84,7 @@ export default function Navbar() {
               <div className="relative w-8 h-8 flex-shrink-0 transition-transform duration-300 group-hover:scale-105">
                 <Image
                   src="/logo-gama.png"
-                  alt="GAMA Servicios Monitoreo"
+                  alt="GAMA Security Logo"
                   width={32}
                   height={32}
                   className="object-contain filter drop-shadow(0 2px 8px rgba(0,102,204,0.3))"
@@ -96,7 +96,7 @@ export default function Navbar() {
                   GAMA
                 </span>
                 <span className="text-xs font-normal text-slate-400 font-sans">
-                  Servicios
+                  Security
                 </span>
               </div>
             </div>

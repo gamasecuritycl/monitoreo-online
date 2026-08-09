@@ -3,8 +3,8 @@
 import { motion } from 'framer-motion'
 
 const BRANDS = [
-  'Hikvision', 'DSC', 'Bosch', 'Dahua', 'Paradox', 'Crow',
-  'Honeywell', 'Risco', 'Axis', 'Pelco', 'Vetti', 'Texecom',
+  'DSC', 'Hikvision', 'Bosch', 'Dahua', 'Paradox', 'Crow',
+  'Honeywell', 'Risco', 'Axis', 'Pelco', 'Texecom',
 ]
 
 const FEATURES = [
@@ -13,12 +13,12 @@ const FEATURES = [
     desc: 'Activación de verificación operativa en menos de 2 minutos ante señales críticas de intrusión.',
   },
   {
-    title: 'Notificación omnicanal',
-    desc: 'Alertas inmediatas mediante WhatsApp, llamada telefónica, SMS e email para encargados de seguridad.',
+    title: 'Notificación omnicanal (+56 9 9101 6912)',
+    desc: 'Alertas inmediatas mediante WhatsApp, llamada telefónica y correo electrónico.',
   },
   {
-    title: 'Zonificación de precisión Scorpion',
-    desc: 'Identificación exacta de la zona vulnerada (área, sensor, dispositivo) con historial auditado.',
+    title: 'Zonificación de precisión Nivel Enterprise',
+    desc: 'Identificación exacta de la zona vulnerada (área, sensor, teclado DSC) con historial auditado.',
   },
   {
     title: 'Redundancia y alta disponibilidad',
@@ -46,14 +46,14 @@ export default function Tecnologia() {
           className="text-center max-w-3xl mx-auto mb-20 space-y-4"
         >
           <span className="text-xs font-semibold text-[#2997ff] uppercase tracking-widest font-sans">
-            TECNOLOGÍA DE PLATAFORMA
+            TECNOLOGÍA Y EQUIPOS DE PRIMERA LÍNEA
           </span>
           <h2 className="apple-display-lg text-white">
-            Plataforma Scorpion. El estándar de la industria.
+            Sistemas de prevención y monitoreo avanzado 24/7.
           </h2>
           <p className="apple-lead text-slate-300 max-w-2xl mx-auto">
-            Procesamos miles de señales de monitoreo con trazabilidad absoluta,
-            despacho de respuesta inmediata y gestión centralizada.
+            Trabajamos con las marcas líderes del mercado como DSC Power Series, Hikvision y Dahua.
+            Equipos homologados y garantizados con soporte técnico permanente.
           </p>
         </motion.div>
 
@@ -90,7 +90,7 @@ export default function Tecnologia() {
             ))}
           </motion.div>
 
-          {/* Interactive Scorpion Platform Window Mockup */}
+          {/* Interactive Console Window Mockup */}
           <motion.div
             initial={{ opacity: 0, x: 30 }}
             whileInView={{ opacity: 1, x: 0 }}
@@ -109,7 +109,7 @@ export default function Tecnologia() {
                     <div className="w-3 h-3 rounded-full bg-green-500/80" />
                   </div>
                   <span className="text-xs font-mono text-slate-400">
-                    central.scorpion — GAMA SERVICIOS
+                    central.operativa — GAMA SECURITY
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -123,7 +123,7 @@ export default function Tecnologia() {
                 {/* Stats row */}
                 <div className="grid grid-cols-3 gap-3">
                   {[
-                    { label: 'Cuentas activas', val: '487', color: 'text-green-400' },
+                    { label: 'Cuentas activas', val: '500+', color: 'text-green-400' },
                     { label: 'Eventos hoy', val: '24', color: 'text-[#2997ff]' },
                     { label: 'Señales/hora', val: '1.4k', color: 'text-amber-400' },
                   ].map((s) => (
@@ -144,7 +144,7 @@ export default function Tecnologia() {
                     { code: 'E131', cta: 'CUENTA-0014', event: 'ALARMA ROBO PERIMETRAL', state: 'EN VERIFICACIÓN', clr: 'text-red-400 bg-red-950/40 border-red-500/30' },
                     { code: 'E602', cta: 'CUENTA-C7C9', event: 'TEST PERIODICO OK', state: 'NORMAL', clr: 'text-green-400 bg-green-950/30 border-green-500/20' },
                     { code: 'R401', cta: 'CUENTA-C7A0', event: 'RESTAURACION ZONA 02', state: 'RESTABLECIDO', clr: 'text-[#2997ff] bg-blue-950/30 border-blue-500/20' },
-                    { code: 'E130', cta: 'CUENTA-0082', event: 'ALARMA SENSORES INTERIORES', state: 'DESPACHADO', clr: 'text-amber-400 bg-amber-950/30 border-amber-500/20' },
+                    { code: 'E130', cta: 'CUENTA-0082', event: 'ALARMA TECLADO DSC POWER', state: 'VERIFICADO', clr: 'text-amber-400 bg-amber-950/30 border-amber-500/20' },
                   ].map((row, idx) => (
                     <div
                       key={idx}
@@ -163,7 +163,7 @@ export default function Tecnologia() {
                 </div>
 
                 <div className="text-center text-[10px] font-mono text-slate-500 pt-1">
-                  Scorpion Engine v3.5 · GAMA SERVICIOS Central Monitoreo Chile
+                  GAMA SECURITY Central Monitoreo Chile · www.gamasecurity.cl
                 </div>
               </div>
 
@@ -181,7 +181,7 @@ export default function Tecnologia() {
           className="pt-8"
         >
           <p className="text-center text-xs font-semibold text-slate-400 uppercase tracking-widest mb-8">
-            COMPATIBILIDAD CON LAS PRINCIPALES MARCAS DEL MERCADO
+            COMPATIBILIDAD Y EQUIPAMIENTO CON LAS MARCAS LÍDERES
           </p>
 
           <div className="relative overflow-hidden">

@@ -13,10 +13,10 @@ const fadeUp: Variants = {
 }
 
 const STATS = [
-  { n: '15+', label: 'Años de trayectoria' },
+  { n: '+20', label: 'Años de trayectoria' },
   { n: '500+', label: 'Empresas y hogares protegidos' },
   { n: '< 2 min', label: 'Tiempo medio de respuesta' },
-  { n: 'OS-10', label: 'Certificado Carabineros' },
+  { n: '24/7', label: 'Central de Monitoreo Redundante' },
 ]
 
 export default function Hero() {
@@ -50,7 +50,7 @@ export default function Hero() {
               className="inline-flex items-center gap-2.5 bg-[#0f2240] border border-[#1e3a5f] rounded-full px-4 py-1.5 text-xs text-slate-300 font-sans"
             >
               <div className="live-dot" />
-              <span>Monitoreo Activo 24/7 · Plataforma Scorpion</span>
+              <span>Monitoreo Activo 24/7 · Central de Operaciones Nivel Enterprise</span>
             </motion.div>
 
             {/* Apple SF Pro Display Headline */}
@@ -74,9 +74,9 @@ export default function Hero() {
               variants={fadeUp}
               className="apple-lead text-slate-300 max-w-xl"
             >
-              Empresa líder en monitoreo electrónico, instalación de cámaras 4K con IA,
-              cercos eléctricos y sistemas de alarma. Respuesta en menos de 2 minutos
-              respaldada por la central <strong className="text-white font-semibold">Scorpion</strong>.
+              Empresa líder con más de 20 años de trayectoria en monitoreo electrónico,
+              instalación de cámaras 4K con IA, cercos eléctricos y alarmas de alta precisión.
+              Respuesta inmediata verificada por nuestra central operativa.
             </motion.p>
 
             {/* Action Buttons */}
@@ -141,7 +141,7 @@ export default function Hero() {
                     <div className="relative w-7 h-7">
                       <Image
                         src="/logo-gama.png"
-                        alt="Gama Logo"
+                        alt="GAMA Security Logo"
                         width={28}
                         height={28}
                         className="object-contain"
@@ -160,7 +160,7 @@ export default function Hero() {
                 <div className="relative h-64 rounded-2xl overflow-hidden mb-5 bg-[#050d1a]">
                   <Image
                     src="/central-monitoreo.png"
-                    alt="Central de Monitoreo GAMA Servicios"
+                    alt="Central de Monitoreo GAMA Security"
                     fill
                     className="object-cover transition-transform duration-700 hover:scale-105"
                     priority
@@ -168,7 +168,7 @@ export default function Hero() {
                   <div className="absolute inset-0 bg-gradient-to-t from-[#0a1628] via-transparent to-transparent opacity-80" />
                   <div className="absolute bottom-3 left-4 right-4 text-left">
                     <span className="text-[10px] uppercase font-mono text-[#2997ff] tracking-wider font-semibold">
-                      TECNOLOGÍA SCORPION
+                      CENTRAL DE OPERACIONES REDUNDANTE
                     </span>
                     <h3 className="text-sm font-semibold text-white">
                       Recepción de eventos en tiempo real
@@ -188,10 +188,10 @@ export default function Hero() {
                   </div>
                   <div className="bg-[#0f2240] border border-[#1e3a5f] rounded-xl p-3 text-left">
                     <div className="text-[11px] text-slate-400 font-sans">
-                      Certificación oficial
+                      Estándar de Seguridad
                     </div>
                     <div className="text-lg font-bold text-[#2997ff] font-mono">
-                      OS-10
+                      Enterprise
                     </div>
                   </div>
                 </div>

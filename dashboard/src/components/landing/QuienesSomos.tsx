@@ -1,19 +1,18 @@
 'use client'
 
-import Image from 'next/image'
 import { motion } from 'framer-motion'
 
 const TIMELINE = [
-  { year: '2010', title: 'Fundación', desc: 'Inicia operaciones GAMA SERVICIOS con su primera central de monitoreo en Santiago.' },
-  { year: '2013', title: 'Certificación OS-10', desc: 'Habilitación oficial por Carabineros de Chile para servicios de seguridad electrónica.' },
-  { year: '2016', title: 'Plataforma Scorpion', desc: 'Implementación del estándar Scorpion para gestión de alarmas y zonificación precisa.' },
-  { year: '2020', title: 'Expansión Nacional', desc: 'Ampliación de red técnica y servicio de monitoreo en múltiples regiones de Chile.' },
+  { year: '2004', title: 'Fundación', desc: 'Inicia operaciones GAMA Security con su primera central de monitoreo en Chile.' },
+  { year: '2009', title: 'Consolidación', desc: 'Ampliación de infraestructura y servicios de protección electrónica perimetral.' },
+  { year: '2016', title: 'Plataforma Avanzada', desc: 'Gestión de alarmas y zonificación de precisión 24/7 con respuesta inmediata.' },
+  { year: '2020', title: 'Expansión Nacional', desc: 'Cobertura completa de servicios de monitoreo e instalación en múltiples regiones.' },
   { year: '2024', title: 'Inteligencia Artificial', desc: 'Integración de analítica de video con IA y automatización de alertas en tiempo real.' },
 ]
 
 const PILLARS = [
   {
-    n: '15+',
+    n: '+20',
     label: 'Años de Experiencia',
     sub: 'Trayectoria ininterrumpida',
   },
@@ -28,9 +27,9 @@ const PILLARS = [
     sub: 'Central redundante 24/7',
   },
   {
-    n: 'OS-10',
-    label: 'Certificación Oficial',
-    sub: 'Carabineros de Chile',
+    n: '24/7',
+    label: 'Atención Continua',
+    sub: 'Respuesta en < 120 seg',
   },
 ]
 
@@ -49,14 +48,14 @@ export default function QuienesSomos() {
           className="text-center max-w-3xl mx-auto mb-20 space-y-4"
         >
           <span className="text-xs font-semibold text-[#0066cc] uppercase tracking-widest font-sans">
-            SOBRE GAMA SERVICIOS
+            SOBRE GAMA SECURITY
           </span>
           <h2 className="apple-display-lg text-[#1d1d1f]">
-            Protegiendo familias y empresas en Chile desde 2010.
+            Protegiendo familias y empresas en Chile con más de 20 años de trayectoria.
           </h2>
           <p className="apple-lead text-[#7a7a7a] text-base sm:text-lg max-w-2xl mx-auto">
-            Combinamos tecnología de grado industrial con operadores capacitados 24/7,
-            bajo las certificaciones vigentes de seguridad privada.
+            Combinamos tecnología de grado industrial con operadores capacitados las 24 horas del día,
+            garantizando estándares de alta seguridad enterprise.
           </p>
         </motion.div>
 
@@ -102,27 +101,26 @@ export default function QuienesSomos() {
             className="lg:col-span-6 space-y-6 text-left"
           >
             <h3 className="apple-display-md text-[#1d1d1f]">
-              Respuesta humana experta respaldada por tecnología Scorpion.
+              Respuesta humana experta respaldada por tecnología de vanguardia.
             </h3>
             
             <p className="text-[#1d1d1f]/80 text-base leading-relaxed">
-              En GAMA SERVICIOS operamos una central propia redundante con enlaces de comunicación
-              múltiples (IP, GPRS, Móvil). Cada señal recibida activa un protocolo de verificación
+              En GAMA Security operamos una central propia redundante con enlaces de comunicación
+              múltiples (IP, GPRS, Celular). Cada señal recibida activa un protocolo de verificación
               en menos de 120 segundos.
             </p>
 
             <p className="text-[#1d1d1f]/80 text-base leading-relaxed">
-              Utilizamos la <strong className="text-[#1d1d1f] font-semibold">plataforma Scorpion</strong>,
-              el estándar de zonificación y gestión de monitoreo en Latinoamérica, lo que garantiza
-              trazabilidad total de cada evento registrado.
+              Utilizamos una tecnología de gestión de monitoreo avanzada que nos permite gestionar
+              miles de señales con zonificación precisa y trazabilidad total de cada evento registrado.
             </p>
 
             {/* Badges */}
             <div className="pt-4 flex flex-wrap gap-3">
               {[
-                { label: 'OS-10 Certificado', sub: 'Carabineros de Chile' },
-                { label: 'Scorpion v3.5', sub: 'Plataforma oficial' },
-                { label: '100% Cobertura', sub: 'Servicio Nacional' },
+                { label: 'Alta Seguridad Enterprise', sub: 'Estándar Industrial' },
+                { label: 'Tecnología Redundante', sub: 'Servicio Continuo 24/7' },
+                { label: '+20 Años', sub: 'Experiencia Nacional' },
               ].map((b) => (
                 <div
                   key={b.label}
@@ -148,17 +146,17 @@ export default function QuienesSomos() {
             className="lg:col-span-6 text-left"
           >
             <h4 className="text-xs font-semibold text-[#7a7a7a] uppercase tracking-widest mb-8">
-              HISTORIA Y EVOLUCIÓN
+              HISTORIA Y TRAYECTORIA
             </h4>
 
             <div className="relative pl-6 space-y-8 border-l-2 border-slate-300">
-              {TIMELINE.map((item, i) => (
+              {TIMELINE.map((item) => (
                 <motion.div
                   key={item.year}
                   initial={{ opacity: 0, x: 20 }}
                   whileInView={{ opacity: 1, x: 0 }}
                   viewport={{ once: true }}
-                  transition={{ delay: i * 0.1, duration: 0.5 }}
+                  transition={{ duration: 0.5 }}
                   className="relative group"
                 >
                   {/* Dot */}

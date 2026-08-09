@@ -7,10 +7,10 @@ const SERVICES = [
   {
     id: 'monitoreo',
     title: 'Monitoreo Central 24/7',
-    desc: 'Operación continua las 24 horas, los 365 días del año. Recepción y verificación de señales en tiempo real mediante la plataforma Scorpion.',
+    desc: 'Operación continua las 24 horas, los 365 días del año. Recepción y verificación de señales en tiempo real mediante nuestra central de operaciones redundante.',
     img: '/central-monitoreo.png',
     tag: '< 2 min respuesta',
-    features: ['Conexión IP / GPRS redundante', 'Operadores certificados OS-10', 'Verificación inmediata de eventos'],
+    features: ['Conexión IP / GPRS redundante', 'Operadores calificados Nivel Enterprise', 'Verificación inmediata de eventos'],
   },
   {
     id: 'camaras',
@@ -30,24 +30,24 @@ const SERVICES = [
   },
   {
     id: 'alarmas',
-    title: 'Sistemas de Alarma',
-    desc: 'Detección perimetral e interior con sensores de movimiento, apertura e impacto conectados directamente a nuestro centro operativo.',
-    img: '/vetti-alarm.png',
-    tag: 'Cobertura 360°',
-    features: ['Sensores de alta precisión', 'Paneles anti-sabotaje', 'Notificación inmediata en celular'],
+    title: 'Sistemas de Alarma DSC',
+    desc: 'Detección perimetral e interior de alta precisión con teclados LED DSC Power Series y sensores de movimiento conectados a nuestro centro operativo.',
+    img: '/dsc-power.png',
+    tag: 'DSC Power Series',
+    features: ['Teclado LED DSC Power Series', 'Sensores de movimiento e impacto', 'Notificación inmediata en celular'],
   },
   {
     id: 'prevencion',
     title: 'Prevención de Robo',
-    desc: 'Protocolos preventivos y auditoría de seguridad integral para recintos comerciales, empresariales y parques industriales.',
+    desc: 'Protocolos preventivos y auditoría de seguridad integral para recintos comerciales, empresariales y parques industriales con placas disuasivas GAMA Security.',
     img: '/prevencion-robo.png',
     tag: 'Empresas & Pymes',
-    features: ['Evaluación de vulnerabilidades', 'Planes de respuesta rápida', 'Reportes periódicos auditados'],
+    features: ['Placas disuasivas GAMA Security', 'Evaluación de vulnerabilidades', 'Planes de respuesta rápida'],
   },
   {
     id: 'incendio',
     title: 'Detección de Incendio',
-    desc: 'Sistemas automáticos de detección de humo, temperatura y gas con alerta temprana conectada a la central y coordinación con bomberos.',
+    desc: 'Sistemas automáticos de detección de humo, temperatura y gas con alerta temprana conectada a la central y coordinación de emergencia.',
     img: '/deteccion-incendio.png',
     tag: 'Alerta Temprana',
     features: ['Sensores térmicos y fotoeléctricos', 'Protocolo automático de emergencia', 'Conexión 24 horas'],
@@ -92,7 +92,7 @@ export default function Servicios() {
             Soluciones integrales de seguridad electrónica.
           </h2>
           <p className="text-slate-300 apple-lead text-base sm:text-lg max-w-2xl mx-auto">
-            Desde el monitoreo continuo 24/7 hasta la instalación de cercos y cámaras 4K,
+            Desde el monitoreo continuo 24/7 hasta la instalación de cercos, alarmas DSC Power Series y cámaras 4K,
             ofrecemos protección integral para tu hogar y empresa.
           </p>
         </motion.div>
