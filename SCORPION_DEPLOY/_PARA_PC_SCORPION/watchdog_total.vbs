@@ -175,9 +175,9 @@ Sub KillProcess(procName, cmdFilter)
 End Sub
 
 ' === ARRANQUE INICIAL ===
-StartSincronizador()
-StartWhatsApp()
-StartBridge()
+Call StartSincronizador()
+Call StartWhatsApp()
+Call StartBridge()
 
 ' === VARIABLES DE CONTROL ===
 Dim sincLastRestart, sincRestartCount
@@ -192,38 +192,38 @@ Do While True
     
     If Not sincProcAlive Then
         ' Proceso muerto → reiniciar
-        LogMsg("SINCRONIZADOR: Proceso MUERTO. Reiniciando...")
-        KillProcess("pythonw.exe", "sincronizador")
-        KillProcess("python.exe", "sincronizador")
-        StartSincronizador()
+        Call LogMsg("SINCRONIZADOR: Proceso MUERTO. Reiniciando...")
+        Call KillProcess("pythonw.exe", "sincronizador")
+        Call KillProcess("python.exe", "sincronizador")
+        Call StartSincronizador()
         sincRestartCount = sincRestartCount + 1
         sincLastRestart = Now
     ElseIf Not HeartbeatFresh(ScriptDir & "\_sincronizador_heartbeat.txt", 120) Then
         ' Proceso vivo PERO sin heartbeat en 120s → colgado, reiniciar
-        LogMsg("SINCRONIZADOR: COLGADO (sin heartbeat >120s). Reiniciando...")
-        KillProcess("pythonw.exe", "sincronizador")
-        KillProcess("python.exe", "sincronizador")
+        Call LogMsg("SINCRONIZADOR: COLGADO (sin heartbeat >120s). Reiniciando...")
+        Call KillProcess("pythonw.exe", "sincronizador")
+        Call KillProcess("python.exe", "sincronizador")
         WScript.Sleep 5000
-        StartSincronizador()
+        Call StartSincronizador()
         sincRestartCount = sincRestartCount + 1
         sincLastRestart = Now
     End If
 
     ' ── WHATSAPP: verificar proceso ──
     If Not ProcessExists("node.exe", "whatsapp_server") Then
-        LogMsg("WHATSAPP: Proceso MUERTO. Reiniciando...")
-        StartWhatsApp()
+        Call LogMsg("WHATSAPP: Proceso MUERTO. Reiniciando...")
+        Call StartWhatsApp()
     End If
 
     ' ── BRIDGE: verificar proceso ──
     If Not (ProcessExists("pythonw.exe", "dahua_p2p_bridge") Or ProcessExists("python.exe", "dahua_p2p_bridge")) Then
-        LogMsg("BRIDGE: Proceso MUERTO. Reiniciando...")
-        StartBridge()
+        Call LogMsg("BRIDGE: Proceso MUERTO. Reiniciando...")
+        Call StartBridge()
     End If
 
     ' ── LOG DE ESTADO cada 5 minutos ──
     If sincRestartCount > 0 Then
-        LogMsg("ESTADO: Sincronizador reiniciado " & sincRestartCount & " vez/veces. Último: " & sincLastRestart)
+        Call LogMsg("ESTADO: Sincronizador reiniciado " & sincRestartCount & " vez/veces. Último: " & sincLastRestart)
     End If
 
     WScript.Sleep 30000
