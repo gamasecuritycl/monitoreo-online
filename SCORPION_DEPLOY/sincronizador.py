@@ -139,8 +139,10 @@ def get_archivos_mdb_activos():
                 except Exception:
                     archivos.append((0, full_path))
 
-        archivos.sort(key=lambda x: x[0], reverse=True)
-        return [item[1] for item in archivos[:5]]
+        # Ordenar por mtime ascendente (el más antiguo primero -> más reciente al final)
+        # Esto garantiza que los días faltantes se suban en orden cronológico fluido
+        archivos.sort(key=lambda x: x[0], reverse=False)
+        return [item[1] for item in archivos[:10]]  # Procesar hasta 10 MDBs activos
     except Exception as e:
         print(f"[ERROR] No se puede leer EVENTOS: {e}")
         return []

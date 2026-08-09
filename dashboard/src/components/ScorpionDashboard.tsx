@@ -472,10 +472,17 @@ export default function ScorpionDashboard() {
         setEventos((prev) => {
           if (prev.some(e => e.id === newEvent.id)) return prev
           const next = [...prev, newEvent]
-          if (next.length > 50) next.shift()
+          next.sort((a, b) => new Date(b.fecha_hora).getTime() - new Date(a.fecha_hora).getTime())
+          if (next.length > 50) next.pop()
           return next
         })
-        setEventoSeleccionado(newEvent)
+        
+        // Seleccionar automáticamente solo si es un evento reciente de los últimos 10 minutos
+        const eventTs = new Date(newEvent.fecha_hora).getTime()
+        const tenMinsAgo = Date.now() - 600_000
+        if (eventTs >= tenMinsAgo) {
+          setEventoSeleccionado(newEvent)
+        }
 
         // ── Notificación push del navegador para alarmas críticas ──
         const eventoUpper = (newEvent.evento || '').toUpperCase()
