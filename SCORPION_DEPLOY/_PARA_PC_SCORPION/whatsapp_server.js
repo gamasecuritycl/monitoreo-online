@@ -211,6 +211,13 @@ function detenerHeartbeat() {
 // ──────────────────────────────────────────────
 async function loadSessionFromSupabase() {
   try {
+    if (fs.existsSync(SESSION_DIR)) {
+      const files = fs.readdirSync(SESSION_DIR).filter(f => f.endsWith('.json'))
+      if (files.length > 0) {
+        log(`Sesión local (.baileys-session) encontrada (${files.length} archivos) — utilizando sesión local.`)
+        return
+      }
+    }
     const { data, error } = await supabase
       .from('eventos_monitoreo')
       .select('nombre_abonado')
@@ -399,23 +406,33 @@ async function conectar() {
         try {
           currentQRImage = await QRCode.toDataURL(qr, { width: 300, margin: 2, color: { dark: '#000000', light: '#ffffff' } })
         } catch {}
+
+        if (!pairingRequested && sock) {
+          pairingRequested = true
+          setTimeout(async () => {
+            try {
+              const code = await sock.requestPairingCode(PHONE_PAIR)
+              currentPairingCode = code
+              log(`🔑 Auto Pairing Code (56948855190): ${code}`)
+              await sincronizarEstadoASupabase()
+            } catch (e) {
+              log(`Error solicitando pairing code: ${e.message}`, 'WARN')
+            }
+          }, 3000)
+        }
         await sincronizarEstadoASupabase()
       }
 
       if (connection === 'open') {
-        isReady = false; currentQR = null; currentQRImage = null
+        isReady = true; currentQR = null; currentQRImage = null
         retryCount = 0; pairingRequested = false; currentPairingCode = null
         userName = sock.user?.name || sock.user?.id?.split(':')[0] || 'desconocido'
         log(`✅ CONECTADO! Usuario: ${userName}`)
-        log(`⏳ Esperando 10s para sincronizar claves E2E...`)
-        await new Promise(r => setTimeout(r, 10_000))
-        isReady = true
-        log(`✅ Claves sincronizadas. Servidor listo.`)
         iniciarHeartbeat()
         await sincronizarEstadoASupabase()
-        setTimeout(sincronizarGruposASupabase, 5_000)
+        setTimeout(sincronizarGruposASupabase, 2_000)
         setInterval(sincronizarGruposASupabase, 60_000)
-        setTimeout(despacharCola, 2_000)
+        setTimeout(despacharCola, 1_000)
       }
 
       if (connection === 'close') {
