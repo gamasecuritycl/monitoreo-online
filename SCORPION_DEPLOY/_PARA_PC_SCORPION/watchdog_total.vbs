@@ -198,9 +198,9 @@ Do While True
         Call StartSincronizador()
         sincRestartCount = sincRestartCount + 1
         sincLastRestart = Now
-    ElseIf Not HeartbeatFresh(ScriptDir & "\_sincronizador_heartbeat.txt", 120) Then
-        ' Proceso vivo PERO sin heartbeat en 120s → colgado, reiniciar
-        Call LogMsg("SINCRONIZADOR: COLGADO (sin heartbeat >120s). Reiniciando...")
+    ElseIf Not HeartbeatFresh(ScriptDir & "\_sincronizador_heartbeat.txt", 300) Then
+        ' Proceso vivo PERO sin heartbeat en 300s → colgado, reiniciar
+        Call LogMsg("SINCRONIZADOR: COLGADO (sin heartbeat >300s). Reiniciando...")
         Call KillProcess("pythonw.exe", "sincronizador")
         Call KillProcess("python.exe", "sincronizador")
         WScript.Sleep 5000

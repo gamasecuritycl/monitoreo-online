@@ -15,10 +15,8 @@ if sys.executable.lower().endswith("pythonw.exe"):
 LOCK_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "_sincronizador.lock")
 try:
     if os.path.exists(LOCK_FILE):
-        try:
-            os.remove(LOCK_FILE)
-        except Exception:
-            pass
+        try: os.remove(LOCK_FILE)
+        except Exception: pass
 except Exception:
     pass
 
@@ -32,20 +30,18 @@ except Exception:
 
 # ============================================================
 #  GAMA COMMAND CENTER - Sincronizador para PC Scorpion
-#  Versión: 3.6 - Multi-MDB Scan por Fecha de Modificación + Safe Copy
+#  Versión: 3.7 - Batching Ultra Rápido (50x) + Persistencia Inmediata de Cache
 # ============================================================
 
 SUPABASE_URL = "https://onxwyrwmpjxtwlmjrosr.supabase.co"
 SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9ueHd5cndtcGp4dHdsbWpyb3NyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI4NTUxNDQsImV4cCI6MjA5ODQzMTE0NH0.8kJRf8hm3rHK8sygMcyBT0R83tyK8hIQCmnAQxannJs"
 
-# Detectar rutas dinámicas
 script_dir = os.path.dirname(os.path.abspath(__file__))
 if os.path.basename(script_dir).upper() == "SCORPION_DEPLOY":
     root_dir = os.path.dirname(script_dir)
 else:
     root_dir = script_dir
 
-# Lista ordenada de posibles directorios que contienen bases de datos de eventos .MDB
 candidatos_rutas = [
     r'C:\SCORPION\BASES DE DATOS\EVENTOS',
     r'C:\SCORPION\BASE DE DATOS\EVENTOS',
@@ -106,43 +102,53 @@ def load_cache():
             with open(RUTA_CACHE, 'r', encoding='utf-8') as f:
                 return set(json.load(f))
         except Exception as e:
-            print(f"[CACHE] Error: {e}")
+            print(f"[CACHE] Error al cargar: {e}")
     return set()
 
 def save_cache(cache):
     try:
         cache_list = list(cache)
-        if len(cache_list) > 5000:
-            cache_list = cache_list[-4000:]
+        if len(cache_list) > 35000:
+            cache_list = cache_list[-30000:]
         with open(RUTA_CACHE, 'w', encoding='utf-8') as f:
-            json.dump(cache_list, f, indent=2)
+            json.dump(cache_list, f)
     except Exception as e:
-        print(f"[CACHE] Error guardando: {e}")
+        print(f"[CACHE] Error al guardar en disco: {e}")
 
 def get_archivos_mdb_activos():
     """
-    Obtiene todos los archivos .MDB ordenados por FECHA DE MODIFICACIÓN DESCENDENTE.
-    Garantiza que se procesen los archivos que Scorpion actualiza en tiempo real,
-    sin importar el nombre del archivo.
+    Obtiene los MDBs activos ordenados por mtime ascendente (más antiguo primero -> más reciente al final).
+    Procesa solo archivos modificados en los últimos 7 días o los 5 MDBs más recientes para máxima velocidad.
     """
     try:
         if not os.path.exists(CARPETA_EVENTOS):
             return []
         
+        ahora = time.time()
+        siete_dias_sec = 7 * 86400
         archivos = []
         for f in os.listdir(CARPETA_EVENTOS):
             if f.upper().endswith('.MDB') and not f.startswith('_'):
                 full_path = os.path.join(CARPETA_EVENTOS, f)
                 try:
                     mtime = os.path.getmtime(full_path)
-                    archivos.append((mtime, full_path))
+                    if (ahora - mtime) <= siete_dias_sec:
+                        archivos.append((mtime, full_path))
                 except Exception:
-                    archivos.append((0, full_path))
+                    pass
 
-        # Ordenar por mtime ascendente (el más antiguo primero -> más reciente al final)
-        # Esto garantiza que los días faltantes se suban en orden cronológico fluido
+        if not archivos:
+            all_files = []
+            for f in os.listdir(CARPETA_EVENTOS):
+                if f.upper().endswith('.MDB') and not f.startswith('_'):
+                    full_path = os.path.join(CARPETA_EVENTOS, f)
+                    try: all_files.append((os.path.getmtime(full_path), full_path))
+                    except: pass
+            all_files.sort(key=lambda x: x[0], reverse=False)
+            return [item[1] for item in all_files[-3:]]
+
         archivos.sort(key=lambda x: x[0], reverse=False)
-        return [item[1] for item in archivos[:10]]  # Procesar hasta 10 MDBs activos
+        return [item[1] for item in archivos]
     except Exception as e:
         print(f"[ERROR] No se puede leer EVENTOS: {e}")
         return []
@@ -153,7 +159,7 @@ def enviar_heartbeat():
         now_iso = datetime.now(timezone.utc).isoformat()
         supabase.table("eventos_monitoreo").upsert({
             "cuenta": "__SINCRONIZADOR__",
-            "nombre_abonado": "PC SCORPION CENTRAL (v3.6 Multi-MDB)",
+            "nombre_abonado": "PC SCORPION CENTRAL (v3.7 Batch)",
             "evento": "HEARTBEAT",
             "fecha_hora": now_iso,
             "zona": "000",
@@ -167,7 +173,6 @@ def enviar_heartbeat():
         pass
 
 def copiar_mdb_con_retry(ruta_original, ruta_temp, max_intentos=3):
-    """ Copia el MDB de Access manejando bloqueos de archivo de forma segura """
     for intento in range(max_intentos):
         try:
             if os.path.exists(ruta_temp):
@@ -176,7 +181,7 @@ def copiar_mdb_con_retry(ruta_original, ruta_temp, max_intentos=3):
             shutil.copy2(ruta_original, ruta_temp)
             return True
         except Exception as e:
-            time.sleep(0.2)
+            time.sleep(0.15)
     return False
 
 def sincronizar(cache):
@@ -185,19 +190,16 @@ def sincronizar(cache):
     
     archivos_mdb = get_archivos_mdb_activos()
     if not archivos_mdb:
-        print("[INFO] No hay archivos .MDB de eventos.")
+        print("[INFO] No hay archivos .MDB activos.")
         return cache
 
     chile_tz = get_chile_offset()
     nuevos_totales = 0
-    cache_modificada = False
 
     for ruta_original in archivos_mdb:
         nombre_base = os.path.basename(ruta_original)
-        print(f"[DB] Analizando MDB: {nombre_base}")
 
         if not copiar_mdb_con_retry(ruta_original, RUTA_COPIA_TEMP):
-            print(f"  [WARN] No se pudo copiar {nombre_base} (bloqueado por Scorpion). Reintentando en siguiente ciclo.")
             continue
 
         try:
@@ -207,7 +209,7 @@ def sincronizar(cache):
             )
             conn = pyodbc.connect(conn_str)
             cursor = conn.cursor()
-            cursor.execute("SELECT * FROM EVENTOS ORDER BY HORA DESC")
+            cursor.execute("SELECT * FROM EVENTOS ORDER BY HORA ASC")
             rows = cursor.fetchall()
             columns = [col[0].upper() for col in cursor.description]
             conn.close()
@@ -221,7 +223,8 @@ def sincronizar(cache):
                     return str(r[default_idx]).strip() if r[default_idx] is not None else ""
                 return ""
 
-            rows.reverse()
+            batch_data = []
+            batch_keys = []
             nuevos_este_mdb = 0
 
             for row in rows:
@@ -262,29 +265,53 @@ def sincronizar(cache):
                     hoy_iso = datetime.now().strftime('%Y-%m-%d')
                     fecha_hora = f"{hoy_iso}T{hora_clean}{chile_tz}"
 
-                data = {
+                batch_data.append({
                     "fecha_hora":     fecha_hora,
                     "cuenta":         cuenta,
                     "nombre_abonado": nombre,
                     "evento":         evento,
                     "zona":           zona,
                     "usuario":        usuario,
-                }
+                })
+                batch_keys.append(event_key)
 
+                if len(batch_data) >= 50:
+                    try:
+                        supabase.table("eventos_monitoreo").insert(batch_data).execute()
+                        for k in batch_keys: cache.add(k)
+                        save_cache(cache)
+                        enviar_heartbeat()
+                        nuevos_este_mdb += len(batch_data)
+                        nuevos_totales += len(batch_data)
+                    except Exception as e:
+                        for d, k in zip(batch_data, batch_keys):
+                            try:
+                                supabase.table("eventos_monitoreo").insert(d).execute()
+                                cache.add(k)
+                            except Exception:
+                                cache.add(k)
+                        save_cache(cache)
+                        enviar_heartbeat()
+                    batch_data = []
+                    batch_keys = []
+
+            if batch_data:
                 try:
-                    supabase.table("eventos_monitoreo").insert(data).execute()
-                    print(f"  [+] {cuenta} | {nombre} | {evento} | Z:{zona}")
-                    cache.add(event_key)
-                    cache_modificada = True
-                    nuevos_totales += 1
-                    nuevos_este_mdb += 1
+                    supabase.table("eventos_monitoreo").insert(batch_data).execute()
+                    for k in batch_keys: cache.add(k)
+                    save_cache(cache)
+                    enviar_heartbeat()
+                    nuevos_este_mdb += len(batch_data)
+                    nuevos_totales += len(batch_data)
                 except Exception as e:
-                    err_str = str(e).lower()
-                    if "duplicate" in err_str or "23505" in err_str or "already exists" in err_str:
-                        cache.add(event_key)
-                        cache_modificada = True
-                    else:
-                        print(f"  [ERROR] Fallo de red/conexión al insertar: {e}")
+                    for d, k in zip(batch_data, batch_keys):
+                        try:
+                            supabase.table("eventos_monitoreo").insert(d).execute()
+                            cache.add(k)
+                        except Exception:
+                            cache.add(k)
+                    save_cache(cache)
+                    enviar_heartbeat()
 
             if nuevos_este_mdb > 0:
                 print(f"  >>> {nuevos_este_mdb} eventos subidos desde {nombre_base}")
@@ -296,17 +323,13 @@ def sincronizar(cache):
                 try: os.remove(RUTA_COPIA_TEMP)
                 except Exception: pass
 
-    if cache_modificada:
-        save_cache(cache)
-
     print(f"  >>> Resumen ciclo: {nuevos_totales} evento(s) nuevo(s) subidos en total." if nuevos_totales > 0 else "  Sin eventos nuevos en ningún MDB.")
-    print(f"--- Esperando {INTERVALO_SEG}s ---\n")
     return cache
 
 
 if __name__ == "__main__":
     print("=" * 60)
-    print("  GAMA COMMAND CENTER - Sincronizador v3.6 (Multi-MDB mtime)")
+    print("  GAMA COMMAND CENTER - Sincronizador v3.7 (Batching 50x + Persistence)")
     print(f"  Carpeta: {CARPETA_EVENTOS}")
     print(f"  Timezone: Chile ({get_chile_offset()})")
     print("=" * 60)
