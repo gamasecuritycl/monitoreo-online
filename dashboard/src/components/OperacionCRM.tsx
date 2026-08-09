@@ -10,6 +10,12 @@ import centrosCostoPreasociados from '@/lib/centros_costo_preasociados.json'
 import facturasJulioReal from '@/lib/facturas_julio_real.json'
 import { esAbonadoInactivo } from '@/lib/inactivos_filter'
 
+import OperacionHeader from './operacion/OperacionHeader'
+import OperacionSidebar from './operacion/OperacionSidebar'
+import CommandPaletteModal from './operacion/CommandPaletteModal'
+import SlideOverDrawer from './operacion/SlideOverDrawer'
+import BentoKpiGrid from './operacion/BentoKpiGrid'
+
 import {
   Shield,
   User,
@@ -311,6 +317,21 @@ export function normalizeCuentaCode(cta: any): string {
 export default function OperacionCRM() {
   const [moduloActivo, setModuloActivo] = useState<'ficha360' | 'autonomia' | 'presupuestos' | 'facturacion' | 'serv_tecnico' | 'kpis' | 'config' | 'marketing'>('ficha360')
   const [sidebarAbierto, setSidebarAbierto] = useState<boolean>(true)
+
+  // ── ESTADOS APPLE HIG / LINEAR (COMMAND PALETTE & SLIDE-OVER DRAWER) ──
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
+  const [drawerState, setDrawerState] = useState<{
+    isOpen: boolean
+    titulo: string
+    subtitulo?: string
+    tipo: 'cliente' | 'cotizacion' | 'factura' | 'ot'
+    datos: any
+  }>({
+    isOpen: false,
+    titulo: '',
+    tipo: 'cliente',
+    datos: null
+  })
 
   // ── NIVEL 1: EMPRESAS DEL CONGLOMERADO Y FORMULARIO MODAL ──
   const [empresasConglomerado, setEmpresasConglomerado] = useState<EmpresaConglomerado[]>(EMPRESAS_INICIALES)
@@ -2427,130 +2448,62 @@ export default function OperacionCRM() {
         }
       `}</style>
 
-      {/* ── HEADER PRINCIPAL APPLE HIG CORPORATIVO RESPONSIVE ── */}
-      <header className="bg-[#0a1628]/80 backdrop-blur-xl border border-[#1e3a5f]/60 rounded-2xl p-4 sm:p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shrink-0 no-imprimir shadow-xl">
-        <div className="flex items-center gap-3 sm:gap-4 w-full md:w-auto justify-between md:justify-start">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setSidebarAbierto(!sidebarAbierto)}
-              className="bg-[#0f2240] hover:bg-[#162a4a] text-slate-300 hover:text-white p-2.5 rounded-xl border border-[#1e3a5f] transition-all cursor-pointer flex items-center justify-center"
-              title="Abrir/Cerrar Menú Lateral"
-            >
-              <SlidersHorizontal className="h-4 w-4 text-[#2997ff] stroke-[1.5]" />
-            </button>
-
-            <div className="w-10 h-10 rounded-xl bg-[#0066cc]/20 border border-[#0066cc]/40 text-[#2997ff] flex items-center justify-center shrink-0 shadow-inner">
-              <Shield className="h-5 w-5 stroke-[1.5]" />
-            </div>
-            <div>
-              <h1 className="text-base sm:text-lg font-semibold tracking-tight text-white flex flex-wrap items-center gap-2">
-                GAMA SECURITY
-                <span className="bg-[#0066cc]/20 text-[#2997ff] border border-[#0066cc]/40 text-[10px] sm:text-xs font-semibold px-2.5 py-0.5 rounded-full flex items-center gap-1.5 font-sans">
-                  <span className="h-1.5 w-1.5 rounded-full bg-[#2997ff] animate-pulse"></span>
-                  <span>PLATAFORMA CRM 360°</span>
-                </span>
-              </h1>
-              <p className="text-[10px] sm:text-xs text-slate-400 font-sans mt-0.5">
-                {empresasConglomerado.length} Razones Sociales • Búsqueda por Abonado & Cliente
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-3 text-xs font-medium w-full md:w-auto justify-between md:justify-end">
-          <div className="bg-[#050d1a] border border-[#1e3a5f] px-3.5 py-2 rounded-xl text-slate-300 font-mono flex items-center gap-2 text-[11px] sm:text-xs">
-            <DollarSign className="h-3.5 w-3.5 text-[#2997ff] stroke-[1.5]" />
-            <span className="text-slate-400">UF HOY:</span>
-            <strong className="text-emerald-400 font-bold">${valorUF.toLocaleString('es-CL')} CLP</strong>
-          </div>
-
-          <a
-            href="/app"
-            className="btn-apple-primary text-xs py-2 px-4 flex items-center gap-1.5 font-sans shadow-md shadow-[#0066cc]/20"
-          >
-            <ExternalLink className="h-3.5 w-3.5 stroke-[1.5]" />
-            <span>Command Center →</span>
-          </a>
-        </div>
-      </header>
+      {/* ── HEADER PRINCIPAL STYLE APPLE / LINEAR ── */}
+      <OperacionHeader
+        moduloActivoLabel={
+          moduloActivo === 'ficha360' ? 'Ficha 360° Cliente' :
+          moduloActivo === 'presupuestos' ? 'Presupuestos & DTE' :
+          moduloActivo === 'marketing' ? 'Marketing B2B' :
+          moduloActivo === 'facturacion' ? 'Cobranza & Abonos' :
+          moduloActivo === 'serv_tecnico' ? 'Servicios Técnicos' :
+          moduloActivo === 'kpis' ? 'Reportes & Analytics' :
+          moduloActivo === 'config' ? 'Configuración & Claves' : 'Agentes Autónomos'
+        }
+        cantEmpresas={empresasConglomerado.length}
+        valorUF={valorUF}
+        sidebarAbierto={sidebarAbierto}
+        setSidebarAbierto={setSidebarAbierto}
+        onOpenCommandPalette={() => setCommandPaletteOpen(true)}
+        onQuickCotizacion={() => {
+          setModuloActivo('presupuestos')
+          setMostrarModalCotizacion(true)
+        }}
+        onQuickOT={() => {
+          setModuloActivo('serv_tecnico')
+          setMostrarModalOT(true)
+        }}
+      />
 
       {/* ── CONTENEDOR PRINCIPAL RESPONSIVE ── */}
-      <div className="flex-1 flex flex-col lg:flex-row gap-4 sm:gap-6 overflow-hidden min-h-0 no-imprimir relative">
+      <div className="flex-1 flex flex-col lg:flex-row gap-6 sm:gap-8 overflow-hidden min-h-0 no-imprimir relative">
         
-        {/* BACKDROP OVERLAY PARA MÓVIL/TABLET */}
-        {sidebarAbierto && (
-          <div
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden transition-opacity"
-            onClick={() => setSidebarAbierto(false)}
-          />
-        )}
+        {/* ── SIDEBAR CATEGORIZADO DE MONITOREO ── */}
+        <OperacionSidebar
+          moduloActivo={moduloActivo}
+          setModuloActivo={setModuloActivo}
+          sidebarAbierto={sidebarAbierto}
+          setSidebarAbierto={setSidebarAbierto}
+          cantEmpresas={empresasConglomerado.length}
+          cantClientes={Object.keys(clientesMaestros).length}
+          cantCentros={Object.keys(abonadosCentrosCosto).length}
+        />
 
-        {/* ── SIDEBAR APPLE GLASSMORPHISM LATERAL ── */}
-        {sidebarAbierto && (
-          <aside className="fixed inset-y-0 left-0 z-50 lg:relative lg:inset-auto lg:z-auto w-72 bg-[#0a1628]/95 backdrop-blur-xl border border-[#1e3a5f]/60 p-5 rounded-r-2xl lg:rounded-2xl flex flex-col gap-4 shrink-0 shadow-2xl transition-all overflow-y-auto max-h-screen lg:max-h-none">
-            <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider px-2 mb-1 flex justify-between items-center font-sans">
-              <span>MÓDULOS DE GESTIÓN</span>
-              <button onClick={() => setSidebarAbierto(false)} className="text-slate-400 hover:text-white font-bold text-sm cursor-pointer p-1">✕</button>
-            </div>
+        {/* ── PANEL DERECHO PRINCIPAL CON BENTO GRID & ESPACIADO AMPLIO ── */}
+        <main className="flex-1 overflow-y-auto min-h-0 flex flex-col gap-6 sm:gap-8">
 
-            <div className="flex flex-col gap-2">
-              {[
-                { id: 'ficha360', label: 'Ficha 360° Cliente', icon: User },
-                { id: 'presupuestos', label: 'Presupuestos', icon: FileText },
-                { id: 'marketing', label: 'Marketing B2B', icon: Megaphone },
-                { id: 'facturacion', label: 'Cobranza y Abonos', icon: DollarSign },
-                { id: 'serv_tecnico', label: 'Servicios Técnicos', icon: Wrench },
-                { id: 'kpis', label: 'Reportes & KPIs', icon: BarChart3 },
-                { id: 'config', label: 'Configuración', icon: Settings },
-                { id: 'autonomia', label: 'Agentes Autónomos IA', icon: Bot },
-              ].map(m => {
-                const IconComp = m.icon
-                const esActivo = moduloActivo === m.id
-                return (
-                  <button
-                    key={m.id}
-                    onClick={() => {
-                      setModuloActivo(m.id as any)
-                      if (typeof window !== 'undefined' && window.innerWidth < 1024) {
-                        setSidebarAbierto(false)
-                      }
-                    }}
-                    className={`w-full text-left p-3.5 rounded-xl font-medium text-xs transition-all flex items-center gap-3 cursor-pointer ${
-                      esActivo
-                        ? 'bg-[#0066cc] text-white shadow-lg shadow-[#0066cc]/30'
-                        : 'bg-[#0f2240]/40 text-slate-300 hover:bg-[#162a4a] hover:text-white border border-[#1e3a5f]/40'
-                    }`}
-                  >
-                    <IconComp className={`h-4 w-4 stroke-[1.5] ${esActivo ? 'text-white' : 'text-[#2997ff]'}`} />
-                    <span>{m.label}</span>
-                  </button>
-                )
-              })}
-            </div>
-
-            <div className="mt-auto bg-[#050d1a] border border-[#1e3a5f] p-4 rounded-xl text-xs space-y-2 text-slate-400">
-              <div className="font-semibold text-white text-[10px] uppercase tracking-wider mb-1 flex items-center gap-1.5 font-sans">
-                <Layers className="h-3.5 w-3.5 text-[#2997ff] stroke-[1.5]" />
-                <span>ESTRUCTURA DE DATOS</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Empresas Emisoras:</span>
-                <strong className="text-white font-mono font-semibold">{empresasConglomerado.length}</strong>
-              </div>
-              <div className="flex justify-between">
-                <span>Clientes Registrados:</span>
-                <strong className="text-white font-mono font-semibold">{Object.keys(clientesMaestros).length}</strong>
-              </div>
-              <div className="flex justify-between">
-                <span>Centros de Costo:</span>
-                <strong className="text-white font-mono font-semibold">{Object.keys(abonadosCentrosCosto).length}</strong>
-              </div>
-            </div>
-          </aside>
-        )}
-
-        {/* ── PANEL DERECHO PRINCIPAL APPLE HIG ── */}
-        <main className="flex-1 overflow-y-auto min-h-0 flex flex-col gap-6">
+          {/* ── BENTO GRID DE KPIS EJECUTIVOS EN TOP DE FICHA 360 Y REPORTES ── */}
+          {(moduloActivo === 'ficha360' || moduloActivo === 'kpis') && (
+            <BentoKpiGrid
+              totalClientes={Object.keys(clientesMaestros).length}
+              totalCentrosCosto={Object.keys(abonadosCentrosCosto).length}
+              facturasTotalesMonto={facturas.reduce((acc, f) => acc + (f.monto_total || 0), 0)}
+              facturasPendientesMonto={facturas.reduce((acc, f) => acc + (f.saldo_pendiente || 0), 0)}
+              cotizacionesTotalMonto={cotizaciones.reduce((acc, c) => acc + (c.monto_total_iva_incluido || 0), 0)}
+              cotizacionesCount={cotizaciones.length}
+              ordenesTrabajoCount={ordenesTrabajo.length}
+              onNavigateTab={(t) => setModuloActivo(t as any)}
+            />
+          )}
 
           {/* ── MÓDULO 1: FICHA 360° DEL CLIENTE COMPLETA (BENTO GRID APPLE) ── */}
           {moduloActivo === 'ficha360' && (
@@ -6086,15 +6039,28 @@ export default function OperacionCRM() {
         />
       )}
 
-      {/* ── TOAST FLOATING NOTIFICATION ── */}
-      {toastNotificacion && (
-        <div className={`fixed bottom-6 right-6 z-50 p-4 rounded-2xl shadow-2xl font-bold text-xs flex items-center gap-3 border text-white transition-all ${
-          toastNotificacion.tipo === 'exito' ? 'bg-slate-900 border-emerald-500' : 'bg-slate-900 border-red-500'
-        }`}>
-          {toastNotificacion.tipo === 'exito' ? <CheckCircle2 className="h-5 w-5 text-emerald-400" /> : <AlertTriangle className="h-5 w-5 text-red-400" />}
-          <span>{toastNotificacion.texto}</span>
-        </div>
-      )}
+      {/* ── COMMAND PALETTE MODAL (CMD + K) ── */}
+      <CommandPaletteModal
+        isOpen={commandPaletteOpen}
+        onClose={() => setCommandPaletteOpen(false)}
+        onSelectSearchItem={(q) => {
+          setBusquedaClienteInput(q)
+          handleDispararBusqueda()
+        }}
+        onNavigateModule={(modId) => setModuloActivo(modId as any)}
+        clientesMaestros={clientesMaestros}
+        abonadosCentrosCosto={abonadosCentrosCosto}
+      />
+
+      {/* ── SLIDE-OVER DRAWER (INSPECCIÓN DE EXPEDIENTES FLUIDA) ── */}
+      <SlideOverDrawer
+        isOpen={drawerState.isOpen}
+        onClose={() => setDrawerState(prev => ({ ...prev, isOpen: false }))}
+        titulo={drawerState.titulo}
+        subtitulo={drawerState.subtitulo}
+        tipo={drawerState.tipo}
+        datos={drawerState.datos}
+      />
 
     </div>
   )
