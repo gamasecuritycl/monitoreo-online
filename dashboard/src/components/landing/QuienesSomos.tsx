@@ -1,88 +1,72 @@
 'use client'
 
+import Image from 'next/image'
 import { motion } from 'framer-motion'
 
 const TIMELINE = [
-  { year: '2010', title: 'Fundación', desc: 'Nace GAMA SERVICIOS con una central de monitoreo en Santiago.' },
-  { year: '2013', title: 'Certificación OS-10', desc: 'Habilitados por Carabineros de Chile para operar como empresa de seguridad privada.' },
-  { year: '2016', title: 'Plataforma Scorpion', desc: 'Adopción del estándar de monitoreo más reconocido en Latinoamérica.' },
-  { year: '2020', title: 'Expansión', desc: 'Cobertura en múltiples regiones con más de 300 clientes activos.' },
-  { year: '2024', title: 'IA & Cámaras', desc: 'Integración de inteligencia artificial en análisis de video para detección avanzada.' },
+  { year: '2010', title: 'Fundación', desc: 'Inicia operaciones GAMA SERVICIOS con su primera central de monitoreo en Santiago.' },
+  { year: '2013', title: 'Certificación OS-10', desc: 'Habilitación oficial por Carabineros de Chile para servicios de seguridad electrónica.' },
+  { year: '2016', title: 'Plataforma Scorpion', desc: 'Implementación del estándar Scorpion para gestión de alarmas y zonificación precisa.' },
+  { year: '2020', title: 'Expansión Nacional', desc: 'Ampliación de red técnica y servicio de monitoreo en múltiples regiones de Chile.' },
+  { year: '2024', title: 'Inteligencia Artificial', desc: 'Integración de analítica de video con IA y automatización de alertas en tiempo real.' },
 ]
 
 const PILLARS = [
   {
     n: '15+',
-    label: 'Años en el mercado',
-    icon: (
-      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-      </svg>
-    ),
+    label: 'Años de Experiencia',
+    sub: 'Trayectoria ininterrumpida',
   },
   {
     n: '500+',
-    label: 'Clientes activos',
-    icon: (
-      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-      </svg>
-    ),
+    label: 'Clientes Activos',
+    sub: 'Empresas y hogares',
   },
   {
     n: '99.9%',
-    label: 'Uptime central',
-    icon: (
-      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-      </svg>
-    ),
+    label: 'Uptime Operativo',
+    sub: 'Central redundante 24/7',
   },
   {
     n: 'OS-10',
-    label: 'Certificado Carabineros',
-    icon: (
-      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-      </svg>
-    ),
+    label: 'Certificación Oficial',
+    sub: 'Carabineros de Chile',
   },
 ]
 
 export default function QuienesSomos() {
   return (
-    <section id="quienes-somos" className="relative py-28 sm:py-36 overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-b from-[#050d1a] via-[#0a1628] to-[#050d1a]" />
-      <div className="absolute top-1/2 right-0 w-[500px] h-[500px] bg-[#f97316]/4 blur-[120px] rounded-full pointer-events-none -translate-y-1/2" />
-
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-
-        {/* Header */}
+    <section id="quienes-somos" className="relative py-24 sm:py-32 tile-parchment overflow-hidden">
+      
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        
+        {/* Section Header */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
+          viewport={{ once: true, margin: '-60px' }}
           transition={{ duration: 0.6 }}
-          className="text-center max-w-2xl mx-auto mb-20"
+          className="text-center max-w-3xl mx-auto mb-20 space-y-4"
         >
-          <span className="section-label mb-5 inline-flex">Quiénes Somos</span>
-          <h2 className="text-4xl sm:text-5xl font-black text-white leading-tight mt-5 mb-5">
-            Protegemos Chile{' '}
-            <span className="text-gradient-orange">desde 2010</span>
+          <span className="text-xs font-semibold text-[#0066cc] uppercase tracking-widest font-sans">
+            SOBRE GAMA SERVICIOS
+          </span>
+          <h2 className="apple-display-lg text-[#1d1d1f]">
+            Protegiendo familias y empresas en Chile desde 2010.
           </h2>
-          <p className="text-slate-400 text-base leading-relaxed">
-            Empresa chilena especializada en monitoreo electrónico y protección patrimonial.
-            Certificados OS-10, operamos con tecnología Scorpion, el estándar de la industria.
+          <p className="apple-lead text-[#7a7a7a] text-base sm:text-lg max-w-2xl mx-auto">
+            Combinamos tecnología de grado industrial con operadores capacitados 24/7,
+            bajo las certificaciones vigentes de seguridad privada.
           </p>
         </motion.div>
 
-        {/* Pillars */}
+        {/* Pillars Grid (Light Museum Cards) */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-20"
+          className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-24"
         >
           {PILLARS.map((p, i) => (
             <motion.div
@@ -91,96 +75,111 @@ export default function QuienesSomos() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.1, duration: 0.5 }}
-              className="enterprise-card p-6 text-center"
+              className="apple-card-light p-6 text-center flex flex-col justify-center"
             >
-              <div className="w-10 h-10 rounded-lg bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-400 mx-auto mb-3">
-                {p.icon}
+              <div className="text-3xl sm:text-4xl font-bold text-[#1d1d1f] tracking-tight font-sans mb-1">
+                {p.n}
               </div>
-              <div className="text-3xl font-black text-white mb-1 stat-number">{p.n}</div>
-              <div className="text-xs text-slate-500 leading-tight">{p.label}</div>
+              <div className="text-sm font-semibold text-[#1d1d1f] mb-0.5">
+                {p.label}
+              </div>
+              <div className="text-xs text-[#7a7a7a]">
+                {p.sub}
+              </div>
             </motion.div>
           ))}
         </motion.div>
 
-        {/* Timeline + text */}
-        <div className="grid lg:grid-cols-2 gap-16 items-start">
-
-          {/* Left: Text */}
+        {/* Editorial Text + Timeline */}
+        <div className="grid lg:grid-cols-12 gap-12 items-start">
+          
+          {/* Left Column: Institutional Narrative */}
           <motion.div
             initial={{ opacity: 0, x: -30 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
+            className="lg:col-span-6 space-y-6 text-left"
           >
-            <h3 className="text-2xl font-bold text-white mb-5">
-              Tecnología + equipo humano 24/7
+            <h3 className="apple-display-md text-[#1d1d1f]">
+              Respuesta humana experta respaldada por tecnología Scorpion.
             </h3>
-            <div className="space-y-4 text-slate-400 leading-relaxed mb-8">
-              <p>
-                En GAMA SERVICIOS combinamos la mejor tecnología disponible con operadores
-                altamente entrenados. Nuestra central opera sin interrupciones con sistemas
-                redundantes de energía y comunicaciones.
-              </p>
-              <p>
-                Utilizamos la <strong className="text-white">plataforma Scorpion</strong>,
-                el estándar de la industria en Latinoamérica, que nos permite gestionar
-                miles de señales con trazabilidad total de cada evento.
-              </p>
-            </div>
+            
+            <p className="text-[#1d1d1f]/80 text-base leading-relaxed">
+              En GAMA SERVICIOS operamos una central propia redundante con enlaces de comunicación
+              múltiples (IP, GPRS, Móvil). Cada señal recibida activa un protocolo de verificación
+              en menos de 120 segundos.
+            </p>
 
-            {/* Certification badges */}
-            <div className="flex flex-wrap gap-3">
+            <p className="text-[#1d1d1f]/80 text-base leading-relaxed">
+              Utilizamos la <strong className="text-[#1d1d1f] font-semibold">plataforma Scorpion</strong>,
+              el estándar de zonificación y gestión de monitoreo en Latinoamérica, lo que garantiza
+              trazabilidad total de cada evento registrado.
+            </p>
+
+            {/* Badges */}
+            <div className="pt-4 flex flex-wrap gap-3">
               {[
-                { label: 'OS-10', sub: 'Carabineros de Chile' },
-                { label: 'Scorpion', sub: 'Platform Certified' },
-                { label: '100% Chilena', sub: 'Empresa nacional' },
-              ].map(b => (
-                <div key={b.label} className="flex items-center gap-2 bg-[#0f2240] border border-[#1e3a5f] rounded-xl px-4 py-2.5">
-                  <svg className="w-4 h-4 text-green-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  <div>
-                    <div className="text-white text-xs font-bold">{b.label}</div>
-                    <div className="text-slate-500 text-[10px]">{b.sub}</div>
+                { label: 'OS-10 Certificado', sub: 'Carabineros de Chile' },
+                { label: 'Scorpion v3.5', sub: 'Plataforma oficial' },
+                { label: '100% Cobertura', sub: 'Servicio Nacional' },
+              ].map((b) => (
+                <div
+                  key={b.label}
+                  className="bg-white border border-slate-200 rounded-xl px-4 py-2.5 shadow-sm text-left"
+                >
+                  <div className="text-xs font-semibold text-[#1d1d1f]">
+                    {b.label}
+                  </div>
+                  <div className="text-[11px] text-[#7a7a7a]">
+                    {b.sub}
                   </div>
                 </div>
               ))}
             </div>
           </motion.div>
 
-          {/* Right: Timeline */}
+          {/* Right Column: Clean Timeline */}
           <motion.div
             initial={{ opacity: 0, x: 30 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
+            className="lg:col-span-6 text-left"
           >
-            <h3 className="text-sm font-mono text-slate-500 uppercase tracking-widest mb-8">Nuestra trayectoria</h3>
-            <div className="relative">
-              <div className="absolute left-[5px] top-3 bottom-3 w-px bg-gradient-to-b from-orange-500/50 via-orange-500/20 to-transparent" />
-              <div className="space-y-7">
-                {TIMELINE.map((item, i) => (
-                  <motion.div
-                    key={item.year}
-                    initial={{ opacity: 0, x: 20 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: i * 0.1, duration: 0.5 }}
-                    className="flex gap-5 group"
-                  >
-                    <div className="mt-1.5 w-2.5 h-2.5 rounded-full bg-orange-500 flex-shrink-0 group-hover:scale-125 transition-transform shadow-[0_0_10px_rgba(249,115,22,0.4)]" />
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-orange-400 font-mono font-bold text-sm">{item.year}</span>
-                        <span className="text-white font-semibold text-sm">{item.title}</span>
-                      </div>
-                      <p className="text-slate-500 text-sm leading-relaxed">{item.desc}</p>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
+            <h4 className="text-xs font-semibold text-[#7a7a7a] uppercase tracking-widest mb-8">
+              HISTORIA Y EVOLUCIÓN
+            </h4>
+
+            <div className="relative pl-6 space-y-8 border-l-2 border-slate-300">
+              {TIMELINE.map((item, i) => (
+                <motion.div
+                  key={item.year}
+                  initial={{ opacity: 0, x: 20 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.1, duration: 0.5 }}
+                  className="relative group"
+                >
+                  {/* Dot */}
+                  <div className="absolute -left-[31px] top-1 w-3.5 h-3.5 rounded-full bg-[#0066cc] border-2 border-[#f5f5f7]" />
+                  
+                  <div className="flex items-center gap-3 mb-1">
+                    <span className="text-[#0066cc] font-mono font-bold text-sm">
+                      {item.year}
+                    </span>
+                    <span className="text-[#1d1d1f] font-semibold text-base">
+                      {item.title}
+                    </span>
+                  </div>
+                  <p className="text-[#7a7a7a] text-sm leading-relaxed">
+                    {item.desc}
+                  </p>
+                </motion.div>
+              ))}
             </div>
           </motion.div>
+
         </div>
       </div>
     </section>

@@ -2,91 +2,78 @@
 
 import { motion } from 'framer-motion'
 
-const TESTIMONIOS = [
+const TESTIMONIALS = [
   {
-    name: 'Rodrigo Fuentes',
-    role: 'Gerente General',
-    empresa: 'Importadora Fuentes SpA',
-    initials: 'RF',
-    text: 'Llevamos 3 años con GAMA SERVICIOS y la tranquilidad que nos brinda es invaluable. Detectaron un intento de intrusión a las 3 AM y respondieron en menos de 90 segundos. Profesionales de primera.',
-    stars: 5,
+    quote: "La velocidad de respuesta ante un salto de alarma en nuestra bodega industrial fue impecable. En menos de 2 minutos ya estaban coordinados con nuestro equipo de seguridad.",
+    author: "Carlos Mendoza",
+    role: "Gerente de Operaciones",
+    company: "Logística y Comercio SA",
   },
   {
-    name: 'Claudia Morales',
-    role: 'Administradora',
-    empresa: 'Edificio Residencial Las Condes',
-    initials: 'CM',
-    text: 'Instalaron cámaras IP 4K en todo el edificio y el cerco eléctrico perimetral. El sistema funciona perfecto y la central de monitoreo responde siempre. Muy recomendados.',
-    stars: 5,
+    quote: "El sistema de cámaras 4K con analítica IA nos da absoluta tranquilidad. Puedo revisar las cámaras de las sucursales directamente desde el celular sin interrupciones.",
+    author: "María José Silva",
+    role: "Administradora de Sucursales",
+    company: "Red de Farmacias Regional",
   },
   {
-    name: 'Carlos Vega',
-    role: 'Propietario',
-    empresa: 'Ferretería Vega Hermanos',
-    initials: 'CV',
-    text: 'Antes teníamos alarmas falsas constantes. GAMA instaló un sistema completamente nuevo y lleva 2 años sin un solo problema. El soporte técnico es rápido y confiable.',
-    stars: 5,
+    quote: "La instalación del cerco eléctrico e integración con la central de GAMA SERVICIOS ha sido la mejor inversión para nuestra comunidad de parcelas.",
+    author: "Roberto Fuentes",
+    role: "Presidente Comité de Seguridad",
+    company: "Condominio Los Lingues",
   },
 ]
 
 export default function Testimonios() {
   return (
-    <section id="testimonios" className="relative py-28 sm:py-36 bg-[#0a1628] overflow-hidden">
-      <div className="absolute top-0 left-0 right-0 h-px section-divider" />
-      <div className="absolute bottom-0 left-0 right-0 h-px section-divider" />
-      <div className="absolute top-1/2 right-0 w-[400px] h-[400px] bg-[#1e3a5f]/30 blur-[100px] rounded-full pointer-events-none -translate-y-1/2" />
-
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-
+    <section className="relative py-24 sm:py-32 tile-parchment overflow-hidden">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        
+        {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="text-center max-w-2xl mx-auto mb-16"
+          className="text-center max-w-3xl mx-auto mb-16 space-y-3"
         >
-          <span className="section-label mb-5 inline-flex">Clientes satisfechos</span>
-          <h2 className="text-4xl sm:text-5xl font-black text-white leading-tight mt-5 mb-5">
-            Lo que dicen{' '}
-            <span className="text-gradient-orange">nuestros clientes</span>
+          <span className="text-xs font-semibold text-[#0066cc] uppercase tracking-widest font-sans">
+            EXPERIENCIA DE NUESTROS CLIENTES
+          </span>
+          <h2 className="apple-display-lg text-[#1d1d1f]">
+            Confianza respaldada por resultados.
           </h2>
-          <p className="text-slate-400">
-            Más de 500 hogares y empresas protegidos en todo Chile confían en GAMA SERVICIOS.
-          </p>
         </motion.div>
 
-        <div className="grid md:grid-cols-3 gap-5">
-          {TESTIMONIOS.map((t, i) => (
+        {/* Testimonials Grid (Environment Quote Cards) */}
+        <div className="grid md:grid-cols-3 gap-8">
+          {TESTIMONIALS.map((t, idx) => (
             <motion.div
-              key={t.name}
-              initial={{ opacity: 0, y: 40 }}
+              key={t.author}
+              initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ delay: i * 0.12, duration: 0.5 }}
-              className="enterprise-card p-7 flex flex-col"
+              transition={{ delay: idx * 0.1, duration: 0.5 }}
+              className="apple-card-light p-8 flex flex-col justify-between text-left"
             >
-              {/* Stars */}
-              <div className="flex gap-1 mb-5">
-                {[...Array(t.stars)].map((_, si) => (
-                  <svg key={si} className="w-4 h-4 text-orange-400" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                  </svg>
-                ))}
+              <div className="space-y-4">
+                <div className="flex gap-1 text-[#0066cc]">
+                  {[...Array(5)].map((_, i) => (
+                    <svg key={i} className="w-4 h-4 fill-current" viewBox="0 0 20 20">
+                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                    </svg>
+                  ))}
+                </div>
+                <p className="text-[#1d1d1f] text-base leading-relaxed italic">
+                  &ldquo;{t.quote}&rdquo;
+                </p>
               </div>
 
-              {/* Quote */}
-              <p className="text-slate-300 text-sm leading-relaxed flex-1 mb-6 italic">
-                "{t.text}"
-              </p>
-
-              {/* Author */}
-              <div className="flex items-center gap-3 pt-5 border-t border-[#1e3a5f]">
-                <div className="w-10 h-10 rounded-full bg-orange-500/20 border border-orange-500/30 flex items-center justify-center text-orange-400 font-bold text-sm flex-shrink-0">
-                  {t.initials}
+              <div className="pt-6 border-t border-slate-100">
+                <div className="font-semibold text-[#1d1d1f] text-sm">
+                  {t.author}
                 </div>
-                <div>
-                  <div className="text-white font-semibold text-sm">{t.name}</div>
-                  <div className="text-slate-500 text-xs">{t.role} · {t.empresa}</div>
+                <div className="text-xs text-[#7a7a7a]">
+                  {t.role} · {t.company}
                 </div>
               </div>
             </motion.div>

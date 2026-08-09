@@ -29,129 +29,151 @@ export default function Navbar() {
   }
 
   return (
-    <motion.nav
-      initial={{ y: -100 }}
-      animate={{ y: 0 }}
-      transition={{ duration: 0.5, ease: 'easeOut' }}
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        scrolled
-          ? 'bg-[#0a1628]/95 backdrop-blur-xl border-b border-[#1e3a5f] shadow-[0_4px_24px_rgba(0,0,0,0.4)]'
-          : 'bg-transparent'
-      }`}
-    >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-18 sm:h-20 py-3">
-
-          {/* Logo */}
-          <div className="flex items-center gap-3">
-            <div className="relative w-12 h-12 flex-shrink-0">
-              <Image
-                src="/logo-CASAS.png"
-                alt="Gama Servicios"
-                width={48}
-                height={48}
-                className="object-contain drop-shadow-lg"
-              />
-            </div>
-            <div className="flex flex-col leading-none">
-              <span className="text-white font-black text-lg tracking-tight">GAMA</span>
-              <span className="text-[11px] font-bold text-orange-400 tracking-[0.2em] uppercase">Servicios</span>
-            </div>
+    <header className="fixed top-0 left-0 right-0 z-50 transition-all duration-300">
+      
+      {/* ── Tier 1: Global Utility Nav (44px height) ── */}
+      <div className="bg-[#050d1a] border-b border-[#1e3a5f]/40 h-11 text-xs text-slate-400 font-sans">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center justify-between">
+          <div className="flex items-center gap-6">
+            <span className="text-slate-300 font-medium tracking-tight flex items-center gap-2">
+              <span className="live-dot" />
+              Central Monitoreo 24/7 · Chile
+            </span>
+            <span className="hidden md:inline text-[#2997ff] text-[11px] font-mono font-semibold">
+              OS-10 Certificado
+            </span>
           </div>
 
-          {/* Desktop Nav */}
-          <div className="hidden lg:flex items-center gap-1">
-            {NAV_LINKS.map(link => (
-              <button
-                key={link.id}
-                onClick={() => scrollTo(link.id)}
-                className="relative text-sm text-slate-300 hover:text-white px-4 py-2 rounded-lg transition-all duration-200 hover:bg-white/5 group font-medium"
-              >
-                {link.label}
-                <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-0 h-0.5 bg-orange-500 rounded-full transition-all duration-300 group-hover:w-4" />
-              </button>
-            ))}
-          </div>
-
-          {/* Right side */}
-          <div className="hidden lg:flex items-center gap-4">
-            {/* Emergency number */}
-            <a
-              href="tel:323276011"
-              className="flex items-center gap-2 bg-[#0f2240] border border-[#1e3a5f] hover:border-orange-500/50 rounded-xl px-4 py-2.5 transition-all duration-200 group"
-            >
-              <div className="live-dot" />
-              <div className="flex flex-col leading-none">
-                <span className="text-[9px] text-slate-500 font-mono tracking-wider">EMERGENCIAS 24/7</span>
-                <span className="text-white font-bold text-sm font-mono">323-276-011</span>
-              </div>
-            </a>
+          <div className="flex items-center gap-5 text-[12px]">
             <button
               onClick={() => scrollTo('contacto')}
-              className="btn-primary text-sm"
+              className="text-slate-300 hover:text-white transition-colors"
             >
-              Solicitar Cotización
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-              </svg>
+              Atención Clientes
             </button>
+            <span className="text-slate-600">|</span>
+            <Link
+              href="/operacion"
+              className="text-[#2997ff] hover:underline font-medium transition-colors"
+            >
+              Acceso Plataforma Scorpion →
+            </Link>
           </div>
-
-          {/* Hamburger */}
-          <button
-            onClick={() => setMenuOpen(!menuOpen)}
-            className="lg:hidden text-white p-2 rounded-lg hover:bg-white/10 transition-colors"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              {menuOpen
-                ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              }
-            </svg>
-          </button>
         </div>
       </div>
 
-      {/* Mobile Menu */}
-      <AnimatePresence>
-        {menuOpen && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.25 }}
-            className="lg:hidden bg-[#0a1628]/98 backdrop-blur-xl border-t border-[#1e3a5f] overflow-hidden"
-          >
-            <div className="px-4 py-5 space-y-1">
-              {NAV_LINKS.map(link => (
+      {/* ── Tier 2: Sub-Nav Frosted Header (52px height) ── */}
+      <motion.nav
+        initial={{ y: -50, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.4 }}
+        className={`transition-all duration-300 ${
+          scrolled
+            ? 'bg-[#0a1628]/90 backdrop-blur-xl border-b border-[#1e3a5f] shadow-[0_4px_24px_rgba(0,0,0,0.3)]'
+            : 'bg-[#0a1628]/70 backdrop-blur-lg border-b border-[#1e3a5f]/50'
+        }`}
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-[52px]">
+
+            {/* Octagonal Isolated Logo + Title */}
+            <div
+              onClick={() => scrollTo('inicio')}
+              className="flex items-center gap-3 cursor-pointer group"
+            >
+              <div className="relative w-8 h-8 flex-shrink-0 transition-transform duration-300 group-hover:scale-105">
+                <Image
+                  src="/logo-gama.png"
+                  alt="GAMA Servicios Monitoreo"
+                  width={32}
+                  height={32}
+                  className="object-contain filter drop-shadow(0 2px 8px rgba(0,102,204,0.3))"
+                  priority
+                />
+              </div>
+              <div className="flex items-center gap-1.5 leading-none">
+                <span className="text-white font-semibold text-base tracking-tight font-sans">
+                  GAMA
+                </span>
+                <span className="text-xs font-normal text-slate-400 font-sans">
+                  Servicios
+                </span>
+              </div>
+            </div>
+
+            {/* Desktop Navigation Links */}
+            <div className="hidden md:flex items-center gap-6 text-[13px] font-sans">
+              {NAV_LINKS.map((link) => (
                 <button
                   key={link.id}
                   onClick={() => scrollTo(link.id)}
-                  className="flex items-center gap-3 w-full text-left text-slate-300 hover:text-white hover:bg-white/5 px-4 py-3 rounded-xl transition-all font-medium"
+                  className="text-slate-300 hover:text-white transition-colors duration-150 font-normal hover:opacity-100"
                 >
-                  <span className="w-1.5 h-1.5 rounded-full bg-orange-500" />
                   {link.label}
                 </button>
               ))}
-              <div className="pt-3 border-t border-[#1e3a5f] space-y-3">
-                <a href="tel:323276011" className="flex items-center gap-3 px-4 py-3 rounded-xl bg-[#0f2240] border border-[#1e3a5f]">
-                  <div className="live-dot" />
-                  <div>
-                    <div className="text-[9px] text-slate-500 font-mono">EMERGENCIAS 24/7</div>
-                    <div className="text-white font-bold font-mono">323-276-011</div>
-                  </div>
-                </a>
-                <button
-                  onClick={() => scrollTo('contacto')}
-                  className="btn-primary w-full justify-center"
-                >
-                  Solicitar Cotización
-                </button>
-              </div>
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </motion.nav>
+
+            {/* Right Side: Action Blue Pill CTA */}
+            <div className="hidden sm:flex items-center gap-3">
+              <button
+                onClick={() => scrollTo('contacto')}
+                className="btn-apple-primary text-xs py-1.5 px-4 font-normal"
+              >
+                Solicitar Cotización
+              </button>
+            </div>
+
+            {/* Mobile Hamburger Toggle */}
+            <button
+              onClick={() => setMenuOpen(!menuOpen)}
+              className="md:hidden text-slate-300 hover:text-white p-1.5 transition-colors"
+              aria-label="Abrir menú"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                {menuOpen ? (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
+                ) : (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 6h16M4 12h16M4 18h16" />
+                )}
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile Dropdown Menu */}
+        <AnimatePresence>
+          {menuOpen && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.2 }}
+              className="md:hidden bg-[#050d1a]/95 backdrop-blur-xl border-t border-[#1e3a5f] overflow-hidden"
+            >
+              <div className="px-5 py-4 space-y-3">
+                {NAV_LINKS.map((link) => (
+                  <button
+                    key={link.id}
+                    onClick={() => scrollTo(link.id)}
+                    className="block w-full text-left text-slate-300 hover:text-white py-2 text-sm font-normal border-b border-white/5"
+                  >
+                    {link.label}
+                  </button>
+                ))}
+                <div className="pt-2 flex flex-col gap-2">
+                  <button
+                    onClick={() => scrollTo('contacto')}
+                    className="btn-apple-primary w-full justify-center text-sm py-2"
+                  >
+                    Solicitar Cotización
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.nav>
+    </header>
   )
 }
