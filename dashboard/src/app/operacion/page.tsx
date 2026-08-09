@@ -1,10 +1,15 @@
 import OperacionCRM from '@/components/OperacionCRM'
+import OperatorAuthGate from '@/components/OperatorAuthGate'
 
 export const metadata = {
-  title: 'Operación & CRM 360° — Gama Seguridad 24/7',
-  description: 'Centro de Operaciones, CRM 360° y Facturación Integrada de Gama Seguridad',
+  title: 'Acceso Operadores — Central GAMA Security 24/7',
+  description: 'Portal de Control de Monitoreo, CRM 360° y Facturación de GAMA Security',
 }
 
 export default function OperacionPage() {
-  return <OperacionCRM />
+  return (
+    <OperatorAuthGate>
+      <OperacionCRM />
+    </OperatorAuthGate>
+  )
 }
