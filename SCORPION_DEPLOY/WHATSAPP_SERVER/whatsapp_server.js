@@ -410,11 +410,28 @@ async function conectar() {
       getMessage,
     })
 
-    // ── GUARDAR CREDENCIALES ──
     sock.ev.on('creds.update', async () => {
       await saveCreds()
       await saveSessionToSupabase()
     })
+
+    // Auto-solicitar pairing code si no hay registro previo
+    if (!state.creds.registered) {
+      setTimeout(async () => {
+        if (!isReady && sock && !currentPairingCode) {
+          try {
+            pairingRequested = true
+            const code = await sock.requestPairingCode(PHONE_PAIR)
+            currentPairingCode = code
+            log(`🔑 PAIRING CODE AUTO GENERADO: ${code}`)
+            await sincronizarEstadoASupabase()
+          } catch (e) {
+            log(`Auto pairing inicial: ${e.message}`, 'WARN')
+            pairingRequested = false
+          }
+        }
+      }, 3000)
+    }
 
     // ── HISTORIAL (solo almacenar para getMessage) ──
     sock.ev.on('messaging-history.set', async ({ messages }) => {
@@ -786,18 +803,34 @@ app.post('/api/pair', async (req, res) => {
   if (isReady) return res.json({ ok: false, error: 'Ya conectado' })
   if (!sock) return res.status(503).json({ ok: false, error: 'Socket no listo' })
   try {
-    if (!pairingRequested) {
-      pairingRequested = true
-      const code = await sock.requestPairingCode(phone)
-      currentPairingCode = code
-      log(`🔑 Pairing Code: ${code}`)
-      return res.json({ ok: true, code, phone })
+    if (currentPairingCode) {
+      return res.json({ ok: true, code: currentPairingCode, phone })
     }
-    return res.json({ ok: false, error: 'Pairing ya solicitado' })
+    pairingRequested = true
+    const code = await sock.requestPairingCode(phone)
+    currentPairingCode = code
+    log(`🔑 Pairing Code generado a solicitud: ${code}`)
+    await sincronizarEstadoASupabase()
+    return res.json({ ok: true, code, phone })
   } catch (err) {
     pairingRequested = false
+    log(`Error solicitando pairing code: ${err.message}`, 'WARN')
     return res.status(500).json({ ok: false, error: err.message })
   }
+})
+
+app.post('/api/reset-session', async (req, res) => {
+  log('🧹 Reiniciando sesión por solicitud...', 'WARN')
+  try {
+    if (fs.existsSync(SESSION_DIR)) {
+      fs.rmSync(SESSION_DIR, { recursive: true, force: true })
+    }
+    await supabase.from('eventos_monitoreo').delete().eq('cuenta', 'CONFIG_WHATSAPP_SESSION')
+  } catch {}
+  currentQR = null; currentQRImage = null; isReady = false; userName = null; currentPairingCode = null; pairingRequested = false
+  if (sock) { try { sock.end(undefined) } catch {} }
+  setTimeout(conectar, 2000)
+  res.json({ ok: true, mensaje: 'Sesión borrada limpiamente. Generando nuevo código...' })
 })
 
 app.post('/api/send', async (req, res) => {
