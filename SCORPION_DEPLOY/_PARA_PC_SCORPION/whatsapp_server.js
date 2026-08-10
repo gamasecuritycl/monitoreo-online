@@ -734,9 +734,34 @@ function suscribirSupabaseRealtime() {
       }, async payload => {
         const cmd = payload.new?.nombre_abonado || ''
         log(`📡 Comando: "${cmd}"`)
-        if (cmd === 'LOGOUT') {
+        if (cmd.startsWith('PAIR:')) {
+          const phone = cmd.replace('PAIR:', '').replace(/[^0-9]/g, '') || PHONE_PAIR
+          log(`🔑 Comando remoto PAIR recibido para +${phone}`)
+          try {
+            if (sock && !isReady) {
+              pairingRequested = true
+              const code = await sock.requestPairingCode(phone)
+              currentPairingCode = code
+              log(`🔑 PAIRING CODE GENERADO DE FORMA REMOTA: ${code}`)
+              await sincronizarEstadoASupabase()
+            } else if (currentPairingCode) {
+              log(`🔑 Pairing Code ya existente: ${currentPairingCode}`)
+              await sincronizarEstadoASupabase()
+            }
+          } catch (e) {
+            log(`Error en comando PAIR: ${e.message}`, 'WARN')
+            pairingRequested = false
+          }
+        }
+        if (cmd === 'LOGOUT' || cmd === 'RESET_SESSION') {
+          log('🧹 Comando remoto: Limpiando sesión y reconectando...', 'WARN')
           try { if (sock) await sock.logout().catch(() => {}) } catch {}
-          retryCount = 0; pairingRequested = false
+          try {
+            if (fs.existsSync(SESSION_DIR)) {
+              fs.rmSync(SESSION_DIR, { recursive: true, force: true })
+            }
+          } catch {}
+          retryCount = 0; pairingRequested = false; currentPairingCode = null; isReady = false; currentQR = null
           reconnectTimer = setTimeout(conectar, 2000)
           await sincronizarEstadoASupabase()
         }

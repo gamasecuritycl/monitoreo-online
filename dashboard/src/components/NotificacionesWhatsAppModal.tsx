@@ -817,15 +817,16 @@ Responde directamente el mensaje a enviar por WhatsApp al cliente basándote EXC
     setLoadingPair(true); setServerMsg('')
     try {
       const phone = pairingInput.replace(/[^0-9]/g, '') || '56948855190'
+      await supabase.from('eventos_monitoreo').delete().eq('cuenta', 'CONFIG_WHATSAPP_COMMAND')
       await supabase
         .from('eventos_monitoreo')
-        .upsert({
+        .insert({
           cuenta: 'CONFIG_WHATSAPP_COMMAND',
           nombre_abonado: `PAIR:${phone}`,
           evento: 'COMMAND',
           fecha_hora: new Date().toISOString()
-        }, { onConflict: 'cuenta' })
-      setServerMsg('⏳ Solicitud de Pairing Code enviada a la nube. El codigo aparecera aqui en breve...')
+        })
+      setServerMsg('⏳ Solicitud enviada a la nube. Generando código de vinculación...')
     } catch (err: any) {
       setServerMsg('❌ Error: ' + err.message)
     } finally {
@@ -837,15 +838,17 @@ Responde directamente el mensaje a enviar por WhatsApp al cliente basándote EXC
     if (!confirm('¿Cerrar sesión de WhatsApp? Deberás volver a vincular.')) return
     setLoadingLogout(true)
     try {
+      await supabase.from('eventos_monitoreo').delete().eq('cuenta', 'CONFIG_WHATSAPP_COMMAND')
+      await supabase.from('eventos_monitoreo').delete().eq('cuenta', 'CONFIG_WHATSAPP_SESSION')
       await supabase
         .from('eventos_monitoreo')
-        .upsert({
+        .insert({
           cuenta: 'CONFIG_WHATSAPP_COMMAND',
           nombre_abonado: 'LOGOUT',
           evento: 'COMMAND',
           fecha_hora: new Date().toISOString()
-        }, { onConflict: 'cuenta' })
-      setServerMsg('🔴 Solicitud de cierre de sesión enviada a la nube...')
+        })
+      setServerMsg('🔴 Solicitud de cierre de sesión enviada. Limpiando credenciales...')
     } catch (err: any) {
       setServerMsg('❌ Error al solicitar logout: ' + err.message)
     }
