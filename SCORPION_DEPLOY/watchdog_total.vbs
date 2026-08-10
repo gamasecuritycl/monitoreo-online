@@ -209,8 +209,8 @@ Do While True
         sincLastRestart = Now
     End If
 
-    ' ── WHATSAPP: verificar proceso ──
-    If Not ProcessExists("node.exe", "whatsapp_server") Then
+    ' ── WHATSAPP: verificar proceso (evitar duplicados) ──
+    If Not ProcessExists("node.exe", "") Then
         Call LogMsg("WHATSAPP: Proceso MUERTO. Reiniciando...")
         Call StartWhatsApp()
     End If
