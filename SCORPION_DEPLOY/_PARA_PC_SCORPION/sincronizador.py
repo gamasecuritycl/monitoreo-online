@@ -12,19 +12,23 @@ if sys.executable.lower().endswith("pythonw.exe"):
         pass
 
 # Evitar múltiples instancias del sincronizador a la vez en el mismo PC
-LOCK_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "_sincronizador.lock")
-try:
-    if os.path.exists(LOCK_FILE):
-        try: os.remove(LOCK_FILE)
-        except Exception: pass
-except Exception:
-    pass
+import msvcrt
 
-try:
-    lock_handle = open(LOCK_FILE, "w")
-    lock_handle.write(str(os.getpid()))
-    lock_handle.flush()
-except Exception:
+GLOBAL_LOCK_FILE = r"C:\SCORPION\BASES DE DATOS\_sincronizador_global.lock"
+LOCAL_LOCK_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "_sincronizador.lock")
+
+lock_fp = None
+for lfile in [GLOBAL_LOCK_FILE, LOCAL_LOCK_FILE]:
+    try:
+        os.makedirs(os.path.dirname(lfile), exist_ok=True)
+        fp = open(lfile, "a+")
+        msvcrt.locking(fp.fileno(), msvcrt.LK_NBLCK, 1)
+        lock_fp = fp
+        break
+    except Exception:
+        continue
+
+if not lock_fp:
     print("[ERROR] El sincronizador ya está en ejecución en segundo plano. Saliendo...")
     sys.exit(0)
 
