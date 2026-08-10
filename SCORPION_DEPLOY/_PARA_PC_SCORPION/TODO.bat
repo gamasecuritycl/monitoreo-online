@@ -62,6 +62,7 @@ copy /y "%SRC%\watchdog_total.vbs" "C:\SCORPION\BASES DE DATOS\watchdog_total.vb
 :: Actualizar whatsapp_server.js SIN BORRAR .baileys-session
 if not exist "%WA_DIR%" mkdir "%WA_DIR%"
 copy /y "%SRC%\whatsapp_server.js" "%WA_DIR%\whatsapp_server.js"  >nul
+if exist "%SRC%\package.json" copy /y "%SRC%\package.json" "%WA_DIR%\package.json" >nul
 
 :: Restaurar sesion si se copió algo
 if exist "%SESSION_BCK%\creds.json" (
@@ -73,15 +74,10 @@ if exist "%SESSION_BCK%\creds.json" (
 :: ─────────────────────────────────────
 :: [4] VERIFICAR / INSTALAR node_modules
 :: ─────────────────────────────────────
-echo [4/7] Verificando dependencias Node.js...
+echo [4/7] Verificando e instalando dependencias Node.js (Baileys 7.x)...
 cd /d "%WA_DIR%"
-if not exist "%WA_DIR%\node_modules\@whiskeysockets" (
-    echo       Instalando node_modules (primera vez - puede tardar 2 min)...
-    call npm install --prefix "%WA_DIR%" @whiskeysockets/baileys @supabase/supabase-js express cors pino qrcode qrcode-terminal uuid >nul 2>&1
-    echo       Instalacion completada.
-) else (
-    echo       node_modules ya estan instalados.
-)
+call npm install --prefix "%WA_DIR%" >nul 2>&1
+echo       Instalacion de dependencias completada.
 
 :: ─────────────────────────────────────
 :: [5] INSTALAR WATCHDOG EN STARTUP

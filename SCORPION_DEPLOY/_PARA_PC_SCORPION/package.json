@@ -1,0 +1,17 @@
+{
+  "name": "gama-whatsapp-server",
+  "version": "4.0.0",
+  "description": "GAMA SEGURIDAD - Servidor WhatsApp v4.0 (Baileys 7.x, LID nativo, getMessage, graceful shutdown)",
+  "main": "whatsapp_server.js",
+  "scripts": {
+    "start": "node whatsapp_server.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.110.7",
+    "@whiskeysockets/baileys": "^7.0.0-rc14",
+    "cors": "^2.8.5",
+    "express": "^4.22.2",
+    "pino": "^9.6.0",
+    "qrcode": "^1.5.4"
+  }
+}
