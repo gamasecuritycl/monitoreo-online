@@ -1,15 +1,18 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════
- *  GAMA SEGURIDAD - SERVIDOR WHATSAPP v3.5 (Baileys + Dedup + Retry)
- *  Motor: @whiskeysockets/baileys (WebSocket puro)
+ *  GAMA SEGURIDAD - SERVIDOR WHATSAPP v4.0
+ *  Motor: @whiskeysockets/baileys 7.x (WebSocket puro, LID nativo)
  *  Puerto: 3015
  * ═══════════════════════════════════════════════════════════════════════
- *  MEJORAS v3.5:
- *  ✅ Deduplicación de mensajes (evita duplicados)
- *  ✅ Retry automático en envíos fallidos (3 intentos)
- *  ✅ Receipts: confirmación de entrega real
- *  ✅ Cola con recuperación de mensajes fallidos
- *  ✅ Logging mejorado (sin catch vacíos)
+ *  v4.0 — Reescritura completa:
+ *  ✅ Baileys 7.x con soporte nativo LID (fix E2E definitivo)
+ *  ✅ getMessage callback (descifrado de reintentos)
+ *  ✅ Graceful shutdown (SIGINT/SIGTERM → guardar sesión → salir)
+ *  ✅ Backoff exponencial real en reconexión
+ *  ✅ Deduplicación de mensajes + retry en envíos
+ *  ✅ Sin memory leaks (intervalos limpiados en reconexión)
+ *  ✅ Supabase Realtime sin polling innecesario
+ *  ✅ Bot IA (menú + Gemini)
  * ═══════════════════════════════════════════════════════════════════════
  */
 
@@ -19,7 +22,6 @@ const path    = require('path')
 const fs      = require('fs')
 const { randomBytes } = require('crypto')
 const QRCode  = require('qrcode')
-const crypto  = require('crypto')
 
 const {
   makeWASocket,
@@ -28,8 +30,7 @@ const {
   isJidBroadcast,
   jidNormalizedUser,
   makeCacheableSignalKeyStore,
-  proto,
-  getAggregateVotesInPollMessage,
+  fetchLatestBaileysVersion,
 } = require('@whiskeysockets/baileys')
 
 const pino    = require('pino')
@@ -43,9 +44,10 @@ const SESSION_DIR  = path.join(__dirname, '.baileys-session')
 const MAX_QUEUE    = 500
 const HEARTBEAT_MS = 30_000
 const MAX_RETRIES  = 3
-const RETRY_DELAY  = 2000  // ms base para backoff
+const RETRY_DELAY  = 2000   // ms base para backoff
 const PHONE_PAIR   = '56948855190'
-const DEDUP_TTL    = 300_000  // 5 minutos dedup window
+const DEDUP_TTL    = 300_000  // 5 min ventana de dedup
+const MSG_STORE_MAX = 1000   // mensajes en store para getMessage
 
 const SUPABASE_URL  = 'https://onxwyrwmpjxtwlmjrosr.supabase.co'
 const SUPABASE_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9ueHd5cndtcGp4dHdsbWpyb3NyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI4NTUxNDQsImV4cCI6MjA5ODQzMTE0NH0.8kJRf8hm3rHK8sygMcyBT0R83tyK8hIQCmnAQxannJs'
@@ -54,48 +56,43 @@ const supabase     = createClient(SUPABASE_URL, SUPABASE_KEY)
 // ──────────────────────────────────────────────
 //  DEDUPLICACIÓN
 // ──────────────────────────────────────────────
-const processedMessages = new Map() // msgId -> timestamp
+const processedMessages = new Map()
 
 function isDuplicate(msgId) {
   if (!msgId) return false
   const now = Date.now()
-  
-  // Limpiar mensajes viejos
-  for (const [id, ts] of processedMessages) {
-    if (now - ts > DEDUP_TTL) processedMessages.delete(id)
+  // Limpiar mensajes viejos periódicamente
+  if (processedMessages.size > 5000) {
+    for (const [id, ts] of processedMessages) {
+      if (now - ts > DEDUP_TTL) processedMessages.delete(id)
+    }
   }
-  
   if (processedMessages.has(msgId)) return true
   processedMessages.set(msgId, now)
   return false
 }
 
 // ──────────────────────────────────────────────
-//  FIX E2E: Mapa @lid → número (iOS)
+//  MESSAGE STORE (para getMessage callback)
+//  Fix E2E: Baileys 7.x REQUIERE este callback
+//  para descifrar reintentos de mensajes
 // ──────────────────────────────────────────────
-const lidToNumber = new Map()
+const msgStore = new Map()
 
-function resolverLID(msg) {
-  if (!msg || !msg.key) return
-  const senderLid = msg.key.senderLid
-  const senderPn = msg.key.senderPn
-  if (senderLid && senderPn) {
-    const num = senderPn.replace(/[^0-9]/g, '')
-    lidToNumber.set(senderLid, num)
-    lidToNumber.set(senderLid.split('@')[0], num)
+function storeMessage(msg) {
+  if (!msg?.key?.id || !msg?.message) return
+  msgStore.set(msg.key.id, msg.message)
+  // Limitar tamaño del store
+  if (msgStore.size > MSG_STORE_MAX) {
+    const oldest = msgStore.keys().next().value
+    msgStore.delete(oldest)
   }
 }
 
-function obtenerNumeroDesdeJID(jid, msg) {
-  if (!jid) return ''
-  if (jid.endsWith('@lid')) {
-    const base = jid.split('@')[0]
-    if (lidToNumber.has(jid)) return lidToNumber.get(jid)
-    if (lidToNumber.has(base)) return lidToNumber.get(base)
-    // Intentar desde senderPn del mensaje
-    if (msg?.key?.senderPn) return msg.key.senderPn.replace(/[^0-9]/g, '')
-  }
-  return jid.replace('@s.whatsapp.net', '')
+async function getMessage(key) {
+  const stored = msgStore.get(key.id)
+  if (stored) return stored
+  return { conversation: '' }
 }
 
 // ──────────────────────────────────────────────
@@ -108,10 +105,13 @@ let currentQRImage  = null
 let retryCount      = 0
 let heartbeatTimer  = null
 let reconnectTimer  = null
+let groupSyncTimer  = null   // <-- Se limpia en reconexión (fix memory leak)
 let messageQueue    = []
 let startTime       = Date.now()
 let userName        = null
 let pairingRequested = false
+let currentPairingCode = null
+let isShuttingDown  = false
 
 // ──────────────────────────────────────────────
 //  EXPRESS
@@ -121,7 +121,7 @@ app.use(cors())
 app.use(express.json())
 
 // ──────────────────────────────────────────────
-//  LOGGER (mejorado)
+//  LOGGER
 // ──────────────────────────────────────────────
 function log(msg, nivel = 'INFO') {
   const ts = new Date().toLocaleTimeString('es-CL', { hour12: false })
@@ -133,12 +133,21 @@ function log(msg, nivel = 'INFO') {
 //  RECONEXIÓN FORZADA
 // ──────────────────────────────────────────────
 async function reconectarForzado() {
+  if (isShuttingDown) return
   log('🔄 WATCHDOG: Forzando reconexión...', 'WARN')
-  detenerHeartbeat()
-  try { if (sock) { sock.end(); sock = null } } catch {}
+  limpiarTimers()
+  try { if (sock) { sock.end(undefined); sock = null } } catch {}
   isReady = false
-  if (reconnectTimer) clearTimeout(reconnectTimer)
   reconnectTimer = setTimeout(conectar, 3_000)
+}
+
+// ──────────────────────────────────────────────
+//  LIMPIEZA DE TIMERS (fix memory leak)
+// ──────────────────────────────────────────────
+function limpiarTimers() {
+  if (heartbeatTimer) { clearInterval(heartbeatTimer); heartbeatTimer = null }
+  if (groupSyncTimer) { clearInterval(groupSyncTimer); groupSyncTimer = null }
+  if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null }
 }
 
 // ──────────────────────────────────────────────
@@ -172,15 +181,26 @@ async function subirMediaASupabase(base64, prefix) {
 let watchdogFailures = 0
 
 function iniciarHeartbeat() {
-  detenerHeartbeat()
+  if (heartbeatTimer) clearInterval(heartbeatTimer)
   watchdogFailures = 0
   heartbeatTimer = setInterval(async () => {
     if (!sock || !isReady) return
-    
+
     if (messageQueue.length > 20) {
       log(`🚨 Cola saturada (${messageQueue.length}). Reconectando...`, 'ERROR')
       return reconectarForzado()
     }
+
+    // Verificar estado del WebSocket
+    try {
+      const wsState = sock.ws?.readyState
+      if (wsState !== undefined && wsState !== 1) { // 1 = OPEN
+        watchdogFailures++
+        log(`⚠️ WebSocket state=${wsState} (${watchdogFailures}/3)`, 'WARN')
+        if (watchdogFailures >= 3) return reconectarForzado()
+        return
+      }
+    } catch {}
 
     try {
       const state = await Promise.race([
@@ -202,40 +222,36 @@ function iniciarHeartbeat() {
   }, HEARTBEAT_MS)
 }
 
-function detenerHeartbeat() {
-  if (heartbeatTimer) { clearInterval(heartbeatTimer); heartbeatTimer = null }
-}
-
 // ──────────────────────────────────────────────
 //  PERSISTENCIA DE SESIÓN EN SUPABASE
 // ──────────────────────────────────────────────
 async function loadSessionFromSupabase() {
   try {
+    // PRIORIDAD ABSOLUTA: si hay sesión local, usarla SIEMPRE
     if (fs.existsSync(SESSION_DIR)) {
       const files = fs.readdirSync(SESSION_DIR).filter(f => f.endsWith('.json'))
       if (files.length > 0) {
-        log(`Sesión local (.baileys-session) encontrada (${files.length} archivos) — utilizando sesión local.`)
+        log(`✅ Sesión local encontrada (${files.length} archivos) — usando sesión local`)
         return
       }
     }
+    // Si no hay sesión local, intentar restaurar de Supabase
     const { data, error } = await supabase
       .from('eventos_monitoreo')
       .select('nombre_abonado')
       .eq('cuenta', 'CONFIG_WHATSAPP_SESSION')
       .limit(1)
-    
     if (error || !data || data.length === 0) {
-      log('No hay sesiones previas en Supabase')
+      log('Sin sesión guardada — se necesita vincular el teléfono')
       return
     }
-
     const sessionData = JSON.parse(data[0].nombre_abonado || '{}')
+    if (Object.keys(sessionData).length === 0) return
     if (!fs.existsSync(SESSION_DIR)) fs.mkdirSync(SESSION_DIR, { recursive: true })
-
     Object.entries(sessionData).forEach(([fileName, content]) => {
       fs.writeFileSync(path.join(SESSION_DIR, fileName), JSON.stringify(content))
     })
-    log('Sesión descargada de Supabase')
+    log(`✅ Sesión restaurada de Supabase (${Object.keys(sessionData).length} archivos)`)
   } catch (err) {
     log(`Error cargando sesión: ${err.message}`, 'WARN')
   }
@@ -267,16 +283,15 @@ async function saveSessionToSupabase() {
     })
     if (Object.keys(sessionData).length === 0) return
     await guardarConfigSupabase('CONFIG_WHATSAPP_SESSION', JSON.stringify(sessionData), 'CONFIG_SESSION')
+    log(`💾 Sesión sincronizada a Supabase (${Object.keys(sessionData).length} archivos)`)
   } catch (err) {
     log(`Error sincronizando sesión: ${err.message}`, 'WARN')
   }
 }
 
 // ──────────────────────────────────────────────
-//  SINCRONIZAR ESTADO Y QR
+//  SINCRONIZAR ESTADO Y QR A SUPABASE
 // ──────────────────────────────────────────────
-let currentPairingCode = null
-
 async function sincronizarEstadoASupabase() {
   try {
     const estadoObj = {
@@ -284,7 +299,7 @@ async function sincronizarEstadoASupabase() {
       estado: isReady ? 'CONECTADO' : (currentQR ? 'ESPERANDO_QR' : 'CONECTANDO'),
       usuario: userName, hasQR: !!currentQR, cola: messageQueue.length,
       uptime: Math.round((Date.now() - startTime) / 1000), reintentos: retryCount,
-      pairingCode: currentPairingCode, version: '3.5',
+      pairingCode: currentPairingCode, version: '4.0',
     }
     await guardarConfigSupabase('CONFIG_WHATSAPP_STATE', JSON.stringify(estadoObj), 'CONFIG_STATE')
 
@@ -298,15 +313,17 @@ async function sincronizarEstadoASupabase() {
   }
 }
 
+// ──────────────────────────────────────────────
+//  NORMALIZAR JID
+// ──────────────────────────────────────────────
 function normalizarJID(raw) {
   if (!raw) return ''
   const str = String(raw).trim()
   if (str.endsWith('@g.us') || str.endsWith('@s.whatsapp.net')) return str
-  // FIX E2E: resolver @lid → número para iOS
+  // LID: intentar resolver via jidNormalizedUser de Baileys 7.x
   if (str.endsWith('@lid')) {
-    const num = lidToNumber.get(str) || lidToNumber.get(str.split('@')[0])
-    if (num) return `${num}@s.whatsapp.net`
-    return str // fallback: dejar @lid si no hay mapping
+    try { return jidNormalizedUser(str) } catch {}
+    return str
   }
   if (str.includes('-') || str.startsWith('120') || str.includes('@g')) {
     return str.replace('@s.whatsapp.net', '') + '@g.us'
@@ -317,6 +334,19 @@ function normalizarJID(raw) {
   return `${digits}@s.whatsapp.net`
 }
 
+function obtenerNumeroDesdeJID(jid) {
+  if (!jid) return ''
+  // Baileys 7.x: jidNormalizedUser resuelve LID automáticamente
+  try {
+    const normalized = jidNormalizedUser(jid)
+    return normalized.replace('@s.whatsapp.net', '')
+  } catch {}
+  return jid.replace('@s.whatsapp.net', '').replace('@lid', '')
+}
+
+// ──────────────────────────────────────────────
+//  SINCRONIZAR GRUPOS A SUPABASE
+// ──────────────────────────────────────────────
 async function sincronizarGruposASupabase() {
   if (!sock || !isReady) return
   try {
@@ -333,54 +363,75 @@ async function sincronizarGruposASupabase() {
 }
 
 // ──────────────────────────────────────────────
-//  CONEXIÓN PRINCIPAL (con dedup)
+//  CONEXIÓN PRINCIPAL (Baileys 7.x)
 // ──────────────────────────────────────────────
 async function conectar() {
+  if (isShuttingDown) return
   if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null }
-  detenerHeartbeat()
+  limpiarTimers()
 
   try {
     await loadSessionFromSupabase()
 
-    log(`🔌 Conectando Baileys (intento ${retryCount + 1})...`)
+    log(`🔌 Conectando Baileys 7.x (intento ${retryCount + 1})...`)
     const { state, saveCreds } = await useMultiFileAuthState(SESSION_DIR)
 
-    // FIX E2E: Version hardcoded - fetchLatestBaileysVersion() negocia versiones
-    // que causan "Esperando el mensaje" en iOS (GitHub #1739, #2297)
-    const version = [2, 3000, 1026152044]
+    // Baileys 7.x: intentar obtener versión, fallback a hardcoded
+    let version
+    try {
+      const vInfo = await Promise.race([
+        fetchLatestBaileysVersion(),
+        new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 8000))
+      ])
+      version = vInfo.version
+      log(`📡 Versión WA: ${version.join('.')}`)
+    } catch {
+      version = [2, 3000, 1015901307]
+      log(`📡 Versión WA fallback: ${version.join('.')}`, 'WARN')
+    }
 
     sock = makeWASocket({
-      version, auth: state,
+      version,
+      auth: {
+        creds: state.creds,
+        keys: makeCacheableSignalKeyStore(state.keys, pino({ level: 'silent' })),
+      },
       logger: pino({ level: 'silent' }),
-      printQRInTerminal: false, mobile: false,
+      printQRInTerminal: false,
+      mobile: false,
       browser: ['GAMA Seguridad', 'Chrome', '12.0'],
-      connectTimeoutMs: 60_000, defaultQueryTimeoutMs: 60_000,
-      keepAliveIntervalMs: 25_000, syncFullHistory: false,
+      connectTimeoutMs: 60_000,
+      defaultQueryTimeoutMs: 60_000,
+      keepAliveIntervalMs: 25_000,
+      syncFullHistory: false,
       markOnlineOnConnect: true,
+      // FIX E2E: getMessage callback OBLIGATORIO en Baileys 7.x
+      // Sin esto, los reintentos de mensajes fallan y aparece "Esperando el mensaje"
+      getMessage,
     })
 
-    // Guardar credenciales
+    // ── GUARDAR CREDENCIALES ──
     sock.ev.on('creds.update', async () => {
       await saveCreds()
       await saveSessionToSupabase()
     })
 
-    // Historial (solo recientes, no todo)
+    // ── HISTORIAL (solo almacenar para getMessage) ──
     sock.ev.on('messaging-history.set', async ({ messages }) => {
       if (!messages || messages.length === 0) return
       log(`📜 Historial: ${messages.length} mensajes`)
       for (const msg of messages) {
+        storeMessage(msg)  // Almacenar para getMessage callback
         if (isJidBroadcast(msg.key.remoteJid || '')) continue
         const body = msg.message?.conversation
           || msg.message?.extendedTextMessage?.text
           || msg.message?.imageMessage?.caption
           || msg.message?.videoMessage?.caption || ''
         if (!body) continue
-        // Dedup historial también
         if (msg.key.id && isDuplicate(msg.key.id)) continue
-        
+
         const jid = msg.key.remoteJid || ''
-        const numero = jid.replace('@s.whatsapp.net', '')
+        const numero = obtenerNumeroDesdeJID(jid)
         const fechaMsg = msg.messageTimestamp ? new Date(msg.messageTimestamp * 1000).toISOString() : new Date().toISOString()
         try {
           await supabase.from('conversaciones_whatsapp').insert({
@@ -398,27 +449,25 @@ async function conectar() {
 
       if (qr) {
         currentQR = qr; isReady = false; userName = null
-        log('📲 QR generado. Escanea con WhatsApp o usa /api/pair')
-        try {
-          const qrTerminal = require('qrcode-terminal')
-          qrTerminal.generate(qr, { small: true })
-        } catch {}
+        log('📲 QR generado — solicitando pairing code automáticamente...')
         try {
           currentQRImage = await QRCode.toDataURL(qr, { width: 300, margin: 2, color: { dark: '#000000', light: '#ffffff' } })
         } catch {}
 
+        // Auto-solicitar pairing code
         if (!pairingRequested && sock) {
           pairingRequested = true
           setTimeout(async () => {
             try {
               const code = await sock.requestPairingCode(PHONE_PAIR)
               currentPairingCode = code
-              log(`🔑 Auto Pairing Code (56948855190): ${code}`)
+              log(`🔑 PAIRING CODE para +${PHONE_PAIR}: ${code}`)
+              log('   En WhatsApp: Configuración → Dispositivos vinculados → Vincular con número de teléfono')
               await sincronizarEstadoASupabase()
             } catch (e) {
-              log(`Error solicitando pairing code: ${e.message}`, 'WARN')
+              log(`Auto pairing code error: ${e.message}`, 'WARN')
             }
-          }, 3000)
+          }, 2000)
         }
         await sincronizarEstadoASupabase()
       }
@@ -427,21 +476,28 @@ async function conectar() {
         isReady = true; currentQR = null; currentQRImage = null
         retryCount = 0; pairingRequested = false; currentPairingCode = null
         userName = sock.user?.name || sock.user?.id?.split(':')[0] || 'desconocido'
-        log(`✅ CONECTADO! Usuario: ${userName}`)
+        log(`✅ CONECTADO! Usuario: ${userName} — Servidor listo para enviar mensajes`)
+        await saveSessionToSupabase()
         iniciarHeartbeat()
         await sincronizarEstadoASupabase()
+        // Sincronizar grupos: UN solo intervalo que se limpia en reconexión
         setTimeout(sincronizarGruposASupabase, 2_000)
-        setInterval(sincronizarGruposASupabase, 60_000)
+        if (groupSyncTimer) clearInterval(groupSyncTimer)
+        groupSyncTimer = setInterval(sincronizarGruposASupabase, 60_000)
         setTimeout(despacharCola, 1_000)
       }
 
       if (connection === 'close') {
-        isReady = false; detenerHeartbeat()
+        isReady = false
+        limpiarTimers()
         const statusCode = lastDisconnect?.error?.output?.statusCode
         const reason = lastDisconnect?.error?.message || 'desconocido'
         log(`🔌 Desconectado. Código: ${statusCode}, Razón: ${reason}`, 'WARN')
         await sincronizarEstadoASupabase()
 
+        if (isShuttingDown) return
+
+        // 401 loggedOut / badSession: NO borrar sesión, reconectar
         if (statusCode === DisconnectReason.loggedOut || statusCode === DisconnectReason.badSession) {
           log('🔴 Sesión cerrada por WhatsApp. NO borramos sesión — reconectando...', 'WARN')
           retryCount = 0
@@ -449,21 +505,30 @@ async function conectar() {
           return
         }
 
+        // 515 restartRequired: reconectar inmediatamente
+        if (statusCode === 515) {
+          log('🔄 Restart requerido por WhatsApp — reconectando inmediatamente...')
+          retryCount = 0
+          reconnectTimer = setTimeout(conectar, 1_000)
+          return
+        }
+
+        // Backoff exponencial real
         retryCount++
-        const delay = retryCount <= MAX_RETRIES ? 5_000 : Math.min(15_000 * (retryCount - MAX_RETRIES), 120_000)
-        log(`⏳ Reintentando en ${Math.round(delay/1000)}s (intento ${retryCount})...`)
+        const delay = Math.min(5_000 * Math.pow(2, retryCount - 1), 120_000)
+        log(`⏳ Reintentando en ${Math.round(delay / 1000)}s (intento ${retryCount})...`)
         reconnectTimer = setTimeout(conectar, delay)
       }
     })
 
-    // ── MENSAJES (con dedup) ──
-    sock.ev.on('messages.upsert', async ({ messages }) => {
+    // ── MENSAJES (con dedup + getMessage store) ──
+    sock.ev.on('messages.upsert', async ({ messages, type }) => {
       for (const msg of messages) {
         if (!msg.key || !msg.key.remoteJid) continue
         if (isJidBroadcast(msg.key.remoteJid)) continue
 
-        // FIX E2E: Mapear @lid → número para iOS
-        resolverLID(msg)
+        // Almacenar SIEMPRE para getMessage callback (fix E2E)
+        storeMessage(msg)
 
         // DEDUPLICACIÓN
         if (msg.key.id && isDuplicate(msg.key.id)) {
@@ -480,7 +545,7 @@ async function conectar() {
 
         const rawJid = msg.key.remoteJid
         const isGroup = rawJid.endsWith('@g.us') || rawJid.includes('-')
-        const numero = isGroup ? rawJid : obtenerNumeroDesdeJID(rawJid, msg)
+        const numero = isGroup ? rawJid : obtenerNumeroDesdeJID(rawJid)
         const nombre = msg.pushName || (isGroup ? 'Grupo WhatsApp' : '')
 
         log(`💬 [${isGroup ? 'GRUPO' : 'CHAT'}] ${msg.key.fromMe ? 'Yo' : nombre}: "${body.slice(0, 50)}"`)
@@ -553,11 +618,10 @@ async function despacharCola() {
       log(`✅ Cola → ${item.phone}`)
       item.resolve({ ok: true, fuente: 'cola' })
     } catch (err) {
-      // Reintentar si no se agotaron los intentos
       if ((item.retries || 0) < MAX_RETRIES) {
         item.retries = (item.retries || 0) + 1
         log(`⚠️ Cola → error a ${item.phone}, reintento ${item.retries}/${MAX_RETRIES}`, 'WARN')
-        messageQueue.push(item) // Reencolar
+        messageQueue.push(item)
       } else {
         log(`❌ Cola → descartado ${item.phone} tras ${MAX_RETRIES} intentos`, 'ERROR')
         item.reject(err)
@@ -608,7 +672,6 @@ async function enviarMensaje(phone, text, retryNum = 0) {
       }
       return { ok: true, fuente: 'directo' }
     } catch (err) {
-      // Retry logic
       if (retryNum < MAX_RETRIES) {
         const delay = RETRY_DELAY * (retryNum + 1)
         log(`⚠️ Error enviando a ${phone}, reintento ${retryNum + 1}/${MAX_RETRIES} en ${delay}ms`, 'WARN')
@@ -631,31 +694,11 @@ async function enviarMensaje(phone, text, retryNum = 0) {
 }
 
 // ──────────────────────────────────────────────
-//  BORRAR SESIÓN
-// ──────────────────────────────────────────────
-async function borrarSesion() {
-  try {
-    if (fs.existsSync(SESSION_DIR)) {
-      fs.rmSync(SESSION_DIR, { recursive: true, force: true })
-      log('Sesión borrada localmente')
-    }
-  } catch (err) {
-    log(`Error borrando sesión: ${err.message}`, 'WARN')
-  }
-  try {
-    await supabase.from('eventos_monitoreo').delete().eq('cuenta', 'CONFIG_WHATSAPP_SESSION')
-    log('Sesión borrada en Supabase')
-  } catch (err) {
-    log(`Error borrando en Supabase: ${err.message}`, 'WARN')
-  }
-  currentQR = null; currentQRImage = null; isReady = false; userName = null
-}
-
-// ──────────────────────────────────────────────
-//  SUPABASE REALTIME
+//  SUPABASE REALTIME (sin polling innecesario)
 // ──────────────────────────────────────────────
 function suscribirSupabaseRealtime() {
   try {
+    // Canal 1: Broadcast para envíos directos
     supabase.channel('whatsapp_outbound')
       .on('broadcast', { event: 'send_whatsapp' }, async ({ payload }) => {
         if (payload?.phone && payload?.text) {
@@ -666,6 +709,7 @@ function suscribirSupabaseRealtime() {
       })
       .subscribe(status => log(`Supabase Realtime (outbound): ${status}`))
 
+    // Canal 2: Comandos remotos
     supabase.channel('whatsapp_commands')
       .on('postgres_changes', {
         event: 'INSERT', schema: 'public',
@@ -682,6 +726,7 @@ function suscribirSupabaseRealtime() {
       })
       .subscribe(status => log(`Supabase Realtime (commands): ${status}`))
 
+    // Canal 3: Mensajes pendientes (reemplaza polling de 3s)
     supabase.channel('whatsapp_pending_dispatches')
       .on('postgres_changes', {
         event: 'INSERT', schema: 'public',
@@ -697,26 +742,7 @@ function suscribirSupabaseRealtime() {
           await supabase.from('conversaciones_whatsapp').update({ estado: 'error' }).eq('id', row.id)
         }
       })
-
-    // Polling de respaldo cada 3s
-    setInterval(async () => {
-      if (!isReady || !sock) return
-      try {
-        const { data: pendientes } = await supabase
-          .from('conversaciones_whatsapp').select('*').eq('estado', 'pendiente').limit(10)
-        if (pendientes?.length > 0) {
-          for (const row of pendientes) {
-            if (!row.numero || !row.mensaje_enviado) continue
-            try {
-              await enviarMensaje(row.numero, row.mensaje_enviado)
-              await supabase.from('conversaciones_whatsapp').update({ estado: 'enviado' }).eq('id', row.id)
-            } catch {
-              await supabase.from('conversaciones_whatsapp').update({ estado: 'error' }).eq('id', row.id)
-            }
-          }
-        }
-      } catch {}
-    }, 3000)
+      .subscribe(status => log(`Supabase Realtime (pending): ${status}`))
 
   } catch (err) {
     log(`Supabase Realtime error: ${err.message}`, 'WARN')
@@ -733,7 +759,8 @@ app.get('/api/status', (req, res) => {
     estado: isReady ? 'CONECTADO' : (currentQR ? 'ESPERANDO_QR' : 'CONECTANDO'),
     usuario: userName, hasQR: !!currentQR, cola: messageQueue.length,
     uptime: Math.round((Date.now() - startTime) / 1000), reintentos: retryCount,
-    version: '3.5', dedupSize: processedMessages.size,
+    version: '4.0', dedupSize: processedMessages.size,
+    msgStoreSize: msgStore.size,
   })
 })
 
@@ -795,7 +822,7 @@ app.post('/api/logout', async (req, res) => {
   try { if (sock) await sock.logout().catch(() => {}) } catch {}
   retryCount = 0; pairingRequested = false
   reconnectTimer = setTimeout(conectar, 2_000)
-  res.json({ ok: true, mensaje: 'Sesión cerrada' })
+  res.json({ ok: true, mensaje: 'Sesión cerrada — reconectando' })
 })
 
 // Panel Web
@@ -806,7 +833,7 @@ app.get('/', (req, res) => {
 <html lang="es">
 <head>
   <meta charset="utf-8"><meta http-equiv="refresh" content="8">
-  <title>GAMA WhatsApp v3.5</title>
+  <title>GAMA WhatsApp v4.0</title>
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
     body{background:#0f172a;color:#e2e8f0;font-family:'Segoe UI',sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center}
@@ -815,20 +842,26 @@ app.get('/', (req, res) => {
     h2{color:#94a3b8;font-size:14px;margin-bottom:24px;font-weight:400}
     .badge{display:inline-block;padding:8px 20px;border-radius:999px;font-weight:700;font-size:13px;color:#000;background:${color};margin-bottom:20px}
     .info{font-size:12px;color:#64748b;margin-top:20px;line-height:1.8}
+    .feat{font-size:11px;color:#475569;margin-top:12px;line-height:1.6}
   </style>
 </head>
 <body>
   <div class="card">
     <h1>🛡️ GAMA SEGURIDAD</h1>
-    <h2>WhatsApp v3.5 — Puerto ${PORT}</h2>
+    <h2>WhatsApp v4.0 — Puerto ${PORT}</h2>
     <div class="badge">${estado}</div>
     ${userName ? `<div style="color:#38bdf8;font-weight:700;font-size:16px;margin:12px 0">👤 ${userName}</div>` : ''}
-    ${isReady ? `<div style="color:#4ade80;margin:12px 0;font-size:14px">✅ Conectado con dedup + retry</div>` : ''}
+    ${isReady ? `<div style="color:#4ade80;margin:12px 0;font-size:14px">✅ Baileys 7.x + LID nativo + getMessage</div>` : ''}
+    ${currentPairingCode ? `<div style="color:#fbbf24;margin:12px 0;font-size:18px;font-weight:700">🔑 Pairing: ${currentPairingCode}</div>` : ''}
     <div class="info">
       ⏱ Uptime: ${Math.round((Date.now() - startTime) / 60000)} min |
       🔄 Reintentos: ${retryCount} |
       📬 Cola: ${messageQueue.length} |
-      🛡️ Dedup: ${processedMessages.size}
+      🛡️ Dedup: ${processedMessages.size} |
+      💾 MsgStore: ${msgStore.size}
+    </div>
+    <div class="feat">
+      Baileys 7.x · LID nativo · getMessage · Graceful shutdown · Backoff exp.
     </div>
   </div>
 </body>
@@ -836,7 +869,7 @@ app.get('/', (req, res) => {
 })
 
 // ══════════════════════════════════════════════
-//  BOT IA (Gemini) -不变
+//  BOT IA (Gemini)
 // ══════════════════════════════════════════════
 const userAuthSessions = {}
 const inactivityTimers = {}
@@ -930,7 +963,7 @@ async function responderConIA(sock, jid, numero, bodyCliente, promptMaestro, nom
         try {
           const f3d = new Date(Date.now() - 3*24*60*60*1000).toISOString()
           const { data: ev } = await supabase.from('eventos_monitoreo').select('evento, fecha_hora, zona').eq('cuenta', cuentaActiva).gte('fecha_hora', f3d).order('fecha_hora', {ascending:false}).limit(10)
-          if (ev?.length > 0) eventosTxt = ev.map(e => { const f = e.fecha_hora ? new Date(e.fecha_hora).toLocaleString('es-CL',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : ''; return `• ${f} - ${e.evento||'Señal'} ${e.zona?`(Z${e.zona})`:''}` }).join('\n')
+          if (ev?.length > 0) eventosTxt = ev.map(e => { const f = e.fecha_hora ? new Date(e.fecha_hora).toLocaleString('es-CL',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : ''; return `• ${f} - ${e.evento||'Señal'} ${e.zona?`(Z${e.zona})`:''}`  }).join('\n')
         } catch {}
         respuestaDirecta = `Bitácora - Cuenta: ${cuentaActiva}\n\nÚltimos eventos:\n${eventosTxt || '• Sin eventos recientes'}\n\n¿Otra opción? Responde 1-4 o "menú".`
       } else {
@@ -1005,22 +1038,69 @@ async function responderConIA(sock, jid, numero, bodyCliente, promptMaestro, nom
 }
 
 // ──────────────────────────────────────────────
+//  GRACEFUL SHUTDOWN
+// ──────────────────────────────────────────────
+async function gracefulShutdown(signal) {
+  if (isShuttingDown) return
+  isShuttingDown = true
+  log(`\n🛑 ${signal} recibido — cerrando servidor limpiamente...`)
+
+  limpiarTimers()
+
+  // Guardar sesión antes de salir
+  try {
+    await saveSessionToSupabase()
+    log('💾 Sesión guardada')
+  } catch (err) {
+    log(`Error guardando sesión en shutdown: ${err.message}`, 'WARN')
+  }
+
+  // Cerrar socket limpiamente
+  try {
+    if (sock) {
+      sock.end(undefined)
+      log('🔌 Socket cerrado')
+    }
+  } catch {}
+
+  // Cerrar servidor HTTP
+  try {
+    server.close()
+  } catch {}
+
+  log('👋 Servidor finalizado')
+  process.exit(0)
+}
+
+process.on('SIGINT', () => gracefulShutdown('SIGINT'))
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'))
+process.on('uncaughtException', (err) => {
+  log(`💥 Uncaught Exception: ${err.message}`, 'ERROR')
+  log(err.stack, 'ERROR')
+  // No crashear — intentar continuar
+})
+process.on('unhandledRejection', (reason) => {
+  log(`💥 Unhandled Rejection: ${reason}`, 'ERROR')
+})
+
+// ──────────────────────────────────────────────
 //  INICIO
 // ──────────────────────────────────────────────
 const server = app.listen(PORT, () => {
-  log(`🚀 GAMA WhatsApp v3.5 en http://localhost:${PORT}`)
-  log(`🛡️ Deduplicación activa (ventana ${DEDUP_TTL/1000}s)`)
-  log(`🔄 Retry automático (${MAX_RETRIES} intentos)`)
-  log(`📡 Supabase Realtime activo`)
-  conectar()
+  log('═══════════════════════════════════════════')
+  log('  GAMA SEGURIDAD - WhatsApp v4.0')
+  log('  Baileys 7.x · LID nativo · getMessage')
+  log(`  Puerto: ${PORT} | Sesión: .baileys-session/`)
+  log('═══════════════════════════════════════════')
   suscribirSupabaseRealtime()
+  conectar()
 })
 
 server.on('error', err => {
-  if (err.code === 'EADDRINUSE') log(`⚠️ Puerto ${PORT} ocupado`, 'WARN')
-  else log(`❌ Error: ${err.message}`, 'ERROR')
+  if (err.code === 'EADDRINUSE') {
+    log(`⚠️ Puerto ${PORT} ya en uso. Otro proceso ya corre.`, 'WARN')
+    process.exit(0)
+  } else {
+    log(`❌ Error servidor: ${err.message}`, 'ERROR')
+  }
 })
-
-log('═══════════════════════════════════════════')
-log('  GAMA SEGURIDAD - WhatsApp v3.5 Dedup+Retry')
-log('═══════════════════════════════════════════')
