@@ -109,12 +109,18 @@ Function ProcessExists(procName, cmdFilter)
     On Error Resume Next
     Set col = GetObject("winmgmts:\\.\root\cimv2").ExecQuery( _
         "SELECT * FROM Win32_Process WHERE Name='" & procName & "'")
-    For Each it In col
-        If InStr(LCase(it.CommandLine & ""), LCase(cmdFilter)) > 0 Then
+    If col.Count > 0 Then
+        If cmdFilter = "" Then
             ProcessExists = True
             Exit Function
         End If
-    Next
+        For Each it In col
+            If InStr(LCase(it.CommandLine & ""), LCase(cmdFilter)) > 0 Then
+                ProcessExists = True
+                Exit Function
+            End If
+        Next
+    End If
     On Error Goto 0
 End Function
 
@@ -153,6 +159,10 @@ End Sub
 
 Sub StartWhatsApp()
     On Error Resume Next
+    If ProcessExists("node.exe", "") Then
+        LogMsg("WhatsApp ya esta en ejecucion (omitido intento duplicado)")
+        Exit Sub
+    End If
     LogMsg("Iniciando WhatsApp Server...")
     WshShell.Run "cmd /c """ & ScriptDir & "\WHATSAPP_SERVER\INICIAR_WHATSAPP_LOOP.bat""", 0, False
     If Err.Number <> 0 Then LogMsg("ERROR WhatsApp: " & Err.Description)
@@ -161,6 +171,10 @@ End Sub
 
 Sub StartBridge()
     On Error Resume Next
+    If ProcessExists("pythonw.exe", "dahua_p2p_bridge") Or ProcessExists("python.exe", "dahua_p2p_bridge") Then
+        LogMsg("Bridge Dahua ya esta en ejecucion (omitido intento duplicado)")
+        Exit Sub
+    End If
     LogMsg("Iniciando Bridge Dahua P2P...")
     WshShell.Run """" & PythonPath & """ """ & ScriptDir & "\dahua_p2p_bridge.py""", 0, False
     If Err.Number <> 0 Then LogMsg("ERROR Bridge: " & Err.Description)

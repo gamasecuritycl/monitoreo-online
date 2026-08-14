@@ -2,10 +2,18 @@ import time, pyodbc, shutil, os, json, sys, re
 from datetime import datetime, timezone, timedelta
 from supabase import create_client
 
-# Redirigir salida a log si se ejecuta en segundo plano con pythonw.exe
+# Redirigir salida a log si se ejecuta en segundo plano con pythonw.exe (máximo 2MB)
 if sys.executable.lower().endswith("pythonw.exe"):
     try:
         log_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "_gama_log.txt")
+        if os.path.exists(log_path) and os.path.getsize(log_path) > 2_000_000:
+            try:
+                with open(log_path, "r", encoding="utf-8", errors="ignore") as f:
+                    lines = f.readlines()[-1000:]
+                with open(log_path, "w", encoding="utf-8") as f:
+                    f.writelines(lines)
+            except Exception:
+                pass
         sys.stdout = open(log_path, "a", encoding="utf-8", buffering=1)
         sys.stderr = sys.stdout
     except Exception:
