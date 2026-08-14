@@ -205,13 +205,21 @@ export default function FooterActions({ onModalOpen, unreadWhatsAppCount }: Foot
         
         {/* VERSIÓN DE ESCRITORIO (PC): Fila de botones perfectamente centrada horizontalmente al medio */}
         <div className="hidden md:flex items-center justify-center gap-2 mx-auto">
-          {/* Botón BITÁCORA (rectangular con texto) */}
+          {/* Botón BITÁCORA */}
           <button
             onClick={() => onModalOpen('bitacora')}
             title="Bitácora de Eventos"
             className="h-13 bg-[#d4d0c8] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 flex items-center justify-center cursor-pointer select-none hover:bg-gray-200 active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white shadow-sm px-3"
           >
             <span className="text-[13px] font-bold text-[#000080] tracking-wider whitespace-nowrap">BITÁCORA</span>
+          </button>
+          {/* Botón ENTREGA DE TURNO */}
+          <button
+            onClick={() => onModalOpen('entrega-turno')}
+            title="Ingresar Novedades de Entrega de Turno"
+            className="h-13 bg-[#d4d0c8] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 flex items-center justify-center cursor-pointer select-none hover:bg-gray-200 active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white shadow-sm px-3"
+          >
+            <span className="text-[12px] font-bold text-amber-900 tracking-wider whitespace-nowrap">📝 ENTREGA TURNO</span>
           </button>
           {BOTONES_RETRO.map((btn) => (
             <button

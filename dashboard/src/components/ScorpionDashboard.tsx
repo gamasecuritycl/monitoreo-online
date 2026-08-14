@@ -20,6 +20,9 @@ import ReportesModal from './ReportesModal'
 import ConfigModal from './ConfigModal'
 import VideoVerificacionModal from './VideoVerificacionModal'
 import CamaraGridModal from './CamaraGridModal'
+import IACopilotCard from './IACopilotCard'
+import EntregaTurnoModal from './EntregaTurnoModal'
+import HealthTelemetryModal from './HealthTelemetryModal'
 import { lookupContactId } from '@/lib/contact_id_library'
 import { sendMessage, generarMensajeAlerta, generarMensajeEnergia, detectarPatronEvento, type EventInfo } from '@/lib/whatsapp'
 
@@ -876,7 +879,11 @@ export default function ScorpionDashboard() {
               WhatsApp {unreadWhatsAppCount > 0 ? `(${unreadWhatsAppCount} NUEVO)` : ''}
             </span>
           </button>
-          <div className="flex items-center gap-1.5 ml-1" title={ultimoHeartbeat ? `Último heartbeat: ${ultimoHeartbeat}` : 'Sin heartbeat'}>
+          <button
+            onClick={() => setModalActivo('health-telemetry')}
+            className="flex items-center gap-1.5 ml-1 bg-transparent border-0 cursor-pointer hover:underline"
+            title={ultimoHeartbeat ? `Ver Telemetría de Salud (Último heartbeat: ${ultimoHeartbeat})` : 'Ver Telemetría de Salud'}
+          >
             <div className={`w-2 h-2 rounded-full animate-pulse shadow-[0_0_8px] ${
               sincronizadorVivo
                 ? 'bg-green-500 shadow-[#22c55e]'
@@ -885,7 +892,7 @@ export default function ScorpionDashboard() {
             <span className={`font-bold text-[10px] tracking-wider ${
               sincronizadorVivo ? 'text-green-400' : 'text-red-400'
             }`}>SINCR.</span>
-          </div>
+          </button>
 
           <div className="flex items-center gap-1 bg-[#1e293b] px-2 py-0.5 rounded text-[10px] font-bold text-slate-300 border border-slate-700">
             <span>👤 {usuarioActivo.nombre} ({usuarioActivo.rol.toUpperCase()})</span>
@@ -1161,6 +1168,17 @@ export default function ScorpionDashboard() {
               RAW: 5051 18{activeEvent?.cuenta || 'C000'}E{activeEvent?.zona || '000'}01{activeEvent?.usuario || '000'}
             </div>
           </div>
+
+          {/* TARJETA IA COPILOT GAMA */}
+          <IACopilotCard
+            evento={activeEvent}
+            clientData={clientData}
+            zonas={buscarZonasAbonado(activeEvent?.cuenta)}
+            onEnviarWhatsApp={(telefono) => {
+              setWhatsappTelefonoInicial(telefono)
+              setModalActivo('notificaciones-whatsapp')
+            }}
+          />
 
           {/* Box 2: INFORMACION BASICA */}
           <div className="bg-[#e0e0e0] border border-t-white border-l-white border-b-gray-600 border-r-gray-600 flex flex-col shrink-0">
@@ -1441,8 +1459,22 @@ export default function ScorpionDashboard() {
         />
       )}
 
-      {/* Login / Operator Switch Modal */}
-      {/* (No longer rendered inline since it is used as full-screen gate page) */}
+      {/* Entrega de Turno Modal */}
+      {modalActivo === 'entrega-turno' && (
+        <EntregaTurnoModal
+          onClose={() => setModalActivo(null)}
+          usuarioActual={usuarioActivo.nombre}
+        />
+      )}
+
+      {/* Health Telemetry Modal */}
+      {modalActivo === 'health-telemetry' && (
+        <HealthTelemetryModal
+          onClose={() => setModalActivo(null)}
+          sincronizadorVivo={sincronizadorVivo}
+          ultimoHeartbeat={ultimoHeartbeat}
+        />
+      )}
 
       {/* Footer */}
       <FooterActions
