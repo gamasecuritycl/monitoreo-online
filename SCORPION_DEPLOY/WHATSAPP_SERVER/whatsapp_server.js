@@ -228,12 +228,18 @@ function iniciarHeartbeat() {
 // ──────────────────────────────────────────────
 async function loadSessionFromSupabase() {
   try {
-    // PRIORIDAD ABSOLUTA: si hay sesión local, usarla SIEMPRE
+    // PRIORIDAD ABSOLUTA: si hay sesión local REGISTRADA (autenticada), usarla SIEMPRE
     if (fs.existsSync(SESSION_DIR)) {
       const files = fs.readdirSync(SESSION_DIR).filter(f => f.endsWith('.json'))
-      if (files.length > 0) {
-        log(`✅ Sesión local encontrada (${files.length} archivos) — usando sesión local`)
-        return
+      const credsFile = path.join(SESSION_DIR, 'creds.json')
+      if (fs.existsSync(credsFile)) {
+        try {
+          const creds = JSON.parse(fs.readFileSync(credsFile, 'utf-8'))
+          if (creds && creds.registered) {
+            log(`✅ Sesión autenticada encontrada (${files.length} archivos) — usando sesión local`)
+            return
+          }
+        } catch {}
       }
     }
     // Si no hay sesión local, intentar restaurar de Supabase
@@ -526,18 +532,23 @@ async function conectar() {
 
         if (isShuttingDown) return
 
-        // 401 loggedOut / badSession: Limpiar credenciales obsoletas para permitir nueva vinculación
+        // 401 loggedOut / badSession: Manejo inteligente de sesión
         if (statusCode === DisconnectReason.loggedOut || statusCode === 401 || statusCode === DisconnectReason.badSession) {
-          log('🔴 Sesión obsoleta o invalidad por WhatsApp. Limpiando para permitir nueva vinculación...', 'WARN')
-          try {
-            if (fs.existsSync(SESSION_DIR)) fs.rmSync(SESSION_DIR, { recursive: true, force: true })
-            await supabase.from('eventos_monitoreo').delete().eq('cuenta', 'CONFIG_WHATSAPP_SESSION')
-          } catch {}
-          currentPairingCode = null
-          pairingCodeCreatedAt = 0
-          pairingRequested = false
+          const isRegistered = state?.creds?.registered || false
+          if (!isRegistered) {
+            log('🔴 Socket de vinculación no registrado desestimado — limpiando credenciales temporales para nuevo QR...', 'WARN')
+            try {
+              if (fs.existsSync(SESSION_DIR)) fs.rmSync(SESSION_DIR, { recursive: true, force: true })
+              await supabase.from('eventos_monitoreo').delete().eq('cuenta', 'CONFIG_WHATSAPP_SESSION')
+            } catch {}
+            currentPairingCode = null
+            pairingCodeCreatedAt = 0
+            pairingRequested = false
+          } else {
+            log('🔴 Sesión AUTENTICADA desconectada temporalmente — manteniendo credenciales y reconectando...', 'WARN')
+          }
           retryCount = 0
-          reconnectTimer = setTimeout(conectar, 3_000)
+          reconnectTimer = setTimeout(conectar, 2_000)
           return
         }
 
