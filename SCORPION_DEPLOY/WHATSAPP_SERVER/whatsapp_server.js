@@ -295,9 +295,9 @@ async function saveSessionToSupabase() {
 // ──────────────────────────────────────────────
 async function sincronizarEstadoASupabase() {
   try {
-    // Auto-expirar pairing code si tiene más de 90s de antigüedad
-    if (currentPairingCode && pairingCodeCreatedAt > 0 && (Date.now() - pairingCodeCreatedAt > 90_000)) {
-      log('⌛ Pairing code expirado (90s) — limpiando código anterior...')
+    // Auto-expirar pairing code si tiene más de 240s (4 min) de antigüedad
+    if (currentPairingCode && pairingCodeCreatedAt > 0 && (Date.now() - pairingCodeCreatedAt > 240_000)) {
+      log('⌛ Pairing code expirado (4 min) — limpiando código anterior...')
       currentPairingCode = null
       pairingCodeCreatedAt = 0
     }
@@ -423,14 +423,15 @@ async function conectar() {
       await saveSessionToSupabase()
     })
 
-    // Auto-solicitar pairing code si no hay registro previo
+    // Auto-solicitar pairing code si no hay registro previo ni código activo (< 4 min)
     if (!state.creds.registered) {
       setTimeout(async () => {
-        if (!isReady && sock && !currentPairingCode) {
+        if (!isReady && sock && !currentPairingCode && (!pairingCodeCreatedAt || Date.now() - pairingCodeCreatedAt > 240_000)) {
           try {
             pairingRequested = true
             const code = await sock.requestPairingCode(PHONE_PAIR)
             currentPairingCode = code
+            pairingCodeCreatedAt = Date.now()
             log(`🔑 PAIRING CODE AUTO GENERADO: ${code}`)
             await sincronizarEstadoASupabase()
           } catch (e) {
@@ -474,23 +475,26 @@ async function conectar() {
 
       if (qr) {
         currentQR = qr; isReady = false; userName = null
-        log('📲 QR generado — solicitando pairing code automáticamente...')
+        log('📲 QR generado por WhatsApp')
         try {
           currentQRImage = await QRCode.toDataURL(qr, { width: 300, margin: 2, color: { dark: '#000000', light: '#ffffff' } })
         } catch {}
 
-        // Auto-solicitar pairing code
-        if (!pairingRequested && sock) {
+        // Auto-solicitar pairing code solo si NO hay un código activo (< 4 min)
+        if (!pairingRequested && sock && (!currentPairingCode || Date.now() - pairingCodeCreatedAt > 240_000)) {
           pairingRequested = true
           setTimeout(async () => {
             try {
+              if (currentPairingCode && Date.now() - pairingCodeCreatedAt <= 240_000) return
               const code = await sock.requestPairingCode(PHONE_PAIR)
               currentPairingCode = code
+              pairingCodeCreatedAt = Date.now()
               log(`🔑 PAIRING CODE para +${PHONE_PAIR}: ${code}`)
               log('   En WhatsApp: Configuración → Dispositivos vinculados → Vincular con número de teléfono')
               await sincronizarEstadoASupabase()
             } catch (e) {
               log(`Auto pairing code error: ${e.message}`, 'WARN')
+              pairingRequested = false
             }
           }, 2000)
         }
@@ -522,11 +526,18 @@ async function conectar() {
 
         if (isShuttingDown) return
 
-        // 401 loggedOut / badSession: NO borrar sesión, reconectar
-        if (statusCode === DisconnectReason.loggedOut || statusCode === DisconnectReason.badSession) {
-          log('🔴 Sesión cerrada por WhatsApp. NO borramos sesión — reconectando...', 'WARN')
+        // 401 loggedOut / badSession: Limpiar credenciales obsoletas para permitir nueva vinculación
+        if (statusCode === DisconnectReason.loggedOut || statusCode === 401 || statusCode === DisconnectReason.badSession) {
+          log('🔴 Sesión obsoleta o invalidad por WhatsApp. Limpiando para permitir nueva vinculación...', 'WARN')
+          try {
+            if (fs.existsSync(SESSION_DIR)) fs.rmSync(SESSION_DIR, { recursive: true, force: true })
+            await supabase.from('eventos_monitoreo').delete().eq('cuenta', 'CONFIG_WHATSAPP_SESSION')
+          } catch {}
+          currentPairingCode = null
+          pairingCodeCreatedAt = 0
+          pairingRequested = false
           retryCount = 0
-          reconnectTimer = setTimeout(conectar, 5_000)
+          reconnectTimer = setTimeout(conectar, 3_000)
           return
         }
 
@@ -723,16 +734,29 @@ async function enviarMensaje(phone, text, retryNum = 0) {
 // ──────────────────────────────────────────────
 async function generarNuevoPairingCode(phoneTarget) {
   const phone = (phoneTarget || PHONE_PAIR).replace(/[^0-9]/g, '')
+
+  // Si ya tenemos un código activo de menos de 4 minutos, REUTILIZARLO para dar tiempo al usuario
+  if (currentPairingCode && pairingCodeCreatedAt > 0 && (Date.now() - pairingCodeCreatedAt < 240_000)) {
+    const minRestantes = Math.ceil((240_000 - (Date.now() - pairingCodeCreatedAt)) / 1000)
+    log(`🔑 Reutilizando pairing code activo (${minRestantes}s restantes): ${currentPairingCode}`)
+    await sincronizarEstadoASupabase()
+    return currentPairingCode
+  }
+
   log(`🔑 Solicitando NUEVO Pairing Code para +${phone}...`)
   currentPairingCode = null
   pairingCodeCreatedAt = Date.now()
   pairingRequested = true
 
   try {
-    if (!sock) {
-      log('🔌 Socket nulo, reiniciando conexión...')
+    if (!sock || !sock.ws || sock.ws.readyState !== 1) {
+      log('🔌 Reiniciando conexión limpia para pairing...')
+      try {
+        if (fs.existsSync(SESSION_DIR)) fs.rmSync(SESSION_DIR, { recursive: true, force: true })
+        await supabase.from('eventos_monitoreo').delete().eq('cuenta', 'CONFIG_WHATSAPP_SESSION')
+      } catch {}
       await conectar()
-      await new Promise(r => setTimeout(r, 2000))
+      await new Promise(r => setTimeout(r, 4000))
     }
 
     if (sock && !isReady) {
@@ -747,23 +771,7 @@ async function generarNuevoPairingCode(phoneTarget) {
       await sincronizarEstadoASupabase()
     }
   } catch (e) {
-    log(`⚠️ Falló primera solicitud de pairing code: ${e.message}. Re-conectando socket...`, 'WARN')
-    try {
-      isReady = false
-      if (sock) try { sock.end(undefined) } catch {}
-      await conectar()
-      await new Promise(r => setTimeout(r, 3000))
-      if (sock && !isReady) {
-        const code = await sock.requestPairingCode(phone)
-        currentPairingCode = code
-        pairingCodeCreatedAt = Date.now()
-        log(`🔑 NUEVO PAIRING CODE GENERADO EN REINTENTO: ${code}`)
-        await sincronizarEstadoASupabase()
-        return code
-      }
-    } catch (err2) {
-      log(`❌ Error fatal generando pairing code: ${err2.message}`, 'ERROR')
-    }
+    log(`⚠️ Falló primera solicitud de pairing code: ${e.message}`, 'WARN')
   }
   return null
 }
