@@ -297,30 +297,52 @@ async function saveSessionToSupabase() {
   }
 }
 
+function hasRegisteredSession() {
+  try {
+    const credsFile = path.join(SESSION_DIR, 'creds.json')
+    if (fs.existsSync(credsFile)) {
+      const creds = JSON.parse(fs.readFileSync(credsFile, 'utf-8'))
+      return !!(creds && creds.registered)
+    }
+  } catch {}
+  return false
+}
+
 // ──────────────────────────────────────────────
 //  SINCRONIZAR ESTADO Y QR A SUPABASE
 // ──────────────────────────────────────────────
 async function sincronizarEstadoASupabase() {
   try {
-    // Auto-expirar pairing code si tiene más de 240s (4 min) de antigüedad
-    if (currentPairingCode && pairingCodeCreatedAt > 0 && (Date.now() - pairingCodeCreatedAt > 240_000)) {
-      log('⌛ Pairing code expirado (4 min) — limpiando código anterior...')
+    const isRegistered = isReady || hasRegisteredSession()
+
+    // Expirar pairing code si ya está registrado o si superó los 4 minutos
+    if (isRegistered || (currentPairingCode && pairingCodeCreatedAt > 0 && (Date.now() - pairingCodeCreatedAt > 240_000))) {
       currentPairingCode = null
       pairingCodeCreatedAt = 0
     }
 
+    const showQR = !isRegistered && !!currentQR
+    const showPair = !isRegistered ? currentPairingCode : null
+    const displayUser = userName || (isRegistered ? 'Gama Seguridad' : null)
+
     const estadoObj = {
-      ready: isReady,
-      estado: isReady ? 'CONECTADO' : (currentQR ? 'ESPERANDO_QR' : 'CONECTANDO'),
-      usuario: userName, hasQR: !!currentQR, cola: messageQueue.length,
-      uptime: Math.round((Date.now() - startTime) / 1000), reintentos: retryCount,
-      pairingCode: currentPairingCode, version: '4.0',
+      ready: isRegistered,
+      estado: isReady ? 'CONECTADO' : (isRegistered ? 'CONECTADO' : (currentQR ? 'ESPERANDO_QR' : 'CONECTANDO')),
+      usuario: displayUser,
+      hasQR: showQR,
+      cola: messageQueue.length,
+      uptime: Math.round((Date.now() - startTime) / 1000),
+      reintentos: retryCount,
+      pairingCode: showPair,
+      version: '4.0',
     }
     await guardarConfigSupabase('CONFIG_WHATSAPP_STATE', JSON.stringify(estadoObj), 'CONFIG_STATE')
 
     const qrObj = {
-      status: isReady ? 'connected' : (currentQR ? 'waiting_qr' : 'connecting'),
-      qr: currentQR, qrImage: currentQRImage, usuario: userName
+      status: isRegistered ? 'connected' : (currentQR ? 'waiting_qr' : 'connecting'),
+      qr: showQR ? currentQR : null,
+      qrImage: showQR ? currentQRImage : null,
+      usuario: displayUser
     }
     await guardarConfigSupabase('CONFIG_WHATSAPP_QR', JSON.stringify(qrObj), 'CONFIG_QR')
   } catch (err) {
@@ -391,7 +413,7 @@ async function conectar() {
     log(`🔌 Conectando Baileys 7.x (intento ${retryCount + 1})...`)
     const { state, saveCreds } = await useMultiFileAuthState(SESSION_DIR)
 
-    // Baileys 7.x: intentar obtener versión, fallback a hardcoded
+    // Obtener última versión de WhatsApp Web
     let version
     try {
       const vInfo = await Promise.race([
@@ -430,25 +452,6 @@ async function conectar() {
       await saveSessionToSupabase()
     })
 
-    // Auto-solicitar pairing code si no hay registro previo ni código activo (< 4 min)
-    if (!state.creds.registered) {
-      setTimeout(async () => {
-        if (!isReady && sock && !currentPairingCode && (!pairingCodeCreatedAt || Date.now() - pairingCodeCreatedAt > 240_000)) {
-          try {
-            pairingRequested = true
-            const code = await sock.requestPairingCode(PHONE_PAIR)
-            currentPairingCode = code
-            pairingCodeCreatedAt = Date.now()
-            log(`🔑 PAIRING CODE AUTO GENERADO: ${code}`)
-            await sincronizarEstadoASupabase()
-          } catch (e) {
-            log(`Auto pairing inicial: ${e.message}`, 'WARN')
-            pairingRequested = false
-          }
-        }
-      }, 3000)
-    }
-
     // ── HISTORIAL (solo almacenar para getMessage) ──
     sock.ev.on('messaging-history.set', async ({ messages }) => {
       if (!messages || messages.length === 0) return
@@ -482,29 +485,10 @@ async function conectar() {
 
       if (qr) {
         currentQR = qr; isReady = false; userName = null
-        log('📲 QR generado por WhatsApp')
+        log('📲 QR generado por WhatsApp — listo para escaneo')
         try {
           currentQRImage = await QRCode.toDataURL(qr, { width: 300, margin: 2, color: { dark: '#000000', light: '#ffffff' } })
         } catch {}
-
-        // Auto-solicitar pairing code solo si NO hay un código activo (< 4 min)
-        if (!pairingRequested && sock && (!currentPairingCode || Date.now() - pairingCodeCreatedAt > 240_000)) {
-          pairingRequested = true
-          setTimeout(async () => {
-            try {
-              if (currentPairingCode && Date.now() - pairingCodeCreatedAt <= 240_000) return
-              const code = await sock.requestPairingCode(PHONE_PAIR)
-              currentPairingCode = code
-              pairingCodeCreatedAt = Date.now()
-              log(`🔑 PAIRING CODE para +${PHONE_PAIR}: ${code}`)
-              log('   En WhatsApp: Configuración → Dispositivos vinculados → Vincular con número de teléfono')
-              await sincronizarEstadoASupabase()
-            } catch (e) {
-              log(`Auto pairing code error: ${e.message}`, 'WARN')
-              pairingRequested = false
-            }
-          }, 2000)
-        }
         await sincronizarEstadoASupabase()
       }
 
