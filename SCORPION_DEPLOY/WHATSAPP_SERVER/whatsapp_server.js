@@ -31,6 +31,7 @@ const {
   jidNormalizedUser,
   makeCacheableSignalKeyStore,
   fetchLatestBaileysVersion,
+  Browsers,
 } = require('@whiskeysockets/baileys')
 
 const pino    = require('pino')
@@ -413,7 +414,7 @@ async function conectar() {
       logger: pino({ level: 'silent' }),
       printQRInTerminal: false,
       mobile: false,
-      browser: ['GAMA Seguridad', 'Chrome', '12.0'],
+      browser: Browsers.ubuntu('Chrome'),
       connectTimeoutMs: 60_000,
       defaultQueryTimeoutMs: 60_000,
       keepAliveIntervalMs: 25_000,
