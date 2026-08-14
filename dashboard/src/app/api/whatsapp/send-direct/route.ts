@@ -59,7 +59,7 @@ export async function POST(req: Request) {
       cuenta: cuentaFinal,
       numero: telLimpio,
       mensaje_enviado: payload,
-      tipo_media: tipoMedia,
+      tipo_evento: tipoMedia ? `media_${tipoMedia}` : 'mensaje_enviado',
       estado: 'enviado',
       created_at: new Date().toISOString()
     })

@@ -213,6 +213,25 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
     }
   }
 
+  const toggleAutoResponder = async (nuevoEstado: boolean) => {
+    setBotAutoResponder(nuevoEstado)
+    setPromptMsgStatus('')
+    try {
+      await supabase.from('eventos_monitoreo').delete().eq('cuenta', 'CONFIG_WHATSAPP_AI_PROMPT')
+      await supabase.from('eventos_monitoreo').insert({
+        cuenta: 'CONFIG_WHATSAPP_AI_PROMPT',
+        nombre_abonado: JSON.stringify({ prompt: masterPrompt, autoResponder: nuevoEstado }),
+        evento: 'CONFIG_AI',
+        fecha_hora: new Date().toISOString()
+      })
+      setPromptMsgStatus(nuevoEstado ? '🟢 IA WhatsApp ACTIVADA' : '🔴 IA WhatsApp DESACTIVADA')
+    } catch (err: any) {
+      setPromptMsgStatus('❌ Error guardando IA: ' + err.message)
+    } finally {
+      setTimeout(() => setPromptMsgStatus(''), 4000)
+    }
+  }
+
   // ══════════════════════════════════════════════
   //  POLLING DEL ESTADO Y QR DE WHATSAPP DIRECTO DESDE SUPABASE
   // ══════════════════════════════════════════════
@@ -887,37 +906,50 @@ Responde directamente el mensaje a enviar por WhatsApp al cliente basándote EXC
   ]
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-2 sm:p-4 font-sans backdrop-blur-sm">
-      <div className="bg-[#f0f2f5] border border-gray-300 rounded-xl w-full max-w-6xl h-[94vh] flex flex-col shadow-2xl overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-2 sm:p-3 font-sans backdrop-blur-sm">
+      <div className="bg-[#f0f2f5] border border-gray-300 rounded-2xl w-[96vw] max-w-[1550px] h-[92vh] max-h-[960px] flex flex-col shadow-2xl overflow-hidden">
 
         {/* Header WhatsApp Web Official Green Style */}
-        <div className="bg-[#00a884] text-white px-4 py-2.5 flex justify-between items-center shrink-0 shadow-md">
-          <div className="font-bold text-sm tracking-wide flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-white text-sm shadow font-bold">
+        <div className="bg-[#00a884] text-white px-5 py-3 flex justify-between items-center shrink-0 shadow-md">
+          <div className="font-bold text-base tracking-wide flex items-center gap-3">
+            <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center text-white text-base shadow font-bold">
               💬
             </div>
             <div>
-              <div className="text-xs font-bold text-white flex items-center gap-2">
+              <div className="text-sm font-bold text-white flex items-center gap-2">
                 CENTRO DE MENSAJERÍA WHATSAPP
-                <span className="text-[10px] bg-white/20 text-white border border-white/40 px-1.5 py-0.5 rounded font-mono">v3.0</span>
+                <span className="text-xs bg-white/20 text-white border border-white/40 px-2 py-0.5 rounded font-mono">v4.0 Cloud</span>
               </div>
-              <div className="text-[10px] text-white/80">Gama Seguridad — Monitoreo 24/7</div>
+              <div className="text-xs text-white/90">Gama Seguridad — Monitoreo 24/7 Nube</div>
             </div>
           </div>
           <div className="flex items-center gap-3">
+            {/* Toggle IA WhatsApp Bot */}
+            <button
+              onClick={() => toggleAutoResponder(!botAutoResponder)}
+              className={`text-xs font-bold px-3.5 py-1.5 rounded-full flex items-center gap-1.5 transition-all cursor-pointer shadow-sm ${
+                botAutoResponder
+                  ? 'bg-[#15803d] text-white hover:bg-[#166534]'
+                  : 'bg-[#991b1b] text-white hover:bg-[#7f1d1d]'
+              }`}
+              title="Activar / Desactivar Auto-respuesta con Asistente IA"
+            >
+              <span>{botAutoResponder ? '🟢 IA Activada' : '🔴 IA Desactivada'}</span>
+            </button>
+
             {/* Indicador de estado compacto */}
-            <span className="text-[11px] font-bold px-3 py-1 rounded-full flex items-center gap-1.5 bg-white text-black shadow-sm">
-              <span className="w-2.5 h-2.5 rounded-full" style={{ background: statusColor }} />
+            <span className="text-xs font-bold px-3.5 py-1.5 rounded-full flex items-center gap-2 bg-white text-black shadow-sm">
+              <span className="w-3 h-3 rounded-full" style={{ background: statusColor }} />
               {statusLabel}
             </span>
             {waStatus.cola > 0 && (
-              <span className="text-[10px] bg-yellow-400 text-black px-2 py-0.5 rounded-full font-bold shadow">
+              <span className="text-xs bg-yellow-400 text-black px-2.5 py-1 rounded-full font-bold shadow">
                 📥 {waStatus.cola} en cola
               </span>
             )}
             <button
               onClick={onClose}
-              className="bg-white/20 text-white hover:bg-red-600 hover:text-white font-bold w-7 h-7 rounded-lg flex items-center justify-center transition-colors cursor-pointer text-xs shadow-sm"
+              className="bg-white/20 text-white hover:bg-red-600 hover:text-white font-bold w-8 h-8 rounded-lg flex items-center justify-center transition-colors cursor-pointer text-sm shadow-sm"
             >
               ✕
             </button>
@@ -930,7 +962,7 @@ Responde directamente el mensaje a enviar por WhatsApp al cliente basándote EXC
             <button
               key={t.id}
               onClick={() => setActiveTab(t.id)}
-              className={`px-5 py-2 text-xs font-bold tracking-wide transition-all cursor-pointer border-b-2 ${
+              className={`px-6 py-2.5 text-sm font-bold tracking-wide transition-all cursor-pointer border-b-2 ${
                 activeTab === t.id
                   ? 'bg-white text-[#00a884] border-b-[#00a884] shadow-sm'
                   : 'text-[#54656f] hover:text-[#111b21] border-b-transparent hover:bg-white/50'
