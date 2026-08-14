@@ -15,22 +15,29 @@ if sys.executable.lower().endswith("pythonw.exe"):
 import msvcrt
 
 GLOBAL_LOCK_FILE = r"C:\SCORPION\BASES DE DATOS\_sincronizador_global.lock"
-LOCAL_LOCK_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "_sincronizador.lock")
 
-lock_fp = None
-for lfile in [GLOBAL_LOCK_FILE, LOCAL_LOCK_FILE]:
+def lock_single_instance():
+    lock_file = GLOBAL_LOCK_FILE
     try:
-        os.makedirs(os.path.dirname(lfile), exist_ok=True)
-        fp = open(lfile, "a+")
-        msvcrt.locking(fp.fileno(), msvcrt.LK_NBLCK, 1)
-        lock_fp = fp
-        break
+        os.makedirs(os.path.dirname(lock_file), exist_ok=True)
     except Exception:
-        continue
+        lock_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "_sincronizador_global.lock")
+        try: os.makedirs(os.path.dirname(lock_file), exist_ok=True)
+        except Exception: pass
 
-if not lock_fp:
-    print("[ERROR] El sincronizador ya está en ejecución en segundo plano. Saliendo...")
-    sys.exit(0)
+    try:
+        fp = open(lock_file, "a+")
+        fp.seek(0)
+        msvcrt.locking(fp.fileno(), msvcrt.LK_NBLCK, 1)
+        return fp
+    except (IOError, OSError, PermissionError):
+        print("[ERROR] El sincronizador ya está en ejecución en otro proceso. Saliendo...")
+        sys.exit(0)
+    except Exception as e:
+        print(f"[ERROR] No se pudo obtener el bloqueo del sincronizador ({e}). Saliendo...")
+        sys.exit(0)
+
+lock_fp = lock_single_instance()
 
 # ============================================================
 #  GAMA COMMAND CENTER - Sincronizador para PC Scorpion
@@ -162,6 +169,8 @@ def save_cache(cache):
         cache_list = list(cache)
         if len(cache_list) > 35000:
             cache_list = cache_list[-30000:]
+            cache.clear()
+            cache.update(cache_list)
         with open(RUTA_CACHE, 'w', encoding='utf-8') as f:
             json.dump(cache_list, f)
     except Exception as e:
@@ -243,8 +252,15 @@ def procesar_comandos_sistema():
     except Exception as e:
         pass
 
+LAST_HEARTBEAT_TIME = 0
+
 def enviar_heartbeat():
-    """ Envía señal continua de heartbeat para mantener status VERDE en la central web y notificar a watchdog_total.vbs """
+    """ Envía señal continua de heartbeat (máx 1 cada 10s) para mantener status VERDE en la central web """
+    global LAST_HEARTBEAT_TIME
+    now = time.time()
+    if now - LAST_HEARTBEAT_TIME < 10:
+        return
+    LAST_HEARTBEAT_TIME = now
     try:
         now_iso = datetime.now(timezone.utc).isoformat()
         supabase.table("eventos_monitoreo").upsert({
@@ -332,7 +348,7 @@ def sincronizar(cache):
                     continue
 
                 event_key = f"{dia}_{hora}_{cuenta}_{evento}_{zona}_{usuario}"
-                if event_key in cache:
+                if event_key in cache or event_key in batch_keys:
                     continue
 
                 fecha_hora = parse_fecha_hora(dia, hora, chile_tz)

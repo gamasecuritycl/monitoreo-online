@@ -138,8 +138,15 @@ End Function
 ' === INICIAR SERVICIOS ===
 Sub StartSincronizador()
     On Error Resume Next
+    If ProcessExists("pythonw.exe", "sincronizador") Or ProcessExists("python.exe", "sincronizador") Then
+        LogMsg("Sincronizador ya esta en ejecucion (omitido intento duplicado)")
+        Exit Sub
+    End If
     LogMsg("Iniciando Sincronizador...")
-    WshShell.Run """" & PythonPath & """ """ & ScriptDir & "\sincronizador.py""", 0, False
+    Dim sincPath
+    sincPath = "C:\SCORPION\BASES DE DATOS\sincronizador.py"
+    If Not FSO.FileExists(sincPath) Then sincPath = ScriptDir & "\sincronizador.py"
+    WshShell.Run """" & PythonPath & """ """ & sincPath & """", 0, False
     If Err.Number <> 0 Then LogMsg("ERROR Sincronizador: " & Err.Description)
     On Error Goto 0
 End Sub
