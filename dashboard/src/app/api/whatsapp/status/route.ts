@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 
-const WA_SERVER = 'https://gama-whatsapp-koyeb.koyeb.app'
+const WA_SERVER = 'https://gama-whatsapp-cloud-production.up.railway.app'
 
 // Proxy del estado del servidor WhatsApp (evita CORS desde el browser)
 export async function GET() {
