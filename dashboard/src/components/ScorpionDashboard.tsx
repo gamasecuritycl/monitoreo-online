@@ -350,6 +350,19 @@ export default function ScorpionDashboard() {
     return false
   }
 
+  const deduplicarEventos = (lista: EventoMonitoreo[]) => {
+    const vistos = new Set<string>()
+    const unicos: EventoMonitoreo[] = []
+    for (const ev of lista) {
+      const key = `${ev.cuenta}_${ev.evento}_${ev.zona}_${ev.usuario}_${ev.fecha_hora}`
+      if (!vistos.has(key)) {
+        vistos.add(key)
+        unicos.push(ev)
+      }
+    }
+    return unicos
+  }
+
   const fetchEventos = useCallback(async () => {
     try {
       let query = supabase
@@ -373,9 +386,9 @@ export default function ScorpionDashboard() {
       if (data) {
         const limpios = data.filter(ev => !esCuentaInternaOFrame(ev.cuenta, ev.evento))
         // Orden cronológico ascendente: el más reciente SIEMPRE abajo
-        const ordenados = limpios
+        const ordenados = deduplicarEventos(limpios
           .slice(0, 100)
-          .sort((a, b) => new Date(a.fecha_hora).getTime() - new Date(b.fecha_hora).getTime())
+          .sort((a, b) => new Date(a.fecha_hora).getTime() - new Date(b.fecha_hora).getTime()))
         setEventos(ordenados)
         if (ordenados.length > 0 && !eventoSeleccionado) {
           setEventoSeleccionado(ordenados[ordenados.length - 1])
@@ -388,8 +401,9 @@ export default function ScorpionDashboard() {
         const json = await r.json()
         if (json.data && json.data.length > 0) {
           // API devuelve oldest-first (ascendente)
-          setEventos(json.data)
-          if (!eventoSeleccionado) setEventoSeleccionado(json.data[json.data.length - 1])
+          const deduplicados = deduplicarEventos(json.data)
+          setEventos(deduplicados)
+          if (deduplicados.length > 0 && !eventoSeleccionado) setEventoSeleccionado(deduplicados[deduplicados.length - 1])
         }
       } catch (e) {
         console.error('[FALLBACK] Error en fallback PG:', e)
@@ -430,9 +444,9 @@ export default function ScorpionDashboard() {
           : data
 
         const limpios = filtered.filter(ev => !esCuentaInternaOFrame(ev.cuenta, ev.evento))
-        const ordenados = [...limpios]
+        const ordenados = deduplicarEventos([...limpios]
           .slice(0, 100)
-          .sort((a, b) => new Date(a.fecha_hora).getTime() - new Date(b.fecha_hora).getTime())
+          .sort((a, b) => new Date(a.fecha_hora).getTime() - new Date(b.fecha_hora).getTime()))
         setEventos(ordenados)
         
         if (ordenados.length > 0) {
@@ -447,8 +461,9 @@ export default function ScorpionDashboard() {
             const maxId = json.data[json.data.length - 1].id  // último = más reciente
             if (maxId <= latestId) return
             latestId = maxId
-            setEventos(json.data)  // oldest-first
-            if (json.data.length > 0) setEventoSeleccionado(json.data[json.data.length - 1])
+            const deduplicados = deduplicarEventos(json.data)
+            setEventos(deduplicados)  // oldest-first
+            if (deduplicados.length > 0) setEventoSeleccionado(deduplicados[deduplicados.length - 1])
           }
         } catch {}
       }
@@ -470,11 +485,12 @@ export default function ScorpionDashboard() {
         if (esCuentaInternaOFrame(newEvent.cuenta, newEvent.evento)) return
         
         setEventos((prev) => {
-          if (prev.some(e => e.id === newEvent.id)) return prev
+          const eventKey = `${newEvent.cuenta}_${newEvent.evento}_${newEvent.zona}_${newEvent.usuario}_${newEvent.fecha_hora}`
+          if (prev.some(e => e.id === newEvent.id || `${e.cuenta}_${e.evento}_${e.zona}_${e.usuario}_${e.fecha_hora}` === eventKey)) return prev
           const next = [...prev, newEvent]
           next.sort((a, b) => new Date(b.fecha_hora).getTime() - new Date(a.fecha_hora).getTime())
           if (next.length > 50) next.pop()
-          return next
+          return deduplicarEventos(next)
         })
         
         // Seleccionar automáticamente solo si es un evento reciente de los últimos 10 minutos

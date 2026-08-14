@@ -12,6 +12,19 @@ export default function CommandCenter() {
   const [cargando, setCargando] = useState(true)
   const [ultimaActualizacion, setUltimaActualizacion] = useState<Date | null>(null)
 
+  const deduplicarEventos = (lista: EventoMonitoreo[]) => {
+    const vistos = new Set<string>()
+    const unicos: EventoMonitoreo[] = []
+    for (const ev of lista) {
+      const key = `${ev.cuenta}_${ev.evento}_${ev.zona}_${ev.usuario}_${ev.fecha_hora}`
+      if (!vistos.has(key)) {
+        vistos.add(key)
+        unicos.push(ev)
+      }
+    }
+    return unicos
+  }
+
   const fetchEventos = useCallback(async () => {
     try {
       let query = supabase
@@ -31,7 +44,7 @@ export default function CommandCenter() {
         return
       }
 
-      setEventos(data || [])
+      setEventos(deduplicarEventos(data || []))
       setUltimaActualizacion(new Date())
     } catch (err) {
       console.error('Unexpected error:', err)
