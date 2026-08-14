@@ -197,7 +197,7 @@ End Sub
 
 ' === ARRANQUE INICIAL ===
 Call StartSincronizador()
-Call StartWhatsApp()
+' Call StartWhatsApp()  ' NUBE 24/7 (Railway) — NO ejecutar localmente
 Call StartBridge()
 
 ' === VARIABLES DE CONTROL ===

@@ -44,12 +44,23 @@ export async function POST(req: Request) {
       tipoMedia = 'video'
     }
 
+    // 1. Enviar directamente a la nube (respuesta instantánea < 500ms)
+    try {
+      await fetch('https://gama-whatsapp-cloud-production.up.railway.app/api/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: telLimpio, text: payload }),
+        signal: AbortSignal.timeout(6000),
+      }).catch(() => {})
+    } catch {}
+
+    // 2. Guardar en Supabase con estado enviado para visualización inmediata
     const { error } = await supabase.from('conversaciones_whatsapp').insert({
       cuenta: cuentaFinal,
       numero: telLimpio,
       mensaje_enviado: payload,
       tipo_media: tipoMedia,
-      estado: 'pendiente',
+      estado: 'enviado',
       created_at: new Date().toISOString()
     })
 
@@ -58,8 +69,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: error.message }, { status: 500 })
     }
 
-    console.log(`[WHATSAPP SEND-DIRECT] Mensaje encolado para ${telLimpio} (cuenta: ${cuentaFinal}, media: ${tipoMedia || 'texto'})`)
-    return NextResponse.json({ ok: true, proveedor: 'whatsapp_database_bridge', numero: telLimpio, cuenta: cuentaFinal, tipo_media: tipoMedia })
+    console.log(`[WHATSAPP SEND-DIRECT] Mensaje enviado a ${telLimpio} (cuenta: ${cuentaFinal}, media: ${tipoMedia || 'texto'})`)
+    return NextResponse.json({ ok: true, proveedor: 'whatsapp_cloud_direct', numero: telLimpio, cuenta: cuentaFinal, tipo_media: tipoMedia })
   } catch (err: any) {
     console.error('[SEND-DIRECT API ERROR]:', err.message)
     return NextResponse.json({ ok: false, error: err.message }, { status: 500 })

@@ -152,6 +152,13 @@ function limpiarTimers() {
   if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null }
 }
 
+function iniciarHeartbeat() {
+  if (heartbeatTimer) clearInterval(heartbeatTimer)
+  heartbeatTimer = setInterval(async () => {
+    await sincronizarEstadoASupabase()
+  }, 10_000)
+}
+
 // ──────────────────────────────────────────────
 //  SUBIR MEDIA A SUPABASE STORAGE
 // ──────────────────────────────────────────────

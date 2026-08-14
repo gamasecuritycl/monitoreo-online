@@ -219,36 +219,32 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
   useEffect(() => {
     const fetchStatusAndQR = async () => {
       try {
-        const { data, error } = await supabase
+        // 1. Consultar estado directo en vivo de la Nube vía API
+        try {
+          const res = await fetch('/api/whatsapp/status', { cache: 'no-store' })
+          if (res.ok) {
+            const cloudData = await res.json()
+            if (cloudData) {
+              setWaStatus(cloudData)
+              if (cloudData.pairingCode) setPairingCode(cloudData.pairingCode)
+            }
+          }
+        } catch {}
+
+        // 2. Grupos de Supabase
+        const { data } = await supabase
           .from('eventos_monitoreo')
           .select('cuenta, nombre_abonado')
-          .in('cuenta', ['CONFIG_WHATSAPP_STATE', 'CONFIG_WHATSAPP_QR', 'CONFIG_WHATSAPP_GROUPS'])
+          .eq('cuenta', 'CONFIG_WHATSAPP_GROUPS')
 
-        if (error || !data) return
-
-        const statusRow = data.find(r => r.cuenta === 'CONFIG_WHATSAPP_STATE')
-        const qrRow = data.find(r => r.cuenta === 'CONFIG_WHATSAPP_QR')
-        const groupsRow = data.find(r => r.cuenta === 'CONFIG_WHATSAPP_GROUPS')
-
-        if (statusRow?.nombre_abonado) {
-          const parsed = JSON.parse(statusRow.nombre_abonado)
-          setWaStatus(parsed)
-          setPairingCode(parsed.pairingCode || '')
-        }
-
-        if (qrRow?.nombre_abonado) {
-          const parsedQR = JSON.parse(qrRow.nombre_abonado)
-          setQrData(parsedQR)
-        }
-
-        if (groupsRow?.nombre_abonado) {
+        if (data && data[0]?.nombre_abonado) {
           try {
-            const parsedG = JSON.parse(groupsRow.nombre_abonado)
+            const parsedG = JSON.parse(data[0].nombre_abonado)
             if (Array.isArray(parsedG)) setWhatsappGrupos(parsedG)
           } catch {}
         }
       } catch (err) {
-        console.error('Error cargando estado de WhatsApp desde Supabase:', err)
+        console.error('Error cargando estado de WhatsApp desde Nube:', err)
       }
     }
 
