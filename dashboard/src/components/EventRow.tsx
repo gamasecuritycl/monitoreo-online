@@ -130,32 +130,6 @@ function renderFecha(iso: string) {
   }
 }
 
-function renderSLA(iso: string) {
-  try {
-    const eventTime = new Date(iso).getTime()
-    const now = Date.now()
-    const diffSec = Math.max(0, Math.floor((now - eventTime) / 1000))
-    
-    if (isNaN(diffSec)) return null
-    
-    const min = Math.floor(diffSec / 60)
-    const sec = diffSec % 60
-    const timeStr = min > 0 ? `${min}m ${sec}s` : `${sec}s`
-
-    let colorClass = 'bg-emerald-600 text-white'
-    if (diffSec >= 30 && diffSec < 60) colorClass = 'bg-amber-500 text-black font-bold'
-    if (diffSec >= 60) colorClass = 'bg-red-600 text-white font-bold animate-pulse'
-
-    return (
-      <span className={`inline-block text-[9px] px-1 py-0.2 rounded font-mono ml-1 align-middle shadow-sm ${colorClass}`} title={`SLA de Atención: ${timeStr} transcurridos`}>
-        {timeStr}
-      </span>
-    )
-  } catch {
-    return null
-  }
-}
-
 export default function EventRow({ evento, onClick, isNew, isLatest, codigosMap }: EventRowProps) {
   const style = getEventoStyle(evento.evento, codigosMap)
   const isCritical = ['#FF0000'].includes(style.bg)
@@ -189,8 +163,7 @@ export default function EventRow({ evento, onClick, isNew, isLatest, codigosMap 
 
       {/* SEÑAL */}
       <td className="px-1 py-0.5 text-[10px] md:text-[11px] font-bold border border-black leading-none align-middle truncate max-w-[80px] md:max-w-none">
-        <span>{evento.evento}</span>
-        {renderSLA(evento.fecha_hora)}
+        {evento.evento}
       </td>
 
       {/* ZN */}
