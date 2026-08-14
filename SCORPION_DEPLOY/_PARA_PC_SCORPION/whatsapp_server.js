@@ -111,6 +111,7 @@ let startTime       = Date.now()
 let userName        = null
 let pairingRequested = false
 let currentPairingCode = null
+let pairingCodeCreatedAt = 0
 let isShuttingDown  = false
 
 // ──────────────────────────────────────────────
@@ -294,6 +295,13 @@ async function saveSessionToSupabase() {
 // ──────────────────────────────────────────────
 async function sincronizarEstadoASupabase() {
   try {
+    // Auto-expirar pairing code si tiene más de 90s de antigüedad
+    if (currentPairingCode && pairingCodeCreatedAt > 0 && (Date.now() - pairingCodeCreatedAt > 90_000)) {
+      log('⌛ Pairing code expirado (90s) — limpiando código anterior...')
+      currentPairingCode = null
+      pairingCodeCreatedAt = 0
+    }
+
     const estadoObj = {
       ready: isReady,
       estado: isReady ? 'CONECTADO' : (currentQR ? 'ESPERANDO_QR' : 'CONECTANDO'),
@@ -711,6 +719,56 @@ async function enviarMensaje(phone, text, retryNum = 0) {
 }
 
 // ──────────────────────────────────────────────
+//  GENERACIÓN ROBUSTA DE PAIRING CODE
+// ──────────────────────────────────────────────
+async function generarNuevoPairingCode(phoneTarget) {
+  const phone = (phoneTarget || PHONE_PAIR).replace(/[^0-9]/g, '')
+  log(`🔑 Solicitando NUEVO Pairing Code para +${phone}...`)
+  currentPairingCode = null
+  pairingCodeCreatedAt = Date.now()
+  pairingRequested = true
+
+  try {
+    if (!sock) {
+      log('🔌 Socket nulo, reiniciando conexión...')
+      await conectar()
+      await new Promise(r => setTimeout(r, 2000))
+    }
+
+    if (sock && !isReady) {
+      const code = await sock.requestPairingCode(phone)
+      currentPairingCode = code
+      pairingCodeCreatedAt = Date.now()
+      log(`🔑 NUEVO PAIRING CODE GENERADO EXITOSAMENTE: ${code}`)
+      await sincronizarEstadoASupabase()
+      return code
+    } else if (isReady) {
+      log('⚠️ El dispositivo YA se encuentra conectado a WhatsApp.', 'WARN')
+      await sincronizarEstadoASupabase()
+    }
+  } catch (e) {
+    log(`⚠️ Falló primera solicitud de pairing code: ${e.message}. Re-conectando socket...`, 'WARN')
+    try {
+      isReady = false
+      if (sock) try { sock.end(undefined) } catch {}
+      await conectar()
+      await new Promise(r => setTimeout(r, 3000))
+      if (sock && !isReady) {
+        const code = await sock.requestPairingCode(phone)
+        currentPairingCode = code
+        pairingCodeCreatedAt = Date.now()
+        log(`🔑 NUEVO PAIRING CODE GENERADO EN REINTENTO: ${code}`)
+        await sincronizarEstadoASupabase()
+        return code
+      }
+    } catch (err2) {
+      log(`❌ Error fatal generando pairing code: ${err2.message}`, 'ERROR')
+    }
+  }
+  return null
+}
+
+// ──────────────────────────────────────────────
 //  SUPABASE REALTIME (sin polling innecesario)
 // ──────────────────────────────────────────────
 function suscribirSupabaseRealtime() {
@@ -733,36 +791,27 @@ function suscribirSupabaseRealtime() {
         table: 'eventos_monitoreo', filter: 'cuenta=eq.CONFIG_WHATSAPP_COMMAND'
       }, async payload => {
         const cmd = payload.new?.nombre_abonado || ''
-        log(`📡 Comando: "${cmd}"`)
+        log(`📡 Comando recibido: "${cmd}"`)
         if (cmd.startsWith('PAIR:')) {
           const phone = cmd.replace('PAIR:', '').replace(/[^0-9]/g, '') || PHONE_PAIR
-          log(`🔑 Comando remoto PAIR recibido para +${phone}`)
-          try {
-            if (sock && !isReady) {
-              pairingRequested = true
-              const code = await sock.requestPairingCode(phone)
-              currentPairingCode = code
-              log(`🔑 PAIRING CODE GENERADO DE FORMA REMOTA: ${code}`)
-              await sincronizarEstadoASupabase()
-            } else if (currentPairingCode) {
-              log(`🔑 Pairing Code ya existente: ${currentPairingCode}`)
-              await sincronizarEstadoASupabase()
-            }
-          } catch (e) {
-            log(`Error en comando PAIR: ${e.message}`, 'WARN')
-            pairingRequested = false
-          }
+          log(`🔑 Comando PAIR recibido para +${phone}`)
+          await generarNuevoPairingCode(phone)
         }
         if (cmd === 'LOGOUT' || cmd === 'RESET_SESSION') {
-          log('🧹 Comando remoto: Limpiando sesión y reconectando...', 'WARN')
+          log('🧹 Comando remoto: Limpiando sesión de WhatsApp y Supabase...', 'WARN')
           try { if (sock) await sock.logout().catch(() => {}) } catch {}
           try {
             if (fs.existsSync(SESSION_DIR)) {
               fs.rmSync(SESSION_DIR, { recursive: true, force: true })
             }
           } catch {}
-          retryCount = 0; pairingRequested = false; currentPairingCode = null; isReady = false; currentQR = null
-          reconnectTimer = setTimeout(conectar, 2000)
+          try {
+            await supabase.from('eventos_monitoreo').delete().eq('cuenta', 'CONFIG_WHATSAPP_SESSION')
+            await supabase.from('eventos_monitoreo').delete().eq('cuenta', 'CONFIG_WHATSAPP_STATE')
+            await supabase.from('eventos_monitoreo').delete().eq('cuenta', 'CONFIG_WHATSAPP_QR')
+          } catch {}
+          retryCount = 0; pairingRequested = false; currentPairingCode = null; pairingCodeCreatedAt = 0; isReady = false; currentQR = null; currentQRImage = null
+          reconnectTimer = setTimeout(conectar, 1500)
           await sincronizarEstadoASupabase()
         }
       })
@@ -823,24 +872,24 @@ app.get('/api/qr-image', async (req, res) => {
 })
 
 app.post('/api/pair', async (req, res) => {
-  const phone = (req.body?.phone || PHONE_PAIR).replace(/[^0-9]/g, '')
-  if (!phone) return res.status(400).json({ ok: false, error: 'Falta teléfono' })
-  if (isReady) return res.json({ ok: false, error: 'Ya conectado' })
-  if (!sock) return res.status(503).json({ ok: false, error: 'Socket no listo' })
-  try {
-    if (currentPairingCode) {
-      return res.json({ ok: true, code: currentPairingCode, phone })
-    }
-    pairingRequested = true
-    const code = await sock.requestPairingCode(phone)
-    currentPairingCode = code
-    log(`🔑 Pairing Code generado a solicitud: ${code}`)
-    await sincronizarEstadoASupabase()
+  const phone = (req.body?.phone || req.query?.phone || PHONE_PAIR).replace(/[^0-9]/g, '')
+  if (isReady) return res.json({ ok: false, error: 'Ya conectado a WhatsApp' })
+  const code = await generarNuevoPairingCode(phone)
+  if (code) {
     return res.json({ ok: true, code, phone })
-  } catch (err) {
-    pairingRequested = false
-    log(`Error solicitando pairing code: ${err.message}`, 'WARN')
-    return res.status(500).json({ ok: false, error: err.message })
+  } else {
+    return res.status(500).json({ ok: false, error: 'No se pudo generar código de vinculación' })
+  }
+})
+
+app.get('/api/pair', async (req, res) => {
+  const phone = (req.query?.phone || PHONE_PAIR).replace(/[^0-9]/g, '')
+  if (isReady) return res.json({ ok: false, error: 'Ya conectado a WhatsApp' })
+  const code = await generarNuevoPairingCode(phone)
+  if (code) {
+    return res.json({ ok: true, code, phone })
+  } else {
+    return res.status(500).json({ ok: false, error: 'No se pudo generar código de vinculación' })
   }
 })
 

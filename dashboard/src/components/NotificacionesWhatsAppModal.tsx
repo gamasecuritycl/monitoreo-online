@@ -233,9 +233,7 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
         if (statusRow?.nombre_abonado) {
           const parsed = JSON.parse(statusRow.nombre_abonado)
           setWaStatus(parsed)
-          if (parsed.pairingCode) {
-            setPairingCode(parsed.pairingCode)
-          }
+          setPairingCode(parsed.pairingCode || '')
         }
 
         if (qrRow?.nombre_abonado) {
@@ -815,6 +813,7 @@ Responde directamente el mensaje a enviar por WhatsApp al cliente basándote EXC
   // Pairing Code
   const solicitarPairingCode = async () => {
     setLoadingPair(true); setServerMsg('')
+    setPairingCode('')
     try {
       const phone = pairingInput.replace(/[^0-9]/g, '') || '56948855190'
       await supabase.from('eventos_monitoreo').delete().eq('cuenta', 'CONFIG_WHATSAPP_COMMAND')
