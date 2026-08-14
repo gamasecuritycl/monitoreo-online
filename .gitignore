@@ -41,6 +41,7 @@ __pycache__/
 SCORPION_DEPLOY/_gama_log.txt
 SCORPION_DEPLOY/_watchdog_log.txt
 SCORPION_DEPLOY/_sincronizador.lock
+SCORPION_DEPLOY/_sincronizador_heartbeat.txt
 SCORPION_DEPLOY/_dev_*.txt
 SCORPION_DEPLOY/_test_*.txt
 SCORPION_DEPLOY/_status*.json

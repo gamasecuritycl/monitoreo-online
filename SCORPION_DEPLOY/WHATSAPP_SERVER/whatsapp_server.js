@@ -726,73 +726,47 @@ function suscribirSupabaseRealtime() {
       })
       .subscribe(status => log(`Supabase Realtime (outbound): ${status}`))
 
-    // Canal 2: Comandos remotos (Realtime INSERT + UPDATE + DELETE)
-    async function procesarComandoRemoto(cmd) {
-      if (!cmd) return
-      if (cmd.startsWith('PAIR:')) {
-        const phone = cmd.replace('PAIR:', '').replace(/[^0-9]/g, '') || PHONE_PAIR
-        log(`🔑 Comando remoto PAIR recibido para +${phone}`)
-        try {
-          if (sock && !isReady) {
-            pairingRequested = true
-            const code = await sock.requestPairingCode(phone)
-            currentPairingCode = code
-            log(`🔑 PAIRING CODE GENERADO DE FORMA REMOTA: ${code}`)
-            await sincronizarEstadoASupabase()
-          } else if (currentPairingCode) {
-            log(`🔑 Pairing Code ya existente: ${currentPairingCode}`)
-            await sincronizarEstadoASupabase()
-          }
-        } catch (e) {
-          log(`Error en comando PAIR: ${e.message}`, 'WARN')
-          pairingRequested = false
-        }
-      }
-      if (cmd === 'LOGOUT' || cmd === 'RESET_SESSION') {
-        log('🧹 Comando remoto: Limpiando sesión y reconectando...', 'WARN')
-        try { if (sock) await sock.logout().catch(() => {}) } catch {}
-        try {
-          if (fs.existsSync(SESSION_DIR)) {
-            fs.rmSync(SESSION_DIR, { recursive: true, force: true })
-          }
-        } catch {}
-        retryCount = 0; pairingRequested = false; currentPairingCode = null; isReady = false; currentQR = null
-        reconnectTimer = setTimeout(conectar, 2000)
-        await sincronizarEstadoASupabase()
-      }
-    }
-
+    // Canal 2: Comandos remotos
     supabase.channel('whatsapp_commands')
       .on('postgres_changes', {
-        event: '*', schema: 'public',
+        event: 'INSERT', schema: 'public',
         table: 'eventos_monitoreo', filter: 'cuenta=eq.CONFIG_WHATSAPP_COMMAND'
       }, async payload => {
         const cmd = payload.new?.nombre_abonado || ''
-        log(`📡 Comando Realtime (${payload.eventType}): "${cmd}"`)
-        await procesarComandoRemoto(cmd)
-      })
-      .subscribe(status => log(`Supabase Realtime (commands): ${status}`))
-
-    // Polling de respaldo para comandos remotos (cada 5s)
-    let ultimoCmdProcesado = ''
-    setInterval(async () => {
-      if (isReady || !sock) return
-      try {
-        const { data } = await supabase
-          .from('eventos_monitoreo')
-          .select('nombre_abonado')
-          .eq('cuenta', 'CONFIG_WHATSAPP_COMMAND')
-          .order('fecha_hora', { ascending: false })
-          .limit(1)
-        if (data && data.length > 0) {
-          const cmd = data[0].nombre_abonado
-          if (cmd && cmd !== ultimoCmdProcesado) {
-            ultimoCmdProcesado = cmd
-            await procesarComandoRemoto(cmd)
+        log(`📡 Comando: "${cmd}"`)
+        if (cmd.startsWith('PAIR:')) {
+          const phone = cmd.replace('PAIR:', '').replace(/[^0-9]/g, '') || PHONE_PAIR
+          log(`🔑 Comando remoto PAIR recibido para +${phone}`)
+          try {
+            if (sock && !isReady) {
+              pairingRequested = true
+              const code = await sock.requestPairingCode(phone)
+              currentPairingCode = code
+              log(`🔑 PAIRING CODE GENERADO DE FORMA REMOTA: ${code}`)
+              await sincronizarEstadoASupabase()
+            } else if (currentPairingCode) {
+              log(`🔑 Pairing Code ya existente: ${currentPairingCode}`)
+              await sincronizarEstadoASupabase()
+            }
+          } catch (e) {
+            log(`Error en comando PAIR: ${e.message}`, 'WARN')
+            pairingRequested = false
           }
         }
-      } catch {}
-    }, 5000)
+        if (cmd === 'LOGOUT' || cmd === 'RESET_SESSION') {
+          log('🧹 Comando remoto: Limpiando sesión y reconectando...', 'WARN')
+          try { if (sock) await sock.logout().catch(() => {}) } catch {}
+          try {
+            if (fs.existsSync(SESSION_DIR)) {
+              fs.rmSync(SESSION_DIR, { recursive: true, force: true })
+            }
+          } catch {}
+          retryCount = 0; pairingRequested = false; currentPairingCode = null; isReady = false; currentQR = null
+          reconnectTimer = setTimeout(conectar, 2000)
+          await sincronizarEstadoASupabase()
+        }
+      })
+      .subscribe(status => log(`Supabase Realtime (commands): ${status}`))
 
     // Canal 3: Mensajes pendientes (reemplaza polling de 3s)
     supabase.channel('whatsapp_pending_dispatches')

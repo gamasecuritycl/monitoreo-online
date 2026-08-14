@@ -12,19 +12,23 @@ if sys.executable.lower().endswith("pythonw.exe"):
         pass
 
 # Evitar múltiples instancias del sincronizador a la vez en el mismo PC
-LOCK_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "_sincronizador.lock")
-try:
-    if os.path.exists(LOCK_FILE):
-        try: os.remove(LOCK_FILE)
-        except Exception: pass
-except Exception:
-    pass
+import msvcrt
 
-try:
-    lock_handle = open(LOCK_FILE, "w")
-    lock_handle.write(str(os.getpid()))
-    lock_handle.flush()
-except Exception:
+GLOBAL_LOCK_FILE = r"C:\SCORPION\BASES DE DATOS\_sincronizador_global.lock"
+LOCAL_LOCK_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "_sincronizador.lock")
+
+lock_fp = None
+for lfile in [GLOBAL_LOCK_FILE, LOCAL_LOCK_FILE]:
+    try:
+        os.makedirs(os.path.dirname(lfile), exist_ok=True)
+        fp = open(lfile, "a+")
+        msvcrt.locking(fp.fileno(), msvcrt.LK_NBLCK, 1)
+        lock_fp = fp
+        break
+    except Exception:
+        continue
+
+if not lock_fp:
     print("[ERROR] El sincronizador ya está en ejecución en segundo plano. Saliendo...")
     sys.exit(0)
 
@@ -201,6 +205,44 @@ def get_archivos_mdb_activos():
         print(f"[ERROR] No se puede leer EVENTOS: {e}")
         return []
 
+def procesar_comandos_sistema():
+    try:
+        res = supabase.table("eventos_monitoreo").select("id, nombre_abonado").eq("cuenta", "CONFIG_SYSTEM_COMMAND").execute()
+        if res.data and len(res.data) > 0:
+            for item in res.data:
+                cmd = str(item.get("nombre_abonado", "")).strip()
+                cmd_id = item.get("id")
+                print(f"[REMOTO] Ejecutando comando de sistema: {cmd}")
+
+                if cmd in ["RESTART_WHATSAPP", "CLEAN_WHATSAPP_SESSION"]:
+                    os.system("taskkill /f /im node.exe >nul 2>&1")
+                    wa_dir = os.path.join(script_dir, "WHATSAPP_SERVER")
+                    if not os.path.exists(wa_dir):
+                        wa_dir = os.path.join(os.path.dirname(script_dir), "SCORPION_DEPLOY", "WHATSAPP_SERVER")
+
+                    if cmd == "CLEAN_WHATSAPP_SESSION":
+                        session_dir = os.path.join(wa_dir, ".baileys-session")
+                        if os.path.exists(session_dir):
+                            try: shutil.rmtree(session_dir, ignore_errors=True)
+                            except Exception as ex: print(f"Error borrando sesión: {ex}")
+                        try:
+                            supabase.table("eventos_monitoreo").delete().eq("cuenta", "CONFIG_WHATSAPP_SESSION").execute()
+                        except: pass
+
+                    wa_js = os.path.join(wa_dir, "whatsapp_server.js")
+                    if os.path.exists(wa_js):
+                        src_js = os.path.join(script_dir, "_PARA_PC_SCORPION", "whatsapp_server.js")
+                        if os.path.exists(src_js) and src_js != wa_js:
+                            try: shutil.copy2(src_js, wa_js)
+                            except: pass
+                        import subprocess
+                        subprocess.Popen(["node", wa_js], cwd=wa_dir, creationflags=0x08000000)
+
+                # Eliminar comando procesado
+                supabase.table("eventos_monitoreo").delete().eq("id", cmd_id).execute()
+    except Exception as e:
+        pass
+
 def enviar_heartbeat():
     """ Envía señal continua de heartbeat para mantener status VERDE en la central web y notificar a watchdog_total.vbs """
     try:
@@ -217,6 +259,8 @@ def enviar_heartbeat():
         hb_path = os.path.join(script_dir, "_sincronizador_heartbeat.txt")
         with open(hb_path, "w", encoding="utf-8") as f:
             f.write(now_iso)
+
+        procesar_comandos_sistema()
     except Exception as e:
         pass
 
