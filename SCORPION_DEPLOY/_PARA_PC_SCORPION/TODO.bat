@@ -96,11 +96,7 @@ echo [6/7] Iniciando servicios en segundo plano...
 start "" /b pythonw.exe "%BASE%\sincronizador.py"
 timeout /t 2 >nul
 
-:: WhatsApp Server Node.js (sin ventana via VBS)
-echo Set WShell = CreateObject("WScript.Shell") > "%TEMP%\start_wa.vbs"
-echo WShell.Run "node ""%WA_DIR%\whatsapp_server.js""", 0, False >> "%TEMP%\start_wa.vbs"
-wscript.exe "%TEMP%\start_wa.vbs"
-timeout /t 5 >nul
+:: WhatsApp Server (Ejecutándose en la Nube 24/7 - Omite ejecución local)
 
 :: Watchdog (sin ventana)
 start "" /b wscript.exe "%BASE%\watchdog_total.vbs"

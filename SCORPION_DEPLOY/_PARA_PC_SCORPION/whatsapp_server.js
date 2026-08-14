@@ -39,7 +39,7 @@ const { createClient } = require('@supabase/supabase-js')
 // ──────────────────────────────────────────────
 //  CONFIG
 // ──────────────────────────────────────────────
-const PORT         = 3015
+const PORT         = process.env.PORT || 3015
 const SESSION_DIR  = path.join(__dirname, '.baileys-session')
 const MAX_QUEUE    = 500
 const HEARTBEAT_MS = 30_000
@@ -1141,14 +1141,24 @@ process.on('unhandledRejection', (reason) => {
   log(`💥 Unhandled Rejection: ${reason}`, 'ERROR')
 })
 
+app.get('/', (req, res) => {
+  res.json({
+    status: 'ok',
+    service: 'Gama Seguridad WhatsApp Cloud Server 24/7',
+    phone: PHONE_PAIR,
+    connected: isConnected,
+    timestamp: new Date().toISOString()
+  })
+})
+
 // ──────────────────────────────────────────────
 //  INICIO
 // ──────────────────────────────────────────────
-const server = app.listen(PORT, () => {
+const server = app.listen(PORT, '0.0.0.0', () => {
   log('═══════════════════════════════════════════')
-  log('  GAMA SEGURIDAD - WhatsApp v4.0')
+  log('  GAMA SEGURIDAD - WhatsApp Cloud v4.0 (24/7 Nube)')
   log('  Baileys 7.x · LID nativo · getMessage')
-  log(`  Puerto: ${PORT} | Sesión: .baileys-session/`)
+  log(`  Puerto: ${PORT} | Sesión: Supabase & .baileys-session/`)
   log('═══════════════════════════════════════════')
   suscribirSupabaseRealtime()
   conectar()

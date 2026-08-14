@@ -230,11 +230,7 @@ Do While True
         sincLastRestart = Now
     End If
 
-    ' ── WHATSAPP: verificar proceso (evitar duplicados) ──
-    If Not ProcessExists("node.exe", "") Then
-        Call LogMsg("WHATSAPP: Proceso MUERTO. Reiniciando...")
-        Call StartWhatsApp()
-    End If
+    ' ── WHATSAPP: Servidor en la Nube 24/7 (NO se ejecuta en PC Scorpion) ──
 
     ' ── BRIDGE: verificar proceso ──
     If Not (ProcessExists("pythonw.exe", "dahua_p2p_bridge") Or ProcessExists("python.exe", "dahua_p2p_bridge")) Then
