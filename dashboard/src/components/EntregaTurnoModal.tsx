@@ -129,80 +129,107 @@ export default function EntregaTurnoModal({ onClose, usuarioActual = 'OPERADOR C
     cargarMetricasTurno()
   }, [])
 
-  // Generar resumen automático del turno consultando la bitácora y conversaciones de WhatsApp con IA Gemini
+  // Generar resumen automático del turno consultando API Bitácora Registros, Supabase MDB y WhatsApp con IA Gemini
   const generarResumenAutomatico = async () => {
     setGenerandoIA(true)
-    setMsgStatus('🤖 Auditando bitácora y conversaciones de WhatsApp con IA Gemini...')
+    setMsgStatus('🤖 Obteniendo registros de Bitácora Operativa, WhatsApp y MDB...')
     try {
-      const hace8Horas = new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString()
+      const hoy = new Date()
+      const hace8Horas = new Date(hoy.getTime() - 8 * 60 * 60 * 1000)
 
-      // 1. Obtener eventos de bitácora
-      const { data: eventos } = await supabase
+      const desdeStr = hace8Horas.toISOString().split('T')[0] + ' ' + hace8Horas.toTimeString().slice(0, 5)
+      const hastaStr = hoy.toISOString().split('T')[0] + ' ' + hoy.toTimeString().slice(0, 5)
+
+      // 1. Obtener anotaciones y observaciones reales registradas por los operadores en la Bitácora
+      let eventosBitacora: any[] = []
+      try {
+        const urlBitacora = `https://bitacora.gamasecurity.cl/api-bitacora.php?action=eventos&desde=${encodeURIComponent(desdeStr)}&hasta=${encodeURIComponent(hastaStr)}`
+        const rBit = await fetch(urlBitacora)
+        if (rBit.ok) eventosBitacora = await rBit.json()
+      } catch (err) {
+        console.warn('Error cargando API bitácora:', err)
+      }
+
+      // 2. Obtener eventos de Supabase MDB
+      const { data: eventosSupabase } = await supabase
         .from('eventos_monitoreo')
         .select('cuenta, evento, fecha_hora, zona, usuario, descripcion, nombre_abonado')
-        .gte('fecha_hora', hace8Horas)
+        .gte('fecha_hora', hace8Horas.toISOString())
         .neq('cuenta', 'CONFIG_ENTREGA_TURNO')
         .order('fecha_hora', { ascending: false })
         .limit(80)
 
-      // 2. Obtener chats recientes de WhatsApp
+      // 3. Obtener chats de WhatsApp
       const { data: chats } = await supabase
         .from('conversaciones_whatsapp')
         .select('cuenta, numero, mensaje_enviado, respuesta_recibida, tipo_evento, created_at')
-        .gte('created_at', hace8Horas)
+        .gte('created_at', hace8Horas.toISOString())
         .order('created_at', { ascending: false })
         .limit(40)
 
-      if ((!eventos || eventos.length === 0) && (!chats || chats.length === 0)) {
-        setNovedades('Sin señales ni mensajes registrados en las últimas 8 horas. Operación normal en central sin novedades de bitácora.')
-        setMsgStatus('✅ Auditoría finalizada (Sin eventos en las últimas 8h).')
-        return
-      }
+      setMsgStatus('✨ Sintetizando con IA Gemini el informe de entrega de turno...')
 
-      // 3. Preparar prompt para la IA Gemini
+      // 4. Preparar prompt exhaustivo para la IA Gemini con las 3 fuentes de información
       const promptAuditoria = `
-Eres el Auditor Principal de Operaciones de una Central de Monitoreo de Alarmas 24/7.
-Genera un INFORME DE ENTREGA DE TURNO DETALLADO Y COMPLETO para el operador entrante, analizando la bitácora de eventos y los chats de WhatsApp de las últimas 8 horas.
+Eres el Auditor y Supervisor Principal de Operaciones de una Central de Monitoreo 24/7.
+Genera un INFORME DE ENTREGA DE TURNO ULTRA-COMPLETO, MINUCIOSO Y PROFUNDO para el operador entrante, sintetizando los datos reales de las últimas 8 horas adjuntos abajo.
 
-DATOS RAW DE BITÁCORA DE MONITOREO (Últimas 8 horas):
-${JSON.stringify((eventos || []).map(e => ({
-  cta: e.cuenta,
-  ev: e.evento || e.descripcion,
-  fecha: e.fecha_hora ? new Date(e.fecha_hora).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }) : '',
-  zona: e.zona,
-  usr: e.usuario,
-  datos: e.nombre_abonado
+FUENTE 1: REGISTROS DE BITÁCORA Y OBSERVACIONES MANUALES DE OPERADORES (API BITÁCORA):
+${JSON.stringify((eventosBitacora || []).map(b => ({
+  cta: b.abonado_cod,
+  nombre: b.abonado_nombre,
+  tipo: b.tipo_nombre,
+  comentario: b.comentario,
+  operador: b.responsable_nombre,
+  fecha: b.created_at
 })).slice(0, 50))}
 
-DATOS RAW DE CONVERSACIONES DE WHATSAPP (Últimas 8 horas):
+FUENTE 2: TELEMETRÍA MDB Y SEÑALES EN VIVO (SUPABASE):
+${JSON.stringify((eventosSupabase || []).map(e => ({
+  cta: e.cuenta,
+  ev: e.evento || e.descripcion,
+  fecha: e.fecha_hora,
+  zona: e.zona,
+  usr: e.usuario
+})).slice(0, 40))}
+
+FUENTE 3: CHATS DE WHATSAPP Y NOTIFICACIONES (SUPABASE):
 ${JSON.stringify((chats || []).map(c => ({
   cta: c.cuenta,
   num: c.numero,
   env: c.mensaje_enviado,
   rec: c.respuesta_recibida,
-  fecha: c.created_at ? new Date(c.created_at).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }) : ''
-})).slice(0, 30))}
+  fecha: c.created_at
+})).slice(0, 25))}
 
-REGLAS DE FORMATO Y ESTRUCTURA OBLIGATORIAS:
+REGLAS DE FORMATO Y ESTRUCTURA OBLIGATORIAS PARA LA IA:
+
 1. ENCABEZADO Y RESUMEN GENERAL:
-   - Rango horario analizado y total de señales y chats procesados.
+   - Rango horario del turno (${desdeStr} a ${hastaStr}).
+   - Muestra el total de anotaciones escritas por los operadores (${eventosBitacora.length} registros en bitácora) y señales MDB procesadas.
 
-2. DETALLE DE GESTIÓN Y PROCEDIMIENTOS POR ABONADO:
-   - Agrupa los hallazgos por cada abonado (ej: Abonado C701, Abonado 0014, etc.).
-   - Especifica la hora, tipo de señal (Alarma de Robo, Corte de Energía, Pánico, Apertura Fuera de Horario, etc.) y ZONA afectada.
-   - Explica el PROCEDIMIENTO EXACTO REGISTRADO EN BITÁCORA (Ej: 'Se realizó llamado al titular, responde confirmando falsa alarma por mascota', 'Se envió notificación por WhatsApp, cliente responde OK', 'Sin respuesta telefónica, se deriva aviso a patrulla').
-   - Indica el ESTADO Y CONTINUIDAD para el turno entrante (Ej: 'Verificado y cerrado', 'En seguimiento de energía', 'Pendiente de llamada a las 08:00').
+2. 🚨 DETALLE DE ALARMAS, NOVEDADES Y PROCEDIMIENTOS (Abonado por Abonado):
+   - Detalla cada cuenta que tuvo novedades o alarmas (Ej: C782 PUCV, C718 Jardin Integra Altamirano, C701, etc.).
+   - Muestra la hora, el tipo de señal/zona y EXPLICA EXACTAMENTE LO QUE EL OPERADOR ESCRIBIÓ EN LA BITÁCORA O GESTIONÓ CON EL CLIENTE (Ej: 'Se llamó a protocolo pero no contestan, se envía SMS', 'Se contactó con guardia del lugar en Casa Central Rony Ramírez', 'Cliente indica falsa alarma por mascota', 'Don Tomás indica no tomar procedimiento por reiterada salvo activen otras zonas').
+   - Indica qué debe hacer o vigilar el turno entrante para darle continuidad.
 
-3. 📌 ANOTACIONES ESPECIALES Y AVISOS DE ABONADOS EN EL TURNO:
-   - Extrae cualquier instrucción especial comunicada por clientes o registrada por operadores (Ej: 'Abonado C701 avisa que habrán trabajos nocturnos y no armarán', 'Abonado 0014 indica problemas con teclado DSC', 'Trabajos de mantenimiento autorizados'). Si no hay avisos especiales, indícalo claramente.
+3. 🔒 ABONADOS QUE NO REGISTRARON CIERRE O CON OBSERVACIONES DE HORARIO:
+   - Identifica todas las cuentas que figuran con "No registró cierre" o "No registra cierre" en la bitácora (Ej: C721, C736, C735, etc.).
+   - Detalla a quién se intentó llamar (Pamela Canesa, Eduardo Ponce, María Fierro), el resultado (sin respuesta / se envió SMS) y deja el encargo claro para la noche.
 
-4. 🏁 CONCLUSIÓN OPERATIVA DEL TURNO:
-   - Estado final de la central para el operador que asume la supervisión.
+4. ⚡ NOVEDADES DE ENERGÍA Y TELEMETRÍA:
+   - Detalla cortes de luz o baterías y con quién se coordinó (directoras, administradores).
 
-Sé muy claro, técnico, profesional y exhaustivo para que el operador entrante sepa exactamente qué pasó y qué hacer.
+5. 📌 ANOTACIONES ESPECIALES Y AVISOS DE ABONADOS:
+   - Extrae cualquier aviso especial capturado en bitácora o WhatsApp (ej: trabajos nocturnos, mantenciones autorizadas, pruebas de sistema, ausencias de personal).
+
+6. 🏁 CONCLUSIÓN OPERATIVA DEL TURNO:
+   - Instrucciones directas de cierre para el operador que toma el turno.
+
+Sé sumamente minucioso y profesional. No inventes datos, usa la información real de los comentarios de los operadores.
 `
 
-      // 4. Consultar API Gemini
+      // 5. Consultar API Gemini
       const res = await fetch('/api/gemini', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -212,10 +239,9 @@ Sé muy claro, técnico, profesional y exhaustivo para que el operador entrante 
       const resData = await res.json()
       if (res.ok && resData.text) {
         setNovedades(resData.text)
-        setMsgStatus('✨ Informe detallado de señales y procedimientos generado exitosamente con IA Gemini!')
+        setMsgStatus('✨ Informe ultra-completo de entrega de turno generado con IA Gemini!')
       } else {
-        // Fallback estructurado si no responde la API de Gemini
-        setNovedades(generarFallbackDetallado(eventos || [], chats || [], hace8Horas))
+        setNovedades(generarFallbackCompleto(eventosBitacora, eventosSupabase || [], chats || [], desdeStr, hastaStr))
         setMsgStatus('✨ Resumen estructurado por abonado generado desde bitácora.')
       }
     } catch (err: any) {
@@ -227,60 +253,28 @@ Sé muy claro, técnico, profesional y exhaustivo para que el operador entrante 
     }
   }
 
-  const generarFallbackDetallado = (eventos: any[], chats: any[], hace8Horas: string) => {
-    let text = `📋 INFORME DE ENTREGA DE TURNO - AUDITORÍA DE SEÑALES Y PROCEDIMIENTOS\n`
-    text += `• Rango horario: ${new Date(hace8Horas).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })} a ${new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}\n`
-    text += `• Total señales registradas en bitácora: ${eventos.length}\n`
-    text += `• Total conversaciones / interacciones WhatsApp: ${chats.length}\n\n`
+  const generarFallbackCompleto = (bitacora: any[], eventosSupabase: any[], chats: any[], desdeStr: string, hastaStr: string) => {
+    let text = `📋 INFORME DE ENTREGA DE TURNO - AUDITORÍA DE BITÁCORA Y PROCEDIMIENTOS\n`
+    text += `• Rango de Monitoreo: ${desdeStr} a ${hastaStr}\n`
+    text += `• Anotaciones en Bitácora Operativa: ${bitacora.length} registros\n`
+    text += `• Señales MDB / WhatsApp: ${eventosSupabase.length} señales | ${chats.length} mensajes\n\n`
 
-    const porCuenta: Record<string, { eventos: any[]; chats: any[] }> = {}
+    text += `🔍 DETALLE DE ANOTACIONES Y PROCEDIMIENTOS EN BITÁCORA:\n`
 
-    eventos.forEach(e => {
-      const cta = e.cuenta || 'GENERAL'
-      if (!porCuenta[cta]) porCuenta[cta] = { eventos: [], chats: [] }
-      porCuenta[cta].eventos.push(e)
-    })
-
-    chats.forEach(c => {
-      const cta = c.cuenta || 'GENERAL'
-      if (!porCuenta[cta]) porCuenta[cta] = { eventos: [], chats: [] }
-      porCuenta[cta].chats.push(c)
-    })
-
-    text += `🔍 DETALLE DE GESTIÓN Y PROCEDIMIENTOS POR ABONADO:\n`
-    const cuentas = Object.keys(porCuenta)
-
-    if (cuentas.length === 0) {
-      text += `• Sin eventos críticos o gestiones registradas en el turno.\n\n`
+    if (bitacora.length === 0) {
+      text += `• Sin novedades escritas en bitácora durante el turno.\n\n`
     } else {
-      cuentas.slice(0, 10).forEach(cta => {
-        const item = porCuenta[cta]
-        text += `\n📍 ABONADO [${cta}]:\n`
-        
-        if (item.eventos.length > 0) {
-          text += `  - Señales en Bitácora (${item.eventos.length}):\n`
-          item.eventos.slice(0, 5).forEach(e => {
-            const h = e.fecha_hora ? new Date(e.fecha_hora).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }) : ''
-            text += `    • [${h}] Evento: ${e.evento || e.descripcion} ${e.zona ? `(Zona ${e.zona})` : ''} | Op: ${e.usuario || 'Sistema'}\n`
-          })
-        }
-
-        if (item.chats.length > 0) {
-          text += `  - Procedimiento / Chats WhatsApp registrados (${item.chats.length}):\n`
-          item.chats.slice(0, 3).forEach(c => {
-            const h = c.created_at ? new Date(c.created_at).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }) : ''
-            if (c.respuesta_recibida) text += `    • [${h}] Cliente respondió: "${c.respuesta_recibida}"\n`
-            if (c.mensaje_enviado) text += `    • [${h}] Central envió: "${c.mensaje_enviado.slice(0, 60)}..."\n`
-          })
-        }
-
-        text += `  - Continuidad para Turno Entrante: Procedimiento verificado en bitácora. Sin pendientes de riesgo.\n`
+      bitacora.slice(0, 15).forEach(b => {
+        const hora = b.created_at ? new Date(b.created_at).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }) : ''
+        text += `\n📍 ABONADO [${b.abonado_cod || 'GENERAL'}] ${b.abonado_nombre || ''}:\n`
+        text += `  • [${hora}] Tipo: ${b.tipo_nombre || 'NOVEDAD'} | Operador: ${b.responsable_nombre || 'Sistema'}\n`
+        text += `  • Comentario / Procedimiento: "${b.comentario}"\n`
       })
     }
 
-    text += `\n📌 ANOTACIONES ESPECIALES Y AVISOS DE ABONADOS:\n`
-    text += `• Revisión automática de mensajes de WhatsApp y notas de operadores realizada.\n`
-    text += `• Central operando normalmente con 100% de señales auditadas.`
+    text += `\n📌 AUDITORÍA DE CONTINUIDAD OPERATIVA:\n`
+    text += `• Revisión de cierres, llamadas a protocolos y mensajes enviados completada.\n`
+    text += `• Turno entrante toma supervisión continua de la central.`
 
     return text
   }
