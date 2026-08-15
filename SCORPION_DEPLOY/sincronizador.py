@@ -288,17 +288,40 @@ def enviar_heartbeat():
     except Exception as e:
         pass
 
-def copiar_mdb_con_retry(ruta_original, ruta_temp, max_intentos=3):
+PASSWORDS_PROBAR = ['Administ', 'SCORPION29', '', 'scorpion', 'SCORPION', 'SCORPION2026', 'admin', 'ADMIN']
+
+def copiar_mdb_con_retry(ruta_original, ruta_temp, max_intentos=5):
     for intento in range(max_intentos):
         try:
             if os.path.exists(ruta_temp):
                 try: os.remove(ruta_temp)
                 except Exception: pass
             shutil.copy2(ruta_original, ruta_temp)
-            return True
-        except Exception as e:
-            time.sleep(0.15)
+            if os.path.exists(ruta_temp) and os.path.getsize(ruta_temp) > 0:
+                return True
+        except Exception:
+            try:
+                os.system(f'cmd /c copy /y "{ruta_original}" "{ruta_temp}" >nul 2>&1')
+                if os.path.exists(ruta_temp) and os.path.getsize(ruta_temp) > 0:
+                    return True
+            except Exception:
+                pass
+            time.sleep(0.3)
     return False
+
+def abrir_conexion_mdb(ruta_mdb):
+    err_ultimo = None
+    for pwd in PASSWORDS_PROBAR:
+        try:
+            conn_str = (
+                f'DRIVER={{Microsoft Access Driver (*.mdb, *.accdb)}};'
+                f'DBQ={ruta_mdb};PWD={pwd};ReadOnly=1;'
+            )
+            return pyodbc.connect(conn_str)
+        except Exception as e:
+            err_ultimo = e
+            continue
+    raise err_ultimo if err_ultimo else Exception("No se pudo abrir MDB")
 
 def sincronizar(cache):
     print("--- Verificando nuevos eventos ---")
@@ -316,14 +339,11 @@ def sincronizar(cache):
         nombre_base = os.path.basename(ruta_original)
 
         if not copiar_mdb_con_retry(ruta_original, RUTA_COPIA_TEMP):
+            print(f"[WARN] No se pudo copiar {nombre_base}")
             continue
 
         try:
-            conn_str = (
-                f'DRIVER={{Microsoft Access Driver (*.mdb, *.accdb)}};'
-                f'DBQ={RUTA_COPIA_TEMP};PWD={DB_PASSWORD};ReadOnly=1;'
-            )
-            conn = pyodbc.connect(conn_str)
+            conn = abrir_conexion_mdb(RUTA_COPIA_TEMP)
             cursor = conn.cursor()
             cursor.execute("SELECT * FROM EVENTOS ORDER BY HORA ASC")
             rows = cursor.fetchall()
