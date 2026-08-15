@@ -41,6 +41,47 @@ interface RegistroTurno {
   }
 }
 
+export type TramoTurno = 'MANANA' | 'TARDE' | 'NOCHE' | 'FLOTANTE_8H'
+
+// Helper para calcular las fechas exactas según el tramo de turno seleccionado
+const calcularRangoTramo = (tramo: TramoTurno) => {
+  const ahora = new Date()
+  let desde = new Date()
+  let hasta = new Date()
+
+  if (tramo === 'MANANA') {
+    desde.setHours(8, 0, 0, 0)
+    hasta.setHours(16, 0, 0, 0)
+    if (ahora < desde) {
+      desde.setDate(desde.getDate() - 1)
+      hasta.setDate(hasta.getDate() - 1)
+    }
+  } else if (tramo === 'TARDE') {
+    desde.setHours(16, 0, 0, 0)
+    hasta.setHours(22, 0, 0, 0)
+    if (ahora < desde) {
+      desde.setDate(desde.getDate() - 1)
+      hasta.setDate(hasta.getDate() - 1)
+    }
+  } else if (tramo === 'NOCHE') {
+    if (ahora.getHours() < 8) {
+      desde.setDate(desde.getDate() - 1)
+      desde.setHours(22, 0, 0, 0)
+      hasta.setHours(8, 0, 0, 0)
+    } else {
+      desde.setHours(22, 0, 0, 0)
+      hasta.setDate(hasta.getDate() + 1)
+      hasta.setHours(8, 0, 0, 0)
+    }
+  } else {
+    // FLOTANTE_8H (últimas 8 horas flotantes)
+    desde = new Date(ahora.getTime() - 8 * 60 * 60 * 1000)
+    hasta = ahora
+  }
+
+  return { desde, hasta }
+}
+
 export default function EntregaTurnoModal({ onClose, usuarioActual = 'OPERADOR CENTRAL' }: EntregaTurnoModalProps) {
   const [saliente, setSaliente] = useState(usuarioActual)
   const [entrante, setEntrante] = useState('')
@@ -50,6 +91,13 @@ export default function EntregaTurnoModal({ onClose, usuarioActual = 'OPERADOR C
   const [enviandoWA, setEnviandoWA] = useState(false)
   const [msgStatus, setMsgStatus] = useState('')
   const [historial, setHistorial] = useState<RegistroTurno[]>([])
+
+  // Tramo de Turno seleccionado
+  const [tramoActual, setTramoActual] = useState<TramoTurno>('FLOTANTE_8H')
+
+  // CRUD State
+  const [editandoId, setEditandoId] = useState<string | number | null>(null)
+  const [busquedaHistorial, setBusquedaHistorial] = useState('')
 
   // Vista de Tabla HTML vs Texto
   const [filasBitacora, setFilasBitacora] = useState<FilaBitacora[]>([])
@@ -61,7 +109,7 @@ export default function EntregaTurnoModal({ onClose, usuarioActual = 'OPERADOR C
   const [nuevaInstruccion, setNuevaInstruccion] = useState('')
   const [nuevaPrioridad, setNuevaPrioridad] = useState<'ALTA' | 'MEDIA' | 'BAJA'>('ALTA')
 
-  // Métricas del turno actual (últimas 8h)
+  // Métricas del turno seleccionado
   const [kpiShift, setKpiShift] = useState({
     total: 0,
     alarmas: 0,
@@ -69,14 +117,15 @@ export default function EntregaTurnoModal({ onClose, usuarioActual = 'OPERADOR C
     cierres: 0
   })
 
-  // Cargar métricas automáticas del turno de las últimas 8h
-  const cargarMetricasTurno = async () => {
+  // Cargar métricas automáticas según el tramo de turno seleccionado
+  const cargarMetricasTurno = async (tramo: TramoTurno = tramoActual) => {
     try {
-      const hace8Horas = new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString()
+      const { desde, hasta } = calcularRangoTramo(tramo)
       const { data } = await supabase
         .from('eventos_monitoreo')
         .select('evento')
-        .gte('fecha_hora', hace8Horas)
+        .gte('fecha_hora', desde.toISOString())
+        .lte('fecha_hora', hasta.toISOString())
         .neq('cuenta', 'CONFIG_ENTREGA_TURNO')
 
       if (data) {
@@ -151,15 +200,15 @@ export default function EntregaTurnoModal({ onClose, usuarioActual = 'OPERADOR C
   }, [])
 
   // Generar resumen automático del turno consultando API Bitácora Registros, Supabase MDB y WhatsApp con IA Gemini
-  const generarResumenAutomatico = async () => {
+  const generarResumenAutomatico = async (tramoParam?: TramoTurno) => {
+    const tramoUsar = tramoParam || tramoActual
     setGenerandoIA(true)
-    setMsgStatus('🤖 Obteniendo registros de Bitácora Operativa, WhatsApp y MDB...')
+    setMsgStatus(`🤖 Auditando registros de Bitácora Operativa, WhatsApp y MDB (${tramoUsar})...`)
     try {
-      const hoy = new Date()
-      const hace8Horas = new Date(hoy.getTime() - 8 * 60 * 60 * 1000)
+      const { desde, hasta } = calcularRangoTramo(tramoUsar)
 
-      const desdeStr = hace8Horas.toISOString().split('T')[0] + ' ' + hace8Horas.toTimeString().slice(0, 5)
-      const hastaStr = hoy.toISOString().split('T')[0] + ' ' + hoy.toTimeString().slice(0, 5)
+      const desdeStr = desde.toISOString().split('T')[0] + ' ' + desde.toTimeString().slice(0, 5)
+      const hastaStr = hasta.toISOString().split('T')[0] + ' ' + hasta.toTimeString().slice(0, 5)
 
       // 1. Obtener anotaciones y observaciones reales registradas por los operadores en la Bitácora
       let eventosBitacora: any[] = []
@@ -175,7 +224,8 @@ export default function EntregaTurnoModal({ onClose, usuarioActual = 'OPERADOR C
       const { data: eventosSupabase } = await supabase
         .from('eventos_monitoreo')
         .select('cuenta, evento, fecha_hora, zona, usuario, descripcion, nombre_abonado')
-        .gte('fecha_hora', hace8Horas.toISOString())
+        .gte('fecha_hora', desde.toISOString())
+        .lte('fecha_hora', hasta.toISOString())
         .neq('cuenta', 'CONFIG_ENTREGA_TURNO')
         .order('fecha_hora', { ascending: false })
         .limit(80)
@@ -184,7 +234,8 @@ export default function EntregaTurnoModal({ onClose, usuarioActual = 'OPERADOR C
       const { data: chats } = await supabase
         .from('conversaciones_whatsapp')
         .select('cuenta, numero, mensaje_enviado, respuesta_recibida, tipo_evento, created_at')
-        .gte('created_at', hace8Horas.toISOString())
+        .gte('created_at', desde.toISOString())
+        .lte('created_at', hasta.toISOString())
         .order('created_at', { ascending: false })
         .limit(40)
 
@@ -209,12 +260,12 @@ export default function EntregaTurnoModal({ onClose, usuarioActual = 'OPERADOR C
         setVistaModo('tabla')
       }
 
-      setMsgStatus('✨ Sintetizando con IA Gemini el informe de entrega de turno...')
+      setMsgStatus(`✨ Sintetizando con IA Gemini el informe de entrega (${tramoUsar})...`)
 
       // 4. Preparar prompt exhaustivo para la IA Gemini con las 3 fuentes de información
       const promptAuditoria = `
 Eres el Auditor y Supervisor Principal de Operaciones de una Central de Monitoreo 24/7.
-Genera un INFORME DE ENTREGA DE TURNO ULTRA-COMPLETO, MINUCIOSO Y PROFUNDO para el operador entrante, sintetizando los datos reales de las últimas 8 horas adjuntos abajo.
+Genera un INFORME DE ENTREGA DE TURNO ULTRA-COMPLETO, MINUCIOSO Y PROFUNDO para el operador entrante, sintetizando los datos reales del tramo horario (${desdeStr} a ${hastaStr}) adjuntos abajo.
 
 FUENTE 1: REGISTROS DE BITÁCORA Y OBSERVACIONES MANUALES DE OPERADORES (API BITÁCORA):
 ${JSON.stringify((eventosBitacora || []).map(b => ({
@@ -256,10 +307,10 @@ REGLAS DE FORMATO Y ESTRUCTURA OBLIGATORIAS PARA LA IA:
 
    Instrucciones para las celdas:
    - HORA: Hora exacta (ej: 11:31 PM, 10:05 PM, 09:16 PM, 06:15 PM, 05:02 PM, 03:53 PM).
-   - ABONADO Y PROPIEDAD: Código + Nombre (ej: [C7B2] PUCV CURAUMA, [C718] JARDIN INTEGRA, [C721] CORP. ASISTENCIA JUDICIAL, [C736] CASA SAGRADA FAMILIA, [C735] COLEGIO SAGRADA FAMILIA, [C798] TALITA KUM, [C7B9] PRODEL PICHILEMU, [C7B8] PRODEL SAN VICENTE).
+   - ABONADO Y PROPIEDAD: Código + Nombre.
    - TIPO DE NOVEDAD: (ej: NOVEDAD, CORTE DE ENERGIA, NO REGISTRA CIERRE, OBSERVACION).
    - OPERADOR: Nombre de la operadora (Tamara Zamora, Nancy Delgadillo, etc.).
-   - COMENTARIO Y PROCEDIMIENTO REGISTRADO EN BITÁCORA: Sintetiza/Transcribe lo que la operadora escribió (ej: "Llamada a guardia sin respuesta, Casa Central Rony Ramírez confirma sin novedad por posible roedor", "No registró cierre, llamado a Pamela Canesa/María Fierro sin respuesta, SMS enviado", "Sabotaje/Robo Z20, instrucción Don Tomás: no tomar procedimiento por reiterada salvo activen otras zonas", "Cierre informado a WhatsApp/SMS").
+   - COMENTARIO Y PROCEDIMIENTO REGISTRADO EN BITÁCORA: Transcribe/Sintetiza lo que la operadora escribió en bitácora.
    - CONTINUIDAD / SEGUIMIENTO: Estado claro (ej: '✅ Verificado con Guardia', '🔴 No Cierre / SMS Enviado', '🟢 Instrucción Tomás Activa', '🟢 Cierre Notificado', '🟢 Restablecido').
 
 3. 📌 ANOTACIONES ESPECIALES Y AVISOS DE ABONADOS:
@@ -281,7 +332,7 @@ Sé sumamente estructurado, minucioso y profesional.
       const resData = await res.json()
       if (res.ok && resData.text) {
         setNovedades(resData.text)
-        setMsgStatus('✨ ¡Informe en celdas y columnas generado exitosamente con IA Gemini!')
+        setMsgStatus(`✨ ¡Informe de turno (${tramoUsar}) generado exitosamente con IA Gemini!`)
       } else {
         setNovedades(generarFallbackCompleto(eventosBitacora, eventosSupabase || [], chats || [], desdeStr, hastaStr))
         setMsgStatus('✨ Resumen estructurado por abonado generado desde bitácora.')
@@ -293,6 +344,35 @@ Sé sumamente estructurado, minucioso y profesional.
       setGenerandoIA(false)
       setTimeout(() => setMsgStatus(''), 5000)
     }
+  }
+
+  // Cambiar Tramo de Turno (Mañana / Tarde / Noche / Flotante)
+  const cambiarTramoTurno = (nuevoTramo: TramoTurno) => {
+    setTramoActual(nuevoTramo)
+    cargarMetricasTurno(nuevoTramo)
+    generarResumenAutomatico(nuevoTramo)
+  }
+
+  // CRUD: Eliminar entrega de turno del historial
+  const eliminarEntregaTurno = async (id: string | number) => {
+    if (!confirm('¿Está seguro de eliminar esta entrega de turno del historial?')) return
+    try {
+      await supabase.from('eventos_monitoreo').delete().eq('id', id)
+      setMsgStatus('🗑️ Entrega de turno eliminada correctamente.')
+      await cargarHistorial()
+    } catch (err: any) {
+      alert('Error al eliminar entrega: ' + err.message)
+    }
+  }
+
+  // CRUD: Cargar entrega existente para editar
+  const editarEntregaTurno = (reg: RegistroTurno) => {
+    setEditandoId(reg.id || null)
+    setSaliente(reg.operador_saliente)
+    setEntrante(reg.operador_entrante)
+    setNovedades(reg.novedades)
+    setPendientesList(reg.pendientes || [])
+    setMsgStatus('✏️ Editando entrega de turno registrada.')
   }
 
   const generarFallbackCompleto = (bitacora: any[], eventosSupabase: any[], chats: any[], desdeStr: string, hastaStr: string) => {
@@ -346,7 +426,7 @@ Sé sumamente estructurado, minucioso y profesional.
     setPendientesList(prev => prev.filter(p => p.id !== id))
   }
 
-  // Guardar entrega de turno
+  // Guardar entrega de turno (Crear o Editar)
   const handleGuardar = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!novedades.trim()) {
@@ -362,6 +442,7 @@ Sé sumamente estructurado, minucioso y profesional.
         entrante: entrante.trim() || 'TURNO SIGUIENTE',
         novedades: novedades.trim(),
         pendientes: pendientesList,
+        tramo: tramoActual,
         resumen_kpi: {
           total_eventos: kpiShift.total,
           alarmas: kpiShift.alarmas,
@@ -369,20 +450,36 @@ Sé sumamente estructurado, minucioso y profesional.
         }
       }
 
-      await supabase.from('eventos_monitoreo').insert({
-        cuenta: 'CONFIG_ENTREGA_TURNO',
-        nombre_abonado: JSON.stringify(payload),
-        evento: 'ENTREGA DE TURNO',
-        fecha_hora: new Date().toISOString(),
-        zona: '000',
-        usuario: saliente
-      })
+      if (editandoId) {
+        // Actualizar registro existente
+        await supabase
+          .from('eventos_monitoreo')
+          .update({
+            nombre_abonado: JSON.stringify(payload),
+            usuario: saliente
+          })
+          .eq('id', editandoId)
+
+        setMsgStatus('✅ Entrega de turno actualizada correctamente.')
+        setEditandoId(null)
+      } else {
+        // Crear nuevo registro
+        await supabase.from('eventos_monitoreo').insert({
+          cuenta: 'CONFIG_ENTREGA_TURNO',
+          nombre_abonado: JSON.stringify(payload),
+          evento: 'ENTREGA DE TURNO',
+          fecha_hora: new Date().toISOString(),
+          zona: '000',
+          usuario: saliente
+        })
+
+        setMsgStatus('✅ Entrega de turno registrada correctamente.')
+      }
 
       setNovedades('')
       setEntrante('')
       setPendientesList([])
       await cargarHistorial()
-      setMsgStatus('✅ Entrega de turno registrada correctamente.')
     } catch (err: any) {
       console.error('Error guardando turno:', err)
       setMsgStatus('❌ Error al guardar la entrega de turno: ' + err.message)
@@ -459,13 +556,78 @@ Sé sumamente estructurado, minucioso y profesional.
           </button>
         </div>
 
-        {/* Bar de KPIs en vivo del Turno (Últimas 8 Horas) */}
+        {/* Selector de Tramo Horario de Turno (1-Click Presets) */}
+        <div className="bg-slate-900 border-b border-slate-800 px-5 py-2 flex items-center justify-between flex-wrap gap-2 shrink-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-[11px] font-extrabold text-amber-400 uppercase tracking-wider flex items-center gap-1">
+              🕒 Tramo Horario de Turno:
+            </span>
+            <div className="flex bg-slate-950 p-1 rounded-xl border border-slate-800 gap-1 flex-wrap">
+              <button
+                type="button"
+                onClick={() => cambiarTramoTurno('MANANA')}
+                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                  tramoActual === 'MANANA'
+                    ? 'bg-amber-600 text-white shadow-md font-black border border-amber-400/40'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                }`}
+              >
+                🌅 Mañana (08:00 - 16:00)
+              </button>
+
+              <button
+                type="button"
+                onClick={() => cambiarTramoTurno('TARDE')}
+                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                  tramoActual === 'TARDE'
+                    ? 'bg-orange-600 text-white shadow-md font-black border border-orange-400/40'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                }`}
+              >
+                ☀️ Tarde (16:00 - 22:00)
+              </button>
+
+              <button
+                type="button"
+                onClick={() => cambiarTramoTurno('NOCHE')}
+                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                  tramoActual === 'NOCHE'
+                    ? 'bg-indigo-600 text-white shadow-md font-black border border-indigo-400/40'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                }`}
+              >
+                🌃 Noche (22:00 - 08:00)
+              </button>
+
+              <button
+                type="button"
+                onClick={() => cambiarTramoTurno('FLOTANTE_8H')}
+                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                  tramoActual === 'FLOTANTE_8H'
+                    ? 'bg-blue-600 text-white shadow-md font-black border border-blue-400/40'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                }`}
+              >
+                ⚡ Flotante (Últimas 8h)
+              </button>
+            </div>
+          </div>
+
+          <div className="text-[11px] font-mono text-slate-400 bg-slate-950 px-2.5 py-1 rounded-lg border border-slate-800">
+            {(() => {
+              const { desde, hasta } = calcularRangoTramo(tramoActual)
+              return `📅 Rango: ${desde.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })} ➔ ${hasta.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}`
+            })()}
+          </div>
+        </div>
+
+        {/* Bar de KPIs en vivo del Turno (Ajustado al Tramo Horario) */}
         <div className="bg-[#1e293b] border-b border-slate-700 px-5 py-2.5 grid grid-cols-2 sm:grid-cols-4 gap-3 shrink-0">
           <div className="bg-slate-800/80 border border-slate-700 rounded-xl p-2.5 flex items-center gap-3">
             <span className="text-2xl">📊</span>
             <div>
               <div className="text-[10px] text-slate-400 font-bold uppercase">Total Eventos Turno</div>
-              <div className="text-base font-black text-blue-400 font-mono">{kpiShift.total} <span className="text-[10px] font-normal text-slate-400">(8h)</span></div>
+              <div className="text-base font-black text-blue-400 font-mono">{kpiShift.total} <span className="text-[10px] font-normal text-slate-400">({tramoActual})</span></div>
             </div>
           </div>
 
@@ -506,7 +668,13 @@ Sé sumamente estructurado, minucioso y profesional.
               <div className="bg-[#1e293b] border border-slate-700 rounded-xl p-4 space-y-3 shadow-sm">
                 <div className="text-xs font-bold text-blue-400 uppercase tracking-wider flex justify-between items-center border-b border-slate-700 pb-2">
                   <span>👤 Responsables del Cambio de Turno</span>
-                  <span className="text-[10px] text-slate-400 font-mono">{new Date().toLocaleString('es-CL')}</span>
+                  {editandoId ? (
+                    <span className="text-xs bg-amber-500/30 text-amber-300 border border-amber-500/50 px-2 py-0.5 rounded font-bold animate-pulse">
+                      ✏️ MODO EDICIÓN ACTIVO (ID #{editandoId})
+                    </span>
+                  ) : (
+                    <span className="text-[10px] text-slate-400 font-mono">{new Date().toLocaleString('es-CL')}</span>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -643,7 +811,7 @@ Sé sumamente estructurado, minucioso y profesional.
                   </div>
                   <button
                     type="button"
-                    onClick={generarResumenAutomatico}
+                    onClick={() => generarResumenAutomatico()}
                     disabled={generandoIA}
                     className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-extrabold text-sm px-5 py-2.5 rounded-xl shadow-lg cursor-pointer transition-all flex items-center gap-2 border border-purple-400/30 disabled:opacity-50 hover:scale-105 active:scale-95"
                   >
@@ -709,7 +877,18 @@ Sé sumamente estructurado, minucioso y profesional.
 
               {/* Fila 4: Barra de Acciones Principales Prominentes */}
               <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-3.5 flex flex-wrap items-center justify-between gap-3 shadow-lg">
-                <span className="text-xs font-bold text-amber-400 truncate max-w-xs">{msgStatus}</span>
+                <div className="flex items-center gap-2 max-w-sm">
+                  <span className="text-xs font-bold text-amber-400 truncate">{msgStatus}</span>
+                  {editandoId && (
+                    <button
+                      type="button"
+                      onClick={() => { setEditandoId(null); setNovedades(''); setEntrante('') }}
+                      className="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-2 py-1 rounded border border-slate-700 cursor-pointer"
+                    >
+                      Cancelar Edición
+                    </button>
+                  )}
+                </div>
 
                 <div className="flex items-center gap-4 ml-auto flex-wrap">
                   <button
@@ -726,7 +905,7 @@ Sé sumamente estructurado, minucioso y profesional.
                     disabled={cargando || !novedades.trim()}
                     className="bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-sm px-6 py-3 rounded-xl shadow-lg cursor-pointer transition-all flex items-center gap-2 border border-blue-400/40 disabled:opacity-50 hover:scale-105 active:scale-95"
                   >
-                    {cargando ? '💾 Guardando...' : '💾 Registrar Entrega de Turno'}
+                    {cargando ? '💾 Guardando...' : editandoId ? '💾 Guardar Cambios' : '💾 Registrar Entrega de Turno'}
                   </button>
                 </div>
               </div>
@@ -734,51 +913,97 @@ Sé sumamente estructurado, minucioso y profesional.
             </form>
           </div>
 
-          {/* Columna Derecha: Historial de Entregas Recientes (Compacto 2-3 Cols) */}
+          {/* Columna Derecha: Historial de Entregas Recientes (Compacto 2-3 Cols con CRUD) */}
           <div className="lg:col-span-3 xl:col-span-2 p-3 bg-slate-900/50 overflow-y-auto flex flex-col gap-2.5 border-l border-slate-800">
             <div className="text-xs font-bold text-slate-300 uppercase tracking-wider border-b border-slate-800 pb-2 flex justify-between items-center shrink-0">
               <span>📋 Historial</span>
               <span className="text-[10px] bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded font-mono">{historial.length}</span>
             </div>
 
-            {historial.length === 0 ? (
-              <div className="text-center py-12 text-slate-500 italic text-xs">
-                No hay entregas de turno registradas en la base de datos.
-              </div>
-            ) : (
-              <div className="space-y-3 flex-1">
-                {historial.map((reg, idx) => (
-                  <div key={reg.id || idx} className="bg-[#1e293b] border border-slate-700 rounded-xl p-3 space-y-2 shadow-sm">
-                    <div className="flex justify-between items-center text-xs border-b border-slate-700/80 pb-1.5">
-                      <span className="font-bold text-blue-400 font-mono flex items-center gap-1.5">
-                        🗓️ {new Date(reg.fecha_hora).toLocaleString('es-CL')}
-                      </span>
-                    </div>
+            {/* Buscador de historial */}
+            <input
+              type="text"
+              placeholder="🔍 Buscar operador/fecha..."
+              value={busquedaHistorial}
+              onChange={e => setBusquedaHistorial(e.target.value)}
+              className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500 font-mono"
+            />
 
-                    <div className="flex justify-between text-[11px] text-slate-300 bg-slate-900/60 p-2 rounded-lg border border-slate-800">
-                      <div><span className="text-slate-400 font-bold">Saliente:</span> {reg.operador_saliente}</div>
-                      <div><span className="text-slate-400 font-bold">Entrante:</span> {reg.operador_entrante}</div>
-                    </div>
+            {(() => {
+              const filtrados = historial.filter(reg => {
+                if (!busquedaHistorial.trim()) return true
+                const q = busquedaHistorial.toLowerCase()
+                return (
+                  reg.operador_saliente.toLowerCase().includes(q) ||
+                  reg.operador_entrante.toLowerCase().includes(q) ||
+                  reg.novedades.toLowerCase().includes(q) ||
+                  reg.fecha_hora.toLowerCase().includes(q)
+                )
+              })
 
-                    {/* Pendientes guardados en este turno */}
-                    {reg.pendientes && reg.pendientes.length > 0 && (
-                      <div className="bg-amber-950/40 border border-amber-900/50 p-2 rounded-lg space-y-1">
-                        <div className="text-[10px] font-bold text-amber-300 uppercase">📌 Pendientes Notificados:</div>
-                        {reg.pendientes.map((p, i) => (
-                          <div key={i} className="text-[11px] text-amber-200 font-mono">
-                            • [{p.cuenta}]: {p.instruccion}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                    <p className="text-slate-200 text-xs whitespace-pre-wrap font-mono leading-relaxed bg-slate-950/60 p-2.5 rounded-lg border border-slate-800 max-h-48 overflow-y-auto">
-                      {reg.novedades}
-                    </p>
+              if (filtrados.length === 0) {
+                return (
+                  <div className="text-center py-12 text-slate-500 italic text-xs">
+                    No se encontraron entregas en el historial.
                   </div>
-                ))}
-              </div>
-            )}
+                )
+              }
+
+              return (
+                <div className="space-y-3 flex-1">
+                  {filtrados.map((reg, idx) => (
+                    <div key={reg.id || idx} className="bg-[#1e293b] border border-slate-700 rounded-xl p-2.5 space-y-2 shadow-sm relative group">
+                      <div className="flex justify-between items-center text-xs border-b border-slate-700/80 pb-1">
+                        <span className="font-bold text-blue-400 font-mono text-[10px]">
+                          🗓️ {new Date(reg.fecha_hora).toLocaleString('es-CL', { month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                        
+                        {/* Botones CRUD: Editar / Eliminar */}
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => editarEntregaTurno(reg)}
+                            title="Editar esta entrega"
+                            className="text-amber-400 hover:text-amber-300 hover:bg-amber-950/60 p-1 rounded text-xs transition-colors cursor-pointer"
+                          >
+                            ✏️
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => reg.id && eliminarEntregaTurno(reg.id)}
+                            title="Eliminar esta entrega"
+                            className="text-red-400 hover:text-red-300 hover:bg-red-950/60 p-1 rounded text-xs transition-colors cursor-pointer"
+                          >
+                            🗑️
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="flex justify-between text-[10px] text-slate-300 bg-slate-900/60 p-1.5 rounded-lg border border-slate-800">
+                        <div><span className="text-slate-400 font-bold">Sal:</span> {reg.operador_saliente}</div>
+                        <div><span className="text-slate-400 font-bold">Ent:</span> {reg.operador_entrante}</div>
+                      </div>
+
+                      {/* Pendientes guardados */}
+                      {reg.pendientes && reg.pendientes.length > 0 && (
+                        <div className="bg-amber-950/40 border border-amber-900/50 p-1.5 rounded-lg space-y-0.5">
+                          <div className="text-[9px] font-bold text-amber-300 uppercase">📌 Pendientes ({reg.pendientes.length}):</div>
+                          {reg.pendientes.map((p, i) => (
+                            <div key={i} className="text-[10px] text-amber-200 font-mono truncate">
+                              • [{p.cuenta}]: {p.instruccion}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      <p className="text-slate-300 text-[10px] whitespace-pre-wrap font-mono leading-relaxed bg-slate-950/60 p-2 rounded-lg border border-slate-800 max-h-36 overflow-y-auto">
+                        {reg.novedades}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )
+            })()}
           </div>
 
         </div>
