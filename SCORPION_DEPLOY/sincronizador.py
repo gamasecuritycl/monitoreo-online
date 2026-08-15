@@ -213,10 +213,10 @@ def get_archivos_mdb_activos():
                     full_path = os.path.join(CARPETA_EVENTOS, f)
                     try: all_files.append((os.path.getmtime(full_path), full_path))
                     except: pass
-            all_files.sort(key=lambda x: x[0], reverse=False)
-            return [item[1] for item in all_files[-3:]]
+            all_files.sort(key=lambda x: x[0], reverse=True)
+            return [item[1] for item in all_files[:5]]
 
-        archivos.sort(key=lambda x: x[0], reverse=False)
+        archivos.sort(key=lambda x: x[0], reverse=True)
         return [item[1] for item in archivos]
     except Exception as e:
         print(f"[ERROR] No se puede leer EVENTOS: {e}")
