@@ -126,12 +126,32 @@ export default function ScorpionDashboard() {
   ]
 
   const [operadores, setOperadores] = useState<Operator[]>(OPERADORES_FALLBACK)
-  const [usuarioActivo, setUsuarioActivo] = useState<Operator>(OPERADORES_FALLBACK[0])
+  const [usuarioActivo, setUsuarioActivo] = useState<Operator>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('gama_operator_auth') || localStorage.getItem('gama_usuario_activo')
+        if (saved) {
+          const parsed = JSON.parse(saved)
+          if (parsed && parsed.nombre) return parsed
+        }
+      } catch {}
+    }
+    return OPERADORES_FALLBACK[0]
+  })
   const [sesionIniciada, setSesionIniciada] = useState(false)
   const [unreadWhatsAppCount, setUnreadWhatsAppCount] = useState(0)
   const [armadoMap, setArmadoMap] = useState<Record<string, boolean>>({})
   const armadoMapRef = useRef<Record<string, boolean>>({})
   const clientesConCamarasRef = useRef<Set<string>>(new Set())
+
+  // Sincronizar usuario activo con localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined' && usuarioActivo?.nombre) {
+      try {
+        localStorage.setItem('gama_usuario_activo', JSON.stringify(usuarioActivo))
+      } catch {}
+    }
+  }, [usuarioActivo])
 
   // Suscripción Realtime a mensajes entrantes de WhatsApp
   useEffect(() => {
@@ -181,18 +201,16 @@ export default function ScorpionDashboard() {
           const parsed = JSON.parse(data[0].nombre_abonado || '[]')
           if (parsed && parsed.length > 0) {
             setOperadores(parsed)
-            // Ajustar el usuario activo
-            const match = parsed.find((o: any) => o.codigo === usuarioActivo.codigo)
+            // Preservar usuario activo si ya coincide por código o nombre
+            const match = parsed.find((o: any) => o.codigo === usuarioActivo.codigo || o.nombre === usuarioActivo.nombre)
             if (match) {
               setUsuarioActivo(match)
-            } else {
-              setUsuarioActivo(parsed[0])
             }
           }
         }
       } catch (err) {
         console.warn('Error loading operators list, using fallback:', err)
-        try { const r = await fetch('/api/dahua-eventos?tipo=operadores'); const j = await r.json(); if (j.data?.[0]?.nombre_abonado) { const p = JSON.parse(j.data[0].nombre_abonado); if (p.length > 0) { setOperadores(p); const m = p.find((o: any) => o.codigo === usuarioActivo.codigo); setUsuarioActivo(m || p[0]) } } } catch {}
+        try { const r = await fetch('/api/dahua-eventos?tipo=operadores'); const j = await r.json(); if (j.data?.[0]?.nombre_abonado) { const p = JSON.parse(j.data[0].nombre_abonado); if (p.length > 0) { setOperadores(p); const m = p.find((o: any) => o.codigo === usuarioActivo.codigo || o.nombre === usuarioActivo.nombre); if (m) setUsuarioActivo(m) } } } catch {}
       }
     }
     fetchOperadores()

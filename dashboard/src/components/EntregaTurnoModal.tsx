@@ -140,6 +140,12 @@ export default function EntregaTurnoModal({ onClose, usuarioActual = 'OPERADOR C
   }
 
   useEffect(() => {
+    if (usuarioActual) {
+      setSaliente(usuarioActual)
+    }
+  }, [usuarioActual])
+
+  useEffect(() => {
     cargarHistorial()
     cargarMetricasTurno()
   }, [])
