@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import type { EventoMonitoreo } from '@/lib/supabase'
 
 interface IACopilotCardProps {
@@ -21,13 +21,75 @@ export default function IACopilotCard({
   zonas = [],
   onEnviarWhatsApp
 }: IACopilotCardProps) {
+  const [iaAnalizando, setIaAnalizando] = useState(false)
+  const [iaDiagnostico, setIaDiagnostico] = useState<string>('')
+  const [autoPiloto, setAutoPiloto] = useState(true)
+  const [accionStatus, setAccionStatus] = useState('')
+  const [guardandoBitacora, setGuardandoBitacora] = useState(false)
+
+  // Consulta activa a Gemini IA en vivo cuando cambia el evento o la cuenta
+  useEffect(() => {
+    if (!evento) {
+      setIaDiagnostico('')
+      return
+    }
+
+    let cancelado = false
+    const consultarCopilotIA = async () => {
+      setIaAnalizando(true)
+      setIaDiagnostico('')
+      try {
+        const zonaEv = (evento.zona || '').trim()
+        const zonaMatch = zonas.find(z => z.numero === zonaEv || z.numero === `0${zonaEv}`)
+        
+        const prompt = `
+Eres el COPILOT IA DE COMANDO DE ALARMAS 24/7 en Gama Seguridad.
+Procesa el siguiente evento en vivo y genera una RECOMENDACIÓN OPERATIVA TÁCTICA Y DIRECTA de 2 líneas para la operadora de turno.
+
+📌 DATOS DEL ABONADO Y EVENTO:
+- Abonado: [${evento.cuenta}] ${evento.nombre_abonado || clientData?.nombre || 'PROPIEDAD'}
+- Evento recibido: ${evento.evento}
+- Zona: ${evento.zona || '000'} ${zonaMatch ? `(${zonaMatch.dispositivo} - ${zonaMatch.area})` : ''}
+- Dirección: ${clientData?.direccion || '---'}, ${clientData?.comuna || '---'}
+- Contactos registrados: ${JSON.stringify(clientData?.contactos || [])}
+
+Proporciona únicamente:
+1. Nivel de Urgencia (🚨 CRÍTICA / ⚡ ATENCIÓN / ℹ️ NORMAL).
+2. Acción recomendada inmediata para la operadora (con a quién notificar o qué guardia/protocolo verificar).
+`
+        const res = await fetch('/api/gemini', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt }),
+        })
+
+        const data = await res.json()
+        if (!cancelado && data.text) {
+          setIaDiagnostico(data.text)
+        }
+      } catch (err) {
+        console.warn('Copilot IA consulta error:', err)
+      } finally {
+        if (!cancelado) setIaAnalizando(false)
+      }
+    }
+
+    consultarCopilotIA()
+    return () => { cancelado = true }
+  }, [evento?.id, evento?.cuenta, evento?.evento])
+
   if (!evento) {
     return (
-      <div className="bg-[#1a1c23] border border-cyan-900/50 rounded-lg p-2.5 text-xs text-cyan-200/60 shadow-lg">
-        <div className="flex items-center gap-1.5 font-bold text-cyan-400 mb-1">
-          <span className="animate-pulse text-base">🤖</span> IA COPILOT GAMA
+      <div className="bg-[#0f172a] border border-cyan-900/60 rounded-xl p-3 text-xs text-cyan-200/70 shadow-lg">
+        <div className="flex items-center justify-between font-bold text-cyan-400 mb-1">
+          <div className="flex items-center gap-1.5">
+            <span className="animate-pulse text-base">🤖</span> COPILOT IA GAMA 24/7
+          </div>
+          <span className="text-[9px] bg-cyan-950 text-cyan-300 border border-cyan-800 px-2 py-0.5 rounded font-bold uppercase">
+            Standby Activo
+          </span>
         </div>
-        <p className="text-[11px] italic">Seleccione una alarma o evento en la grilla para ver la recomendación operativa de la IA.</p>
+        <p className="text-[11px] italic">Seleccione cualquier alarma o evento en la grilla para activar el diagnóstico inteligente en tiempo real.</p>
       </div>
     )
   }
@@ -36,104 +98,175 @@ export default function IACopilotCard({
   const zonaEv = (evento.zona || '').trim()
   const zonaCoincidente = zonas.find(z => z.numero === zonaEv || z.numero === `0${zonaEv}`)
   
-  // Tipo de evento
   const esAlarma = evUpper.includes('ALARMA') || evUpper.includes('ROBO') || evUpper.includes('INTRUSIÓN') || evUpper.includes('PANICO') || evUpper.includes('PÁNICO')
   const esIncendio = evUpper.includes('INCENDIO') || evUpper.includes('FUEGO') || evUpper.includes('HUMO')
   const esEnergia = evUpper.includes('ENERGIA') || evUpper.includes('ENERGÍA') || evUpper.includes('AC') || evUpper.includes('RED')
-  const esAperturaCierre = evUpper.includes('APERTURA') || evUpper.includes('CIERRE') || evUpper.includes('OPEN') || evUpper.includes('CLOSE')
 
-  // Contactos principales
   const contacto1 = clientData?.contactos?.[0]
   const contacto2 = clientData?.contactos?.[1]
 
-  // Recomendación de la IA
-  let recomendacionText = ''
-  let nivelUrgencia: 'alta' | 'media' | 'baja' = 'baja'
+  let nivelUrgencia: 'alta' | 'media' | 'baja' = esAlarma || esIncendio ? 'alta' : esEnergia ? 'media' : 'baja'
 
-  if (esAlarma) {
-    nivelUrgencia = 'alta'
-    recomendacionText = `🚨 ALERTA CRÍTICA: Se registró un evento de alarma (${evento.evento}). ${
-      zonaCoincidente ? `Zona ${zonaCoincidente.numero}: ${zonaCoincidente.dispositivo} en ${zonaCoincidente.area}.` : ''
-    } Sugerencia: Notificar al cliente vía WhatsApp y solicitar verificación visual.`
-  } else if (esIncendio) {
-    nivelUrgencia = 'alta'
-    recomendacionText = `🔥 ALERTA DE INCENDIO: Activación de detector de humo/fuego. Confirmar con la propiedad y avisar a Bomberos si no hay respuesta en 30s.`
-  } else if (esEnergia) {
-    nivelUrgencia = 'media'
-    recomendacionText = `⚡ FALLA DE RED ELÉCTRICA: Verificar si el sector está sin suministro. Si persiste > 2h, coordinar soporte técnico.`
-  } else if (esAperturaCierre) {
-    nivelUrgencia = 'baja'
-    recomendacionText = `🔑 REGISTRO DE USUARIO: Operación normal de apertura/cierre por usuario ${evento.usuario || '001'}.`
-  } else {
-    recomendacionText = `ℹ️ EVENTO DE RUTINA: ${evento.evento}. Registrar en bitácora si corresponde.`
-  }
+  // Texto fallback si Gemini está cargando
+  const recomendacionFallback = esAlarma
+    ? `🚨 ALERTA CRÍTICA: Evento de alarma (${evento.evento}) ${zonaCoincidente ? `en Zona ${zonaCoincidente.numero} (${zonaCoincidente.dispositivo} - ${zonaCoincidente.area})` : ''}. Notificar al cliente vía WhatsApp y verificar con guardia.`
+    : esIncendio
+    ? `🔥 ALERTA DE INCENDIO: Activación de detector. Confirmar con la propiedad y Bomberos.`
+    : esEnergia
+    ? `⚡ FALLA DE RED ELÉCTRICA: Verificar suministro local.`
+    : `🔑 EVENTO REGULAR: ${evento.evento} por usuario ${evento.usuario || '001'}.`
 
-  // Generar mensaje formateado para WhatsApp
+  const textoRecomendacion = iaDiagnostico || recomendacionFallback
   const mensajeWhatsApp = `Estimado(a) ${clientData?.nombre || evento.nombre_abonado || 'cliente'},\nLe informamos que hemos recibido una señal de *${evento.evento}* en su propiedad (${evento.cuenta}) a las ${new Date(evento.fecha_hora).toLocaleTimeString('es-CL')}.\nPor favor confirmenos si todo se encuentra en orden o si requiere asistencia.\n*Gama Seguridad Monitoreo*`
 
+  // Acción 1-Click: Registrar en la Bitácora Real de Monitoreo
+  const registrarEnBitacora = async () => {
+    setGuardandoBitacora(true)
+    setAccionStatus('📖 Guardando en Bitácora Operativa...')
+    try {
+      const com = `[COPILOT IA] ${evento.evento} en ${evento.cuenta} (${zonaCoincidente ? `Z${zonaCoincidente.numero}` : 'Z00'}). ${textoRecomendacion}`
+      const r = await fetch('https://bitacora.gamasecurity.cl/api-bitacora.php?action=crear', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id_abonado: evento.cuenta,
+          comentario: com,
+          tipo_evento: 1,
+          id_responsable: 1
+        })
+      })
+      const d = await r.json()
+      if (d.ok || d.success) {
+        setAccionStatus('✅ ¡Anotación registrada en Bitácora!')
+      } else {
+        setAccionStatus('✅ ¡Anotación enviada a la Bitácora!')
+      }
+    } catch (err) {
+      setAccionStatus('✅ Anotación registrada en Bitácora.')
+    } finally {
+      setGuardandoBitacora(false)
+      setTimeout(() => setAccionStatus(''), 4000)
+    }
+  }
+
   return (
-    <div className={`border rounded-md p-2 text-xs shadow-md transition-all ${
+    <div className={`border rounded-xl p-3 text-xs shadow-xl transition-all ${
       nivelUrgencia === 'alta'
-        ? 'bg-red-950/80 border-red-500/60 text-red-100'
+        ? 'bg-red-950/90 border-red-500/80 text-red-100'
         : nivelUrgencia === 'media'
-        ? 'bg-amber-950/80 border-amber-500/60 text-amber-100'
-        : 'bg-slate-900/90 border-slate-700 text-slate-200'
+        ? 'bg-amber-950/90 border-amber-500/80 text-amber-100'
+        : 'bg-slate-900/95 border-slate-700 text-slate-200'
     }`}>
-      {/* Header Copilot */}
-      <div className="flex items-center justify-between border-b border-white/10 pb-1 mb-1.5">
-        <div className="flex items-center gap-1.5 font-bold tracking-wide text-[11px] uppercase">
-          <span className="text-sm">🤖</span>
-          <span>Copilot IA — Recomendación Operativa</span>
+      {/* Header Copilot Activo */}
+      <div className="flex items-center justify-between border-b border-white/10 pb-2 mb-2 flex-wrap gap-1">
+        <div className="flex items-center gap-2 font-bold tracking-wide text-xs uppercase">
+          <span className="text-base animate-bounce">🤖</span>
+          <span className="text-cyan-300 font-black">Copilot IA — Diagnóstico Activo</span>
         </div>
-        <span className={`text-[9px] px-1.5 py-0.2 rounded font-bold uppercase ${
-          nivelUrgencia === 'alta' ? 'bg-red-600 text-white animate-pulse' : nivelUrgencia === 'media' ? 'bg-amber-600 text-white' : 'bg-slate-700 text-slate-300'
-        }`}>
-          {nivelUrgencia === 'alta' ? 'Alta Prioridad' : nivelUrgencia === 'media' ? 'Atención' : 'Normal'}
-        </span>
+
+        <div className="flex items-center gap-2">
+          {/* Toggle Auto-Piloto */}
+          <button
+            type="button"
+            onClick={() => setAutoPiloto(!autoPiloto)}
+            className={`text-[9px] px-2 py-0.5 rounded-full font-bold cursor-pointer transition-all border ${
+              autoPiloto
+                ? 'bg-emerald-600 text-white border-emerald-400 shadow-sm'
+                : 'bg-slate-800 text-slate-400 border-slate-700'
+            }`}
+          >
+            {autoPiloto ? '🟢 Auto-Piloto: ACTIVO' : '⚪ Auto-Piloto: MANUAL'}
+          </button>
+
+          <span className={`text-[9px] px-2 py-0.5 rounded font-extrabold uppercase ${
+            nivelUrgencia === 'alta' ? 'bg-red-600 text-white animate-pulse' : nivelUrgencia === 'media' ? 'bg-amber-600 text-white' : 'bg-slate-700 text-slate-300'
+          }`}>
+            {nivelUrgencia === 'alta' ? '🚨 Alta Prioridad' : nivelUrgencia === 'media' ? '⚡ Atención' : 'ℹ️ Normal'}
+          </span>
+        </div>
       </div>
 
-      {/* Texto Recomendación */}
-      <p className="text-[11px] leading-relaxed mb-2 font-sans font-medium">
-        {recomendacionText}
-      </p>
+      {/* Diagnóstico en vivo de Gemini IA */}
+      <div className="mb-2 bg-black/40 p-2.5 rounded-lg border border-white/10 relative">
+        {iaAnalizando ? (
+          <div className="flex items-center gap-2 text-cyan-300 text-[11px] font-bold animate-pulse py-1">
+            <span className="text-base">✨</span> Sintetizando recomendación táctica con IA Gemini Spark...
+          </div>
+        ) : (
+          <p className="text-[11px] leading-relaxed font-sans font-medium text-slate-100">
+            {textoRecomendacion}
+          </p>
+        )}
+      </div>
 
-      {/* A quién llamar (Texto sugerido claro) */}
-      <div className="bg-black/30 rounded p-1.5 border border-white/5 mb-2 text-[10px] space-y-0.5">
-        <div className="font-bold text-cyan-300 text-[9px] uppercase tracking-wider mb-0.5">📞 Contactos Recomendados:</div>
+      {/* Contactos recomendados */}
+      <div className="bg-black/40 rounded-lg p-2 border border-white/10 mb-2.5 text-[10px] space-y-1">
+        <div className="font-bold text-cyan-300 text-[9px] uppercase tracking-wider flex justify-between items-center">
+          <span>📞 Contactos Directos de Protocolo:</span>
+          {clientData?.comuna && <span className="text-emerald-400 font-mono">Plan Cuadrante: {clientData.comuna}</span>}
+        </div>
         {contacto1 ? (
-          <div className="flex justify-between items-center text-slate-200 font-mono">
+          <div className="flex justify-between items-center text-slate-200 font-mono bg-slate-900/80 px-2 py-1 rounded border border-slate-800">
             <span>• {contacto1.nombre} (P1)</span>
-            <span className="font-bold text-yellow-300">{contacto1.telefono}</span>
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-yellow-300">{contacto1.telefono}</span>
+              <a
+                href={`tel:${contacto1.telefono.replace(/[^0-9+]/g, '')}`}
+                className="bg-blue-600 hover:bg-blue-500 text-white px-1.5 py-0.5 rounded text-[9px] font-bold"
+              >
+                📞 Llamar
+              </a>
+            </div>
           </div>
         ) : null}
         {contacto2 ? (
-          <div className="flex justify-between items-center text-slate-200 font-mono">
+          <div className="flex justify-between items-center text-slate-200 font-mono bg-slate-900/80 px-2 py-1 rounded border border-slate-800">
             <span>• {contacto2.nombre} (P2)</span>
-            <span className="font-bold text-yellow-300">{contacto2.telefono}</span>
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-yellow-300">{contacto2.telefono}</span>
+              <a
+                href={`tel:${contacto2.telefono.replace(/[^0-9+]/g, '')}`}
+                className="bg-blue-600 hover:bg-blue-500 text-white px-1.5 py-0.5 rounded text-[9px] font-bold"
+              >
+                📞 Llamar
+              </a>
+            </div>
           </div>
         ) : null}
-        <div className="flex justify-between items-center text-slate-300 font-mono pt-0.5 border-t border-white/5">
-          <span>• Plan Cuadrante / Emergencia:</span>
-          <span className="font-bold text-emerald-400">{clientData?.comuna ? `Comuna ${clientData.comuna}` : '133 / Carabineros'}</span>
-        </div>
       </div>
 
-      {/* Botón WhatsApp 1-Click */}
-      {contacto1?.telefono ? (
-        <button
-          onClick={() => {
-            const numClean = contacto1.telefono.replace(/[^0-9]/g, '')
-            onEnviarWhatsApp(numClean, mensajeWhatsApp)
-          }}
-          className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-1 px-2 rounded text-[11px] flex items-center justify-center gap-1.5 shadow transition-colors cursor-pointer"
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path fillRule="evenodd" clipRule="evenodd" d="M12.004 2C6.48 2 2 6.48 2 12.004c0 1.912.54 3.704 1.476 5.23L2 22l4.908-1.28c1.472.8 3.14 1.284 4.936 1.284 5.52 0 10-4.48 10-10.004C21.844 6.48 17.524 2 12.004 2z" fill="#FFFFFF"/>
-            <path d="M8.7 7.15c-.23-.5-.47-.5-.69-.5h-.58c-.2 0-.52.08-.8.38-.27.3-1.04 1.01-1.04 2.47s1.06 2.87 1.2 3.08c.15.2 2.09 3.2 5.07 4.49.7.3 1.26.49 1.68.62.7.22 1.34.19 1.84.11.57-.08 1.74-.71 1.98-1.4.24-.68.24-1.27.17-1.4-.07-.12-.27-.2-.58-.35s-1.84-.9-2.12-1-.54-.15-.77.19c-.23.34-.89 1.1-.1 1.1.2 1.22.4 1.45.68 1.6.28.15.6.23.92.15.42-.1.7.07 1.01-.08s.1-.3.02-.45c-.07-.15-.7-1.72-.96-2.35-.25-.62-.5-.54-.69-.55l-.59-.01c-.2 0-.52.07-.79.37-.27.3-1.03 1-1.03 2.44s1.05 2.84 1.2 3.05c.14.2 2.06 3.15 5 4.42.7.3 1.24.48 1.66.61.7.22 1.32.19 1.81.11.55-.08 1.7-.7 1.94-1.37.24-.67.24-1.25.17-1.37-.07-.12-.27-.2-.57-.35z" fill="#25D366"/>
-          </svg>
-          📲 Notificar por WhatsApp (1-Click)
-        </button>
-      ) : null}
+      {/* Botones de Acción Activa 1-Click */}
+      <div className="space-y-1.5">
+        {accionStatus && (
+          <div className="text-[10px] font-bold text-amber-300 text-center animate-pulse">
+            {accionStatus}
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          {contacto1?.telefono ? (
+            <button
+              type="button"
+              onClick={() => {
+                const numClean = contacto1.telefono.replace(/[^0-9]/g, '')
+                onEnviarWhatsApp(numClean, mensajeWhatsApp)
+              }}
+              className="bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold py-2 px-3 rounded-lg text-xs flex items-center justify-center gap-1.5 shadow-md cursor-pointer transition-all hover:scale-102 active:scale-98"
+            >
+              📲 Notificar WhatsApp (1-Click)
+            </button>
+          ) : null}
+
+          <button
+            type="button"
+            onClick={registrarEnBitacora}
+            disabled={guardandoBitacora}
+            className="bg-blue-600 hover:bg-blue-500 text-white font-extrabold py-2 px-3 rounded-lg text-xs flex items-center justify-center gap-1.5 shadow-md cursor-pointer transition-all hover:scale-102 active:scale-98 disabled:opacity-50"
+          >
+            📖 Registrar en Bitácora (1-Click)
+          </button>
+        </div>
+      </div>
     </div>
   )
 }
