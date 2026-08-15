@@ -16,6 +16,17 @@ interface PendienteAbonado {
   prioridad: 'ALTA' | 'MEDIA' | 'BAJA'
 }
 
+interface FilaBitacora {
+  id?: string | number
+  hora: string
+  cuenta: string
+  nombre: string
+  tipo: string
+  operador: string
+  comentario: string
+  continuidad: string
+}
+
 interface RegistroTurno {
   id?: string | number
   fecha_hora: string
@@ -39,6 +50,10 @@ export default function EntregaTurnoModal({ onClose, usuarioActual = 'OPERADOR C
   const [enviandoWA, setEnviandoWA] = useState(false)
   const [msgStatus, setMsgStatus] = useState('')
   const [historial, setHistorial] = useState<RegistroTurno[]>([])
+
+  // Vista de Tabla HTML vs Texto
+  const [filasBitacora, setFilasBitacora] = useState<FilaBitacora[]>([])
+  const [vistaModo, setVistaModo] = useState<'tabla' | 'texto'>('tabla')
 
   // Pendientes por abonado
   const [pendientesList, setPendientesList] = useState<PendienteAbonado[]>([])
@@ -166,6 +181,27 @@ export default function EntregaTurnoModal({ onClose, usuarioActual = 'OPERADOR C
         .gte('created_at', hace8Horas.toISOString())
         .order('created_at', { ascending: false })
         .limit(40)
+
+      // Parsear filas para la vista de tabla HTML ejecutiva
+      if (Array.isArray(eventosBitacora) && eventosBitacora.length > 0) {
+        const parsedFilas: FilaBitacora[] = eventosBitacora.map((b: any) => {
+          const hora = b.created_at ? new Date(b.created_at).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }) : ''
+          const com = b.comentario || ''
+          const isNoCierre = com.toLowerCase().includes('no registra') || com.toLowerCase().includes('no registró')
+          return {
+            id: b.id,
+            hora,
+            cuenta: b.abonado_cod || 'CTA',
+            nombre: b.abonado_nombre || '',
+            tipo: b.tipo_nombre || 'NOVEDAD',
+            operador: b.responsable_nombre || 'Operador',
+            comentario: com,
+            continuidad: isNoCierre ? '🔴 No Cierre / SMS' : '✅ Verificado / OK'
+          }
+        })
+        setFilasBitacora(parsedFilas)
+        setVistaModo('tabla')
+      }
 
       setMsgStatus('✨ Sintetizando con IA Gemini el informe de entrega de turno...')
 
@@ -571,28 +607,98 @@ Sé sumamente estructurado, minucioso y profesional.
 
               {/* Fila 3: Redacción de Novedades y Resumen Automático */}
               <div className="bg-[#1e293b] border border-slate-700 rounded-xl p-4 space-y-3 shadow-sm">
-                <div className="flex justify-between items-center border-b border-slate-700 pb-2">
-                  <span className="text-xs font-bold text-green-400 uppercase tracking-wider">
-                    📝 Novedades y Observaciones del Turno
-                  </span>
+                <div className="flex justify-between items-center border-b border-slate-700 pb-2 flex-wrap gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-green-400 uppercase tracking-wider">
+                      📝 Novedades y Observaciones del Turno
+                    </span>
+                    {filasBitacora.length > 0 && (
+                      <div className="flex bg-slate-900 border border-slate-700 rounded-lg p-0.5 text-[10px] font-bold ml-2">
+                        <button
+                          type="button"
+                          onClick={() => setVistaModo('tabla')}
+                          className={`px-2.5 py-1 rounded cursor-pointer transition-colors ${
+                            vistaModo === 'tabla' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-white'
+                          }`}
+                        >
+                          📊 Tabla Ejecutiva (HTML)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setVistaModo('texto')}
+                          className={`px-2.5 py-1 rounded cursor-pointer transition-colors ${
+                            vistaModo === 'texto' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-white'
+                          }`}
+                        >
+                          ✏️ Texto / WhatsApp
+                        </button>
+                      </div>
+                    )}
+                  </div>
                   <button
                     type="button"
                     onClick={generarResumenAutomatico}
                     disabled={generandoIA}
-                    className="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs px-3 py-1 rounded-lg cursor-pointer transition-colors shadow flex items-center gap-1.5 disabled:opacity-50"
+                    className="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs px-3.5 py-1.5 rounded-lg cursor-pointer transition-colors shadow flex items-center gap-1.5 disabled:opacity-50"
                   >
                     {generandoIA ? '✨ Analizando...' : '✨ Auto-Generar Resumen de Bitácora'}
                   </button>
                 </div>
 
-                <textarea
-                  rows={8}
-                  value={novedades}
-                  onChange={(e) => setNovedades(e.target.value)}
-                  placeholder="Redacte aquí las novedades del turno, o haga clic en 'Auto-Generar Resumen de Bitácora'..."
-                  className="w-full bg-slate-900 border border-slate-700 p-3 rounded-lg text-sm text-slate-100 font-mono leading-relaxed focus:outline-none focus:border-green-500 resize-y"
-                  required
-                />
+                {vistaModo === 'tabla' && filasBitacora.length > 0 ? (
+                  <div className="overflow-x-auto border border-slate-700 rounded-xl bg-slate-950 max-h-[340px] overflow-y-auto shadow-inner">
+                    <table className="w-full text-left border-collapse text-xs">
+                      <thead>
+                        <tr className="bg-slate-800 text-slate-300 font-bold text-[11px] border-b border-slate-700 sticky top-0 z-10 shadow-sm">
+                          <th className="p-2.5 w-20">HORA</th>
+                          <th className="p-2.5 w-44">ABONADO Y PROPIEDAD</th>
+                          <th className="p-2.5 w-28">TIPO NOVEDAD</th>
+                          <th className="p-2.5 w-32">OPERADOR</th>
+                          <th className="p-2.5">COMENTARIO / PROCEDIMIENTO EN BITÁCORA</th>
+                          <th className="p-2.5 w-36">SEGUIMIENTO</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-800 text-slate-200">
+                        {filasBitacora.map((f, i) => (
+                          <tr key={f.id || i} className="hover:bg-slate-800/60 transition-colors">
+                            <td className="p-2.5 font-mono text-blue-400 font-bold whitespace-nowrap text-[11px]">{f.hora}</td>
+                            <td className="p-2.5 font-bold text-[11px]">
+                              <span className="text-amber-400 font-mono">[{f.cuenta}]</span> {f.nombre}
+                            </td>
+                            <td className="p-2.5 whitespace-nowrap">
+                              <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                f.tipo.includes('NOVEDAD') || f.tipo.includes('ROBO') ? 'bg-red-900/80 text-red-200 border border-red-700' :
+                                f.tipo.includes('ENERGIA') ? 'bg-amber-900/80 text-amber-200 border border-amber-700' :
+                                f.tipo.includes('CIERRE') ? 'bg-blue-900/80 text-blue-200 border border-blue-700' :
+                                'bg-slate-800 text-slate-300 border border-slate-700'
+                              }`}>
+                                {f.tipo}
+                              </span>
+                            </td>
+                            <td className="p-2.5 text-slate-300 text-[11px] whitespace-nowrap">{f.operador}</td>
+                            <td className="p-2.5 text-slate-200 font-sans leading-relaxed text-[11px]">{f.comentario}</td>
+                            <td className="p-2.5 whitespace-nowrap">
+                              <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                f.continuidad.includes('No Cierre') ? 'bg-red-950 text-red-300 border border-red-800' : 'bg-green-950 text-green-300 border border-green-800'
+                              }`}>
+                                {f.continuidad}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <textarea
+                    rows={8}
+                    value={novedades}
+                    onChange={(e) => setNovedades(e.target.value)}
+                    placeholder="Redacte aquí las novedades del turno, o haga clic en 'Auto-Generar Resumen de Bitácora'..."
+                    className="w-full bg-slate-900 border border-slate-700 p-3 rounded-lg text-sm text-slate-100 font-mono leading-relaxed focus:outline-none focus:border-green-500 resize-y"
+                    required
+                  />
+                )}
               </div>
 
               {/* Fila 4: Acciones del Formulario */}
