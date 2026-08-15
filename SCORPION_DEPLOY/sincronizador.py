@@ -184,10 +184,43 @@ def save_cache(cache):
     except Exception as e:
         print(f"[CACHE] Error al guardar en disco: {e}")
 
+LAST_UPDATE_CHECK = 0
+
+def verificar_auto_actualizacion_github():
+    """ Revisa GitHub en segundo plano cada 10 minutos. Si hay una nueva versión de sincronizador.py, la descarga y reinicia automáticamente sin intervención humana. """
+    global LAST_UPDATE_CHECK
+    now = time.time()
+    if now - LAST_UPDATE_CHECK < 600:
+        return
+    LAST_UPDATE_CHECK = now
+    try:
+        import urllib.request
+        url_raw = "https://raw.githubusercontent.com/gamasecuritycl/monitoreo-online/main/sincronizador.py"
+        this_file = os.path.abspath(__file__)
+        temp_remote = this_file + ".remote"
+        
+        urllib.request.urlretrieve(url_raw, temp_remote)
+        if os.path.exists(temp_remote) and os.path.getsize(temp_remote) > 1000:
+            with open(this_file, 'rb') as f1, open(temp_remote, 'rb') as f2:
+                content_local = f1.read()
+                content_remote = f2.read()
+            
+            if content_local != content_remote:
+                print("[AUTO-UPDATE] Nueva versión detectada en GitHub. Aplicando actualización transparente...")
+                shutil.copy2(temp_remote, this_file)
+                try: os.remove(temp_remote)
+                except Exception: pass
+                os.execv(sys.executable, [sys.executable, this_file])
+            else:
+                try: os.remove(temp_remote)
+                except Exception: pass
+    except Exception as e:
+        pass
+
 def get_archivos_mdb_activos():
     """
-    Obtiene los MDBs activos ordenados por mtime ascendente (más antiguo primero -> más reciente al final).
-    Procesa solo archivos modificados en los últimos 7 días.
+    Obtiene los MDBs de eventos activos ordenados por mtime descendente (más reciente primero).
+    Omite archivos de zonificación (cuentas de 4 caracteres ej. 0014.MDB).
     """
     try:
         if not os.path.exists(CARPETA_EVENTOS):
@@ -198,6 +231,10 @@ def get_archivos_mdb_activos():
         archivos = []
         for f in os.listdir(CARPETA_EVENTOS):
             if f.upper().endswith('.MDB') and not f.startswith('_'):
+                f_base = os.path.splitext(f)[0]
+                # Omitir archivos de zonificación de 4 caracteres (ej: 0014.MDB, C7C9.MDB)
+                if len(f_base) == 4 and f_base.isalnum() and not f_base.startswith('202'):
+                    continue
                 full_path = os.path.join(CARPETA_EVENTOS, f)
                 try:
                     mtime = os.path.getmtime(full_path)
@@ -210,6 +247,9 @@ def get_archivos_mdb_activos():
             all_files = []
             for f in os.listdir(CARPETA_EVENTOS):
                 if f.upper().endswith('.MDB') and not f.startswith('_'):
+                    f_base = os.path.splitext(f)[0]
+                    if len(f_base) == 4 and f_base.isalnum() and not f_base.startswith('202'):
+                        continue
                     full_path = os.path.join(CARPETA_EVENTOS, f)
                     try: all_files.append((os.path.getmtime(full_path), full_path))
                     except: pass
@@ -326,6 +366,7 @@ def abrir_conexion_mdb(ruta_mdb):
 def sincronizar(cache):
     print("--- Verificando nuevos eventos ---")
     enviar_heartbeat()
+    verificar_auto_actualizacion_github()
     
     archivos_mdb = get_archivos_mdb_activos()
     if not archivos_mdb:
