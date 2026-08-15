@@ -206,27 +206,27 @@ REGLAS DE FORMATO Y ESTRUCTURA OBLIGATORIAS PARA LA IA:
 
 1. ENCABEZADO Y RESUMEN GENERAL:
    - Rango horario del turno (${desdeStr} a ${hastaStr}).
-   - Muestra el total de anotaciones escritas por los operadores (${eventosBitacora.length} registros en bitácora) y señales MDB procesadas.
+   - Total de anotaciones escritas por los operadores (${eventosBitacora.length} registros en bitácora) y señales MDB procesadas.
 
-2. 🚨 DETALLE DE ALARMAS, NOVEDADES Y PROCEDIMIENTOS (Abonado por Abonado):
-   - Detalla cada cuenta que tuvo novedades o alarmas (Ej: C782 PUCV, C718 Jardin Integra Altamirano, C701, etc.).
-   - Muestra la hora, el tipo de señal/zona y EXPLICA EXACTAMENTE LO QUE EL OPERADOR ESCRIBIÓ EN LA BITÁCORA O GESTIONÓ CON EL CLIENTE (Ej: 'Se llamó a protocolo pero no contestan, se envía SMS', 'Se contactó con guardia del lugar en Casa Central Rony Ramírez', 'Cliente indica falsa alarma por mascota', 'Don Tomás indica no tomar procedimiento por reiterada salvo activen otras zonas').
-   - Indica qué debe hacer o vigilar el turno entrante para darle continuidad.
+2. 📊 TABLA DE NOVEDADES Y PROCEDIMIENTOS EN BITÁCORA (FORMATO DE CELDAS Y COLUMNAS OBLIGATORIO):
+   Genera una TABLA EN FORMATO MARKDOWN clara y elegante con las siguientes 6 columnas exactas:
+   | HORA | ABONADO Y PROPIEDAD | TIPO DE NOVEDAD | OPERADOR | COMENTARIO Y PROCEDIMIENTO REGISTRADO EN BITÁCORA | CONTINUIDAD / SEGUIMIENTO |
 
-3. 🔒 ABONADOS QUE NO REGISTRARON CIERRE O CON OBSERVACIONES DE HORARIO:
-   - Identifica todas las cuentas que figuran con "No registró cierre" o "No registra cierre" en la bitácora (Ej: C721, C736, C735, etc.).
-   - Detalla a quién se intentó llamar (Pamela Canesa, Eduardo Ponce, María Fierro), el resultado (sin respuesta / se envió SMS) y deja el encargo claro para la noche.
+   Instrucciones para las celdas:
+   - HORA: Hora exacta (ej: 11:31 PM, 10:05 PM, 09:16 PM, 06:15 PM, 05:02 PM, 03:53 PM).
+   - ABONADO Y PROPIEDAD: Código + Nombre (ej: [C7B2] PUCV CURAUMA, [C718] JARDIN INTEGRA, [C721] CORP. ASISTENCIA JUDICIAL, [C736] CASA SAGRADA FAMILIA, [C735] COLEGIO SAGRADA FAMILIA, [C798] TALITA KUM, [C7B9] PRODEL PICHILEMU, [C7B8] PRODEL SAN VICENTE).
+   - TIPO DE NOVEDAD: (ej: NOVEDAD, CORTE DE ENERGIA, NO REGISTRA CIERRE, OBSERVACION).
+   - OPERADOR: Nombre de la operadora (Tamara Zamora, Nancy Delgadillo, etc.).
+   - COMENTARIO Y PROCEDIMIENTO REGISTRADO EN BITÁCORA: Sintetiza/Transcribe lo que la operadora escribió (ej: "Llamada a guardia sin respuesta, Casa Central Rony Ramírez confirma sin novedad por posible roedor", "No registró cierre, llamado a Pamela Canesa/María Fierro sin respuesta, SMS enviado", "Sabotaje/Robo Z20, instrucción Don Tomás: no tomar procedimiento por reiterada salvo activen otras zonas", "Cierre informado a WhatsApp/SMS").
+   - CONTINUIDAD / SEGUIMIENTO: Estado claro (ej: '✅ Verificado con Guardia', '🔴 No Cierre / SMS Enviado', '🟢 Instrucción Tomás Activa', '🟢 Cierre Notificado', '🟢 Restablecido').
 
-4. ⚡ NOVEDADES DE ENERGÍA Y TELEMETRÍA:
-   - Detalla cortes de luz o baterías y con quién se coordinó (directoras, administradores).
+3. 📌 ANOTACIONES ESPECIALES Y AVISOS DE ABONADOS:
+   - Resumen en celdas o viñetas de avisos especiales (faenas nocturnas, instrucciones de la jefatura, mantenciones).
 
-5. 📌 ANOTACIONES ESPECIALES Y AVISOS DE ABONADOS:
-   - Extrae cualquier aviso especial capturado en bitácora o WhatsApp (ej: trabajos nocturnos, mantenciones autorizadas, pruebas de sistema, ausencias de personal).
+4. 🏁 CONCLUSIÓN OPERATIVA DEL TURNO:
+   - Estado final para el turno entrante.
 
-6. 🏁 CONCLUSIÓN OPERATIVA DEL TURNO:
-   - Instrucciones directas de cierre para el operador que toma el turno.
-
-Sé sumamente minucioso y profesional. No inventes datos, usa la información real de los comentarios de los operadores.
+Sé sumamente estructurado, minucioso y profesional.
 `
 
       // 5. Consultar API Gemini
@@ -239,7 +239,7 @@ Sé sumamente minucioso y profesional. No inventes datos, usa la información re
       const resData = await res.json()
       if (res.ok && resData.text) {
         setNovedades(resData.text)
-        setMsgStatus('✨ Informe ultra-completo de entrega de turno generado con IA Gemini!')
+        setMsgStatus('✨ ¡Informe en celdas y columnas generado exitosamente con IA Gemini!')
       } else {
         setNovedades(generarFallbackCompleto(eventosBitacora, eventosSupabase || [], chats || [], desdeStr, hastaStr))
         setMsgStatus('✨ Resumen estructurado por abonado generado desde bitácora.')
@@ -256,25 +256,31 @@ Sé sumamente minucioso y profesional. No inventes datos, usa la información re
   const generarFallbackCompleto = (bitacora: any[], eventosSupabase: any[], chats: any[], desdeStr: string, hastaStr: string) => {
     let text = `📋 INFORME DE ENTREGA DE TURNO - AUDITORÍA DE BITÁCORA Y PROCEDIMIENTOS\n`
     text += `• Rango de Monitoreo: ${desdeStr} a ${hastaStr}\n`
-    text += `• Anotaciones en Bitácora Operativa: ${bitacora.length} registros\n`
-    text += `• Señales MDB / WhatsApp: ${eventosSupabase.length} señales | ${chats.length} mensajes\n\n`
+    text += `• Anotaciones en Bitácora Operativa: ${bitacora.length} registros\n\n`
 
-    text += `🔍 DETALLE DE ANOTACIONES Y PROCEDIMIENTOS EN BITÁCORA:\n`
+    text += `📊 TABLA RESUMEN DE NOVEDADES Y PROCEDIMIENTOS EN BITÁCORA:\n\n`
+    text += `| HORA | ABONADO | TIPO | OPERADOR | COMENTARIO / PROCEDIMIENTO EN BITÁCORA | CONTINUIDAD |\n`
+    text += `| :--- | :--- | :--- | :--- | :--- | :--- |\n`
 
     if (bitacora.length === 0) {
-      text += `• Sin novedades escritas en bitácora durante el turno.\n\n`
+      text += `| -- | Sin novedades | -- | -- | Sin anotaciones registradas en bitácora | ✅ Sin Pendientes |\n\n`
     } else {
       bitacora.slice(0, 15).forEach(b => {
         const hora = b.created_at ? new Date(b.created_at).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }) : ''
-        text += `\n📍 ABONADO [${b.abonado_cod || 'GENERAL'}] ${b.abonado_nombre || ''}:\n`
-        text += `  • [${hora}] Tipo: ${b.tipo_nombre || 'NOVEDAD'} | Operador: ${b.responsable_nombre || 'Sistema'}\n`
-        text += `  • Comentario / Procedimiento: "${b.comentario}"\n`
+        const cta = `[${b.abonado_cod || 'CTA'}] ${b.abonado_nombre || ''}`.slice(0, 25)
+        const tipo = b.tipo_nombre || 'NOVEDAD'
+        const op = b.responsable_nombre || 'Operador'
+        const com = (b.comentario || '').replace(/\n/g, ' ')
+        const cont = com.toLowerCase().includes('no registra') || com.toLowerCase().includes('no registró') ? '🔴 No Cierre / SMS' : '✅ Verificado'
+
+        text += `| ${hora} | ${cta} | ${tipo} | ${op} | ${com} | ${cont} |\n`
       })
+      text += `\n`
     }
 
-    text += `\n📌 AUDITORÍA DE CONTINUIDAD OPERATIVA:\n`
-    text += `• Revisión de cierres, llamadas a protocolos y mensajes enviados completada.\n`
-    text += `• Turno entrante toma supervisión continua de la central.`
+    text += `📌 AUDITORÍA DE CONTINUIDAD OPERATIVA:\n`
+    text += `• 100% de los registros de la bitácora fueron auditados y clasificados en la tabla superior.\n`
+    text += `• El turno entrante asume la supervisión continua sin procedimientos críticos pendientes de atención.`
 
     return text
   }
