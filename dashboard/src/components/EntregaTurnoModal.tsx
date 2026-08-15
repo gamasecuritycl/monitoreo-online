@@ -491,8 +491,8 @@ Sé sumamente estructurado, minucioso y profesional.
         {/* Contenido Principal (Split 2 Columnas) */}
         <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 overflow-hidden bg-[#0f172a]">
 
-          {/* Columna Izquierda: Formulario y Registro de Turno (7 Cols) */}
-          <div className="lg:col-span-7 p-4 border-r border-slate-800 overflow-y-auto space-y-4">
+          {/* Columna Izquierda: Formulario y Registro de Turno (9-10 Cols - 85% del ancho) */}
+          <div className="lg:col-span-9 xl:col-span-10 p-4 border-r border-slate-800 overflow-y-auto space-y-4">
 
             <form onSubmit={handleGuardar} className="space-y-4">
 
@@ -728,11 +728,11 @@ Sé sumamente estructurado, minucioso y profesional.
             </form>
           </div>
 
-          {/* Columna Derecha: Historial de Entregas Recientes (5 Cols) */}
-          <div className="lg:col-span-5 p-4 bg-slate-900/50 overflow-y-auto flex flex-col gap-3">
+          {/* Columna Derecha: Historial de Entregas Recientes (Compacto 2-3 Cols) */}
+          <div className="lg:col-span-3 xl:col-span-2 p-3 bg-slate-900/50 overflow-y-auto flex flex-col gap-2.5 border-l border-slate-800">
             <div className="text-xs font-bold text-slate-300 uppercase tracking-wider border-b border-slate-800 pb-2 flex justify-between items-center shrink-0">
-              <span>📋 Historial de Entregas Recientes</span>
-              <span className="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded font-mono">{historial.length} Entregas</span>
+              <span>📋 Historial</span>
+              <span className="text-[10px] bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded font-mono">{historial.length}</span>
             </div>
 
             {historial.length === 0 ? (
