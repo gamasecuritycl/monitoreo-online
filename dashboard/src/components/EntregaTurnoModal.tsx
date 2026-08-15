@@ -639,14 +639,14 @@ Sé sumamente estructurado, minucioso y profesional.
                     type="button"
                     onClick={generarResumenAutomatico}
                     disabled={generandoIA}
-                    className="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs px-3.5 py-1.5 rounded-lg cursor-pointer transition-colors shadow flex items-center gap-1.5 disabled:opacity-50"
+                    className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-extrabold text-sm px-5 py-2.5 rounded-xl shadow-lg cursor-pointer transition-all flex items-center gap-2 border border-purple-400/30 disabled:opacity-50 hover:scale-105 active:scale-95"
                   >
-                    {generandoIA ? '✨ Analizando...' : '✨ Auto-Generar Resumen de Bitácora'}
+                    {generandoIA ? '✨ Analizando Bitácora...' : '✨ Auto-Generar Resumen de Bitácora'}
                   </button>
                 </div>
 
                 {vistaModo === 'tabla' && filasBitacora.length > 0 ? (
-                  <div className="overflow-x-auto border border-slate-700 rounded-xl bg-slate-950 max-h-[340px] overflow-y-auto shadow-inner">
+                  <div className="overflow-x-auto border border-slate-700 rounded-xl bg-slate-950 max-h-[380px] overflow-y-auto shadow-inner">
                     <table className="w-full text-left border-collapse text-xs">
                       <thead>
                         <tr className="bg-slate-800 text-slate-300 font-bold text-[11px] border-b border-slate-700 sticky top-0 z-10 shadow-sm">
@@ -701,16 +701,16 @@ Sé sumamente estructurado, minucioso y profesional.
                 )}
               </div>
 
-              {/* Fila 4: Acciones del Formulario */}
-              <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-                <span className="text-xs font-bold text-amber-400 truncate">{msgStatus}</span>
+              {/* Fila 4: Barra de Acciones Principales Prominentes */}
+              <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-3.5 flex flex-wrap items-center justify-between gap-3 shadow-lg">
+                <span className="text-xs font-bold text-amber-400 truncate max-w-xs">{msgStatus}</span>
 
-                <div className="flex items-center gap-3 ml-auto">
+                <div className="flex items-center gap-4 ml-auto flex-wrap">
                   <button
                     type="button"
                     onClick={enviarPorWhatsApp}
                     disabled={enviandoWA || !novedades.trim()}
-                    className="bg-[#25D366] hover:bg-[#20ba5a] text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow cursor-pointer transition-colors flex items-center gap-2 disabled:opacity-50"
+                    className="bg-[#25D366] hover:bg-[#20ba5a] text-white font-extrabold text-sm px-6 py-3 rounded-xl shadow-lg cursor-pointer transition-all flex items-center gap-2 border border-green-400/40 disabled:opacity-50 hover:scale-105 active:scale-95"
                   >
                     {enviandoWA ? '📱 Enviando...' : '📱 Enviar por WhatsApp'}
                   </button>
@@ -718,7 +718,7 @@ Sé sumamente estructurado, minucioso y profesional.
                   <button
                     type="submit"
                     disabled={cargando || !novedades.trim()}
-                    className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-5 py-2.5 rounded-xl shadow cursor-pointer transition-colors flex items-center gap-2 disabled:opacity-50"
+                    className="bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-sm px-6 py-3 rounded-xl shadow-lg cursor-pointer transition-all flex items-center gap-2 border border-blue-400/40 disabled:opacity-50 hover:scale-105 active:scale-95"
                   >
                     {cargando ? '💾 Guardando...' : '💾 Registrar Entrega de Turno'}
                   </button>
