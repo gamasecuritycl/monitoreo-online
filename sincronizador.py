@@ -117,25 +117,27 @@ def get_chile_offset() -> str:
 
 def parse_fecha_hora(dia_str, hora_str, chile_tz):
     """
-    Convierte cualquier formato de fecha/hora de Access (12h AM/PM, 24h, DD/MM/YYYY, YYYY-MM-DD)
+    Convierte cualquier formato de fecha/hora de Access (12h AM/PM, 24h, DD/MM/YYYY, YYYY-MM-DD, con o sin timestamp)
     a ISO 8601 estricto compatible con PostgreSQL timestamptz.
-    Ejemplo: '2026-08-09T19:32:15-04:00'
+    Ejemplo: '2026-08-15T09:32:15-04:00'
     """
     now_dt = datetime.now()
     year, month, day = now_dt.year, now_dt.month, now_dt.day
 
-    # 1. Parsear Día
+    # 1. Parsear Día (Asegurar remoción de porción de hora '00:00:00')
     if dia_str:
-        dia_clean = str(dia_str).strip().replace('/', '-')
+        dia_clean = str(dia_str).split()[0].strip().replace('/', '-')
         partes_d = dia_clean.split('-')
         if len(partes_d) == 3:
-            p0, p1, p2 = partes_d[0], partes_d[1], partes_d[2]
+            p0 = re.sub(r'\D', '', partes_d[0])
+            p1 = re.sub(r'\D', '', partes_d[1])
+            p2 = re.sub(r'\D', '', partes_d[2])
             try:
-                if len(p0) == 4: # YYYY-MM-DD
+                if len(p0) == 4 and p0 and p1 and p2: # YYYY-MM-DD
                     year, month, day = int(p0), int(p1), int(p2)
-                elif len(p2) == 4: # DD-MM-YYYY
+                elif len(p2) == 4 and p0 and p1 and p2: # DD-MM-YYYY
                     day, month, year = int(p0), int(p1), int(p2)
-                elif len(p2) == 2: # DD-MM-YY
+                elif len(p2) == 2 and p0 and p1 and p2: # DD-MM-YY
                     day, month, year = int(p0), int(p1), 2000 + int(p2)
             except Exception:
                 pass
