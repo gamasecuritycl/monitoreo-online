@@ -35,36 +35,37 @@ const COLOR_ACCESS_TO_CSS: Record<string, { bg: string; text: string }> = {
   'COMPROBAR':{ bg: '#FFA500', text: '#000000' }, // Naranja para señales a verificar
 }
 
-// ── Paleta Scorpion de fallback (si el evento no coincide con CODIGOS.MDB) ─
+// ── Paleta Scorpion de fallback (coincidente 1:1 con Scorpion Monitoring Software) ─
 function getScorpionStyleFallback(evento: string): { bg: string; text: string } {
-  const upper = evento.toUpperCase()
+  const upper = (evento || '').toUpperCase().trim()
 
-  // Emergencia, Pánico, Fuego -> Rojo
+  // 1. Emergencia, Pánico, Fuego -> Rojo (#FF0000)
   if (upper.includes('PANICO') || upper.includes('FUEGO') || upper.includes('INCENDIO') || upper.includes('EMERGENCIA') || upper.includes('MEDICA')) {
     return { bg: '#FF0000', text: '#FFFFFF' }
   }
-  // Todos los Restablecimientos -> Amarillo
+  // 2. Todos los Restablecimientos -> Amarillo (#FFFF00)
   if (upper.includes('RESTABLEC') || upper.includes('RESTAURACION') || upper.includes('RETORNO') || upper.includes('RESTABLECIMIENTO')) {
     return { bg: '#FFFF00', text: '#000000' }
   }
-  // Cortes de luz / Fallas de energía -> Verde
+  // 3. Cortes de luz / Fallas de energía -> Verde (#00FF00)
   if (upper.includes('FALLA AC') || upper.includes('FALLA DE ENERGIA') || upper.includes('CORTE DE LUZ') || upper.includes('AC FALLA') || upper.includes('E301') || upper.includes('E302')) {
     return { bg: '#00FF00', text: '#000000' }
   }
-  // Sabotajes de zona y Alarmas de robo -> Rosado
+  // 4. Sabotajes de zona y Alarmas de robo -> Rosado (#FFC0CB)
   if (upper.includes('ROBO') || upper.includes('ALARMA') || upper.includes('INTRUSION') || upper.includes('SABOTAJE') || upper.includes('TAMPER')) {
     return { bg: '#FFC0CB', text: '#000000' }
   }
-  // Cierres y Aperturas -> blanco o celeste aleatorio (anti-saturacion)
-  if (upper.includes('CIERRE') || upper.includes('APERTURA')) {
-    const hash = upper.split('').reduce((a, c) => a + c.charCodeAt(0), 0)
-    return hash % 2 === 0
-      ? { bg: '#FFFFFF', text: '#000000' }
-      : { bg: '#E0F0FF', text: '#000000' }
-  }
-  // Autotests -> Celeste
-  if (upper.includes('AUTOTEST')) {
+  // 5. Aperturas -> Celeste / Cyan (#00FFFF) igual a PC Scorpion
+  if (upper.includes('APERTURA')) {
     return { bg: '#00FFFF', text: '#000000' }
+  }
+  // 6. Autotests -> Gris / Plateado (#E0E0E0) igual a PC Scorpion
+  if (upper.includes('AUTOTEST')) {
+    return { bg: '#E0E0E0', text: '#000000' }
+  }
+  // 7. Cierres -> Blanco (#FFFFFF)
+  if (upper.includes('CIERRE')) {
+    return { bg: '#FFFFFF', text: '#000000' }
   }
 
   return { bg: '#FFFFFF', text: '#000000' }
