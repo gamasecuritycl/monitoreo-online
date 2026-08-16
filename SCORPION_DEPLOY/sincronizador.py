@@ -101,51 +101,62 @@ def get_chile_offset() -> str:
 
 def parse_fecha_hora(dia_str, hora_str, chile_tz):
     """
-    Convierte cualquier formato de fecha/hora de Access (12h AM/PM, 24h, DD/MM/YYYY, YYYY-MM-DD, con o sin timestamp)
-    a ISO 8601 estricto compatible con PostgreSQL timestamptz.
-    Ejemplo: '2026-08-15T09:32:15-04:00'
+    Convierte cualquier formato de fecha/hora de Access (12h AM/PM, 24h, DD/MM/YYYY, YYYY-MM-DD,
+    objetos datetime.datetime de pyodbc, con o sin timestamp) a ISO 8601 estricto timestamptz.
     """
     now_dt = datetime.now()
     year, month, day = now_dt.year, now_dt.month, now_dt.day
+    h, m, s = 0, 0, 0
 
-    # 1. Parsear Día (Asegurar remoción de porción de hora '00:00:00')
+    # 1. Parsear Día
     if dia_str:
-        dia_clean = str(dia_str).split()[0].strip().replace('/', '-')
-        partes_d = dia_clean.split('-')
+        dia_s = str(dia_str).strip()
+        parts_dia = dia_s.split()
+        date_part = parts_dia[0].replace('/', '-')
+        partes_d = date_part.split('-')
         if len(partes_d) == 3:
             p0 = re.sub(r'\D', '', partes_d[0])
             p1 = re.sub(r'\D', '', partes_d[1])
             p2 = re.sub(r'\D', '', partes_d[2])
             try:
-                if len(p0) == 4 and p0 and p1 and p2: # YYYY-MM-DD
+                if len(p0) == 4 and p0 and p1 and p2:   # YYYY-MM-DD
                     year, month, day = int(p0), int(p1), int(p2)
                 elif len(p2) == 4 and p0 and p1 and p2: # DD-MM-YYYY
                     day, month, year = int(p0), int(p1), int(p2)
                 elif len(p2) == 2 and p0 and p1 and p2: # DD-MM-YY
                     day, month, year = int(p0), int(p1), 2000 + int(p2)
-            except Exception:
-                pass
+            except Exception: pass
 
-    # 2. Parsear Hora (convertir AM/PM a 24 Horas)
-    h, m, s = 0, 0, 0
+        # Si dia_str incluía hora (ej: "2026-08-16 10:15:30") y hora_str viene vacío
+        if len(parts_dia) > 1 and ':' in parts_dia[1] and not hora_str:
+            hora_str = parts_dia[1]
+
+    # 2. Parsear Hora (extraer estrictamente la porción HH:MM:SS)
     if hora_str:
-        hora_clean = str(hora_str).strip()
-        is_pm = 'PM' in hora_clean.upper() or 'P.M.' in hora_clean.upper()
-        is_am = 'AM' in hora_clean.upper() or 'A.M.' in hora_clean.upper()
+        hora_s = str(hora_str).strip()
+        is_pm = 'PM' in hora_s.upper() or 'P.M.' in hora_s.upper()
+        is_am = 'AM' in hora_s.upper() or 'A.M.' in hora_s.upper()
 
-        hora_nums = re.sub(r'[^\d:]', '', hora_clean)
+        # Extraer únicamente el token que contiene dos puntos ':' (ej: "10:15:30" de "2026-08-16 10:15:30 P.M.")
+        tokens = hora_s.split()
+        time_token = ""
+        for tok in tokens:
+            if ':' in tok:
+                time_token = tok
+                break
+        if not time_token:
+            time_token = hora_s
+
+        hora_nums = re.sub(r'[^\d:]', '', time_token)
         partes_h = hora_nums.split(':')
         try:
             if len(partes_h) >= 1 and partes_h[0]: h = int(partes_h[0])
             if len(partes_h) >= 2 and partes_h[1]: m = int(partes_h[1])
             if len(partes_h) >= 3 and partes_h[2]: s = int(partes_h[2])
-        except Exception:
-            pass
+        except Exception: pass
 
-        if is_pm and h < 12:
-            h += 12
-        elif is_am and h == 12:
-            h = 0
+        if is_pm and h < 12: h += 12
+        elif is_am and h == 12: h = 0
 
     return f"{year:04d}-{month:02d}-{day:02d}T{h:02d}:{m:02d}:{s:02d}{chile_tz}"
 
