@@ -221,48 +221,54 @@ def verificar_auto_actualizacion_github():
 
 def get_archivos_mdb_activos():
     """
-    Obtiene los MDBs de eventos activos ordenados por mtime descendente (más reciente primero).
-    Omite archivos de zonificación (cuentas de 4 caracteres ej. 0014.MDB).
+    Escanea TODAS las carpetas candidatas (C:\SCORPION\BASES DE DATOS\EVENTOS, C:\SCORPION\BASES DE DATOS, etc.)
+    y retorna los MDBs de eventos más recientes primero.
     """
-    try:
-        if not os.path.exists(CARPETA_EVENTOS):
-            return []
-        
-        ahora = time.time()
-        siete_dias_sec = 7 * 86400
-        archivos = []
-        for f in os.listdir(CARPETA_EVENTOS):
-            if f.upper().endswith('.MDB') and not f.startswith('_'):
-                f_base = os.path.splitext(f)[0]
-                # Omitir archivos de zonificación de 4 caracteres (ej: 0014.MDB, C7C9.MDB)
-                if len(f_base) == 4 and f_base.isalnum() and not f_base.startswith('202'):
-                    continue
-                full_path = os.path.join(CARPETA_EVENTOS, f)
+    ahora = time.time()
+    siete_dias_sec = 7 * 86400
+    archivos = []
+    rutas_procesadas = set()
+
+    for ruta in rutas_unicas:
+        if os.path.exists(ruta):
+            try:
+                for f in os.listdir(ruta):
+                    if f.upper().endswith('.MDB') and not f.startswith('_'):
+                        f_base = os.path.splitext(f)[0]
+                        # Omitir archivos de zonificación de 4 caracteres (ej: 0014.MDB, C7C9.MDB)
+                        if len(f_base) == 4 and f_base.isalnum() and not f_base.startswith('202'):
+                            continue
+                        full_path = os.path.normpath(os.path.join(ruta, f))
+                        if full_path.lower() not in rutas_procesadas:
+                            rutas_procesadas.add(full_path.lower())
+                            try:
+                                mtime = os.path.getmtime(full_path)
+                                if (ahora - mtime) <= siete_dias_sec:
+                                    archivos.append((mtime, full_path))
+                            except Exception:
+                                pass
+            except Exception:
+                pass
+
+    if not archivos:
+        for ruta in rutas_unicas:
+            if os.path.exists(ruta):
                 try:
-                    mtime = os.path.getmtime(full_path)
-                    if (ahora - mtime) <= siete_dias_sec:
-                        archivos.append((mtime, full_path))
+                    for f in os.listdir(ruta):
+                        if f.upper().endswith('.MDB') and not f.startswith('_'):
+                            f_base = os.path.splitext(f)[0]
+                            if len(f_base) == 4 and f_base.isalnum() and not f_base.startswith('202'):
+                                continue
+                            full_path = os.path.normpath(os.path.join(ruta, f))
+                            if full_path.lower() not in rutas_procesadas:
+                                rutas_procesadas.add(full_path.lower())
+                                try: archivos.append((os.path.getmtime(full_path), full_path))
+                                except: pass
                 except Exception:
                     pass
 
-        if not archivos:
-            all_files = []
-            for f in os.listdir(CARPETA_EVENTOS):
-                if f.upper().endswith('.MDB') and not f.startswith('_'):
-                    f_base = os.path.splitext(f)[0]
-                    if len(f_base) == 4 and f_base.isalnum() and not f_base.startswith('202'):
-                        continue
-                    full_path = os.path.join(CARPETA_EVENTOS, f)
-                    try: all_files.append((os.path.getmtime(full_path), full_path))
-                    except: pass
-            all_files.sort(key=lambda x: x[0], reverse=True)
-            return [item[1] for item in all_files[:5]]
-
-        archivos.sort(key=lambda x: x[0], reverse=True)
-        return [item[1] for item in archivos]
-    except Exception as e:
-        print(f"[ERROR] No se puede leer EVENTOS: {e}")
-        return []
+    archivos.sort(key=lambda x: x[0], reverse=True)
+    return [item[1] for item in archivos[:10]]
 
 def procesar_comandos_sistema():
     try:
