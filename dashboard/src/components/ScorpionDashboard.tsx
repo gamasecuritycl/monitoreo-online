@@ -26,42 +26,76 @@ import HealthTelemetryModal from './HealthTelemetryModal'
 import { lookupContactId } from '@/lib/contact_id_library'
 import { sendMessage, generarMensajeAlerta, generarMensajeEnergia, detectarPatronEvento, type EventInfo } from '@/lib/whatsapp'
 
-// ── Contactos del Panel Lateral de Scorpion ──
+// ── Contactos del Panel Lateral de Scorpion y Entidades de Emergencia ──
 interface ContactoAutorizado {
   prioridad: number
   nombre: string
   telefono: string
+  cargo?: string
+  tipo?: 'autorizado' | 'emergencia' | 'cuadrante' | 'comisaria' | 'seguridad'
 }
 
 function obtenerDatosAbonado(cuenta: string, nombreAbonado: string, clienteDb: Record<string, string> | null) {
-  // Datos base con fallback por si no existe
   const datos = {
+    nombre: clienteDb?.nombre || nombreAbonado || 'PROPIEDAD',
     direccion: clienteDb?.direccion || 'Av. Providencia 1420, Of. 602',
-    comuna: clienteDb?.ciudad || clienteDb?.sector || 'Providencia, Santiago',
-    contactos: [] as ContactoAutorizado[]
+    comuna: clienteDb?.sector || clienteDb?.ciudad || 'Santiago',
+    contactos: [] as ContactoAutorizado[],
+    emergencias: {
+      cuadrante: undefined as { nombre: string; telefono: string } | undefined,
+      comisaria: undefined as { nombre: string; telefono: string } | undefined,
+      seguridadCiudadana: undefined as { nombre: string; telefono: string } | undefined,
+    }
   }
 
-  // Extraer contactos reales del 1 al 7 de GENERAL.mdb (si existen en el payload)
+  // Extraer contactos reales del 1 al 7 de GENERAL.mdb
   if (clienteDb) {
     for (let i = 1; i <= 7; i++) {
-      const nombre = clienteDb[`nombre${i}`]
-      const tel = clienteDb[`t${i}`] || clienteDb[`telefono${i}`]
-      if (nombre && nombre.trim()) {
+      const nombre = (clienteDb[`nombre${i}`] || '').trim()
+      const tel = (clienteDb[`t${i}`] || clienteDb[`telefono${i}`] || '').trim()
+      const carg = (clienteDb[`carg${i}`] || '').trim()
+      
+      if (nombre || tel) {
+        const nomUpper = nombre.toUpperCase()
+        const cargUpper = carg.toUpperCase()
+        const fullTxt = `${nomUpper} ${cargUpper}`
+        
+        let tipo: ContactoAutorizado['tipo'] = 'autorizado'
+        
+        if (fullTxt.includes('CUADRANTE') || fullTxt.includes('PLAN')) {
+          tipo = 'cuadrante'
+          if (tel && !datos.emergencias.cuadrante) {
+            datos.emergencias.cuadrante = { nombre: nombre || 'Plan Cuadrante', telefono: tel }
+          }
+        } else if (fullTxt.includes('COMISARIA') || fullTxt.includes('COMISERIA') || fullTxt.includes('CARABINEROS')) {
+          tipo = 'comisaria'
+          if (tel && !datos.emergencias.comisaria) {
+            datos.emergencias.comisaria = { nombre: nombre || 'Comisaría Local', telefono: tel }
+          }
+        } else if (fullTxt.includes('PAZ CIUDADANA') || fullTxt.includes('SEGURIDAD CIUDADANA') || fullTxt.includes('MUNICIPAL') || fullTxt.includes('SEGURIDAD MUNICIPAL')) {
+          tipo = 'seguridad'
+          if (tel && !datos.emergencias.seguridadCiudadana) {
+            datos.emergencias.seguridadCiudadana = { nombre: nombre || 'Seguridad Ciudadana', telefono: tel }
+          }
+        }
+
         datos.contactos.push({
           prioridad: i,
-          nombre: nombre.toUpperCase().trim(),
-          telefono: (tel || '').trim()
+          nombre: nombre ? nombre.toUpperCase() : (tipo === 'cuadrante' ? 'PLAN CUADRANTE' : tipo === 'comisaria' ? 'COMISARÍA' : 'CONTACTO'),
+          telefono: tel,
+          cargo: carg,
+          tipo
         })
       }
     }
   }
 
-  // Si no hay contactos en la BD, rellenar con fallbacks por defecto
+  // Fallbacks si no hay contactos en BD
   if (datos.contactos.length === 0) {
     datos.contactos = [
-      { prioridad: 1, nombre: 'Tomás Toro (Admin)', telefono: '+56 9 8765 4321' },
-      { prioridad: 2, nombre: 'Conserjería Central', telefono: '+56 2 2345 6789' },
-      { prioridad: 3, nombre: 'Carabineros de Chile', telefono: '133' }
+      { prioridad: 1, nombre: 'Tomás Toro (Admin)', telefono: '+56 9 8765 4321', tipo: 'autorizado' },
+      { prioridad: 2, nombre: 'Conserjería Central', telefono: '+56 2 2345 6789', tipo: 'autorizado' },
+      { prioridad: 3, nombre: 'Carabineros de Chile', telefono: '133', tipo: 'comisaria' }
     ]
   }
 
@@ -1190,12 +1224,14 @@ export default function ScorpionDashboard() {
           {/* TARJETA IA COPILOT GAMA */}
           <IACopilotCard
             evento={activeEvent}
+            historialEventos={eventos}
             clientData={clientData}
             zonas={buscarZonasAbonado(activeEvent?.cuenta)}
             onEnviarWhatsApp={(telefono) => {
               setWhatsappTelefonoInicial(telefono)
               setModalActivo('notificaciones-whatsapp')
             }}
+            usuarioOperador={usuarioActivo.nombre}
           />
 
           {/* Box 2: INFORMACION BASICA */}
