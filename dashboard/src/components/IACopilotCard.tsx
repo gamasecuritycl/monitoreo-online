@@ -21,6 +21,7 @@ interface IACopilotCardProps {
   tieneCamaras?: boolean
   cantCamaras?: number
   onAbrirVideo?: () => void
+  onAbrirPredictor?: () => void
   onEnviarWhatsApp: (telefono: string, mensajeDefault?: string) => void
   usuarioOperador?: string
 }
@@ -33,6 +34,7 @@ export default function IACopilotCard({
   tieneCamaras = false,
   cantCamaras = 0,
   onAbrirVideo,
+  onAbrirPredictor,
   onEnviarWhatsApp,
   usuarioOperador = 'Operadora'
 }: IACopilotCardProps) {
@@ -62,6 +64,8 @@ export default function IACopilotCard({
     zonasDisparadas,
     hayCorteEnergiaReciente,
     hayCorteSirenaReciente,
+    hayBateriaBajaReciente,
+    esRiesgoApagadoTotal,
     esUrgenciaCarabineros
   } = useMemo(() => {
     if (!evento) {
@@ -74,6 +78,8 @@ export default function IACopilotCard({
         zonasDisparadas: [] as string[],
         hayCorteEnergiaReciente: false,
         hayCorteSirenaReciente: false,
+        hayBateriaBajaReciente: false,
+        esRiesgoApagadoTotal: false,
         esUrgenciaCarabineros: false
       }
     }
@@ -128,6 +134,15 @@ export default function IACopilotCard({
       return u.includes('SIRENA') || u.includes('TAMPER') || u.includes('SABOTAJE') || u.includes('321') || u.includes('CORTE DE SIRENA')
     })
 
+    // Detección de Batería Baja
+    const bateriaBaja = eventosCuenta.some(e => {
+      const u = (e.evento || '').toUpperCase()
+      return u.includes('BATERIA') || u.includes('BATERÍA') || u.includes('BAT') || u.includes('302') || u.includes('309') || u.includes('310') || u.includes('384')
+    })
+
+    // CASO CRÍTICO: Batería baja consecutiva tras corte de luz -> Riesgo de apagado total
+    const riesgoApagadoTotal = (corteEnergia || isEnergia) && bateriaBaja
+
     // URGENCIA MÁXIMA: Más de 2 zonas + (Corte de Energía o Corte de Sirena)
     const urgenciaCarabineros = (multiZona || isPanico) && (corteEnergia || corteSirena)
 
@@ -140,6 +155,8 @@ export default function IACopilotCard({
       zonasDisparadas: distinctZonas,
       hayCorteEnergiaReciente: corteEnergia,
       hayCorteSirenaReciente: corteSirena,
+      hayBateriaBajaReciente: bateriaBaja,
+      esRiesgoApagadoTotal: riesgoApagadoTotal,
       esUrgenciaCarabineros: urgenciaCarabineros
     }
   }, [evento?.id, evento?.cuenta, evento?.evento, evento?.zona, historialEventos])
@@ -244,21 +261,25 @@ Proporciona únicamente:
   // Nivel de urgencia calculado
   const nivelUrgencia: 'critica' | 'alta' | 'media' | 'baja' = enModoPruebas
     ? 'baja'
-    : esUrgenciaCarabineros
+    : esUrgenciaCarabineros || esRiesgoApagadoTotal
     ? 'critica'
     : esMultiZona || esPanico || esIncendio
     ? 'alta'
-    : esAlarma || esEnergia
+    : esAlarma || esEnergia || hayBateriaBajaReciente
     ? 'media'
     : 'baja'
 
   // Mensajes y Recomendaciones Fallback
   const recomendacionFallback = enModoPruebas
     ? `🛠️ EN MODO PRUEBAS TÉCNICAS: Eventos silenciados para pruebas en terreno por ${datosPrueba?.tecnico || 'Técnico'}.`
+    : esRiesgoApagadoTotal
+    ? `🔥 RIESGO DE APAGADO TOTAL: Corte de energía AC activo + Batería de respaldo agotándose. Avisar URGENTE al cliente para verificar el disyuntor eléctrico.`
     : esUrgenciaCarabineros
     ? `🔥 URGENCIA MÁXIMA POLICIAL: Alarma multi-zona (${zonasDisparadas.length} zonas) + ${hayCorteEnergiaReciente ? 'CORTE DE AC' : ''} ${hayCorteSirenaReciente ? 'SABOTAJE SIRENA' : ''}. Despachar inmediatamente al Plan Cuadrante / Comisaría.`
     : esMultiZona
     ? `🚨 ALARMA CONFIRMADA (>2 ZONAS: ${zonasDisparadas.join(', ')}): Contactar de inmediato a Persona Autorizada P1. Si no responde, despachar seguridad.`
+    : hayBateriaBajaReciente
+    ? `🔋 BATERÍA BAJA DETECTADA (${evento.evento}): Panel o sensor operando con baja carga. Sugerir recambio preventivo de batería.`
     : esAlarma
     ? `⚡ SEÑAL DE ALARMA INDIVIDUAL (${evento.evento}) en Zona ${evento.zona || '00'} ${zonaCoincidente ? `(${zonaCoincidente.dispositivo} - ${zonaCoincidente.area})` : ''}. Notificar a contacto P1 para verificar.`
     : esIncendio
@@ -272,7 +293,9 @@ Proporciona únicamente:
   const contactoP1 = contactosAutorizados[0] || clientData?.contactos?.[0]
   const contactoP2 = contactosAutorizados[1] || clientData?.contactos?.[1]
 
-  const mensajeWhatsApp = `Estimado(a) ${clientData?.nombre || evento.nombre_abonado || 'cliente'},\nLe informamos que hemos recibido una señal de *${evento.evento}* en su propiedad (${evento.cuenta}) a las ${new Date(evento.fecha_hora).toLocaleTimeString('es-CL')}${esMultiZona ? ` con múltiples zonas activadas (${zonasDisparadas.join(', ')})` : ''}.\nPor favor confirmenos si todo se encuentra en orden o si requiere asistencia inmediata.\n*Gama Seguridad Monitoreo*`
+  const mensajeWhatsApp = esRiesgoApagadoTotal
+    ? `⚠️ URGENTE - GAMA SEGURIDAD: Estimado(a) ${clientData?.nombre || evento.nombre_abonado || 'cliente'},\nLe informamos que nuestro sistema de monitoreo registra un CORTE DE ENERGÍA prolongado y la BATERÍA DE RESPALDO DE SU ALARMA ESTÁ EN NIVEL CRÍTICO (${evento.cuenta}).\nSi el suministro eléctrico no se repone o saltó el interruptor automático de su propiedad, su sistema de alarma se apagará en breve.\nPor favor verifique su suministro eléctrico o contáctenos de inmediato.\n*Gama Seguridad Monitoreo*`
+    : `Estimado(a) ${clientData?.nombre || evento.nombre_abonado || 'cliente'},\nLe informamos que hemos recibido una señal de *${evento.evento}* en su propiedad (${evento.cuenta}) a las ${new Date(evento.fecha_hora).toLocaleTimeString('es-CL')}${esMultiZona ? ` con múltiples zonas activadas (${zonasDisparadas.join(', ')})` : ''}.\nPor favor confirmenos si todo se encuentra en orden o si requiere asistencia inmediata.\n*Gama Seguridad Monitoreo*`
 
   // Ficha Táctica para dictar o enviar a Carabineros / Seguridad Ciudadana
   const fichaDespachoTactico = `📋 FICHA DE DESPACHO TÁCTICO — GAMA SEGURIDAD
@@ -433,6 +456,22 @@ Proporciona únicamente:
               className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-1.5 py-0.5 rounded text-[8px] flex items-center gap-0.5 cursor-pointer"
             >
               📲 WA
+            </button>
+          )}
+
+          {/* Botón rápido Predictor IA (si hay corte AC o batería baja) */}
+          {(esRiesgoApagadoTotal || hayBateriaBajaReciente || hayCorteEnergiaReciente) && onAbrirPredictor && (
+            <button
+              type="button"
+              onClick={onAbrirPredictor}
+              title="Abrir Predictor IA de Mantenimiento y Baterías"
+              className={`font-black px-1.5 py-0.5 rounded text-[8px] flex items-center gap-0.5 cursor-pointer shadow-xs ${
+                esRiesgoApagadoTotal
+                  ? 'bg-red-600 hover:bg-red-500 text-white animate-bounce'
+                  : 'bg-amber-600 hover:bg-amber-500 text-black'
+              }`}
+            >
+              ⚡ {esRiesgoApagadoTotal ? 'APAGADO!' : 'Bat'}
             </button>
           )}
 
@@ -693,6 +732,17 @@ Proporciona únicamente:
 
           {/* Botones de Acción Táctica 1-Click */}
           <div className="space-y-1.5 pt-1">
+            {/* Botón Predictor IA si hay fallas técnicas */}
+            {(esRiesgoApagadoTotal || hayBateriaBajaReciente || hayCorteEnergiaReciente) && onAbrirPredictor && (
+              <button
+                type="button"
+                onClick={onAbrirPredictor}
+                className="w-full bg-gradient-to-r from-amber-700 to-orange-700 hover:from-amber-600 hover:to-orange-600 text-white font-bold py-1.5 px-2 rounded text-[10px] flex items-center justify-center gap-1.5 shadow-md cursor-pointer"
+              >
+                <span>⚡ Abrir Predictor IA de Mantenimiento & Baterías</span>
+              </button>
+            )}
+
             {/* Botón destacado VideoVerificación (SOLO si tiene cámaras) */}
             {tieneCamaras && onAbrirVideo && (
               <button

@@ -21,6 +21,7 @@ import ConfigModal from './ConfigModal'
 import VideoVerificacionModal from './VideoVerificacionModal'
 import CamaraGridModal from './CamaraGridModal'
 import HorariosModal from './HorariosModal'
+import PredictorMantenimientoModal from './PredictorMantenimientoModal'
 import IACopilotCard from './IACopilotCard'
 import EntregaTurnoModal from './EntregaTurnoModal'
 import HealthTelemetryModal from './HealthTelemetryModal'
@@ -1112,6 +1113,7 @@ export default function ScorpionDashboard() {
           { label: 'USUARIOS',       id: 'menu-usuarios' },
           { label: 'CONFIGURACION',  id: 'menu-configuracion' },
           { label: 'SERV. TECNICO',  id: 'menu-serv-tecnico' },
+          { label: 'PREDICTOR IA',   id: 'menu-predictor-ia' },
           { label: 'CONTROL TEST',   id: 'menu-control-test' },
           { label: 'HORARIOS',       id: 'menu-horarios' },
           { label: 'TABLAS',         id: 'menu-tablas' },
@@ -1124,7 +1126,7 @@ export default function ScorpionDashboard() {
         ].filter(item => {
           if (item.id === 'menu-configuracion') return usuarioActivo.rol === 'Administrador'
           if (item.id === 'menu-operadores') return usuarioActivo.rol === 'Administrador' || usuarioActivo.rol === 'Supervisor'
-          if (item.id === 'menu-serv-tecnico') return ['Administrador', 'Supervisor', 'Técnico'].includes(usuarioActivo.rol)
+          if (item.id === 'menu-serv-tecnico' || item.id === 'menu-predictor-ia') return ['Administrador', 'Supervisor', 'Técnico'].includes(usuarioActivo.rol)
           if (item.id === 'menu-control-test') return ['Administrador', 'Supervisor', 'Operadora'].includes(usuarioActivo.rol)
           return true
         }).map((item, idx) => (
@@ -1144,6 +1146,10 @@ export default function ScorpionDashboard() {
                   setMostrarMenuReportes(false)
                 } else if (item.id === 'menu-serv-tecnico') {
                   setModalActivo('servicio-tecnico')
+                  setMostrarMenuNotificaciones(false)
+                  setMostrarMenuReportes(false)
+                } else if (item.id === 'menu-predictor-ia') {
+                  setModalActivo('predictor-ia')
                   setMostrarMenuNotificaciones(false)
                   setMostrarMenuReportes(false)
                 } else if (item.id === 'menu-control-test') {
@@ -1299,6 +1305,7 @@ export default function ScorpionDashboard() {
             tieneCamaras={tieneCamaras}
             cantCamaras={cantCamarasActiva}
             onAbrirVideo={() => setModalActivo('video-verificacion')}
+            onAbrirPredictor={() => setModalActivo('predictor-ia')}
             onEnviarWhatsApp={(telefono) => {
               setWhatsappTelefonoInicial(telefono)
               setModalActivo('notificaciones-whatsapp')
@@ -1580,6 +1587,22 @@ export default function ScorpionDashboard() {
           onClose={() => setModalActivo(null)}
           cuentaInicial={activeEvent?.cuenta || undefined}
           clientesMap={clientesMap}
+        />
+      )}
+
+      {/* Predictor IA Mantenimiento Modal */}
+      {modalActivo === 'predictor-ia' && (
+        <PredictorMantenimientoModal
+          onClose={() => setModalActivo(null)}
+          eventos={eventos}
+          clientesMap={clientesMap}
+          onCrearOrdenTecnica={(cuenta, tipo, problema) => {
+            setModalActivo('servicio-tecnico')
+          }}
+          onEnviarWhatsApp={(telefono, mensaje) => {
+            setWhatsappTelefonoInicial(telefono)
+            setModalActivo('notificaciones-whatsapp')
+          }}
         />
       )}
 
