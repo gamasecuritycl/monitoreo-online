@@ -150,20 +150,27 @@ def parse_fecha_hora(dia_str, hora_str, chile_tz):
     return f"{year:04d}-{month:02d}-{day:02d}T{h:02d}:{m:02d}:{s:02d}{chile_tz}"
 
 CACHE_VERSION_FILE = os.path.join(TEMP_DIR, "_cache_version.txt")
-CACHE_CURRENT_VERSION = "v4.0_reset_stale_bugfix"
+CACHE_CURRENT_VERSION = "v4.1_force_purge_temp_cache_v5"
 
 def load_cache():
-    # Si la versión de cache cambió, resetear cache viciado para re-evaluar eventos omitidos
+    # Purga total de cualquier archivo de cache antiguo en TEMP o en carpetas de Scorpion
     try:
         ver_actual = ""
         if os.path.exists(CACHE_VERSION_FILE):
             with open(CACHE_VERSION_FILE, "r") as vf: ver_actual = vf.read().strip()
         if ver_actual != CACHE_CURRENT_VERSION:
-            if os.path.exists(RUTA_CACHE):
-                try: os.remove(RUTA_CACHE)
-                except Exception: pass
+            posibles_caches = [
+                RUTA_CACHE,
+                os.path.join(script_dir, '_sincronizador_cache.json'),
+                r'C:\SCORPION\BASES DE DATOS\_sincronizador_cache.json',
+                r'C:\SCORPION\BASES DE DATOS\SCORPION_DEPLOY\_sincronizador_cache.json',
+            ]
+            for cfile in posibles_caches:
+                if os.path.exists(cfile):
+                    try: os.remove(cfile)
+                    except Exception: pass
             with open(CACHE_VERSION_FILE, "w") as vf: vf.write(CACHE_CURRENT_VERSION)
-            print("[CACHE] Cache viciado reseteado a v4.0_reset_stale_bugfix")
+            print("[CACHE] Purga total de cache viciado ejecutada para v4.1")
             return set()
     except Exception:
         pass
@@ -398,7 +405,7 @@ def sincronizar(cache):
         try:
             conn = abrir_conexion_mdb(RUTA_COPIA_TEMP)
             cursor = conn.cursor()
-            cursor.execute("SELECT * FROM EVENTOS ORDER BY HORA ASC")
+            cursor.execute("SELECT * FROM EVENTOS")
             rows = cursor.fetchall()
             columns = [col[0].upper() for col in cursor.description]
             conn.close()
