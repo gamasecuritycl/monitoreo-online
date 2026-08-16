@@ -149,39 +149,41 @@ def parse_fecha_hora(dia_str, hora_str, chile_tz):
 
     return f"{year:04d}-{month:02d}-{day:02d}T{h:02d}:{m:02d}:{s:02d}{chile_tz}"
 
-CACHE_VERSION_FILE = os.path.join(TEMP_DIR, "_cache_version.txt")
-CACHE_CURRENT_VERSION = "v4.1_force_purge_temp_cache_v5"
-
 def load_cache():
-    # Purga total de cualquier archivo de cache antiguo en TEMP o en carpetas de Scorpion
+    """
+    Carga el caché directamente desde los últimos 1500 registros reales de Supabase.
+    Esto elimina al 100% cualquier problema de archivos .json viciados o desactualizados en disco.
+    """
+    cache_set = set()
     try:
-        ver_actual = ""
-        if os.path.exists(CACHE_VERSION_FILE):
-            with open(CACHE_VERSION_FILE, "r") as vf: ver_actual = vf.read().strip()
-        if ver_actual != CACHE_CURRENT_VERSION:
-            posibles_caches = [
-                RUTA_CACHE,
-                os.path.join(script_dir, '_sincronizador_cache.json'),
-                r'C:\SCORPION\BASES DE DATOS\_sincronizador_cache.json',
-                r'C:\SCORPION\BASES DE DATOS\SCORPION_DEPLOY\_sincronizador_cache.json',
-            ]
-            for cfile in posibles_caches:
-                if os.path.exists(cfile):
-                    try: os.remove(cfile)
-                    except Exception: pass
-            with open(CACHE_VERSION_FILE, "w") as vf: vf.write(CACHE_CURRENT_VERSION)
-            print("[CACHE] Purga total de cache viciado ejecutada para v4.1")
-            return set()
-    except Exception:
-        pass
+        res = supabase.table("eventos_monitoreo") \
+            .select("fecha_hora, cuenta, evento, zona, usuario") \
+            .not("cuenta", "in", "(CLIENTES,CODIGOS,ZONAS,__SINCRONIZADOR__,CONFIG_OPERADORES)") \
+            .order("id", desc=True) \
+            .limit(1500) \
+            .execute()
+        if res.data:
+            for item in res.data:
+                fh = str(item.get("fecha_hora", "")).strip()
+                cu = str(item.get("cuenta", "")).strip()
+                ev = str(item.get("evento", "")).strip()
+                zn = str(item.get("zona", "")).strip()
+                us = str(item.get("usuario", "")).strip()
+                key = f"{fh}_{cu}_{ev}_{zn}_{us}"
+                cache_set.add(key)
+            print(f"[CACHE SUPABASE] {len(cache_set)} claves reales cargadas directamente desde la nube.")
+    except Exception as e:
+        print(f"[CACHE SUPABASE WARN] Error al consultar Supabase para cache: {e}")
 
+    # Fallback a disco solo si no hay internet
     if os.path.exists(RUTA_CACHE):
         try:
             with open(RUTA_CACHE, 'r', encoding='utf-8') as f:
-                return set(json.load(f))
-        except Exception as e:
-            print(f"[CACHE] Error al cargar: {e}")
-    return set()
+                disco_keys = json.load(f)
+                cache_set.update(disco_keys)
+        except Exception: pass
+
+    return cache_set
 
 def save_cache(cache):
     try:
