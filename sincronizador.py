@@ -149,7 +149,25 @@ def parse_fecha_hora(dia_str, hora_str, chile_tz):
 
     return f"{year:04d}-{month:02d}-{day:02d}T{h:02d}:{m:02d}:{s:02d}{chile_tz}"
 
+CACHE_VERSION_FILE = os.path.join(TEMP_DIR, "_cache_version.txt")
+CACHE_CURRENT_VERSION = "v4.0_reset_stale_bugfix"
+
 def load_cache():
+    # Si la versión de cache cambió, resetear cache viciado para re-evaluar eventos omitidos
+    try:
+        ver_actual = ""
+        if os.path.exists(CACHE_VERSION_FILE):
+            with open(CACHE_VERSION_FILE, "r") as vf: ver_actual = vf.read().strip()
+        if ver_actual != CACHE_CURRENT_VERSION:
+            if os.path.exists(RUTA_CACHE):
+                try: os.remove(RUTA_CACHE)
+                except Exception: pass
+            with open(CACHE_VERSION_FILE, "w") as vf: vf.write(CACHE_CURRENT_VERSION)
+            print("[CACHE] Cache viciado reseteado a v4.0_reset_stale_bugfix")
+            return set()
+    except Exception:
+        pass
+
     if os.path.exists(RUTA_CACHE):
         try:
             with open(RUTA_CACHE, 'r', encoding='utf-8') as f:
@@ -442,7 +460,7 @@ def sincronizar(cache):
                                 cache.add(k)
                             except Exception as ex:
                                 print(f"  [ERROR INSERT] {d['cuenta']} | {d['evento']} | {d['fecha_hora']}: {ex}")
-                                cache.add(k)
+                                # IMPORTANTE: NO agregar a cache si falla, para reintentar en el siguiente ciclo
                         save_cache(cache)
                         enviar_heartbeat()
                     batch_data = []
@@ -464,7 +482,7 @@ def sincronizar(cache):
                             cache.add(k)
                         except Exception as ex:
                             print(f"  [ERROR INSERT] {d['cuenta']} | {d['evento']} | {d['fecha_hora']}: {ex}")
-                            cache.add(k)
+                            # IMPORTANTE: NO agregar a cache si falla, para reintentar en el siguiente ciclo
                     save_cache(cache)
                     enviar_heartbeat()
 
