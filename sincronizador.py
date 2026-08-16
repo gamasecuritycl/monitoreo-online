@@ -22,17 +22,15 @@ if sys.executable.lower().endswith("pythonw.exe"):
 # Evitar múltiples instancias del sincronizador a la vez en el mismo PC
 import msvcrt
 
-GLOBAL_LOCK_FILE = r"C:\SCORPION\BASES DE DATOS\_sincronizador_global.lock"
+# Usar directorio temporal aislado de Windows para evitar CUALQUIER interferencia de archivos en C:\SCORPION
+TEMP_DIR = os.path.join(os.environ.get("TEMP", r"C:\Windows\Temp"), "gama_sincronizador")
+try: os.makedirs(TEMP_DIR, exist_ok=True)
+except Exception: pass
+
+GLOBAL_LOCK_FILE = os.path.join(TEMP_DIR, "_sincronizador_global.lock")
 
 def lock_single_instance():
     lock_file = GLOBAL_LOCK_FILE
-    try:
-        os.makedirs(os.path.dirname(lock_file), exist_ok=True)
-    except Exception:
-        lock_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "_sincronizador_global.lock")
-        try: os.makedirs(os.path.dirname(lock_file), exist_ok=True)
-        except Exception: pass
-
     try:
         fp = open(lock_file, "a+")
         fp.seek(0)
@@ -49,7 +47,7 @@ lock_fp = lock_single_instance()
 
 # ============================================================
 #  GAMA COMMAND CENTER - Sincronizador para PC Scorpion
-#  Versión: 3.8 - Parsing de Horas 12h AM/PM / 24h + Batching 50x
+#  Versión: 3.9 - Cero-Interferencia (Temp en Windows %TEMP%) + Scan Recursivo OPERACION/EVENTOS
 # ============================================================
 
 SUPABASE_URL = "https://onxwyrwmpjxtwlmjrosr.supabase.co"
@@ -62,11 +60,16 @@ else:
     root_dir = script_dir
 
 candidatos_rutas = [
+    r'C:\SCORPION\BASES DE DATOS\OPERACION',
+    r'C:\SCORPION\BASE DE DATOS\OPERACION',
+    r'C:\SCORPION\OPERACION',
     r'C:\SCORPION\BASES DE DATOS\EVENTOS',
     r'C:\SCORPION\BASE DE DATOS\EVENTOS',
     r'C:\SCORPION\BASES DE DATOS',
     r'C:\SCORPION\BASE DE DATOS',
     r'C:\SCORPION',
+    os.path.join(root_dir, 'BASES DE DATOS', 'OPERACION'),
+    os.path.join(root_dir, 'OPERACION'),
     os.path.join(root_dir, 'BASES DE DATOS', 'EVENTOS'),
     os.path.join(root_dir, 'EVENTOS'),
     root_dir,
@@ -79,27 +82,8 @@ for p in candidatos_rutas:
     if p_norm.lower() not in [r.lower() for r in rutas_unicas]:
         rutas_unicas.append(p_norm)
 
-CARPETA_EVENTOS = None
-for ruta in rutas_unicas:
-    if os.path.exists(ruta):
-        try:
-            if any(f.upper().endswith('.MDB') and not f.startswith('_') for f in os.listdir(ruta)):
-                CARPETA_EVENTOS = ruta
-                break
-        except Exception:
-            pass
-
-if not CARPETA_EVENTOS:
-    for ruta in rutas_unicas:
-        if os.path.exists(ruta):
-            CARPETA_EVENTOS = ruta
-            break
-
-if not CARPETA_EVENTOS:
-    CARPETA_EVENTOS = os.path.join(root_dir, 'BASES DE DATOS', 'EVENTOS')
-
-RUTA_COPIA_TEMP = os.path.join(script_dir, '_EVENTOS_TEMP.MDB')
-RUTA_CACHE      = os.path.join(script_dir, '_sincronizador_cache.json')
+RUTA_COPIA_TEMP = os.path.join(TEMP_DIR, '_EVENTOS_TEMP.MDB')
+RUTA_CACHE      = os.path.join(TEMP_DIR, '_sincronizador_cache.json')
 
 DB_PASSWORD  = 'Administ'
 INTERVALO_SEG = 3
@@ -221,8 +205,8 @@ def verificar_auto_actualizacion_github():
 
 def get_archivos_mdb_activos():
     """
-    Escanea TODAS las carpetas candidatas (C:\SCORPION\BASES DE DATOS\EVENTOS, C:\SCORPION\BASES DE DATOS, etc.)
-    y retorna los MDBs de eventos más recientes primero.
+    Escanea TODAS las carpetas candidatas (C:\SCORPION\BASES DE DATOS\OPERACION, EVENTOS, etc.)
+    y sus subcarpetas de forma recursiva (os.walk), retornando los MDBs de eventos más recientes primero.
     """
     ahora = time.time()
     siete_dias_sec = 7 * 86400
@@ -232,21 +216,22 @@ def get_archivos_mdb_activos():
     for ruta in rutas_unicas:
         if os.path.exists(ruta):
             try:
-                for f in os.listdir(ruta):
-                    if f.upper().endswith('.MDB') and not f.startswith('_'):
-                        f_base = os.path.splitext(f)[0]
-                        # Omitir archivos de zonificación de 4 caracteres (ej: 0014.MDB, C7C9.MDB)
-                        if len(f_base) == 4 and f_base.isalnum() and not f_base.startswith('202'):
-                            continue
-                        full_path = os.path.normpath(os.path.join(ruta, f))
-                        if full_path.lower() not in rutas_procesadas:
-                            rutas_procesadas.add(full_path.lower())
-                            try:
-                                mtime = os.path.getmtime(full_path)
-                                if (ahora - mtime) <= siete_dias_sec:
-                                    archivos.append((mtime, full_path))
-                            except Exception:
-                                pass
+                for root, dirs, files in os.walk(ruta):
+                    for f in files:
+                        if f.upper().endswith('.MDB') and not f.startswith('_'):
+                            f_base = os.path.splitext(f)[0]
+                            # Omitir archivos de zonificación de 4 caracteres (ej: 0014.MDB, C7C9.MDB)
+                            if len(f_base) == 4 and f_base.isalnum() and not f_base.startswith('202'):
+                                continue
+                            full_path = os.path.normpath(os.path.join(root, f))
+                            if full_path.lower() not in rutas_procesadas:
+                                rutas_procesadas.add(full_path.lower())
+                                try:
+                                    mtime = os.path.getmtime(full_path)
+                                    if (ahora - mtime) <= siete_dias_sec:
+                                        archivos.append((mtime, full_path))
+                                except Exception:
+                                    pass
             except Exception:
                 pass
 
@@ -254,21 +239,22 @@ def get_archivos_mdb_activos():
         for ruta in rutas_unicas:
             if os.path.exists(ruta):
                 try:
-                    for f in os.listdir(ruta):
-                        if f.upper().endswith('.MDB') and not f.startswith('_'):
-                            f_base = os.path.splitext(f)[0]
-                            if len(f_base) == 4 and f_base.isalnum() and not f_base.startswith('202'):
-                                continue
-                            full_path = os.path.normpath(os.path.join(ruta, f))
-                            if full_path.lower() not in rutas_procesadas:
-                                rutas_procesadas.add(full_path.lower())
-                                try: archivos.append((os.path.getmtime(full_path), full_path))
-                                except: pass
+                    for root, dirs, files in os.walk(ruta):
+                        for f in files:
+                            if f.upper().endswith('.MDB') and not f.startswith('_'):
+                                f_base = os.path.splitext(f)[0]
+                                if len(f_base) == 4 and f_base.isalnum() and not f_base.startswith('202'):
+                                    continue
+                                full_path = os.path.normpath(os.path.join(root, f))
+                                if full_path.lower() not in rutas_procesadas:
+                                    rutas_procesadas.add(full_path.lower())
+                                    try: archivos.append((os.path.getmtime(full_path), full_path))
+                                    except: pass
                 except Exception:
                     pass
 
     archivos.sort(key=lambda x: x[0], reverse=True)
-    return [item[1] for item in archivos[:10]]
+    return [item[1] for item in archivos[:15]]
 
 def procesar_comandos_sistema():
     try:
