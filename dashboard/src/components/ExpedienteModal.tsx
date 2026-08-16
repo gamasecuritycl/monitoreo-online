@@ -768,6 +768,19 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
           <div className="flex items-center gap-1.5">
             <span className="text-xs">📖</span>
             <span className="text-[11px] tracking-wide">Scorpion - Expediente de Usuario</span>
+            <button
+              type="button"
+              onClick={() => {
+                try {
+                  localStorage.setItem('gama_portal_cuenta', cuentaActiva)
+                } catch {}
+                window.open('/portal', '_blank')
+              }}
+              title="Abrir Vista Móvil PWA del Cliente para esta cuenta"
+              className="ml-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-sans text-[9px] font-bold px-2 py-0.5 rounded shadow cursor-pointer flex items-center gap-1"
+            >
+              📱 Abrir Portal PWA Cliente
+            </button>
           </div>
           <button 
             onClick={onClose} 
