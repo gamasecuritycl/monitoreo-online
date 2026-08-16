@@ -410,11 +410,10 @@ def sincronizar(cache):
                 if not cuenta or not evento:
                     continue
 
-                event_key = f"{dia}_{hora}_{cuenta}_{evento}_{zona}_{usuario}"
+                fecha_hora = parse_fecha_hora(dia, hora, chile_tz)
+                event_key = f"{fecha_hora}_{cuenta}_{evento}_{zona}_{usuario}"
                 if event_key in cache or event_key in batch_keys:
                     continue
-
-                fecha_hora = parse_fecha_hora(dia, hora, chile_tz)
 
                 batch_data.append({
                     "fecha_hora":     fecha_hora,
