@@ -22,6 +22,7 @@ import VideoVerificacionModal from './VideoVerificacionModal'
 import CamaraGridModal from './CamaraGridModal'
 import HorariosModal from './HorariosModal'
 import PredictorMantenimientoModal from './PredictorMantenimientoModal'
+import SimuladorEventosModal from './SimuladorEventosModal'
 import IACopilotCard from './IACopilotCard'
 import EntregaTurnoModal from './EntregaTurnoModal'
 import HealthTelemetryModal from './HealthTelemetryModal'
@@ -1122,6 +1123,7 @@ export default function ScorpionDashboard() {
           { label: 'REPORTES',       id: 'menu-reportes', hasDropdown: true },
           { label: 'EVENTOS',        id: 'menu-eventos' },
           { label: 'CAMARAS',       id: 'menu-camaras' },
+          { label: 'SIMULADOR',      id: 'menu-simulador' },
           { label: 'AYUDA',          id: 'menu-ayuda' },
         ].filter(item => {
           if (item.id === 'menu-configuracion') return usuarioActivo.rol === 'Administrador'
@@ -1150,6 +1152,10 @@ export default function ScorpionDashboard() {
                   setMostrarMenuReportes(false)
                 } else if (item.id === 'menu-predictor-ia') {
                   setModalActivo('predictor-ia')
+                  setMostrarMenuNotificaciones(false)
+                  setMostrarMenuReportes(false)
+                } else if (item.id === 'menu-simulador') {
+                  setModalActivo('simulador')
                   setMostrarMenuNotificaciones(false)
                   setMostrarMenuReportes(false)
                 } else if (item.id === 'menu-control-test') {
@@ -1602,6 +1608,18 @@ export default function ScorpionDashboard() {
           onEnviarWhatsApp={(telefono, mensaje) => {
             setWhatsappTelefonoInicial(telefono)
             setModalActivo('notificaciones-whatsapp')
+          }}
+        />
+      )}
+
+      {/* Simulador de Eventos y Entrenamiento Modal */}
+      {modalActivo === 'simulador' && (
+        <SimuladorEventosModal
+          onClose={() => setModalActivo(null)}
+          clientesMap={clientesMap}
+          onInyectarEvento={(nuevoEv) => {
+            setEventos(prev => [nuevoEv, ...prev])
+            setEventoSeleccionado(nuevoEv)
           }}
         />
       )}
