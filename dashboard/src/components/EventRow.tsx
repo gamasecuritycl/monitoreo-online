@@ -79,9 +79,17 @@ function getEventoStyle(
   eventoTexto: string,
   codigosMap?: Record<string, CodigoInfo>
 ): { bg: string; text: string } {
+  const upper = (eventoTexto || '').toUpperCase().trim()
+
+  // ── Reglas nativas idénticas 1:1 al software de la PC Scorpion ──
+  if (upper.includes('APERTURA')) return { bg: '#00FFFF', text: '#000000' } // Celeste / Cyan
+  if (upper.includes('AUTOTEST')) return { bg: '#E0E0E0', text: '#000000' } // Gris / Plateado
+  if (upper.includes('CIERRE'))   return { bg: '#FFFFFF', text: '#000000' } // Blanco
+  if (upper.includes('RESTABLEC') || upper.includes('RESTAURACION')) return { bg: '#FFFF00', text: '#000000' } // Amarillo
+  if (upper.includes('FALLA AC') || upper.includes('FALLA DE ENERGIA') || upper.includes('CORTE DE LUZ')) return { bg: '#00FF00', text: '#000000' } // Verde
+  if (upper.includes('ROBO') || upper.includes('ALARMA') || upper.includes('INTRUSION') || upper.includes('SABOTAJE')) return { bg: '#FFC0CB', text: '#000000' } // Rosado
+
   if (codigosMap && eventoTexto) {
-    const upper = eventoTexto.toUpperCase().trim()
-    
     // 1. Buscar coincidencia exacta por CODIGO (ej: "E130", "R100")
     if (codigosMap[upper]) {
       const colorNombre = codigosMap[upper].color
