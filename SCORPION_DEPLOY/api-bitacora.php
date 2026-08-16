@@ -69,6 +69,16 @@ if (!is_dir($UPLOAD_DIR)) {
     file_put_contents($UPLOAD_DIR . '/index.html', '');
 }
 
+// ── AUTO-REPARACIÓN DE REGISTROS CON id_abonado = 0 O NULL PARA PREVENIR ERROR 500 EN EL FRONTEND ──
+try {
+    $stmtValid = $pdo->query("SELECT id FROM abonados WHERE id > 0 ORDER BY id ASC LIMIT 1");
+    $validRow = $stmtValid->fetch();
+    $defaultAbId = ($validRow && (int)$validRow['id'] > 0) ? (int)$validRow['id'] : 1;
+    $pdo->exec("UPDATE eventos SET id_abonado = $defaultAbId WHERE id_abonado = 0 OR id_abonado IS NULL");
+} catch (Exception $e) {
+    // Ignorar si falla auto-reparación
+}
+
 $action = $_GET['action'] ?? '';
 
 switch ($action) {
@@ -100,9 +110,11 @@ switch ($action) {
 
         $sql = "
             SELECT e.id, e.id_abonado, e.comentario, e.tipo_evento, e.created_at, e.updated_at,
-                   et.name AS tipo_nombre, et.color AS tipo_color,
-                   u.name AS responsable_nombre,
-                   a.cod AS abonado_cod, a.nombre AS abonado_nombre
+                   COALESCE(et.name, 'NOVEDAD') AS tipo_nombre,
+                   COALESCE(et.color, 'FF0000') AS tipo_color,
+                   COALESCE(u.name, 'operador') AS responsable_nombre,
+                   COALESCE(a.cod, 'S/C') AS abonado_cod,
+                   COALESCE(a.nombre, 'ABONADO GENERAL') AS abonado_nombre
             FROM eventos e
             LEFT JOIN eventos_type et ON e.tipo_evento = et.id
             LEFT JOIN users u ON e.id_responsable = u.id
@@ -168,16 +180,17 @@ switch ($action) {
 
         try {
             $abonadoId = $input['id_abonado'];
-            if (!is_numeric($abonadoId)) {
+            if (!is_numeric($abonadoId) || (int)$abonadoId <= 0) {
+                $rawCode = trim(strval($abonadoId));
                 $stmtAb = $pdo->prepare("SELECT id FROM abonados WHERE cod = ? OR cod LIKE ? LIMIT 1");
-                $stmtAb->execute([$abonadoId, "%$abonadoId%"]);
+                $stmtAb->execute([$rawCode, "%$rawCode%"]);
                 $abRow = $stmtAb->fetch();
-                if ($abRow) {
-                    $abonadoId = $abRow['id'];
+                if ($abRow && (int)$abRow['id'] > 0) {
+                    $abonadoId = (int)$abRow['id'];
                 } else {
-                    $stmtFirst = $pdo->query("SELECT id FROM abonados ORDER BY id ASC LIMIT 1");
+                    $stmtFirst = $pdo->query("SELECT id FROM abonados WHERE id > 0 ORDER BY id ASC LIMIT 1");
                     $abFirst = $stmtFirst->fetch();
-                    $abonadoId = $abFirst ? $abFirst['id'] : 1;
+                    $abonadoId = ($abFirst && (int)$abFirst['id'] > 0) ? (int)$abFirst['id'] : 1;
                 }
             }
 
@@ -188,7 +201,7 @@ switch ($action) {
             ");
             $stmt->execute([
                 $input['id_responsable'] ?? 1,
-                $abonadoId,
+                (int)$abonadoId,
                 $input['comentario'],
                 $input['tipo_evento'] ?? 1,
                 $input['publico'] ?? 0,
