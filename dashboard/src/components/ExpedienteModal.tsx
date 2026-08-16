@@ -7,6 +7,7 @@ import VideoVerificacionModal from './VideoVerificacionModal'
 
 import { cleanRut } from '@/lib/rut'
 import { esAbonadoInactivo } from '@/lib/inactivos_filter'
+import { DIAS_SEMANA_DEFAULT, type DiaHorario, type ConfigHorarioAbonado } from './HorariosModal'
 
 // Base de datos de fallback precargada
 import clientesDataRaw from '@/lib/clientes_general.json'
@@ -95,9 +96,7 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
   const [inputEmailVideo, setInputEmailVideo] = useState('')
   const [whatsappsVideo, setWhatsappsVideo] = useState<{ telefono: string, nombre: string }[]>([])
   const [inputWhatsappTel, setInputWhatsappTel] = useState('')
-  const [inputWhatsappNombre, setInputWhatsappNombre] = useState('')
-
-  // Estados para RUT y Alias de Unidad (Edición restringida a Administrador)
+  const [inputWhatsappNombre, setInputWhatsappNombre] = useState('')  // Estados para RUT y Alias de Unidad (Edición restringida a Administrador)
   const [inputRut, setInputRut] = useState('')
   const [inputAlias, setInputAlias] = useState('')
   const [editandoRut, setEditandoRut] = useState(false)
@@ -105,7 +104,135 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
   const [excelTextRaw, setExcelTextRaw] = useState('')
   const [cargandoExcel, setCargandoExcel] = useState(false)
 
-  // Estados de integración con BD IA
+  // Estados para Horarios de Apertura y Cierre de Abonado
+  const [horariosDias, setHorariosDias] = useState<DiaHorario[]>(DIAS_SEMANA_DEFAULT)
+  const [horariosNoCierre, setHorariosNoCierre] = useState(true)
+  const [horariosTelWA, setHorariosTelWA] = useState('')
+  const [horariosAlertaInhabitual, setHorariosAlertaInhabitual] = useState(true)
+  const [guardandoHorarios, setGuardandoHorarios] = useState(false)
+  const [horariosMsg, setHorariosMsg] = useState('')
+
+  // Cargar configuración de horarios al cambiar cuentaActiva
+  useEffect(() => {
+    if (!cuentaActiva) return
+    const fetchH = async () => {
+      try {
+        const local = localStorage.getItem(`gama_horarios_${cuentaActiva}`)
+        if (local) {
+          const p = JSON.parse(local)
+          if (p.dias && Array.isArray(p.dias)) {
+            setHorariosDias(p.dias)
+            setHorariosNoCierre(Boolean(p.notificarNoCierre))
+            setHorariosTelWA(p.telefonoWhatsApp || '')
+            setHorariosAlertaInhabitual(Boolean(p.alertaAperturaInhabitual))
+            return
+          }
+        }
+        const { data } = await supabase
+          .from('eventos_monitoreo')
+          .select('nombre_abonado')
+          .eq('cuenta', `HORARIOS_${cuentaActiva}`)
+          .order('id', { ascending: false })
+          .limit(1)
+        if (data && data.length > 0 && data[0].nombre_abonado) {
+          const p: ConfigHorarioAbonado = JSON.parse(data[0].nombre_abonado)
+          if (p.dias && Array.isArray(p.dias)) {
+            setHorariosDias(p.dias)
+            setHorariosNoCierre(Boolean(p.notificarNoCierre))
+            setHorariosTelWA(p.telefonoWhatsApp || '')
+            setHorariosAlertaInhabitual(Boolean(p.alertaAperturaInhabitual))
+            localStorage.setItem(`gama_horarios_${cuentaActiva}`, JSON.stringify(p))
+            return
+          }
+        }
+        const cActual = clientesMap[cuentaActiva] || clientesGeneralFallback[cuentaActiva]
+        const t = cActual?.telefono1 || cActual?.t1 || ''
+        setHorariosDias(DIAS_SEMANA_DEFAULT)
+        setHorariosNoCierre(true)
+        setHorariosTelWA(t.replace(/[^0-9+]/g, ''))
+        setHorariosAlertaInhabitual(true)
+      } catch (e) {}
+    }
+    fetchH()
+  }, [cuentaActiva, clientesMap])
+
+  const guardarHorariosExpediente = async () => {
+    setGuardandoHorarios(true)
+    setHorariosMsg('Guardando horarios...')
+    try {
+      const cActual = clientesMap[cuentaActiva] || clientesGeneralFallback[cuentaActiva]
+      const payload: ConfigHorarioAbonado = {
+        cuenta: cuentaActiva,
+        nombre: cActual?.nombre || 'ABONADO',
+        dias: horariosDias,
+        notificarNoCierre: horariosNoCierre,
+        telefonoWhatsApp: horariosTelWA.trim(),
+        alertaAperturaInhabitual: horariosAlertaInhabitual,
+        actualizadoEl: new Date().toISOString()
+      }
+      localStorage.setItem(`gama_horarios_${cuentaActiva}`, JSON.stringify(payload))
+      const { error } = await supabase.from('eventos_monitoreo').upsert({
+        cuenta: `HORARIOS_${cuentaActiva}`,
+        nombre_abonado: JSON.stringify(payload),
+        evento: 'CONFIG_HORARIOS_ABONADO',
+        fecha_hora: new Date().toISOString()
+      })
+      if (error) throw error
+      setHorariosMsg('✅ Horarios guardados exitosamente')
+      setTimeout(() => setHorariosMsg(''), 3500)
+    } catch (e: any) {
+      setHorariosMsg('❌ Error al guardar: ' + e.message)
+    } finally {
+      setGuardandoHorarios(false)
+    }
+  }
+
+  const aplicarPlantillaExpediente = (tipo: 'comercio' | 'retail' | 'industrial' | '24_7') => {
+    if (tipo === 'comercio') {
+      setHorariosDias([
+        { dia: 'lunes', label: 'Lunes', habilitado: true, apertura: '08:30', cierre: '19:00', toleranciaMin: 30 },
+        { dia: 'martes', label: 'Martes', habilitado: true, apertura: '08:30', cierre: '19:00', toleranciaMin: 30 },
+        { dia: 'miercoles', label: 'Miércoles', habilitado: true, apertura: '08:30', cierre: '19:00', toleranciaMin: 30 },
+        { dia: 'jueves', label: 'Jueves', habilitado: true, apertura: '08:30', cierre: '19:00', toleranciaMin: 30 },
+        { dia: 'viernes', label: 'Viernes', habilitado: true, apertura: '08:30', cierre: '19:00', toleranciaMin: 30 },
+        { dia: 'sabado', label: 'Sábado', habilitado: true, apertura: '09:00', cierre: '14:00', toleranciaMin: 30 },
+        { dia: 'domingo', label: 'Domingo', habilitado: false, apertura: '00:00', cierre: '00:00', toleranciaMin: 0 },
+        { dia: 'festivos', label: 'Festivos', habilitado: false, apertura: '00:00', cierre: '00:00', toleranciaMin: 0 }
+      ])
+    } else if (tipo === 'retail') {
+      setHorariosDias([
+        { dia: 'lunes', label: 'Lunes', habilitado: true, apertura: '10:00', cierre: '21:00', toleranciaMin: 30 },
+        { dia: 'martes', label: 'Martes', habilitado: true, apertura: '10:00', cierre: '21:00', toleranciaMin: 30 },
+        { dia: 'miercoles', label: 'Miércoles', habilitado: true, apertura: '10:00', cierre: '21:00', toleranciaMin: 30 },
+        { dia: 'jueves', label: 'Jueves', habilitado: true, apertura: '10:00', cierre: '21:00', toleranciaMin: 30 },
+        { dia: 'viernes', label: 'Viernes', habilitado: true, apertura: '10:00', cierre: '21:30', toleranciaMin: 30 },
+        { dia: 'sabado', label: 'Sábado', habilitado: true, apertura: '10:00', cierre: '21:30', toleranciaMin: 30 },
+        { dia: 'domingo', label: 'Domingo', habilitado: true, apertura: '11:00', cierre: '20:00', toleranciaMin: 30 },
+        { dia: 'festivos', label: 'Festivos', habilitado: true, apertura: '11:00', cierre: '20:00', toleranciaMin: 30 }
+      ])
+    } else if (tipo === 'industrial') {
+      setHorariosDias([
+        { dia: 'lunes', label: 'Lunes', habilitado: true, apertura: '07:30', cierre: '20:00', toleranciaMin: 45 },
+        { dia: 'martes', label: 'Martes', habilitado: true, apertura: '07:30', cierre: '20:00', toleranciaMin: 45 },
+        { dia: 'miercoles', label: 'Miércoles', habilitado: true, apertura: '07:30', cierre: '20:00', toleranciaMin: 45 },
+        { dia: 'jueves', label: 'Jueves', habilitado: true, apertura: '07:30', cierre: '20:00', toleranciaMin: 45 },
+        { dia: 'viernes', label: 'Viernes', habilitado: true, apertura: '07:30', cierre: '20:00', toleranciaMin: 45 },
+        { dia: 'sabado', label: 'Sábado', habilitado: true, apertura: '08:00', cierre: '13:00', toleranciaMin: 30 },
+        { dia: 'domingo', label: 'Domingo', habilitado: false, apertura: '00:00', cierre: '00:00', toleranciaMin: 0 },
+        { dia: 'festivos', label: 'Festivos', habilitado: false, apertura: '00:00', cierre: '00:00', toleranciaMin: 0 }
+      ])
+    } else if (tipo === '24_7') {
+      setHorariosDias(DIAS_SEMANA_DEFAULT.map(d => ({
+        ...d,
+        habilitado: true,
+        apertura: '00:00',
+        cierre: '23:59',
+        toleranciaMin: 0
+      })))
+    }
+  }
+
+  // Estados de integración con BD IABD IA
   const [camarasIA, setCamarasIA] = useState<Array<{ id: string; nombre: string; rtsp_url?: string; activa: boolean }>>([])
   const [clipsIA, setClipsIA] = useState<Array<{ id: string; camara_id: string; clip_path: string; fecha_hora: string; motivo?: string }>>([])
   const [clipSeleccionado, setClipSeleccionado] = useState<string | null>(null)
@@ -633,7 +760,7 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
       <div
         ref={modalRef}
         tabIndex={-1}
-        className="w-full max-w-[1700px] h-[94vh] bg-[#d4d0c8] text-black border-2 border-t-white border-l-white border-b-[#808080] border-r-[#808080] p-1.5 shadow-[4px_4px_16px_rgba(0,0,0,0.8)] focus:outline-none flex flex-col justify-between select-none"
+        className="w-[98vw] max-w-[1850px] h-[96vh] bg-[#d4d0c8] text-black border-2 border-t-white border-l-white border-b-[#808080] border-r-[#808080] p-2 shadow-[4px_4px_24px_rgba(0,0,0,0.85)] focus:outline-none flex flex-col justify-between select-none"
         style={{ fontSize: '11px' }}
       >
         {/* Barra de Título */}
@@ -946,8 +1073,185 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
                 )}
 
                 {tabEmergentes === 'horarios' && (
-                  <div className="p-2 text-center text-gray-500 font-bold border border-gray-400 flex-1 flex items-center justify-center bg-white text-[10px]">
-                    [Horarios de Apertura/Cierre]
+                  <div className="border border-gray-400 bg-[#d4d0c8] flex-1 flex flex-col overflow-hidden p-1.5 gap-1.5">
+                    {/* Header y Plantillas */}
+                    <div className="flex flex-wrap items-center justify-between bg-[#e6f0fa] border border-blue-400 p-1.5 rounded-xs shrink-0 text-[10px]">
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-bold text-blue-950">⏰ HORARIOS ABONADO [{cuentaActiva}]:</span>
+                        <span className="text-gray-600 truncate max-w-[240px]">{cliente.nombre}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <span className="font-bold text-gray-700 text-[9px] uppercase">Plantilla:</span>
+                        <button
+                          type="button"
+                          onClick={() => aplicarPlantillaExpediente('comercio')}
+                          className="bg-[#d4d0c8] border border-t-white border-l-white border-b-black border-r-black px-1.5 py-0.5 text-[9px] font-bold hover:bg-[#e8e8e8] cursor-pointer"
+                        >
+                          🏢 Comercio
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => aplicarPlantillaExpediente('retail')}
+                          className="bg-[#d4d0c8] border border-t-white border-l-white border-b-black border-r-black px-1.5 py-0.5 text-[9px] font-bold hover:bg-[#e8e8e8] cursor-pointer"
+                        >
+                          🛍️ Retail
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => aplicarPlantillaExpediente('industrial')}
+                          className="bg-[#d4d0c8] border border-t-white border-l-white border-b-black border-r-black px-1.5 py-0.5 text-[9px] font-bold hover:bg-[#e8e8e8] cursor-pointer"
+                        >
+                          🏭 Industrial
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => aplicarPlantillaExpediente('24_7')}
+                          className="bg-[#d4d0c8] border border-t-white border-l-white border-b-black border-r-black px-1.5 py-0.5 text-[9px] font-bold hover:bg-[#e8e8e8] cursor-pointer"
+                        >
+                          🕒 24/7
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Tabla de Días */}
+                    <div className="flex-1 bg-white border border-t-gray-700 border-l-gray-700 border-b-white border-r-white overflow-y-auto min-h-0">
+                      <table className="w-full border-collapse text-[10px] text-left">
+                        <thead className="bg-[#b0b0b0] border-b border-gray-400 font-bold sticky top-0 z-10">
+                          <tr>
+                            <th className="p-1 border-r border-gray-400 w-24">Día</th>
+                            <th className="p-1 border-r border-gray-400 w-24 text-center">Estado</th>
+                            <th className="p-1 border-r border-gray-400 w-28 text-center">Apertura</th>
+                            <th className="p-1 border-r border-gray-400 w-28 text-center">Cierre</th>
+                            <th className="p-1 border-r border-gray-400 w-24 text-center">Tolerancia</th>
+                            <th className="p-1">Observación</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-300 font-bold">
+                          {horariosDias.map((d, idx) => (
+                            <tr key={d.dia} className={`hover:bg-blue-50 ${!d.habilitado ? 'bg-gray-100 text-gray-400' : 'text-gray-900'}`}>
+                              <td className="p-1 border-r border-gray-300 font-extrabold flex items-center gap-1">
+                                <span className={`w-1.5 h-1.5 rounded-full ${d.habilitado ? 'bg-green-600' : 'bg-gray-400'}`} />
+                                <span>{d.label}</span>
+                              </td>
+                              <td className="p-1 border-r border-gray-300 text-center">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const next = [...horariosDias]
+                                    next[idx] = { ...next[idx], habilitado: !d.habilitado }
+                                    setHorariosDias(next)
+                                  }}
+                                  className={`px-1.5 py-0.5 text-[8px] font-bold rounded-xs cursor-pointer ${
+                                    d.habilitado ? 'bg-green-700 text-white' : 'bg-gray-400 text-black'
+                                  }`}
+                                >
+                                  {d.habilitado ? 'ABIERTO' : 'CERRADO'}
+                                </button>
+                              </td>
+                              <td className="p-1 border-r border-gray-300 text-center">
+                                <input
+                                  type="time"
+                                  disabled={!d.habilitado}
+                                  value={d.apertura}
+                                  onChange={(e) => {
+                                    const next = [...horariosDias]
+                                    next[idx] = { ...next[idx], apertura: e.target.value }
+                                    setHorariosDias(next)
+                                  }}
+                                  className={`px-1 border font-mono text-center text-[10px] font-bold ${
+                                    d.habilitado ? 'bg-[#ffffd0] text-blue-900 border-gray-400' : 'bg-gray-200 text-gray-400 border-gray-300'
+                                  }`}
+                                />
+                              </td>
+                              <td className="p-1 border-r border-gray-300 text-center">
+                                <input
+                                  type="time"
+                                  disabled={!d.habilitado}
+                                  value={d.cierre}
+                                  onChange={(e) => {
+                                    const next = [...horariosDias]
+                                    next[idx] = { ...next[idx], cierre: e.target.value }
+                                    setHorariosDias(next)
+                                  }}
+                                  className={`px-1 border font-mono text-center text-[10px] font-bold ${
+                                    d.habilitado ? 'bg-[#ffffd0] text-blue-900 border-gray-400' : 'bg-gray-200 text-gray-400 border-gray-300'
+                                  }`}
+                                />
+                              </td>
+                              <td className="p-1 border-r border-gray-300 text-center">
+                                <select
+                                  disabled={!d.habilitado}
+                                  value={d.toleranciaMin}
+                                  onChange={(e) => {
+                                    const next = [...horariosDias]
+                                    next[idx] = { ...next[idx], toleranciaMin: Number(e.target.value) }
+                                    setHorariosDias(next)
+                                  }}
+                                  className={`px-1 border font-bold text-[9px] ${
+                                    d.habilitado ? 'bg-[#ffffd0] text-black border-gray-400' : 'bg-gray-200 text-gray-400 border-gray-300'
+                                  }`}
+                                >
+                                  <option value={0}>0m</option>
+                                  <option value={15}>±15m</option>
+                                  <option value={30}>±30m</option>
+                                  <option value={45}>±45m</option>
+                                  <option value={60}>±60m</option>
+                                </select>
+                              </td>
+                              <td className="p-1 text-[9px] text-gray-600 truncate">
+                                {d.habilitado ? `Apertura ${d.apertura} - Cierre ${d.cierre}` : 'Cerrado todo el día'}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Guardián and Save Bar */}
+                    <div className="bg-[#e8e4dc] border border-gray-400 p-1.5 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 shrink-0 text-[10px]">
+                      <div className="flex flex-wrap items-center gap-3">
+                        <label className="flex items-center gap-1 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={horariosAlertaInhabitual}
+                            onChange={(e) => setHorariosAlertaInhabitual(e.target.checked)}
+                          />
+                          <span className="font-bold text-gray-800">Alertar Desarme Fuera de Horario</span>
+                        </label>
+                        <label className="flex items-center gap-1 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={horariosNoCierre}
+                            onChange={(e) => setHorariosNoCierre(e.target.checked)}
+                          />
+                          <span className="font-bold text-gray-800">Alertar No-Cierre</span>
+                        </label>
+                        {horariosNoCierre && (
+                          <div className="flex items-center gap-1">
+                            <span className="font-bold text-emerald-900">WhatsApp:</span>
+                            <input
+                              type="text"
+                              placeholder="569..."
+                              value={horariosTelWA}
+                              onChange={(e) => setHorariosTelWA(e.target.value)}
+                              className="bg-white border border-gray-400 px-1 py-0.5 font-mono text-[10px] w-28"
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        {horariosMsg && <span className="font-bold text-blue-900 animate-pulse text-[10px]">{horariosMsg}</span>}
+                        <button
+                          type="button"
+                          onClick={guardarHorariosExpediente}
+                          disabled={guardandoHorarios}
+                          className="bg-[#000080] border border-t-white border-l-white border-b-black border-r-black px-3 py-1 text-xs font-bold text-white hover:bg-blue-900 active:border-t-black active:border-l-black active:border-b-white active:border-r-white cursor-pointer shadow-xs disabled:opacity-50"
+                        >
+                          {guardandoHorarios ? 'Guardando...' : '💾 Guardar Horarios'}
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 )}
 

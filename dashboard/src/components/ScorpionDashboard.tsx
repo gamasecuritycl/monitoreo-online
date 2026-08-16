@@ -20,6 +20,7 @@ import ReportesModal from './ReportesModal'
 import ConfigModal from './ConfigModal'
 import VideoVerificacionModal from './VideoVerificacionModal'
 import CamaraGridModal from './CamaraGridModal'
+import HorariosModal from './HorariosModal'
 import IACopilotCard from './IACopilotCard'
 import EntregaTurnoModal from './EntregaTurnoModal'
 import HealthTelemetryModal from './HealthTelemetryModal'
@@ -1112,6 +1113,7 @@ export default function ScorpionDashboard() {
           { label: 'CONFIGURACION',  id: 'menu-configuracion' },
           { label: 'SERV. TECNICO',  id: 'menu-serv-tecnico' },
           { label: 'CONTROL TEST',   id: 'menu-control-test' },
+          { label: 'HORARIOS',       id: 'menu-horarios' },
           { label: 'TABLAS',         id: 'menu-tablas' },
           { label: 'UTILIDADES',     id: 'menu-utilidades' },
           { label: 'NOTIFICACIONES', id: 'menu-notificaciones', hasDropdown: true },
@@ -1146,6 +1148,10 @@ export default function ScorpionDashboard() {
                   setMostrarMenuReportes(false)
                 } else if (item.id === 'menu-control-test') {
                   setModalActivo('control-test')
+                  setMostrarMenuNotificaciones(false)
+                  setMostrarMenuReportes(false)
+                } else if (item.id === 'menu-horarios') {
+                  setModalActivo('horarios')
                   setMostrarMenuNotificaciones(false)
                   setMostrarMenuReportes(false)
                 } else if (item.id === 'menu-operadores') {
@@ -1564,6 +1570,15 @@ export default function ScorpionDashboard() {
       {modalActivo === 'control-test' && (
         <ControlTestModal 
           onClose={() => setModalActivo(null)} 
+          clientesMap={clientesMap}
+        />
+      )}
+
+      {/* Horarios Modal */}
+      {modalActivo === 'horarios' && (
+        <HorariosModal
+          onClose={() => setModalActivo(null)}
+          cuentaInicial={activeEvent?.cuenta || undefined}
           clientesMap={clientesMap}
         />
       )}
