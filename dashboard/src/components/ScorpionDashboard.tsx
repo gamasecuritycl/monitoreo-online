@@ -177,6 +177,44 @@ export default function ScorpionDashboard() {
   const [armadoMap, setArmadoMap] = useState<Record<string, boolean>>({})
   const armadoMapRef = useRef<Record<string, boolean>>({})
   const clientesConCamarasRef = useRef<Set<string>>(new Set())
+  const [cuentasConCamarasMap, setCuentasConCamarasMap] = useState<Record<string, number>>({})
+
+  // Cargar cuentas que efectivamente tienen cámaras configuradas en Supabase
+  useEffect(() => {
+    const fetchCamarasRegistradas = async () => {
+      try {
+        const { data } = await supabase
+          .from('eventos_monitoreo')
+          .select('cuenta, nombre_abonado')
+          .like('cuenta', 'CAMARAS_DAHUA_%')
+          .order('id', { ascending: false })
+
+        if (data && data.length > 0) {
+          const map: Record<string, number> = {}
+          const setCams = new Set<string>()
+          for (const row of data) {
+            const cta = row.cuenta.replace('CAMARAS_DAHUA_', '').toUpperCase().trim()
+            if (cta && !map[cta]) {
+              try {
+                const parsed = JSON.parse(row.nombre_abonado || '[]')
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                  map[cta] = parsed.length
+                  setCams.add(cta)
+                }
+              } catch {}
+            }
+          }
+          setCuentasConCamarasMap(map)
+          clientesConCamarasRef.current = setCams
+        }
+      } catch (err) {
+        console.warn('Error cargando cuentas con cámaras:', err)
+      }
+    }
+    fetchCamarasRegistradas()
+    const timer = setInterval(fetchCamarasRegistradas, 45_000)
+    return () => clearInterval(timer)
+  }, [])
 
   // Sincronizar usuario activo con localStorage
   useEffect(() => {
@@ -577,22 +615,31 @@ export default function ScorpionDashboard() {
         if (esCierre) { const next = { ...armadoMapRef.current, [newEvent.cuenta]: true }; armadoMapRef.current = next; setArmadoMap(next) }
         if (esApertura) { const next = { ...armadoMapRef.current, [newEvent.cuenta]: false }; armadoMapRef.current = next; setArmadoMap(next) }
 
-        // Auto-apertura de videoverificación: ROBO + sistema armado + cliente con cámara
+        // Auto-apertura de videoverificación: ROBO + sistema armado + cliente con cámara registrada
         const esRobo = eventoUpper.includes('ALARMA') && (eventoUpper.includes('ROBO') || eventoUpper.includes('INTRUSIÓN') || eventoUpper.includes('INTRUSION') || eventoUpper.includes('PERIMETRAL'))
         if (esRobo && armadoMapRef.current[newEvent.cuenta] === true) {
           ;(async () => {
             try {
-              if (!clientesConCamarasRef.current.has(newEvent.cuenta)) {
+              const ctaKey = (newEvent.cuenta || '').toUpperCase().trim()
+              let hasCam = clientesConCamarasRef.current.has(ctaKey)
+              if (!hasCam) {
                 const { data } = await supabase
                   .from('eventos_monitoreo')
-                  .select('id')
-                  .eq('cuenta', `CAMARAS_DAHUA_${newEvent.cuenta}`)
+                  .select('nombre_abonado')
+                  .eq('cuenta', `CAMARAS_DAHUA_${ctaKey}`)
                   .limit(1)
-                if (data && data.length > 0) {
-                  clientesConCamarasRef.current.add(newEvent.cuenta)
+                if (data && data.length > 0 && data[0].nombre_abonado) {
+                  try {
+                    const parsed = JSON.parse(data[0].nombre_abonado)
+                    if (Array.isArray(parsed) && parsed.length > 0) {
+                      clientesConCamarasRef.current.add(ctaKey)
+                      hasCam = true
+                    }
+                  } catch {}
                 }
               }
-              if (clientesConCamarasRef.current.has(newEvent.cuenta)) {
+              // Solo abrir si verdaderamente tiene cámaras configuradas
+              if (hasCam) {
                 setEventoSeleccionado(newEvent)
                 setModalActivo('video-verificacion')
               }
@@ -874,6 +921,22 @@ export default function ScorpionDashboard() {
   const cuentaKey = activeEvent ? activeEvent.cuenta.toUpperCase().trim() : ''
   const clienteDb = cuentaKey ? (clientesMap[cuentaKey] || null) : null
   const clientData = activeEvent ? obtenerDatosAbonado(activeEvent.cuenta, activeEvent.nombre_abonado, clienteDb) : null
+
+  const cantCamarasActiva = (() => {
+    if (!cuentaKey) return 0
+    if (cuentasConCamarasMap[cuentaKey]) return cuentasConCamarasMap[cuentaKey]
+    if (typeof window !== 'undefined') {
+      try {
+        const local = localStorage.getItem(`gama_dahua_sn_${cuentaKey}`)
+        if (local) {
+          const p = JSON.parse(local)
+          if (Array.isArray(p) && p.length > 0) return p.length
+        }
+      } catch {}
+    }
+    return 0
+  })()
+  const tieneCamaras = cantCamarasActiva > 0
 
   const direccionParaMapa = clientData?.direccion && clientData.direccion !== 'Av. Providencia 1420, Of. 602'
     ? `${clientData.direccion}, ${clientData.comuna || ''}, Chile`
@@ -1227,6 +1290,9 @@ export default function ScorpionDashboard() {
             historialEventos={eventos}
             clientData={clientData}
             zonas={buscarZonasAbonado(activeEvent?.cuenta)}
+            tieneCamaras={tieneCamaras}
+            cantCamaras={cantCamarasActiva}
+            onAbrirVideo={() => setModalActivo('video-verificacion')}
             onEnviarWhatsApp={(telefono) => {
               setWhatsappTelefonoInicial(telefono)
               setModalActivo('notificaciones-whatsapp')
@@ -1354,18 +1420,33 @@ export default function ScorpionDashboard() {
             </div>
           </div>
 
-          {/* Botón de verificación de video inferior */}
+          {/* Botón de verificación de video inferior dinámico */}
           <button 
             onClick={() => {
-              if (activeEvent) {
+              if (!activeEvent) {
+                alert('Por favor seleccione un abonado en la grilla primero.')
+                return
+              }
+              if (tieneCamaras) {
                 setModalActivo('video-verificacion')
               } else {
-                alert('Por favor seleccione un abonado en la grilla primero.')
+                setExpedientePestana('camara')
+                setModalActivo('bar-chart')
               }
             }}
-            className="w-full bg-[#d0d0d0] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 py-1 text-xs text-gray-800 font-bold hover:bg-[#e0e0e0] active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white cursor-pointer select-none shrink-0"
+            title={tieneCamaras ? `Verificación por video activa (${cantCamarasActiva} cámaras registradas)` : 'Sin cámaras registradas. Clic para configurar en Expediente'}
+            className={`w-full border-2 py-1 text-xs font-bold flex items-center justify-center gap-1.5 transition-all select-none shrink-0 cursor-pointer ${
+              tieneCamaras
+                ? 'bg-blue-900 text-white border-t-blue-400 border-l-blue-400 border-b-black border-r-black hover:bg-blue-800 active:border-t-black active:border-l-black active:border-b-white active:border-r-white shadow-sm'
+                : 'bg-[#d4d0c8] text-gray-700 border-t-white border-l-white border-b-gray-600 border-r-gray-600 hover:bg-[#e0e0e0] active:border-t-gray-600 active:border-l-gray-600 active:border-b-white active:border-r-white'
+            }`}
           >
-            🎥 Activar verificación por video
+            <span>{tieneCamaras ? '🎥' : '📷'}</span>
+            <span>
+              {tieneCamaras
+                ? `Activar verificación por video (${cantCamarasActiva} cam)`
+                : 'Sin cámaras registradas [Configurar]'}
+            </span>
           </button>
 
           {/* Reloj y Fecha inferior de Scorpion */}

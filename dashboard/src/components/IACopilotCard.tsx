@@ -18,6 +18,9 @@ interface IACopilotCardProps {
     }
   } | null
   zonas?: Array<{ numero: string; dispositivo: string; area: string }>
+  tieneCamaras?: boolean
+  cantCamaras?: number
+  onAbrirVideo?: () => void
   onEnviarWhatsApp: (telefono: string, mensajeDefault?: string) => void
   usuarioOperador?: string
 }
@@ -27,6 +30,9 @@ export default function IACopilotCard({
   historialEventos = [],
   clientData,
   zonas = [],
+  tieneCamaras = false,
+  cantCamaras = 0,
+  onAbrirVideo,
   onEnviarWhatsApp,
   usuarioOperador = 'Operadora'
 }: IACopilotCardProps) {
@@ -430,6 +436,18 @@ Proporciona únicamente:
             </button>
           )}
 
+          {/* Botón rápido Video (SOLO si el abonado tiene cámaras registradas) */}
+          {tieneCamaras && onAbrirVideo && (
+            <button
+              type="button"
+              onClick={onAbrirVideo}
+              title={`Ver cámaras en vivo (${cantCamaras} registradas)`}
+              className="bg-blue-600 hover:bg-blue-500 text-white font-bold px-1.5 py-0.5 rounded text-[8px] flex items-center gap-0.5 cursor-pointer shadow-xs"
+            >
+              🎥 Cam{cantCamaras > 1 ? ` (${cantCamaras})` : ''}
+            </button>
+          )}
+
           {/* Botón rápido Modo Pruebas */}
           <button
             type="button"
@@ -675,6 +693,17 @@ Proporciona únicamente:
 
           {/* Botones de Acción Táctica 1-Click */}
           <div className="space-y-1.5 pt-1">
+            {/* Botón destacado VideoVerificación (SOLO si tiene cámaras) */}
+            {tieneCamaras && onAbrirVideo && (
+              <button
+                type="button"
+                onClick={onAbrirVideo}
+                className="w-full bg-gradient-to-r from-blue-700 to-indigo-700 hover:from-blue-600 hover:to-indigo-600 text-white font-bold py-1.5 px-2 rounded text-[10px] flex items-center justify-center gap-1.5 shadow-md cursor-pointer"
+              >
+                <span>🎥 Ver Cámaras en Vivo ({cantCamaras} registradas)</span>
+              </button>
+            )}
+
             <button
               type="button"
               onClick={copiarFichaTactica}
