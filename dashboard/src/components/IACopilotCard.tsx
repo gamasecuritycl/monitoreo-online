@@ -124,12 +124,24 @@ Proporciona únicamente:
     setGuardandoBitacora(true)
     setAccionStatus('📖 Guardando en Bitácora Operativa...')
     try {
+      let numericId: any = evento.cuenta
+      try {
+        const resAb = await fetch(`https://bitacora.gamasecurity.cl/api-bitacora.php?action=abonados&q=${encodeURIComponent(evento.cuenta)}`)
+        if (resAb.ok) {
+          const abList = await resAb.json()
+          if (Array.isArray(abList) && abList.length > 0) {
+            const match = abList.find((a: any) => a.cod === evento.cuenta) || abList[0]
+            if (match && match.id) numericId = match.id
+          }
+        }
+      } catch {}
+
       const com = `[COPILOT IA] ${evento.evento} en ${evento.cuenta} (${zonaCoincidente ? `Z${zonaCoincidente.numero}` : 'Z00'}). ${textoRecomendacion}`
       const r = await fetch('https://bitacora.gamasecurity.cl/api-bitacora.php?action=crear', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          id_abonado: evento.cuenta,
+          id_abonado: numericId,
           comentario: com,
           tipo_evento: 1,
           id_responsable: 1
