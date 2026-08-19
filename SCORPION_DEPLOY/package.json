@@ -1,21 +1,17 @@
 {
-  "name": "scorpion_deploy",
-  "version": "1.0.0",
-  "description": "",
-  "main": "openwa-server.js",
+  "name": "gama-whatsapp-server",
+  "version": "4.0.0",
+  "description": "GAMA SEGURIDAD - Servidor WhatsApp v4.0 (Baileys 7.x, LID nativo, getMessage, graceful shutdown)",
+  "main": "whatsapp_server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node whatsapp_server.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
   "dependencies": {
-    "@whiskeysockets/baileys": "^7.0.0-rc13",
-    "cors": "^2.8.6",
-    "express": "^5.2.1",
-    "pg": "^8.22.0",
-    "pino": "^10.3.1",
-    "qrcode-terminal": "^0.12.0"
+    "@supabase/supabase-js": "^2.110.7",
+    "@whiskeysockets/baileys": "^7.0.0-rc14",
+    "cors": "^2.8.5",
+    "express": "^4.22.2",
+    "pino": "^9.6.0",
+    "qrcode": "^1.5.4"
   }
 }

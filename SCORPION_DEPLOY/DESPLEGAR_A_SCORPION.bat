@@ -5,7 +5,7 @@ echo  Copia todos los archivos actualizados
 echo ═══════════════════════════════════════════════
 echo.
 
-set SRC=C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\SCORPION_DEPLOY
+set SRC=C:\SCORPION\BASES DE DATOS\SCORPION_DEPLOY\_PARA_PC_SCORPION
 set DST=C:\SCORPION\BASES DE DATOS\SCORPION_DEPLOY
 
 echo Origen: %SRC%

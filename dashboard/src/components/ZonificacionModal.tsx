@@ -52,16 +52,19 @@ export default function ZonificacionModal({ onClose, eventoInicial, usuarioRol }
           setClientesMap(map)
         }
 
-        // 2. Cargar zonas
+        // 2. Cargar zonas (preferir la fila válida de sincronización v3.5)
         const { data: dataZonas } = await supabase
           .from('eventos_monitoreo')
           .select('*')
           .eq('cuenta', 'ZONAS')
           .order('id', { ascending: false })
-          .limit(1)
+          .limit(6)
         if (dataZonas && dataZonas.length > 0) {
-          const mz = JSON.parse(dataZonas[0].nombre_abonado)
-          setZonasMap(mz)
+          const filaValida = dataZonas.find(r => r.evento === 'SINCRONIZACION ZONAS MDB' || r.evento === 'CONFIGURACION_ZONAS') || dataZonas[0]
+          if (filaValida?.nombre_abonado) {
+            const mz = JSON.parse(filaValida.nombre_abonado)
+            setZonasMap(mz)
+          }
         }
       } catch (err) {
         console.warn('[ZONIFICACION] Error de red, usando datos locales.')
@@ -95,21 +98,64 @@ export default function ZonificacionModal({ onClose, eventoInicial, usuarioRol }
       )
     : listaAbonados
 
-  // Zonas del abonado activo (lookup robusto: "C769", "769", "0769" y defensa ante objeto único)
+  // Zonas del abonado activo (lookup estricto validado por clave y nombre de cliente)
   const zonasAbonado: Zona[] = (() => {
     const k = (cuentaActiva || '').toUpperCase().trim()
     if (!k) return []
-    const candidatas = [k, k.replace(/^C/, ''), k.replace(/^C/, '').replace(/^0+/, '')]
-    for (const c of candidatas) {
-      const v = zonasMap[c]
-      if (v) return Array.isArray(v) ? v : [v as any]
+
+    // 1. Coincidencia exacta por clave de cuenta
+    if (zonasMap[k]) {
+      const v = zonasMap[k]
+      return Array.isArray(v) ? v : [v as any]
     }
-    const soloDigitos = k.replace(/^C/, '').replace(/^0+/, '')
-    for (const [clave, valor] of Object.entries(zonasMap)) {
-      if (clave.toUpperCase().replace(/^C/, '').replace(/^0+/, '') === soloDigitos) {
-        return Array.isArray(valor) ? valor : [valor as any]
+
+    const nombreActivo = (clientesMap[k]?.nombre || '').toUpperCase().trim()
+    const last2 = k.slice(-2)
+    const last3 = k.slice(-3)
+
+    // 2. Variaciones directas comprobadas
+    const candidatas = [
+      'C' + k,
+      k.startsWith('0') ? 'C7' + last2 : '',
+      k.startsWith('0') ? 'C7' + last3 : '',
+      k.startsWith('C7') ? '0' + last3 : '',
+      k.replace(/^C/, '0'),
+      k.replace(/^0+/, ''),
+    ].filter(Boolean)
+
+    for (const c of candidatas) {
+      if (c && zonasMap[c]) {
+        const nombreCandidata = (clientesMap[c]?.nombre || '').toUpperCase().trim()
+        // Validar coincidencia de cliente para evitar falsos positivos
+        if (
+          !nombreActivo ||
+          !nombreCandidata ||
+          nombreActivo === nombreCandidata ||
+          nombreActivo.includes(nombreCandidata) ||
+          nombreCandidata.includes(nombreActivo) ||
+          c === k
+        ) {
+          const v = zonasMap[c]
+          return Array.isArray(v) ? v : [v as any]
+        }
       }
     }
+
+    // 3. Coincidencia estricta por Nombre de Abonado (evita asociar cuentas distintas con números similares)
+    if (nombreActivo && nombreActivo.length > 3) {
+      for (const [clave, valor] of Object.entries(zonasMap)) {
+        const nombreClave = (clientesMap[clave]?.nombre || '').toUpperCase().trim()
+        if (
+          nombreClave &&
+          (nombreActivo === nombreClave ||
+            (nombreActivo.length > 5 && nombreClave.length > 5 && (nombreActivo.includes(nombreClave) || nombreClave.includes(nombreActivo))))
+        ) {
+          const v = Array.isArray(valor) ? valor : [valor as any]
+          return v
+        }
+      }
+    }
+
     return []
   })()
 

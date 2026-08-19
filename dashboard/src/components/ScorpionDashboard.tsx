@@ -28,6 +28,7 @@ import EntregaTurnoModal from './EntregaTurnoModal'
 import HealthTelemetryModal from './HealthTelemetryModal'
 import { lookupContactId } from '@/lib/contact_id_library'
 import { sendMessage, generarMensajeAlerta, generarMensajeEnergia, detectarPatronEvento, type EventInfo } from '@/lib/whatsapp'
+import { Operator, ensureUserAttributes, OPERADORES_PREDETERMINADOS } from '@/types/operator'
 
 // ── Contactos del Panel Lateral de Scorpion y Entidades de Emergencia ──
 interface ContactoAutorizado {
@@ -147,35 +148,39 @@ export default function ScorpionDashboard() {
     return []
   }, [zonasMap])
 
-  // Gestión de Usuarios y Roles (RBAC)
-  interface Operator {
-    codigo: string
-    nombre: string
-    rol: 'Administrador' | 'Supervisor' | 'Operadora' | 'Técnico'
-    clave: string
-  }
-
-  const OPERADORES_FALLBACK: Operator[] = [
-    { codigo: '01', nombre: 'Tomás Toro', rol: 'Administrador', clave: '123' },
-    { codigo: '02', nombre: 'Mauricio Tapia', rol: 'Supervisor', clave: '123' },
-    { codigo: '03', nombre: 'Juan Pérez', rol: 'Operadora', clave: '123' },
-    { codigo: '04', nombre: 'Diego Reyes', rol: 'Técnico', clave: '123' }
-  ]
-
-  const [operadores, setOperadores] = useState<Operator[]>(OPERADORES_FALLBACK)
+  // Gestión de Usuarios y Roles (RBAC) con Atributos
+  const [operadores, setOperadores] = useState<Operator[]>(OPERADORES_PREDETERMINADOS)
   const [usuarioActivo, setUsuarioActivo] = useState<Operator>(() => {
     if (typeof window !== 'undefined') {
       try {
         const saved = localStorage.getItem('gama_operator_auth') || localStorage.getItem('gama_usuario_activo')
         if (saved) {
           const parsed = JSON.parse(saved)
-          if (parsed && parsed.nombre) return parsed
+          if (parsed && parsed.nombre) return { ...parsed, atributos: ensureUserAttributes(parsed) }
         }
       } catch {}
     }
-    return OPERADORES_FALLBACK[0]
+    return OPERADORES_PREDETERMINADOS[0]
   })
-  const [sesionIniciada, setSesionIniciada] = useState(false)
+  const [sesionIniciada, setSesionIniciada] = useState(true)
+
+  // Sincronizar usuario activo con OperatorAuthGate
+  useEffect(() => {
+    const syncActiveUser = () => {
+      try {
+        const saved = sessionStorage.getItem('gama_operator_auth') || localStorage.getItem('gama_operator_auth')
+        if (saved) {
+          const parsed = JSON.parse(saved)
+          if (parsed && parsed.nombre) {
+            setUsuarioActivo({ ...parsed, atributos: ensureUserAttributes(parsed) })
+          }
+        }
+      } catch {}
+    }
+    syncActiveUser()
+    window.addEventListener('storage', syncActiveUser)
+    return () => window.removeEventListener('storage', syncActiveUser)
+  }, [])
   const [unreadWhatsAppCount, setUnreadWhatsAppCount] = useState(0)
   const [armadoMap, setArmadoMap] = useState<Record<string, boolean>>({})
   const armadoMapRef = useRef<Record<string, boolean>>({})
@@ -1114,10 +1119,11 @@ export default function ScorpionDashboard() {
           { label: 'USUARIOS',       id: 'menu-usuarios' },
           { label: 'CONFIGURACION',  id: 'menu-configuracion' },
           { label: 'SERV. TECNICO',  id: 'menu-serv-tecnico' },
+          { label: 'ZONIFICACION',   id: 'menu-zonificacion' },
           { label: 'PREDICTOR IA',   id: 'menu-predictor-ia' },
           { label: 'CONTROL TEST',   id: 'menu-control-test' },
           { label: 'HORARIOS',       id: 'menu-horarios' },
-          { label: 'TABLAS',         id: 'menu-tablas' },
+          { label: 'TABLAS (CONTACT ID)', id: 'menu-tablas' },
           { label: 'UTILIDADES',     id: 'menu-utilidades' },
           { label: 'NOTIFICACIONES', id: 'menu-notificaciones', hasDropdown: true },
           { label: 'REPORTES',       id: 'menu-reportes', hasDropdown: true },
@@ -1126,10 +1132,15 @@ export default function ScorpionDashboard() {
           { label: 'SIMULADOR',      id: 'menu-simulador' },
           { label: 'AYUDA',          id: 'menu-ayuda' },
         ].filter(item => {
-          if (item.id === 'menu-configuracion') return usuarioActivo.rol === 'Administrador'
-          if (item.id === 'menu-operadores') return usuarioActivo.rol === 'Administrador' || usuarioActivo.rol === 'Supervisor'
-          if (item.id === 'menu-serv-tecnico' || item.id === 'menu-predictor-ia') return ['Administrador', 'Supervisor', 'Técnico'].includes(usuarioActivo.rol)
-          if (item.id === 'menu-control-test') return ['Administrador', 'Supervisor', 'Operadora'].includes(usuarioActivo.rol)
+          const attrs = ensureUserAttributes(usuarioActivo)
+          if (item.id === 'menu-configuracion' || item.id === 'menu-operadores') return attrs.verConfiguracion || usuarioActivo.rol === 'Administrador'
+          if (item.id === 'menu-[#zonificacion]' || item.id === 'menu-zonificacion') return attrs.editarZonificacion || ['Administrador', 'Supervisor', 'Técnico'].includes(usuarioActivo.rol)
+          if (item.id === 'menu-serv-tecnico' || item.id === 'menu-predictor-ia' || item.id === 'menu-camaras') return attrs.verTelemetriaTecnica
+          if (item.id === 'menu-control-test' || item.id === 'menu-simulador') return attrs.controlTestSimulador
+          if (item.id === 'menu-reportes') return attrs.verReportes
+          if (item.id === 'menu-tablas' || item.id === 'menu-usuarios') return attrs.verCRM
+          if (item.id === 'menu-notificaciones') return attrs.enviarMensajesWhatsApp
+          if (item.id === 'menu-eventos') return attrs.verMonitoreoEnVivo
           return true
         }).map((item, idx) => (
           <div key={idx} className="relative">
@@ -1142,6 +1153,10 @@ export default function ScorpionDashboard() {
                 } else if (item.id === 'menu-reportes') {
                   setMostrarMenuReportes(!mostrarMenuReportes)
                   setMostrarMenuNotificaciones(false)
+                } else if (item.id === 'menu-zonificacion') {
+                  setModalActivo('zones-tree')
+                  setMostrarMenuNotificaciones(false)
+                  setMostrarMenuReportes(false)
                 } else if (item.id === 'menu-configuracion') {
                   setModalActivo('file-edit')
                   setMostrarMenuNotificaciones(false)

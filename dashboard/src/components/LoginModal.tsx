@@ -2,12 +2,7 @@
 
 import React, { useState } from 'react'
 
-interface Operator {
-  codigo: string
-  nombre: string
-  rol: 'Administrador' | 'Supervisor' | 'Operadora' | 'Técnico'
-  clave: string
-}
+import { Operator } from '@/types/operator'
 
 interface LoginModalProps {
   onClose: () => void

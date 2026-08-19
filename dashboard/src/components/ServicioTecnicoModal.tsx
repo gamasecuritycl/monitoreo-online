@@ -24,15 +24,12 @@ export interface OrdenTrabajo {
   fecha_cierre?: string
 }
 
+import { Operator } from '@/types/operator'
+
 interface Props {
   onClose: () => void
   clientesMap?: Record<string, Record<string, string>>
-  usuarioActivo?: {
-    codigo: string
-    nombre: string
-    rol: 'Administrador' | 'Supervisor' | 'Operadora' | 'Técnico'
-    clave: string
-  }
+  usuarioActivo?: Operator
 }
 
 const TECNICOS = ['Juan Pérez', 'Diego Reyes', 'Mauricio Tapia', 'Cristian Muñoz']

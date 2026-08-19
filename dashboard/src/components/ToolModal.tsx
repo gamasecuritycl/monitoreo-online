@@ -3,12 +3,7 @@
 import { useEffect, useState } from 'react'
 import { supabaseIA } from '@/lib/supabase'
 
-interface Operator {
-  codigo: string
-  nombre: string
-  rol: 'Administrador' | 'Supervisor' | 'Operadora' | 'Técnico'
-  clave: string
-}
+import { Operator, UserRole, ensureUserAttributes, DEFAULT_ATTRIBUTES_BY_ROLE } from '@/types/operator'
 
 interface ToolModalProps {
   modalId: string
