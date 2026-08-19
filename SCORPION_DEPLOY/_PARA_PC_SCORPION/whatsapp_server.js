@@ -1108,7 +1108,12 @@ async function responderConIA(sock, jid, numero, bodyCliente, promptMaestro, nom
       return
     }
 
-    // Gemini IA
+    // Gemini IA - DESACTIVADA POR DEFECTO por política de la Central (Escucha activa sin auto-respuesta)
+    const AUTO_BOT_ENABLED = process.env.WHATSAPP_AUTO_BOT_ENABLED === 'true'
+    if (!AUTO_BOT_ENABLED) {
+      log(`🤖 Bot IA desactivado por defecto (escucha activa sin auto-respuesta para ${nombreCliente})`)
+      return
+    }
     const GEMINI_KEY = process.env.GEMINI_API_KEY
     if (!GEMINI_KEY) return
 
