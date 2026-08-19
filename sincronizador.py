@@ -25,6 +25,20 @@ TEMP_DIR = os.path.join(os.environ.get("TEMP", r"C:\Windows\Temp"), "gama_sincro
 try: os.makedirs(TEMP_DIR, exist_ok=True)
 except Exception: pass
 
+# Purga automática de residuos temporales obsoletos (_MEI*) en %TEMP%
+try:
+    _temp_parent = os.environ.get("TEMP", r"C:\Windows\Temp")
+    for _item in os.listdir(_temp_parent):
+        if _item.startswith("_MEI") or _item.startswith("pip-install-"):
+            _item_path = os.path.join(_temp_parent, _item)
+            try:
+                if os.path.isdir(_item_path):
+                    shutil.rmtree(_item_path, ignore_errors=True)
+                else:
+                    os.remove(_item_path)
+            except Exception: pass
+except Exception: pass
+
 GLOBAL_LOCK_FILE = os.path.join(TEMP_DIR, "_sincronizador_global.lock")
 
 def lock_single_instance():
