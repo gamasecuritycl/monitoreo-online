@@ -171,12 +171,15 @@ End Sub
 
 Sub StartBridge()
     On Error Resume Next
+    Dim bridgeFile
+    bridgeFile = ScriptDir & "\dahua_p2p_bridge.py"
+    If Not FSO.FileExists(bridgeFile) Then Exit Sub
     If ProcessExists("pythonw.exe", "dahua_p2p_bridge") Or ProcessExists("python.exe", "dahua_p2p_bridge") Then
         LogMsg("Bridge Dahua ya esta en ejecucion (omitido intento duplicado)")
         Exit Sub
     End If
     LogMsg("Iniciando Bridge Dahua P2P...")
-    WshShell.Run """" & PythonPath & """ """ & ScriptDir & "\dahua_p2p_bridge.py""", 0, False
+    WshShell.Run """" & PythonPath & """ """ & bridgeFile & """", 0, False
     If Err.Number <> 0 Then LogMsg("ERROR Bridge: " & Err.Description)
     On Error Goto 0
 End Sub
@@ -232,10 +235,12 @@ Do While True
 
     ' ── WHATSAPP: Servidor en la Nube 24/7 (NO se ejecuta en PC Scorpion) ──
 
-    ' ── BRIDGE: verificar proceso ──
-    If Not (ProcessExists("pythonw.exe", "dahua_p2p_bridge") Or ProcessExists("python.exe", "dahua_p2p_bridge")) Then
-        Call LogMsg("BRIDGE: Proceso MUERTO. Reiniciando...")
-        Call StartBridge()
+    ' ── BRIDGE: verificar proceso (solo si existe el archivo) ──
+    If FSO.FileExists(ScriptDir & "\dahua_p2p_bridge.py") Then
+        If Not (ProcessExists("pythonw.exe", "dahua_p2p_bridge") Or ProcessExists("python.exe", "dahua_p2p_bridge")) Then
+            Call LogMsg("BRIDGE: Proceso MUERTO. Reiniciando...")
+            Call StartBridge()
+        End If
     End If
 
     ' ── LOG DE ESTADO cada 5 minutos ──
