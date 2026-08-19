@@ -1483,12 +1483,6 @@ export default function ScorpionDashboard() {
             </span>
           </button>
 
-          {/* Reloj y Fecha inferior de Scorpion */}
-          <div className="flex justify-between items-center bg-[#d0d0d0] border border-gray-400 px-2 py-0.5 text-[9px] font-mono text-gray-700 shrink-0">
-            <span>Operador: {usuarioActivo.nombre} ({usuarioActivo.rol.toUpperCase()})</span>
-            <span className="font-bold">{horaLocal}</span>
-          </div>
-
         </div>
       </div>
 
@@ -1685,6 +1679,9 @@ export default function ScorpionDashboard() {
       {/* Footer */}
       <FooterActions
         unreadWhatsAppCount={unreadWhatsAppCount}
+        operadorNombre={usuarioActivo.nombre}
+        operadorRol={usuarioActivo.rol}
+        horaLocal={horaLocal}
         onModalOpen={(id) => {
           if (id === 'notificaciones-whatsapp') {
             setUnreadWhatsAppCount(0)
