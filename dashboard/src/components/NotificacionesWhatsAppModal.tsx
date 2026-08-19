@@ -171,7 +171,7 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
 
   // ── Tab IA WhatsApp ──
   const [masterPrompt, setMasterPrompt] = useState(PROMPT_AI_DEFAULT)
-  const [botAutoResponder, setBotAutoResponder] = useState(true)
+  const [botAutoResponder, setBotAutoResponder] = useState(false)
   const [guardandoPrompt, setGuardandoPrompt] = useState(false)
   const [promptMsgStatus, setPromptMsgStatus] = useState('')
 
@@ -186,9 +186,17 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
         if (data?.nombre_abonado) {
           const parsed = JSON.parse(data.nombre_abonado)
           if (parsed.prompt) setMasterPrompt(parsed.prompt)
-          if (parsed.autoResponder !== undefined) setBotAutoResponder(parsed.autoResponder)
+          if (parsed.autoResponder !== undefined) {
+            setBotAutoResponder(Boolean(parsed.autoResponder))
+          } else {
+            setBotAutoResponder(false)
+          }
+        } else {
+          setBotAutoResponder(false)
         }
-      } catch {}
+      } catch {
+        setBotAutoResponder(false)
+      }
     }
     cargarPromptMaestro()
   }, [])
