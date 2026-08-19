@@ -1,8 +1,8 @@
 @echo off
-title GAMA SECURITY - INICIO DIRECTO SINCRONIZADOR v4.0
+title GAMA SECURITY - INICIO DIRECTO SINCRONIZADOR v5.1
 color 0A
 echo ═══════════════════════════════════════════════════════
-echo   GAMA SEGURIDAD — INICIO DIRECTO SINCRONIZADOR v4.0
+echo   GAMA SEGURIDAD — INICIO DIRECTO SINCRONIZADOR v5.1
 echo ═══════════════════════════════════════════════════════
 echo.
 
@@ -47,7 +47,7 @@ echo Ruta Python: %PY_W%
 echo [4/5] Verificando e instalando librerias (pyodbc, supabase)...
 %PY_E% -m pip install pyodbc supabase >nul 2>&1
 
-echo [5/5] Lanzando Sincronizador v4.0...
+echo [5/5] Lanzando Sincronizador v5.1...
 cd /d "C:\SCORPION\BASES DE DATOS"
 start "" /b %PY_W% "C:\SCORPION\BASES DE DATOS\sincronizador.py"
 start "" /b wscript.exe "C:\SCORPION\BASES DE DATOS\SCORPION_DEPLOY\watchdog_total.vbs" >nul 2>&1
