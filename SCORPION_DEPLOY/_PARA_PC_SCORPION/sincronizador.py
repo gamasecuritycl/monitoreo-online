@@ -289,21 +289,32 @@ def copiar_mdb_con_retry(ruta_original, ruta_temp, max_intentos=3):
                     return True
             except Exception: pass
 
-            # PowerShell con FileShare.ReadWrite (copia MDBs abiertos por Scorpion)
-            ps_cmd = (
-                f'powershell -NoProfile -ExecutionPolicy Bypass -Command "'
-                f'$src = \'{ruta_original}\'; $dst = \'{ruta_temp}\'; '
-                f'try {{ '
-                f'  $in = [System.IO.File]::Open($src, [System.IO.FileMode]::Open, [System.IO.FileAccess]::Read, [System.IO.FileShare]::ReadWrite); '
-                f'  $out = [System.IO.File]::Create($dst); '
-                f'  $in.CopyTo($out); $in.Close(); $out.Close(); '
-                f'}} catch {{}}"'
+            # PowerShell con FileShare.ReadWrite (silencioso sin ventana flotante)
+            creationflags = getattr(subprocess, "CREATE_NO_WINDOW", 0x08000000)
+            ps_script = (
+                f"$src = '{ruta_original}'; $dst = '{ruta_temp}'; "
+                f"try {{ "
+                f"  $in = [System.IO.File]::Open($src, [System.IO.FileMode]::Open, [System.IO.FileAccess]::Read, [System.IO.FileShare]::ReadWrite); "
+                f"  $out = [System.IO.File]::Create($dst); "
+                f"  $in.CopyTo($out); $in.Close(); $out.Close(); "
+                f"}} catch {{}}"
             )
-            os.system(ps_cmd)
+            subprocess.run(
+                ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_script],
+                creationflags=creationflags,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL
+            )
             if os.path.exists(ruta_temp) and os.path.getsize(ruta_temp) > 0:
                 return True
 
-            os.system(f'cmd /c copy /y "{ruta_original}" "{ruta_temp}" >nul 2>&1')
+            subprocess.run(
+                f'cmd /c copy /y "{ruta_original}" "{ruta_temp}"',
+                shell=True,
+                creationflags=creationflags,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL
+            )
             if os.path.exists(ruta_temp) and os.path.getsize(ruta_temp) > 0:
                 return True
         except Exception: pass
