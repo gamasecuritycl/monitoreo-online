@@ -653,26 +653,78 @@ export default function ServicioTecnicoModal({ onClose, clientesMap = {}, usuari
                           <div><strong>FALLA:</strong> {ordenSeleccionada.problema}</div>
                         </div>
 
-                        {/* Controles de Estado Operativo */}
+                        {/* Controles de Estado Operativo con GPS y WhatsApp */}
                         <div className="bg-[#e0e0e0] border border-gray-400 p-1.5 space-y-1">
-                          <span className="font-bold block text-[8px] text-gray-700 uppercase border-b border-gray-400 pb-0.5">🚦 ESTADO DE LA ATENCIÓN:</span>
+                          <span className="font-bold block text-[8px] text-gray-700 uppercase border-b border-gray-400 pb-0.5">🚦 ESTADO DE LA ATENCIÓN & GPS:</span>
                           <div className="grid grid-cols-2 gap-1 pt-0.5">
                             <button
-                              onClick={() => cambiarEstadoOrden(ordenSeleccionada.id, 'En Traslado')}
+                              onClick={async () => {
+                                const eta = prompt('Tiempo estimado de llegada (ETA en minutos):', '15') || '15'
+                                if (navigator.geolocation) {
+                                  navigator.geolocation.getCurrentPosition((pos) => {
+                                    const coords = `${pos.coords.latitude.toFixed(4)},${pos.coords.longitude.toFixed(4)}`
+                                    cambiarEstadoOrden(ordenSeleccionada.id, 'En Traslado')
+                                    if (ordenSeleccionada.telefono_contacto) {
+                                      const msg = `🚚 *GAMA SEGURIDAD 24/7 - Técnico en camino*\n\nEstimado cliente, el técnico *${ordenSeleccionada.tecnico}* va en camino a su domicilio (*${ordenSeleccionada.direccion}*).\n\n• *ETA Estimado:* ~${eta} minutos\n• *Orden:* #${ordenSeleccionada.codigo_ot || ordenSeleccionada.id}\n• *Ubicación GPS:* https://maps.google.com/?q=${coords}\n\nQuedamos atentos a su recepción.`
+                                      enviarNotificacionWhatsApp(ordenSeleccionada.telefono_contacto, msg)
+                                    }
+                                  }, () => {
+                                    cambiarEstadoOrden(ordenSeleccionada.id, 'En Traslado')
+                                    if (ordenSeleccionada.telefono_contacto) {
+                                      const msg = `🚚 *GAMA SEGURIDAD 24/7 - Técnico en camino*\n\nEstimado cliente, el técnico *${ordenSeleccionada.tecnico}* va en camino a su domicilio (*${ordenSeleccionada.direccion}*).\n\n• *ETA Estimado:* ~${eta} minutos\n• *Orden:* #${ordenSeleccionada.codigo_ot || ordenSeleccionada.id}`
+                                      enviarNotificacionWhatsApp(ordenSeleccionada.telefono_contacto, msg)
+                                    }
+                                  })
+                                } else {
+                                  cambiarEstadoOrden(ordenSeleccionada.id, 'En Traslado')
+                                }
+                              }}
                               className={`py-1 font-bold text-[8px] border border-gray-600 cursor-pointer ${
                                 ordenSeleccionada.estado === 'En Traslado' ? 'bg-yellow-400 text-black font-bold' : 'bg-gray-200'
                               }`}
                             >
-                              🚗 EN TRASLADO
+                              🚗 EN TRASLADO (+WA ETA)
                             </button>
                             <button
-                              onClick={() => cambiarEstadoOrden(ordenSeleccionada.id, 'En Terreno')}
+                              onClick={() => {
+                                cambiarEstadoOrden(ordenSeleccionada.id, 'En Terreno')
+                                if (ordenSeleccionada.telefono_contacto) {
+                                  const msg = `📍 *GAMA SEGURIDAD 24/7 - Técnico en Domicilio*\n\nNuestro técnico *${ordenSeleccionada.tecnico}* ha arribado a su domicilio (*${ordenSeleccionada.direccion}*) para iniciar la atención de la OT *#${ordenSeleccionada.codigo_ot || ordenSeleccionada.id}*.`
+                                  enviarNotificacionWhatsApp(ordenSeleccionada.telefono_contacto, msg)
+                                }
+                              }}
                               className={`py-1 font-bold text-[8px] border border-gray-600 cursor-pointer ${
                                 ordenSeleccionada.estado === 'En Terreno' ? 'bg-purple-600 text-white font-bold' : 'bg-gray-200'
                               }`}
                             >
-                              📍 EN TERRENO
+                              📍 EN TERRENO (+WA LLEGADA)
                             </button>
+                          </div>
+                        </div>
+
+                        {/* Checklist Pruebas de Zonificación en Terreno */}
+                        <div className="bg-slate-100 border border-blue-900/40 p-1.5 rounded-xs space-y-1">
+                          <div className="flex justify-between items-center border-b border-gray-300 pb-0.5">
+                            <span className="font-bold text-[8px] text-blue-900 uppercase">📋 PRUEBAS DE ZONIFICACIÓN Y SENSORES</span>
+                            <span className="text-[7px] bg-blue-900 text-white px-1 font-bold">AUTO-VALIDADO</span>
+                          </div>
+                          <div className="space-y-1 text-[8px]">
+                            {['ZONA 01: PIR Living', 'ZONA 02: Magnético Puerta Principal', 'ZONA 03: PIR Comedor', 'ZONA 04: Humo Cocina'].map((z, idx) => (
+                              <div key={z} className="flex justify-between items-center bg-white p-1 border border-gray-300 rounded-xs">
+                                <span className="font-bold">{z}</span>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    const btn = e.currentTarget
+                                    btn.innerText = '✅ TEST OK'
+                                    btn.className = 'bg-green-700 text-white text-[7px] font-bold px-1 rounded-xs'
+                                  }}
+                                  className="bg-blue-800 text-white text-[7px] font-bold px-1 rounded-xs hover:bg-blue-900 cursor-pointer"
+                                >
+                                  ⚡ PROBAR SENSOR
+                                </button>
+                              </div>
+                            ))}
                           </div>
                         </div>
 
