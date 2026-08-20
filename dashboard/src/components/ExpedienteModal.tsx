@@ -383,8 +383,15 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
           .limit(1)
 
         if (data && data.length > 0 && data[0].nombre_abonado) {
-          const parsed = JSON.parse(data[0].nombre_abonado)
+          let parsed = JSON.parse(data[0].nombre_abonado)
           if (Array.isArray(parsed) && parsed.length > 0) {
+            if (cuentaActiva === 'C701' || parsed.some((c: any) => c.serialNumber?.includes('AE0970'))) {
+              parsed = parsed.map((c: any) => ({
+                ...c,
+                serialNumber: c.serialNumber === 'AE09700PAG00815' ? 'AE0970BPAG00815' : (c.serialNumber || 'AE0970BPAG00815'),
+                password: (cuentaActiva === 'C701' && (c.password === '123456789' || !c.password)) ? 'L2D55413' : c.password
+              }))
+            }
             setDahuaCams(parsed)
             setSelectedDahuaCamId(parsed[0].id)
             localStorage.setItem(`gama_dahua_sn_${cuentaActiva}`, JSON.stringify(parsed))

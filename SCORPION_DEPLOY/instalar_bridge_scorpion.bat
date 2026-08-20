@@ -101,7 +101,7 @@ curl -s -X PATCH "https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monit
   -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9ueHd5cndtcGp4dHdsbWpyb3NyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI4NTUxNDQsImV4cCI6MjA5ODQzMTE0NH0.8kJRf8hm3rHK8sygMcyBT0R83tyK8hIQCmnAQxannJs" ^
   -H "Content-Type: application/json" ^
   -H "Prefer: return=minimal" ^
-  -d "[{\"id\":\"DH-C701-1\",\"nombre\":\"CAMARA ACCESO PRINCIPAL P2P\",\"serialNumber\":\"AE0970BPAG00815\",\"usuario\":\"admin\",\"password\":\"L2D55413\",\"canal\":1,\"substream\":true,\"activa\":true,\"local_ip\":\"192.168.1.2\"}]" >nul
+  -d "{\"nombre_abonado\":\"[{\\\"id\\\":\\\"DH-C701-1\\\",\\\"nombre\\\":\\\"CAMARA ACCESO PRINCIPAL P2P\\\",\\\"serialNumber\\\":\\\"AE0970BPAG00815\\\",\\\"usuario\\\":\\\"admin\\\",\\\"password\\\":\\\"L2D55413\\\",\\\"canal\\\":1,\\\"substream\\\":true,\\\"activa\\\":true,\\\"local_ip\\\":\\\"192.168.1.2\\\"}]\"}" >nul
 if %errorLevel% equ 0 (
     echo [OK] Cámara C701 registrada/actualizada en Supabase.
 ) else (

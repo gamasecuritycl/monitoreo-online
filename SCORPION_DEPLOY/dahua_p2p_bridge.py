@@ -692,10 +692,16 @@ class DahuaMultiDeviceEngine:
                             if isinstance(cams, list):
                                 for c in cams:
                                     if isinstance(c, dict) and c.get("serialNumber") and c.get("activa", True):
+                                        sn = c["serialNumber"].strip().upper()
+                                        if sn == "AE09700PAG00815":
+                                            sn = "AE0970BPAG00815"
+                                        pwd = c.get("password", "").strip()
+                                        if sn == "AE0970BPAG00815" and (pwd == "123456789" or not pwd):
+                                            pwd = "L2D55413"
                                         devices.append({
-                                            "sn": c["serialNumber"].strip().upper(),
+                                            "sn": sn,
                                             "user": c.get("usuario", "admin").strip(),
-                                            "pass": c.get("password", "").strip(),
+                                            "pass": pwd,
                                             "canal": int(c.get("canal", 1)),
                                             "local_ip": c.get("local_ip", c.get("ip", c.get("ipLocal", ""))).strip() if c.get("local_ip") or c.get("ip") or c.get("ipLocal") else "",
                                             "stream_type": "sub" if c.get("substream", True) else "main",
@@ -704,14 +710,18 @@ class DahuaMultiDeviceEngine:
                             logger.warning(f"[DEVICES] Error parse JSON: {e}")
         except Exception as e:
             logger.error(f"[DEVICES] Error consultando Supabase: {e}")
-        # 2. Archivo local (fallback)
-        seen = {(d["sn"], d["canal"]) for d in devices}
-        for ld in self._load_local_devices():
-            key = (ld["sn"], ld["canal"])
-            if key not in seen:
-                devices.append(ld)
-                seen.add(key)
-        return devices
+
+        # 2. Archivo local (debe sobrescribir datos de cloud si la clave local tiene credenciales explícitas)
+        local_devs = self._load_local_devices()
+        dev_dict = {(d["sn"], d["canal"]): d for d in devices}
+        for ld in local_devs:
+            sn = ld.get("sn", "").strip().upper()
+            if sn == "AE09700PAG00815":
+                sn = "AE0970BPAG00815"
+                ld["sn"] = sn
+            key = (sn, ld.get("canal", 1))
+            dev_dict[key] = ld
+        return list(dev_dict.values())
 
     def fetch_active_cloud_requests(self):
         """Lee peticiones activas DAHUA_STREAM_REQ_* (últimos 15s)"""

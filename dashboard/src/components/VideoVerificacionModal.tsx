@@ -310,6 +310,20 @@ export default function VideoVerificacionModal({ onClose, evento, esCierre, clie
 
         let finalCams = Array.from(combinedMap.values())
 
+        // Sanitización para C701 y corrección de typos (AE09700PAG00815 -> AE0970BPAG00815)
+        if (cuentaActiva === 'C701' || finalCams.some(c => c.serialNumber?.includes('AE0970'))) {
+          finalCams = finalCams.map(c => {
+            let sn = (c.serialNumber || '').trim().toUpperCase()
+            if (sn === 'AE09700PAG00815') sn = 'AE0970BPAG00815'
+            let pass = c.password || ''
+            if (cuentaActiva === 'C701' && (pass === '123456789' || !pass)) pass = 'L2D55413'
+            return { ...c, serialNumber: sn, password: pass }
+          })
+          if (finalCams.length > 0) {
+            localStorage.setItem(`gama_dahua_sn_${cuentaActiva}`, JSON.stringify(finalCams))
+          }
+        }
+
         if (finalCams.length === 0 && cuentaActiva === 'C701') {
           finalCams.push({
             id: 'DH-C701-1',
@@ -321,6 +335,7 @@ export default function VideoVerificacionModal({ onClose, evento, esCierre, clie
             substream: true,
             activa: true
           })
+          localStorage.setItem(`gama_dahua_sn_${cuentaActiva}`, JSON.stringify(finalCams))
         }
 
         if (isMounted) {
