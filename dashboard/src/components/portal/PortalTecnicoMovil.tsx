@@ -75,9 +75,7 @@ function formatFechaHoraChile(fechaIso: string) {
 export default function PortalTecnicoMovil() {
   // Autenticación Diaria & Cierre a Medianoche (00:00)
   const [tecnicoAutenticado, setTecnicoAutenticado] = useState<string | null>(null)
-  const [pinIngresado, setPinIngresado] = useState('')
   const [tecnicoSeleccionadoLogin, setTecnicoSeleccionadoLogin] = useState(TECNICOS[0].nombre)
-  const [errorLogin, setErrorLogin] = useState('')
 
   // Pantalla de Carga Splash Screen con Logo
   const [cargandoSplash, setCargandoSplash] = useState<boolean>(true)
@@ -90,6 +88,11 @@ export default function PortalTecnicoMovil() {
   const [ordenes, setOrdenes] = useState<OrdenTrabajo[]>([])
   const [ordenSeleccionada, setOrdenSeleccionada] = useState<OrdenTrabajo | null>(null)
   const [cargando, setCargando] = useState(false)
+
+  // Notificaciones Push y Burbujas de Alerta
+  const [permisoNotificacion, setPermisoNotificacion] = useState<string>('default')
+  const [nuevasOrdenesBadge, setNuevasOrdenesBadge] = useState<number>(0)
+  const [bannerAlertaNuevaOT, setBannerAlertaNuevaOT] = useState<OrdenTrabajo | null>(null)
 
   // Monitor de Eventos de Alarma (Solo Lectura)
   const [eventosAlarma, setEventosAlarma] = useState<EventoAlarma[]>([])
@@ -109,6 +112,83 @@ export default function PortalTecnicoMovil() {
   // Visor de Comprobante Imprimible
   const [ordenImprimir, setOrdenImprimir] = useState<OrdenTrabajo | null>(null)
 
+  // Generador de Tono Sonoro de Alerta Web Audio API
+  const reproducirSonidoAlerta = () => {
+    try {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext
+      if (!AudioCtx) return
+      const ctx = new AudioCtx()
+      
+      const osc1 = ctx.createOscillator()
+      const gain1 = ctx.createGain()
+      osc1.type = 'sine'
+      osc1.frequency.setValueAtTime(587.33, ctx.currentTime) // D5
+      gain1.gain.setValueAtTime(0.3, ctx.currentTime)
+      gain1.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3)
+      osc1.connect(gain1)
+      gain1.connect(ctx.destination)
+      osc1.start()
+      osc1.stop(ctx.currentTime + 0.3)
+
+      const osc2 = ctx.createOscillator()
+      const gain2 = ctx.createGain()
+      osc2.type = 'sine'
+      osc2.frequency.setValueAtTime(880, ctx.currentTime + 0.25) // A5
+      gain2.gain.setValueAtTime(0.4, ctx.currentTime + 0.25)
+      gain2.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.6)
+      osc2.connect(gain2)
+      gain2.connect(ctx.destination)
+      osc2.start(ctx.currentTime + 0.25)
+      osc2.stop(ctx.currentTime + 0.6)
+    } catch (e) {
+      console.warn('Audio alert error:', e)
+    }
+  }
+
+  // Disparar Notificación Push Nactiva
+  const dispararNotificacionPush = (ot: OrdenTrabajo) => {
+    reproducirSonidoAlerta()
+
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      if (Notification.permission === 'granted') {
+        try {
+          new Notification(`🛠️ GAMA 24/7: ¡Nuevo Servicio Técnico!`, {
+            body: `Abonado ${ot.cuenta} - ${ot.nombre_abonado}\nSolicitud: ${ot.problema}\nDirección: ${ot.direccion}`,
+            icon: '/icon-192.png',
+            badge: '/icon-192.png',
+            tag: `ot-${ot.id}`,
+            renotify: true
+          } as any)
+        } catch (err) {
+          console.warn('Error push notification:', err)
+        }
+      }
+    }
+  }
+
+  // Solicitar permiso Push al usuario
+  const solicitarPermisoNotificaciones = async () => {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      const res = await Notification.requestPermission()
+      setPermisoNotificacion(res)
+      if (res === 'granted') {
+        alert('🔔 ¡Notificaciones Push en pantalla activadas exitosamente! Recibirás alertas instantáneas cuando la central te asigne un nuevo servicio técnico.')
+        reproducirSonidoAlerta()
+      } else {
+        alert('Las notificaciones fueron bloqueadas. Puedes activarlas en la configuración del navegador de tu teléfono.')
+      }
+    } else {
+      alert('Tu navegador no soporta notificaciones push nativas.')
+    }
+  }
+
+  // Verificación inicial del estado de permisos de notificación
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      setPermisoNotificacion(Notification.permission)
+    }
+  }, [])
+
   // 1. Verificación de Sesión Diaria & Cierre Automático a las 00:00
   const verificarSesionDiaria = () => {
     const hoyStr = new Date().toISOString().slice(0, 10)
@@ -119,7 +199,6 @@ export default function PortalTecnicoMovil() {
         if (parsed.fecha === hoyStr && parsed.tecnico) {
           setTecnicoAutenticado(parsed.tecnico)
         } else {
-          // Sesión vencida (pasaron las 00:00) -> Cerrar sesión
           localStorage.removeItem('gama_tecnico_sesion_diaria')
           setTecnicoAutenticado(null)
         }
@@ -135,7 +214,6 @@ export default function PortalTecnicoMovil() {
       setCargandoSplash(false)
     }, 1800)
 
-    // Intervalo de seguridad que invalida la sesión exactamente al pasar las 00:00
     const checkMidnight = setInterval(() => {
       const hoyStr = new Date().toISOString().slice(0, 10)
       const sesion = localStorage.getItem('gama_tecnico_sesion_diaria')
@@ -169,7 +247,7 @@ export default function PortalTecnicoMovil() {
         .limit(1)
 
       if (data && data.length > 0 && !error) {
-        const parsed = JSON.parse(data[0].nombre_abonado || '[]')
+        const parsed: OrdenTrabajo[] = JSON.parse(data[0].nombre_abonado || '[]')
         setOrdenes(parsed)
       }
     } catch (err) {
@@ -178,6 +256,46 @@ export default function PortalTecnicoMovil() {
       setCargando(false)
     }
   }
+
+  // Suscripción Realtime para detectar nuevas órdenes asignadas en vivo
+  useEffect(() => {
+    if (!tecnicoAutenticado) return
+
+    const channelOT = supabase
+      .channel('realtime_ordenes_tecnico_pwa')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'eventos_monitoreo',
+        filter: 'cuenta=eq.ORDENES_TRABAJO'
+      }, payload => {
+        const payloadNew = payload.new as any
+        if (payloadNew && payloadNew.nombre_abonado) {
+          try {
+            const listaNuevas: OrdenTrabajo[] = JSON.parse(payloadNew.nombre_abonado || '[]')
+            
+            const misPendientesNuevas = listaNuevas.filter(o => o.tecnico === tecnicoAutenticado && o.estado !== 'Completada' && o.estado !== 'Cancelada')
+            const idsViejos = new Set(ordenes.map(o => o.id))
+            const ordenRecienAsignada = misPendientesNuevas.find(o => !idsViejos.has(o.id))
+
+            if (ordenRecienAsignada) {
+              setBannerAlertaNuevaOT(ordenRecienAsignada)
+              setNuevasOrdenesBadge(prev => prev + 1)
+              dispararNotificacionPush(ordenRecienAsignada)
+            }
+
+            setOrdenes(listaNuevas)
+          } catch (e) {
+            console.error('Error al procesar tiempo real OT:', e)
+          }
+        }
+      })
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channelOT)
+    }
+  }, [tecnicoAutenticado, ordenes])
 
   // Filtro estricto de eventos internos, heartbeats y registros de sistema
   const esEventoInternoOHeartbeat = (cuentaRaw: string = '', eventoRaw: string = '') => {
@@ -241,7 +359,6 @@ export default function PortalTecnicoMovil() {
   // Login del Técnico
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault()
-    setErrorLogin('')
     const tFound = TECNICOS.find(t => t.nombre === tecnicoSeleccionadoLogin)
     if (tFound) {
       const hoyStr = new Date().toISOString().slice(0, 10)
@@ -253,6 +370,10 @@ export default function PortalTecnicoMovil() {
       setCargandoSplash(true)
       setMensajeSplash(`Bienvenido, ${tFound.nombre}...`)
       setTimeout(() => setCargandoSplash(false), 1200)
+
+      if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission().then(p => setPermisoNotificacion(p))
+      }
     }
   }
 
@@ -437,7 +558,6 @@ export default function PortalTecnicoMovil() {
     e.evento.toLowerCase().includes(filtroCuentaAlarma.toLowerCase())
   )
 
-  // Fecha bonita en español
   const fechaHoyLegible = new Date().toLocaleDateString('es-CL', {
     weekday: 'long',
     year: 'numeric',
@@ -473,7 +593,6 @@ export default function PortalTecnicoMovil() {
     return (
       <div className="min-h-screen bg-[#070b14] text-white flex flex-col justify-center items-center p-5 max-w-md mx-auto relative select-none">
         
-        {/* Card Login PWA */}
         <div className="w-full bg-[#0e172a] border border-blue-900/60 rounded-3xl p-6 shadow-2xl space-y-6">
           
           <div className="text-center space-y-2">
@@ -540,6 +659,16 @@ export default function PortalTecnicoMovil() {
           </div>
 
           <div className="flex items-center gap-1.5">
+            {permisoNotificacion !== 'granted' && (
+              <button
+                onClick={solicitarPermisoNotificaciones}
+                className="bg-amber-600 hover:bg-amber-500 text-white p-2 rounded-xl text-xs font-bold animate-pulse shadow flex items-center gap-1"
+                title="Activar Notificaciones Push"
+              >
+                <span>🔔</span>
+              </button>
+            )}
+
             <button 
               onClick={() => {
                 cargarOrdenes()
@@ -573,6 +702,41 @@ export default function PortalTecnicoMovil() {
         </div>
       </header>
 
+      {/* BANNER FLOTANTE DE NUEVA OT EN TIEMPO REAL */}
+      {bannerAlertaNuevaOT && (
+        <div className="bg-gradient-to-r from-red-600 via-amber-600 to-red-700 text-white p-4 rounded-2xl mx-3 mt-3 shadow-2xl border-2 border-amber-300 animate-bounce space-y-2 z-40">
+          <div className="flex justify-between items-start">
+            <div className="flex items-center gap-2">
+              <span className="text-2xl animate-pulse">🚨</span>
+              <div>
+                <h3 className="font-black text-sm uppercase tracking-wide">¡NUEVA ATENCIÓN ASIGNADA!</h3>
+                <p className="text-[11px] font-bold text-amber-100 font-mono">Abonado #{bannerAlertaNuevaOT.cuenta}</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setBannerAlertaNuevaOT(null)}
+              className="text-xs bg-black/40 hover:bg-black/60 px-2 py-1 rounded-lg font-bold"
+            >
+              ✕
+            </button>
+          </div>
+          <div className="text-xs font-bold leading-tight">
+            <div><strong>Cliente:</strong> {bannerAlertaNuevaOT.nombre_abonado}</div>
+            <div><strong>Solicitud:</strong> {bannerAlertaNuevaOT.problema}</div>
+          </div>
+          <button
+            onClick={() => {
+              setOrdenSeleccionada(bannerAlertaNuevaOT)
+              setMenuSeccion('ordenes_pendientes')
+              setBannerAlertaNuevaOT(null)
+            }}
+            className="w-full bg-white text-red-950 font-black py-2 rounded-xl text-xs uppercase tracking-wider shadow cursor-pointer text-center"
+          >
+            🚀 VER Y ATENDER AHORA
+          </button>
+        </div>
+      )}
+
       {/* Cuerpo Principal PWA */}
       <main className="flex-1 p-3.5 flex flex-col space-y-4 overflow-y-auto">
 
@@ -598,6 +762,17 @@ export default function PortalTecnicoMovil() {
                   Bienvenido a tu jornada laboral de hoy. El sistema ha preparado tu itinerario de atenciones en terreno:
                 </p>
               </div>
+
+              {/* Botón Habilitar Notificaciones Push */}
+              {permisoNotificacion !== 'granted' && (
+                <button
+                  onClick={solicitarPermisoNotificaciones}
+                  className="w-full bg-amber-600/90 hover:bg-amber-500 text-white font-extrabold py-3 rounded-2xl text-xs uppercase tracking-wider shadow cursor-pointer border border-amber-400 flex items-center justify-center gap-2"
+                >
+                  <span>🔔</span>
+                  <span>ACTIVAR NOTIFICACIONES PUSH EN PANTALLA</span>
+                </button>
+              )}
 
               {/* Stats resumen diario */}
               <div className="grid grid-cols-2 gap-2 pt-1">
@@ -797,7 +972,7 @@ export default function PortalTecnicoMovil() {
                   </div>
                 </div>
 
-                {/* Checklist Pruebas de Zonificación en Terreno */}
+                {/* Checklist Pruebas de Sensores en Terreno */}
                 <div className="bg-slate-900 border border-blue-900/60 rounded-3xl p-4 space-y-2.5">
                   <div className="flex justify-between items-center border-b border-slate-800 pb-2">
                     <span className="text-xs font-black text-blue-300 uppercase">📋 Checklist Pruebas de Sensores</span>
@@ -911,6 +1086,7 @@ export default function PortalTecnicoMovil() {
                         setNovedadTexto(o.novedad || '')
                         setRepuestosTexto(o.repuestos_utilizados || '')
                         setNombreFirmanteText(o.nombre_firmante || '')
+                        setNuevasOrdenesBadge(0)
                       }}
                       className={`bg-slate-900 border rounded-2xl p-4 cursor-pointer hover:border-blue-500 transition-all shadow-lg space-y-2.5 relative overflow-hidden active:scale-98 ${
                         o.estado === 'En Terreno' ? 'border-purple-600 bg-purple-950/30' :
@@ -1091,18 +1267,30 @@ export default function PortalTecnicoMovil() {
                   <strong className="text-emerald-400 font-mono text-sm">{ordenesCompletadas.length}</strong>
                 </div>
                 <div className="flex justify-between py-1.5 border-b border-slate-800/60">
+                  <span className="text-slate-400">Notificaciones Push:</span>
+                  <strong className={permisoNotificacion === 'granted' ? 'text-emerald-400' : 'text-amber-400'}>
+                    {permisoNotificacion === 'granted' ? '🔔 Activadas' : '⚠️ No Activadas'}
+                  </strong>
+                </div>
+                <div className="flex justify-between py-1.5 border-b border-slate-800/60">
                   <span className="text-slate-400">Política Cierre Sesión:</span>
                   <strong className="text-amber-400">Diaria a las 00:00 hrs</strong>
                 </div>
-                <div className="flex justify-between py-1.5 border-b border-slate-800/60">
-                  <span className="text-slate-400">Estado Conexión PWA:</span>
-                  <strong className="text-blue-400">En Línea (Supabase Sync)</strong>
-                </div>
               </div>
+
+              {permisoNotificacion !== 'granted' && (
+                <button
+                  onClick={solicitarPermisoNotificaciones}
+                  className="w-full bg-amber-600 hover:bg-amber-500 text-white font-extrabold py-3.5 rounded-2xl border border-amber-400 text-xs uppercase tracking-wider shadow cursor-pointer active:scale-95 transition-transform flex items-center justify-center gap-2"
+                >
+                  <span>🔔</span>
+                  <span>ACTIVAR NOTIFICACIONES PUSH EN CELULAR</span>
+                </button>
+              )}
 
               <button
                 onClick={handleLogout}
-                className="w-full bg-red-950/80 hover:bg-red-900 text-red-300 font-black py-3.5 rounded-2xl border border-red-800 text-xs uppercase tracking-wider shadow cursor-pointer mt-2 active:scale-95 transition-transform"
+                className="w-full bg-red-950/80 hover:bg-red-900 text-red-300 font-black py-3.5 rounded-2xl border border-red-800 text-xs uppercase tracking-wider shadow cursor-pointer active:scale-95 transition-transform"
               >
                 🚪 CERRAR SESIÓN DIARIA MANULAMENTE
               </button>
@@ -1112,7 +1300,7 @@ export default function PortalTecnicoMovil() {
 
       </main>
 
-      {/* BOTTOM NAVIGATION BAR (MENÚ PROFESIONAL MÓVIL 5 SECCIONES) */}
+      {/* BOTTOM NAVIGATION BAR (MENÚ PROFESIONAL MÓVIL 5 SECCIONES CON BURBUJAS DE NOTIFICACIÓN) */}
       <nav className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-slate-950/95 backdrop-blur-md border-t border-slate-800 grid grid-cols-5 z-40 text-[10px] shadow-2xl">
         
         <button
@@ -1126,13 +1314,18 @@ export default function PortalTecnicoMovil() {
         </button>
 
         <button
-          onClick={() => { setMenuSeccion('ordenes_pendientes'); setOrdenSeleccionada(null); }}
-          className={`py-2.5 flex flex-col items-center justify-center font-extrabold transition-colors cursor-pointer ${
+          onClick={() => { setMenuSeccion('ordenes_pendientes'); setOrdenSeleccionada(null); setNuevasOrdenesBadge(0); }}
+          className={`py-2.5 flex flex-col items-center justify-center font-extrabold transition-colors cursor-pointer relative ${
             menuSeccion === 'ordenes_pendientes' ? 'text-blue-400 bg-slate-900 border-t-2 border-blue-500' : 'text-slate-400 hover:text-slate-200'
           }`}
         >
           <span className="text-base">📋</span>
           <span className="leading-tight">Pendientes</span>
+          {nuevasOrdenesBadge > 0 && (
+            <span className="absolute top-1 right-2 bg-red-600 text-white font-black text-[9px] w-4 h-4 rounded-full flex items-center justify-center animate-bounce shadow">
+              {nuevasOrdenesBadge}
+            </span>
+          )}
         </button>
 
         <button
