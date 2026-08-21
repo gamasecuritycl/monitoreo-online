@@ -210,6 +210,70 @@ export default function PortalTecnicoMovil() {
 
   // Modo Pruebas de Sistema / Cuenta en Pruebas en Domicilio
   const [modoPruebasActivo, setModoPruebasActivo] = useState<boolean>(false)
+  const [segundosModoPruebas, setSegundosModoPruebas] = useState<number>(0)
+  const [eventosPruebasLive, setEventosPruebasLive] = useState<any[]>([])
+  const [enviandoTestSignal, setEnviandoTestSignal] = useState(false)
+
+  useEffect(() => {
+    let timer: any = null
+    if (modoPruebasActivo) {
+      timer = setInterval(() => {
+        setSegundosModoPruebas(prev => prev + 1)
+      }, 1000)
+    } else {
+      setSegundosModoPruebas(0)
+    }
+    return () => {
+      if (timer) clearInterval(timer)
+    }
+  }, [modoPruebasActivo])
+
+  useEffect(() => {
+    if (modoPruebasActivo && ordenSeleccionada?.cuenta) {
+      const fetchPruebasEvents = async () => {
+        try {
+          const { data } = await supabase
+            .from('eventos_monitoreo')
+            .select('*')
+            .eq('cuenta', ordenSeleccionada.cuenta)
+            .order('id', { ascending: false })
+            .limit(6)
+          if (data) setEventosPruebasLive(data)
+        } catch (e) {}
+      }
+      fetchPruebasEvents()
+
+      const sub = supabase
+        .channel(`pruebas-${ordenSeleccionada.cuenta}`)
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'eventos_monitoreo', filter: `cuenta=eq.${ordenSeleccionada.cuenta}` }, payload => {
+          setEventosPruebasLive(prev => [payload.new, ...prev.slice(0, 5)])
+        })
+        .subscribe()
+
+      return () => {
+        supabase.removeChannel(sub)
+      }
+    }
+  }, [modoPruebasActivo, ordenSeleccionada?.cuenta])
+
+  const handleSimularEventoPrueba = async (tipo: string) => {
+    if (!ordenSeleccionada) return
+    setEnviandoTestSignal(true)
+    try {
+      await supabase.from('eventos_monitoreo').insert({
+        fecha_hora: new Date().toISOString(),
+        cuenta: ordenSeleccionada.cuenta,
+        nombre_abonado: ordenSeleccionada.nombre_abonado,
+        evento: `TEST DE TERRENO [${tipo}]: RECEPCION OK EN CENTRAL`,
+        zona: 'Z01',
+        usuario: 'TEC'
+      })
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setEnviandoTestSignal(false)
+    }
+  }
 
   // Fotos de Evidencia en Terreno
   const [fotosEvidencia, setFotosEvidencia] = useState<string[]>([])
@@ -1097,13 +1161,13 @@ export default function PortalTecnicoMovil() {
         usuario: 'TEC'
       })
 
-      // REGISTRO EN BITÁCORA REAL A NOMBRE DE ANDRÉS ALZAMORA PARA ABONADOS ACTIVOS
+      // REGISTRO EN BITÁCORA REAL A NOMBRE DE ANDRÉS ALZAMORA PARA ABONADOS ACTIVOS (CORS-FREE PWA PROXY)
       const ctaValida = (ordenSeleccionada.cuenta || '').trim().toUpperCase()
       if (ctaValida && ctaValida !== 'S/C' && !ctaValida.startsWith('S/')) {
         try {
           let numericId: any = ctaValida
           try {
-            const resAb = await fetch(`https://bitacora.gamasecurity.cl/api-bitacora.php?action=abonados&q=${encodeURIComponent(ctaValida)}`)
+            const resAb = await fetch(`/api/bitacora?action=abonados&q=${encodeURIComponent(ctaValida)}`)
             if (resAb.ok) {
               const abList = await resAb.json()
               if (Array.isArray(abList) && abList.length > 0) {
@@ -1111,18 +1175,23 @@ export default function PortalTecnicoMovil() {
                 if (match && match.id) numericId = match.id
               }
             }
-          } catch {}
+          } catch (e) {
+            console.warn('Error buscando ID abonado bitacora:', e)
+          }
 
           const comBitacora = `[SERVICIO TÉCNICO - PWA] OT #${ordenSeleccionada.codigo_ot || ordenSeleccionada.id} (${ordenSeleccionada.tipo_visita}). Trabajo: ${novedadTexto.trim()}. Técnico Responsable: Andrés Alzamora. Firmado: ${nombreFirmanteText.trim() || 'Cliente'} (${rutFirmanteText.trim() || 'S/RUT'}).`
 
-          await fetch('https://bitacora.gamasecurity.cl/api-bitacora.php?action=crear', {
+          // Enviar vía API Proxy Next.js /api/bitacora (garantiza compatibilidad PWA 100% libre de CORS)
+          await fetch('/api/bitacora', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
+              action: 'crear',
               id_abonado: numericId,
               comentario: comBitacora,
               tipo_evento: 1, // Servicio Técnico
-              id_responsable: 1
+              id_responsable: 1,
+              cuenta: ctaValida
             })
           })
         } catch (errBit) {
@@ -1731,8 +1800,8 @@ export default function PortalTecnicoMovil() {
                   </div>
                 </div>
 
-                {/* BOTÓN MODO PRUEBAS DE SISTEMA */}
-                <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-4 shadow-xl space-y-2">
+                {/* BOTÓN & PANEL DE CONTROL DE PRUEBAS DE TERRENO */}
+                <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-4 shadow-xl space-y-3">
                   <div className="flex items-center justify-between">
                     <div>
                       <h4 className="text-xs font-black text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
@@ -1752,9 +1821,85 @@ export default function PortalTecnicoMovil() {
                     </button>
                   </div>
 
+                  {/* PANEL DESPLEGADO EN MODO PRUEBAS (CONTROL DE TEST EN VIVO) */}
                   {modoPruebasActivo && (
-                    <div className="bg-amber-500/10 border border-amber-500/30 p-2.5 rounded-2xl text-[11px] text-amber-300 font-bold">
-                      ⚡ La cuenta está registrada en MODO PRUEBAS en Central. Al finalizar la atención se retirará automáticamente.
+                    <div className="bg-gradient-to-br from-amber-950/80 via-[#181105] to-slate-900 border-2 border-amber-500/80 rounded-2xl p-4 shadow-2xl space-y-3 animate-in fade-in slide-in-from-top-3 duration-300">
+                      <div className="flex items-center justify-between border-b border-amber-500/30 pb-2">
+                        <div className="flex items-center gap-2">
+                          <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping" />
+                          <span className="text-xs font-black text-amber-300 uppercase font-mono">
+                            ⏱️ Test Activo: {Math.floor(segundosModoPruebas / 60).toString().padStart(2, '0')}:{(segundosModoPruebas % 60).toString().padStart(2, '0')}
+                          </span>
+                        </div>
+                        <span className="text-[10px] font-mono text-amber-400/80 font-bold bg-amber-950 px-2 py-0.5 rounded border border-amber-800">
+                          Cuenta {ordenSeleccionada.cuenta}
+                        </span>
+                      </div>
+
+                      {/* BOTONES RÁPIDOS DE PRUEBA DE COMUNICACIÓN */}
+                      <div className="space-y-1.5">
+                        <span className="text-[10px] font-bold text-amber-300/90 uppercase tracking-wider block">
+                          ⚡ Disparar Señal de Prueba Directa a Central:
+                        </span>
+                        <div className="grid grid-cols-3 gap-1.5">
+                          <button
+                            type="button"
+                            disabled={enviandoTestSignal}
+                            onClick={() => handleSimularEventoPrueba('PÁNICO / ASALTO')}
+                            className="bg-red-950/80 hover:bg-red-900 border border-red-700 text-red-300 font-bold py-2 rounded-xl text-[10px] uppercase flex items-center justify-center gap-1 cursor-pointer"
+                          >
+                            <span>🚨</span> Pánico
+                          </button>
+
+                          <button
+                            type="button"
+                            disabled={enviandoTestSignal}
+                            onClick={() => handleSimularEventoPrueba('INTRUSIÓN ZONA PIR')}
+                            className="bg-amber-950/80 hover:bg-amber-900 border border-amber-700 text-amber-300 font-bold py-2 rounded-xl text-[10px] uppercase flex items-center justify-center gap-1 cursor-pointer"
+                          >
+                            <span>🏃</span> Intrusión PIR
+                          </button>
+
+                          <button
+                            type="button"
+                            disabled={enviandoTestSignal}
+                            onClick={() => handleSimularEventoPrueba('TEST PERIÓDICO 24H')}
+                            className="bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-700 text-emerald-300 font-bold py-2 rounded-xl text-[10px] uppercase flex items-center justify-center gap-1 cursor-pointer"
+                          >
+                            <span>📡</span> Test 24H
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* MONITOR DE SEÑALES EN TIEMPO REAL */}
+                      <div className="space-y-1.5 pt-1 border-t border-amber-900/50">
+                        <div className="flex justify-between items-center">
+                          <span className="text-[10px] font-bold text-amber-300 uppercase flex items-center gap-1">
+                            <span>📡</span> Señales Recibidas ({ordenSeleccionada.cuenta}):
+                          </span>
+                          <span className="text-[9px] font-mono text-amber-400/80">Supabase Realtime</span>
+                        </div>
+
+                        <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
+                          {eventosPruebasLive.map((ev, idx) => (
+                            <div key={ev.id || idx} className="bg-[#0b0804] border border-amber-900/60 rounded-xl p-2 text-xs flex justify-between items-center shadow-sm">
+                              <div className="space-y-0.5 min-w-0 pr-2">
+                                <div className="font-bold text-amber-200 text-[11px] truncate">{ev.evento}</div>
+                                <div className="text-[9px] text-amber-400/70 font-mono">Zona: {ev.zona || 'S/Z'} | Usr: {ev.usuario || 'SYS'}</div>
+                              </div>
+                              <span className="text-[10px] font-mono text-slate-400 shrink-0">
+                                {ev.fecha_hora ? new Date(ev.fecha_hora).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '--:--'}
+                              </span>
+                            </div>
+                          ))}
+
+                          {eventosPruebasLive.length === 0 && (
+                            <div className="text-center text-[11px] text-amber-400/60 italic py-2">
+                              Esperando transmisión de eventos desde el panel de alarma...
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>
