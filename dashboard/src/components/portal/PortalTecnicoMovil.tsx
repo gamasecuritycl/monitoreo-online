@@ -243,6 +243,238 @@ export default function PortalTecnicoMovil() {
     }
   }
 
+  // Generador de Documento PDF Limpio para Impresión / Descarga
+  const generarImpresionLimpia = (orden: OrdenTrabajo) => {
+    const printWindow = window.open('', '_blank', 'width=900,height=1100')
+    if (!printWindow) {
+      alert('Por favor permita las ventanas emergentes (pop-ups) en su navegador para imprimir el documento PDF.')
+      return
+    }
+
+    const fotosHtml = orden.fotos_evidencia && orden.fotos_evidencia.length > 0 ? `
+      <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:12px; margin-bottom:14px;">
+        <div style="font-size:11px; font-weight:900; color:#1e3a8a; text-transform:uppercase; border-bottom:1px solid #cbd5e1; padding-bottom:4px; margin-bottom:8px;">
+          IV. REGISTRO FOTOGRÁFICO DE EVIDENCIA EN TERRENO
+        </div>
+        <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:10px;">
+          ${orden.fotos_evidencia.map((foto, idx) => `
+            <div style="aspect-ratio: 4/3; background:#ffffff; border:1px solid #cbd5e1; border-radius:6px; overflow:hidden; padding:2px;">
+              <img src="${foto}" style="width:100%; height:100%; object-fit:cover; border-radius:4px;" alt="Evidencia ${idx + 1}" />
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    ` : ''
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html lang="es">
+      <head>
+        <meta charset="UTF-8">
+        <title>Certificado_Oficial_${orden.codigo_ot || orden.id}</title>
+        <style>
+          @page {
+            size: letter portrait;
+            margin: 10mm 12mm;
+          }
+          body {
+            font-family: 'Segoe UI', Helvetica, Arial, sans-serif;
+            color: #0f172a;
+            background: #ffffff;
+            margin: 0;
+            padding: 0;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          .cert-container {
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+            background: #ffffff;
+          }
+          .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-bottom: 3px solid #0f172a;
+            padding-bottom: 12px;
+            margin-bottom: 16px;
+          }
+          .logo-box {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+          }
+          .logo-box img {
+            width: 60px;
+            height: 60px;
+            object-fit: contain;
+            background: #0f172a;
+            padding: 4px;
+            border-radius: 8px;
+          }
+          .company-title {
+            font-size: 20px;
+            font-weight: 900;
+            color: #0f172a;
+            letter-spacing: 1px;
+            margin: 0;
+          }
+          .company-sub {
+            font-size: 11px;
+            color: #475569;
+            font-weight: 700;
+            margin: 2px 0 0 0;
+          }
+          .cert-badge {
+            background: #0f172a;
+            color: #ffffff;
+            font-family: monospace;
+            font-size: 13px;
+            font-weight: 900;
+            padding: 6px 14px;
+            border-radius: 6px;
+            display: inline-block;
+          }
+          .cert-meta {
+            text-align: right;
+            font-size: 11px;
+            color: #334155;
+            font-weight: 700;
+            margin-top: 6px;
+          }
+          .section-box {
+            background: #f8fafc;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            padding: 12px 14px;
+            margin-bottom: 14px;
+          }
+          .section-title {
+            font-size: 11px;
+            font-weight: 900;
+            color: #1e3a8a;
+            text-transform: uppercase;
+            border-bottom: 1px solid #cbd5e1;
+            padding-bottom: 4px;
+            margin-bottom: 8px;
+          }
+          .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px 16px;
+            font-size: 11px;
+          }
+          .signature-img {
+            height: 65px;
+            border: 1px solid #cbd5e1;
+            background: #ffffff;
+            padding: 4px;
+            border-radius: 6px;
+            margin-top: 6px;
+          }
+          .footer-stamp {
+            border-top: 1px solid #cbd5e1;
+            padding-top: 6px;
+            margin-top: 12px;
+            font-size: 9px;
+            color: #64748b;
+            font-family: monospace;
+            text-align: right;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="cert-container">
+          <div class="header">
+            <div class="logo-box">
+              <img src="/logo-gama.png" alt="GAMA" />
+              <div>
+                <h1 class="company-title">GAMA SEGURIDAD 24/7</h1>
+                <p class="company-sub">Mantenimiento Electrónico & Monitoreo de Alarmas</p>
+                <p class="company-sub" style="color: #64748b; font-size: 10px;">Certificado Oficial de Atención Técnica en Terreno</p>
+              </div>
+            </div>
+            <div>
+              <div class="cert-badge">CERTIFICADO N° ${orden.codigo_ot || 'OT-' + orden.id}</div>
+              <div class="cert-meta">
+                Fecha: ${orden.fecha_cierre || orden.fecha_cita}<br>
+                <span style="color: #15803d; background: #dcfce7; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold;">STATUS: VERIFICADO OK</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="section-box">
+            <div class="section-title">I. Identificación del Abonado & Domicilio</div>
+            <div class="grid-2">
+              <div><strong>Código Cuenta:</strong> <span style="font-family: monospace; font-weight: 900; color: #1e3a8a;">${orden.cuenta}</span></div>
+              <div><strong>Nombre / Razón Social:</strong> ${orden.nombre_abonado}</div>
+              <div><strong>Dirección Comercial/Residencial:</strong> ${orden.direccion}</div>
+              <div><strong>Teléfono Contacto:</strong> ${orden.telefono_contacto || 'Sin registro'}</div>
+            </div>
+          </div>
+
+          <div class="section-box">
+            <div class="section-title">II. Resumen Operativo del Servicio</div>
+            <div class="grid-2">
+              <div><strong>Tipo de Visita:</strong> ${orden.tipo_visita || 'Correctiva'}</div>
+              <div><strong>Bloque Horario:</strong> ${orden.bloque_horario}</div>
+              <div><strong>Técnico Certificado Responsable:</strong> ${orden.tecnico}</div>
+              <div><strong>Voltaje Batería / Fuente:</strong> ${orden.voltaje_bateria || '13.8V DC (Normal)'}</div>
+            </div>
+          </div>
+
+          <div class="section-box">
+            <div class="section-title">III. Requerimiento & Diagnóstico Técnico Ejecutado</div>
+            <div style="font-size: 11px; line-height: 1.5;">
+              <div style="margin-bottom: 4px;"><strong>Falla Reportada Inicial:</strong> ${orden.problema}</div>
+              <div style="margin-bottom: 4px;"><strong>Trabajo Realizado en Terreno:</strong> ${orden.novedad || 'Prueba y mantención ejecutada'}</div>
+              <div><strong>Repuestos / Insumos Utilizados:</strong> ${orden.repuestos_utilizados || 'Ninguno (Mantenimiento preventivo)'}</div>
+            </div>
+          </div>
+
+          ${fotosHtml}
+
+          <div class="section-box">
+            <div class="section-title">V. Conformidad & Recepción del Servicio</div>
+            <div class="grid-2">
+              <div>
+                <p style="margin: 0; font-size: 11px; font-weight: bold;">Firma Cliente Receptor:</p>
+                <p style="margin: 2px 0; font-size: 11px;">Nombre: <strong>${orden.nombre_firmante || 'Cliente'}</strong></p>
+                <p style="margin: 2px 0; font-size: 11px;">RUT: <strong>${orden.rut_firmante || 'S/RUT'}</strong></p>
+                ${orden.firma ? `<img src="${orden.firma}" class="signature-img" alt="Firma Touch" />` : '<div style="font-size: 10px; color: #94a3b8; font-style: italic; margin-top: 10px;">Firma Digitalizada Registrada</div>'}
+              </div>
+              <div style="text-align: right; display: flex; flex-direction: column; justify-between;">
+                <div>
+                  <p style="margin: 0; font-size: 11px; font-weight: bold;">Técnico Certificado GAMA Security:</p>
+                  <p style="margin: 2px 0; font-size: 12px; font-weight: 900; color: #0f172a;">${orden.tecnico}</p>
+                  <p style="margin: 0; font-size: 10px; color: #64748b;">GAMA Security 24/7 SpA — Chile</p>
+                </div>
+                <div class="footer-stamp">
+                  Sello Digital de Validación GAMA # ${orden.id}
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <script>
+          window.onload = function() {
+            setTimeout(function() {
+              window.print();
+            }, 300);
+          }
+        </script>
+      </body>
+      </html>
+    `
+
+    printWindow.document.open()
+    printWindow.document.write(htmlContent)
+    printWindow.document.close()
+  }
+
   // Disparar Notificación Push Nativa
   const dispararNotificacionPush = (ot: OrdenTrabajo) => {
     reproducirSonidoAlerta()
@@ -1591,11 +1823,11 @@ export default function PortalTecnicoMovil() {
                 CERRAR
               </button>
               <button
-                onClick={() => window.print()}
+                onClick={() => generarImpresionLimpia(ordenImprimir)}
                 className="px-6 py-2.5 bg-blue-900 text-white font-black text-xs rounded-xl hover:bg-blue-950 shadow-lg cursor-pointer flex items-center gap-1.5"
               >
                 <span>🖨️</span>
-                <span>IMPRIMIR CERTIFICADO PDF (HOJA CARTA)</span>
+                <span>IMPRIMIR / DESCARGAR CERTIFICADO PDF</span>
               </button>
             </div>
 
