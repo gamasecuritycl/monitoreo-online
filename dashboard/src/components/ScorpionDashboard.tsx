@@ -971,8 +971,8 @@ export default function ScorpionDashboard() {
   }
 
   return (
-    <div className="h-[100dvh] flex flex-col bg-[#070b13] text-slate-100 overflow-hidden select-none relative" style={{ fontFamily: "'Consolas', 'Courier New', monospace" }}>
-      
+    <div className="h-screen max-h-screen w-full flex flex-col bg-[#070b13] text-slate-100 overflow-hidden select-none relative" style={{ fontFamily: "'Consolas', 'Courier New', monospace" }}>
+
       {/* Top Bar Navy Bevel Style */}
       <header className="flex flex-col sm:flex-row items-center justify-between px-4 py-1.5 bg-[#0f172a] border-b border-[#1e293b] shrink-0 shadow-md gap-2 sm:gap-0 z-10">
         <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-start">
@@ -1271,7 +1271,7 @@ export default function ScorpionDashboard() {
       )}
 
       {/* Contenedor Principal: Izquierda (Tabla), Derecha (Widgets de Scorpion) */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 min-h-0 flex overflow-hidden">
         
         {/* Lado Izquierdo: Tabla de Eventos (Ocupa 100% en móvil y 845px fijos en PC) */}
         <div className="w-full md:w-[845px] md:shrink-0 border-r border-[#1e293b] flex flex-col h-full bg-[#070b13] overflow-hidden">
