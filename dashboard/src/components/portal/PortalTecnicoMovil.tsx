@@ -306,12 +306,9 @@ export default function PortalTecnicoMovil() {
             gap: 12px;
           }
           .logo-box img {
-            width: 60px;
-            height: 60px;
+            width: 65px;
+            height: 65px;
             object-fit: contain;
-            background: #0f172a;
-            padding: 4px;
-            border-radius: 8px;
           }
           .company-title {
             font-size: 20px;
@@ -981,8 +978,8 @@ export default function PortalTecnicoMovil() {
       <div className="fixed inset-0 bg-[#060913] flex flex-col items-center justify-center p-6 text-white z-50 select-none">
         <div className="relative mb-6">
           <div className="absolute -inset-6 rounded-full bg-blue-600/30 blur-2xl animate-pulse"></div>
-          <div className="relative w-32 h-32 bg-[#0b1329]/90 border border-blue-500/40 rounded-3xl p-4 shadow-2xl flex items-center justify-center backdrop-blur-xl">
-            <img src="/logo-gama.png" alt="Gama Seguridad" className="w-full h-full object-contain" />
+          <div className="relative w-32 h-32 flex items-center justify-center">
+            <img src="/logo-gama.png" alt="Gama Seguridad" className="w-full h-full object-contain drop-shadow-[0_10px_25px_rgba(0,102,204,0.5)]" />
           </div>
         </div>
 
@@ -1005,8 +1002,8 @@ export default function PortalTecnicoMovil() {
 
         {/* Banner superior */}
         <div className="pt-8 text-center relative z-10">
-          <div className="inline-flex items-center justify-center w-24 h-24 bg-[#0b1329]/90 border border-blue-500/40 rounded-3xl p-3 shadow-2xl mb-4 backdrop-blur-xl">
-            <img src="/logo-gama.png" alt="GAMA Security" className="w-full h-full object-contain" />
+          <div className="inline-flex items-center justify-center w-24 h-24 mb-4">
+            <img src="/logo-gama.png" alt="GAMA Security" className="w-full h-full object-contain drop-shadow-[0_10px_20px_rgba(0,102,204,0.4)]" />
           </div>
           <h1 className="text-2xl font-black tracking-wider text-white">GAMA SEGURIDAD 24/7</h1>
           <p className="text-xs text-blue-400 font-bold tracking-widest uppercase mt-1">Portal Técnico en Terreno PWA</p>
@@ -1104,8 +1101,8 @@ export default function PortalTecnicoMovil() {
       {/* Top Header iOS Apple Bar */}
       <header className="bg-slate-900/80 border-b border-slate-800/80 px-5 py-4 backdrop-blur-xl sticky top-0 z-30 flex items-center justify-between shadow-md">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-[#0b1329] border border-blue-500/40 rounded-2xl p-1.5 flex items-center justify-center shadow">
-            <img src="/logo-gama.png" alt="GAMA Security" className="w-full h-full object-contain" />
+          <div className="w-10 h-10 flex items-center justify-center">
+            <img src="/logo-gama.png" alt="GAMA Security" className="w-full h-full object-contain drop-shadow" />
           </div>
           <div>
             <h2 className="text-sm font-black tracking-wider text-white leading-tight">GAMA SEGURIDAD</h2>

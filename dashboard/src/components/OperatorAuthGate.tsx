@@ -258,13 +258,13 @@ export default function OperatorAuthGate({ children }: OperatorAuthGateProps) {
           
           {/* Logo & Encabezado */}
           <div className="text-center mb-8 space-y-3">
-            <div className="w-16 h-16 rounded-2xl bg-[#050d1a] border border-[#1e3a5f] flex items-center justify-center mx-auto p-3 shadow-inner">
+            <div className="w-20 h-20 flex items-center justify-center mx-auto mb-1">
               <Image
                 src="/logo-gama.png"
                 alt="GAMA Security Logo"
-                width={48}
-                height={48}
-                className="object-contain"
+                width={72}
+                height={72}
+                className="object-contain filter drop-shadow-[0_4px_12px_rgba(0,102,204,0.5)]"
               />
             </div>
             <div>

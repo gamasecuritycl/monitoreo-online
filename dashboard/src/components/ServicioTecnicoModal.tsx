@@ -233,12 +233,9 @@ export default function ServicioTecnicoModal({ onClose, clientesMap = {}, usuari
             gap: 12px;
           }
           .logo-box img {
-            width: 60px;
-            height: 60px;
+            width: 65px;
+            height: 65px;
             object-fit: contain;
-            background: #0f172a;
-            padding: 4px;
-            border-radius: 8px;
           }
           .company-title {
             font-size: 20px;
@@ -894,8 +891,8 @@ export default function ServicioTecnicoModal({ onClose, clientesMap = {}, usuari
             {/* Encabezado Corporativo Oficial */}
             <div className="flex justify-between items-start border-b-2 border-blue-900 pb-4 mb-6">
               <div className="flex items-center gap-3">
-                <div className="w-16 h-16 bg-blue-950 p-2 rounded-xl flex items-center justify-center">
-                  <img src="/logo-gama.png" alt="Gama Seguridad" className="w-full h-full object-contain" />
+                <div className="w-16 h-16 flex items-center justify-center">
+                  <img src="/logo-gama.png" alt="Gama Seguridad" className="w-full h-full object-contain drop-shadow" />
                 </div>
                 <div>
                   <h1 className="text-xl font-black text-blue-950 tracking-wider">GAMA SEGURIDAD 24/7</h1>
