@@ -60,6 +60,8 @@ export default function IACopilotCard({
     esIncendio,
     esPanico,
     esEnergia,
+    esRestablecimientoEnergia,
+    isRestablecimiento,
     esMultiZona,
     zonasDisparadas,
     hayCorteEnergiaReciente,
@@ -74,6 +76,8 @@ export default function IACopilotCard({
         esIncendio: false,
         esPanico: false,
         esEnergia: false,
+        esRestablecimientoEnergia: false,
+        isRestablecimiento: false,
         esMultiZona: false,
         zonasDisparadas: [] as string[],
         hayCorteEnergiaReciente: false,
@@ -87,10 +91,18 @@ export default function IACopilotCard({
     const cta = (evento.cuenta || '').toUpperCase().trim()
     const evUpper = (evento.evento || '').toUpperCase()
 
-    const isAlarma = evUpper.includes('ALARMA') || evUpper.includes('ROBO') || evUpper.includes('INTRUSIÓN') || evUpper.includes('INTRUSION') || evUpper.includes('PERIMETRAL')
-    const isPanico = evUpper.includes('PANICO') || evUpper.includes('PÁNICO') || evUpper.includes('ASALTO') || evUpper.includes('EMERGENCIA')
-    const isIncendio = evUpper.includes('INCENDIO') || evUpper.includes('FUEGO') || evUpper.includes('HUMO')
-    const isEnergia = evUpper.includes('ENERGIA') || evUpper.includes('ENERGÍA') || evUpper.includes('AC') || evUpper.includes('RED') || evUpper.includes('301')
+    // Detectar si es un restablecimiento / restauración / retorno a la normalidad
+    const isRestablecimiento = evUpper.includes('RESTABLEC') || evUpper.includes('RESTAUR') || evUpper.includes('RETORNO') || evUpper.includes('NORMALIZ')
+
+    const isAlarma = (evUpper.includes('ALARMA') || evUpper.includes('ROBO') || evUpper.includes('INTRUSIÓN') || evUpper.includes('INTRUSION') || evUpper.includes('PERIMETRAL')) && !isRestablecimiento
+    const isPanico = (evUpper.includes('PANICO') || evUpper.includes('PÁNICO') || evUpper.includes('ASALTO') || evUpper.includes('EMERGENCIA')) && !isRestablecimiento
+    const isIncendio = (evUpper.includes('INCENDIO') || evUpper.includes('FUEGO') || evUpper.includes('HUMO')) && !isRestablecimiento
+    
+    // Falla de energía activa (CORTE AC): Menciona energía/AC/RED/301 pero NO es un restablecimiento
+    const isEnergiaCorte = (evUpper.includes('ENERGIA') || evUpper.includes('ENERGÍA') || evUpper.includes('CORTE AC') || evUpper.includes('FALLA AC') || evUpper.includes('FALLA DE RED') || evUpper.includes('CORTE LUZ') || evUpper.includes('301')) && !isRestablecimiento
+
+    // Restablecimiento de energía: Es restablecimiento Y menciona energía/AC/red/luz
+    const isRestablecimientoEnergia = isRestablecimiento && (evUpper.includes('ENERGIA') || evUpper.includes('ENERGÍA') || evUpper.includes('AC') || evUpper.includes('RED') || evUpper.includes('301') || evUpper.includes('LUZ') || evUpper.includes('FALLA ENERGIA'))
 
     // Filtrar eventos de los últimos 45 minutos para la misma cuenta
     const ahora = Date.now()
@@ -110,7 +122,7 @@ export default function IACopilotCard({
 
     eventosCuenta.forEach(e => {
       const eUpper = (e.evento || '').toUpperCase()
-      const isEvAlarma = eUpper.includes('ALARMA') || eUpper.includes('ROBO') || eUpper.includes('INTRUSIÓN') || eUpper.includes('INTRUSION') || eUpper.includes('PERIMETRAL') || eUpper.includes('PANICO') || eUpper.includes('PÁNICO')
+      const isEvAlarma = (eUpper.includes('ALARMA') || eUpper.includes('ROBO') || eUpper.includes('INTRUSIÓN') || eUpper.includes('INTRUSION') || eUpper.includes('PERIMETRAL') || eUpper.includes('PANICO') || eUpper.includes('PÁNICO')) && !(eUpper.includes('RESTABLEC') || eUpper.includes('RESTAUR'))
       if (isEvAlarma && e.zona) {
         const z = e.zona.trim()
         if (z && z !== '0' && z !== '00' && z !== '000') {
@@ -123,37 +135,46 @@ export default function IACopilotCard({
     // REGLA: Alarma confirmada / multizona solo si son > 2 zonas distintas (o al menos 2 zonas)
     const multiZona = distinctZonas.length >= 2
 
-    // Detección de Agravantes Críticos
-    const corteEnergia = eventosCuenta.some(e => {
+    // Detección de Agravantes Críticos: Verificar si la falla de energía sigue vigente
+    const eventosEnergia = eventosCuenta.filter(e => {
       const u = (e.evento || '').toUpperCase()
-      return u.includes('ENERGIA') || u.includes('ENERGÍA') || u.includes('CORTE AC') || u.includes('FALLA AC') || u.includes('301') || u.includes('RED')
-    }) || isEnergia
+      return u.includes('ENERGIA') || u.includes('ENERGÍA') || u.includes('CORTE AC') || u.includes('FALLA AC') || u.includes('FALLA DE RED') || u.includes('301') || u.includes('RED')
+    })
+    
+    // El corte de energía está vigente si el último evento de energía NO es un restablecimiento
+    const ultimoEventoEnergia = eventosEnergia.length > 0 ? eventosEnergia[0] : null
+    const ultimoEvText = ultimoEventoEnergia ? (ultimoEventoEnergia.evento || '').toUpperCase() : ''
+    const hayCorteEnergiaVigente = ultimoEventoEnergia
+      ? !(ultimoEvText.includes('RESTABLEC') || ultimoEvText.includes('RESTAUR') || ultimoEvText.includes('RETORNO') || ultimoEvText.includes('NORMALIZ'))
+      : isEnergiaCorte
 
     const corteSirena = eventosCuenta.some(e => {
       const u = (e.evento || '').toUpperCase()
-      return u.includes('SIRENA') || u.includes('TAMPER') || u.includes('SABOTAJE') || u.includes('321') || u.includes('CORTE DE SIRENA')
+      return (u.includes('SIRENA') || u.includes('TAMPER') || u.includes('SABOTAJE') || u.includes('321') || u.includes('CORTE DE SIRENA')) && !(u.includes('RESTABLEC') || u.includes('RESTAUR'))
     })
 
     // Detección de Batería Baja
     const bateriaBaja = eventosCuenta.some(e => {
       const u = (e.evento || '').toUpperCase()
-      return u.includes('BATERIA') || u.includes('BATERÍA') || u.includes('BAT') || u.includes('302') || u.includes('309') || u.includes('310') || u.includes('384')
+      return (u.includes('BATERIA') || u.includes('BATERÍA') || u.includes('BAT') || u.includes('302') || u.includes('309') || u.includes('310') || u.includes('384')) && !(u.includes('RESTABLEC') || u.includes('RESTAUR'))
     })
 
-    // CASO CRÍTICO: Batería baja consecutiva tras corte de luz -> Riesgo de apagado total
-    const riesgoApagadoTotal = (corteEnergia || isEnergia) && bateriaBaja
+    // CASO CRÍTICO: Batería baja consecutiva tras corte de luz VIGENTE -> Riesgo de apagado total
+    const riesgoApagadoTotal = hayCorteEnergiaVigente && bateriaBaja
 
-    // URGENCIA MÁXIMA: Más de 2 zonas + (Corte de Energía o Corte de Sirena)
-    const urgenciaCarabineros = (multiZona || isPanico) && (corteEnergia || corteSirena)
+    // URGENCIA MÁXIMA: Más de 2 zonas + (Corte de Energía VIGENTE o Corte de Sirena)
+    const urgenciaCarabineros = (multiZona || isPanico) && (hayCorteEnergiaVigente || corteSirena)
 
     return {
       esAlarma: isAlarma,
       esIncendio: isIncendio,
       esPanico: isPanico,
-      esEnergia: isEnergia,
+      esEnergia: isEnergiaCorte,
+      esRestablecimientoEnergia: isRestablecimientoEnergia,
+      isRestablecimiento: isRestablecimiento,
       esMultiZona: multiZona,
       zonasDisparadas: distinctZonas,
-      hayCorteEnergiaReciente: corteEnergia,
+      hayCorteEnergiaReciente: hayCorteEnergiaVigente,
       hayCorteSirenaReciente: corteSirena,
       hayBateriaBajaReciente: bateriaBaja,
       esRiesgoApagadoTotal: riesgoApagadoTotal,
@@ -259,7 +280,7 @@ Proporciona únicamente:
   const zonaCoincidente = zonas.find(z => z.numero === zonaEv || z.numero === `0${zonaEv}`)
 
   // Nivel de urgencia calculado
-  const nivelUrgencia: 'critica' | 'alta' | 'media' | 'baja' = enModoPruebas
+  const nivelUrgencia: 'critica' | 'alta' | 'media' | 'baja' = enModoPruebas || esRestablecimientoEnergia || isRestablecimiento
     ? 'baja'
     : esUrgenciaCarabineros || esRiesgoApagadoTotal
     ? 'critica'
@@ -272,6 +293,10 @@ Proporciona únicamente:
   // Mensajes y Recomendaciones Fallback
   const recomendacionFallback = enModoPruebas
     ? `🛠️ EN MODO PRUEBAS TÉCNICAS: Eventos silenciados para pruebas en terreno por ${datosPrueba?.tecnico || 'Técnico'}.`
+    : esRestablecimientoEnergia
+    ? `✅ ENERGÍA RESTABLECIDA: Se confirmó el retorno de la red eléctrica AC en la propiedad. El suministro eléctrico se encuentra normalizado.`
+    : isRestablecimiento
+    ? `✅ RESTABLECIMIENTO DE SEÑAL (${evento.evento}): Retorno a la normalidad en el abonado #${evento.cuenta}.`
     : esRiesgoApagadoTotal
     ? `🔥 RIESGO DE APAGADO TOTAL: Corte de energía AC activo + Batería de respaldo agotándose. Avisar URGENTE al cliente para verificar el disyuntor eléctrico.`
     : esUrgenciaCarabineros
