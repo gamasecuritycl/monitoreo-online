@@ -41,6 +41,37 @@ const TECNICOS = [
   { nombre: 'Cristian Muñoz', cargo: 'Técnico Terreno Mantenimiento Preventivo', pin: '1234' },
 ]
 
+function formatFechaHoraChile(fechaIso: string) {
+  if (!fechaIso) return { hora: '--:--:--', fecha: '----' }
+  try {
+    let isoClean = fechaIso.trim()
+    if (!isoClean.endsWith('Z') && !isoClean.includes('+')) {
+      isoClean = isoClean.replace(' ', 'T') + 'Z'
+    }
+    const d = new Date(isoClean)
+    if (isNaN(d.getTime())) return { hora: fechaIso.slice(11, 19), fecha: fechaIso.slice(0, 10) }
+
+    const hora = d.toLocaleTimeString('es-CL', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+      timeZone: 'America/Santiago'
+    })
+
+    const fecha = d.toLocaleDateString('es-CL', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      timeZone: 'America/Santiago'
+    })
+
+    return { hora, fecha }
+  } catch (e) {
+    return { hora: fechaIso.slice(11, 19), fecha: fechaIso.slice(0, 10) }
+  }
+}
+
 export default function PortalTecnicoMovil() {
   // Autenticación Diaria & Cierre a Medianoche (00:00)
   const [tecnicoAutenticado, setTecnicoAutenticado] = useState<string | null>(null)
@@ -1000,26 +1031,29 @@ export default function PortalTecnicoMovil() {
             </div>
 
             <div className="space-y-2">
-              {eventosFiltrados.map(ev => (
-                <div key={ev.id} className="bg-slate-900/90 border border-slate-800 rounded-xl p-3 text-xs flex items-center justify-between hover:border-slate-700">
-                  <div className="space-y-1 max-w-[75%]">
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono font-bold text-blue-400 text-xs">{ev.cuenta}</span>
-                      <span className="text-xs font-bold text-slate-300 truncate">{ev.nombre_abonado}</span>
+              {eventosFiltrados.map(ev => {
+                const { hora, fecha } = formatFechaHoraChile(ev.fecha_hora)
+                return (
+                  <div key={ev.id} className="bg-slate-900/90 border border-slate-800 rounded-xl p-3 text-xs flex items-center justify-between hover:border-slate-700">
+                    <div className="space-y-1 max-w-[75%]">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono font-bold text-blue-400 text-xs">{ev.cuenta}</span>
+                        <span className="text-xs font-bold text-slate-300 truncate">{ev.nombre_abonado}</span>
+                      </div>
+                      <div className={`font-mono text-xs font-black ${
+                        ev.evento.includes('ALARMA') || ev.evento.includes('ROBO') ? 'text-red-400' :
+                        ev.evento.includes('RESTAURA') ? 'text-emerald-400' : 'text-amber-300'
+                      }`}>
+                        {ev.evento} {ev.zona && ev.zona !== 'S/T' ? `[ZONA ${ev.zona}]` : ''}
+                      </div>
                     </div>
-                    <div className={`font-mono text-xs font-black ${
-                      ev.evento.includes('ALARMA') || ev.evento.includes('ROBO') ? 'text-red-400' :
-                      ev.evento.includes('RESTAURA') ? 'text-emerald-400' : 'text-amber-300'
-                    }`}>
-                      {ev.evento} {ev.zona && ev.zona !== 'S/T' ? `[ZONA ${ev.zona}]` : ''}
+                    <div className="text-right shrink-0">
+                      <span className="text-xs font-mono text-slate-300 font-bold block">{hora}</span>
+                      <span className="text-[10px] text-slate-500 block">{fecha}</span>
                     </div>
                   </div>
-                  <div className="text-right shrink-0">
-                    <span className="text-xs font-mono text-slate-300 font-bold block">{ev.fecha_hora ? ev.fecha_hora.slice(11, 19) : ''}</span>
-                    <span className="text-[10px] text-slate-500 block">{ev.fecha_hora ? ev.fecha_hora.slice(0, 10) : ''}</span>
-                  </div>
-                </div>
-              ))}
+                )
+              })}
 
               {eventosFiltrados.length === 0 && !cargandoEventos && (
                 <div className="text-center text-slate-400 italic py-16 bg-slate-900/50 rounded-3xl border border-slate-800 text-xs">
