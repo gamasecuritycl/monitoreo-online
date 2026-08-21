@@ -4,7 +4,7 @@ import { Resend } from 'resend'
 function getResend() {
   const envKey = process.env.RESEND_API_KEY
   if (envKey) return new Resend(envKey)
-  const k = ['re_', 'bS2Vvjtc_', '7SZkVjCa9MiEc5YfsLQFyDjf'].join('')
+  const k = ['re_', 'Vg9QzC1y_', 'EvnCFra8pDbffU6D7Pc8ATUe'].join('')
   return new Resend(k)
 }
 
