@@ -72,6 +72,20 @@ function formatFechaHoraChile(fechaIso: string) {
   }
 }
 
+function coincideTecnico(t1?: string | null, t2?: string | null) {
+  if (!t1 || !t2) return false
+  const norm1 = t1.replace(/[^a-zA-Z0-9 ]/g, '').toLowerCase().trim()
+  const norm2 = t2.replace(/[^a-zA-Z0-9 ]/g, '').toLowerCase().trim()
+  if (norm1 === norm2) return true
+
+  const p1 = norm1.split(' ').filter(Boolean)
+  const p2 = norm2.split(' ').filter(Boolean)
+  if (p1.length > 0 && p2.length > 0 && p1[0] === p2[0]) {
+    return true
+  }
+  return false
+}
+
 export default function PortalTecnicoMovil() {
   // Autenticación Diaria & Cierre a Medianoche (00:00)
   const [tecnicoAutenticado, setTecnicoAutenticado] = useState<string | null>(null)
@@ -250,7 +264,7 @@ export default function PortalTecnicoMovil() {
         const parsed: OrdenTrabajo[] = JSON.parse(data[0].nombre_abonado || '[]')
         
         if (tecnicoAutenticado) {
-          const misPendientesNuevas = parsed.filter(o => o.tecnico === tecnicoAutenticado && o.estado !== 'Completada' && o.estado !== 'Cancelada')
+          const misPendientesNuevas = parsed.filter(o => coincideTecnico(o.tecnico, tecnicoAutenticado) && o.estado !== 'Completada' && o.estado !== 'Cancelada')
           
           setOrdenes(prevOrdenes => {
             if (prevOrdenes.length > 0) {
@@ -551,7 +565,7 @@ export default function PortalTecnicoMovil() {
   }
 
   // Filtrado de órdenes por técnico activo
-  const ordenesTécnico = ordenes.filter(o => o.tecnico === tecnicoAutenticado)
+  const ordenesTécnico = ordenes.filter(o => coincideTecnico(o.tecnico, tecnicoAutenticado))
   const ordenesPendientes = ordenesTécnico.filter(o => o.estado !== 'Completada' && o.estado !== 'Cancelada')
   const ordenesCompletadas = ordenesTécnico.filter(o => o.estado === 'Completada')
 

@@ -36,6 +36,20 @@ const TECNICOS = ['Juan Pérez', 'Diego Reyes', 'Mauricio Tapia', 'Cristian Muñ
 const TIPOS_VISITA = ['Correctiva', 'Preventiva', 'Cambio de Batería', 'Instalación', 'Revisión de Cámaras'] as const
 const BLOQUES_HORARIOS = ['Mañana (09:00 - 13:00)', 'Tarde (14:00 - 18:00)'] as const
 
+function coincideTecnico(t1?: string | null, t2?: string | null) {
+  if (!t1 || !t2) return false
+  const norm1 = t1.replace(/[^a-zA-Z0-9 ]/g, '').toLowerCase().trim()
+  const norm2 = t2.replace(/[^a-zA-Z0-9 ]/g, '').toLowerCase().trim()
+  if (norm1 === norm2) return true
+
+  const p1 = norm1.split(' ').filter(Boolean)
+  const p2 = norm2.split(' ').filter(Boolean)
+  if (p1.length > 0 && p2.length > 0 && p1[0] === p2[0]) {
+    return true
+  }
+  return false
+}
+
 export default function ServicioTecnicoModal({ onClose, clientesMap = {}, usuarioActivo }: Props) {
   const [tabActive, setTabActive] = useState<'despacho' | 'tecnico_movil'>('despacho')
 
