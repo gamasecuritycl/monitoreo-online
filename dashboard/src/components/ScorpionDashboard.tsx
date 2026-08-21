@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { supabase, type EventoMonitoreo } from '@/lib/supabase'
 import EventGrid from './EventGrid'
 import FooterActions from './FooterActions'
@@ -97,11 +97,17 @@ function obtenerDatosAbonado(cuenta: string, nombreAbonado: string, clienteDb: R
 
   // Fallbacks si no hay contactos en BD
   if (datos.contactos.length === 0) {
-    datos.contactos = [
-      { prioridad: 1, nombre: 'Tomás Toro (Admin)', telefono: '+56 9 8765 4321', tipo: 'autorizado' },
-      { prioridad: 2, nombre: 'Conserjería Central', telefono: '+56 2 2345 6789', tipo: 'autorizado' },
-      { prioridad: 3, nombre: 'Carabineros de Chile', telefono: '133', tipo: 'comisaria' }
-    ]
+    const mainTel = (clienteDb?.telefono1 || clienteDb?.t1 || clienteDb?.telefono || '').trim()
+    const mainNom = (clienteDb?.nombre || nombreAbonado || 'TITULAR ALARMA').trim().toUpperCase()
+    if (mainTel || mainNom) {
+      datos.contactos.push({
+        prioridad: 1,
+        nombre: mainNom,
+        telefono: mainTel || 'Sin teléfono registrado',
+        cargo: 'Titular',
+        tipo: 'autorizado'
+      })
+    }
   }
 
   return datos
@@ -929,7 +935,81 @@ export default function ScorpionDashboard() {
   const activeEvent = eventoSeleccionado || (eventos.length > 0 ? eventos[eventos.length - 1] : null)
   const cuentaKey = activeEvent ? activeEvent.cuenta.toUpperCase().trim() : ''
   const clienteDb = cuentaKey ? (clientesMap[cuentaKey] || null) : null
-  const clientData = activeEvent ? obtenerDatosAbonado(activeEvent.cuenta, activeEvent.nombre_abonado, clienteDb) : null
+
+  // Cargar contactos reales guardados en Expediente (Supabase: notificaciones_whatsapp / eventos_monitoreo)
+  const [contactosSupabase, setContactosSupabase] = useState<ContactoAutorizado[]>([])
+
+  useEffect(() => {
+    if (!cuentaKey) {
+      setContactosSupabase([])
+      return
+    }
+    let isCancelled = false
+
+    const loadRealContacts = async () => {
+      try {
+        // 1. Cargar desde notificaciones_whatsapp (contactos de escalamiento guardados en Expediente)
+        const { data: waData } = await supabase
+          .from('notificaciones_whatsapp')
+          .select('contactos_escalamiento')
+          .eq('cuenta', cuentaKey)
+          .maybeSingle()
+
+        if (!isCancelled && waData?.contactos_escalamiento && Array.isArray(waData.contactos_escalamiento) && waData.contactos_escalamiento.length > 0) {
+          const mapped: ContactoAutorizado[] = waData.contactos_escalamiento.map((c: any, idx: number) => ({
+            prioridad: idx + 1,
+            nombre: (c.nombre || c.parentesco || `CONTACTO ${idx + 1}`).toUpperCase(),
+            telefono: c.telefono || '',
+            cargo: c.parentesco || 'AUTORIZADO',
+            tipo: 'autorizado'
+          }))
+          setContactosSupabase(mapped)
+          return
+        }
+
+        // 2. Cargar desde eventos_monitoreo EXPEDIENTE_CONTACTOS_...
+        const { data: expData } = await supabase
+          .from('eventos_monitoreo')
+          .select('nombre_abonado')
+          .eq('cuenta', `EXPEDIENTE_CONTACTOS_${cuentaKey}`)
+          .order('id', { ascending: false })
+          .limit(1)
+
+        if (!isCancelled && expData && expData.length > 0 && expData[0].nombre_abonado) {
+          try {
+            const parsed = JSON.parse(expData[0].nombre_abonado)
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              const mappedExp: ContactoAutorizado[] = parsed.map((c: any, idx: number) => ({
+                prioridad: idx + 1,
+                nombre: (c.nombre || `CONTACTO ${idx + 1}`).toUpperCase(),
+                telefono: c.telefono || '',
+                cargo: c.cargo || c.parentesco || 'AUTORIZADO',
+                tipo: 'autorizado'
+              }))
+              setContactosSupabase(mappedExp)
+              return
+            }
+          } catch {}
+        }
+
+        if (!isCancelled) setContactosSupabase([])
+      } catch (err) {
+        if (!isCancelled) setContactosSupabase([])
+      }
+    }
+
+    loadRealContacts()
+    return () => { isCancelled = true }
+  }, [cuentaKey])
+
+  const clientData = useMemo(() => {
+    if (!activeEvent) return null
+    const base = obtenerDatosAbonado(activeEvent.cuenta, activeEvent.nombre_abonado, clienteDb)
+    if (contactosSupabase.length > 0) {
+      base.contactos = contactosSupabase
+    }
+    return base
+  }, [activeEvent, clienteDb, contactosSupabase])
 
   const cantCamarasActiva = (() => {
     if (!cuentaKey) return 0
@@ -1361,26 +1441,29 @@ export default function ScorpionDashboard() {
           </div>
 
           {/* Box 3: CONTACTOS / PERSONAS AUTORIZADAS */}
-          <div className="bg-[#e0e0e0] border border-t-white border-l-white border-b-gray-600 border-r-gray-600 flex flex-col flex-1 min-h-[100px] max-h-[140px] overflow-hidden">
-            <div className="bg-[#000080] text-white text-[10px] font-bold px-2 py-0.5 tracking-wider uppercase">
-              Personas Autorizadas
+          <div className="bg-[#e0e0e0] border border-t-white border-l-white border-b-gray-600 border-r-gray-600 flex flex-col flex-1 min-h-[140px] max-h-[220px] overflow-hidden">
+            <div className="bg-[#000080] text-white text-xs font-black px-2.5 py-1 tracking-wider uppercase flex items-center justify-between">
+              <span>Personas Autorizadas</span>
+              <span className="text-[10px] text-cyan-300 font-mono font-normal">
+                {clientData?.contactos.length || 0} Registrados
+              </span>
             </div>
             <div className="flex-1 overflow-y-auto">
-              <table className="w-full border-collapse text-[10px] text-left bg-white">
-                <thead className="sticky top-0 bg-[#d0d0d0] border-b border-gray-400 z-10">
+              <table className="w-full border-collapse text-xs text-left bg-white">
+                <thead className="sticky top-0 bg-[#c4c0b8] border-b border-gray-400 z-10 text-gray-900">
                   <tr>
-                    <th className="p-1 font-bold border-r border-gray-400 w-8 text-center">PR</th>
-                    <th className="p-1 font-bold border-r border-gray-400">Nombre</th>
-                    <th className="p-1 font-bold">Teléfono</th>
+                    <th className="p-1.5 font-black border-r border-gray-400 w-8 text-center">PR</th>
+                    <th className="p-1.5 font-black border-r border-gray-400">Nombre / Contacto</th>
+                    <th className="p-1.5 font-black">Teléfono</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-300">
                   {clientData?.contactos.map((contact) => (
-                    <tr key={contact.prioridad} className="hover:bg-blue-100 font-bold text-gray-800">
-                      <td className="p-0.5 text-center border-r border-gray-300">{contact.prioridad}</td>
-                      <td className="p-0.5 border-r border-gray-300 truncate max-w-[120px]">{contact.nombre}</td>
-                      <td className="p-0.5 font-mono text-blue-800 flex items-center justify-between gap-1">
-                        <span className="truncate max-w-[90px]">{contact.telefono}</span>
+                    <tr key={contact.prioridad} className="hover:bg-blue-100 font-bold text-gray-900 text-xs">
+                      <td className="p-1 text-center font-mono font-black text-blue-900 border-r border-gray-300">{contact.prioridad}</td>
+                      <td className="p-1 border-r border-gray-300 truncate max-w-[150px] font-extrabold uppercase">{contact.nombre}</td>
+                      <td className="p-1 font-mono text-blue-900 flex items-center justify-between gap-1 font-bold">
+                        <span className="truncate max-w-[110px]">{contact.telefono}</span>
                         <div className="flex gap-0.5 shrink-0">
                           <button
                             onClick={() => {
@@ -1389,9 +1472,9 @@ export default function ScorpionDashboard() {
                               setModalActivo('notificaciones-whatsapp')
                             }}
                             title="Enviar WhatsApp (Interno)"
-                            className="bg-[#c0c0c0] border border-t-white border-l-white border-b-gray-700 border-r-gray-700 px-1 py-0.5 hover:bg-[#d0d0d0] active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white flex items-center justify-center cursor-pointer"
+                            className="bg-[#c0c0c0] border border-t-white border-l-white border-b-gray-700 border-r-gray-700 px-1.5 py-0.5 hover:bg-[#d0d0d0] active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white flex items-center justify-center cursor-pointer shadow-xs"
                           >
-                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                               <path fillRule="evenodd" clipRule="evenodd" d="M12.004 2C6.48 2 2 6.48 2 12.004c0 1.912.54 3.704 1.476 5.23L2 22l4.908-1.28c1.472.8 3.14 1.284 4.936 1.284 5.52 0 10-4.48 10-10.004C21.844 6.48 17.524 2 12.004 2z" fill="#25D366"/>
                               <path d="M8.7 7.15c-.23-.5-.47-.5-.69-.5h-.58c-.2 0-.52.08-.8.38-.27.3-1.04 1.01-1.04 2.47s1.06 2.87 1.2 3.08c.15.2 2.09 3.2 5.07 4.49.7.3 1.26.49 1.68.62.7.22 1.34.19 1.84.11.57-.08 1.74-.71 1.98-1.4.24-.68.24-1.27.17-1.4-.07-.12-.27-.2-.58-.35s-1.84-.9-2.12-1-.54-.15-.77.19c-.23.34-.89 1.1-.1 1.1.2 1.22.4 1.45.68 1.6.28.15.6.23.92.15.42-.1.7.07 1.01-.08s.1-.3.02-.45c-.07-.15-.7-1.72-.96-2.35-.25-.62-.5-.54-.69-.55l-.59-.01c-.2 0-.52.07-.79.37-.27.3-1.03 1-1.03 2.44s1.05 2.84 1.2 3.05c.14.2 2.06 3.15 5 4.42.7.3 1.24.48 1.66.61.7.22 1.32.19 1.81.11.55-.08 1.7-.7 1.94-1.37.24-.67.24-1.25.17-1.37-.07-.12-.27-.2-.57-.35z" fill="white"/>
                             </svg>
@@ -1402,7 +1485,7 @@ export default function ScorpionDashboard() {
                   ))}
                   {!clientData && (
                     <tr>
-                      <td colSpan={3} className="p-2 text-center text-gray-400">Seleccione un abonado</td>
+                      <td colSpan={3} className="p-3 text-center text-gray-500 italic text-xs">Seleccione un abonado</td>
                     </tr>
                   )}
                 </tbody>
@@ -1411,41 +1494,44 @@ export default function ScorpionDashboard() {
           </div>
 
           {/* Box 4: ZONIFICACION */}
-          <div className="bg-[#e0e0e0] border border-t-white border-l-white border-b-gray-600 border-r-gray-600 flex flex-col flex-1 min-h-[90px] max-h-[140px] overflow-hidden">
-            <div className="bg-[#000080] text-white text-[10px] font-bold px-2 py-0.5 tracking-wider uppercase">
-              Zonificacion
+          <div className="bg-[#e0e0e0] border border-t-white border-l-white border-b-gray-600 border-r-gray-600 flex flex-col flex-1 min-h-[130px] max-h-[220px] overflow-hidden">
+            <div className="bg-[#000080] text-white text-xs font-black px-2.5 py-1 tracking-wider uppercase flex items-center justify-between">
+              <span>Zonificación</span>
+              <span className="text-[10px] text-yellow-300 font-mono font-normal">
+                {buscarZonasAbonado(activeEvent?.cuenta).length} Zonas
+              </span>
             </div>
             <div className="flex-1 overflow-y-auto">
               {(() => {
                 const zonasAbonado = buscarZonasAbonado(activeEvent?.cuenta)
                 if (!activeEvent) {
                   return (
-                    <div className="p-1 text-center text-gray-400 text-[10px] italic">Seleccione un abonado</div>
+                    <div className="p-3 text-center text-gray-500 text-xs italic">Seleccione un abonado</div>
                   )
                 }
                 if (zonasAbonado.length === 0) {
                   return (
-                    <div className="p-1 text-center text-[10px]">
-                      <div className="text-gray-500 italic font-bold">Sin información</div>
-                      <div className="text-blue-700 font-bold mt-0.5 cursor-pointer hover:underline">Solicitar</div>
+                    <div className="p-3 text-center text-xs">
+                      <div className="text-gray-600 italic font-bold">Sin información de zonas</div>
+                      <div className="text-blue-800 font-bold mt-1 cursor-pointer hover:underline">Solicitar Zonificación</div>
                     </div>
                   )
                 }
                 return (
-                  <table className="w-full border-collapse text-[9px] text-left bg-white">
-                    <thead className="sticky top-0 bg-[#d0d0d0] border-b border-gray-400 z-10">
+                  <table className="w-full border-collapse text-xs text-left bg-white">
+                    <thead className="sticky top-0 bg-[#c4c0b8] border-b border-gray-400 z-10 text-gray-900">
                       <tr>
-                        <th className="p-1 font-bold border-r border-gray-400 w-8 text-center">ZN</th>
-                        <th className="p-1 font-bold border-r border-gray-400">Dispositivos</th>
-                        <th className="p-1 font-bold">Area Cubierta</th>
+                        <th className="p-1.5 font-black border-r border-gray-400 w-9 text-center">ZN</th>
+                        <th className="p-1.5 font-black border-r border-gray-400">Dispositivos</th>
+                        <th className="p-1.5 font-black">Área Cubierta</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-300">
                       {zonasAbonado.map((zona, idx) => (
-                        <tr key={idx} className="hover:bg-blue-100 font-bold text-gray-800">
-                          <td className="p-0.5 text-center border-r border-gray-300 text-yellow-700">{zona.numero}</td>
-                          <td className="p-0.5 border-r border-gray-300 truncate max-w-[100px] capitalize">{(zona.dispositivo || '').toLowerCase()}</td>
-                          <td className="p-0.5 truncate max-w-[100px] capitalize">{(zona.area || '').toLowerCase()}</td>
+                        <tr key={idx} className="hover:bg-blue-100 font-bold text-gray-900 text-xs">
+                          <td className="p-1 text-center font-mono font-black border-r border-gray-300 text-amber-800">{zona.numero}</td>
+                          <td className="p-1 border-r border-gray-300 truncate max-w-[120px] capitalize font-bold">{(zona.dispositivo || '').toLowerCase()}</td>
+                          <td className="p-1 truncate max-w-[120px] capitalize font-semibold">{(zona.area || '').toLowerCase()}</td>
                         </tr>
                       ))}
                     </tbody>
