@@ -68,6 +68,7 @@ export default function ServicioTecnicoModal({ onClose, clientesMap = {}, usuari
   
   // Lista de órdenes
   const [ordenes, setOrdenes] = useState<OrdenTrabajo[]>([])
+  const [filtroEstadoTab, setFiltroEstadoTab] = useState<'todas' | 'pendientes' | 'completadas'>('todas')
   const [cargando, setCargando] = useState(false)
 
   // Formulario creación en Despacho
@@ -512,8 +513,31 @@ export default function ServicioTecnicoModal({ onClose, clientesMap = {}, usuari
 
               {/* Listado de Órdenes Derecha (AMPLIADO Y AMPLIAS TABLAS) */}
               <div className="flex-1 flex flex-col overflow-hidden min-h-0 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 p-3 shadow-inner">
-                <div className="bg-[#000080] text-white text-xs md:text-sm font-black px-3 py-1.5 uppercase tracking-wider mb-3 flex justify-between items-center rounded-sm">
-                  <span>📋 Listado de Órdenes de Trabajo Activas ({ordenes.length})</span>
+                <div className="bg-[#000080] text-white text-xs md:text-sm font-black px-3 py-1.5 uppercase tracking-wider mb-3 flex flex-wrap justify-between items-center rounded-sm gap-2">
+                  <div className="flex items-center gap-2">
+                    <span>📋 Listado de Órdenes:</span>
+                    <div className="flex gap-1 bg-blue-950 p-1 rounded">
+                      <button
+                        onClick={() => setFiltroEstadoTab('todas')}
+                        className={`px-2.5 py-0.5 text-xs font-black rounded cursor-pointer transition-colors ${filtroEstadoTab === 'todas' ? 'bg-white text-blue-950 shadow' : 'text-blue-200 hover:text-white'}`}
+                      >
+                        Todas ({ordenes.length})
+                      </button>
+                      <button
+                        onClick={() => setFiltroEstadoTab('pendientes')}
+                        className={`px-2.5 py-0.5 text-xs font-black rounded cursor-pointer transition-colors ${filtroEstadoTab === 'pendientes' ? 'bg-white text-blue-950 shadow' : 'text-blue-200 hover:text-white'}`}
+                      >
+                        Pendientes ({ordenes.filter(o => o.estado !== 'Completada' && o.estado !== 'Cancelada').length})
+                      </button>
+                      <button
+                        onClick={() => setFiltroEstadoTab('completadas')}
+                        className={`px-2.5 py-0.5 text-xs font-black rounded cursor-pointer transition-colors ${filtroEstadoTab === 'completadas' ? 'bg-emerald-400 text-black shadow' : 'text-emerald-200 hover:text-white'}`}
+                      >
+                        ✅ Completadas ({ordenes.filter(o => o.estado === 'Completada').length})
+                      </button>
+                    </div>
+                  </div>
+
                   <button onClick={cargarOrdenes} className="hover:text-yellow-300 text-xs font-black cursor-pointer flex items-center gap-1">
                     <span>🔄</span>
                     <span>ACTUALIZAR TABLA</span>
@@ -530,11 +554,17 @@ export default function ServicioTecnicoModal({ onClose, clientesMap = {}, usuari
                         <th className="p-2.5 border-r border-gray-400">ABONADO</th>
                         <th className="p-2.5 border-r border-gray-400">TIPO / TÉCNICO</th>
                         <th className="p-2.5 border-r border-gray-400">FALLA / TRABAJO REPORTADO</th>
-                        <th className="p-2.5 text-center w-24">ACCIONES</th>
+                        <th className="p-2.5 text-center w-28">ACCIONES</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-300">
-                      {ordenes.map(o => (
+                      {ordenes
+                        .filter(o => {
+                          if (filtroEstadoTab === 'pendientes') return o.estado !== 'Completada' && o.estado !== 'Cancelada'
+                          if (filtroEstadoTab === 'completadas') return o.estado === 'Completada'
+                          return true
+                        })
+                        .map(o => (
                         <tr key={o.id} className="hover:bg-blue-50 transition-colors">
                           <td className="p-2.5 border-r border-gray-300 text-center">
                             <span className="font-black font-mono text-blue-900 text-xs md:text-sm block">{o.codigo_ot || `OT-${o.id.toString().slice(-4)}`}</span>
@@ -556,17 +586,24 @@ export default function ServicioTecnicoModal({ onClose, clientesMap = {}, usuari
                             <span className="font-black text-gray-900 block text-xs">{o.tipo_visita || 'Correctiva'}</span>
                             <span className="text-gray-600 font-bold text-[11px]">{o.tecnico}</span>
                           </td>
-                          <td className="p-2.5 border-r border-gray-300 max-w-[260px] truncate font-medium text-xs md:text-sm" title={o.problema}>{o.problema}</td>
+                          <td className="p-2.5 border-r border-gray-300 max-w-[260px] truncate font-medium text-xs md:text-sm" title={o.novedad || o.problema}>
+                            {o.estado === 'Completada' ? (
+                              <span className="text-emerald-900 font-bold">✅ {o.novedad || o.problema}</span>
+                            ) : (
+                              <span>{o.problema}</span>
+                            )}
+                          </td>
                           <td className="p-2.5 text-center flex items-center justify-center gap-1.5 pt-3">
-                            {o.estado === 'Completada' && (
+                            {o.estado === 'Completada' ? (
                               <button
                                 onClick={() => setOrdenImprimir(o)}
-                                className="bg-blue-700 hover:bg-blue-800 text-white border border-blue-600 px-2 py-1 text-xs font-bold rounded cursor-pointer"
-                                title="Ver / Imprimir Comprobante Oficial PDF"
+                                className="bg-emerald-700 hover:bg-emerald-800 text-white border border-emerald-600 px-2.5 py-1 text-xs font-black rounded cursor-pointer shadow flex items-center gap-1"
+                                title="Ver / Imprimir Certificado Oficial PDF"
                               >
-                                📄 PDF
+                                <span>📄</span>
+                                <span>PDF</span>
                               </button>
-                            )}
+                            ) : null}
                             <button
                               onClick={() => handleEliminarOrden(o.id)}
                               className="bg-red-700 hover:bg-red-600 text-white border border-red-500 px-2 py-1 text-xs font-bold rounded cursor-pointer"
@@ -591,8 +628,36 @@ export default function ServicioTecnicoModal({ onClose, clientesMap = {}, usuari
       </div>
       {/* VISOR COMPROBANTE / CERTIFICADO OFICIAL COMPLETO (HOJA CARTA EXECUTIVE PDF) */}
       {ordenImprimir && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4 font-sans text-black select-text">
-          <div className="w-full max-w-[850px] bg-white p-8 shadow-2xl rounded-3xl border border-gray-400 max-h-[96vh] overflow-y-auto print:max-h-none print:shadow-none print:border-none print:p-0">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4 font-sans text-black select-text print:p-0 print:bg-white print:static print:inset-auto">
+          <style>{`
+            @media print {
+              @page {
+                size: letter portrait;
+                margin: 5mm;
+              }
+              body, html {
+                background: #ffffff !important;
+                color: #000000 !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+              }
+              .print-cert-card {
+                width: 100% !important;
+                max-width: 100% !important;
+                padding: 10px !important;
+                margin: 0 !important;
+                border: none !important;
+                box-shadow: none !important;
+                border-radius: 0 !important;
+                background: white !important;
+                page-break-inside: avoid !important;
+              }
+            }
+          `}</style>
+
+          <div className="print-cert-card w-full max-w-[850px] bg-white p-6 md:p-8 shadow-2xl rounded-3xl border border-gray-400 max-h-[96vh] overflow-y-auto print:max-h-none print:shadow-none print:border-none print:p-0 print:overflow-visible">
             
             {/* Encabezado Corporativo Oficial */}
             <div className="flex justify-between items-start border-b-2 border-blue-900 pb-4 mb-6">

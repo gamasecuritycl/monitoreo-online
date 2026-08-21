@@ -1448,8 +1448,36 @@ export default function PortalTecnicoMovil() {
 
       {/* VISOR COMPROBANTE / CERTIFICADO OFICIAL COMPLETO (HOJA CARTA EXECUTIVE PDF) */}
       {ordenImprimir && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4 font-sans text-black">
-          <div className="w-full max-w-[850px] bg-white p-8 shadow-2xl rounded-3xl border border-gray-400 max-h-[96vh] overflow-y-auto print:max-h-none print:shadow-none print:border-none print:p-0">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4 font-sans text-black select-text print:p-0 print:bg-white print:static print:inset-auto">
+          <style>{`
+            @media print {
+              @page {
+                size: letter portrait;
+                margin: 5mm;
+              }
+              body, html {
+                background: #ffffff !important;
+                color: #000000 !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+              }
+              .print-cert-card {
+                width: 100% !important;
+                max-width: 100% !important;
+                padding: 10px !important;
+                margin: 0 !important;
+                border: none !important;
+                box-shadow: none !important;
+                border-radius: 0 !important;
+                background: white !important;
+                page-break-inside: avoid !important;
+              }
+            }
+          `}</style>
+
+          <div className="print-cert-card w-full max-w-[850px] bg-white p-6 md:p-8 shadow-2xl rounded-3xl border border-gray-400 max-h-[96vh] overflow-y-auto print:max-h-none print:shadow-none print:border-none print:p-0 print:overflow-visible">
             
             {/* Encabezado Corporativo Oficial */}
             <div className="flex justify-between items-start border-b-2 border-blue-900 pb-4 mb-6">
