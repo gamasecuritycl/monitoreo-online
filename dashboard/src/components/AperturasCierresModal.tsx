@@ -121,19 +121,13 @@ export default function AperturasCierresModal({ onClose }: AperturasCierresModal
     return () => { cancel = true }
   }, [])
 
-  // Guardar lista sincronizada
-  const guardarLista = async (nuevaLista: ItemMonitoreado[]) => {
+  // Guardar lista sincronizada localmente
+  const guardarLista = (nuevaLista: ItemMonitoreado[]) => {
     setItemsMonitoreados(nuevaLista)
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(nuevaLista))
-      await supabase.from('eventos_monitoreo').insert({
-        cuenta: SUPABASE_CONFIG_CUENTA,
-        nombre_abonado: JSON.stringify(nuevaLista),
-        evento: 'CONFIG_UPDATE_APERTURAS_CIERRES',
-        fecha_hora: new Date().toISOString()
-      })
     } catch (err) {
-      console.warn('Error al sincronizar lista de particiones:', err)
+      console.warn('Error al guardar lista de particiones:', err)
     }
   }
 
