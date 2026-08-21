@@ -445,23 +445,10 @@ export default function PortalTecnicoMovil() {
                     <button
                       onClick={async () => {
                         const eta = prompt('Tiempo estimado de llegada (ETA en minutos):', '15') || '15'
-                        if (navigator.geolocation) {
-                          navigator.geolocation.getCurrentPosition((pos) => {
-                            const coords = `${pos.coords.latitude.toFixed(4)},${pos.coords.longitude.toFixed(4)}`
-                            cambiarEstadoOrden(ordenSeleccionada.id, 'En Traslado')
-                            if (ordenSeleccionada.telefono_contacto) {
-                              const msg = `🚚 *GAMA SEGURIDAD 24/7 - Técnico en camino*\n\nEstimado cliente, el técnico *${ordenSeleccionada.tecnico}* va en camino a su domicilio (*${ordenSeleccionada.direccion}*).\n\n• *ETA Estimado:* ~${eta} minutos\n• *Orden:* #${ordenSeleccionada.codigo_ot || ordenSeleccionada.id}\n• *Ubicación GPS:* https://maps.google.com/?q=${coords}\n\nQuedamos atentos a su recepción.`
-                              enviarNotificacionWhatsApp(ordenSeleccionada.telefono_contacto, msg)
-                            }
-                          }, () => {
-                            cambiarEstadoOrden(ordenSeleccionada.id, 'En Traslado')
-                            if (ordenSeleccionada.telefono_contacto) {
-                              const msg = `🚚 *GAMA SEGURIDAD 24/7 - Técnico en camino*\n\nEstimado cliente, el técnico *${ordenSeleccionada.tecnico}* va en camino a su domicilio (*${ordenSeleccionada.direccion}*).\n\n• *ETA Estimado:* ~${eta} minutos\n• *Orden:* #${ordenSeleccionada.codigo_ot || ordenSeleccionada.id}`
-                              enviarNotificacionWhatsApp(ordenSeleccionada.telefono_contacto, msg)
-                            }
-                          })
-                        } else {
-                          cambiarEstadoOrden(ordenSeleccionada.id, 'En Traslado')
+                        cambiarEstadoOrden(ordenSeleccionada.id, 'En Traslado')
+                        if (ordenSeleccionada.telefono_contacto) {
+                          const msg = `🚚 *GAMA SEGURIDAD 24/7 - Técnico en camino*\n\nEstimado cliente, el técnico *${ordenSeleccionada.tecnico}* va en camino a su domicilio (*${ordenSeleccionada.direccion}*).\n\n• *Tiempo Estimado de Llegada (ETA):* ~${eta} minutos\n• *Orden de Trabajo:* #${ordenSeleccionada.codigo_ot || ordenSeleccionada.id}\n\nQuedamos atentos a su recepción.`
+                          enviarNotificacionWhatsApp(ordenSeleccionada.telefono_contacto, msg)
                         }
                       }}
                       className={`py-2 px-2 font-bold text-xs rounded-lg border cursor-pointer transition-colors shadow ${
