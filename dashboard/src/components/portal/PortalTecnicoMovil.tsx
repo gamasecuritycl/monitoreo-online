@@ -148,19 +148,31 @@ export default function PortalTecnicoMovil() {
     }
   }
 
-  // Cargar eventos de alarma en tiempo real (Sólo Lectura)
+  // Filtro estricto de eventos internos, heartbeats y registros de sistema
+  const esEventoInternoOHeartbeat = (cuentaRaw: string = '', eventoRaw: string = '') => {
+    const c = (cuentaRaw || '').toUpperCase().trim()
+    const e = (eventoRaw || '').toUpperCase().trim()
+    if (c.startsWith('CAMARAS_DAHUA_') || c.startsWith('DAHUA_FRAME_') || c.startsWith('DAHUA_STREAM_REQ_') || c.startsWith('SNAPSHOT_') || c.startsWith('CLIP_') || c.startsWith('CONFIG_WHATSAPP_')) return true
+    if (['CLIENTES', 'CODIGOS', 'ZONAS', '__SINCRONIZADOR__', 'EMPRESAS_CONGLOMERADO', 'COTIZACIONES_DOLIBARR', 'ORDENES_TRABAJO', 'CONFIG_OPERADORES', 'CLIENTES_MAESTROS_CRM', 'CONFIGURACION'].includes(c)) return true
+    if (['ELIMINACION_DAHUA_CRUD', 'GENERACION_NVR_MULTICANAL', 'FRAME_SYNC', 'NVR_DVR_FRAME_SYNC', 'CAMERA_FRAME_SYNC', 'STREAM_REQ', 'SNAPSHOT_OPERADOR', 'CLIP_VIDEO_OPERADOR', 'HEARTBEAT'].includes(e)) return true
+    return false
+  }
+
+  // Cargar eventos de alarma reales de clientes en tiempo real (Sólo Lectura)
   const cargarEventosAlarma = async () => {
     setCargandoEventos(true)
     try {
       const { data } = await supabase
         .from('eventos_monitoreo')
         .select('*')
-        .not('cuenta', 'in', '("ORDENES_TRABAJO","CONFIGURACION")')
+        .not('cuenta', 'in', '("ORDENES_TRABAJO","CONFIGURACION","__SINCRONIZADOR__","ZONAS","CLIENTES","CODIGOS")')
+        .not('evento', 'eq', 'HEARTBEAT')
         .order('id', { ascending: false })
-        .limit(50)
+        .limit(100)
 
       if (data) {
-        setEventosAlarma(data)
+        const clienteEvs = data.filter(e => !esEventoInternoOHeartbeat(e.cuenta, e.evento))
+        setEventosAlarma(clienteEvs.slice(0, 50))
       }
     } catch (err) {
       console.error('Error cargando eventos:', err)
@@ -175,7 +187,7 @@ export default function PortalTecnicoMovil() {
     }
   }, [tecnicoAutenticado])
 
-  // Suscripción Realtime para Monitor de Eventos (Solo Lectura)
+  // Suscripción Realtime para Monitor de Eventos de Clientes (Solo Lectura)
   useEffect(() => {
     if (menuSeccion === 'eventos_alarma' && tecnicoAutenticado) {
       cargarEventosAlarma()
@@ -183,8 +195,8 @@ export default function PortalTecnicoMovil() {
         .channel('realtime_eventos_tecnico')
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'eventos_monitoreo' }, payload => {
           const newEv = payload.new as EventoAlarma
-          if (newEv && !['ORDENES_TRABAJO', 'CONFIGURACION'].includes(newEv.cuenta)) {
-            setEventosAlarma(prev => [newEv, ...prev.slice(0, 49)])
+          if (newEv && !esEventoInternoOHeartbeat(newEv.cuenta, newEv.evento)) {
+            setEventosAlarma(prev => [newEv, ...prev.filter(e => e.id !== newEv.id)].slice(0, 50))
           }
         })
         .subscribe()
