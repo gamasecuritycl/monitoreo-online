@@ -2007,7 +2007,7 @@ export default function PortalTecnicoMovil() {
 
             {/* SUB-VISTA 2: FORMULARIO NUEVO LEVANTAMIENTO */}
             {subSeccionLevantamiento === 'nuevo' && (
-              <div className="space-y-4">
+              <div className="space-y-4 pb-36">
                 {/* Botón Volver al Menú */}
                 <button
                   onClick={() => setSubSeccionLevantamiento('menu')}
@@ -2193,8 +2193,8 @@ export default function PortalTecnicoMovil() {
                     />
                   </div>
 
-                  {/* BOTÓN ENVIAR LEVANTAMIENTO (FLOATING STICKY BAR SOBRE EL FOOTER) */}
-                  <div className="sticky bottom-20 z-30 bg-[#070e20]/95 backdrop-blur-md p-4 border-t-2 border-cyan-500/60 rounded-t-3xl shadow-[0_-15px_35px_rgba(0,0,0,0.95)] -mx-5 -mb-5 mt-6">
+                  {/* BOTÓN ENVIAR LEVANTAMIENTO (FLUJO NORMAL AL FINAL DEL FORMULARIO CON PB-36) */}
+                  <div className="pt-6 pb-6 border-t-2 border-cyan-900/80 mt-6 space-y-2">
                     <button
                       type="button"
                       disabled={levEnviando}
@@ -2213,7 +2213,7 @@ export default function PortalTecnicoMovil() {
                         </>
                       )}
                     </button>
-                    <p className="text-[10px] text-cyan-300 text-center mt-2.5 font-bold">
+                    <p className="text-[10px] text-cyan-300 text-center font-bold">
                       * Se enviará el informe PDF oficial a la Central de Ventas y quedará registrado en tu Historial.
                     </p>
                   </div>
