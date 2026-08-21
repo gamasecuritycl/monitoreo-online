@@ -1217,7 +1217,8 @@ export default function ScorpionDashboard() {
           if (item.id === 'menu-configuracion' || item.id === 'menu-operadores') return attrs.verConfiguracion || usuarioActivo.rol === 'Administrador'
           if (item.id === 'menu-[#zonificacion]' || item.id === 'menu-zonificacion') return attrs.editarZonificacion || ['Administrador', 'Supervisor', 'Técnico'].includes(usuarioActivo.rol)
           if (item.id === 'menu-serv-tecnico' || item.id === 'menu-predictor-ia' || item.id === 'menu-camaras') return attrs.verTelemetriaTecnica
-          if (item.id === 'menu-control-test' || item.id === 'menu-simulador') return attrs.controlTestSimulador
+          if (item.id === 'menu-control-test') return true
+          if (item.id === 'menu-simulador') return attrs.controlTestSimulador
           if (item.id === 'menu-reportes') return attrs.verReportes
           if (item.id === 'menu-tablas' || item.id === 'menu-usuarios') return attrs.verCRM
           if (item.id === 'menu-notificaciones') return attrs.enviarMensajesWhatsApp

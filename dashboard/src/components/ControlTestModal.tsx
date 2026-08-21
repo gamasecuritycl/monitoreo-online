@@ -61,94 +61,94 @@ export default function ControlTestModal({ onClose, clientesMap = {} }: Props) {
         setConfigTest(horasMap)
       }
 
-      // 2. Cargar últimos 500 eventos de tipo test
+      // 2. Cargar eventos de tipo test recientes (limit 1500)
       const { data: eventosData, error: eventosError } = await supabase
         .from('eventos_monitoreo')
         .select('*')
-        .or('evento.ilike.%E602%,evento.ilike.%602%,evento.ilike.%test%,evento.ilike.%autotest%')
+        .or('evento.ilike.%602%,evento.ilike.%test%,evento.ilike.%prueba%')
         .order('fecha_hora', { ascending: false })
-        .limit(500)
+        .limit(1500)
 
       if (eventosError) throw eventosError
 
       const testEvents = (eventosData || []) as EventoMonitoreo[]
 
-      // 3. Procesar para cada cliente activo
+      // 3. Procesar para CADA cliente activo de la base de datos (145+ cuentas)
       const targetMap = Object.keys(clientesMap).length > 0 ? clientesMap : clientesGeneralFallback
       const listaEstados = Object.entries(targetMap)
         .filter(([cuenta, c]) => !esAbonadoInactivo(cuenta, (c as any)?.alias_unidad || (c as any)?.nombre || ''))
         .map(([cuenta, c]) => {
-        // Filtrar todos los eventos de tipo test para este abonado
-        const eventsForClient = testEvents.filter(e => e.cuenta?.toUpperCase().trim() === cuenta.toUpperCase().trim())
-        
-        if (eventsForClient.length === 0) {
-          return null // Excluir si no hay test registrado en los últimos 500
-        }
+          const nombreCliente = (c as any)?.alias_unidad || (c as any)?.nombre || 'Abonado Desconocido'
+          const horaProgConfig = horasMap[cuenta] || '03:00'
 
-        const ultimoEvento = eventsForClient[0]
-        const eventoAnterior = eventsForClient[1]
-
-        let ultimoTest = 'Sin Registro'
-        let horaEsperada = '03:00'
-        let desfaseMinutos: number | null = null
-        let estado: 'OK' | 'Desfasado' | 'Incomunicado' = 'Incomunicado'
-
-        // Formatear fecha del último test
-        const fechaTest = new Date(ultimoEvento.fecha_hora)
-        const yyyy = fechaTest.getFullYear()
-        const mm = String(fechaTest.getMonth() + 1).padStart(2, '0')
-        const dd = String(fechaTest.getDate()).padStart(2, '0')
-        const hh = String(fechaTest.getHours()).padStart(2, '0')
-        const min = String(fechaTest.getMinutes()).padStart(2, '0')
-        ultimoTest = `${yyyy}-${mm}-${dd} ${hh}:${min}`
-
-        // Calcular diferencia de horas frente a la actual
-        const ahora = new Date()
-        const diferenciaHoras = (ahora.getTime() - fechaTest.getTime()) / (1000 * 60 * 60)
-
-        if (diferenciaHoras > 240) {
-          return null // Excluir si no ha reportado en los últimos 10 días
-        }
-
-        // Obtener la referencia horaria del test anterior (ayer)
-        if (eventoAnterior) {
-          const fechaAnt = new Date(eventoAnterior.fecha_hora)
-          const hhAnt = String(fechaAnt.getHours()).padStart(2, '0')
-          const minAnt = String(fechaAnt.getMinutes()).padStart(2, '0')
-          horaEsperada = `${hhAnt}:${minAnt}` // Referencia del test del día anterior
-
-          // Calcular desfase en minutos con respecto al test anterior
-          const horaTestEnMinutos = fechaTest.getHours() * 60 + fechaTest.getMinutes()
-          const horaEsperadaEnMinutos = fechaAnt.getHours() * 60 + fechaAnt.getMinutes()
+          // Filtrar eventos de test para este abonado
+          const eventsForClient = testEvents.filter(e => e.cuenta?.toUpperCase().trim() === cuenta.toUpperCase().trim())
           
-          let diff = horaTestEnMinutos - horaEsperadaEnMinutos
-          if (diff > 720) diff -= 1440
-          if (diff < -720) diff += 1440
-          desfaseMinutos = diff
-        } else {
-          // Si no hay test anterior, usar la configurada o fallback
-          horaEsperada = horasMap[cuenta] || '03:00'
-        }
+          if (eventsForClient.length === 0) {
+            return {
+              cuenta,
+              nombre: nombreCliente,
+              horaEsperada: `${horaProgConfig} hrs (Programada)`,
+              ultimoTest: 'Sin Registro Reciente',
+              desfaseMinutos: null,
+              estado: 'Incomunicado' as const
+            }
+          }
 
-        if (diferenciaHoras > 26) {
-          estado = 'Incomunicado'
-        } else {
-          if (desfaseMinutos !== null && Math.abs(desfaseMinutos) > 60) {
+          const ultimoEvento = eventsForClient[0]
+          const eventoAnterior = eventsForClient[1]
+
+          // Formatear fecha del último test
+          const fechaTest = new Date(ultimoEvento.fecha_hora)
+          const yyyy = fechaTest.getFullYear()
+          const mm = String(fechaTest.getMonth() + 1).padStart(2, '0')
+          const dd = String(fechaTest.getDate()).padStart(2, '0')
+          const hh = String(fechaTest.getHours()).padStart(2, '0')
+          const min = String(fechaTest.getMinutes()).padStart(2, '0')
+          const ultimoTest = `${yyyy}-${mm}-${dd} ${hh}:${min}`
+
+          // Calcular diferencia de horas frente a la hora actual
+          const ahora = new Date()
+          const diferenciaHoras = (ahora.getTime() - fechaTest.getTime()) / (1000 * 60 * 60)
+
+          let horaEsperada = horaProgConfig
+          let desfaseMinutos: number | null = null
+
+          // Obtener referencia horaria del test anterior si existe
+          if (eventoAnterior) {
+            const fechaAnt = new Date(eventoAnterior.fecha_hora)
+            const hhAnt = String(fechaAnt.getHours()).padStart(2, '0')
+            const minAnt = String(fechaAnt.getMinutes()).padStart(2, '0')
+            horaEsperada = `${hhAnt}:${minAnt}`
+
+            const horaTestEnMinutos = fechaTest.getHours() * 60 + fechaTest.getMinutes()
+            const horaEsperadaEnMinutos = fechaAnt.getHours() * 60 + fechaAnt.getMinutes()
+            
+            let diff = horaTestEnMinutos - horaEsperadaEnMinutos
+            if (diff > 720) diff -= 1440
+            if (diff < -720) diff += 1440
+            desfaseMinutos = diff
+          }
+
+          let estado: 'OK' | 'Desfasado' | 'Incomunicado' = 'OK'
+
+          if (diferenciaHoras > 26) {
+            estado = 'Incomunicado'
+          } else if (desfaseMinutos !== null && Math.abs(desfaseMinutos) > 60) {
             estado = 'Desfasado'
           } else {
             estado = 'OK'
           }
-        }
 
-        return {
-          cuenta,
-          nombre: c.nombre || 'Abonado Desconocido',
-          horaEsperada: `${horaEsperada} ${eventoAnterior ? '(Ref. Ayer)' : '(Fijo)'}`,
-          ultimoTest,
-          desfaseMinutos,
-          estado
-        }
-      })
+          return {
+            cuenta,
+            nombre: nombreCliente,
+            horaEsperada: `${horaEsperada} hrs ${eventoAnterior ? '(Ref. Ayer)' : '(Programada)'}`,
+            ultimoTest,
+            desfaseMinutos,
+            estado
+          }
+        })
 
       setEstados(listaEstados.filter(Boolean) as TestStatus[])
     } catch (err) {
