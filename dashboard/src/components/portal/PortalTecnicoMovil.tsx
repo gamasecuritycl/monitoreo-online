@@ -92,6 +92,40 @@ function coincideTecnico(t1?: string | null, t2?: string | null) {
   return false
 }
 
+export interface ItemCatalogo {
+  id: string
+  nombre: string
+  categoria: 'equipos' | 'insumos' | 'mano_obra'
+  unidad?: string
+  esPersonalizado?: boolean
+}
+
+export const CATALOGO_DEFAULT: ItemCatalogo[] = [
+  // 🛡️ EQUIPOS & DISPOSITIVOS DE SEGURIDAD
+  { id: 'cat-1', nombre: 'Paneles / Centrales de Alarma IP', categoria: 'equipos' },
+  { id: 'cat-2', nombre: 'Sensores de Movimiento PIR Interior', categoria: 'equipos' },
+  { id: 'cat-3', nombre: 'Sensores de Movimiento PIR Exterior Perimetral', categoria: 'equipos' },
+  { id: 'cat-4', nombre: 'Contactos Magnéticos Puerta/Ventana/Cortina', categoria: 'equipos' },
+  { id: 'cat-5', nombre: 'Sensores de Humo / Incendio', categoria: 'equipos' },
+  { id: 'cat-6', nombre: 'Cámaras IP 4K / CCTV', categoria: 'equipos' },
+  { id: 'cat-7', nombre: 'Grabadores NVR / DVR (4/8/16 Ch)', categoria: 'equipos' },
+  { id: 'cat-8', nombre: 'Sirenas Exteriores Estroboscópicas 120dB', categoria: 'equipos' },
+  { id: 'cat-9', nombre: 'Sirenas Interiores 110dB', categoria: 'equipos' },
+  { id: 'cat-10', nombre: 'Teclados LCD / Touch', categoria: 'equipos' },
+  { id: 'cat-11', nombre: 'Controles Remotos / Botón Asalto', categoria: 'equipos' },
+  { id: 'cat-12', nombre: 'Baterías de Respaldo 12V 7Ah', categoria: 'equipos' },
+
+  // 🔌 INSUMOS, CABLEADO & CANALIZACIÓN
+  { id: 'cat-13', nombre: 'Metros Cableado / Canalización Conduit', categoria: 'insumos', unidad: 'm' },
+  { id: 'cat-14', nombre: 'Cable UTP Cat6 Exterior Apantallado', categoria: 'insumos', unidad: 'm' },
+  { id: 'cat-15', nombre: 'Cajas Estancas IP65 de Derivación', categoria: 'insumos', unidad: 'ud' },
+  { id: 'cat-16', nombre: 'Fuentes de Poder 12V DC / Reguladores', categoria: 'insumos', unidad: 'ud' },
+
+  // ⏱️ MANO DE OBRA & DÍAS DE TRABAJO
+  { id: 'cat-17', nombre: 'Días Estimados de Trabajo en Terreno', categoria: 'mano_obra', unidad: 'días' },
+  { id: 'cat-18', nombre: 'Horas Hombre Técnicas (HH)', categoria: 'mano_obra', unidad: 'HH' },
+]
+
 export interface LevantamientoItem {
   id: string
   fecha: string
@@ -127,6 +161,15 @@ export default function PortalTecnicoMovil() {
   const [busquedaLevantamiento, setBusquedaLevantamiento] = useState('')
   const [levantamientoDetalle, setLevantamientoDetalle] = useState<LevantamientoItem | null>(null)
 
+  // Categorías & Elementos Personalizados
+  const [categoriaTab, setCategoriaTab] = useState<'todos' | 'equipos' | 'insumos' | 'mano_obra'>('todos')
+  const [catalogoItems, setCatalogoItems] = useState<ItemCatalogo[]>(CATALOGO_DEFAULT)
+  const [modalNuevoItemOpen, setModalNuevoItemOpen] = useState(false)
+  const [customNombre, setCustomNombre] = useState('')
+  const [customCategoria, setCustomCategoria] = useState<'equipos' | 'insumos' | 'mano_obra'>('equipos')
+  const [customUnidad, setCustomUnidad] = useState('ud')
+  const [customCant, setCustomCant] = useState(1)
+
   const [levNombre, setLevNombre] = useState('')
   const [levRut, setLevRut] = useState('')
   const [levDireccion, setLevDireccion] = useState('')
@@ -152,7 +195,8 @@ export default function PortalTecnicoMovil() {
     'Teclados LCD / Touch': 1,
     'Controles Remotos / Botón Asalto': 2,
     'Baterías de Respaldo 12V 7Ah': 1,
-    'Metros Aprox. Cableado / Canalización Conduit (m)': 30
+    'Metros Cableado / Canalización Conduit': 30,
+    'Días Estimados de Trabajo en Terreno': 1
   })
 
   // Datos
@@ -213,6 +257,69 @@ export default function PortalTecnicoMovil() {
       window.removeEventListener('offline', handleOffline)
     }
   }, [])
+
+  // Cargar catálogo personalizado desde localStorage
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('gama_cat_personalizados')
+      if (saved) {
+        const customItems: ItemCatalogo[] = JSON.parse(saved)
+        setCatalogoItems([...CATALOGO_DEFAULT, ...customItems])
+      }
+    } catch (e) {
+      console.error('Error al cargar catálogo personalizado:', e)
+    }
+  }, [])
+
+  // Agregar nuevo item personalizado
+  const handleAgregarCustomItem = () => {
+    if (!customNombre.trim()) {
+      alert('Por favor ingrese el nombre del producto, insumo o servicio.')
+      return
+    }
+
+    const nuevoItem: ItemCatalogo = {
+      id: 'custom-' + Date.now(),
+      nombre: customNombre.trim(),
+      categoria: customCategoria,
+      unidad: customUnidad.trim() || 'ud',
+      esPersonalizado: true
+    }
+
+    const existentesCustom = catalogoItems.filter(i => i.esPersonalizado)
+    const nuevoCatalogoCustom = [...existentesCustom, nuevoItem]
+
+    try {
+      localStorage.setItem('gama_cat_personalizados', JSON.stringify(nuevoCatalogoCustom))
+    } catch (e) {
+      console.error(e)
+    }
+
+    setCatalogoItems([...CATALOGO_DEFAULT, ...nuevoCatalogoCustom])
+    setLevContadores(prev => ({ ...prev, [nuevoItem.nombre]: customCant }))
+
+    setCustomNombre('')
+    setCustomCant(1)
+    setModalNuevoItemOpen(false)
+  }
+
+  // Eliminar item personalizado
+  const handleEliminarCustomItem = (id: string, nombre: string) => {
+    if (confirm(`¿Desea eliminar el elemento "${nombre}" de su catálogo personalizado?`)) {
+      const nuevosCustom = catalogoItems.filter(i => i.esPersonalizado && i.id !== id)
+      try {
+        localStorage.setItem('gama_cat_personalizados', JSON.stringify(nuevosCustom))
+      } catch (e) {
+        console.error(e)
+      }
+      setCatalogoItems([...CATALOGO_DEFAULT, ...nuevosCustom])
+      setLevContadores(prev => {
+        const copy = { ...prev }
+        delete copy[nombre]
+        return copy
+      })
+    }
+  }
 
   // Cargar Levantamientos desde localStorage
   useEffect(() => {
@@ -2132,50 +2239,153 @@ export default function PortalTecnicoMovil() {
                     </div>
                   </div>
 
-                  {/* SECCIÓN 2: CUANTIFICADOR DE INSUMOS */}
+                  {/* SECCIÓN 2: CUANTIFICACIÓN CATEGORIZADA DE EQUIPOS, INSUMOS & MANO DE OBRA */}
                   <div className="space-y-3">
-                    <h3 className="text-xs font-black text-cyan-400 uppercase tracking-wider flex items-center justify-between">
-                      <span className="flex items-center gap-1.5">📦 2. Cuantificación de Equipos & Insumos</span>
-                    </h3>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-cyan-900/50 pb-2">
+                      <h3 className="text-xs font-black text-cyan-400 uppercase tracking-wider flex items-center gap-1.5">
+                        <span>📦</span> 2. Cuantificación de Equipos, Insumos & Trabajo
+                      </h3>
 
+                      {/* BOTÓN CREAR ELEMENTO PERSONALIZADO */}
+                      <button
+                        type="button"
+                        onClick={() => setModalNuevoItemOpen(true)}
+                        className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-black text-[11px] px-3 py-1.5 rounded-xl shadow-lg border border-cyan-300/40 flex items-center justify-center gap-1.5 cursor-pointer transition active:scale-95"
+                      >
+                        <span>➕</span>
+                        <span>Crear Elemento Personalizado</span>
+                      </button>
+                    </div>
+
+                    {/* BARRA DE FILTROS POR CATEGORÍA */}
+                    <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+                      <button
+                        type="button"
+                        onClick={() => setCategoriaTab('todos')}
+                        className={`px-3 py-1.5 rounded-xl font-bold text-[11px] whitespace-nowrap transition cursor-pointer ${
+                          categoriaTab === 'todos'
+                            ? 'bg-cyan-600 text-white shadow border border-cyan-400'
+                            : 'bg-[#070e20] text-slate-400 hover:text-white border border-slate-800'
+                        }`}
+                      >
+                        🌐 Todos ({catalogoItems.length})
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setCategoriaTab('equipos')}
+                        className={`px-3 py-1.5 rounded-xl font-bold text-[11px] whitespace-nowrap transition cursor-pointer ${
+                          categoriaTab === 'equipos'
+                            ? 'bg-blue-600 text-white shadow border border-blue-400'
+                            : 'bg-[#070e20] text-slate-400 hover:text-white border border-slate-800'
+                        }`}
+                      >
+                        🛡️ Equipos ({catalogoItems.filter(i => i.categoria === 'equipos').length})
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setCategoriaTab('insumos')}
+                        className={`px-3 py-1.5 rounded-xl font-bold text-[11px] whitespace-nowrap transition cursor-pointer ${
+                          categoriaTab === 'insumos'
+                            ? 'bg-emerald-600 text-white shadow border border-emerald-400'
+                            : 'bg-[#070e20] text-slate-400 hover:text-white border border-slate-800'
+                        }`}
+                      >
+                        🔌 Insumos ({catalogoItems.filter(i => i.categoria === 'insumos').length})
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setCategoriaTab('mano_obra')}
+                        className={`px-3 py-1.5 rounded-xl font-bold text-[11px] whitespace-nowrap transition cursor-pointer ${
+                          categoriaTab === 'mano_obra'
+                            ? 'bg-amber-600 text-white shadow border border-amber-400'
+                            : 'bg-[#070e20] text-slate-400 hover:text-white border border-slate-800'
+                        }`}
+                      >
+                        ⏱️ Días / HH ({catalogoItems.filter(i => i.categoria === 'mano_obra').length})
+                      </button>
+                    </div>
+
+                    {/* LISTA DE ELEMENTOS FILTRADOS */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      {Object.keys(levContadores).map((key) => {
-                        const cant = levContadores[key]
-                        return (
-                          <div
-                            key={key}
-                            className="bg-[#070e20] border border-slate-800 rounded-xl p-2.5 flex items-center justify-between gap-2 shadow-sm hover:border-slate-700 transition"
-                          >
-                            <span className="text-xs font-medium text-slate-200 leading-tight">
-                              {key}
-                            </span>
+                      {catalogoItems
+                        .filter(item => categoriaTab === 'todos' || item.categoria === categoriaTab)
+                        .map((item) => {
+                          const cant = levContadores[item.nombre] || 0
+                          const esEquip = item.categoria === 'equipos'
+                          const esInsum = item.categoria === 'insumos'
 
-                            <div className="flex items-center gap-1 shrink-0">
-                              <button
-                                type="button"
-                                onClick={() => setLevContadores(prev => ({ ...prev, [key]: Math.max(0, (prev[key] || 0) - 1) }))}
-                                className="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-black text-sm flex items-center justify-center transition cursor-pointer"
-                              >
-                                -
-                              </button>
+                          return (
+                            <div
+                              key={item.id}
+                              className={`border rounded-2xl p-2.5 flex items-center justify-between gap-2 shadow-sm transition ${
+                                cant > 0
+                                  ? 'bg-[#09152b] border-cyan-500/60 shadow-[0_0_12px_rgba(6,182,212,0.15)]'
+                                  : 'bg-[#070e20] border-slate-800 hover:border-slate-700'
+                              }`}
+                            >
+                              <div className="space-y-0.5 min-w-0 flex-1">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-[10px]">
+                                    {esEquip ? '🛡️' : esInsum ? '🔌' : '⏱️'}
+                                  </span>
+                                  <span className="text-xs font-semibold text-slate-200 leading-tight truncate">
+                                    {item.nombre}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  {item.unidad && (
+                                    <span className="text-[9px] font-mono text-cyan-400 font-bold bg-cyan-950 px-1.5 py-0.2 rounded border border-cyan-900">
+                                      {item.unidad}
+                                    </span>
+                                  )}
+                                  {item.esPersonalizado && (
+                                    <span className="text-[9px] font-mono text-amber-400 bg-amber-950/80 px-1.5 py-0.2 rounded border border-amber-800">
+                                      Personalizado
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
 
-                              <span className={`w-8 text-center font-mono font-black text-xs px-1.5 py-0.5 rounded ${
-                                cant > 0 ? 'bg-cyan-950 text-cyan-300 border border-cyan-800' : 'bg-slate-900 text-slate-500'
-                              }`}>
-                                {cant}
-                              </span>
+                              <div className="flex items-center gap-1 shrink-0">
+                                {item.esPersonalizado && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleEliminarCustomItem(item.id, item.nombre)}
+                                    className="w-6 h-6 rounded-lg bg-red-950/80 hover:bg-red-900 border border-red-800 text-red-400 text-xs flex items-center justify-center transition cursor-pointer mr-1"
+                                    title="Eliminar de mi catálogo"
+                                  >
+                                    🗑️
+                                  </button>
+                                )}
 
-                              <button
-                                type="button"
-                                onClick={() => setLevContadores(prev => ({ ...prev, [key]: (prev[key] || 0) + 1 }))}
-                                className="w-7 h-7 rounded-lg bg-cyan-950 hover:bg-cyan-900 border border-cyan-800 text-cyan-300 font-black text-sm flex items-center justify-center transition cursor-pointer"
-                              >
-                                +
-                              </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setLevContadores(prev => ({ ...prev, [item.nombre]: Math.max(0, (prev[item.nombre] || 0) - 1) }))}
+                                  className="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-black text-sm flex items-center justify-center transition cursor-pointer"
+                                >
+                                  -
+                                </button>
+
+                                <span className={`w-8 text-center font-mono font-black text-xs px-1.5 py-0.5 rounded ${
+                                  cant > 0 ? 'bg-cyan-950 text-cyan-300 border border-cyan-800' : 'bg-slate-900 text-slate-500'
+                                }`}>
+                                  {cant}
+                                </span>
+
+                                <button
+                                  type="button"
+                                  onClick={() => setLevContadores(prev => ({ ...prev, [item.nombre]: (prev[item.nombre] || 0) + 1 }))}
+                                  className="w-7 h-7 rounded-lg bg-cyan-950 hover:bg-cyan-900 border border-cyan-800 text-cyan-300 font-black text-sm flex items-center justify-center transition cursor-pointer"
+                                >
+                                  +
+                                </button>
+                              </div>
                             </div>
-                          </div>
-                        )
-                      })}
+                          )
+                        })}
                     </div>
                   </div>
 
@@ -2652,11 +2862,102 @@ export default function PortalTecnicoMovil() {
                 <span>IMPRIMIR / DESCARGAR CERTIFICADO PDF</span>
               </button>
             </div>
-
           </div>
         </div>
       )}
 
+{/* MODAL CREAR ELEMENTO PERSONALIZADO */}
+{modalNuevoItemOpen && (
+  <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+    <div className="bg-[#0c162d] border-2 border-cyan-500/60 rounded-3xl p-5 max-w-md w-full shadow-2xl space-y-4 animate-in zoom-in-95 duration-200">
+      <div className="flex items-center justify-between border-b border-cyan-900/60 pb-3">
+        <div className="flex items-center gap-2">
+          <span className="text-xl">➕</span>
+          <h3 className="text-sm font-black text-white uppercase">Crear Elemento Personalizado</h3>
+        </div>
+        <button
+          onClick={() => setModalNuevoItemOpen(false)}
+          className="text-slate-400 hover:text-white font-black text-sm w-7 h-7 rounded-full bg-slate-800 flex items-center justify-center cursor-pointer"
+        >
+          ✕
+        </button>
+      </div>
+
+      <div className="space-y-3">
+        <div>
+          <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">
+            Nombre del Elemento / Servicio *
+          </label>
+          <input
+            type="text"
+            placeholder="Ej: Cámara Solar PTZ 4G 4K / Tubo Conduit 1-1/2"
+            value={customNombre}
+            onChange={e => setCustomNombre(e.target.value)}
+            className="w-full bg-[#070e20] border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Categoría</label>
+            <select
+              value={customCategoria}
+              onChange={e => setCustomCategoria(e.target.value as any)}
+              className="w-full bg-[#070e20] border border-slate-700 rounded-xl px-2.5 py-2 text-xs text-cyan-300 font-bold focus:outline-none focus:border-cyan-500 cursor-pointer"
+            >
+              <option value="equipos">🛡️ Equipos & Dispositivos</option>
+              <option value="insumos">🔌 Insumos & Materiales</option>
+              <option value="mano_obra">⏱️ Días Trabajo / HH</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Unidad de Medida</label>
+            <input
+              type="text"
+              placeholder="Ej: ud / m / días / HH"
+              value={customUnidad}
+              onChange={e => setCustomUnidad(e.target.value)}
+              className="w-full bg-[#070e20] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 font-mono"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Cantidad Inicial en Terreno</label>
+          <div className="flex items-center gap-3">
+            <input
+              type="number"
+              min={1}
+              value={customCant}
+              onChange={e => setCustomCant(Math.max(1, parseInt(e.target.value) || 1))}
+              className="w-24 bg-[#070e20] border border-slate-700 rounded-xl px-3 py-2 text-xs text-cyan-300 font-bold font-mono focus:outline-none focus:border-cyan-500"
+            />
+            <span className="text-xs text-slate-400">unidad(es) a contabilizar</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-end gap-2 pt-3 border-t border-cyan-900/60">
+        <button
+          type="button"
+          onClick={() => setModalNuevoItemOpen(false)}
+          className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl cursor-pointer"
+        >
+          Cancelar
+        </button>
+        <button
+          type="button"
+          onClick={handleAgregarCustomItem}
+          className="px-5 py-2.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-black text-xs rounded-xl shadow-lg border border-cyan-300/40 cursor-pointer"
+        >
+          ➕ Guardar y Agregar
+        </button>
+      </div>
     </div>
-  )
+  </div>
+)}
+
+</div>
+)
 }
