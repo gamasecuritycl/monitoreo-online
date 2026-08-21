@@ -34,16 +34,31 @@ export interface EventoAlarma {
   usuario: string
 }
 
-const TECNICOS = ['Juan Pérez', 'Diego Reyes', 'Mauricio Tapia', 'Cristian Muñoz']
+const TECNICOS = [
+  { nombre: 'Juan Pérez', cargo: 'Técnico Senior Sistemas Alarmas & CCTV', pin: '1234' },
+  { nombre: 'Diego Reyes', cargo: 'Técnico Terreno Redes & Acceso', pin: '1234' },
+  { nombre: 'Mauricio Tapia', cargo: 'Especialista en Automatización & Cercos', pin: '1234' },
+  { nombre: 'Cristian Muñoz', cargo: 'Técnico Terreno Mantenimiento Preventivo', pin: '1234' },
+]
 
 export default function PortalTecnicoMovil() {
-  const [tecnicoActivo, setTecnicoActivo] = useState<string>(TECNICOS[0])
+  // Autenticación Diaria & Cierre a Medianoche (00:00)
+  const [tecnicoAutenticado, setTecnicoAutenticado] = useState<string | null>(null)
+  const [pinIngresado, setPinIngresado] = useState('')
+  const [tecnicoSeleccionadoLogin, setTecnicoSeleccionadoLogin] = useState(TECNICOS[0].nombre)
+  const [errorLogin, setErrorLogin] = useState('')
+
+  // Pantalla de Carga Splash Screen con Logo
+  const [cargandoSplash, setCargandoSplash] = useState<boolean>(true)
+  const [mensajeSplash, setMensajeSplash] = useState<string>('Iniciando Módulo Técnico...')
+
+  // Navegación del Menú Principal
+  const [menuSeccion, setMenuSeccion] = useState<'itinerario' | 'ordenes_pendientes' | 'servicios_realizados' | 'eventos_alarma' | 'perfil'>('itinerario')
+
+  // Datos
   const [ordenes, setOrdenes] = useState<OrdenTrabajo[]>([])
   const [ordenSeleccionada, setOrdenSeleccionada] = useState<OrdenTrabajo | null>(null)
   const [cargando, setCargando] = useState(false)
-
-  // Navegación del Menú Principal (Nombres profesionales sin siglas)
-  const [menuSeccion, setMenuSeccion] = useState<'ordenes_pendientes' | 'servicios_realizados' | 'eventos_alarma' | 'perfil'>('ordenes_pendientes')
 
   // Monitor de Eventos de Alarma (Solo Lectura)
   const [eventosAlarma, setEventosAlarma] = useState<EventoAlarma[]>([])
@@ -63,7 +78,55 @@ export default function PortalTecnicoMovil() {
   // Visor de Comprobante Imprimible
   const [ordenImprimir, setOrdenImprimir] = useState<OrdenTrabajo | null>(null)
 
-  // Cargar órdenes de trabajo
+  // 1. Verificación de Sesión Diaria & Cierre Automático a las 00:00
+  const verificarSesionDiaria = () => {
+    const hoyStr = new Date().toISOString().slice(0, 10)
+    const sesionGuardada = localStorage.getItem('gama_tecnico_sesion_diaria')
+    if (sesionGuardada) {
+      try {
+        const parsed = JSON.parse(sesionGuardada)
+        if (parsed.fecha === hoyStr && parsed.tecnico) {
+          setTecnicoAutenticado(parsed.tecnico)
+        } else {
+          // Sesión vencida (pasaron las 00:00) -> Cerrar sesión
+          localStorage.removeItem('gama_tecnico_sesion_diaria')
+          setTecnicoAutenticado(null)
+        }
+      } catch (e) {
+        setTecnicoAutenticado(null)
+      }
+    }
+  }
+
+  useEffect(() => {
+    verificarSesionDiaria()
+    const timerSplash = setTimeout(() => {
+      setCargandoSplash(false)
+    }, 1800)
+
+    // Intervalo de seguridad que invalida la sesión exactamente al pasar las 00:00
+    const checkMidnight = setInterval(() => {
+      const hoyStr = new Date().toISOString().slice(0, 10)
+      const sesion = localStorage.getItem('gama_tecnico_sesion_diaria')
+      if (sesion) {
+        try {
+          const parsed = JSON.parse(sesion)
+          if (parsed.fecha !== hoyStr) {
+            localStorage.removeItem('gama_tecnico_sesion_diaria')
+            setTecnicoAutenticado(null)
+            alert('🌙 Ha iniciado un nuevo día laboral (00:00 hrs). Por favor inicie sesión diariamente.')
+          }
+        } catch {}
+      }
+    }, 15000)
+
+    return () => {
+      clearTimeout(timerSplash)
+      clearInterval(checkMidnight)
+    }
+  }, [])
+
+  // Cargar órdenes de trabajo desde Supabase
   const cargarOrdenes = async () => {
     setCargando(true)
     try {
@@ -107,12 +170,14 @@ export default function PortalTecnicoMovil() {
   }
 
   useEffect(() => {
-    cargarOrdenes()
-  }, [])
+    if (tecnicoAutenticado) {
+      cargarOrdenes()
+    }
+  }, [tecnicoAutenticado])
 
   // Suscripción Realtime para Monitor de Eventos (Solo Lectura)
   useEffect(() => {
-    if (menuSeccion === 'eventos_alarma') {
+    if (menuSeccion === 'eventos_alarma' && tecnicoAutenticado) {
       cargarEventosAlarma()
       const channel = supabase
         .channel('realtime_eventos_tecnico')
@@ -128,7 +193,32 @@ export default function PortalTecnicoMovil() {
         supabase.removeChannel(channel)
       }
     }
-  }, [menuSeccion])
+  }, [menuSeccion, tecnicoAutenticado])
+
+  // Login del Técnico
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault()
+    setErrorLogin('')
+    const tFound = TECNICOS.find(t => t.nombre === tecnicoSeleccionadoLogin)
+    if (tFound) {
+      const hoyStr = new Date().toISOString().slice(0, 10)
+      localStorage.setItem('gama_tecnico_sesion_diaria', JSON.stringify({
+        tecnico: tFound.nombre,
+        fecha: hoyStr
+      }))
+      setTecnicoAutenticado(tFound.nombre)
+      setCargandoSplash(true)
+      setMensajeSplash(`Bienvenido, ${tFound.nombre}...`)
+      setTimeout(() => setCargandoSplash(false), 1200)
+    }
+  }
+
+  // Logout del Técnico
+  const handleLogout = () => {
+    localStorage.removeItem('gama_tecnico_sesion_diaria')
+    setTecnicoAutenticado(null)
+    setOrdenSeleccionada(null)
+  }
 
   // Guardar en Supabase
   const guardarOrdenesBase = async (listaNueva: OrdenTrabajo[]) => {
@@ -189,7 +279,7 @@ export default function PortalTecnicoMovil() {
       const ctx = canvas.getContext('2d')
       if (ctx) {
         ctx.strokeStyle = '#000080'
-        ctx.lineWidth = 2.5
+        ctx.lineWidth = 3
       }
     }
   }, [ordenSeleccionada])
@@ -291,8 +381,8 @@ export default function PortalTecnicoMovil() {
     }
   }
 
-  // Filtrado por técnico asignado
-  const ordenesTécnico = ordenes.filter(o => o.tecnico === tecnicoActivo)
+  // Filtrado de órdenes por técnico activo
+  const ordenesTécnico = ordenes.filter(o => o.tecnico === tecnicoAutenticado)
   const ordenesPendientes = ordenesTécnico.filter(o => o.estado !== 'Completada' && o.estado !== 'Cancelada')
   const ordenesCompletadas = ordenesTécnico.filter(o => o.estado === 'Completada')
 
@@ -304,77 +394,262 @@ export default function PortalTecnicoMovil() {
     e.evento.toLowerCase().includes(filtroCuentaAlarma.toLowerCase())
   )
 
-  return (
-    <div className="min-h-screen bg-[#0f172a] text-white flex flex-col font-sans max-w-md mx-auto shadow-2xl relative border-x border-slate-800 pb-16">
-      
-      {/* Top Header App Bar */}
-      <header className="bg-gradient-to-r from-blue-950 via-slate-900 to-slate-950 p-3 border-b border-blue-800/40 sticky top-0 z-30 shadow-lg flex flex-col gap-2">
-        <div className="flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <span className="text-xl">🛠️</span>
-            <div>
-              <h1 className="text-xs font-black tracking-wider text-blue-400 uppercase">GAMA SEGURIDAD 24/7</h1>
-              <p className="text-[10px] text-slate-300 font-bold">Módulo Técnico en Terreno PWA</p>
-            </div>
+  // Fecha bonita en español
+  const fechaHoyLegible = new Date().toLocaleDateString('es-CL', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  })
+
+  // PANTALLA 1: SPLASH SCREEN (CARGANDO CON LOGO DE EMPRESA)
+  if (cargandoSplash) {
+    return (
+      <div className="fixed inset-0 bg-[#070b14] flex flex-col items-center justify-center p-6 text-white z-50 select-none">
+        <div className="relative mb-6">
+          <div className="absolute -inset-4 rounded-full bg-blue-600/30 blur-xl animate-pulse"></div>
+          <div className="relative w-28 h-28 bg-[#0b1329] border-2 border-blue-500/80 rounded-3xl p-3 shadow-2xl flex items-center justify-center">
+            <img src="/logo-gama.png" alt="Gama Seguridad" className="w-full h-full object-contain" />
           </div>
-          <button 
-            onClick={() => {
-              cargarOrdenes()
-              if (menuSeccion === 'eventos_alarma') cargarEventosAlarma()
-            }}
-            className="bg-blue-900/60 hover:bg-blue-800 text-blue-200 p-1.5 rounded-lg border border-blue-700/50 text-[10px] font-bold flex items-center gap-1 active:scale-95 transition-transform"
-          >
-            <span>🔄</span>
-            <span>{cargando || cargandoEventos ? '...' : 'Actualizar'}</span>
-          </button>
         </div>
 
-        {/* Selector Profesional de Técnico */}
-        <div className="bg-slate-950/80 p-1.5 rounded-lg border border-slate-800 flex items-center justify-between">
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">👨‍🔧 Técnico Activo:</span>
-          <select
-            value={tecnicoActivo}
-            onChange={(e) => {
-              setTecnicoActivo(e.target.value)
-              setOrdenSeleccionada(null)
-            }}
-            className="bg-blue-950 text-blue-100 font-bold px-2 py-1 rounded text-xs border border-blue-700 focus:outline-none"
-          >
-            {TECNICOS.map(t => (
-              <option key={t} value={t}>{t}</option>
-            ))}
-          </select>
+        <h1 className="text-xl font-black tracking-wider text-blue-400 uppercase text-center">GAMA SEGURIDAD 24/7</h1>
+        <p className="text-xs text-slate-300 font-bold tracking-wide mt-1">Módulo Técnico en Terreno PWA</p>
+
+        <div className="w-64 bg-slate-900 h-2 rounded-full mt-8 overflow-hidden border border-slate-800">
+          <div className="bg-gradient-to-r from-blue-600 to-emerald-400 h-full w-full animate-pulse"></div>
+        </div>
+
+        <p className="text-xs text-slate-400 mt-4 font-mono animate-pulse">{mensajeSplash}</p>
+      </div>
+    )
+  }
+
+  // PANTALLA 2: LOGIN DIARIO OBLIGATORIO (SE REINICIA A LAS 00:00)
+  if (!tecnicoAutenticado) {
+    return (
+      <div className="min-h-screen bg-[#070b14] text-white flex flex-col justify-center items-center p-5 max-w-md mx-auto relative select-none">
+        
+        {/* Card Login PWA */}
+        <div className="w-full bg-[#0e172a] border border-blue-900/60 rounded-3xl p-6 shadow-2xl space-y-6">
+          
+          <div className="text-center space-y-2">
+            <div className="w-20 h-20 bg-[#070b14] border border-blue-500/50 rounded-2xl p-2 mx-auto shadow-inner flex items-center justify-center">
+              <img src="/logo-gama.png" alt="Logo Gama" className="w-full h-full object-contain" />
+            </div>
+            <h1 className="text-lg font-black tracking-wider text-blue-400 uppercase">GAMA SEGURIDAD 24/7</h1>
+            <p className="text-xs text-slate-300 font-bold">Ingreso Diario Técnico en Terreno</p>
+            <span className="inline-block bg-blue-950 text-blue-300 border border-blue-800 px-3 py-1 rounded-full text-[10px] font-bold">
+              🗓️ Jornada: {new Date().toLocaleDateString('es-CL')}
+            </span>
+          </div>
+
+          <form onSubmit={handleLogin} className="space-y-4">
+            
+            <div className="space-y-1.5">
+              <label className="text-xs font-extrabold text-slate-300 uppercase block">Seleccionar Técnico:</label>
+              <select
+                value={tecnicoSeleccionadoLogin}
+                onChange={(e) => setTecnicoSeleccionadoLogin(e.target.value)}
+                className="w-full bg-[#070b14] border-2 border-blue-800 text-white font-bold text-sm rounded-xl p-3.5 focus:outline-none focus:border-blue-500"
+              >
+                {TECNICOS.map(t => (
+                  <option key={t.nombre} value={t.nombre}>{t.nombre}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="bg-slate-900/80 p-3 rounded-xl border border-slate-800 text-[11px] text-slate-400 space-y-1">
+              <span className="font-bold text-amber-400 block">🔒 Política de Seguridad Diaria:</span>
+              <p>Por norma operativa de la Central, tu sesión vence automáticamente cada día a las 00:00 hrs. Ingresa para sincronizar tus órdenes diarias.</p>
+            </div>
+
+            <button
+              type="submit"
+              className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-4 rounded-2xl text-sm uppercase tracking-wider shadow-xl cursor-pointer active:scale-95 transition-transform flex items-center justify-center gap-2"
+            >
+              <span>🔑</span>
+              <span>INICIAR JORNADA LABORAL</span>
+            </button>
+          </form>
+
+        </div>
+
+      </div>
+    )
+  }
+
+  // PANTALLA 3: PORTAL PRINCIPAL DEL TÉCNICO (DISEÑO MÓVIL ALTA VISIBILIDAD)
+  return (
+    <div className="min-h-screen bg-[#070b14] text-white flex flex-col font-sans max-w-md mx-auto shadow-2xl relative border-x border-slate-800 pb-20 select-none">
+      
+      {/* Header Corporativo Móvil */}
+      <header className="bg-gradient-to-r from-blue-950 via-slate-900 to-slate-950 p-4 border-b border-blue-800/40 sticky top-0 z-30 shadow-xl flex flex-col gap-2">
+        <div className="flex justify-between items-center">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 bg-blue-950 border border-blue-500 rounded-xl p-1 shrink-0">
+              <img src="/logo-gama.png" alt="Gama Logo" className="w-full h-full object-contain" />
+            </div>
+            <div>
+              <h1 className="text-sm font-black tracking-wider text-blue-400 uppercase">GAMA SEGURIDAD</h1>
+              <p className="text-[11px] text-slate-300 font-bold">Módulo Técnico PWA</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            <button 
+              onClick={() => {
+                cargarOrdenes()
+                if (menuSeccion === 'eventos_alarma') cargarEventosAlarma()
+              }}
+              className="bg-blue-950 hover:bg-blue-900 text-blue-300 p-2 rounded-xl border border-blue-700/60 text-xs font-bold active:scale-95 transition-transform"
+              title="Actualizar Órdenes"
+            >
+              🔄
+            </button>
+
+            <button
+              onClick={handleLogout}
+              className="bg-red-950/80 hover:bg-red-900 text-red-300 p-2 rounded-xl border border-red-800/60 text-xs font-bold active:scale-95 transition-transform"
+              title="Cerrar Sesión Diaria"
+            >
+              🚪
+            </button>
+          </div>
+        </div>
+
+        {/* Banner Técnico Autenticado */}
+        <div className="bg-slate-950/90 p-2 rounded-xl border border-slate-800 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span className="text-xs font-black text-white">{tecnicoAutenticado}</span>
+          </div>
+          <span className="text-[10px] text-amber-400 font-bold font-mono">
+            {ordenesPendientes.length} Pendiente(s)
+          </span>
         </div>
       </header>
 
-      {/* Main Body View */}
-      <main className="flex-1 p-3 flex flex-col space-y-3 overflow-y-auto">
+      {/* Cuerpo Principal PWA */}
+      <main className="flex-1 p-3.5 flex flex-col space-y-4 overflow-y-auto">
 
-        {/* SECCIÓN 1: ÓRDENES PENDIENTES */}
+        {/* SECCIÓN A: ASISTENTE DE ITINERARIO DIARIO */}
+        {menuSeccion === 'itinerario' && !ordenSeleccionada && (
+          <div className="space-y-4 animate-fadeIn">
+            
+            {/* Card Mensaje de Bienvenida Asistente */}
+            <div className="bg-gradient-to-br from-blue-950 via-slate-900 to-slate-900 border border-blue-800/70 rounded-3xl p-5 shadow-2xl space-y-3">
+              <div className="flex items-center gap-3 border-b border-blue-900/60 pb-3">
+                <span className="text-3xl">🤖</span>
+                <div>
+                  <h2 className="text-base font-black text-blue-300">Asistente Virtual de Jornada</h2>
+                  <p className="text-xs text-slate-300 capitalize">{fechaHoyLegible}</p>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-sm font-bold text-white leading-relaxed">
+                  ¡Buenos días, <span className="text-amber-400 font-black">{tecnicoAutenticado}</span>! 👋
+                </p>
+                <p className="text-xs text-slate-300 leading-normal">
+                  Bienvenido a tu jornada laboral de hoy. El sistema ha preparado tu itinerario de atenciones en terreno:
+                </p>
+              </div>
+
+              {/* Stats resumen diario */}
+              <div className="grid grid-cols-2 gap-2 pt-1">
+                <div className="bg-slate-950/80 border border-amber-500/40 p-3 rounded-2xl text-center">
+                  <span className="text-xs text-slate-400 font-bold block uppercase">Atenciones Pendientes:</span>
+                  <span className="text-2xl font-black text-amber-400 font-mono">{ordenesPendientes.length}</span>
+                </div>
+                <div className="bg-slate-950/80 border border-emerald-500/40 p-3 rounded-2xl text-center">
+                  <span className="text-xs text-slate-400 font-bold block uppercase">Atenciones Finalizadas:</span>
+                  <span className="text-2xl font-black text-emerald-400 font-mono">{ordenesCompletadas.length}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Cronograma / Itinerario de Visitas Sugeridas */}
+            <div className="space-y-2">
+              <h3 className="text-xs font-black text-slate-300 uppercase tracking-wider px-1">
+                📅 Cronograma de Visitas Programadas para Hoy:
+              </h3>
+
+              {ordenesPendientes.map((o, index) => (
+                <div
+                  key={o.id}
+                  onClick={() => {
+                    setOrdenSeleccionada(o)
+                    setNovedadTexto(o.novedad || '')
+                    setRepuestosTexto(o.repuestos_utilizados || '')
+                    setNombreFirmanteText(o.nombre_firmante || '')
+                  }}
+                  className={`bg-slate-900 border rounded-2xl p-4 cursor-pointer hover:border-blue-500 transition-all shadow-lg space-y-2 active:scale-98 ${
+                    index === 0 ? 'border-amber-500 bg-amber-950/20' : 'border-slate-800'
+                  }`}
+                >
+                  <div className="flex justify-between items-center border-b border-slate-800 pb-2">
+                    <span className="text-xs font-black text-amber-400 uppercase tracking-wide">
+                      {index === 0 ? '📍 PRÓXIMA ATENCIÓN SUGERIDA' : `VISITA N° ${index + 1}`}
+                    </span>
+                    <span className="bg-blue-950 text-blue-300 text-[10px] font-mono font-extrabold px-2 py-0.5 rounded-full border border-blue-800">
+                      {o.bloque_horario}
+                    </span>
+                  </div>
+
+                  <div className="space-y-1">
+                    <div className="text-sm font-black text-white">{o.nombre_abonado}</div>
+                    <div className="text-xs text-blue-300 font-mono font-bold">Código Cliente: #{o.cuenta} • {o.tipo_visita || 'Correctiva'}</div>
+                    <div className="text-xs text-slate-300 leading-snug">📍 {o.direccion}</div>
+                    <div className="text-xs text-amber-200/90 italic bg-slate-950 p-2 rounded-xl border border-slate-800/80">
+                      ⚠️ {o.problema}
+                    </div>
+                  </div>
+
+                  <button className="w-full bg-blue-600 hover:bg-blue-500 text-white font-extrabold py-2.5 rounded-xl text-xs uppercase tracking-wider shadow cursor-pointer mt-1 flex items-center justify-center gap-1.5">
+                    <span>🚀 Iniciar Atención Técnica</span>
+                    <span>➔</span>
+                  </button>
+                </div>
+              ))}
+
+              {ordenesPendientes.length === 0 && (
+                <div className="text-center text-emerald-400 italic py-12 bg-slate-900/60 rounded-3xl border border-emerald-900/60 p-4 space-y-2">
+                  <span className="text-3xl block">🎉</span>
+                  <span className="font-bold text-sm block">¡Excelente trabajo, {tecnicoAutenticado}!</span>
+                  <span className="text-xs text-slate-400 block">Has completado todas tus atenciones programadas para el día de hoy.</span>
+                </div>
+              )}
+            </div>
+
+          </div>
+        )}
+
+        {/* SECCIÓN B: ÓRDENES PENDIENTES & EJECUCIÓN */}
         {menuSeccion === 'ordenes_pendientes' && (
           <div className="space-y-3">
             {ordenSeleccionada ? (
-              /* DETALLE Y EJECUCIÓN DE ATENCIÓN TÉCNICA */
-              <div className="space-y-3 animate-fadeIn">
+              /* DETALLE Y EJECUCIÓN EN TERRENO */
+              <div className="space-y-4 animate-fadeIn">
                 
                 <button
                   onClick={() => setOrdenSeleccionada(null)}
-                  className="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg text-xs font-bold border border-slate-700 flex items-center gap-1 cursor-pointer"
+                  className="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 py-3 rounded-2xl text-xs font-black border border-slate-700 flex items-center justify-center gap-2 cursor-pointer shadow"
                 >
                   <span>◀</span>
-                  <span>Volver a Órdenes Pendientes</span>
+                  <span>Volver a la Lista de Órdenes</span>
                 </button>
 
                 {/* Datos del Cliente */}
-                <div className="bg-slate-900 border border-slate-700 rounded-xl p-3.5 space-y-2 shadow-lg">
-                  <div className="flex justify-between items-start border-b border-slate-800 pb-2">
+                <div className="bg-slate-900 border border-slate-700 rounded-3xl p-4 space-y-3 shadow-xl">
+                  <div className="flex justify-between items-start border-b border-slate-800 pb-2.5">
                     <div>
-                      <span className="text-xs font-black text-blue-400 font-mono block">
+                      <span className="text-sm font-black text-blue-400 font-mono block">
                         #{ordenSeleccionada.codigo_ot || `OT-${ordenSeleccionada.id}`}
                       </span>
-                      <span className="text-[10px] text-slate-400">{ordenSeleccionada.fecha_cita} • {ordenSeleccionada.bloque_horario}</span>
+                      <span className="text-xs text-slate-400 font-bold">{ordenSeleccionada.fecha_cita} • {ordenSeleccionada.bloque_horario}</span>
                     </div>
-                    <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold uppercase ${
+                    <span className={`px-2.5 py-1 rounded-xl text-xs font-black uppercase ${
                       ordenSeleccionada.estado === 'Completada' ? 'bg-emerald-950 text-emerald-300 border border-emerald-700' :
                       ordenSeleccionada.estado === 'En Terreno' ? 'bg-purple-950 text-purple-300 border border-purple-700' :
                       ordenSeleccionada.estado === 'En Traslado' ? 'bg-amber-950 text-amber-300 border border-amber-700' :
@@ -384,20 +659,20 @@ export default function PortalTecnicoMovil() {
                     </span>
                   </div>
 
-                  <div className="text-xs space-y-1.5 pt-1">
-                    <div><span className="text-slate-400 font-semibold">Código de Cliente:</span> <strong className="font-mono text-blue-300">{ordenSeleccionada.cuenta}</strong></div>
-                    <div><span className="text-slate-400 font-semibold">Nombre del Abonado:</span> <strong>{ordenSeleccionada.nombre_abonado}</strong></div>
+                  <div className="text-xs space-y-2">
+                    <div><span className="text-slate-400 font-bold">Código de Cliente:</span> <strong className="font-mono text-sm text-blue-300">{ordenSeleccionada.cuenta}</strong></div>
+                    <div><span className="text-slate-400 font-bold">Nombre del Abonado:</span> <strong className="text-sm text-white">{ordenSeleccionada.nombre_abonado}</strong></div>
                     
-                    <div className="flex justify-between items-center bg-slate-950 p-2 rounded-lg border border-slate-800">
-                      <div className="max-w-[70%]">
-                        <span className="text-[10px] text-slate-400 block font-bold">DIRECCIÓN DE ATENCIÓN:</span>
+                    <div className="flex justify-between items-center bg-slate-950 p-3 rounded-2xl border border-slate-800">
+                      <div className="max-w-[65%]">
+                        <span className="text-[10px] text-slate-400 block font-bold uppercase">Dirección de Atención:</span>
                         <span className="text-xs font-bold text-slate-200 leading-tight block">{ordenSeleccionada.direccion}</span>
                       </div>
                       <a
                         href={`https://maps.google.com/?q=${encodeURIComponent(ordenSeleccionada.direccion)}`}
                         target="_blank"
                         rel="noreferrer"
-                        className="bg-blue-600 hover:bg-blue-500 text-white font-bold text-[10px] px-2.5 py-1.5 rounded-md border border-blue-400 shadow shrink-0 flex items-center gap-1"
+                        className="bg-blue-600 hover:bg-blue-500 text-white font-black text-xs px-3 py-2.5 rounded-xl border border-blue-400 shadow cursor-pointer shrink-0 flex items-center gap-1.5"
                       >
                         <span>📍</span>
                         <span>Navegar</span>
@@ -405,15 +680,15 @@ export default function PortalTecnicoMovil() {
                     </div>
 
                     {ordenSeleccionada.telefono_contacto && (
-                      <div className="flex justify-between items-center bg-slate-950 p-2 rounded-lg border border-slate-800">
+                      <div className="flex justify-between items-center bg-slate-950 p-3 rounded-2xl border border-slate-800">
                         <div>
-                          <span className="text-[10px] text-slate-400 block font-bold">TELÉFONO DE CONTACTO:</span>
+                          <span className="text-[10px] text-slate-400 block font-bold uppercase">Teléfono de Contacto:</span>
                           <span className="text-xs font-bold text-emerald-400 font-mono">{ordenSeleccionada.telefono_contacto}</span>
                         </div>
-                        <div className="flex gap-1.5">
+                        <div className="flex gap-2">
                           <a
                             href={`tel:${ordenSeleccionada.telefono_contacto}`}
-                            className="bg-emerald-700 hover:bg-emerald-600 text-white font-bold text-[10px] px-2 py-1 rounded border border-emerald-500"
+                            className="bg-emerald-700 hover:bg-emerald-600 text-white font-bold text-xs px-2.5 py-1.5 rounded-xl border border-emerald-500"
                           >
                             📞 Llamar
                           </a>
@@ -421,7 +696,7 @@ export default function PortalTecnicoMovil() {
                             href={`https://wa.me/${ordenSeleccionada.telefono_contacto.replace(/[^0-9]/g, '')}`}
                             target="_blank"
                             rel="noreferrer"
-                            className="bg-green-600 hover:bg-green-500 text-white font-bold text-[10px] px-2 py-1 rounded border border-green-400"
+                            className="bg-green-600 hover:bg-green-500 text-white font-bold text-xs px-2.5 py-1.5 rounded-xl border border-green-400"
                           >
                             💬 Chat WA
                           </a>
@@ -429,17 +704,17 @@ export default function PortalTecnicoMovil() {
                       </div>
                     )}
 
-                    <div className="bg-amber-950/40 border border-amber-800/60 p-2 rounded-lg text-amber-200 text-xs">
-                      <span className="font-bold block text-[10px] uppercase text-amber-400">⚠️ Requerimiento / Falla Reportada:</span>
-                      <p className="mt-0.5 leading-relaxed">{ordenSeleccionada.problema}</p>
+                    <div className="bg-amber-950/40 border border-amber-800/60 p-3 rounded-2xl text-amber-200 text-xs space-y-1">
+                      <span className="font-black block text-xs uppercase text-amber-400">⚠️ Requerimiento / Falla Reportada:</span>
+                      <p className="leading-relaxed">{ordenSeleccionada.problema}</p>
                     </div>
                   </div>
                 </div>
 
-                {/* Controles de Estado Operativo con GPS y WhatsApp */}
-                <div className="bg-slate-900 border border-slate-700 rounded-xl p-3 space-y-2">
-                  <span className="text-xs font-black text-slate-300 uppercase tracking-wide block border-b border-slate-800 pb-1">
-                    🚦 Estado de la Atención & Geolocalización:
+                {/* Controles de Estado Operativo sin GPS link para el cliente */}
+                <div className="bg-slate-900 border border-slate-700 rounded-3xl p-4 space-y-2.5">
+                  <span className="text-xs font-black text-slate-300 uppercase tracking-wide block border-b border-slate-800 pb-1.5">
+                    🚦 Estado de la Atención en Terreno:
                   </span>
                   <div className="grid grid-cols-2 gap-2 pt-1">
                     <button
@@ -451,9 +726,9 @@ export default function PortalTecnicoMovil() {
                           enviarNotificacionWhatsApp(ordenSeleccionada.telefono_contacto, msg)
                         }
                       }}
-                      className={`py-2 px-2 font-bold text-xs rounded-lg border cursor-pointer transition-colors shadow ${
+                      className={`py-3.5 px-3 font-black text-xs rounded-2xl border cursor-pointer transition-colors shadow ${
                         ordenSeleccionada.estado === 'En Traslado'
-                          ? 'bg-amber-500 text-black border-amber-300 font-extrabold'
+                          ? 'bg-amber-500 text-black border-amber-300 font-black'
                           : 'bg-slate-800 text-amber-300 border-amber-800/50 hover:bg-slate-700'
                       }`}
                     >
@@ -468,9 +743,9 @@ export default function PortalTecnicoMovil() {
                           enviarNotificacionWhatsApp(ordenSeleccionada.telefono_contacto, msg)
                         }
                       }}
-                      className={`py-2 px-2 font-bold text-xs rounded-lg border cursor-pointer transition-colors shadow ${
+                      className={`py-3.5 px-3 font-black text-xs rounded-2xl border cursor-pointer transition-colors shadow ${
                         ordenSeleccionada.estado === 'En Terreno'
-                          ? 'bg-purple-600 text-white border-purple-300 font-extrabold'
+                          ? 'bg-purple-600 text-white border-purple-300 font-black'
                           : 'bg-slate-800 text-purple-300 border-purple-800/50 hover:bg-slate-700'
                       }`}
                     >
@@ -480,23 +755,23 @@ export default function PortalTecnicoMovil() {
                 </div>
 
                 {/* Checklist Pruebas de Zonificación en Terreno */}
-                <div className="bg-slate-900 border border-blue-900/60 rounded-xl p-3 space-y-2">
-                  <div className="flex justify-between items-center border-b border-slate-800 pb-1">
+                <div className="bg-slate-900 border border-blue-900/60 rounded-3xl p-4 space-y-2.5">
+                  <div className="flex justify-between items-center border-b border-slate-800 pb-2">
                     <span className="text-xs font-black text-blue-300 uppercase">📋 Checklist Pruebas de Sensores</span>
-                    <span className="text-[9px] bg-blue-950 text-blue-300 px-1.5 py-0.5 rounded font-bold border border-blue-800">EN VIVO</span>
+                    <span className="text-[10px] bg-blue-950 text-blue-300 px-2 py-0.5 rounded-full font-extrabold border border-blue-800">EN VIVO</span>
                   </div>
-                  <div className="space-y-1.5 text-xs">
+                  <div className="space-y-2 text-xs">
                     {['ZONA 01: PIR Living', 'ZONA 02: Magnético Puerta Principal', 'ZONA 03: PIR Comedor / Pasillo', 'ZONA 04: Humo / Temperatura Cocina'].map((z) => (
-                      <div key={z} className="flex justify-between items-center bg-slate-950 p-2 rounded-lg border border-slate-800">
+                      <div key={z} className="flex justify-between items-center bg-slate-950 p-2.5 rounded-2xl border border-slate-800">
                         <span className="font-bold text-slate-200 text-xs">{z}</span>
                         <button
                           type="button"
                           onClick={(e) => {
                             const btn = e.currentTarget
                             btn.innerText = '✅ TEST OK'
-                            btn.className = 'bg-emerald-600 text-white text-[10px] font-extrabold px-2 py-1 rounded-md border border-emerald-400'
+                            btn.className = 'bg-emerald-600 text-white text-xs font-extrabold px-3 py-1.5 rounded-xl border border-emerald-400'
                           }}
-                          className="bg-blue-700 hover:bg-blue-600 text-white text-[10px] font-bold px-2 py-1 rounded-md border border-blue-500 cursor-pointer"
+                          className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-3 py-1.5 rounded-xl border border-blue-400 cursor-pointer"
                         >
                           ⚡ PROBAR SENSOR
                         </button>
@@ -506,54 +781,54 @@ export default function PortalTecnicoMovil() {
                 </div>
 
                 {/* Formulario Cierre & Firma */}
-                <div className="bg-slate-900 border border-slate-700 rounded-xl p-3.5 space-y-3">
-                  <span className="text-xs font-black text-slate-200 uppercase tracking-wide block border-b border-slate-800 pb-1">
+                <div className="bg-slate-900 border border-slate-700 rounded-3xl p-4 space-y-3.5">
+                  <span className="text-xs font-black text-slate-200 uppercase tracking-wide block border-b border-slate-800 pb-1.5">
                     📝 Informe de Trabajo & Cierre:
                   </span>
 
-                  <div className="space-y-1">
+                  <div className="space-y-1.5">
                     <label className="text-xs font-bold text-slate-300 uppercase block">Trabajo / Solución Realizada:</label>
                     <textarea
                       value={novedadTexto}
                       onChange={(e) => setNovedadTexto(e.target.value)}
                       placeholder="Describa los trabajos ejecutados, cambios de batería o revisión de sensores..."
-                      className="bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs text-white w-full h-20 resize-none focus:outline-none focus:border-blue-500"
+                      className="bg-slate-950 border border-slate-700 rounded-2xl p-3 text-xs text-white w-full h-24 resize-none focus:outline-none focus:border-blue-500"
                     />
                   </div>
 
-                  <div className="space-y-1">
+                  <div className="space-y-1.5">
                     <label className="text-xs font-bold text-slate-300 uppercase block">Repuestos / Baterías Cambiadas:</label>
                     <input
                       type="text"
                       value={repuestosTexto}
                       onChange={(e) => setRepuestosTexto(e.target.value)}
                       placeholder="Ej: 1 Batería 12V 7Ah Ritar, 1 Sensor PIR DSC..."
-                      className="bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs text-white w-full focus:outline-none focus:border-blue-500"
+                      className="bg-slate-950 border border-slate-700 rounded-2xl p-3 text-xs text-white w-full focus:outline-none focus:border-blue-500"
                     />
                   </div>
 
-                  <div className="space-y-1">
+                  <div className="space-y-1.5">
                     <label className="text-xs font-bold text-slate-300 uppercase block">Nombre del Cliente / Firmante:</label>
                     <input
                       type="text"
                       value={nombreFirmanteText}
                       onChange={(e) => setNombreFirmanteText(e.target.value)}
                       placeholder="Nombre y apellido de quien recibe en domicilio..."
-                      className="bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs text-white w-full focus:outline-none focus:border-blue-500"
+                      className="bg-slate-950 border border-slate-700 rounded-2xl p-3 text-xs text-white w-full focus:outline-none focus:border-blue-500"
                     />
                   </div>
 
                   {/* Dibujar Firma Touch Digital */}
-                  <div className="space-y-1">
+                  <div className="space-y-1.5">
                     <div className="flex justify-between items-center">
                       <label className="text-xs font-bold text-slate-300 uppercase">Firma Digital del Cliente:</label>
-                      <button onClick={clearFirma} className="text-[10px] text-red-400 font-bold hover:underline">LIMPIAR</button>
+                      <button onClick={clearFirma} className="text-xs text-red-400 font-bold hover:underline">LIMPIAR</button>
                     </div>
-                    <div className="touch-none bg-white rounded-lg border-2 border-slate-600 p-1">
+                    <div className="touch-none bg-white rounded-2xl border-2 border-slate-600 p-1">
                       <canvas
                         ref={canvasRef}
                         width={320}
-                        height={100}
+                        height={110}
                         onMouseDown={startDrawing}
                         onMouseMove={draw}
                         onMouseUp={stopDrawing}
@@ -561,14 +836,14 @@ export default function PortalTecnicoMovil() {
                         onTouchStart={startDrawing}
                         onTouchMove={draw}
                         onTouchEnd={stopDrawing}
-                        className="w-full cursor-crosshair bg-white rounded"
+                        className="w-full cursor-crosshair bg-white rounded-xl"
                       />
                     </div>
                   </div>
 
                   <button
                     onClick={handleFinalizarOrden}
-                    className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold py-3 rounded-xl border border-emerald-400 shadow-xl cursor-pointer text-xs uppercase tracking-wider flex items-center justify-center gap-2 active:scale-98 transition-transform"
+                    className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-4 rounded-2xl border border-emerald-400 shadow-xl cursor-pointer text-xs uppercase tracking-wider flex items-center justify-center gap-2 active:scale-98 transition-transform"
                   >
                     <span>✔️</span>
                     <span>FINALIZAR Y ENVIAR COMPROBANTE WA</span>
@@ -579,12 +854,12 @@ export default function PortalTecnicoMovil() {
             ) : (
               /* LISTA DE TRABAJOS PENDIENTES */
               <div className="space-y-3">
-                <div className="flex justify-between items-center bg-slate-900 p-2 rounded-xl border border-slate-800">
+                <div className="flex justify-between items-center bg-slate-900 p-3 rounded-2xl border border-slate-800">
                   <span className="text-xs font-black text-slate-200 uppercase">📋 Órdenes Pendientes ({ordenesPendientes.length})</span>
-                  <span className="text-[10px] text-blue-400 font-bold">{tecnicoActivo}</span>
+                  <span className="text-xs text-blue-400 font-bold">{tecnicoAutenticado}</span>
                 </div>
 
-                <div className="space-y-2.5">
+                <div className="space-y-3">
                   {ordenesPendientes.map(o => (
                     <div
                       key={o.id}
@@ -594,14 +869,14 @@ export default function PortalTecnicoMovil() {
                         setRepuestosTexto(o.repuestos_utilizados || '')
                         setNombreFirmanteText(o.nombre_firmante || '')
                       }}
-                      className={`bg-slate-900 border rounded-xl p-3.5 cursor-pointer hover:border-blue-500 transition-all shadow-md space-y-2 relative overflow-hidden ${
+                      className={`bg-slate-900 border rounded-2xl p-4 cursor-pointer hover:border-blue-500 transition-all shadow-lg space-y-2.5 relative overflow-hidden active:scale-98 ${
                         o.estado === 'En Terreno' ? 'border-purple-600 bg-purple-950/30' :
-                        o.estado === 'En Traslado' ? 'border-amber-500 bg-amber-950/30' : 'border-slate-700'
+                        o.estado === 'En Traslado' ? 'border-amber-500 bg-amber-950/30' : 'border-slate-800'
                       }`}
                     >
                       <div className="flex justify-between items-center border-b border-slate-800/80 pb-2">
                         <span className="font-mono text-xs font-black text-blue-400">#{o.codigo_ot || `OT-${o.id}`}</span>
-                        <span className={`px-2 py-0.5 rounded text-[9px] font-extrabold uppercase ${
+                        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase ${
                           o.estado === 'En Terreno' ? 'bg-purple-950 text-purple-300 border border-purple-700' :
                           o.estado === 'En Traslado' ? 'bg-amber-950 text-amber-300 border border-amber-700' :
                           'bg-blue-950 text-blue-300 border border-blue-700'
@@ -610,19 +885,21 @@ export default function PortalTecnicoMovil() {
                         </span>
                       </div>
 
-                      <div className="space-y-1">
+                      <div className="space-y-1.5">
                         <div className="text-xs font-bold text-white flex justify-between">
                           <span>Cliente: <span className="font-mono text-blue-300">{o.cuenta}</span></span>
-                          <span className="text-[10px] text-slate-400">{o.tipo_visita || 'Correctiva'}</span>
+                          <span className="text-[11px] text-slate-400 font-bold">{o.tipo_visita || 'Correctiva'}</span>
                         </div>
-                        <div className="text-xs font-black text-slate-100 uppercase truncate">{o.nombre_abonado}</div>
-                        <div className="text-[11px] text-slate-300 truncate font-medium">📍 {o.direccion}</div>
-                        <div className="text-[10px] text-amber-200/90 italic truncate">⚠️ {o.problema}</div>
+                        <div className="text-sm font-black text-slate-100 uppercase truncate">{o.nombre_abonado}</div>
+                        <div className="text-xs text-slate-300 truncate font-medium">📍 {o.direccion}</div>
+                        <div className="text-xs text-amber-200/90 italic truncate bg-slate-950 p-2 rounded-xl border border-slate-800">
+                          ⚠️ {o.problema}
+                        </div>
                       </div>
 
-                      <div className="pt-1 flex justify-between items-center text-[10px] text-slate-400 font-bold border-t border-slate-800">
+                      <div className="pt-1.5 flex justify-between items-center text-xs text-slate-400 font-bold border-t border-slate-800">
                         <span>📅 Cita: {o.fecha_cita}</span>
-                        <span className="text-blue-400 flex items-center gap-1">
+                        <span className="text-blue-400 flex items-center gap-1 font-black">
                           <span>Iniciar Atención</span>
                           <span>➔</span>
                         </span>
@@ -631,7 +908,7 @@ export default function PortalTecnicoMovil() {
                   ))}
 
                   {ordenesPendientes.length === 0 && !cargando && (
-                    <div className="text-center text-slate-400 italic py-16 bg-slate-900/50 rounded-xl border border-slate-800 text-xs">
+                    <div className="text-center text-slate-400 italic py-16 bg-slate-900/50 rounded-3xl border border-slate-800 text-xs">
                       No tienes órdenes pendientes asignadas para hoy.
                     </div>
                   )}
@@ -641,33 +918,33 @@ export default function PortalTecnicoMovil() {
           </div>
         )}
 
-        {/* SECCIÓN 2: SERVICIOS REALIZADOS */}
+        {/* SECCIÓN C: SERVICIOS REALIZADOS */}
         {menuSeccion === 'servicios_realizados' && (
           <div className="space-y-3">
-            <div className="flex justify-between items-center bg-slate-900 p-2 rounded-xl border border-slate-800">
+            <div className="flex justify-between items-center bg-slate-900 p-3 rounded-2xl border border-slate-800">
               <span className="text-xs font-black text-emerald-400 uppercase">✅ Servicios Realizados ({ordenesCompletadas.length})</span>
-              <span className="text-[10px] text-slate-400 font-bold">{tecnicoActivo}</span>
+              <span className="text-xs text-slate-400 font-bold">{tecnicoAutenticado}</span>
             </div>
 
-            <div className="space-y-2.5">
+            <div className="space-y-3">
               {ordenesCompletadas.map(o => (
                 <div
                   key={o.id}
-                  className="bg-slate-900 border border-emerald-800/60 bg-emerald-950/20 rounded-xl p-3.5 shadow-md space-y-2"
+                  className="bg-slate-900 border border-emerald-800/60 bg-emerald-950/20 rounded-2xl p-4 shadow-md space-y-2.5"
                 >
-                  <div className="flex justify-between items-center border-b border-slate-800 pb-1.5">
+                  <div className="flex justify-between items-center border-b border-slate-800 pb-2">
                     <span className="font-mono text-xs font-black text-emerald-400">#{o.codigo_ot || `OT-${o.id}`}</span>
-                    <span className="text-[10px] bg-emerald-950 text-emerald-300 border border-emerald-700 px-2 py-0.5 rounded font-extrabold">COMPLETADA</span>
+                    <span className="text-[10px] bg-emerald-950 text-emerald-300 border border-emerald-700 px-2.5 py-0.5 rounded-full font-black">COMPLETADA</span>
                   </div>
-                  <div className="text-xs space-y-1">
+                  <div className="text-xs space-y-1.5">
                     <div><span className="text-slate-400">Cliente:</span> <strong className="font-mono text-blue-300">{o.cuenta}</strong> - {o.nombre_abonado}</div>
-                    <div className="text-slate-300"><strong>Trabajo:</strong> {o.novedad}</div>
+                    <div className="text-slate-200"><strong>Trabajo:</strong> {o.novedad}</div>
                     {o.repuestos_utilizados && <div className="text-slate-400"><strong>Repuestos:</strong> {o.repuestos_utilizados}</div>}
-                    <div className="text-[10px] text-slate-500">Cierre: {o.fecha_cierre || o.fecha_cita} • Recepción: {o.nombre_firmante || 'Cliente'}</div>
+                    <div className="text-[10px] text-slate-400">Cierre: {o.fecha_cierre || o.fecha_cita} • Recepción: {o.nombre_firmante || 'Cliente'}</div>
                   </div>
                   <button
                     onClick={() => setOrdenImprimir(o)}
-                    className="w-full bg-blue-900 hover:bg-blue-800 text-white font-bold py-1.5 rounded-lg border border-blue-700 text-xs flex items-center justify-center gap-1 cursor-pointer mt-1"
+                    className="w-full bg-blue-900 hover:bg-blue-800 text-white font-extrabold py-2.5 rounded-xl border border-blue-700 text-xs flex items-center justify-center gap-1.5 cursor-pointer mt-1"
                   >
                     <span>📄</span>
                     <span>Ver Comprobante Firmado</span>
@@ -676,50 +953,49 @@ export default function PortalTecnicoMovil() {
               ))}
 
               {ordenesCompletadas.length === 0 && (
-                <div className="text-center text-slate-400 italic py-16 bg-slate-900/50 rounded-xl border border-slate-800 text-xs">
-                  No hay servicios realizados registrados para {tecnicoActivo}.
+                <div className="text-center text-slate-400 italic py-16 bg-slate-900/50 rounded-3xl border border-slate-800 text-xs">
+                  No hay servicios realizados registrados para {tecnicoAutenticado}.
                 </div>
               )}
             </div>
           </div>
         )}
 
-        {/* SECCIÓN 3: MONITOR DE EVENTOS DE ALARMA (SOLO LECTURA) */}
+        {/* SECCIÓN D: MONITOR DE EVENTOS DE ALARMA (SOLO LECTURA) */}
         {menuSeccion === 'eventos_alarma' && (
           <div className="space-y-3">
-            <div className="bg-slate-900 p-2.5 rounded-xl border border-slate-800 space-y-2">
-              <div className="flex justify-between items-center border-b border-slate-800 pb-1.5">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-base">🚨</span>
+            <div className="bg-slate-900 p-3.5 rounded-2xl border border-slate-800 space-y-2">
+              <div className="flex justify-between items-center border-b border-slate-800 pb-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">🚨</span>
                   <span className="text-xs font-black text-red-400 uppercase tracking-wide">Monitor de Eventos de Alarma</span>
                 </div>
-                <span className="text-[8px] bg-red-950 text-red-300 border border-red-700 px-1.5 py-0.5 rounded font-black tracking-wider uppercase">
+                <span className="text-[9px] bg-red-950 text-red-300 border border-red-700 px-2 py-0.5 rounded-full font-black tracking-wider uppercase">
                   🔒 SÓLO LECTURA
                 </span>
               </div>
-              <p className="text-[10px] text-slate-400">
+              <p className="text-xs text-slate-400 leading-normal">
                 Visualizador de señales de sensores y pruebas en tiempo real para auditoría en terreno sin permisos de edición.
               </p>
 
-              {/* Buscador de cuenta o evento */}
               <input
                 type="text"
                 value={filtroCuentaAlarma}
                 onChange={(e) => setFiltroCuentaAlarma(e.target.value)}
                 placeholder="Filtrar por código de cliente o tipo de evento..."
-                className="bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs text-white w-full focus:outline-none focus:border-red-500"
+                className="bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-xs text-white w-full focus:outline-none focus:border-red-500"
               />
             </div>
 
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               {eventosFiltrados.map(ev => (
-                <div key={ev.id} className="bg-slate-900/90 border border-slate-800 rounded-lg p-2 text-xs flex items-center justify-between hover:border-slate-700">
-                  <div className="space-y-0.5 max-w-[75%]">
-                    <div className="flex items-center gap-1.5">
-                      <span className="font-mono font-bold text-blue-400">{ev.cuenta}</span>
-                      <span className="text-[10px] font-bold text-slate-300 truncate">{ev.nombre_abonado}</span>
+                <div key={ev.id} className="bg-slate-900/90 border border-slate-800 rounded-xl p-3 text-xs flex items-center justify-between hover:border-slate-700">
+                  <div className="space-y-1 max-w-[75%]">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono font-bold text-blue-400 text-xs">{ev.cuenta}</span>
+                      <span className="text-xs font-bold text-slate-300 truncate">{ev.nombre_abonado}</span>
                     </div>
-                    <div className={`font-mono text-[11px] font-extrabold ${
+                    <div className={`font-mono text-xs font-black ${
                       ev.evento.includes('ALARMA') || ev.evento.includes('ROBO') ? 'text-red-400' :
                       ev.evento.includes('RESTAURA') ? 'text-emerald-400' : 'text-amber-300'
                     }`}>
@@ -727,14 +1003,14 @@ export default function PortalTecnicoMovil() {
                     </div>
                   </div>
                   <div className="text-right shrink-0">
-                    <span className="text-[9px] font-mono text-slate-400 block">{ev.fecha_hora ? ev.fecha_hora.slice(11, 19) : ''}</span>
-                    <span className="text-[8px] text-slate-500 block">{ev.fecha_hora ? ev.fecha_hora.slice(0, 10) : ''}</span>
+                    <span className="text-xs font-mono text-slate-300 font-bold block">{ev.fecha_hora ? ev.fecha_hora.slice(11, 19) : ''}</span>
+                    <span className="text-[10px] text-slate-500 block">{ev.fecha_hora ? ev.fecha_hora.slice(0, 10) : ''}</span>
                   </div>
                 </div>
               ))}
 
               {eventosFiltrados.length === 0 && !cargandoEventos && (
-                <div className="text-center text-slate-400 italic py-16 bg-slate-900/50 rounded-xl border border-slate-800 text-xs">
+                <div className="text-center text-slate-400 italic py-16 bg-slate-900/50 rounded-3xl border border-slate-800 text-xs">
                   No hay eventos de alarma registrados para la búsqueda.
                 </div>
               )}
@@ -742,96 +1018,117 @@ export default function PortalTecnicoMovil() {
           </div>
         )}
 
-        {/* SECCIÓN 4: PERFIL DEL TÉCNICO */}
+        {/* SECCIÓN E: PERFIL DEL TÉCNICO */}
         {menuSeccion === 'perfil' && (
           <div className="space-y-3">
-            <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-3 text-xs">
-              <div className="flex items-center gap-3 border-b border-slate-800 pb-3">
-                <div className="w-12 h-12 bg-blue-900 text-blue-200 rounded-full flex items-center justify-center text-xl font-bold border border-blue-700">
+            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 space-y-4 text-xs">
+              <div className="flex items-center gap-3.5 border-b border-slate-800 pb-4">
+                <div className="w-14 h-14 bg-blue-950 text-blue-300 rounded-2xl flex items-center justify-center text-2xl font-bold border border-blue-700 shadow-inner">
                   👨‍🔧
                 </div>
                 <div>
-                  <h3 className="font-black text-sm text-white">{tecnicoActivo}</h3>
-                  <span className="text-[10px] text-emerald-400 font-bold flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                  <h3 className="font-black text-base text-white">{tecnicoAutenticado}</h3>
+                  <span className="text-xs text-emerald-400 font-bold flex items-center gap-1.5 mt-0.5">
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
                     <span>Técnico de Terreno Activo</span>
                   </span>
                 </div>
               </div>
 
-              <div className="space-y-2 text-slate-300">
-                <div className="flex justify-between py-1 border-b border-slate-800/60">
-                  <span className="text-slate-400">Órdenes Pendientes:</span>
-                  <strong className="text-amber-400 font-mono">{ordenesPendientes.length}</strong>
+              <div className="space-y-2.5 text-slate-300">
+                <div className="flex justify-between py-1.5 border-b border-slate-800/60">
+                  <span className="text-slate-400">Atenciones Pendientes:</span>
+                  <strong className="text-amber-400 font-mono text-sm">{ordenesPendientes.length}</strong>
                 </div>
-                <div className="flex justify-between py-1 border-b border-slate-800/60">
+                <div className="flex justify-between py-1.5 border-b border-slate-800/60">
                   <span className="text-slate-400">Servicios Completados:</span>
-                  <strong className="text-emerald-400 font-mono">{ordenesCompletadas.length}</strong>
+                  <strong className="text-emerald-400 font-mono text-sm">{ordenesCompletadas.length}</strong>
                 </div>
-                <div className="flex justify-between py-1 border-b border-slate-800/60">
-                  <span className="text-slate-400">Estado de Conexión PWA:</span>
+                <div className="flex justify-between py-1.5 border-b border-slate-800/60">
+                  <span className="text-slate-400">Política Cierre Sesión:</span>
+                  <strong className="text-amber-400">Diaria a las 00:00 hrs</strong>
+                </div>
+                <div className="flex justify-between py-1.5 border-b border-slate-800/60">
+                  <span className="text-slate-400">Estado Conexión PWA:</span>
                   <strong className="text-blue-400">En Línea (Supabase Sync)</strong>
                 </div>
               </div>
+
+              <button
+                onClick={handleLogout}
+                className="w-full bg-red-950/80 hover:bg-red-900 text-red-300 font-black py-3.5 rounded-2xl border border-red-800 text-xs uppercase tracking-wider shadow cursor-pointer mt-2 active:scale-95 transition-transform"
+              >
+                🚪 CERRAR SESIÓN DIARIA MANULAMENTE
+              </button>
             </div>
           </div>
         )}
 
       </main>
 
-      {/* BOTTOM NAVIGATION BAR (MENÚ PROFESIONAL DE NAVEGACIÓN) */}
-      <nav className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-slate-950 border-t border-slate-800 grid grid-cols-4 z-40 text-[10px] shadow-2xl">
+      {/* BOTTOM NAVIGATION BAR (MENÚ PROFESIONAL MÓVIL 5 SECCIONES) */}
+      <nav className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-slate-950/95 backdrop-blur-md border-t border-slate-800 grid grid-cols-5 z-40 text-[10px] shadow-2xl">
         
         <button
+          onClick={() => { setMenuSeccion('itinerario'); setOrdenSeleccionada(null); }}
+          className={`py-2.5 flex flex-col items-center justify-center font-extrabold transition-colors cursor-pointer ${
+            menuSeccion === 'itinerario' ? 'text-amber-400 bg-slate-900 border-t-2 border-amber-500' : 'text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <span className="text-base">🤖</span>
+          <span className="leading-tight">Itinerario</span>
+        </button>
+
+        <button
           onClick={() => { setMenuSeccion('ordenes_pendientes'); setOrdenSeleccionada(null); }}
-          className={`py-2 flex flex-col items-center justify-center font-bold transition-colors cursor-pointer ${
+          className={`py-2.5 flex flex-col items-center justify-center font-extrabold transition-colors cursor-pointer ${
             menuSeccion === 'ordenes_pendientes' ? 'text-blue-400 bg-slate-900 border-t-2 border-blue-500' : 'text-slate-400 hover:text-slate-200'
           }`}
         >
-          <span className="text-sm">📋</span>
+          <span className="text-base">📋</span>
           <span className="leading-tight">Pendientes</span>
         </button>
 
         <button
           onClick={() => { setMenuSeccion('servicios_realizados'); setOrdenSeleccionada(null); }}
-          className={`py-2 flex flex-col items-center justify-center font-bold transition-colors cursor-pointer ${
+          className={`py-2.5 flex flex-col items-center justify-center font-extrabold transition-colors cursor-pointer ${
             menuSeccion === 'servicios_realizados' ? 'text-emerald-400 bg-slate-900 border-t-2 border-emerald-500' : 'text-slate-400 hover:text-slate-200'
           }`}
         >
-          <span className="text-sm">✅</span>
+          <span className="text-base">✅</span>
           <span className="leading-tight">Realizados</span>
         </button>
 
         <button
           onClick={() => { setMenuSeccion('eventos_alarma'); setOrdenSeleccionada(null); }}
-          className={`py-2 flex flex-col items-center justify-center font-bold transition-colors cursor-pointer ${
+          className={`py-2.5 flex flex-col items-center justify-center font-extrabold transition-colors cursor-pointer ${
             menuSeccion === 'eventos_alarma' ? 'text-red-400 bg-slate-900 border-t-2 border-red-500' : 'text-slate-400 hover:text-slate-200'
           }`}
         >
-          <span className="text-sm">🚨</span>
-          <span className="leading-tight">Eventos (Lectura)</span>
+          <span className="text-base">🚨</span>
+          <span className="leading-tight">Eventos</span>
         </button>
 
         <button
           onClick={() => { setMenuSeccion('perfil'); setOrdenSeleccionada(null); }}
-          className={`py-2 flex flex-col items-center justify-center font-bold transition-colors cursor-pointer ${
+          className={`py-2.5 flex flex-col items-center justify-center font-extrabold transition-colors cursor-pointer ${
             menuSeccion === 'perfil' ? 'text-purple-400 bg-slate-900 border-t-2 border-purple-500' : 'text-slate-400 hover:text-slate-200'
           }`}
         >
-          <span className="text-sm">👤</span>
-          <span className="leading-tight">Mi Perfil</span>
+          <span className="text-base">👤</span>
+          <span className="leading-tight">Perfil</span>
         </button>
 
       </nav>
 
       {/* Visor Modal Comprobante Imprimible */}
       {ordenImprimir && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-3">
-          <div className="w-full max-w-[650px] bg-white text-black p-5 font-sans shadow-2xl rounded-xl border border-gray-400 max-h-[95vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-3 select-text">
+          <div className="w-full max-w-[650px] bg-white text-black p-5 font-sans shadow-2xl rounded-2xl border border-gray-400 max-h-[95vh] overflow-y-auto">
             
             <div className="flex justify-between items-center border-b-2 border-blue-900 pb-3 mb-3">
               <div>
-                <h1 className="text-lg font-bold text-blue-950 tracking-wider">GAMA SEGURIDAD 24/7</h1>
+                <h1 className="text-lg font-black text-blue-950 tracking-wider">GAMA SEGURIDAD 24/7</h1>
                 <p className="text-xs text-gray-600 font-semibold">Comprobante de Servicio Técnico en Terreno</p>
               </div>
               <div className="text-right">
@@ -842,36 +1139,36 @@ export default function PortalTecnicoMovil() {
               </div>
             </div>
 
-            <div className="bg-slate-50 p-2.5 rounded border border-slate-200 mb-3 text-xs space-y-1">
+            <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 mb-3 text-xs space-y-1">
               <div><strong>Código de Cliente:</strong> <span className="font-mono font-bold text-blue-900">{ordenImprimir.cuenta}</span></div>
               <div><strong>Nombre del Abonado:</strong> {ordenImprimir.nombre_abonado}</div>
               <div><strong>Dirección de Atención:</strong> {ordenImprimir.direccion}</div>
               <div><strong>Teléfono:</strong> {ordenImprimir.telefono_contacto || 'N/A'}</div>
             </div>
 
-            <div className="bg-slate-50 p-2.5 rounded border border-slate-200 mb-3 text-xs space-y-1">
+            <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 mb-3 text-xs space-y-1">
               <div><strong>Trabajo Realizado:</strong> {ordenImprimir.novedad}</div>
               {ordenImprimir.repuestos_utilizados && <div><strong>Repuestos:</strong> {ordenImprimir.repuestos_utilizados}</div>}
               <div><strong>Técnico:</strong> {ordenImprimir.tecnico}</div>
             </div>
 
             {ordenImprimir.firma && (
-              <div className="border border-gray-300 p-2 rounded bg-slate-50 mb-3 text-xs">
+              <div className="border border-gray-300 p-2.5 rounded-xl bg-slate-50 mb-3 text-xs">
                 <span className="font-bold block text-gray-700 mb-1">Recepción / Firma Cliente: {ordenImprimir.nombre_firmante}</span>
-                <img src={ordenImprimir.firma} alt="Firma" className="h-14 border border-gray-400 bg-white px-2 rounded" />
+                <img src={ordenImprimir.firma} alt="Firma" className="h-16 border border-gray-400 bg-white px-2 rounded" />
               </div>
             )}
 
             <div className="flex justify-end gap-2 pt-2 border-t border-gray-200">
               <button
                 onClick={() => setOrdenImprimir(null)}
-                className="px-3 py-1 bg-gray-300 text-gray-800 font-bold text-xs rounded hover:bg-gray-400 cursor-pointer"
+                className="px-4 py-2 bg-gray-300 text-gray-800 font-bold text-xs rounded-xl hover:bg-gray-400 cursor-pointer"
               >
                 Cerrar
               </button>
               <button
                 onClick={() => window.print()}
-                className="px-4 py-1 bg-blue-900 text-white font-bold text-xs rounded hover:bg-blue-950 shadow cursor-pointer"
+                className="px-5 py-2 bg-blue-900 text-white font-bold text-xs rounded-xl hover:bg-blue-950 shadow cursor-pointer"
               >
                 🖨️ Imprimir
               </button>
