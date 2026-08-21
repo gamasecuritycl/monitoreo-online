@@ -73,7 +73,7 @@ export default function ControlTestModal({ onClose, clientesMap = {} }: Props) {
 
       const testEvents = (eventosData || []) as EventoMonitoreo[]
 
-      // 3. Procesar para CADA cliente activo de la base de datos (145+ cuentas)
+      // 3. Procesar solo para clientes activos y que tengan test en las últimas 36 horas
       const targetMap = Object.keys(clientesMap).length > 0 ? clientesMap : clientesGeneralFallback
       const listaEstados = Object.entries(targetMap)
         .filter(([cuenta, c]) => !esAbonadoInactivo(cuenta, (c as any)?.alias_unidad || (c as any)?.nombre || ''))
@@ -85,14 +85,7 @@ export default function ControlTestModal({ onClose, clientesMap = {} }: Props) {
           const eventsForClient = testEvents.filter(e => e.cuenta?.toUpperCase().trim() === cuenta.toUpperCase().trim())
           
           if (eventsForClient.length === 0) {
-            return {
-              cuenta,
-              nombre: nombreCliente,
-              horaEsperada: `${horaProgConfig} hrs (Programada)`,
-              ultimoTest: 'Sin Registro Reciente',
-              desfaseMinutos: null,
-              estado: 'Incomunicado' as const
-            }
+            return null // No se lista si no registra test
           }
 
           const ultimoEvento = eventsForClient[0]
@@ -100,16 +93,20 @@ export default function ControlTestModal({ onClose, clientesMap = {} }: Props) {
 
           // Formatear fecha del último test
           const fechaTest = new Date(ultimoEvento.fecha_hora)
+          const ahora = new Date()
+          const diferenciaHoras = (ahora.getTime() - fechaTest.getTime()) / (1000 * 60 * 60)
+
+          // REGLA: Mostrar solo abonados con test en las últimas 36 horas
+          if (diferenciaHoras > 36) {
+            return null
+          }
+
           const yyyy = fechaTest.getFullYear()
           const mm = String(fechaTest.getMonth() + 1).padStart(2, '0')
           const dd = String(fechaTest.getDate()).padStart(2, '0')
           const hh = String(fechaTest.getHours()).padStart(2, '0')
           const min = String(fechaTest.getMinutes()).padStart(2, '0')
           const ultimoTest = `${yyyy}-${mm}-${dd} ${hh}:${min}`
-
-          // Calcular diferencia de horas frente a la hora actual
-          const ahora = new Date()
-          const diferenciaHoras = (ahora.getTime() - fechaTest.getTime()) / (1000 * 60 * 60)
 
           let horaEsperada = horaProgConfig
           let desfaseMinutos: number | null = null
