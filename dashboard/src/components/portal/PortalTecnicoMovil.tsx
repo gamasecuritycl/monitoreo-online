@@ -235,9 +235,9 @@ export default function PortalTecnicoMovil() {
     }
   }, [])
 
-  // Cargar órdenes de trabajo desde Supabase
-  const cargarOrdenes = async () => {
-    setCargando(true)
+  // Cargar órdenes de trabajo desde Supabase (Fila más reciente con order id desc)
+  const cargarOrdenes = async (silent: boolean = false) => {
+    if (!silent) setCargando(true)
     try {
       const { data, error } = await supabase
         .from('eventos_monitoreo')
@@ -248,18 +248,41 @@ export default function PortalTecnicoMovil() {
 
       if (data && data.length > 0 && !error) {
         const parsed: OrdenTrabajo[] = JSON.parse(data[0].nombre_abonado || '[]')
-        setOrdenes(parsed)
+        
+        if (tecnicoAutenticado) {
+          const misPendientesNuevas = parsed.filter(o => o.tecnico === tecnicoAutenticado && o.estado !== 'Completada' && o.estado !== 'Cancelada')
+          
+          setOrdenes(prevOrdenes => {
+            if (prevOrdenes.length > 0) {
+              const idsViejos = new Set(prevOrdenes.map(o => o.id))
+              const ordenRecienAsignada = misPendientesNuevas.find(o => !idsViejos.has(o.id))
+              if (ordenRecienAsignada) {
+                setBannerAlertaNuevaOT(ordenRecienAsignada)
+                setNuevasOrdenesBadge(prev => prev + 1)
+                dispararNotificacionPush(ordenRecienAsignada)
+              }
+            }
+            return parsed
+          })
+        } else {
+          setOrdenes(parsed)
+        }
       }
     } catch (err) {
       console.error('Error cargando órdenes:', err)
     } finally {
-      setCargando(false)
+      if (!silent) setCargando(false)
     }
   }
 
-  // Suscripción Realtime para detectar nuevas órdenes asignadas en vivo
+  // Carga inicial y Polling ultrarrápido cada 3.5s + Suscripción Realtime
   useEffect(() => {
     if (!tecnicoAutenticado) return
+
+    cargarOrdenes()
+    const pollInterval = setInterval(() => {
+      cargarOrdenes(true)
+    }, 3500)
 
     const channelOT = supabase
       .channel('realtime_ordenes_tecnico_pwa')
@@ -268,34 +291,16 @@ export default function PortalTecnicoMovil() {
         schema: 'public',
         table: 'eventos_monitoreo',
         filter: 'cuenta=eq.ORDENES_TRABAJO'
-      }, payload => {
-        const payloadNew = payload.new as any
-        if (payloadNew && payloadNew.nombre_abonado) {
-          try {
-            const listaNuevas: OrdenTrabajo[] = JSON.parse(payloadNew.nombre_abonado || '[]')
-            
-            const misPendientesNuevas = listaNuevas.filter(o => o.tecnico === tecnicoAutenticado && o.estado !== 'Completada' && o.estado !== 'Cancelada')
-            const idsViejos = new Set(ordenes.map(o => o.id))
-            const ordenRecienAsignada = misPendientesNuevas.find(o => !idsViejos.has(o.id))
-
-            if (ordenRecienAsignada) {
-              setBannerAlertaNuevaOT(ordenRecienAsignada)
-              setNuevasOrdenesBadge(prev => prev + 1)
-              dispararNotificacionPush(ordenRecienAsignada)
-            }
-
-            setOrdenes(listaNuevas)
-          } catch (e) {
-            console.error('Error al procesar tiempo real OT:', e)
-          }
-        }
+      }, () => {
+        cargarOrdenes(true)
       })
       .subscribe()
 
     return () => {
+      clearInterval(pollInterval)
       supabase.removeChannel(channelOT)
     }
-  }, [tecnicoAutenticado, ordenes])
+  }, [tecnicoAutenticado])
 
   // Filtro estricto de eventos internos, heartbeats y registros de sistema
   const esEventoInternoOHeartbeat = (cuentaRaw: string = '', eventoRaw: string = '') => {
