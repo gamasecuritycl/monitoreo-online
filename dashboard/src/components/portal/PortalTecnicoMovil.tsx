@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
+import jsPDF from 'jspdf'
 
 export interface OrdenTrabajo {
   id: number
@@ -39,6 +40,7 @@ export interface EventoAlarma {
 }
 
 const TECNICOS = [
+  { nombre: 'Andrés Alzamora', cargo: 'Técnico Jefe / Servicio Técnico & Terreno', pin: '1234' },
   { nombre: 'Juan Pérez', cargo: 'Técnico Senior Sistemas Alarmas & CCTV', pin: '1234' },
   { nombre: 'Diego Reyes', cargo: 'Técnico Terreno Redes & Acceso', pin: '1234' },
   { nombre: 'Mauricio Tapia', cargo: 'Especialista en Automatización & Cercos', pin: '1234' },
@@ -100,7 +102,36 @@ export default function PortalTecnicoMovil() {
   const [mensajeSplash, setMensajeSplash] = useState<string>('Iniciando Módulo Técnico...')
 
   // Navegación del Menú Principal
-  const [menuSeccion, setMenuSeccion] = useState<'itinerario' | 'ordenes_pendientes' | 'servicios_realizados' | 'eventos_alarma' | 'perfil'>('itinerario')
+  const [menuSeccion, setMenuSeccion] = useState<'itinerario' | 'ordenes_pendientes' | 'servicios_realizados' | 'eventos_alarma' | 'perfil' | 'levantamiento'>('itinerario')
+
+  // Módulo Levantamiento Prospecto (Cotización Terreno)
+  const [levNombre, setLevNombre] = useState('')
+  const [levRut, setLevRut] = useState('')
+  const [levDireccion, setLevDireccion] = useState('')
+  const [levComuna, setLevComuna] = useState('')
+  const [levContacto, setLevContacto] = useState('')
+  const [levWhatsapp, setLevWhatsapp] = useState('')
+  const [levEmail, setLevEmail] = useState('')
+  const [levTipoPropiedad, setLevTipoPropiedad] = useState('Local Comercial / Empresa')
+  const [levObservaciones, setLevObservaciones] = useState('')
+  const [levEnviando, setLevEnviando] = useState(false)
+  const [levStatusMsg, setLevStatusMsg] = useState('')
+
+  const [levContadores, setLevContadores] = useState<Record<string, number>>({
+    'Paneles / Centrales de Alarma IP': 1,
+    'Sensores de Movimiento PIR Interior': 2,
+    'Sensores de Movimiento PIR Exterior Perimetral': 0,
+    'Contactos Magnéticos Puerta/Ventana/Cortina': 2,
+    'Sensores de Humo / Incendio': 0,
+    'Cámaras IP 4K / CCTV': 0,
+    'Grabadores NVR / DVR (4/8/16 Ch)': 0,
+    'Sirenas Exteriores Estroboscópicas 120dB': 1,
+    'Sirenas Interiores 110dB': 1,
+    'Teclados LCD / Touch': 1,
+    'Controles Remotos / Botón Asalto': 2,
+    'Baterías de Respaldo 12V 7Ah': 1,
+    'Metros Aprox. Cableado / Canalización Conduit (m)': 30
+  })
 
   // Datos
   const [ordenes, setOrdenes] = useState<OrdenTrabajo[]>([])
@@ -916,9 +947,43 @@ export default function PortalTecnicoMovil() {
         usuario: 'TEC'
       })
 
+      // REGISTRO EN BITÁCORA REAL A NOMBRE DE ANDRÉS ALZAMORA PARA ABONADOS ACTIVOS
+      const ctaValida = (ordenSeleccionada.cuenta || '').trim().toUpperCase()
+      if (ctaValida && ctaValida !== 'S/C' && !ctaValida.startsWith('S/')) {
+        try {
+          let numericId: any = ctaValida
+          try {
+            const resAb = await fetch(`https://bitacora.gamasecurity.cl/api-bitacora.php?action=abonados&q=${encodeURIComponent(ctaValida)}`)
+            if (resAb.ok) {
+              const abList = await resAb.json()
+              if (Array.isArray(abList) && abList.length > 0) {
+                const match = abList.find((a: any) => a.cod === ctaValida) || abList[0]
+                if (match && match.id) numericId = match.id
+              }
+            }
+          } catch {}
+
+          const comBitacora = `[SERVICIO TÉCNICO - PWA] OT #${ordenSeleccionada.codigo_ot || ordenSeleccionada.id} (${ordenSeleccionada.tipo_visita}). Trabajo: ${novedadTexto.trim()}. Técnico Responsable: Andrés Alzamora. Firmado: ${nombreFirmanteText.trim() || 'Cliente'} (${rutFirmanteText.trim() || 'S/RUT'}).`
+
+          await fetch('https://bitacora.gamasecurity.cl/api-bitacora.php?action=crear', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              id_abonado: numericId,
+              comentario: comBitacora,
+              tipo_evento: 1, // Servicio Técnico
+              id_responsable: 1
+            })
+          })
+        } catch (errBit) {
+          console.warn('Error registrando en Bitácora:', errBit)
+        }
+      }
+
       const ordenCompletada: OrdenTrabajo = {
         ...ordenSeleccionada,
         estado: 'Completada',
+        tecnico: 'Andrés Alzamora',
         novedad: novedadTexto.trim(),
         repuestos_utilizados: repuestosTexto.trim(),
         nombre_firmante: nombreFirmanteText.trim() || 'Cliente',
@@ -934,11 +999,11 @@ export default function PortalTecnicoMovil() {
       await guardarOrdenesBase(listaNueva)
 
       if (ordenCompletada.telefono_contacto) {
-        const msgWA = `✅ *GAMA SEGURIDAD 24/7 - Certificado Técnico de Atención*\n\nSu orden de servicio técnico *#${ordenCompletada.codigo_ot || 'OT'}* ha sido completada exitosamente.\n\n• *Trabajo Realizado:* ${novedadTexto.trim()}\n• *Repuestos:* ${repuestosTexto.trim() || 'Ninguno'}\n• *Atendido por:* ${ordenCompletada.tecnico}\n\nGracias por su confianza.`
+        const msgWA = `✅ *GAMA SEGURIDAD 24/7 - Certificado Técnico de Atención*\n\nSu orden de servicio técnico *#${ordenCompletada.codigo_ot || 'OT'}* ha sido completada exitosamente.\n\n• *Trabajo Realizado:* ${novedadTexto.trim()}\n• *Repuestos:* ${repuestosTexto.trim() || 'Ninguno'}\n• *Atendido por:* Andrés Alzamora\n\nGracias por su confianza.`
         enviarNotificacionWhatsApp(ordenCompletada.telefono_contacto, msgWA)
       }
 
-      alert('🎉 ¡Orden completada, firma touch registrada y certificado oficial generado!')
+      alert('🎉 ¡Orden completada, registrada en Bitácora a nombre de Andrés Alzamora y certificado generado!')
       setOrdenImprimir(ordenCompletada)
       setOrdenSeleccionada(null)
       setNovedadTexto('')
@@ -949,6 +1014,196 @@ export default function PortalTecnicoMovil() {
       setFotosEvidencia([])
     } catch (err: any) {
       alert('Error al finalizar la orden de trabajo: ' + err.message)
+    }
+  }
+
+  // Generar PDF y Enviar Levantamiento por Correo (Resend)
+  const handleEnviarLevantamiento = async () => {
+    if (!levNombre.trim() || !levComuna.trim()) {
+      alert('Por favor ingrese al menos el Nombre/Razón Social y la Comuna del cliente prospecto.')
+      return
+    }
+
+    setLevEnviando(true)
+    setLevStatusMsg('📄 Generando informe PDF corporativo de Gama Seguridad...')
+
+    try {
+      const doc = new jsPDF()
+      const hoyStr = new Date().toLocaleDateString('es-CL')
+
+      // Header Membrete
+      doc.setFillColor(0, 0, 128) // Azul Gama #000080
+      doc.rect(0, 0, 210, 28, 'F')
+
+      doc.setTextColor(255, 255, 255)
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(16)
+      doc.text('GAMA SEGURIDAD CHILE 24/7', 14, 12)
+      doc.setFontSize(9)
+      doc.setFont('helvetica', 'normal')
+      doc.text('LEVANTE DE REQUERIMIENTOS TÉCNICOS EN TERRENO PARA PRESUPUESTO', 14, 19)
+
+      doc.setFontSize(9)
+      doc.text(`FECHA: ${hoyStr}`, 155, 12)
+      doc.text(`INSPECTOR: Andrés Alzamora`, 155, 18)
+
+      // Ficha Cliente
+      doc.setTextColor(0, 0, 0)
+      doc.setFontSize(11)
+      doc.setFont('helvetica', 'bold')
+      doc.text('I. DATOS DEL CLIENTE PROSPECTO / PROPIEDAD', 14, 38)
+      
+      doc.setFontSize(9)
+      doc.setFont('helvetica', 'normal')
+      doc.text(`Nombre / Razón Social: ${levNombre.toUpperCase()}`, 14, 46)
+      doc.text(`R.U.T.: ${levRut || 'S/RUT'}`, 130, 46)
+      doc.text(`Dirección: ${levDireccion || '---'}`, 14, 52)
+      doc.text(`Comuna: ${levComuna.toUpperCase()}`, 130, 52)
+      doc.text(`Contacto: ${levContacto || '---'}`, 14, 58)
+      doc.text(`Teléfono / WhatsApp: ${levWhatsapp || '---'}`, 130, 58)
+      doc.text(`Email: ${levEmail || '---'}`, 14, 64)
+      doc.text(`Tipo de Propiedad: ${levTipoPropiedad}`, 130, 64)
+
+      doc.setLineWidth(0.5)
+      doc.setDrawColor(200, 200, 200)
+      doc.line(14, 68, 196, 68)
+
+      // Tabla Cuantificación
+      doc.setFontSize(11)
+      doc.setFont('helvetica', 'bold')
+      doc.text('II. CUANTIFICACIÓN DE EQUIPOS E INSUMOS REQUERIDOS', 14, 76)
+
+      let yPos = 84
+      doc.setFillColor(240, 243, 248)
+      doc.rect(14, yPos - 5, 182, 7, 'F')
+      doc.setFontSize(8)
+      doc.setFont('helvetica', 'bold')
+      doc.text('ÍTEM / DESCRIPCIÓN TÉCNICA DEL ELEMENTO', 16, yPos)
+      doc.text('CANTIDAD TERRENO', 150, yPos)
+
+      yPos += 6
+      doc.setFont('helvetica', 'normal')
+
+      const itemsKeys = Object.keys(levContadores)
+      itemsKeys.forEach((key, idx) => {
+        const cant = levContadores[key]
+        if (cant > 0) {
+          if (idx % 2 === 0) {
+            doc.setFillColor(250, 250, 252)
+            doc.rect(14, yPos - 4, 182, 6, 'F')
+          }
+          doc.text(key, 16, yPos)
+          doc.setFont('helvetica', 'bold')
+          doc.text(`${cant} ud(s)`, 155, yPos)
+          doc.setFont('helvetica', 'normal')
+          yPos += 6
+        }
+      })
+
+      yPos += 4
+      doc.line(14, yPos, 196, yPos)
+      yPos += 8
+
+      // Observaciones Técnicas
+      doc.setFontSize(11)
+      doc.setFont('helvetica', 'bold')
+      doc.text('III. DIAGNÓSTICO TÉCNICO & RECOMENDACIONES EN TERRENO', 14, yPos)
+      yPos += 6
+      doc.setFontSize(9)
+      doc.setFont('helvetica', 'normal')
+      const obsLines = doc.splitTextToSize(levObservaciones || 'Sin observaciones adicionales registradas. Levantamiento estándar sin complejidades aparentes.', 180)
+      doc.text(obsLines, 14, yPos)
+
+      yPos += (obsLines.length * 5) + 12
+      doc.setFont('helvetica', 'bold')
+      doc.text('Firma Inspector Técnico Terreno: Andrés Alzamora', 14, yPos)
+      doc.text('Gama Seguridad 24/7 SpA — Valparaíso / Santiago', 130, yPos)
+
+      // Convertir a base64
+      const pdfBase64 = doc.output('datauristring').split(',')[1]
+
+      setLevStatusMsg('✉️ Enviando correo comercial a Tomas Toro y M. Rebolledo vía Resend...')
+
+      // Generar HTML de acompañamiento
+      const itemsHtml = Object.entries(levContadores)
+        .filter(([_, cant]) => cant > 0)
+        .map(([k, cant]) => `<tr><td style="padding:6px; border-bottom:1px solid #eee;">${k}</td><td style="padding:6px; border-bottom:1px solid #eee; text-align:center; font-weight:bold;">${cant}</td></tr>`)
+        .join('')
+
+      const htmlMail = `
+        <div style="font-family: Arial, sans-serif; max-width: 680px; margin: 0 auto; border: 1px solid #000080; border-radius: 12px; overflow: hidden; background:#ffffff;">
+          <div style="background-color: #000080; padding: 20px; color: #ffffff; text-align: center;">
+            <h2 style="margin: 0; text-transform: uppercase;">GAMA SEGURIDAD CHILE</h2>
+            <p style="margin: 4px 0 0 0; font-size: 13px; opacity: 0.9;">INFORME DE LEVANTAMIENTO TÉCNICO DE PROSPECTO EN TERRENO</p>
+          </div>
+          <div style="padding: 20px; color: #1e293b;">
+            <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:14px; margin-bottom:16px;">
+              <h3 style="margin:0 0 8px 0; font-size:15px; color:#000080;">📋 DATOS DEL CLIENTE PROSPECTO</h3>
+              <p style="margin:2px 0; font-size:13px;"><strong>Cliente / Empresa:</strong> ${levNombre.toUpperCase()}</p>
+              <p style="margin:2px 0; font-size:13px;"><strong>R.U.T.:</strong> ${levRut || 'S/RUT'}</p>
+              <p style="margin:2px 0; font-size:13px;"><strong>Dirección:</strong> ${levDireccion || '---'}, ${levComuna.toUpperCase()}</p>
+              <p style="margin:2px 0; font-size:13px;"><strong>Contacto:</strong> ${levContacto || '---'} | Teléfono: ${levWhatsapp || '---'}</p>
+              <p style="margin:2px 0; font-size:13px;"><strong>Email Cliente:</strong> ${levEmail || '---'}</p>
+              <p style="margin:2px 0; font-size:13px;"><strong>Inspector Responsable:</strong> Andrés Alzamora (Técnico Jefe)</p>
+            </div>
+            
+            <h3 style="font-size:14px; color:#000080; margin-bottom:8px;">📦 RESUMEN DE ELEMENTOS REQUERIDOS PARA PRESUPUESTO</h3>
+            <table style="width:100%; border-collapse:collapse; font-size:12px; margin-bottom:16px;">
+              <thead>
+                <tr style="background:#000080; color:white;">
+                  <th style="padding:8px; text-align:left;">Ítem / Elemento</th>
+                  <th style="padding:8px; text-align:center;">Cantidad</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${itemsHtml}
+              </tbody>
+            </table>
+
+            <div style="background:#fffbe0; border:1px solid #ffe58f; border-radius:8px; padding:12px; font-size:12px;">
+              <strong>📝 Observaciones Técnicas:</strong><br/>
+              ${levObservaciones || 'Sin observaciones adicionales.'}
+            </div>
+
+            <p style="font-size:11px; color:#64748b; margin-top:16px; text-align:center;">
+              📄 Se adjunta el informe oficial en formato PDF en este correo para su cotización comercial.
+            </p>
+          </div>
+        </div>
+      `
+
+      const res = await fetch('/api/enviar-reporte', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          destinatarios: ['tetoromoreno@gamasecurity.cl', 'mrebolledo@gamasecurity.cl'],
+          asunto: `Levantamiento Técnico — ${levNombre.toUpperCase()} — ${levComuna.toUpperCase()}`,
+          html: htmlMail,
+          pdf_base64: pdfBase64,
+          nombre_archivo: `Levantamiento_${levNombre.replace(/\s+/g, '_')}_${levComuna}.pdf`
+        })
+      })
+
+      const data = await res.json()
+      if (res.ok && data.ok) {
+        alert(`🎉 ¡Levantamiento enviado exitosamente a Tomás Toro (tetoromoreno@gamasecurity.cl) y M. Rebolledo (mrebolledo@gamasecurity.cl) con el informe PDF adjunto!`)
+        setLevNombre('')
+        setLevRut('')
+        setLevDireccion('')
+        setLevComuna('')
+        setLevContacto('')
+        setLevWhatsapp('')
+        setLevEmail('')
+        setLevObservaciones('')
+        setMenuSeccion('itinerario')
+      } else {
+        throw new Error(data.error || 'Error al enviar email')
+      }
+    } catch (err: any) {
+      alert(`Error al procesar levantamiento: ${err.message}`)
+    } finally {
+      setLevEnviando(false)
+      setLevStatusMsg('')
     }
   }
 
@@ -1596,6 +1851,217 @@ export default function PortalTecnicoMovil() {
             </div>
           </div>
         )}
+        {/* SECCIÓN 6: MÓDULO DE LEVANTAMIENTO TÉCNICO DE PROSPECTOS (COTIZACIÓN TERRENO) */}
+        {menuSeccion === 'levantamiento' && (
+          <div className="space-y-4 animate-in fade-in duration-300">
+            <div className="bg-slate-900/90 border border-cyan-900/80 rounded-3xl p-5 shadow-2xl backdrop-blur-2xl">
+              <div className="flex items-center gap-3 border-b border-cyan-900/50 pb-3 mb-4">
+                <div className="w-11 h-11 rounded-2xl bg-cyan-600/20 border border-cyan-400/40 flex items-center justify-center text-2xl shadow">
+                  📐
+                </div>
+                <div>
+                  <h2 className="text-base font-black text-white tracking-wide uppercase flex items-center gap-2">
+                    Levantamiento Técnico Prospecto
+                    <span className="text-[9px] bg-cyan-950 text-cyan-300 border border-cyan-700/60 px-2 py-0.5 rounded font-mono font-bold">
+                      Andrés Alzamora
+                    </span>
+                  </h2>
+                  <p className="text-xs text-slate-400">
+                    Cuantificación de equipos en terreno para cotización comercial.
+                  </p>
+                </div>
+              </div>
+
+              {/* SECCIÓN 1: DATOS PROSPECTO */}
+              <div className="space-y-3 mb-5">
+                <h3 className="text-xs font-black text-cyan-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <span>📋</span> 1. Ficha del Cliente Prospecto
+                </h3>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Nombre / Razón Social *</label>
+                    <input
+                      type="text"
+                      placeholder="Ej: Bodegas Santiago SpA"
+                      value={levNombre}
+                      onChange={e => setLevNombre(e.target.value)}
+                      className="w-full bg-[#070e20] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">RUT Cliente</label>
+                    <input
+                      type="text"
+                      placeholder="Ej: 76.123.456-7"
+                      value={levRut}
+                      onChange={e => setLevRut(e.target.value)}
+                      className="w-full bg-[#070e20] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 font-mono"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Dirección de la Propiedad</label>
+                    <input
+                      type="text"
+                      placeholder="Ej: Av. Providencia 1234"
+                      value={levDireccion}
+                      onChange={e => setLevDireccion(e.target.value)}
+                      className="w-full bg-[#070e20] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Comuna *</label>
+                    <input
+                      type="text"
+                      placeholder="Ej: Quillota / Viña del Mar / Santiago"
+                      value={levComuna}
+                      onChange={e => setLevComuna(e.target.value)}
+                      className="w-full bg-[#070e20] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 uppercase font-bold"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Persona de Contacto</label>
+                    <input
+                      type="text"
+                      placeholder="Ej: Carlos Mendoza (Administrador)"
+                      value={levContacto}
+                      onChange={e => setLevContacto(e.target.value)}
+                      className="w-full bg-[#070e20] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Teléfono / WhatsApp</label>
+                    <input
+                      type="text"
+                      placeholder="Ej: +56 9 1234 5678"
+                      value={levWhatsapp}
+                      onChange={e => setLevWhatsapp(e.target.value)}
+                      className="w-full bg-[#070e20] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 font-mono"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Email del Cliente</label>
+                    <input
+                      type="email"
+                      placeholder="Ej: contacto@bodegassantiago.cl"
+                      value={levEmail}
+                      onChange={e => setLevEmail(e.target.value)}
+                      className="w-full bg-[#070e20] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Tipo de Inmueble</label>
+                    <select
+                      value={levTipoPropiedad}
+                      onChange={e => setLevTipoPropiedad(e.target.value)}
+                      className="w-full bg-[#070e20] border border-slate-700 rounded-xl px-3 py-2 text-xs text-cyan-300 font-bold focus:outline-none focus:border-cyan-500 cursor-pointer"
+                    >
+                      <option value="Local Comercial / Empresa">Local Comercial / Empresa</option>
+                      <option value="Bodega / Centro Logístico">Bodega / Centro Logístico</option>
+                      <option value="Casa / Residencial">Casa / Residencial</option>
+                      <option value="Condominio / Edificio">Condominio / Edificio</option>
+                      <option value="Terreno / Parcela / Agrícola">Terreno / Parcela / Agrícola</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* SECCIÓN 2: CUANTIFICADOR DE INSUMOS */}
+              <div className="space-y-3 mb-5">
+                <h3 className="text-xs font-black text-cyan-400 uppercase tracking-wider flex items-center justify-between">
+                  <span className="flex items-center gap-1.5">📦 2. Cuantificación de Equipos & Insumos</span>
+                  <span className="text-[10px] font-mono text-slate-400">Inspector: Andrés Alzamora</span>
+                </h3>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {Object.keys(levContadores).map((key) => {
+                    const cant = levContadores[key]
+                    return (
+                      <div
+                        key={key}
+                        className="bg-[#070e20] border border-slate-800 rounded-xl p-2.5 flex items-center justify-between gap-2 shadow-sm hover:border-slate-700 transition"
+                      >
+                        <span className="text-xs font-medium text-slate-200 leading-tight">
+                          {key}
+                        </span>
+
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => setLevContadores(prev => ({ ...prev, [key]: Math.max(0, (prev[key] || 0) - 1) }))}
+                            className="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-black text-sm flex items-center justify-center transition cursor-pointer"
+                          >
+                            -
+                          </button>
+
+                          <span className={`w-8 text-center font-mono font-black text-xs px-1.5 py-0.5 rounded ${
+                            cant > 0 ? 'bg-cyan-950 text-cyan-300 border border-cyan-800' : 'bg-slate-900 text-slate-500'
+                          }`}>
+                            {cant}
+                          </span>
+
+                          <button
+                            type="button"
+                            onClick={() => setLevContadores(prev => ({ ...prev, [key]: (prev[key] || 0) + 1 }))}
+                            className="w-7 h-7 rounded-lg bg-cyan-950 hover:bg-cyan-900 border border-cyan-800 text-cyan-300 font-black text-sm flex items-center justify-center transition cursor-pointer"
+                          >
+                            +
+                          </button>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* SECCIÓN 3: OBS TÉCNICAS */}
+              <div className="space-y-2 mb-5">
+                <h3 className="text-xs font-black text-cyan-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <span>📝</span> 3. Diagnóstico Técnico & Puntos Críticos en Terreno
+                </h3>
+                <textarea
+                  rows={3}
+                  placeholder="Describa riesgos del sector, factibilidad de energía/internet, trabajos en altura o recomendaciones comerciales..."
+                  value={levObservaciones}
+                  onChange={e => setLevObservaciones(e.target.value)}
+                  className="w-full bg-[#070e20] border border-slate-700 rounded-xl p-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
+                />
+              </div>
+
+              {/* BOTÓN ENVIAR LEVANTAMIENTO */}
+              <div className="pt-2">
+                <button
+                  type="button"
+                  disabled={levEnviando}
+                  onClick={handleEnviarLevantamiento}
+                  className="w-full py-3.5 px-4 bg-gradient-to-r from-blue-600 via-cyan-600 to-blue-700 hover:from-blue-500 hover:to-cyan-500 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-xl transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                >
+                  {levEnviando ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <span>{levStatusMsg || 'Procesando e Informe PDF...'}</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>🚀</span>
+                      <span>Enviar Levantamiento a Ventas (Email + PDF Adjunto)</span>
+                    </>
+                  )}
+                </button>
+                <p className="text-[10px] text-slate-500 text-center mt-2">
+                  * Se enviará automáticamente a Tomás Toro (tetoromoreno@gamasecurity.cl) y M. Rebolledo (mrebolledo@gamasecurity.cl).
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
       </main>
 
@@ -1607,12 +2073,12 @@ export default function PortalTecnicoMovil() {
             setOrdenSeleccionada(null)
             setMenuSeccion('itinerario')
           }}
-          className={`flex flex-col items-center py-1.5 px-3 rounded-2xl transition-all cursor-pointer ${
+          className={`flex flex-col items-center py-1.5 px-2.5 rounded-2xl transition-all cursor-pointer ${
             menuSeccion === 'itinerario' ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30' : 'text-slate-400 hover:text-white'
           }`}
         >
           <span className="text-lg">🗺️</span>
-          <span className="text-[10px] font-black uppercase mt-0.5">Ruta</span>
+          <span className="text-[9px] font-black uppercase mt-0.5">Ruta</span>
         </button>
 
         <button
@@ -1621,14 +2087,14 @@ export default function PortalTecnicoMovil() {
             setMenuSeccion('ordenes_pendientes')
             setNuevasOrdenesBadge(0)
           }}
-          className={`flex flex-col items-center py-1.5 px-3 rounded-2xl transition-all relative cursor-pointer ${
+          className={`flex flex-col items-center py-1.5 px-2.5 rounded-2xl transition-all relative cursor-pointer ${
             menuSeccion === 'ordenes_pendientes' ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30' : 'text-slate-400 hover:text-white'
           }`}
         >
           <span className="text-lg">📋</span>
-          <span className="text-[10px] font-black uppercase mt-0.5">Pendientes</span>
+          <span className="text-[9px] font-black uppercase mt-0.5">Pendientes</span>
           {nuevasOrdenesBadge > 0 && (
-            <span className="absolute -top-1 -right-1 bg-red-600 text-white font-black text-[10px] w-5 h-5 rounded-full flex items-center justify-center shadow animate-bounce">
+            <span className="absolute -top-1 -right-1 bg-red-600 text-white font-black text-[9px] w-4 h-4 rounded-full flex items-center justify-center shadow animate-bounce">
               {nuevasOrdenesBadge}
             </span>
           )}
@@ -1637,27 +2103,27 @@ export default function PortalTecnicoMovil() {
         <button
           onClick={() => {
             setOrdenSeleccionada(null)
-            setMenuSeccion('servicios_realizados')
+            setMenuSeccion('levantamiento')
           }}
-          className={`flex flex-col items-center py-1.5 px-3 rounded-2xl transition-all cursor-pointer ${
-            menuSeccion === 'servicios_realizados' ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30' : 'text-slate-400 hover:text-white'
+          className={`flex flex-col items-center py-1.5 px-2.5 rounded-2xl transition-all cursor-pointer ${
+            menuSeccion === 'levantamiento' ? 'bg-cyan-600/20 text-cyan-400 border border-cyan-500/40 shadow-[0_0_10px_rgba(6,182,212,0.3)]' : 'text-slate-400 hover:text-white'
           }`}
         >
-          <span className="text-lg">✅</span>
-          <span className="text-[10px] font-black uppercase mt-0.5">Historial</span>
+          <span className="text-lg">📐</span>
+          <span className="text-[9px] font-black uppercase mt-0.5">Levant.</span>
         </button>
 
         <button
           onClick={() => {
             setOrdenSeleccionada(null)
-            setMenuSeccion('eventos_alarma')
+            setMenuSeccion('servicios_realizados')
           }}
-          className={`flex flex-col items-center py-1.5 px-3 rounded-2xl transition-all cursor-pointer ${
-            menuSeccion === 'eventos_alarma' ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30' : 'text-slate-400 hover:text-white'
+          className={`flex flex-col items-center py-1.5 px-2.5 rounded-2xl transition-all cursor-pointer ${
+            menuSeccion === 'servicios_realizados' ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30' : 'text-slate-400 hover:text-white'
           }`}
         >
-          <span className="text-lg">🔔</span>
-          <span className="text-[10px] font-black uppercase mt-0.5">Alarmas</span>
+          <span className="text-lg">✅</span>
+          <span className="text-[9px] font-black uppercase mt-0.5">Historial</span>
         </button>
 
         <button
@@ -1665,12 +2131,12 @@ export default function PortalTecnicoMovil() {
             setOrdenSeleccionada(null)
             setMenuSeccion('perfil')
           }}
-          className={`flex flex-col items-center py-1.5 px-3 rounded-2xl transition-all cursor-pointer ${
+          className={`flex flex-col items-center py-1.5 px-2.5 rounded-2xl transition-all cursor-pointer ${
             menuSeccion === 'perfil' ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30' : 'text-slate-400 hover:text-white'
           }`}
         >
           <span className="text-lg">👤</span>
-          <span className="text-[10px] font-black uppercase mt-0.5">Perfil</span>
+          <span className="text-[9px] font-black uppercase mt-0.5">Perfil</span>
         </button>
 
       </nav>
