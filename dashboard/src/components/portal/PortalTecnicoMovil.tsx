@@ -92,6 +92,23 @@ function coincideTecnico(t1?: string | null, t2?: string | null) {
   return false
 }
 
+export interface LevantamientoItem {
+  id: string
+  fecha: string
+  inspector: string
+  nombre: string
+  rut: string
+  direccion: string
+  comuna: string
+  contacto: string
+  whatsapp: string
+  email: string
+  tipo_propiedad: string
+  observaciones: string
+  contadores: Record<string, number>
+  estado_envio: string
+}
+
 export default function PortalTecnicoMovil() {
   // Autenticación Diaria & Cierre a Medianoche (00:00)
   const [tecnicoAutenticado, setTecnicoAutenticado] = useState<string | null>(null)
@@ -104,7 +121,12 @@ export default function PortalTecnicoMovil() {
   // Navegación del Menú Principal
   const [menuSeccion, setMenuSeccion] = useState<'itinerario' | 'ordenes_pendientes' | 'servicios_realizados' | 'eventos_alarma' | 'perfil' | 'levantamiento'>('itinerario')
 
-  // Módulo Levantamiento Prospecto (Cotización Terreno)
+  // Módulo Levantamiento Prospecto (Cotización Terreno) - Navegación Interna iOS 3D
+  const [subSeccionLevantamiento, setSubSeccionLevantamiento] = useState<'menu' | 'nuevo' | 'historial' | 'detalle'>('menu')
+  const [levantamientosLista, setLevantamientosLista] = useState<LevantamientoItem[]>([])
+  const [busquedaLevantamiento, setBusquedaLevantamiento] = useState('')
+  const [levantamientoDetalle, setLevantamientoDetalle] = useState<LevantamientoItem | null>(null)
+
   const [levNombre, setLevNombre] = useState('')
   const [levRut, setLevRut] = useState('')
   const [levDireccion, setLevDireccion] = useState('')
@@ -191,6 +213,27 @@ export default function PortalTecnicoMovil() {
       window.removeEventListener('offline', handleOffline)
     }
   }, [])
+
+  // Cargar Levantamientos desde localStorage
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('gama_levantamientos_db')
+      if (stored) {
+        setLevantamientosLista(JSON.parse(stored))
+      }
+    } catch (e) {
+      console.error('Error cargando gama_levantamientos_db:', e)
+    }
+  }, [])
+
+  const guardarLevantamientos = (nuevaLista: LevantamientoItem[]) => {
+    setLevantamientosLista(nuevaLista)
+    try {
+      localStorage.setItem('gama_levantamientos_db', JSON.stringify(nuevaLista))
+    } catch (e) {
+      console.error('Error guardando gama_levantamientos_db:', e)
+    }
+  }
 
   // Auto-Sincronizar órdenes almacenadas localmente durante pérdida de señal
   const sincronizarColaOffline = async () => {
@@ -1851,215 +1894,531 @@ export default function PortalTecnicoMovil() {
             </div>
           </div>
         )}
-        {/* SECCIÓN 6: MÓDULO DE LEVANTAMIENTO TÉCNICO DE PROSPECTOS (COTIZACIÓN TERRENO) */}
+        {/* SECCIÓN 6: MÓDULO DE LEVANTAMIENTO TÉCNICO DE PROSPECTOS (COTIZACIÓN TERRENO - IOS 3D) */}
         {menuSeccion === 'levantamiento' && (
-          <div className="space-y-4 animate-in fade-in duration-300">
-            <div className="bg-slate-900/90 border border-cyan-900/80 rounded-3xl p-5 shadow-2xl backdrop-blur-2xl">
-              <div className="flex items-center gap-3 border-b border-cyan-900/50 pb-3 mb-4">
-                <div className="w-11 h-11 rounded-2xl bg-cyan-600/20 border border-cyan-400/40 flex items-center justify-center text-2xl shadow">
-                  📐
-                </div>
-                <div>
-                  <h2 className="text-base font-black text-white tracking-wide uppercase flex items-center gap-2">
-                    Levantamiento Técnico Prospecto
-                    <span className="text-[9px] bg-cyan-950 text-cyan-300 border border-cyan-700/60 px-2 py-0.5 rounded font-mono font-bold">
-                      Andrés Alzamora
+          <div className="space-y-4 animate-in fade-in duration-300 pb-20">
+            
+            {/* SUB-VISTA 1: MENÚ PRINCIPAL 3D NATIVO IOS */}
+            {subSeccionLevantamiento === 'menu' && (
+              <div className="space-y-5">
+                {/* Banner Encabezado Estilo iOS */}
+                <div className="bg-gradient-to-br from-[#0c162d] via-[#091124] to-[#050b18] border-2 border-cyan-500/40 rounded-3xl p-5 shadow-[0_15px_35px_rgba(0,0,0,0.8)] backdrop-blur-2xl relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-700 p-0.5 shadow-lg flex items-center justify-center">
+                        <div className="w-full h-full bg-[#070e20] rounded-[14px] flex items-center justify-center text-2xl">
+                          📐
+                        </div>
+                      </div>
+                      <div>
+                        <h2 className="text-base font-black text-white uppercase tracking-wide">
+                          Gestión de Levantamientos
+                        </h2>
+                        <p className="text-xs text-cyan-400 font-bold flex items-center gap-1.5">
+                          <span>👤 Inspector:</span>
+                          <span className="bg-cyan-950/80 text-cyan-300 border border-cyan-700/60 px-2 py-0.5 rounded-md font-mono text-[10px]">
+                            Andrés Alzamora
+                          </span>
+                        </p>
+                      </div>
+                    </div>
+                    <span className="text-[10px] font-black uppercase font-mono bg-blue-500/20 text-blue-400 border border-blue-500/30 px-2.5 py-1 rounded-full">
+                      v2.5 Terreno
                     </span>
-                  </h2>
-                  <p className="text-xs text-slate-400">
-                    Cuantificación de equipos en terreno para cotización comercial.
-                  </p>
-                </div>
-              </div>
-
-              {/* SECCIÓN 1: DATOS PROSPECTO */}
-              <div className="space-y-3 mb-5">
-                <h3 className="text-xs font-black text-cyan-400 uppercase tracking-wider flex items-center gap-1.5">
-                  <span>📋</span> 1. Ficha del Cliente Prospecto
-                </h3>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  <div>
-                    <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Nombre / Razón Social *</label>
-                    <input
-                      type="text"
-                      placeholder="Ej: Bodegas Santiago SpA"
-                      value={levNombre}
-                      onChange={e => setLevNombre(e.target.value)}
-                      className="w-full bg-[#070e20] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">RUT Cliente</label>
-                    <input
-                      type="text"
-                      placeholder="Ej: 76.123.456-7"
-                      value={levRut}
-                      onChange={e => setLevRut(e.target.value)}
-                      className="w-full bg-[#070e20] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 font-mono"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Dirección de la Propiedad</label>
-                    <input
-                      type="text"
-                      placeholder="Ej: Av. Providencia 1234"
-                      value={levDireccion}
-                      onChange={e => setLevDireccion(e.target.value)}
-                      className="w-full bg-[#070e20] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Comuna *</label>
-                    <input
-                      type="text"
-                      placeholder="Ej: Quillota / Viña del Mar / Santiago"
-                      value={levComuna}
-                      onChange={e => setLevComuna(e.target.value)}
-                      className="w-full bg-[#070e20] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 uppercase font-bold"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Persona de Contacto</label>
-                    <input
-                      type="text"
-                      placeholder="Ej: Carlos Mendoza (Administrador)"
-                      value={levContacto}
-                      onChange={e => setLevContacto(e.target.value)}
-                      className="w-full bg-[#070e20] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Teléfono / WhatsApp</label>
-                    <input
-                      type="text"
-                      placeholder="Ej: +56 9 1234 5678"
-                      value={levWhatsapp}
-                      onChange={e => setLevWhatsapp(e.target.value)}
-                      className="w-full bg-[#070e20] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 font-mono"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Email del Cliente</label>
-                    <input
-                      type="email"
-                      placeholder="Ej: contacto@bodegassantiago.cl"
-                      value={levEmail}
-                      onChange={e => setLevEmail(e.target.value)}
-                      className="w-full bg-[#070e20] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Tipo de Inmueble</label>
-                    <select
-                      value={levTipoPropiedad}
-                      onChange={e => setLevTipoPropiedad(e.target.value)}
-                      className="w-full bg-[#070e20] border border-slate-700 rounded-xl px-3 py-2 text-xs text-cyan-300 font-bold focus:outline-none focus:border-cyan-500 cursor-pointer"
-                    >
-                      <option value="Local Comercial / Empresa">Local Comercial / Empresa</option>
-                      <option value="Bodega / Centro Logístico">Bodega / Centro Logístico</option>
-                      <option value="Casa / Residencial">Casa / Residencial</option>
-                      <option value="Condominio / Edificio">Condominio / Edificio</option>
-                      <option value="Terreno / Parcela / Agrícola">Terreno / Parcela / Agrícola</option>
-                    </select>
                   </div>
                 </div>
+
+                {/* TARJETAS BOTÓN 3D NATIVAS ESTILO IPHONE */}
+                <div className="grid grid-cols-1 gap-4">
+                  {/* BOTÓN 3D 1: NUEVO LEVANTAMIENTO */}
+                  <button
+                    onClick={() => setSubSeccionLevantamiento('nuevo')}
+                    className="w-full group text-left relative bg-gradient-to-r from-cyan-600 via-blue-600 to-indigo-700 rounded-3xl p-6 shadow-[0_12px_30px_rgba(6,182,212,0.45)] border-t-2 border-l-2 border-cyan-300/60 border-b-4 border-r-4 border-indigo-950/90 transition-all duration-200 hover:-translate-y-1 active:translate-y-1 active:shadow-md cursor-pointer overflow-hidden"
+                  >
+                    <div className="absolute top-0 right-0 w-36 h-36 bg-white/10 rounded-full blur-2xl group-hover:scale-125 transition-all" />
+                    <div className="flex items-center gap-4 relative z-10">
+                      <div className="w-14 h-14 rounded-2xl bg-white/20 border border-white/40 flex items-center justify-center text-3xl shadow-inner shrink-0 group-hover:scale-110 transition-transform">
+                        ➕
+                      </div>
+                      <div className="space-y-1 flex-1">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-base font-black text-white uppercase tracking-wider">
+                            Nuevo Levantamiento
+                          </h3>
+                          <span className="text-xs text-cyan-200 font-bold bg-white/15 px-2.5 py-0.5 rounded-full uppercase">
+                            En Terreno ➔
+                          </span>
+                        </div>
+                        <p className="text-xs text-cyan-100 font-medium leading-snug">
+                          Registrar ficha de prospecto, cuantificar insumos (+/-), adjuntar observaciones y enviar PDF comercial.
+                        </p>
+                      </div>
+                    </div>
+                  </button>
+
+                  {/* BOTÓN 3D 2: HISTORIAL & CRUD LEVANTAMIENTOS */}
+                  <button
+                    onClick={() => setSubSeccionLevantamiento('historial')}
+                    className="w-full group text-left relative bg-gradient-to-r from-slate-900 via-[#0c162d] to-slate-950 rounded-3xl p-6 shadow-[0_12px_30px_rgba(15,23,42,0.8)] border-t-2 border-l-2 border-cyan-500/40 border-b-4 border-r-4 border-slate-950 transition-all duration-200 hover:-translate-y-1 active:translate-y-1 active:shadow-md cursor-pointer overflow-hidden"
+                  >
+                    <div className="flex items-center gap-4 relative z-10">
+                      <div className="w-14 h-14 rounded-2xl bg-cyan-950/80 border border-cyan-700/60 flex items-center justify-center text-3xl shadow-inner shrink-0 group-hover:scale-110 transition-transform">
+                        📋
+                      </div>
+                      <div className="space-y-1 flex-1">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-base font-black text-white uppercase tracking-wider">
+                            Historial & CRUD Prospectos
+                          </h3>
+                          <span className="text-xs font-mono font-black text-cyan-400 bg-cyan-950 border border-cyan-800 px-2.5 py-0.5 rounded-full">
+                            {levantamientosLista.length} Guardados
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-300 font-medium leading-snug">
+                          Consultar cotizaciones registradas, descargar PDF oficial, reenviar por email o gestionar fichas (CRUD).
+                        </p>
+                      </div>
+                    </div>
+                  </button>
+                </div>
               </div>
+            )}
 
-              {/* SECCIÓN 2: CUANTIFICADOR DE INSUMOS */}
-              <div className="space-y-3 mb-5">
-                <h3 className="text-xs font-black text-cyan-400 uppercase tracking-wider flex items-center justify-between">
-                  <span className="flex items-center gap-1.5">📦 2. Cuantificación de Equipos & Insumos</span>
-                  <span className="text-[10px] font-mono text-slate-400">Inspector: Andrés Alzamora</span>
-                </h3>
+            {/* SUB-VISTA 2: FORMULARIO NUEVO LEVANTAMIENTO */}
+            {subSeccionLevantamiento === 'nuevo' && (
+              <div className="space-y-4">
+                {/* Botón Volver al Menú */}
+                <button
+                  onClick={() => setSubSeccionLevantamiento('menu')}
+                  className="bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-slate-700 font-black text-xs px-3.5 py-2 rounded-2xl flex items-center gap-2 cursor-pointer transition shadow-md"
+                >
+                  <span>⬅️ Volver al Menú Levantamientos</span>
+                </button>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {Object.keys(levContadores).map((key) => {
-                    const cant = levContadores[key]
-                    return (
-                      <div
-                        key={key}
-                        className="bg-[#070e20] border border-slate-800 rounded-xl p-2.5 flex items-center justify-between gap-2 shadow-sm hover:border-slate-700 transition"
-                      >
-                        <span className="text-xs font-medium text-slate-200 leading-tight">
-                          {key}
-                        </span>
+                <div className="bg-slate-900/90 border border-cyan-900/80 rounded-3xl p-5 shadow-2xl backdrop-blur-2xl space-y-5">
+                  <div className="flex items-center gap-3 border-b border-cyan-900/50 pb-3">
+                    <div className="w-10 h-10 rounded-2xl bg-cyan-600/20 border border-cyan-400/40 flex items-center justify-center text-xl shadow">
+                      📐
+                    </div>
+                    <div>
+                      <h2 className="text-sm font-black text-white tracking-wide uppercase flex items-center gap-2">
+                        Ficha de Levantamiento Técnico
+                      </h2>
+                      <p className="text-xs text-slate-400">
+                        Inspector Responsable: <strong>Andrés Alzamora</strong>
+                      </p>
+                    </div>
+                  </div>
 
-                        <div className="flex items-center gap-1 shrink-0">
-                          <button
-                            type="button"
-                            onClick={() => setLevContadores(prev => ({ ...prev, [key]: Math.max(0, (prev[key] || 0) - 1) }))}
-                            className="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-black text-sm flex items-center justify-center transition cursor-pointer"
+                  {/* SECCIÓN 1: DATOS PROSPECTO */}
+                  <div className="space-y-3">
+                    <h3 className="text-xs font-black text-cyan-400 uppercase tracking-wider flex items-center gap-1.5">
+                      <span>📋</span> 1. Ficha del Cliente Prospecto
+                    </h3>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Nombre / Razón Social *</label>
+                        <input
+                          type="text"
+                          placeholder="Ej: Bodegas Santiago SpA"
+                          value={levNombre}
+                          onChange={e => setLevNombre(e.target.value)}
+                          className="w-full bg-[#070e20] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">RUT Cliente</label>
+                        <input
+                          type="text"
+                          placeholder="Ej: 76.123.456-7"
+                          value={levRut}
+                          onChange={e => setLevRut(e.target.value)}
+                          className="w-full bg-[#070e20] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 font-mono"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Dirección de la Propiedad</label>
+                        <input
+                          type="text"
+                          placeholder="Ej: Av. Providencia 1234"
+                          value={levDireccion}
+                          onChange={e => setLevDireccion(e.target.value)}
+                          className="w-full bg-[#070e20] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Comuna *</label>
+                        <input
+                          type="text"
+                          placeholder="Ej: Quillota / Viña del Mar / Santiago"
+                          value={levComuna}
+                          onChange={e => setLevComuna(e.target.value)}
+                          className="w-full bg-[#070e20] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 uppercase font-bold"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Persona de Contacto</label>
+                        <input
+                          type="text"
+                          placeholder="Ej: Carlos Mendoza (Administrador)"
+                          value={levContacto}
+                          onChange={e => setLevContacto(e.target.value)}
+                          className="w-full bg-[#070e20] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Teléfono / WhatsApp</label>
+                        <input
+                          type="text"
+                          placeholder="Ej: +56 9 1234 5678"
+                          value={levWhatsapp}
+                          onChange={e => setLevWhatsapp(e.target.value)}
+                          className="w-full bg-[#070e20] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 font-mono"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Email del Cliente</label>
+                        <input
+                          type="email"
+                          placeholder="Ej: contacto@bodegassantiago.cl"
+                          value={levEmail}
+                          onChange={e => setLevEmail(e.target.value)}
+                          className="w-full bg-[#070e20] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Tipo de Inmueble</label>
+                        <select
+                          value={levTipoPropiedad}
+                          onChange={e => setLevTipoPropiedad(e.target.value)}
+                          className="w-full bg-[#070e20] border border-slate-700 rounded-xl px-3 py-2 text-xs text-cyan-300 font-bold focus:outline-none focus:border-cyan-500 cursor-pointer"
+                        >
+                          <option value="Local Comercial / Empresa">Local Comercial / Empresa</option>
+                          <option value="Bodega / Centro Logístico">Bodega / Centro Logístico</option>
+                          <option value="Casa / Residencial">Casa / Residencial</option>
+                          <option value="Condominio / Edificio">Condominio / Edificio</option>
+                          <option value="Terreno / Parcela / Agrícola">Terreno / Parcela / Agrícola</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* SECCIÓN 2: CUANTIFICADOR DE INSUMOS */}
+                  <div className="space-y-3">
+                    <h3 className="text-xs font-black text-cyan-400 uppercase tracking-wider flex items-center justify-between">
+                      <span className="flex items-center gap-1.5">📦 2. Cuantificación de Equipos & Insumos</span>
+                    </h3>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {Object.keys(levContadores).map((key) => {
+                        const cant = levContadores[key]
+                        return (
+                          <div
+                            key={key}
+                            className="bg-[#070e20] border border-slate-800 rounded-xl p-2.5 flex items-center justify-between gap-2 shadow-sm hover:border-slate-700 transition"
                           >
-                            -
+                            <span className="text-xs font-medium text-slate-200 leading-tight">
+                              {key}
+                            </span>
+
+                            <div className="flex items-center gap-1 shrink-0">
+                              <button
+                                type="button"
+                                onClick={() => setLevContadores(prev => ({ ...prev, [key]: Math.max(0, (prev[key] || 0) - 1) }))}
+                                className="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-black text-sm flex items-center justify-center transition cursor-pointer"
+                              >
+                                -
+                              </button>
+
+                              <span className={`w-8 text-center font-mono font-black text-xs px-1.5 py-0.5 rounded ${
+                                cant > 0 ? 'bg-cyan-950 text-cyan-300 border border-cyan-800' : 'bg-slate-900 text-slate-500'
+                              }`}>
+                                {cant}
+                              </span>
+
+                              <button
+                                type="button"
+                                onClick={() => setLevContadores(prev => ({ ...prev, [key]: (prev[key] || 0) + 1 }))}
+                                className="w-7 h-7 rounded-lg bg-cyan-950 hover:bg-cyan-900 border border-cyan-800 text-cyan-300 font-black text-sm flex items-center justify-center transition cursor-pointer"
+                              >
+                                +
+                              </button>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+
+                  {/* SECCIÓN 3: OBS TÉCNICAS */}
+                  <div className="space-y-2">
+                    <h3 className="text-xs font-black text-cyan-400 uppercase tracking-wider flex items-center gap-1.5">
+                      <span>📝</span> 3. Diagnóstico Técnico & Puntos Críticos en Terreno
+                    </h3>
+                    <textarea
+                      rows={3}
+                      placeholder="Describa riesgos del sector, factibilidad de energía/internet, trabajos en altura o recomendaciones comerciales..."
+                      value={levObservaciones}
+                      onChange={e => setLevObservaciones(e.target.value)}
+                      className="w-full bg-[#070e20] border border-slate-700 rounded-xl p-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
+                    />
+                  </div>
+
+                  {/* BOTÓN ENVIAR LEVANTAMIENTO (ELEVADO Y VISIBLE) */}
+                  <div className="pt-4 pb-6 border-t border-cyan-900/60">
+                    <button
+                      type="button"
+                      disabled={levEnviando}
+                      onClick={async () => {
+                        await handleEnviarLevantamiento()
+                        // Crear item en CRUD local
+                        const nuevoItem: LevantamientoItem = {
+                          id: 'LEV-' + Date.now().toString().slice(-6),
+                          fecha: new Date().toLocaleDateString('es-CL') + ' ' + new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }),
+                          inspector: 'Andrés Alzamora',
+                          nombre: levNombre.trim() || 'Prospecto S/N',
+                          rut: levRut.trim() || 'S/RUT',
+                          direccion: levDireccion.trim() || 'S/D',
+                          comuna: levComuna.trim() || 'S/C',
+                          contacto: levContacto.trim() || 'N/A',
+                          whatsapp: levWhatsapp.trim() || 'N/A',
+                          email: levEmail.trim() || 'N/A',
+                          tipo_propiedad: levTipoPropiedad,
+                          observaciones: levObservaciones.trim(),
+                          contadores: { ...levContadores },
+                          estado_envio: 'Enviado a Ventas'
+                        }
+                        guardarLevantamientos([nuevoItem, ...levantamientosLista])
+                        setSubSeccionLevantamiento('historial')
+                      }}
+                      className="w-full py-4 px-4 bg-gradient-to-r from-blue-600 via-cyan-600 to-blue-700 hover:from-blue-500 hover:to-cyan-500 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-[0_10px_25px_rgba(6,182,212,0.5)] border-t border-cyan-300/40 transition flex items-center justify-center gap-2 cursor-pointer active:scale-98"
+                    >
+                      {levEnviando ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          <span>{levStatusMsg || 'Procesando e Informe PDF...'}</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>🚀</span>
+                          <span>Enviar Levantamiento a Ventas (Email + PDF Adjunto)</span>
+                        </>
+                      )}
+                    </button>
+                    <p className="text-[10px] text-slate-400 text-center mt-2.5 font-medium">
+                      * Se enviará a Tomás Toro (tetoromoreno@gamasecurity.cl) y M. Rebolledo (mrebolledo@gamasecurity.cl) y se guardará en tu Historial CRUD.
+                    </p>
+                  </div>
+
+                </div>
+              </div>
+            )}
+
+            {/* SUB-VISTA 3: HISTORIAL & CRUD LEVANTAMIENTOS */}
+            {subSeccionLevantamiento === 'historial' && (
+              <div className="space-y-4">
+                {/* Header & Volver */}
+                <div className="flex items-center justify-between">
+                  <button
+                    onClick={() => setSubSeccionLevantamiento('menu')}
+                    className="bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-slate-700 font-black text-xs px-3.5 py-2 rounded-2xl flex items-center gap-2 cursor-pointer transition shadow-md"
+                  >
+                    <span>⬅️ Volver al Menú</span>
+                  </button>
+
+                  <button
+                    onClick={() => setSubSeccionLevantamiento('nuevo')}
+                    className="bg-cyan-600 hover:bg-cyan-500 text-white font-black text-xs px-3.5 py-2 rounded-2xl flex items-center gap-1.5 cursor-pointer transition shadow-md"
+                  >
+                    <span>➕ Nuevo</span>
+                  </button>
+                </div>
+
+                {/* Buscador en tiempo real */}
+                <input
+                  type="text"
+                  placeholder="🔍 Buscar por nombre del cliente, RUT o comuna..."
+                  value={busquedaLevantamiento}
+                  onChange={e => setBusquedaLevantamiento(e.target.value)}
+                  className="w-full bg-[#070e20] border border-slate-700 rounded-2xl px-4 py-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 shadow-inner"
+                />
+
+                {/* Lista de Fichas CRUD */}
+                <div className="space-y-3">
+                  {levantamientosLista
+                    .filter(item => {
+                      const q = busquedaLevantamiento.toLowerCase()
+                      return (
+                        item.nombre.toLowerCase().includes(q) ||
+                        item.comuna.toLowerCase().includes(q) ||
+                        item.rut.toLowerCase().includes(q)
+                      )
+                    })
+                    .map((item) => (
+                      <div
+                        key={item.id}
+                        className="bg-gradient-to-br from-slate-900/90 to-[#0c162d] border border-cyan-900/60 rounded-3xl p-4 space-y-3 shadow-xl backdrop-blur-xl relative overflow-hidden"
+                      >
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <span className="text-[10px] font-black bg-cyan-950 text-cyan-400 border border-cyan-800 px-2.5 py-0.5 rounded-full uppercase font-mono">
+                              {item.id}
+                            </span>
+                            <h4 className="text-sm font-black text-white mt-1 uppercase">{item.nombre}</h4>
+                            <p className="text-[11px] text-slate-400">RUT: {item.rut || 'S/RUT'} | Comuna: <strong className="text-cyan-300 uppercase">{item.comuna}</strong></p>
+                          </div>
+                          <span className="text-[10px] font-mono text-slate-400">{item.fecha}</span>
+                        </div>
+
+                        <div className="text-xs text-slate-300 bg-[#070e20] p-3 rounded-2xl border border-slate-800 space-y-1">
+                          <div>📍 <strong>Dirección:</strong> {item.direccion || '---'}</div>
+                          <div>👤 <strong>Contacto:</strong> {item.contacto || '---'} ({item.whatsapp || '---'})</div>
+                          <div>📦 <strong>Ítems Cuantificados:</strong> {Object.values(item.contadores || {}).reduce((a, b) => a + b, 0)} elemento(s)</div>
+                        </div>
+
+                        {/* Botonera CRUD por tarjeta */}
+                        <div className="grid grid-cols-3 gap-2 pt-1">
+                          <button
+                            onClick={async () => {
+                              alert(`✉️ Reenviando reporte de ${item.nombre} por email a Ventas...`)
+                              try {
+                                const doc = new jsPDF()
+                                doc.setFillColor(0, 0, 128)
+                                doc.rect(0, 0, 210, 28, 'F')
+                                doc.setTextColor(255, 255, 255)
+                                doc.setFont('helvetica', 'bold')
+                                doc.setFontSize(16)
+                                doc.text('GAMA SEGURIDAD CHILE 24/7', 14, 12)
+                                doc.setFontSize(9)
+                                doc.setFont('helvetica', 'normal')
+                                doc.text(`REPORTE DE LEVANTAMIENTO DE PROSPECTO: ${item.nombre.toUpperCase()}`, 14, 19)
+
+                                const pdfBase64 = doc.output('datauristring').split(',')[1]
+
+                                await fetch('/api/enviar-reporte', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({
+                                    destinatarios: ['tetoromoreno@gamasecurity.cl', 'mrebolledo@gamasecurity.cl'],
+                                    asunto: `Levantamiento Técnico — ${item.nombre.toUpperCase()} — ${item.comuna.toUpperCase()}`,
+                                    html: `<p>Reenvío de levantamiento técnico de ${item.nombre} (${item.comuna}). Inspector: ${item.inspector}</p>`,
+                                    pdf_base64: pdfBase64,
+                                    nombre_archivo: `Levantamiento_${item.id}.pdf`
+                                  })
+                                })
+                                alert('🎉 ¡Email reenviado exitosamente a Tomás Toro y M. Rebolledo!')
+                              } catch (e: any) {
+                                alert('Error al reenviar email: ' + e.message)
+                              }
+                            }}
+                            className="bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border border-blue-500/30 font-bold py-2 rounded-xl text-[11px] flex items-center justify-center gap-1 cursor-pointer"
+                          >
+                            <span>✉️ Reenviar</span>
                           </button>
 
-                          <span className={`w-8 text-center font-mono font-black text-xs px-1.5 py-0.5 rounded ${
-                            cant > 0 ? 'bg-cyan-950 text-cyan-300 border border-cyan-800' : 'bg-slate-900 text-slate-500'
-                          }`}>
-                            {cant}
-                          </span>
+                          <button
+                            onClick={() => {
+                              setLevantamientoDetalle(item)
+                              setSubSeccionLevantamiento('detalle')
+                            }}
+                            className="bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-400 border border-cyan-500/30 font-bold py-2 rounded-xl text-[11px] flex items-center justify-center gap-1 cursor-pointer"
+                          >
+                            <span>👁️ Ver Ficha</span>
+                          </button>
 
                           <button
-                            type="button"
-                            onClick={() => setLevContadores(prev => ({ ...prev, [key]: (prev[key] || 0) + 1 }))}
-                            className="w-7 h-7 rounded-lg bg-cyan-950 hover:bg-cyan-900 border border-cyan-800 text-cyan-300 font-black text-sm flex items-center justify-center transition cursor-pointer"
+                            onClick={() => {
+                              if (confirm(`¿Desea eliminar la ficha de ${item.nombre}?`)) {
+                                guardarLevantamientos(levantamientosLista.filter(i => i.id !== item.id))
+                              }
+                            }}
+                            className="bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-500/30 font-bold py-2 rounded-xl text-[11px] flex items-center justify-center gap-1 cursor-pointer"
                           >
-                            +
+                            <span>🗑️ Eliminar</span>
                           </button>
                         </div>
                       </div>
-                    )
-                  })}
+                    ))}
+
+                  {levantamientosLista.length === 0 && (
+                    <div className="bg-slate-900/50 border border-slate-800 rounded-3xl p-8 text-center text-slate-400 text-xs italic space-y-2">
+                      <p>No tienes levantamientos guardados aún en tu historial.</p>
+                      <button
+                        onClick={() => setSubSeccionLevantamiento('nuevo')}
+                        className="text-cyan-400 font-bold text-xs underline cursor-pointer"
+                      >
+                        ➕ Realizar el primer levantamiento ahora
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
+            )}
 
-              {/* SECCIÓN 3: OBS TÉCNICAS */}
-              <div className="space-y-2 mb-5">
-                <h3 className="text-xs font-black text-cyan-400 uppercase tracking-wider flex items-center gap-1.5">
-                  <span>📝</span> 3. Diagnóstico Técnico & Puntos Críticos en Terreno
-                </h3>
-                <textarea
-                  rows={3}
-                  placeholder="Describa riesgos del sector, factibilidad de energía/internet, trabajos en altura o recomendaciones comerciales..."
-                  value={levObservaciones}
-                  onChange={e => setLevObservaciones(e.target.value)}
-                  className="w-full bg-[#070e20] border border-slate-700 rounded-xl p-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
-                />
-              </div>
-
-              {/* BOTÓN ENVIAR LEVANTAMIENTO */}
-              <div className="pt-4 pb-4">
+            {/* SUB-VISTA 4: DETALLE DE FICHA LEVANTAMIENTO */}
+            {subSeccionLevantamiento === 'detalle' && levantamientoDetalle && (
+              <div className="space-y-4">
                 <button
-                  type="button"
-                  disabled={levEnviando}
-                  onClick={handleEnviarLevantamiento}
-                  className="w-full py-4 px-4 bg-gradient-to-r from-blue-600 via-cyan-600 to-blue-700 hover:from-blue-500 hover:to-cyan-500 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-2xl transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 active:scale-98"
+                  onClick={() => setSubSeccionLevantamiento('historial')}
+                  className="bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-slate-700 font-black text-xs px-3.5 py-2 rounded-2xl flex items-center gap-2 cursor-pointer transition shadow-md"
                 >
-                  {levEnviando ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      <span>{levStatusMsg || 'Procesando e Informe PDF...'}</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>🚀</span>
-                      <span>Enviar Levantamiento a Ventas (Email + PDF Adjunto)</span>
-                    </>
-                  )}
+                  <span>⬅️ Volver a la Lista</span>
                 </button>
-                <p className="text-[10px] text-slate-400 text-center mt-2.5 font-medium">
-                  * Se enviará automáticamente a Tomás Toro (tetoromoreno@gamasecurity.cl) y M. Rebolledo (mrebolledo@gamasecurity.cl).
-                </p>
+
+                <div className="bg-slate-900/90 border border-cyan-900/80 rounded-3xl p-5 shadow-2xl backdrop-blur-2xl space-y-4">
+                  <div className="flex justify-between items-start border-b border-slate-800 pb-3">
+                    <div>
+                      <span className="text-[10px] font-black bg-cyan-950 text-cyan-300 border border-cyan-700 px-2 py-0.5 rounded font-mono">
+                        {levantamientoDetalle.id}
+                      </span>
+                      <h3 className="text-base font-black text-white mt-1 uppercase">{levantamientoDetalle.nombre}</h3>
+                      <p className="text-xs text-slate-400">{levantamientoDetalle.tipo_propiedad}</p>
+                    </div>
+                    <span className="text-xs font-mono text-cyan-400 font-bold">{levantamientoDetalle.fecha}</span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 text-xs text-slate-300 bg-[#070e20] p-3 rounded-2xl border border-slate-800">
+                    <div><strong>RUT:</strong> {levantamientoDetalle.rut || 'S/RUT'}</div>
+                    <div><strong>Comuna:</strong> {levantamientoDetalle.comuna}</div>
+                    <div><strong>Dirección:</strong> {levantamientoDetalle.direccion}</div>
+                    <div><strong>Contacto:</strong> {levantamientoDetalle.contacto}</div>
+                    <div><strong>Teléfono:</strong> {levantamientoDetalle.whatsapp}</div>
+                    <div><strong>Email:</strong> {levantamientoDetalle.email}</div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <h4 className="text-xs font-black text-cyan-400 uppercase">📦 Equipos & Insumos Requeridos:</h4>
+                    <div className="bg-[#070e20] rounded-2xl p-3 border border-slate-800 space-y-1.5">
+                      {Object.entries(levantamientoDetalle.contadores || {})
+                        .filter(([_, cant]) => cant > 0)
+                        .map(([k, cant]) => (
+                          <div key={k} className="flex justify-between text-xs text-slate-200 border-b border-slate-800/60 pb-1">
+                            <span>{k}</span>
+                            <span className="font-mono font-bold text-cyan-300">{cant} ud(s)</span>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <h4 className="text-xs font-black text-cyan-400 uppercase">📝 Observaciones Técnicas:</h4>
+                    <p className="text-xs text-slate-300 bg-[#070e20] p-3 rounded-2xl border border-slate-800 italic">
+                      {levantamientoDetalle.observaciones || 'Sin observaciones registradas.'}
+                    </p>
+                  </div>
+                </div>
               </div>
-            </div>
+            )}
+
           </div>
         )}
 
@@ -2104,6 +2463,7 @@ export default function PortalTecnicoMovil() {
           onClick={() => {
             setOrdenSeleccionada(null)
             setMenuSeccion('levantamiento')
+            setSubSeccionLevantamiento('menu')
           }}
           className={`flex flex-col items-center py-1.5 px-2.5 rounded-2xl transition-all cursor-pointer ${
             menuSeccion === 'levantamiento' ? 'bg-cyan-600/20 text-cyan-400 border border-cyan-500/40 shadow-[0_0_10px_rgba(6,182,212,0.3)]' : 'text-slate-400 hover:text-white'
