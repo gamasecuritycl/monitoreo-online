@@ -376,34 +376,9 @@ export default function ServicioTecnicoModal({ onClose, clientesMap = {}, usuari
           </button>
         </div>
 
-        {/* Windows Style Tabs Menu Ampliado */}
-        <div className="bg-[#c0c0c0] px-3 pt-2 flex gap-1 border-b-2 border-white shrink-0">
-          {usuarioActivo?.rol !== 'Técnico' && (
-            <button
-              onClick={() => setTabActive('despacho')}
-              className={`px-4 py-2 font-black text-xs md:text-sm border-t-2 border-l-2 border-r-2 border-white rounded-t-md cursor-pointer transition-colors ${
-                tabActive === 'despacho' ? 'bg-[#d4d0c8] pb-2.5 -mb-0.5 z-10 text-blue-950' : 'bg-[#b0b0b0] text-gray-700 hover:bg-[#c0c0c0]'
-              }`}
-            >
-              🖥️ DESPACHO Y AGENDAMIENTO (CENTRAL)
-            </button>
-          )}
-          <button
-            onClick={() => setTabActive('tecnico_movil')}
-            className={`px-4 py-2 font-black text-xs md:text-sm border-t-2 border-l-2 border-r-2 border-white rounded-t-md cursor-pointer transition-colors ${
-              tabActive === 'tecnico_movil' ? 'bg-[#d4d0c8] pb-2.5 -mb-0.5 z-10 text-blue-950' : 'bg-[#b0b0b0] text-gray-700 hover:bg-[#c0c0c0]'
-            }`}
-          >
-            {usuarioActivo?.rol === 'Técnico' ? '📱 PORTAL TÉCNICO EN TERRENO' : '📱 SIMULADOR PORTAL TÉCNICO (TERRENO)'}
-          </button>
-        </div>
-
-        {/* Tab Content area */}
+        {/* Content area Despacho Central */}
         <div className="p-4 bg-[#d4d0c8] flex-1 flex flex-col overflow-hidden min-h-0">
-          
-          {/* TAB 1: DESPACHO CENTRAL */}
-          {tabActive === 'despacho' && (
-            <div className="flex-1 flex flex-col md:flex-row gap-5 overflow-hidden min-h-0">
+          <div className="flex-1 flex flex-col md:flex-row gap-5 overflow-hidden min-h-0">
               
               {/* Formulario Asignación Izquierda (AMPLIADO A 460px) */}
               <div className="w-full md:w-[440px] lg:w-[460px] bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 p-4 flex flex-col justify-between shrink-0 overflow-y-auto shadow-inner">
@@ -607,144 +582,9 @@ export default function ServicioTecnicoModal({ onClose, clientesMap = {}, usuari
                   </table>
                 </div>
               </div>
-
-            </div>
-          )}
-
-          {/* TAB 2: PORTAL / SIMULADOR TÉCNICO EN TERRENO */}
-          {tabActive === 'tecnico_movil' && (
-            <div className="flex-1 flex flex-col md:flex-row gap-5 overflow-hidden min-h-0">
-              
-              {/* Selector de técnico en simulador */}
-              <div className="w-full md:w-[320px] bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 p-3 flex flex-col space-y-3 shrink-0">
-                <div className="bg-[#000080] text-white text-xs font-black px-2 py-1 uppercase text-center">
-                  👨‍🔧 Selección de Técnico
-                </div>
-                <select
-                  value={tecnicoSimulado}
-                  onChange={(e) => {
-                    setTecnicoSimulado(e.target.value)
-                    setOrdenSeleccionada(null)
-                  }}
-                  className="bg-white border-2 border-gray-500 font-black p-2 text-xs md:text-sm text-black focus:outline-none w-full rounded"
-                >
-                  {TECNICOS.map(t => (
-                    <option key={t} value={t}>{t}</option>
-                  ))}
-                </select>
-
-                <div className="flex-1 overflow-y-auto space-y-2">
-                  <span className="text-xs font-black text-gray-800 uppercase block">Órdenes del Técnico ({ordenesTécnico.length}):</span>
-                  {ordenesTécnico.map(o => (
-                    <div
-                      key={o.id}
-                      onClick={() => {
-                        setOrdenSeleccionada(o)
-                        setNovedadTexto(o.novedad || '')
-                        setRepuestosTexto(o.repuestos_utilizados || '')
-                        setNombreFirmanteText(o.nombre_firmante || '')
-                      }}
-                      className={`p-2.5 border-2 rounded text-xs cursor-pointer ${
-                        ordenSeleccionada?.id === o.id ? 'bg-blue-900 text-white border-blue-950 font-bold' : 'bg-white text-black border-gray-400 hover:bg-slate-100'
-                      }`}
-                    >
-                      <div className="font-black flex justify-between">
-                        <span>{o.codigo_ot || `OT-${o.id}`}</span>
-                        <span>{o.cuenta}</span>
-                      </div>
-                      <div className="truncate text-[11px] font-bold">{o.nombre_abonado}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Vista Móvil Terreno */}
-              <div className="flex-1 bg-slate-900 border-2 border-gray-700 p-4 rounded overflow-y-auto text-white">
-                {ordenSeleccionada ? (
-                  <div className="space-y-4 max-w-lg mx-auto">
-                    <h3 className="text-base font-black text-blue-400 border-b border-slate-700 pb-2">
-                      Atención #{ordenSeleccionada.codigo_ot || ordenSeleccionada.id} — {ordenSeleccionada.nombre_abonado}
-                    </h3>
-                    
-                    <div className="bg-slate-950 p-3 rounded border border-slate-800 text-xs space-y-1">
-                      <div><strong>Cuenta:</strong> {ordenSeleccionada.cuenta}</div>
-                      <div><strong>Dirección:</strong> {ordenSeleccionada.direccion}</div>
-                      <div><strong>Falla Reportada:</strong> {ordenSeleccionada.problema}</div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <label className="text-xs font-bold text-slate-300">Trabajo Realizado en Terreno:</label>
-                      <textarea
-                        value={novedadTexto}
-                        onChange={(e) => setNovedadTexto(e.target.value)}
-                        className="bg-slate-950 border border-slate-700 p-2 text-xs text-white w-full h-20 rounded"
-                        placeholder="Descripción de trabajos..."
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <label className="text-xs font-bold text-slate-300">Repuestos Utilizados:</label>
-                      <input
-                        type="text"
-                        value={repuestosTexto}
-                        onChange={(e) => setRepuestosTexto(e.target.value)}
-                        className="bg-slate-950 border border-slate-700 p-2 text-xs text-white w-full rounded"
-                        placeholder="Ej: Batería 12V 7Ah..."
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <label className="text-xs font-bold text-slate-300">Nombre de quien recibe:</label>
-                      <input
-                        type="text"
-                        value={nombreFirmanteText}
-                        onChange={(e) => setNombreFirmanteText(e.target.value)}
-                        className="bg-slate-950 border border-slate-700 p-2 text-xs text-white w-full rounded"
-                        placeholder="Nombre completo..."
-                      />
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="text-xs font-bold text-slate-300">Firma Touch:</label>
-                      <div className="bg-white p-1 rounded">
-                        <canvas
-                          ref={canvasRef}
-                          width={340}
-                          height={110}
-                          onMouseDown={startDrawing}
-                          onMouseMove={draw}
-                          onMouseUp={stopDrawing}
-                          onMouseLeave={stopDrawing}
-                          onTouchStart={startDrawing}
-                          onTouchMove={draw}
-                          onTouchEnd={stopDrawing}
-                          className="w-full cursor-crosshair bg-white rounded"
-                        />
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={handleFinalizarOrden}
-                      className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-3 rounded-xl text-xs uppercase"
-                    >
-                      ✔️ FINALIZAR Y GENERAR COMPROBANTE
-                    </button>
-                  </div>
-                ) : (
-                  <div className="text-center text-slate-400 py-16 text-sm italic">
-                    Seleccione una orden de trabajo de la lista para simular la atención.
-                  </div>
-                )}
-              </div>
-
-            </div>
-          )}
-
+          </div>
         </div>
-
       </div>
-
-      {/* Visor Modal Comprobante Imprimible */}
       {ordenImprimir && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4">
           <div className="w-full max-w-[750px] bg-white text-black p-6 font-sans shadow-2xl rounded-2xl border border-gray-400 max-h-[95vh] overflow-y-auto">
