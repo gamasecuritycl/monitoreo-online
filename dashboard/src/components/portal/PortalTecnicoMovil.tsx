@@ -1165,7 +1165,7 @@ export default function PortalTecnicoMovil() {
       // Convertir a base64
       const pdfBase64 = doc.output('datauristring').split(',')[1]
 
-      setLevStatusMsg('✉️ Enviando correo comercial a Tomas Toro y M. Rebolledo vía Resend...')
+      setLevStatusMsg('✉️ Despachando informe de levantamiento por correo comercial...')
 
       // Generar HTML de acompañamiento
       const itemsHtml = Object.entries(levContadores)
@@ -1229,7 +1229,27 @@ export default function PortalTecnicoMovil() {
 
       const data = await res.json()
       if (res.ok && data.ok) {
-        alert(`🎉 ¡Levantamiento enviado exitosamente a Tomás Toro (tetoromoreno@gamasecurity.cl) y M. Rebolledo (mrebolledo@gamasecurity.cl) con el informe PDF adjunto!`)
+        // Crear registro en el Historial local
+        const nuevoItem: LevantamientoItem = {
+          id: 'LEV-' + Date.now().toString().slice(-6),
+          fecha: new Date().toLocaleDateString('es-CL') + ' ' + new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }),
+          inspector: 'Andrés Alzamora',
+          nombre: levNombre.trim() || 'Prospecto S/N',
+          rut: levRut.trim() || 'S/RUT',
+          direccion: levDireccion.trim() || 'S/D',
+          comuna: levComuna.trim() || 'S/C',
+          contacto: levContacto.trim() || 'N/A',
+          whatsapp: levWhatsapp.trim() || 'N/A',
+          email: levEmail.trim() || 'N/A',
+          tipo_propiedad: levTipoPropiedad,
+          observaciones: levObservaciones.trim(),
+          contadores: { ...levContadores },
+          estado_envio: 'Enviado a Ventas'
+        }
+        guardarLevantamientos([nuevoItem, ...levantamientosLista])
+
+        alert(`🎉 ¡Informe de Levantamiento Técnico enviado exitosamente a Ventas con PDF adjunto!`)
+
         setLevNombre('')
         setLevRut('')
         setLevDireccion('')
@@ -1238,7 +1258,7 @@ export default function PortalTecnicoMovil() {
         setLevWhatsapp('')
         setLevEmail('')
         setLevObservaciones('')
-        setMenuSeccion('itinerario')
+        setSubSeccionLevantamiento('historial')
       } else {
         throw new Error(data.error || 'Error al enviar email')
       }
@@ -1957,7 +1977,7 @@ export default function PortalTecnicoMovil() {
                     </div>
                   </button>
 
-                  {/* BOTÓN 3D 2: HISTORIAL & CRUD LEVANTAMIENTOS */}
+                  {/* BOTÓN 3D 2: HISTORIAL DE LEVANTAMIENTOS */}
                   <button
                     onClick={() => setSubSeccionLevantamiento('historial')}
                     className="w-full group text-left relative bg-gradient-to-r from-slate-900 via-[#0c162d] to-slate-950 rounded-3xl p-6 shadow-[0_12px_30px_rgba(15,23,42,0.8)] border-t-2 border-l-2 border-cyan-500/40 border-b-4 border-r-4 border-slate-950 transition-all duration-200 hover:-translate-y-1 active:translate-y-1 active:shadow-md cursor-pointer overflow-hidden"
@@ -1969,14 +1989,14 @@ export default function PortalTecnicoMovil() {
                       <div className="space-y-1 flex-1">
                         <div className="flex items-center justify-between">
                           <h3 className="text-base font-black text-white uppercase tracking-wider">
-                            Historial & CRUD Prospectos
+                            Historial de Levantamientos
                           </h3>
                           <span className="text-xs font-mono font-black text-cyan-400 bg-cyan-950 border border-cyan-800 px-2.5 py-0.5 rounded-full">
-                            {levantamientosLista.length} Guardados
+                            {levantamientosLista.length} Registrados
                           </span>
                         </div>
                         <p className="text-xs text-slate-300 font-medium leading-snug">
-                          Consultar cotizaciones registradas, descargar PDF oficial, reenviar por email o gestionar fichas (CRUD).
+                          Consultar levantamientos guardados en terreno, ver fichas completas, reenviar informes por email o administrar fichas.
                         </p>
                       </div>
                     </div>
@@ -2173,33 +2193,12 @@ export default function PortalTecnicoMovil() {
                     />
                   </div>
 
-                  {/* BOTÓN ENVIAR LEVANTAMIENTO (ELEVADO Y VISIBLE) */}
-                  <div className="pt-4 pb-6 border-t border-cyan-900/60">
+                  {/* BOTÓN ENVIAR LEVANTAMIENTO (FLOATING STICKY BAR SOBRE EL FOOTER) */}
+                  <div className="sticky bottom-20 z-30 bg-[#070e20]/95 backdrop-blur-md p-4 border-t-2 border-cyan-500/60 rounded-t-3xl shadow-[0_-15px_35px_rgba(0,0,0,0.95)] -mx-5 -mb-5 mt-6">
                     <button
                       type="button"
                       disabled={levEnviando}
-                      onClick={async () => {
-                        await handleEnviarLevantamiento()
-                        // Crear item en CRUD local
-                        const nuevoItem: LevantamientoItem = {
-                          id: 'LEV-' + Date.now().toString().slice(-6),
-                          fecha: new Date().toLocaleDateString('es-CL') + ' ' + new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }),
-                          inspector: 'Andrés Alzamora',
-                          nombre: levNombre.trim() || 'Prospecto S/N',
-                          rut: levRut.trim() || 'S/RUT',
-                          direccion: levDireccion.trim() || 'S/D',
-                          comuna: levComuna.trim() || 'S/C',
-                          contacto: levContacto.trim() || 'N/A',
-                          whatsapp: levWhatsapp.trim() || 'N/A',
-                          email: levEmail.trim() || 'N/A',
-                          tipo_propiedad: levTipoPropiedad,
-                          observaciones: levObservaciones.trim(),
-                          contadores: { ...levContadores },
-                          estado_envio: 'Enviado a Ventas'
-                        }
-                        guardarLevantamientos([nuevoItem, ...levantamientosLista])
-                        setSubSeccionLevantamiento('historial')
-                      }}
+                      onClick={handleEnviarLevantamiento}
                       className="w-full py-4 px-4 bg-gradient-to-r from-blue-600 via-cyan-600 to-blue-700 hover:from-blue-500 hover:to-cyan-500 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-[0_10px_25px_rgba(6,182,212,0.5)] border-t border-cyan-300/40 transition flex items-center justify-center gap-2 cursor-pointer active:scale-98"
                     >
                       {levEnviando ? (
@@ -2214,8 +2213,8 @@ export default function PortalTecnicoMovil() {
                         </>
                       )}
                     </button>
-                    <p className="text-[10px] text-slate-400 text-center mt-2.5 font-medium">
-                      * Se enviará a Tomás Toro (tetoromoreno@gamasecurity.cl) y M. Rebolledo (mrebolledo@gamasecurity.cl) y se guardará en tu Historial CRUD.
+                    <p className="text-[10px] text-cyan-300 text-center mt-2.5 font-bold">
+                      * Se enviará el informe PDF oficial a la Central de Ventas y quedará registrado en tu Historial.
                     </p>
                   </div>
 
@@ -2315,7 +2314,7 @@ export default function PortalTecnicoMovil() {
                                     nombre_archivo: `Levantamiento_${item.id}.pdf`
                                   })
                                 })
-                                alert('🎉 ¡Email reenviado exitosamente a Tomás Toro y M. Rebolledo!')
+                                alert('🎉 ¡Informe reenviado exitosamente a Ventas con PDF adjunto!')
                               } catch (e: any) {
                                 alert('Error al reenviar email: ' + e.message)
                               }

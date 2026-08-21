@@ -32,7 +32,7 @@ export async function POST(req: Request) {
     ] : []
 
     let response = await resend.emails.send({
-      from: 'Gama Seguridad <reportes@gamasecurity.cl>',
+      from: 'Levantamiento Gama Seguridad <reportes@gamasecurity.cl>',
       to: toList,
       subject: asunto,
       html,
@@ -42,7 +42,7 @@ export async function POST(req: Request) {
     if (response.error) {
       console.warn('Fallback a onboarding@resend.dev por error en dominio corporativo:', response.error)
       response = await resend.emails.send({
-        from: 'Gama Seguridad <onboarding@resend.dev>',
+        from: 'Levantamiento Gama Seguridad <onboarding@resend.dev>',
         to: toList,
         subject: asunto,
         html,
