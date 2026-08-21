@@ -10,11 +10,12 @@ interface AperturasCierresModalProps {
   onClose: () => void
 }
 
-interface ItemMonitoreado {
-  id: string // Identificador único ej: "C745_PAR1"
+export interface ItemMonitoreado {
+  id: string // Identificador único ej: "C745_P1"
   cuenta: string
   nombreAbonado: string
-  particion: string // ej: "01", "02", "P1", "GENERAL"
+  particion: string // ej: "P1", "P2", "P3"
+  numParticion: number // 1, 2, 3...
 }
 
 interface EstadoParticion {
@@ -26,24 +27,48 @@ interface EstadoParticion {
   eventoNombre: string
 }
 
-const STORAGE_KEY = 'gama_aperturas_cierres_monitoreados_v1'
+const STORAGE_KEY = 'gama_aperturas_cierres_monitoreados_v2'
 const SUPABASE_CONFIG_CUENTA = 'CONFIG_APERTURAS_CIERRES_LISTA'
 
-// Lista de abonados predeterminados sugeridos (ej: Doral, Centro Comercial Quillota, C745, etc.)
+// Helper para resolver el Nombre Real del Abonado desde la BD de clientes
+const obtenerNombreRealBD = (cta: string, fallbackNombre?: string): string => {
+  const c = clientesMap[cta.toUpperCase().trim()]
+  if (c?.nombre && c.nombre.trim()) return c.nombre.trim().toUpperCase()
+  if (fallbackNombre && fallbackNombre.trim() && !fallbackNombre.includes('- BODEGA') && !fallbackNombre.includes(' P2')) {
+    return fallbackNombre.trim().toUpperCase()
+  }
+  return `ABONADO #${cta.toUpperCase()}`
+}
+
+// Lista sugerida inicial con nombres 100% reales de la BD
 const CUENTAS_DEFECTO_SUGERIDAS: ItemMonitoreado[] = [
-  { id: 'C745_PAR1', cuenta: 'C745', nombreAbonado: 'DORAL - LOCAL 1', particion: '01' },
-  { id: 'C745_PAR2', cuenta: 'C745', nombreAbonado: 'DORAL - BODEGA', particion: '02' },
-  { id: '0014_PAR1', cuenta: '0014', nombreAbonado: 'CENTRO COMERCIAL QUILLOTA', particion: '01' },
-  { id: '0014_PAR2', cuenta: '0014', nombreAbonado: 'CENTRO COMERCIAL QUILLOTA P2', particion: '02' },
-  { id: 'C7C9_PAR1', cuenta: 'C7C9', nombreAbonado: 'FARMACIA AHUMADA', particion: '01' },
-  { id: 'C7A0_PAR1', cuenta: 'C7A0', nombreAbonado: 'SUPERMERCADO SANTA ISABEL', particion: '01' }
+  { id: 'C745_P1', cuenta: 'C745', nombreAbonado: obtenerNombreRealBD('C745'), particion: 'P1', numParticion: 1 },
+  { id: 'C745_P2', cuenta: 'C745', nombreAbonado: obtenerNombreRealBD('C745'), particion: 'P2', numParticion: 2 },
+  { id: '0014_P1', cuenta: '0014', nombreAbonado: obtenerNombreRealBD('0014'), particion: 'P1', numParticion: 1 },
+  { id: '0014_P2', cuenta: '0014', nombreAbonado: obtenerNombreRealBD('0014'), particion: 'P2', numParticion: 2 },
+  { id: 'C7C9_P1', cuenta: 'C7C9', nombreAbonado: obtenerNombreRealBD('C7C9'), particion: 'P1', numParticion: 1 },
+  { id: 'C7A0_P1', cuenta: 'C7A0', nombreAbonado: obtenerNombreRealBD('C7A0'), particion: 'P1', numParticion: 1 }
 ]
+
+// Función para hacer coincidir el número de partición (columna ZN/PAR en Supabase)
+const matchParticion = (zonaStr: string, numParticion: number, labelParticion: string): boolean => {
+  if (!zonaStr || zonaStr === 'None' || zonaStr === '00' || zonaStr === '0' || zonaStr === '---') {
+    return numParticion === 1 // Si no especifica zona, asumir partición 1
+  }
+  const z = zonaStr.trim().toUpperCase()
+  const numZ = parseInt(z.replace(/[^0-9]/g, ''), 10)
+  if (!isNaN(numZ)) {
+    return numZ === numParticion
+  }
+  return z.includes(labelParticion.toUpperCase()) || z.includes(`P${numParticion}`)
+}
 
 export default function AperturasCierresModal({ onClose }: AperturasCierresModalProps) {
   const [itemsMonitoreados, setItemsMonitoreados] = useState<ItemMonitoreado[]>(CUENTAS_DEFECTO_SUGERIDAS)
   const [estadosMap, setEstadosMap] = useState<Record<string, EstadoParticion>>({})
   const [cargando, setCargando] = useState(false)
-  const [inputBusquedaCuenta, setInputBusquedaCuenta] = useState('')
+  const [inputCuenta, setInputCuenta] = useState('')
+  const [inputParticionSel, setInputParticionSel] = useState<string>('P1')
   const [filtroEstado, setFiltroEstado] = useState<'TODOS' | 'APERTURAS' | 'CIERRES'>('TODOS')
   const [filtroTexto, setFiltroTexto] = useState('')
   const [mensajeError, setMensajeError] = useState('')
@@ -54,7 +79,6 @@ export default function AperturasCierresModal({ onClose }: AperturasCierresModal
 
     const fetchListaCompartida = async () => {
       try {
-        // Intentar leer de Supabase lista compartida
         const { data } = await supabase
           .from('eventos_monitoreo')
           .select('nombre_abonado')
@@ -66,18 +90,26 @@ export default function AperturasCierresModal({ onClose }: AperturasCierresModal
           try {
             const parsed = JSON.parse(data[0].nombre_abonado)
             if (Array.isArray(parsed) && parsed.length > 0) {
-              setItemsMonitoreados(parsed)
+              // Sanitizar nombres de abonados para asegurar datos reales de BD
+              const sanitizados = parsed.map((item: ItemMonitoreado) => ({
+                ...item,
+                nombreAbonado: obtenerNombreRealBD(item.cuenta, item.nombreAbonado)
+              }))
+              setItemsMonitoreados(sanitizados)
               return
             }
           } catch {}
         }
 
-        // Fallback a localStorage
         const localSaved = localStorage.getItem(STORAGE_KEY)
         if (localSaved && !cancel) {
           const parsedLocal = JSON.parse(localSaved)
           if (Array.isArray(parsedLocal) && parsedLocal.length > 0) {
-            setItemsMonitoreados(parsedLocal)
+            const sanitizadosLocal = parsedLocal.map((item: ItemMonitoreado) => ({
+              ...item,
+              nombreAbonado: obtenerNombreRealBD(item.cuenta, item.nombreAbonado)
+            }))
+            setItemsMonitoreados(sanitizadosLocal)
           }
         }
       } catch (e) {
@@ -89,12 +121,11 @@ export default function AperturasCierresModal({ onClose }: AperturasCierresModal
     return () => { cancel = true }
   }, [])
 
-  // Guardar lista cuando cambie
+  // Guardar lista sincronizada
   const guardarLista = async (nuevaLista: ItemMonitoreado[]) => {
     setItemsMonitoreados(nuevaLista)
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(nuevaLista))
-      // Guardar en Supabase para sincronizar con otras monitoras
       await supabase.from('eventos_monitoreo').insert({
         cuenta: SUPABASE_CONFIG_CUENTA,
         nombre_abonado: JSON.stringify(nuevaLista),
@@ -102,11 +133,11 @@ export default function AperturasCierresModal({ onClose }: AperturasCierresModal
         fecha_hora: new Date().toISOString()
       })
     } catch (err) {
-      console.warn('Error al sincronizar lista:', err)
+      console.warn('Error al sincronizar lista de particiones:', err)
     }
   }
 
-  // 2. Cargar eventos en tiempo real de los abonados monitoreados
+  // 2. Cargar eventos en tiempo real de los abonados y sus particiones
   useEffect(() => {
     if (itemsMonitoreados.length === 0) return
     let isCancelled = false
@@ -116,23 +147,22 @@ export default function AperturasCierresModal({ onClose }: AperturasCierresModal
       const cuentasUnicas = Array.from(new Set(itemsMonitoreados.map(i => i.cuenta)))
 
       try {
-        // Cargar los últimos 200 eventos de estas cuentas
         const { data: eventosData } = await supabase
           .from('eventos_monitoreo')
           .select('*')
           .in('cuenta', cuentasUnicas)
           .order('id', { ascending: false })
-          .limit(200)
+          .limit(300)
 
         if (isCancelled || !eventosData) return
 
         const nuevoMap: Record<string, EstadoParticion> = {}
 
-        // Procesar eventos para encontrar el último estado por partición
+        // Evaluar cada partición individualmente filtrando por su columna PAR/ZN
         itemsMonitoreados.forEach((item) => {
           const evsCuenta = eventosData.filter(e => e.cuenta === item.cuenta)
 
-          // Buscar evento filtrando por partición si aplica
+          // Encontrar el último evento de Apertura/Cierre que corresponda a ESTA partición (PAR)
           const evRelevante = evsCuenta.find(e => {
             const evUpper = (e.evento || '').toUpperCase()
             const esApOrCie = evUpper.includes('APERTURA') || evUpper.includes('CIERRE') ||
@@ -141,18 +171,14 @@ export default function AperturasCierresModal({ onClose }: AperturasCierresModal
             
             if (!esApOrCie) return false
 
-            // Si la partición coincide o si es general/sin especificar
-            const zonaEv = String(e.zona || '01').trim()
-            if (item.particion === '01' && (zonaEv === '01' || zonaEv === '1' || zonaEv === '00' || !e.zona)) return true
-            if (zonaEv.includes(item.particion) || item.particion.includes(zonaEv)) return true
-            return true
+            // Verificar si la partición (zona/PAR) coincide
+            return matchParticion(e.zona || '', item.numParticion, item.particion)
           })
 
           if (evRelevante) {
             const evUpper = (evRelevante.evento || '').toUpperCase()
             const esApertura = evUpper.includes('APERTURA') || evUpper.includes('DESARME') || evUpper.includes('OPEN')
             
-            // Extraer hora y fecha
             const fh = evRelevante.fecha_hora || ''
             const hora = fh.includes('T') ? fh.split('T')[1]?.substring(0, 8) : fh.substring(11, 19) || fh
             const fecha = fh.includes('T') ? fh.split('T')[0] : fh.substring(0, 10) || ''
@@ -161,19 +187,19 @@ export default function AperturasCierresModal({ onClose }: AperturasCierresModal
               esApertura,
               hora: hora || 'Reciente',
               fecha: fecha || '',
-              usuarioCodigo: evRelevante.usuario || evRelevante.zona || 'U-00',
+              usuarioCodigo: evRelevante.usuario || evRelevante.zona || 'U-01',
               usuarioNombre: evRelevante.nombre_abonado || 'Usuario Registrado',
               eventoNombre: evRelevante.evento || (esApertura ? 'APERTURA' : 'CIERRE')
             }
           } else {
-            // Estado inicial por defecto (ej: armado)
+            // Estado por defecto si no hay señal reciente
             nuevoMap[item.id] = {
               esApertura: false,
               hora: '--:--:--',
               fecha: '',
               usuarioCodigo: 'U-01',
               usuarioNombre: 'Sin evento reciente',
-              eventoNombre: 'CIERRE / PROTEGIDO'
+              eventoNombre: 'CIERRE / ARMADO'
             }
           }
         })
@@ -188,9 +214,9 @@ export default function AperturasCierresModal({ onClose }: AperturasCierresModal
 
     cargarEstadosRealtime()
 
-    // Suscripción Realtime a eventos de monitoreo para actualización instantánea
+    // Suscripción Realtime a eventos
     const channel = supabase
-      .channel('aperturas_cierres_realtime_updates')
+      .channel('aperturas_cierres_p1_p2_updates')
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'eventos_monitoreo' },
@@ -201,7 +227,13 @@ export default function AperturasCierresModal({ onClose }: AperturasCierresModal
           if (evUpper.includes('CONFIG_UPDATE_APERTURAS_CIERRES')) {
             try {
               const parsed = JSON.parse(newEv.nombre_abonado)
-              if (Array.isArray(parsed)) setItemsMonitoreados(parsed)
+              if (Array.isArray(parsed)) {
+                const sanitizados = parsed.map((item: ItemMonitoreado) => ({
+                  ...item,
+                  nombreAbonado: obtenerNombreRealBD(item.cuenta, item.nombreAbonado)
+                }))
+                setItemsMonitoreados(sanitizados)
+              }
             } catch {}
             return
           }
@@ -211,9 +243,9 @@ export default function AperturasCierresModal({ onClose }: AperturasCierresModal
 
           if (!esAp && !esCie) return
 
-          // Actualizar las particiones pertenecientes a esta cuenta
+          // Actualizar las particiones pertenecientes a esta cuenta si coinciden en PAR
           itemsMonitoreados.forEach(item => {
-            if (item.cuenta === newEv.cuenta) {
+            if (item.cuenta === newEv.cuenta && matchParticion(newEv.zona || '', item.numParticion, item.particion)) {
               const fh = newEv.fecha_hora || ''
               const hora = fh.includes('T') ? fh.split('T')[1]?.substring(0, 8) : fh.substring(11, 19) || fh
 
@@ -221,7 +253,7 @@ export default function AperturasCierresModal({ onClose }: AperturasCierresModal
                 ...prev,
                 [item.id]: {
                   esApertura: esAp,
-                  hora: hora || new Date().toLocaleTimeString(),
+                  hora: hora || new Date().toLocaleTimeString('es-CL'),
                   fecha: new Date().toLocaleDateString(),
                   usuarioCodigo: newEv.usuario || newEv.zona || 'U-01',
                   usuarioNombre: newEv.nombre_abonado || 'Usuario Registrado',
@@ -240,35 +272,39 @@ export default function AperturasCierresModal({ onClose }: AperturasCierresModal
     }
   }, [itemsMonitoreados])
 
-  // 3. Agregar cuenta manualmente por número o búsqueda
-  const handleAgregarManual = () => {
+  // 3. Agregar Partición Manualmente (Cuenta + P1, P2...)
+  const handleAgregarManual = (ctaManual?: string, particionManual?: string) => {
     setMensajeError('')
-    const cta = inputBusquedaCuenta.toUpperCase().trim()
+    const cta = (ctaManual || inputCuenta).toUpperCase().trim()
+    const partLabel = (particionManual || inputParticionSel).toUpperCase().trim() || 'P1'
+
     if (!cta) {
       setMensajeError('Ingrese un número de cuenta válido.')
       return
     }
 
-    const info = clientesMap[cta]
-    const nombreDef = info?.nombre || `ABONADO #${cta}`
+    const numP = parseInt(partLabel.replace(/[^0-9]/g, ''), 10) || 1
+    const partNormalizada = `P${numP}`
+    const idItem = `${cta}_${partNormalizada}`
 
-    // Agregar Partición 01 y Partición 02 si corresponde
-    const id1 = `${cta}_PAR1`
-    const id2 = `${cta}_PAR2`
-
-    if (itemsMonitoreados.some(i => i.cuenta === cta)) {
-      setMensajeError(`La cuenta #${cta} ya está agregada al monitoreo.`)
+    if (itemsMonitoreados.some(i => i.id === idItem)) {
+      setMensajeError(`La cuenta #${cta} Partición ${partNormalizada} ya está agregada.`)
       return
     }
 
-    const nuevos: ItemMonitoreado[] = [
-      ...itemsMonitoreados,
-      { id: id1, cuenta: cta, nombreAbonado: nombreDef, particion: '01' },
-      { id: id2, cuenta: cta, nombreAbonado: `${nombreDef} (P2)`, particion: '02' }
-    ]
+    const nombreRealBD = obtenerNombreRealBD(cta)
 
+    const nuevoItem: ItemMonitoreado = {
+      id: idItem,
+      cuenta: cta,
+      nombreAbonado: nombreRealBD,
+      particion: partNormalizada,
+      numParticion: numP
+    }
+
+    const nuevos = [...itemsMonitoreados, nuevoItem]
     guardarLista(nuevos)
-    setInputBusquedaCuenta('')
+    setInputCuenta('')
   }
 
   // Eliminar un abonado/partición de la lista
@@ -312,7 +348,7 @@ export default function AperturasCierresModal({ onClose }: AperturasCierresModal
     <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 select-none">
       <div className="bg-[#0b1329] border-2 border-slate-700 w-full max-w-6xl max-h-[92vh] rounded-2xl flex flex-col shadow-2xl overflow-hidden font-sans text-white animate-in zoom-in-95">
         
-        {/* ENCABEZADO ESTILO SCORPION RETRO / DASHBOARD */}
+        {/* ENCABEZADO SCORPION / COMMAND CENTER */}
         <div className="bg-gradient-to-r from-[#000080] via-[#0d1f4d] to-[#040a1b] px-4 py-3 border-b border-slate-700 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-blue-600/30 border border-blue-400/40 flex items-center justify-center text-xl shadow">
@@ -320,13 +356,13 @@ export default function AperturasCierresModal({ onClose }: AperturasCierresModal
             </div>
             <div>
               <h2 className="text-base font-black tracking-wide text-white flex items-center gap-2">
-                CONTROL DE APERTURAS & CIERRES POR PARTICIÓN
+                CONTROL DE APERTURAS & CIERRES POR PARTICIÓN (`P1`, `P2`...)
                 <span className="text-[10px] bg-blue-900/80 text-cyan-300 font-mono px-2 py-0.5 rounded border border-cyan-500/40">
-                  REALTIME SYNCHRONIZED
+                  REALTIME BD (COLUMNA PAR / ZONA)
                 </span>
               </h2>
               <p className="text-[11px] text-slate-300">
-                Semáforo automático de estado de alarmas (🟢 Verde = Apertura / 🔴 Rojo = Cierre). Sincronizado para todas las monitoras.
+                Semáforo automático por partición individual. Lectura directa del campo `PAR` (`zona`) desde Supabase/MDB. Nombres 100% reales de la BD.
               </p>
             </div>
           </div>
@@ -340,24 +376,38 @@ export default function AperturasCierresModal({ onClose }: AperturasCierresModal
           </button>
         </div>
 
-        {/* BARRA SUPERIOR DE ACCIONES & AGREGADO MANUAL */}
+        {/* BARRA SUPERIOR DE FORMULARIO DE AGREGADO MANUAL (CUENTA + PARTICIÓN) */}
         <div className="bg-[#070e20] p-3 border-b border-slate-800 flex flex-wrap items-center justify-between gap-3 shrink-0">
-          {/* Formulario Agregar Cuenta Manual */}
-          <div className="flex items-center gap-2 flex-1 min-w-[280px]">
+          {/* Formulario Agregar Partición Manual */}
+          <div className="flex items-center gap-2 flex-1 min-w-[320px]">
             <input
               type="text"
-              placeholder="Agregar Abonado (Ej: C745, 0014, C7C9)..."
-              value={inputBusquedaCuenta}
-              onChange={(e) => setInputBusquedaCuenta(e.target.value.toUpperCase())}
+              placeholder="Número de Cuenta (Ej: C745, 0014)..."
+              value={inputCuenta}
+              onChange={(e) => setInputCuenta(e.target.value.toUpperCase())}
               onKeyDown={(e) => e.key === 'Enter' && handleAgregarManual()}
-              className="bg-[#0e172e] border border-slate-700 rounded-xl px-3 py-1.5 text-xs font-mono text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 w-full max-w-xs uppercase"
+              className="bg-[#0e172e] border border-slate-700 rounded-xl px-3 py-1.5 text-xs font-mono text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 w-48 uppercase font-bold"
             />
-            <button
-              onClick={handleAgregarManual}
-              className="bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs px-3 py-1.5 rounded-xl transition shadow cursor-pointer whitespace-nowrap"
+
+            <select
+              value={inputParticionSel}
+              onChange={(e) => setInputParticionSel(e.target.value)}
+              className="bg-[#0e172e] border border-slate-700 rounded-xl px-2 py-1.5 text-xs font-mono text-cyan-300 font-bold focus:outline-none focus:border-blue-500 cursor-pointer"
             >
-              + Agregar Cuenta
+              <option value="P1">Partición P1</option>
+              <option value="P2">Partición P2</option>
+              <option value="P3">Partición P3</option>
+              <option value="P4">Partición P4</option>
+              <option value="P5">Partición P5</option>
+            </select>
+
+            <button
+              onClick={() => handleAgregarManual()}
+              className="bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-xs px-3.5 py-1.5 rounded-xl transition shadow cursor-pointer whitespace-nowrap flex items-center gap-1"
+            >
+              + Agregar Partición
             </button>
+
             {mensajeError && (
               <span className="text-red-400 text-xs font-medium animate-pulse">{mensajeError}</span>
             )}
@@ -396,10 +446,10 @@ export default function AperturasCierresModal({ onClose }: AperturasCierresModal
           {/* Filtro por Texto en Pantalla */}
           <input
             type="text"
-            placeholder="Filtrar en pantalla..."
+            placeholder="Buscar abonado/partición..."
             value={filtroTexto}
             onChange={(e) => setFiltroTexto(e.target.value)}
-            className="bg-[#0e172e] border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 w-40"
+            className="bg-[#0e172e] border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 w-44"
           />
         </div>
 
@@ -408,14 +458,14 @@ export default function AperturasCierresModal({ onClose }: AperturasCierresModal
           {cargando && itemsMonitoreados.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-48 space-y-3">
               <div className="w-8 h-8 border-3 border-blue-500 border-t-transparent rounded-full animate-spin" />
-              <span className="text-xs text-slate-400 font-mono">Cargando estados en tiempo real desde Supabase...</span>
+              <span className="text-xs text-slate-400 font-mono">Cargando eventos por partición desde Supabase...</span>
             </div>
           ) : itemsFiltrados.length === 0 ? (
             <div className="bg-[#0b1328] border border-slate-800 rounded-2xl p-8 text-center space-y-2 my-6">
               <span className="text-3xl block">🔑</span>
-              <h3 className="font-bold text-sm text-white">No hay abonados o particiones en este filtro</h3>
+              <h3 className="font-bold text-sm text-white">No hay abonados o particiones activas en la vista</h3>
               <p className="text-xs text-slate-400 max-w-md mx-auto">
-                Ingrese el número de abonado en la barra superior para agregarlo a la matriz de supervisión de la Central.
+                Ingrese el número de cuenta y la partición (P1, P2) en el formulario superior para iniciar la supervisión.
               </p>
             </div>
           ) : (
@@ -423,6 +473,7 @@ export default function AperturasCierresModal({ onClose }: AperturasCierresModal
               {itemsFiltrados.map((item) => {
                 const st = estadosMap[item.id]
                 const esApertura = st?.esApertura ?? false
+                const siguienteP = `P${item.numParticion + 1}`
 
                 return (
                   <div
@@ -437,19 +488,19 @@ export default function AperturasCierresModal({ onClose }: AperturasCierresModal
                     <button
                       onClick={() => handleEliminarItem(item.id)}
                       className="absolute top-1.5 right-1.5 w-5 h-5 rounded-md bg-black/40 hover:bg-red-600 text-slate-400 hover:text-white text-[10px] font-bold flex items-center justify-center transition cursor-pointer"
-                      title="Quitar del monitoreo"
+                      title="Quitar esta partición"
                     >
                       ✕
                     </button>
 
-                    {/* Línea Superior: Cuenta + Partición + Estado Badge */}
+                    {/* Línea Superior: Cuenta + Badge Partición (P1/P2) + Estado Semáforo */}
                     <div className="flex items-center justify-between gap-1.5 pr-5">
                       <div className="flex items-center gap-1.5">
                         <span className="bg-slate-900/90 text-white font-mono font-black text-xs px-2 py-0.5 rounded border border-slate-700 shadow-sm">
                           #{item.cuenta}
                         </span>
-                        <span className="bg-slate-800/80 text-cyan-300 font-mono font-bold text-[10px] px-1.5 py-0.5 rounded border border-cyan-800/60">
-                          PAR: {item.particion}
+                        <span className="bg-cyan-950 text-cyan-300 font-mono font-black text-xs px-2 py-0.5 rounded border border-cyan-700/80 shadow-xs">
+                          {item.particion}
                         </span>
                       </div>
 
@@ -466,11 +517,20 @@ export default function AperturasCierresModal({ onClose }: AperturasCierresModal
                       </span>
                     </div>
 
-                    {/* Línea Media: Nombre del Abonado */}
-                    <div className="mt-1.5 mb-1">
-                      <h4 className="text-xs font-black text-white truncate tracking-tight" title={item.nombreAbonado}>
+                    {/* Línea Media: Nombre REAL del Abonado (BD) */}
+                    <div className="mt-1.5 mb-1 flex items-center justify-between gap-2">
+                      <h4 className="text-xs font-black text-white truncate tracking-tight uppercase" title={item.nombreAbonado}>
                         {item.nombreAbonado}
                       </h4>
+
+                      {/* Botón rápido para agregar siguiente partición (ej: + P2) */}
+                      <button
+                        onClick={() => handleAgregarManual(item.cuenta, siguienteP)}
+                        className="text-[9px] bg-slate-800/80 hover:bg-blue-600 text-slate-300 hover:text-white font-mono font-bold px-1.5 py-0.5 rounded border border-slate-700 transition cursor-pointer shrink-0"
+                        title={`Agregar también Partición ${siguienteP} para #${item.cuenta}`}
+                      >
+                        + {siguienteP}
+                      </button>
                     </div>
 
                     {/* Línea Inferior: Timestamp + Usuario que Armó/Desarmó */}
@@ -493,16 +553,16 @@ export default function AperturasCierresModal({ onClose }: AperturasCierresModal
         <div className="bg-[#060c1a] px-4 py-2.5 border-t border-slate-800 flex flex-wrap items-center justify-between gap-2 text-xs font-mono text-slate-400 shrink-0">
           <div className="flex items-center gap-4">
             <span className="flex items-center gap-1 text-emerald-400 font-bold">
-              🟢 {conteoStats.aperturas} Desarmados (Apertura)
+              🟢 {conteoStats.aperturas} Particiones Abiertas (Desarmadas)
             </span>
             <span className="flex items-center gap-1 text-red-400 font-bold">
-              🔴 {conteoStats.cierres} Armados (Cierre)
+              🔴 {conteoStats.cierres} Particiones Cerradas (Armadas)
             </span>
           </div>
 
           <div className="flex items-center gap-3">
             <span className="text-[10px] text-slate-500">
-              * Estado dinámico 100% automático desde Supabase Realtime
+              * Lectura directa del campo PAR (`zona`) en Supabase Realtime
             </span>
             <button
               onClick={onClose}
