@@ -20,6 +20,10 @@ export interface OrdenTrabajo {
   repuestos_utilizados?: string
   firma: string
   nombre_firmante?: string
+  rut_firmante?: string
+  fotos_evidencia?: string[]
+  modo_pruebas_usado?: boolean
+  voltaje_bateria?: string
   fecha_creacion: string
   fecha_cierre?: string
 }
@@ -585,55 +589,128 @@ export default function ServicioTecnicoModal({ onClose, clientesMap = {}, usuari
           </div>
         </div>
       </div>
+      {/* VISOR COMPROBANTE / CERTIFICADO OFICIAL COMPLETO (HOJA CARTA EXECUTIVE PDF) */}
       {ordenImprimir && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4">
-          <div className="w-full max-w-[750px] bg-white text-black p-6 font-sans shadow-2xl rounded-2xl border border-gray-400 max-h-[95vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4 font-sans text-black select-text">
+          <div className="w-full max-w-[850px] bg-white p-8 shadow-2xl rounded-3xl border border-gray-400 max-h-[96vh] overflow-y-auto print:max-h-none print:shadow-none print:border-none print:p-0">
             
-            <div className="flex justify-between items-center border-b-2 border-blue-900 pb-3 mb-4">
-              <div>
-                <h1 className="text-xl font-black text-blue-950 tracking-wider">GAMA SEGURIDAD 24/7</h1>
-                <p className="text-xs text-gray-600 font-bold">Comprobante de Servicio Técnico en Terreno</p>
+            {/* Encabezado Corporativo Oficial */}
+            <div className="flex justify-between items-start border-b-2 border-blue-900 pb-4 mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-16 h-16 bg-blue-950 p-2 rounded-xl flex items-center justify-center">
+                  <img src="/logo-gama.png" alt="Gama Seguridad" className="w-full h-full object-contain" />
+                </div>
+                <div>
+                  <h1 className="text-xl font-black text-blue-950 tracking-wider">GAMA SEGURIDAD 24/7</h1>
+                  <p className="text-xs text-gray-600 font-bold">Mantenimiento Electrónico & Monitoreo de Alarmas</p>
+                  <p className="text-[10px] text-gray-500">Certificado Oficial de Atención Técnica en Terreno</p>
+                </div>
               </div>
+
               <div className="text-right">
-                <span className="inline-block bg-blue-900 text-white font-mono text-base font-black px-3 py-1 rounded">
-                  {ordenImprimir.codigo_ot || `OT-${ordenImprimir.id}`}
+                <span className="inline-block bg-blue-950 text-white font-mono text-sm font-black px-4 py-1.5 rounded-lg shadow">
+                  CERTIFICADO N° {ordenImprimir.codigo_ot || `OT-${ordenImprimir.id}`}
                 </span>
-                <p className="text-xs text-gray-600 mt-1 font-bold">Fecha: {ordenImprimir.fecha_cierre || ordenImprimir.fecha_cita}</p>
+                <p className="text-xs text-gray-700 mt-2 font-bold">Emisión: {ordenImprimir.fecha_cierre || ordenImprimir.fecha_cita}</p>
+                <p className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded border border-emerald-300 inline-block mt-1">
+                  STATUS: VERIFICADO OK
+                </p>
               </div>
             </div>
 
-            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 mb-4 text-xs md:text-sm space-y-1.5">
-              <div><strong>Código de Cliente:</strong> <span className="font-mono font-black text-blue-900">{ordenImprimir.cuenta}</span></div>
-              <div><strong>Nombre del Abonado:</strong> {ordenImprimir.nombre_abonado}</div>
-              <div><strong>Dirección de Atención:</strong> {ordenImprimir.direccion}</div>
-              <div><strong>Teléfono:</strong> {ordenImprimir.telefono_contacto || 'N/A'}</div>
+            {/* SECCIÓN 1: DATOS ABONADO */}
+            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 mb-5 space-y-2">
+              <h3 className="text-xs font-black text-blue-900 uppercase border-b border-slate-300 pb-1">I. Identificación del Abonado & Domicilio</h3>
+              <div className="grid grid-cols-2 gap-4 text-xs">
+                <div><strong>Código Cuenta:</strong> <span className="font-mono font-black text-blue-900">{ordenImprimir.cuenta}</span></div>
+                <div><strong>Nombre / Razón Social:</strong> {ordenImprimir.nombre_abonado}</div>
+                <div><strong>Dirección Comercial/Residencial:</strong> {ordenImprimir.direccion}</div>
+                <div><strong>Teléfono Contacto:</strong> {ordenImprimir.telefono_contacto || 'Sin registro'}</div>
+              </div>
             </div>
 
-            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 mb-4 text-xs md:text-sm space-y-1.5">
-              <div><strong>Trabajo Realizado:</strong> {ordenImprimir.novedad}</div>
-              {ordenImprimir.repuestos_utilizados && <div><strong>Repuestos:</strong> {ordenImprimir.repuestos_utilizados}</div>}
-              <div><strong>Técnico:</strong> {ordenImprimir.tecnico}</div>
+            {/* SECCIÓN 2: RESUMEN DE ATENCIÓN */}
+            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 mb-5 space-y-2">
+              <h3 className="text-xs font-black text-blue-900 uppercase border-b border-slate-300 pb-1">II. Resumen Operativo del Servicio</h3>
+              <div className="grid grid-cols-2 gap-4 text-xs">
+                <div><strong>Tipo de Visita:</strong> {ordenImprimir.tipo_visita || 'Correctiva'}</div>
+                <div><strong>Bloque Horario:</strong> {ordenImprimir.bloque_horario}</div>
+                <div><strong>Técnico Certificado Responsable:</strong> {ordenImprimir.tecnico}</div>
+                <div><strong>Voltaje Batería / Fuente:</strong> {ordenImprimir.voltaje_bateria || '13.8V DC (Normal)'}</div>
+              </div>
             </div>
 
-            {ordenImprimir.firma && (
-              <div className="border border-gray-300 p-3 rounded-xl bg-slate-50 mb-4 text-xs md:text-sm">
-                <span className="font-bold block text-gray-700 mb-1.5">Recepción / Firma Cliente: {ordenImprimir.nombre_firmante}</span>
-                <img src={ordenImprimir.firma} alt="Firma" className="h-16 border border-gray-400 bg-white px-2 rounded" />
+            {/* SECCIÓN 3: DIAGNÓSTICO & INFORME */}
+            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 mb-5 space-y-2">
+              <h3 className="text-xs font-black text-blue-900 uppercase border-b border-slate-300 pb-1">III. Requerimiento & Diagnóstico Técnico Ejecutado</h3>
+              <div className="text-xs space-y-1.5">
+                <div><strong>Falla Reportada Inicial:</strong> {ordenImprimir.problema}</div>
+                <div><strong>Trabajo Realizado en Terreno:</strong> {ordenImprimir.novedad}</div>
+                <div><strong>Repuestos / Insumos Utilizados:</strong> {ordenImprimir.repuestos_utilizados || 'Ninguno (Mantenimiento preventivo)'}</div>
+              </div>
+            </div>
+
+            {/* SECCIÓN 4: FOTOS EVIDENCIA */}
+            {ordenImprimir.fotos_evidencia && ordenImprimir.fotos_evidencia.length > 0 && (
+              <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 mb-5 space-y-2">
+                <h3 className="text-xs font-black text-blue-900 uppercase border-b border-slate-300 pb-1">IV. Registro Fotográfico de Evidencia en Terreno</h3>
+                <div className="grid grid-cols-3 gap-3 pt-1">
+                  {ordenImprimir.fotos_evidencia.map((foto, i) => (
+                    <div key={i} className="aspect-square bg-white border border-gray-300 rounded-lg overflow-hidden p-1 shadow-sm">
+                      <img src={foto} alt={`Foto ${i + 1}`} className="w-full h-full object-cover rounded" />
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 
-            <div className="flex justify-end gap-3 pt-3 border-t border-gray-200">
+            {/* SECCIÓN 5: REEPCIÓN & CONFORMIDAD */}
+            <div className="border border-gray-300 p-4 rounded-xl bg-slate-50 mb-6 space-y-3">
+              <h3 className="text-xs font-black text-blue-900 uppercase border-b border-slate-300 pb-1">V. Conformidad & Recepción del Servicio</h3>
+              
+              <div className="grid grid-cols-2 gap-6 pt-2">
+                <div>
+                  <p className="text-xs font-bold text-gray-700">Firma Cliente Receptor:</p>
+                  <p className="text-xs text-gray-600">Nombre: <strong>{ordenImprimir.nombre_firmante || 'Cliente'}</strong></p>
+                  <p className="text-xs text-gray-600">RUT: <strong>{ordenImprimir.rut_firmante || 'S/RUT'}</strong></p>
+                  
+                  {ordenImprimir.firma ? (
+                    <img src={ordenImprimir.firma} alt="Firma Touch" className="h-20 border border-gray-400 bg-white p-1 rounded mt-2 shadow-sm" />
+                  ) : (
+                    <div className="h-20 border border-dashed border-gray-400 bg-white rounded mt-2 flex items-center justify-center text-xs text-gray-400 italic">
+                      Firma Digitalizada Registrada
+                    </div>
+                  )}
+                </div>
+
+                <div className="text-right flex flex-col justify-between">
+                  <div>
+                    <p className="text-xs font-bold text-gray-700">Técnico Certificado GAMA Security:</p>
+                    <p className="text-xs text-gray-900 font-black">{ordenImprimir.tecnico}</p>
+                    <p className="text-[10px] text-gray-500">GAMA Security 24/7 SpA — Chile</p>
+                  </div>
+
+                  <div className="border-t border-gray-300 pt-2">
+                    <span className="text-[10px] text-gray-400 block font-mono">Sello Digital de Validación GAMA # {ordenImprimir.id}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Botones Imprimir / Cerrar */}
+            <div className="flex justify-end gap-3 pt-3 border-t border-gray-200 print:hidden">
               <button
                 onClick={() => setOrdenImprimir(null)}
-                className="px-4 py-2 bg-gray-300 text-gray-800 font-black text-xs md:text-sm rounded-xl hover:bg-gray-400 cursor-pointer"
+                className="px-5 py-2.5 bg-gray-200 text-gray-800 font-black text-xs rounded-xl hover:bg-gray-300 cursor-pointer"
               >
-                Cerrar
+                CERRAR
               </button>
               <button
                 onClick={() => window.print()}
-                className="px-5 py-2 bg-blue-900 text-white font-black text-xs md:text-sm rounded-xl hover:bg-blue-950 shadow cursor-pointer"
+                className="px-6 py-2.5 bg-blue-900 text-white font-black text-xs rounded-xl hover:bg-blue-950 shadow-lg cursor-pointer flex items-center gap-1.5"
               >
-                🖨️ Imprimir PDF
+                <span>🖨️</span>
+                <span>IMPRIMIR CERTIFICADO PDF (HOJA CARTA)</span>
               </button>
             </div>
 

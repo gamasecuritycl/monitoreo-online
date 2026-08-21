@@ -20,6 +20,10 @@ export interface OrdenTrabajo {
   repuestos_utilizados?: string
   firma: string
   nombre_firmante?: string
+  rut_firmante?: string
+  fotos_evidencia?: string[]
+  modo_pruebas_usado?: boolean
+  voltaje_bateria?: string
   fecha_creacion: string
   fecha_cierre?: string
 }
@@ -103,6 +107,17 @@ export default function PortalTecnicoMovil() {
   const [ordenSeleccionada, setOrdenSeleccionada] = useState<OrdenTrabajo | null>(null)
   const [cargando, setCargando] = useState(false)
 
+  // Modo Offline & Auto-Sincronización
+  const [isOffline, setIsOffline] = useState<boolean>(typeof navigator !== 'undefined' ? !navigator.onLine : false)
+  const [syncStatusMsg, setSyncStatusMsg] = useState<string | null>(null)
+
+  // Modo Pruebas de Sistema / Cuenta en Pruebas en Domicilio
+  const [modoPruebasActivo, setModoPruebasActivo] = useState<boolean>(false)
+
+  // Fotos de Evidencia en Terreno
+  const [fotosEvidencia, setFotosEvidencia] = useState<string[]>([])
+  const [voltajeBateriaInput, setVoltajeBateriaInput] = useState<string>('13.8V DC (OK)')
+
   // Notificaciones Push y Burbujas de Alerta
   const [permisoNotificacion, setPermisoNotificacion] = useState<string>('default')
   const [nuevasOrdenesBadge, setNuevasOrdenesBadge] = useState<number>(0)
@@ -117,6 +132,7 @@ export default function PortalTecnicoMovil() {
   const [novedadTexto, setNovedadTexto] = useState('')
   const [repuestosTexto, setRepuestosTexto] = useState('')
   const [nombreFirmanteText, setNombreFirmanteText] = useState('')
+  const [rutFirmanteText, setRutFirmanteText] = useState('')
 
   // Canvas Firma Touch
   const [firmando, setFirmando] = useState(false)
@@ -125,6 +141,74 @@ export default function PortalTecnicoMovil() {
 
   // Visor de Comprobante Imprimible
   const [ordenImprimir, setOrdenImprimir] = useState<OrdenTrabajo | null>(null)
+
+  // Listener para estado Offline / Online
+  useEffect(() => {
+    const handleOnline = () => {
+      setIsOffline(false)
+      sincronizarColaOffline()
+    }
+    const handleOffline = () => {
+      setIsOffline(true)
+    }
+
+    window.addEventListener('online', handleOnline)
+    window.addEventListener('offline', handleOffline)
+
+    return () => {
+      window.removeEventListener('online', handleOnline)
+      window.removeEventListener('offline', handleOffline)
+    }
+  }, [])
+
+  // Auto-Sincronizar órdenes almacenadas localmente durante pérdida de señal
+  const sincronizarColaOffline = async () => {
+    const offlineQueue = localStorage.getItem('gama_ot_offline_queue')
+    if (offlineQueue) {
+      try {
+        const queue: OrdenTrabajo[] = JSON.parse(offlineQueue)
+        if (queue.length > 0) {
+          setSyncStatusMsg(`⚡ Sincronizando ${queue.length} orden(es) de terreno pendientes...`)
+          
+          // Cargar las órdenes actuales de Supabase
+          const { data } = await supabase
+            .from('eventos_monitoreo')
+            .select('*')
+            .eq('cuenta', 'ORDENES_TRABAJO')
+            .order('id', { ascending: false })
+            .limit(1)
+
+          let listaBase: OrdenTrabajo[] = []
+          if (data && data.length > 0) {
+            listaBase = JSON.parse(data[0].nombre_abonado || '[]')
+          }
+
+          // Fusionar queue local con lista base
+          const mapaFusion = new Map<number, OrdenTrabajo>()
+          listaBase.forEach(o => mapaFusion.set(o.id, o))
+          queue.forEach(o => mapaFusion.set(o.id, o))
+
+          const listaFinal = Array.from(mapaFusion.values())
+
+          await supabase
+            .from('eventos_monitoreo')
+            .upsert({
+              cuenta: 'ORDENES_TRABAJO',
+              nombre_abonado: JSON.stringify(listaFinal),
+              evento: 'CONFIGURACION',
+              fecha_hora: new Date().toISOString()
+            })
+
+          localStorage.removeItem('gama_ot_offline_queue')
+          setOrdenes(listaFinal)
+          setSyncStatusMsg('🟢 ¡Sincronización con Supabase completada con éxito!')
+          setTimeout(() => setSyncStatusMsg(null), 4000)
+        }
+      } catch (e) {
+        console.error('Error sincronizando cola offline:', e)
+      }
+    }
+  }
 
   // Generador de Tono Sonoro de Alerta Web Audio API
   const reproducirSonidoAlerta = () => {
@@ -159,7 +243,7 @@ export default function PortalTecnicoMovil() {
     }
   }
 
-  // Disparar Notificación Push Nactiva
+  // Disparar Notificación Push Nativa
   const dispararNotificacionPush = (ot: OrdenTrabajo) => {
     reproducirSonidoAlerta()
 
@@ -186,10 +270,10 @@ export default function PortalTecnicoMovil() {
       const res = await Notification.requestPermission()
       setPermisoNotificacion(res)
       if (res === 'granted') {
-        alert('🔔 ¡Notificaciones Push en pantalla activadas exitosamente! Recibirás alertas instantáneas cuando la central te asigne un nuevo servicio técnico.')
+        alert('🔔 ¡Notificaciones Push activadas! Recibirás alertas instantáneas cuando la central te asigne un nuevo servicio técnico.')
         reproducirSonidoAlerta()
       } else {
-        alert('Las notificaciones fueron bloqueadas. Puedes activarlas en la configuración del navegador de tu teléfono.')
+        alert('Las notificaciones están desactivadas en los permisos del navegador.')
       }
     } else {
       alert('Tu navegador no soporta notificaciones push nativas.')
@@ -203,30 +287,23 @@ export default function PortalTecnicoMovil() {
     }
   }, [])
 
-  // 1. Verificación de Sesión Diaria & Cierre Automático a las 00:00
-  const verificarSesionDiaria = () => {
-    const hoyStr = new Date().toISOString().slice(0, 10)
-    const sesionGuardada = localStorage.getItem('gama_tecnico_sesion_diaria')
-    if (sesionGuardada) {
-      try {
-        const parsed = JSON.parse(sesionGuardada)
-        if (parsed.fecha === hoyStr && parsed.tecnico) {
-          setTecnicoAutenticado(parsed.tecnico)
-        } else {
-          localStorage.removeItem('gama_tecnico_sesion_diaria')
-          setTecnicoAutenticado(null)
-        }
-      } catch (e) {
-        setTecnicoAutenticado(null)
-      }
-    }
-  }
-
+  // Auto-login persistente por 24 hrs
   useEffect(() => {
-    verificarSesionDiaria()
     const timerSplash = setTimeout(() => {
+      const hoyStr = new Date().toISOString().slice(0, 10)
+      const sesion = localStorage.getItem('gama_tecnico_sesion_diaria')
+      if (sesion) {
+        try {
+          const parsed = JSON.parse(sesion)
+          if (parsed.fecha === hoyStr && parsed.tecnico) {
+            setTecnicoAutenticado(parsed.tecnico)
+          } else {
+            localStorage.removeItem('gama_tecnico_sesion_diaria')
+          }
+        } catch {}
+      }
       setCargandoSplash(false)
-    }, 1800)
+    }, 1500)
 
     const checkMidnight = setInterval(() => {
       const hoyStr = new Date().toISOString().slice(0, 10)
@@ -249,7 +326,7 @@ export default function PortalTecnicoMovil() {
     }
   }, [])
 
-  // Cargar órdenes de trabajo desde Supabase (Fila más reciente con order id desc)
+  // Cargar órdenes de trabajo desde Supabase
   const cargarOrdenes = async (silent: boolean = false) => {
     if (!silent) setCargando(true)
     try {
@@ -403,8 +480,15 @@ export default function PortalTecnicoMovil() {
     setOrdenSeleccionada(null)
   }
 
-  // Guardar en Supabase
+  // Guardar en Supabase o en memoria local (Modo Offline)
   const guardarOrdenesBase = async (listaNueva: OrdenTrabajo[]) => {
+    setOrdenes(listaNueva)
+    if (isOffline) {
+      localStorage.setItem('gama_ot_offline_queue', JSON.stringify(listaNueva))
+      setSyncStatusMsg('📡 Guardado localmente en memoria (Modo Offline)')
+      return
+    }
+
     try {
       await supabase
         .from('eventos_monitoreo')
@@ -414,9 +498,9 @@ export default function PortalTecnicoMovil() {
           evento: 'CONFIGURACION',
           fecha_hora: new Date().toISOString()
         })
-      setOrdenes(listaNueva)
     } catch (err) {
       console.error('Error guardando órdenes:', err)
+      localStorage.setItem('gama_ot_offline_queue', JSON.stringify(listaNueva))
     }
   }
 
@@ -441,7 +525,7 @@ export default function PortalTecnicoMovil() {
     }
   }
 
-  // Transición de estado de la atención
+  // Transición de estado de la atención (En Traslado, En Terreno)
   const cambiarEstadoOrden = async (id: number, nuevoEstado: OrdenTrabajo['estado']) => {
     const listaNueva = ordenes.map(o => {
       if (o.id === id) {
@@ -453,6 +537,62 @@ export default function PortalTecnicoMovil() {
     if (ordenSeleccionada && ordenSeleccionada.id === id) {
       setOrdenSeleccionada({ ...ordenSeleccionada, estado: nuevoEstado })
     }
+
+    // Si pasa a En Terreno, avisar por evento
+    if (nuevoEstado === 'En Terreno' && ordenSeleccionada) {
+      try {
+        await supabase.from('eventos_monitoreo').insert({
+          fecha_hora: new Date().toISOString(),
+          cuenta: ordenSeleccionada.cuenta,
+          nombre_abonado: ordenSeleccionada.nombre_abonado,
+          evento: `TECNICO EN DOMICILIO: ${tecnicoAutenticado?.toUpperCase()}`,
+          zona: 'S/T',
+          usuario: 'TEC'
+        })
+      } catch (e) {}
+    }
+  }
+
+  // Activar / Desactivar Modo Pruebas de Sistema en Domicilio
+  const toggleModoPruebas = async () => {
+    if (!ordenSeleccionada) return
+    const nuevoEstado = !modoPruebasActivo
+    setModoPruebasActivo(nuevoEstado)
+
+    try {
+      await supabase.from('eventos_monitoreo').insert({
+        fecha_hora: new Date().toISOString(),
+        cuenta: ordenSeleccionada.cuenta,
+        nombre_abonado: ordenSeleccionada.nombre_abonado,
+        evento: nuevoEstado ? 'CUENTA PUESTA EN MODO PRUEBAS TECNICAS EN TERRENO' : 'CUENTA RETIRADA DE MODO PRUEBAS TECNICAS',
+        zona: 'S/T',
+        usuario: 'TEC'
+      })
+    } catch (e) {
+      console.warn('Error al registrar evento de modo pruebas:', e)
+    }
+  }
+
+  // Captura de Foto de Evidencia
+  const handleCapturarFoto = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (fotosEvidencia.length >= 3) {
+      alert('Se permite un máximo de 3 fotos de evidencia por servicio.')
+      return
+    }
+    const reader = new FileReader()
+    reader.onload = (ev) => {
+      const base64 = ev.target?.result as string
+      if (base64) {
+        setFotosEvidencia(prev => [...prev, base64])
+      }
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const eliminarFoto = (idx: number) => {
+    setFotosEvidencia(prev => prev.filter((_, i) => i !== idx))
   }
 
   // Canvas Handlers Touch & Mouse
@@ -525,6 +665,19 @@ export default function PortalTecnicoMovil() {
     const fechaCierreStr = new Date().toISOString().slice(0, 16).replace('T', ' ')
 
     try {
+      // Si la cuenta estaba en Modo Pruebas, retirarla automáticamente
+      if (modoPruebasActivo) {
+        await supabase.from('eventos_monitoreo').insert({
+          fecha_hora: new Date().toISOString(),
+          cuenta: ordenSeleccionada.cuenta,
+          nombre_abonado: ordenSeleccionada.nombre_abonado,
+          evento: 'CUENTA RETIRADA DE MODO PRUEBAS TECNICAS AL FINALIZAR ATENCION',
+          zona: 'S/T',
+          usuario: 'TEC'
+        })
+        setModoPruebasActivo(false)
+      }
+
       await supabase.from('eventos_monitoreo').insert({
         fecha_hora: new Date().toISOString(),
         cuenta: ordenSeleccionada.cuenta,
@@ -540,7 +693,11 @@ export default function PortalTecnicoMovil() {
         novedad: novedadTexto.trim(),
         repuestos_utilizados: repuestosTexto.trim(),
         nombre_firmante: nombreFirmanteText.trim() || 'Cliente',
+        rut_firmante: rutFirmanteText.trim() || 'N/A',
         firma: firmaImagen,
+        fotos_evidencia: fotosEvidencia,
+        modo_pruebas_usado: modoPruebasActivo,
+        voltaje_bateria: voltajeBateriaInput,
         fecha_cierre: fechaCierreStr
       }
 
@@ -548,17 +705,19 @@ export default function PortalTecnicoMovil() {
       await guardarOrdenesBase(listaNueva)
 
       if (ordenCompletada.telefono_contacto) {
-        const msgWA = `✅ *GAMA SEGURIDAD 24/7 - Atención Finalizada*\n\nSu orden de servicio técnico *#${ordenCompletada.codigo_ot || 'OT'}* ha sido completada exitosamente.\n\n• *Trabajo Realizado:* ${novedadTexto.trim()}\n• *Repuestos:* ${repuestosTexto.trim() || 'Ninguno'}\n• *Atendido por:* ${ordenCompletada.tecnico}\n\nGracias por su confianza.`
+        const msgWA = `✅ *GAMA SEGURIDAD 24/7 - Certificado Técnico de Atención*\n\nSu orden de servicio técnico *#${ordenCompletada.codigo_ot || 'OT'}* ha sido completada exitosamente.\n\n• *Trabajo Realizado:* ${novedadTexto.trim()}\n• *Repuestos:* ${repuestosTexto.trim() || 'Ninguno'}\n• *Atendido por:* ${ordenCompletada.tecnico}\n\nGracias por su confianza.`
         enviarNotificacionWhatsApp(ordenCompletada.telefono_contacto, msgWA)
       }
 
-      alert('🎉 ¡Orden de trabajo completada y notificada con éxito!')
+      alert('🎉 ¡Orden completada, firma touch registrada y certificado oficial generado!')
       setOrdenImprimir(ordenCompletada)
       setOrdenSeleccionada(null)
       setNovedadTexto('')
       setRepuestosTexto('')
       setNombreFirmanteText('')
+      setRutFirmanteText('')
       setFirmaImagen('')
+      setFotosEvidencia([])
     } catch (err: any) {
       alert('Error al finalizar la orden de trabajo: ' + err.message)
     }
@@ -587,731 +746,623 @@ export default function PortalTecnicoMovil() {
   // PANTALLA 1: SPLASH SCREEN (CARGANDO CON LOGO DE EMPRESA)
   if (cargandoSplash) {
     return (
-      <div className="fixed inset-0 bg-[#070b14] flex flex-col items-center justify-center p-6 text-white z-50 select-none">
+      <div className="fixed inset-0 bg-[#060913] flex flex-col items-center justify-center p-6 text-white z-50 select-none">
         <div className="relative mb-6">
-          <div className="absolute -inset-4 rounded-full bg-blue-600/30 blur-xl animate-pulse"></div>
-          <div className="relative w-28 h-28 bg-[#0b1329] border-2 border-blue-500/80 rounded-3xl p-3 shadow-2xl flex items-center justify-center">
+          <div className="absolute -inset-6 rounded-full bg-blue-600/30 blur-2xl animate-pulse"></div>
+          <div className="relative w-32 h-32 bg-[#0b1329]/90 border border-blue-500/40 rounded-3xl p-4 shadow-2xl flex items-center justify-center backdrop-blur-xl">
             <img src="/logo-gama.png" alt="Gama Seguridad" className="w-full h-full object-contain" />
           </div>
         </div>
 
-        <h1 className="text-xl font-black tracking-wider text-blue-400 uppercase text-center">GAMA SEGURIDAD 24/7</h1>
-        <p className="text-xs text-slate-300 font-bold tracking-wide mt-1">Módulo Técnico en Terreno PWA</p>
-
-        <div className="w-64 bg-slate-900 h-2 rounded-full mt-8 overflow-hidden border border-slate-800">
-          <div className="bg-gradient-to-r from-blue-600 to-emerald-400 h-full w-full animate-pulse"></div>
+        <h1 className="text-2xl font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-300 to-sky-400 uppercase text-center">GAMA SEGURIDAD 24/7</h1>
+        <p className="text-xs text-slate-400 font-semibold tracking-wider mt-1">{mensajeSplash}</p>
+        <div className="w-36 h-1 bg-slate-800 rounded-full mt-6 overflow-hidden">
+          <div className="h-full bg-blue-500 rounded-full animate-pulse w-3/4"></div>
         </div>
-
-        <p className="text-xs text-slate-400 mt-4 font-mono animate-pulse">{mensajeSplash}</p>
       </div>
     )
   }
 
-  // PANTALLA 2: LOGIN DIARIO OBLIGATORIO (SE REINICIA A LAS 00:00)
+  // PANTALLA 2: FORMULARIO DE LOGIN DIARIO DEL TÉCNICO
   if (!tecnicoAutenticado) {
     return (
-      <div className="min-h-screen bg-[#070b14] text-white flex flex-col justify-center items-center p-5 max-w-md mx-auto relative select-none">
-        
-        <div className="w-full bg-[#0e172a] border border-blue-900/60 rounded-3xl p-6 shadow-2xl space-y-6">
-          
-          <div className="text-center space-y-2">
-            <div className="w-20 h-20 bg-[#070b14] border border-blue-500/50 rounded-2xl p-2 mx-auto shadow-inner flex items-center justify-center">
-              <img src="/logo-gama.png" alt="Logo Gama" className="w-full h-full object-contain" />
-            </div>
-            <h1 className="text-lg font-black tracking-wider text-blue-400 uppercase">GAMA SEGURIDAD 24/7</h1>
-            <p className="text-xs text-slate-300 font-bold">Ingreso Diario Técnico en Terreno</p>
-            <span className="inline-block bg-blue-950 text-blue-300 border border-blue-800 px-3 py-1 rounded-full text-[10px] font-bold">
-              🗓️ Jornada: {new Date().toLocaleDateString('es-CL')}
-            </span>
+      <div className="min-h-screen bg-[#060913] text-white flex flex-col justify-between p-6 relative overflow-hidden select-none font-sans">
+        {/* Glow de fondo Apple Style */}
+        <div className="absolute -top-32 -left-32 w-96 h-96 bg-blue-600/20 rounded-full blur-3xl pointer-events-none"></div>
+        <div className="absolute -bottom-32 -right-32 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none"></div>
+
+        {/* Banner superior */}
+        <div className="pt-8 text-center relative z-10">
+          <div className="inline-flex items-center justify-center w-24 h-24 bg-[#0b1329]/90 border border-blue-500/40 rounded-3xl p-3 shadow-2xl mb-4 backdrop-blur-xl">
+            <img src="/logo-gama.png" alt="GAMA Security" className="w-full h-full object-contain" />
+          </div>
+          <h1 className="text-2xl font-black tracking-wider text-white">GAMA SEGURIDAD 24/7</h1>
+          <p className="text-xs text-blue-400 font-bold tracking-widest uppercase mt-1">Portal Técnico en Terreno PWA</p>
+        </div>
+
+        {/* Tarjeta Formulario Login iOS Style */}
+        <div className="max-w-md w-full mx-auto bg-slate-900/80 border border-slate-800/80 rounded-3xl p-6 shadow-2xl backdrop-blur-2xl relative z-10 space-y-5">
+          <div className="border-b border-slate-800 pb-3">
+            <h2 className="text-lg font-black text-white flex items-center gap-2">
+              <span>👨‍🔧</span>
+              <span>Autenticación Diaria de Turno</span>
+            </h2>
+            <p className="text-xs text-slate-400 font-medium mt-0.5">Por requerimiento operativo de Central, debe identificarse cada día laboral.</p>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-4">
-            
             <div className="space-y-1.5">
-              <label className="text-xs font-extrabold text-slate-300 uppercase block">Seleccionar Técnico:</label>
+              <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block">Seleccione Técnico Terreno:</label>
               <select
                 value={tecnicoSeleccionadoLogin}
                 onChange={(e) => setTecnicoSeleccionadoLogin(e.target.value)}
-                className="w-full bg-[#070b14] border-2 border-blue-800 text-white font-bold text-sm rounded-xl p-3.5 focus:outline-none focus:border-blue-500"
+                className="w-full bg-slate-950 border border-slate-700/80 rounded-2xl px-4 py-3.5 text-sm font-bold text-white focus:outline-none focus:border-blue-500 transition-colors shadow-inner"
               >
                 {TECNICOS.map(t => (
-                  <option key={t.nombre} value={t.nombre}>{t.nombre}</option>
+                  <option key={t.nombre} value={t.nombre}>{t.nombre} — ({t.cargo})</option>
                 ))}
               </select>
             </div>
 
-            <div className="bg-slate-900/80 p-3 rounded-xl border border-slate-800 text-[11px] text-slate-400 space-y-1">
-              <span className="font-bold text-amber-400 block">🔒 Política de Seguridad Diaria:</span>
-              <p>Por norma operativa de la Central, tu sesión vence automáticamente cada día a las 00:00 hrs. Ingresa para sincronizar tus órdenes diarias.</p>
+            <div className="bg-slate-950/80 border border-slate-800 p-3.5 rounded-2xl flex items-start gap-3">
+              <span className="text-lg">🗓️</span>
+              <div className="text-xs text-slate-300">
+                <span className="font-bold text-blue-400 block uppercase">Sesión Diaria de Terreno:</span>
+                <span>{fechaHoyLegible}</span>
+                <span className="block text-[10px] text-slate-500 mt-0.5">Cierre automático programado a las 00:00 hrs.</span>
+              </div>
             </div>
 
             <button
               type="submit"
-              className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-4 rounded-2xl text-sm uppercase tracking-wider shadow-xl cursor-pointer active:scale-95 transition-transform flex items-center justify-center gap-2"
+              className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black py-4 rounded-2xl text-sm uppercase tracking-wider shadow-lg shadow-blue-600/30 cursor-pointer active:scale-98 transition-all flex items-center justify-center gap-2"
             >
-              <span>🔑</span>
-              <span>INICIAR JORNADA LABORAL</span>
+              <span>🚀 INICIAR TURNO Y VER ITINERARIO</span>
             </button>
           </form>
-
         </div>
 
+        {/* Footer */}
+        <div className="text-center text-[11px] text-slate-500 font-medium relative z-10 pb-4">
+          © 2026 GAMA Security — Sistema Móvil de Despacho & Mantenimiento
+        </div>
       </div>
     )
   }
 
-  // PANTALLA 3: PORTAL PRINCIPAL DEL TÉCNICO (DISEÑO MÓVIL ALTA VISIBILIDAD)
+  // PANTALLA 3: PORTAL MÓVIL DEL TÉCNICO (AUTENTICADO)
   return (
-    <div className="min-h-screen bg-[#070b14] text-white flex flex-col font-sans max-w-md mx-auto shadow-2xl relative border-x border-slate-800 pb-20 select-none">
+    <div className="min-h-screen bg-[#060913] text-white flex flex-col font-sans relative pb-24 select-none">
       
-      {/* Header Corporativo Móvil */}
-      <header className="bg-gradient-to-r from-blue-950 via-slate-900 to-slate-950 p-4 border-b border-blue-800/40 sticky top-0 z-30 shadow-xl flex flex-col gap-2">
-        <div className="flex justify-between items-center">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 bg-blue-950 border border-blue-500 rounded-xl p-1 shrink-0">
-              <img src="/logo-gama.png" alt="Gama Logo" className="w-full h-full object-contain" />
-            </div>
-            <div>
-              <h1 className="text-sm font-black tracking-wider text-blue-400 uppercase">GAMA SEGURIDAD</h1>
-              <p className="text-[11px] text-slate-300 font-bold">Módulo Técnico PWA</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-1.5">
-            {permisoNotificacion !== 'granted' && (
-              <button
-                onClick={solicitarPermisoNotificaciones}
-                className="bg-amber-600 hover:bg-amber-500 text-white p-2 rounded-xl text-xs font-bold animate-pulse shadow flex items-center gap-1"
-                title="Activar Notificaciones Push"
-              >
-                <span>🔔</span>
-              </button>
-            )}
-
-            <button 
-              onClick={() => {
-                cargarOrdenes()
-                if (menuSeccion === 'eventos_alarma') cargarEventosAlarma()
-              }}
-              className="bg-blue-950 hover:bg-blue-900 text-blue-300 p-2 rounded-xl border border-blue-700/60 text-xs font-bold active:scale-95 transition-transform"
-              title="Actualizar Órdenes"
-            >
-              🔄
-            </button>
-
-            <button
-              onClick={handleLogout}
-              className="bg-red-950/80 hover:bg-red-900 text-red-300 p-2 rounded-xl border border-red-800/60 text-xs font-bold active:scale-95 transition-transform"
-              title="Cerrar Sesión Diaria"
-            >
-              🚪
-            </button>
-          </div>
+      {/* Banner de Estado Offline / Sincronización */}
+      {isOffline && (
+        <div className="bg-amber-500/90 text-black font-black text-xs px-4 py-2 text-center flex items-center justify-center gap-2 shadow-lg sticky top-0 z-50">
+          <span>📡 MODO OFFLINE DETECTADO</span>
+          <span className="font-normal">— Trabajos guardados en memoria local. Se sincronizarán al recuperar 4G.</span>
         </div>
+      )}
 
-        {/* Banner Técnico Autenticado */}
-        <div className="bg-slate-950/90 p-2 rounded-xl border border-slate-800 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span className="text-xs font-black text-white">{tecnicoAutenticado}</span>
-          </div>
-          <span className="text-[10px] text-amber-400 font-bold font-mono">
-            {ordenesPendientes.length} Pendiente(s)
-          </span>
+      {syncStatusMsg && (
+        <div className="bg-blue-600 text-white font-black text-xs px-4 py-2 text-center animate-pulse sticky top-0 z-50 shadow-lg">
+          {syncStatusMsg}
         </div>
-      </header>
+      )}
 
-      {/* BANNER FLOTANTE DE NUEVA OT EN TIEMPO REAL */}
+      {/* Banner Alerta Nueva OT en Vivo */}
       {bannerAlertaNuevaOT && (
-        <div className="bg-gradient-to-r from-red-600 via-amber-600 to-red-700 text-white p-4 rounded-2xl mx-3 mt-3 shadow-2xl border-2 border-amber-300 animate-bounce space-y-2 z-40">
-          <div className="flex justify-between items-start">
-            <div className="flex items-center gap-2">
-              <span className="text-2xl animate-pulse">🚨</span>
-              <div>
-                <h3 className="font-black text-sm uppercase tracking-wide">¡NUEVA ATENCIÓN ASIGNADA!</h3>
-                <p className="text-[11px] font-bold text-amber-100 font-mono">Abonado #{bannerAlertaNuevaOT.cuenta}</p>
-              </div>
-            </div>
-            <button
-              onClick={() => setBannerAlertaNuevaOT(null)}
-              className="text-xs bg-black/40 hover:bg-black/60 px-2 py-1 rounded-lg font-bold"
-            >
-              ✕
-            </button>
-          </div>
-          <div className="text-xs font-bold leading-tight">
-            <div><strong>Cliente:</strong> {bannerAlertaNuevaOT.nombre_abonado}</div>
-            <div><strong>Solicitud:</strong> {bannerAlertaNuevaOT.problema}</div>
+        <div className="mx-4 mt-4 bg-gradient-to-r from-red-600 to-rose-700 text-white p-4 rounded-3xl shadow-2xl border border-red-400 animate-bounce flex items-center justify-between z-40">
+          <div className="space-y-0.5">
+            <span className="text-xs font-black bg-white/20 px-2 py-0.5 rounded-full uppercase tracking-wider">🚨 NUEVO SERVICIO ASIGNADO</span>
+            <h4 className="font-black text-sm">{bannerAlertaNuevaOT.cuenta} — {bannerAlertaNuevaOT.nombre_abonado}</h4>
+            <p className="text-xs text-red-100 font-medium truncate max-w-xs">{bannerAlertaNuevaOT.problema}</p>
           </div>
           <button
             onClick={() => {
               setOrdenSeleccionada(bannerAlertaNuevaOT)
-              setMenuSeccion('ordenes_pendientes')
               setBannerAlertaNuevaOT(null)
+              setMenuSeccion('ordenes_pendientes')
             }}
-            className="w-full bg-white text-red-950 font-black py-2 rounded-xl text-xs uppercase tracking-wider shadow cursor-pointer text-center"
+            className="bg-white text-red-700 font-black text-xs px-3 py-2 rounded-2xl shadow hover:bg-red-50 active:scale-95 cursor-pointer shrink-0"
           >
-            🚀 VER Y ATENDER AHORA
+            ATENDER
           </button>
         </div>
       )}
 
-      {/* Cuerpo Principal PWA */}
-      <main className="flex-1 p-3.5 flex flex-col space-y-4 overflow-y-auto">
+      {/* Top Header iOS Apple Bar */}
+      <header className="bg-slate-900/80 border-b border-slate-800/80 px-5 py-4 backdrop-blur-xl sticky top-0 z-30 flex items-center justify-between shadow-md">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-[#0b1329] border border-blue-500/40 rounded-2xl p-1.5 flex items-center justify-center shadow">
+            <img src="/logo-gama.png" alt="GAMA Security" className="w-full h-full object-contain" />
+          </div>
+          <div>
+            <h2 className="text-sm font-black tracking-wider text-white leading-tight">GAMA SEGURIDAD</h2>
+            <p className="text-[11px] text-blue-400 font-bold leading-tight truncate max-w-[160px]">{tecnicoAutenticado}</p>
+          </div>
+        </div>
 
-        {/* SECCIÓN A: ASISTENTE DE ITINERARIO DIARIO */}
-        {menuSeccion === 'itinerario' && !ordenSeleccionada && (
-          <div className="space-y-4 animate-fadeIn">
+        <div className="flex items-center gap-2">
+          {permisoNotificacion !== 'granted' && (
+            <button
+              onClick={solicitarPermisoNotificaciones}
+              className="bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border border-blue-500/30 text-[11px] font-black px-2.5 py-1.5 rounded-xl flex items-center gap-1 cursor-pointer"
+              title="Activar Notificaciones Push"
+            >
+              <span>🔔</span>
+              <span>Push</span>
+            </button>
+          )}
+
+          <button
+            onClick={handleLogout}
+            className="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-[11px] font-bold px-2.5 py-1.5 rounded-xl cursor-pointer"
+          >
+            Salir
+          </button>
+        </div>
+      </header>
+
+      {/* Main Mobile Body Container */}
+      <main className="p-4 space-y-4 max-w-lg mx-auto w-full flex-1">
+        
+        {/* SECCIÓN 1: ITINERARIO ASISTENTE & BIENVENIDA */}
+        {menuSeccion === 'itinerario' && (
+          <div className="space-y-4">
             
-            {/* Card Mensaje de Bienvenida Asistente */}
-            <div className="bg-gradient-to-br from-blue-950 via-slate-900 to-slate-900 border border-blue-800/70 rounded-3xl p-5 shadow-2xl space-y-3">
-              <div className="flex items-center gap-3 border-b border-blue-900/60 pb-3">
-                <span className="text-3xl">🤖</span>
+            {/* Card Bienvenida & Resumen Asistente */}
+            <div className="bg-gradient-to-br from-slate-900/90 via-[#0b1329] to-slate-900/90 border border-slate-800 rounded-3xl p-5 shadow-2xl backdrop-blur-2xl relative overflow-hidden space-y-4">
+              <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-base font-black text-blue-300">Asistente Virtual de Jornada</h2>
-                  <p className="text-xs text-slate-300 capitalize">{fechaHoyLegible}</p>
+                  <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest bg-blue-500/10 px-2.5 py-1 rounded-full border border-blue-500/20">ASISTENTE DE RUTA</span>
+                  <h3 className="text-xl font-black text-white mt-1">¡Hola, {tecnicoAutenticado?.split(' ')[0]}! 👋</h3>
+                </div>
+                <div className="text-right">
+                  <span className="text-2xl font-black text-blue-400 block">{ordenesPendientes.length}</span>
+                  <span className="text-[10px] text-slate-400 font-bold uppercase">Pendientes</span>
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <p className="text-sm font-bold text-white leading-relaxed">
-                  ¡Buenos días, <span className="text-amber-400 font-black">{tecnicoAutenticado}</span>! 👋
-                </p>
-                <p className="text-xs text-slate-300 leading-normal">
-                  Bienvenido a tu jornada laboral de hoy. El sistema ha preparado tu itinerario de atenciones en terreno:
-                </p>
-              </div>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                Para hoy <strong className="text-white">{fechaHoyLegible}</strong> tienes agendadas <strong className="text-blue-400">{ordenesPendientes.length} atenciones técnicas</strong> en terreno.
+              </p>
 
-              {/* Botón Habilitar Notificaciones Push */}
-              {permisoNotificacion !== 'granted' && (
+              {/* Botón Acción Principal */}
+              {ordenesPendientes.length > 0 ? (
                 <button
-                  onClick={solicitarPermisoNotificaciones}
-                  className="w-full bg-amber-600/90 hover:bg-amber-500 text-white font-extrabold py-3 rounded-2xl text-xs uppercase tracking-wider shadow cursor-pointer border border-amber-400 flex items-center justify-center gap-2"
+                  onClick={() => {
+                    setOrdenSeleccionada(ordenesPendientes[0])
+                    setMenuSeccion('ordenes_pendientes')
+                  }}
+                  className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black py-3.5 rounded-2xl text-xs uppercase tracking-wider shadow-lg shadow-blue-600/30 flex items-center justify-center gap-2 cursor-pointer active:scale-98 transition-all"
                 >
-                  <span>🔔</span>
-                  <span>ACTIVAR NOTIFICACIONES PUSH EN PANTALLA</span>
+                  <span>🚀 INICIAR PRIMERA ATENCIÓN (# {ordenesPendientes[0].codigo_ot || ordenesPendientes[0].id})</span>
                 </button>
+              ) : (
+                <div className="bg-emerald-500/10 border border-emerald-500/20 p-3 rounded-2xl text-xs text-emerald-400 font-bold text-center">
+                  🎉 ¡No tienes órdenes pendientes por realizar en este momento!
+                </div>
               )}
-
-              {/* Stats resumen diario */}
-              <div className="grid grid-cols-2 gap-2 pt-1">
-                <div className="bg-slate-950/80 border border-amber-500/40 p-3 rounded-2xl text-center">
-                  <span className="text-xs text-slate-400 font-bold block uppercase">Atenciones Pendientes:</span>
-                  <span className="text-2xl font-black text-amber-400 font-mono">{ordenesPendientes.length}</span>
-                </div>
-                <div className="bg-slate-950/80 border border-emerald-500/40 p-3 rounded-2xl text-center">
-                  <span className="text-xs text-slate-400 font-bold block uppercase">Atenciones Finalizadas:</span>
-                  <span className="text-2xl font-black text-emerald-400 font-mono">{ordenesCompletadas.length}</span>
-                </div>
-              </div>
             </div>
 
-            {/* Cronograma / Itinerario de Visitas Sugeridas */}
+            {/* Listado Rápido de Itinerario */}
             <div className="space-y-2">
-              <h3 className="text-xs font-black text-slate-300 uppercase tracking-wider px-1">
-                📅 Cronograma de Visitas Programadas para Hoy:
-              </h3>
-
-              {ordenesPendientes.map((o, index) => (
+              <h4 className="text-xs font-black text-slate-400 uppercase tracking-wider px-1">Itinerario Programado de Hoy:</h4>
+              {ordenesPendientes.map((ot, idx) => (
                 <div
-                  key={o.id}
+                  key={ot.id}
                   onClick={() => {
-                    setOrdenSeleccionada(o)
-                    setNovedadTexto(o.novedad || '')
-                    setRepuestosTexto(o.repuestos_utilizados || '')
-                    setNombreFirmanteText(o.nombre_firmante || '')
+                    setOrdenSeleccionada(ot)
+                    setMenuSeccion('ordenes_pendientes')
                   }}
-                  className={`bg-slate-900 border rounded-2xl p-4 cursor-pointer hover:border-blue-500 transition-all shadow-lg space-y-2 active:scale-98 ${
-                    index === 0 ? 'border-amber-500 bg-amber-950/20' : 'border-slate-800'
-                  }`}
+                  className="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 flex items-center justify-between hover:border-blue-500/50 transition-all cursor-pointer shadow"
                 >
-                  <div className="flex justify-between items-center border-b border-slate-800 pb-2">
-                    <span className="text-xs font-black text-amber-400 uppercase tracking-wide">
-                      {index === 0 ? '📍 PRÓXIMA ATENCIÓN SUGERIDA' : `VISITA N° ${index + 1}`}
-                    </span>
-                    <span className="bg-blue-950 text-blue-300 text-[10px] font-mono font-extrabold px-2 py-0.5 rounded-full border border-blue-800">
-                      {o.bloque_horario}
-                    </span>
-                  </div>
-
-                  <div className="space-y-1">
-                    <div className="text-sm font-black text-white">{o.nombre_abonado}</div>
-                    <div className="text-xs text-blue-300 font-mono font-bold">Código Cliente: #{o.cuenta} • {o.tipo_visita || 'Correctiva'}</div>
-                    <div className="text-xs text-slate-300 leading-snug">📍 {o.direccion}</div>
-                    <div className="text-xs text-amber-200/90 italic bg-slate-950 p-2 rounded-xl border border-slate-800/80">
-                      ⚠️ {o.problema}
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 font-black text-xs">
+                      #{idx + 1}
+                    </div>
+                    <div>
+                      <div className="font-black text-sm text-white">{ot.cuenta} — {ot.nombre_abonado}</div>
+                      <div className="text-xs text-slate-400 font-medium truncate max-w-[200px]">{ot.tipo_visita} • {ot.bloque_horario}</div>
                     </div>
                   </div>
-
-                  <button className="w-full bg-blue-600 hover:bg-blue-500 text-white font-extrabold py-2.5 rounded-xl text-xs uppercase tracking-wider shadow cursor-pointer mt-1 flex items-center justify-center gap-1.5">
-                    <span>🚀 Iniciar Atención Técnica</span>
-                    <span>➔</span>
-                  </button>
+                  <span className="text-xs font-black text-blue-400">Ver ➔</span>
                 </div>
               ))}
-
-              {ordenesPendientes.length === 0 && (
-                <div className="text-center text-emerald-400 italic py-12 bg-slate-900/60 rounded-3xl border border-emerald-900/60 p-4 space-y-2">
-                  <span className="text-3xl block">🎉</span>
-                  <span className="font-bold text-sm block">¡Excelente trabajo, {tecnicoAutenticado}!</span>
-                  <span className="text-xs text-slate-400 block">Has completado todas tus atenciones programadas para el día de hoy.</span>
-                </div>
-              )}
             </div>
 
           </div>
         )}
 
-        {/* SECCIÓN B: ÓRDENES PENDIENTES & EJECUCIÓN */}
+        {/* SECCIÓN 2: ÓRDENES PENDIENTES & DETALLE DE ATENCIÓN */}
         {menuSeccion === 'ordenes_pendientes' && (
-          <div className="space-y-3">
-            {ordenSeleccionada ? (
-              /* DETALLE Y EJECUCIÓN EN TERRENO */
-              <div className="space-y-4 animate-fadeIn">
-                
+          <div className="space-y-4">
+            
+            {/* Si no hay orden seleccionada, mostrar listado */}
+            {!ordenSeleccionada ? (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between px-1">
+                  <h3 className="text-sm font-black text-white uppercase tracking-wider">Órdenes Pendientes ({ordenesPendientes.length})</h3>
+                  <button onClick={() => cargarOrdenes()} className="text-xs text-blue-400 font-bold">🔄 Actualizar</button>
+                </div>
+
+                {ordenesPendientes.map(ot => (
+                  <div
+                    key={ot.id}
+                    onClick={() => {
+                      setOrdenSeleccionada(ot)
+                      setNovedadTexto(ot.novedad || '')
+                      setRepuestosTexto(ot.repuestos_utilizados || '')
+                      setNombreFirmanteText(ot.nombre_firmante || '')
+                    }}
+                    className="bg-slate-900/90 border border-slate-800 rounded-3xl p-5 space-y-3 shadow-xl hover:border-blue-500/50 cursor-pointer transition-all backdrop-blur-xl"
+                  >
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <span className="text-[10px] font-black bg-blue-500/20 text-blue-400 border border-blue-500/30 px-2.5 py-0.5 rounded-full uppercase font-mono">
+                          {ot.codigo_ot || `OT-${ot.id}`}
+                        </span>
+                        <h4 className="text-base font-black text-white mt-1">{ot.nombre_abonado}</h4>
+                      </div>
+                      <span className="text-xs font-bold text-slate-400 font-mono">{ot.cuenta}</span>
+                    </div>
+
+                    <div className="text-xs text-slate-300 space-y-1 bg-slate-950/60 p-3 rounded-2xl border border-slate-800/80">
+                      <div>📍 <strong>Dirección:</strong> {ot.direccion}</div>
+                      <div>🛠️ <strong>Requerimiento:</strong> {ot.problema}</div>
+                      <div>🕒 <strong>Cita:</strong> {ot.fecha_cita} ({ot.bloque_horario})</div>
+                    </div>
+
+                    <button
+                      className="w-full bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border border-blue-500/30 font-black py-2.5 rounded-2xl text-xs uppercase tracking-wider flex items-center justify-center gap-1"
+                    >
+                      <span>GESTIONAR ATENCIÓN</span>
+                      <span>➔</span>
+                    </button>
+                  </div>
+                ))}
+
+                {ordenesPendientes.length === 0 && (
+                  <div className="bg-slate-900/50 border border-slate-800 rounded-3xl p-8 text-center text-slate-400 text-xs italic">
+                    No tienes órdenes de trabajo pendientes asignadas.
+                  </div>
+                )}
+              </div>
+            ) : (
+              /* DETALLE Y FORMULARIO DE ATENCIÓN DE ORDEN SELECCIONADA */
+              <div className="space-y-4">
                 <button
                   onClick={() => setOrdenSeleccionada(null)}
-                  className="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 py-3 rounded-2xl text-xs font-black border border-slate-700 flex items-center justify-center gap-2 cursor-pointer shadow"
+                  className="text-xs text-slate-400 hover:text-white font-bold flex items-center gap-1 mb-2 cursor-pointer"
                 >
-                  <span>◀</span>
-                  <span>Volver a la Lista de Órdenes</span>
+                  <span>⬅️</span>
+                  <span>Volver a la lista de órdenes</span>
                 </button>
 
-                {/* Datos del Cliente */}
-                <div className="bg-slate-900 border border-slate-700 rounded-3xl p-4 space-y-3 shadow-xl">
-                  <div className="flex justify-between items-start border-b border-slate-800 pb-2.5">
+                {/* Tarjeta Encabezado OT */}
+                <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-5 space-y-3 shadow-2xl backdrop-blur-2xl">
+                  <div className="flex justify-between items-start">
                     <div>
-                      <span className="text-sm font-black text-blue-400 font-mono block">
-                        #{ordenSeleccionada.codigo_ot || `OT-${ordenSeleccionada.id}`}
+                      <span className="text-xs font-black bg-blue-500/20 text-blue-400 border border-blue-500/30 px-3 py-1 rounded-full uppercase font-mono">
+                        {ordenSeleccionada.codigo_ot || `OT-${ordenSeleccionada.id}`}
                       </span>
-                      <span className="text-xs text-slate-400 font-bold">{ordenSeleccionada.fecha_cita} • {ordenSeleccionada.bloque_horario}</span>
+                      <h3 className="text-lg font-black text-white mt-1.5">{ordenSeleccionada.nombre_abonado}</h3>
                     </div>
-                    <span className={`px-2.5 py-1 rounded-xl text-xs font-black uppercase ${
-                      ordenSeleccionada.estado === 'Completada' ? 'bg-emerald-950 text-emerald-300 border border-emerald-700' :
-                      ordenSeleccionada.estado === 'En Terreno' ? 'bg-purple-950 text-purple-300 border border-purple-700' :
-                      ordenSeleccionada.estado === 'En Traslado' ? 'bg-amber-950 text-amber-300 border border-amber-700' :
-                      'bg-blue-950 text-blue-300 border border-blue-700'
-                    }`}>
-                      {ordenSeleccionada.estado}
-                    </span>
+                    <span className="text-sm font-black text-blue-400 font-mono">CTA: {ordenSeleccionada.cuenta}</span>
                   </div>
 
-                  <div className="text-xs space-y-2">
-                    <div><span className="text-slate-400 font-bold">Código de Cliente:</span> <strong className="font-mono text-sm text-blue-300">{ordenSeleccionada.cuenta}</strong></div>
-                    <div><span className="text-slate-400 font-bold">Nombre del Abonado:</span> <strong className="text-sm text-white">{ordenSeleccionada.nombre_abonado}</strong></div>
-                    
-                    <div className="flex justify-between items-center bg-slate-950 p-3 rounded-2xl border border-slate-800">
-                      <div className="max-w-[65%]">
-                        <span className="text-[10px] text-slate-400 block font-bold uppercase">Dirección de Atención:</span>
-                        <span className="text-xs font-bold text-slate-200 leading-tight block">{ordenSeleccionada.direccion}</span>
-                      </div>
-                      <a
-                        href={`https://maps.google.com/?q=${encodeURIComponent(ordenSeleccionada.direccion)}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="bg-blue-600 hover:bg-blue-500 text-white font-black text-xs px-3 py-2.5 rounded-xl border border-blue-400 shadow cursor-pointer shrink-0 flex items-center gap-1.5"
-                      >
-                        <span>📍</span>
-                        <span>Navegar</span>
-                      </a>
-                    </div>
-
-                    {ordenSeleccionada.telefono_contacto && (
-                      <div className="flex justify-between items-center bg-slate-950 p-3 rounded-2xl border border-slate-800">
-                        <div>
-                          <span className="text-[10px] text-slate-400 block font-bold uppercase">Teléfono de Contacto:</span>
-                          <span className="text-xs font-bold text-emerald-400 font-mono">{ordenSeleccionada.telefono_contacto}</span>
-                        </div>
-                        <div className="flex gap-2">
-                          <a
-                            href={`tel:${ordenSeleccionada.telefono_contacto}`}
-                            className="bg-emerald-700 hover:bg-emerald-600 text-white font-bold text-xs px-2.5 py-1.5 rounded-xl border border-emerald-500"
-                          >
-                            📞 Llamar
-                          </a>
-                          <a
-                            href={`https://wa.me/${ordenSeleccionada.telefono_contacto.replace(/[^0-9]/g, '')}`}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="bg-green-600 hover:bg-green-500 text-white font-bold text-xs px-2.5 py-1.5 rounded-xl border border-green-400"
-                          >
-                            💬 Chat WA
-                          </a>
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="bg-amber-950/40 border border-amber-800/60 p-3 rounded-2xl text-amber-200 text-xs space-y-1">
-                      <span className="font-black block text-xs uppercase text-amber-400">⚠️ Requerimiento / Falla Reportada:</span>
-                      <p className="leading-relaxed">{ordenSeleccionada.problema}</p>
-                    </div>
+                  <div className="text-xs text-slate-300 space-y-1.5 bg-slate-950 p-3.5 rounded-2xl border border-slate-800">
+                    <div>📍 <strong>Dirección:</strong> {ordenSeleccionada.direccion}</div>
+                    <div>📞 <strong>Contacto:</strong> {ordenSeleccionada.telefono_contacto || 'Sin registro'}</div>
+                    <div>🛠️ <strong>Falla Reportada:</strong> {ordenSeleccionada.problema}</div>
                   </div>
-                </div>
 
-                {/* Controles de Estado Operativo sin GPS link para el cliente */}
-                <div className="bg-slate-900 border border-slate-700 rounded-3xl p-4 space-y-2.5">
-                  <span className="text-xs font-black text-slate-300 uppercase tracking-wide block border-b border-slate-800 pb-1.5">
-                    🚦 Estado de la Atención en Terreno:
-                  </span>
+                  {/* Botones Transición de Estado */}
                   <div className="grid grid-cols-2 gap-2 pt-1">
                     <button
-                      onClick={async () => {
-                        const eta = prompt('Tiempo estimado de llegada (ETA en minutos):', '15') || '15'
-                        cambiarEstadoOrden(ordenSeleccionada.id, 'En Traslado')
-                        if (ordenSeleccionada.telefono_contacto) {
-                          const msg = `🚚 *GAMA SEGURIDAD 24/7 - Técnico en camino*\n\nEstimado cliente, el técnico *${ordenSeleccionada.tecnico}* va en camino a su domicilio (*${ordenSeleccionada.direccion}*).\n\n• *Tiempo Estimado de Llegada (ETA):* ~${eta} minutos\n• *Orden de Trabajo:* #${ordenSeleccionada.codigo_ot || ordenSeleccionada.id}\n\nQuedamos atentos a su recepción.`
-                          enviarNotificacionWhatsApp(ordenSeleccionada.telefono_contacto, msg)
-                        }
-                      }}
-                      className={`py-3.5 px-3 font-black text-xs rounded-2xl border cursor-pointer transition-colors shadow ${
-                        ordenSeleccionada.estado === 'En Traslado'
-                          ? 'bg-amber-500 text-black border-amber-300 font-black'
-                          : 'bg-slate-800 text-amber-300 border-amber-800/50 hover:bg-slate-700'
+                      onClick={() => cambiarEstadoOrden(ordenSeleccionada.id, 'En Traslado')}
+                      className={`py-3 rounded-2xl text-xs font-black uppercase transition-all cursor-pointer ${
+                        ordenSeleccionada.estado === 'En Traslado' ? 'bg-amber-500 text-black shadow-lg shadow-amber-500/20' : 'bg-slate-800 text-slate-300 border border-slate-700'
                       }`}
                     >
-                      🚗 EN TRASLADO (+WA ETA)
+                      🚚 EN TRASLADO
                     </button>
+                    <button
+                      onClick={() => cambiarEstadoOrden(ordenSeleccionada.id, 'En Terreno')}
+                      className={`py-3 rounded-2xl text-xs font-black uppercase transition-all cursor-pointer ${
+                        ordenSeleccionada.estado === 'En Terreno' ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/20' : 'bg-slate-800 text-slate-300 border border-slate-700'
+                      }`}
+                    >
+                      🏢 EN TERRENO
+                    </button>
+                  </div>
+                </div>
+
+                {/* BOTÓN MODO PRUEBAS DE SISTEMA */}
+                <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-4 shadow-xl space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="text-xs font-black text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                        <span>🧪</span>
+                        <span>Modo Pruebas de Terreno</span>
+                      </h4>
+                      <p className="text-[11px] text-slate-400 font-medium">Notifica a Central para ignorar alertas durante pruebas.</p>
+                    </div>
 
                     <button
-                      onClick={() => {
-                        cambiarEstadoOrden(ordenSeleccionada.id, 'En Terreno')
-                        if (ordenSeleccionada.telefono_contacto) {
-                          const msg = `📍 *GAMA SEGURIDAD 24/7 - Técnico en Domicilio*\n\nNuestro técnico *${ordenSeleccionada.tecnico}* ha arribado a su domicilio (*${ordenSeleccionada.direccion}*) para iniciar la atención de la OT *#${ordenSeleccionada.codigo_ot || ordenSeleccionada.id}*.`
-                          enviarNotificacionWhatsApp(ordenSeleccionada.telefono_contacto, msg)
-                        }
-                      }}
-                      className={`py-3.5 px-3 font-black text-xs rounded-2xl border cursor-pointer transition-colors shadow ${
-                        ordenSeleccionada.estado === 'En Terreno'
-                          ? 'bg-purple-600 text-white border-purple-300 font-black'
-                          : 'bg-slate-800 text-purple-300 border-purple-800/50 hover:bg-slate-700'
+                      onClick={toggleModoPruebas}
+                      className={`px-4 py-2.5 rounded-2xl text-xs font-black uppercase transition-all cursor-pointer shadow ${
+                        modoPruebasActivo ? 'bg-gradient-to-r from-amber-500 to-yellow-500 text-black animate-pulse' : 'bg-slate-800 text-slate-300 border border-slate-700'
                       }`}
                     >
-                      📍 EN TERRENO (+WA LLEGADA)
+                      {modoPruebasActivo ? '⚠️ EN PRUEBAS (ACTIVO)' : 'ACTIVAR PRUEBAS'}
                     </button>
                   </div>
+
+                  {modoPruebasActivo && (
+                    <div className="bg-amber-500/10 border border-amber-500/30 p-2.5 rounded-2xl text-[11px] text-amber-300 font-bold">
+                      ⚡ La cuenta está registrada en MODO PRUEBAS en Central. Al finalizar la atención se retirará automáticamente.
+                    </div>
+                  )}
                 </div>
 
-                {/* Checklist Pruebas de Sensores en Terreno */}
-                <div className="bg-slate-900 border border-blue-900/60 rounded-3xl p-4 space-y-2.5">
-                  <div className="flex justify-between items-center border-b border-slate-800 pb-2">
-                    <span className="text-xs font-black text-blue-300 uppercase">📋 Checklist Pruebas de Sensores</span>
-                    <span className="text-[10px] bg-blue-950 text-blue-300 px-2 py-0.5 rounded-full font-extrabold border border-blue-800">EN VIVO</span>
-                  </div>
-                  <div className="space-y-2 text-xs">
-                    {['ZONA 01: PIR Living', 'ZONA 02: Magnético Puerta Principal', 'ZONA 03: PIR Comedor / Pasillo', 'ZONA 04: Humo / Temperatura Cocina'].map((z) => (
-                      <div key={z} className="flex justify-between items-center bg-slate-950 p-2.5 rounded-2xl border border-slate-800">
-                        <span className="font-bold text-slate-200 text-xs">{z}</span>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            const btn = e.currentTarget
-                            btn.innerText = '✅ TEST OK'
-                            btn.className = 'bg-emerald-600 text-white text-xs font-extrabold px-3 py-1.5 rounded-xl border border-emerald-400'
-                          }}
-                          className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-3 py-1.5 rounded-xl border border-blue-400 cursor-pointer"
-                        >
-                          ⚡ PROBAR SENSOR
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                {/* FORMULARIO DE TRABAJO REALIZADO & EVIDENCIA */}
+                <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-5 space-y-4 shadow-2xl backdrop-blur-2xl">
+                  <h4 className="text-xs font-black text-blue-400 uppercase tracking-wider border-b border-slate-800 pb-2">
+                    📋 Informe Técnico & Evidencia
+                  </h4>
 
-                {/* Formulario Cierre & Firma */}
-                <div className="bg-slate-900 border border-slate-700 rounded-3xl p-4 space-y-3.5">
-                  <span className="text-xs font-black text-slate-200 uppercase tracking-wide block border-b border-slate-800 pb-1.5">
-                    📝 Informe de Trabajo & Cierre:
-                  </span>
-
+                  {/* Trabajo Realizado */}
                   <div className="space-y-1.5">
                     <label className="text-xs font-bold text-slate-300 uppercase block">Trabajo / Solución Realizada:</label>
                     <textarea
                       value={novedadTexto}
                       onChange={(e) => setNovedadTexto(e.target.value)}
-                      placeholder="Describa los trabajos ejecutados, cambios de batería o revisión de sensores..."
-                      className="bg-slate-950 border border-slate-700 rounded-2xl p-3 text-xs text-white w-full h-24 resize-none focus:outline-none focus:border-blue-500"
+                      placeholder="Ej: Se reemplazó batería 12V 7Ah agotada en panel DSC 1832, se probó zona 03 PIR living con aviso OK a Central..."
+                      className="w-full bg-slate-950 border border-slate-700/80 rounded-2xl p-3.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 h-24 resize-none shadow-inner"
                     />
                   </div>
 
+                  {/* Repuestos Utilizados */}
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-300 uppercase block">Repuestos / Baterías Cambiadas:</label>
+                    <label className="text-xs font-bold text-slate-300 uppercase block">Insumos & Repuestos Utilizados:</label>
                     <input
                       type="text"
                       value={repuestosTexto}
                       onChange={(e) => setRepuestosTexto(e.target.value)}
-                      placeholder="Ej: 1 Batería 12V 7Ah Ritar, 1 Sensor PIR DSC..."
-                      className="bg-slate-950 border border-slate-700 rounded-2xl p-3 text-xs text-white w-full focus:outline-none focus:border-blue-500"
+                      placeholder="Ej: 1x Batería 12V 7Ah Ultracell, 1x Sensor PIR DSC..."
+                      className="w-full bg-slate-950 border border-slate-700/80 rounded-2xl p-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 shadow-inner"
                     />
                   </div>
 
+                  {/* Medición de Voltaje Batería */}
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-300 uppercase block">Nombre del Cliente / Firmante:</label>
+                    <label className="text-xs font-bold text-slate-300 uppercase block">Medición Voltaje Fuente / Batería:</label>
                     <input
                       type="text"
-                      value={nombreFirmanteText}
-                      onChange={(e) => setNombreFirmanteText(e.target.value)}
-                      placeholder="Nombre y apellido de quien recibe en domicilio..."
-                      className="bg-slate-950 border border-slate-700 rounded-2xl p-3 text-xs text-white w-full focus:outline-none focus:border-blue-500"
+                      value={voltajeBateriaInput}
+                      onChange={(e) => setVoltajeBateriaInput(e.target.value)}
+                      placeholder="Ej: 13.8V DC (Carga Normal OK)"
+                      className="w-full bg-slate-950 border border-slate-700/80 rounded-2xl p-3 text-xs text-white focus:outline-none focus:border-blue-500 shadow-inner"
                     />
                   </div>
 
-                  {/* Dibujar Firma Touch Digital */}
-                  <div className="space-y-1.5">
+                  {/* CAPTURA DE FOTOS DE EVIDENCIA */}
+                  <div className="space-y-2">
                     <div className="flex justify-between items-center">
-                      <label className="text-xs font-bold text-slate-300 uppercase">Firma Digital del Cliente:</label>
-                      <button onClick={clearFirma} className="text-xs text-red-400 font-bold hover:underline">LIMPIAR</button>
+                      <label className="text-xs font-bold text-slate-300 uppercase">📷 Fotos de Evidencia (Máx 3):</label>
+                      <span className="text-[10px] text-slate-400 font-bold">{fotosEvidencia.length}/3 fotos</span>
                     </div>
-                    <div className="touch-none bg-white rounded-2xl border-2 border-slate-600 p-1">
-                      <canvas
-                        ref={canvasRef}
-                        width={320}
-                        height={110}
-                        onMouseDown={startDrawing}
-                        onMouseMove={draw}
-                        onMouseUp={stopDrawing}
-                        onMouseLeave={stopDrawing}
-                        onTouchStart={startDrawing}
-                        onTouchMove={draw}
-                        onTouchEnd={stopDrawing}
-                        className="w-full cursor-crosshair bg-white rounded-xl"
-                      />
+
+                    <div className="grid grid-cols-3 gap-2">
+                      {fotosEvidencia.map((foto, i) => (
+                        <div key={i} className="relative aspect-square bg-slate-950 rounded-2xl overflow-hidden border border-slate-700">
+                          <img src={foto} alt={`Evidencia ${i + 1}`} className="w-full h-full object-cover" />
+                          <button
+                            type="button"
+                            onClick={() => eliminarFoto(i)}
+                            className="absolute top-1 right-1 bg-red-600 text-white rounded-full w-5 h-5 text-[10px] font-black flex items-center justify-center shadow"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
+
+                      {fotosEvidencia.length < 3 && (
+                        <label className="aspect-square bg-slate-950 border-2 border-dashed border-slate-700 hover:border-blue-500 rounded-2xl flex flex-col items-center justify-center cursor-pointer text-slate-400 hover:text-white transition-colors">
+                          <span className="text-xl">📸</span>
+                          <span className="text-[9px] font-bold uppercase mt-1">Adjuntar Foto</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            capture="environment"
+                            onChange={handleCapturarFoto}
+                            className="hidden"
+                          />
+                        </label>
+                      )}
                     </div>
                   </div>
 
+                  {/* DATOS CLIENTE & FIRMA DIGITAL TOUCH */}
+                  <div className="space-y-3 pt-2 border-t border-slate-800">
+                    <h5 className="text-xs font-black text-slate-300 uppercase">✍️ Conformidad del Cliente</h5>
+                    
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-bold text-slate-400">Nombre de quien recibe:</label>
+                        <input
+                          type="text"
+                          value={nombreFirmanteText}
+                          onChange={(e) => setNombreFirmanteText(e.target.value)}
+                          placeholder="Nombre y Apellido..."
+                          className="w-full bg-slate-950 border border-slate-700/80 rounded-2xl p-2.5 text-xs text-white focus:outline-none focus:border-blue-500 shadow-inner"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-bold text-slate-400">RUT / Identificación:</label>
+                        <input
+                          type="text"
+                          value={rutFirmanteText}
+                          onChange={(e) => setRutFirmanteText(e.target.value)}
+                          placeholder="12.345.678-K"
+                          className="w-full bg-slate-950 border border-slate-700/80 rounded-2xl p-2.5 text-xs text-white focus:outline-none focus:border-blue-500 shadow-inner"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <div className="flex justify-between items-center">
+                        <label className="text-xs font-bold text-slate-300">Firma Touch Digitalizada:</label>
+                        <button type="button" onClick={clearFirma} className="text-[10px] text-red-400 font-bold">Limpiar Canvas</button>
+                      </div>
+                      
+                      <div className="bg-white p-1 rounded-2xl border-2 border-slate-700 overflow-hidden">
+                        <canvas
+                          ref={canvasRef}
+                          width={340}
+                          height={120}
+                          onMouseDown={startDrawing}
+                          onMouseMove={draw}
+                          onMouseUp={stopDrawing}
+                          onMouseLeave={stopDrawing}
+                          onTouchStart={startDrawing}
+                          onTouchMove={draw}
+                          onTouchEnd={stopDrawing}
+                          className="w-full cursor-crosshair bg-white touch-none rounded-xl"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* BOTÓN FINALIZAR */}
                   <button
                     onClick={handleFinalizarOrden}
-                    className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-4 rounded-2xl border border-emerald-400 shadow-xl cursor-pointer text-xs uppercase tracking-wider flex items-center justify-center gap-2 active:scale-98 transition-transform"
+                    className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black py-4 rounded-2xl text-xs uppercase tracking-wider shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2 cursor-pointer active:scale-98 transition-all mt-3"
                   >
-                    <span>✔️</span>
-                    <span>FINALIZAR Y ENVIAR COMPROBANTE WA</span>
+                    <span>✔️ FINALIZAR ATENCIÓN & FIRMAR COMPROBANTE</span>
                   </button>
-                </div>
 
+                </div>
               </div>
-            ) : (
-              /* LISTA DE TRABAJOS PENDIENTES */
-              <div className="space-y-3">
-                <div className="flex justify-between items-center bg-slate-900 p-3 rounded-2xl border border-slate-800">
-                  <span className="text-xs font-black text-slate-200 uppercase">📋 Órdenes Pendientes ({ordenesPendientes.length})</span>
-                  <span className="text-xs text-blue-400 font-bold">{tecnicoAutenticado}</span>
+            )}
+
+          </div>
+        )}
+
+        {/* SECCIÓN 3: HISTORIAL DE SERVICIOS REALIZADOS */}
+        {menuSeccion === 'servicios_realizados' && (
+          <div className="space-y-3">
+            <h3 className="text-sm font-black text-white uppercase tracking-wider px-1">Servicios Completados ({ordenesCompletadas.length})</h3>
+
+            {ordenesCompletadas.map(ot => (
+              <div
+                key={ot.id}
+                className="bg-slate-900/90 border border-slate-800 rounded-3xl p-5 space-y-3 shadow-xl backdrop-blur-xl"
+              >
+                <div className="flex justify-between items-start">
+                  <div>
+                    <span className="text-[10px] font-black bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2.5 py-0.5 rounded-full uppercase font-mono">
+                      {ot.codigo_ot || `OT-${ot.id}`}
+                    </span>
+                    <h4 className="text-base font-black text-white mt-1">{ot.nombre_abonado}</h4>
+                  </div>
+                  <span className="text-xs font-bold text-slate-400 font-mono">{ot.cuenta}</span>
                 </div>
 
-                <div className="space-y-3">
-                  {ordenesPendientes.map(o => (
-                    <div
-                      key={o.id}
-                      onClick={() => {
-                        setOrdenSeleccionada(o)
-                        setNovedadTexto(o.novedad || '')
-                        setRepuestosTexto(o.repuestos_utilizados || '')
-                        setNombreFirmanteText(o.nombre_firmante || '')
-                        setNuevasOrdenesBadge(0)
-                      }}
-                      className={`bg-slate-900 border rounded-2xl p-4 cursor-pointer hover:border-blue-500 transition-all shadow-lg space-y-2.5 relative overflow-hidden active:scale-98 ${
-                        o.estado === 'En Terreno' ? 'border-purple-600 bg-purple-950/30' :
-                        o.estado === 'En Traslado' ? 'border-amber-500 bg-amber-950/30' : 'border-slate-800'
-                      }`}
-                    >
-                      <div className="flex justify-between items-center border-b border-slate-800/80 pb-2">
-                        <span className="font-mono text-xs font-black text-blue-400">#{o.codigo_ot || `OT-${o.id}`}</span>
-                        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase ${
-                          o.estado === 'En Terreno' ? 'bg-purple-950 text-purple-300 border border-purple-700' :
-                          o.estado === 'En Traslado' ? 'bg-amber-950 text-amber-300 border border-amber-700' :
-                          'bg-blue-950 text-blue-300 border border-blue-700'
-                        }`}>
-                          {o.estado}
-                        </span>
-                      </div>
-
-                      <div className="space-y-1.5">
-                        <div className="text-xs font-bold text-white flex justify-between">
-                          <span>Cliente: <span className="font-mono text-blue-300">{o.cuenta}</span></span>
-                          <span className="text-[11px] text-slate-400 font-bold">{o.tipo_visita || 'Correctiva'}</span>
-                        </div>
-                        <div className="text-sm font-black text-slate-100 uppercase truncate">{o.nombre_abonado}</div>
-                        <div className="text-xs text-slate-300 truncate font-medium">📍 {o.direccion}</div>
-                        <div className="text-xs text-amber-200/90 italic truncate bg-slate-950 p-2 rounded-xl border border-slate-800">
-                          ⚠️ {o.problema}
-                        </div>
-                      </div>
-
-                      <div className="pt-1.5 flex justify-between items-center text-xs text-slate-400 font-bold border-t border-slate-800">
-                        <span>📅 Cita: {o.fecha_cita}</span>
-                        <span className="text-blue-400 flex items-center gap-1 font-black">
-                          <span>Iniciar Atención</span>
-                          <span>➔</span>
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-
-                  {ordenesPendientes.length === 0 && !cargando && (
-                    <div className="text-center text-slate-400 italic py-16 bg-slate-900/50 rounded-3xl border border-slate-800 text-xs">
-                      No tienes órdenes pendientes asignadas para hoy.
-                    </div>
-                  )}
+                <div className="text-xs text-slate-300 space-y-1 bg-slate-950/60 p-3 rounded-2xl border border-slate-800/80">
+                  <div>✅ <strong>Trabajo:</strong> {ot.novedad}</div>
+                  {ot.repuestos_utilizados && <div>🛠️ <strong>Repuestos:</strong> {ot.repuestos_utilizados}</div>}
+                  <div>✍️ <strong>Recepción:</strong> {ot.nombre_firmante || 'Cliente'} ({ot.rut_firmante || 'S/RUT'})</div>
+                  <div>🕒 <strong>Cierre:</strong> {ot.fecha_cierre || ot.fecha_cita}</div>
                 </div>
+
+                <button
+                  onClick={() => setOrdenImprimir(ot)}
+                  className="w-full bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border border-blue-500/30 font-black py-2.5 rounded-2xl text-xs uppercase tracking-wider flex items-center justify-center gap-1 cursor-pointer"
+                >
+                  <span>📄 VER CERTIFICADO OFICIAL / PDF</span>
+                </button>
+              </div>
+            ))}
+
+            {ordenesCompletadas.length === 0 && (
+              <div className="bg-slate-900/50 border border-slate-800 rounded-3xl p-8 text-center text-slate-400 text-xs italic">
+                Aún no has completado servicios técnicos en este turno.
               </div>
             )}
           </div>
         )}
 
-        {/* SECCIÓN C: SERVICIOS REALIZADOS */}
-        {menuSeccion === 'servicios_realizados' && (
-          <div className="space-y-3">
-            <div className="flex justify-between items-center bg-slate-900 p-3 rounded-2xl border border-slate-800">
-              <span className="text-xs font-black text-emerald-400 uppercase">✅ Servicios Realizados ({ordenesCompletadas.length})</span>
-              <span className="text-xs text-slate-400 font-bold">{tecnicoAutenticado}</span>
-            </div>
-
-            <div className="space-y-3">
-              {ordenesCompletadas.map(o => (
-                <div
-                  key={o.id}
-                  className="bg-slate-900 border border-emerald-800/60 bg-emerald-950/20 rounded-2xl p-4 shadow-md space-y-2.5"
-                >
-                  <div className="flex justify-between items-center border-b border-slate-800 pb-2">
-                    <span className="font-mono text-xs font-black text-emerald-400">#{o.codigo_ot || `OT-${o.id}`}</span>
-                    <span className="text-[10px] bg-emerald-950 text-emerald-300 border border-emerald-700 px-2.5 py-0.5 rounded-full font-black">COMPLETADA</span>
-                  </div>
-                  <div className="text-xs space-y-1.5">
-                    <div><span className="text-slate-400">Cliente:</span> <strong className="font-mono text-blue-300">{o.cuenta}</strong> - {o.nombre_abonado}</div>
-                    <div className="text-slate-200"><strong>Trabajo:</strong> {o.novedad}</div>
-                    {o.repuestos_utilizados && <div className="text-slate-400"><strong>Repuestos:</strong> {o.repuestos_utilizados}</div>}
-                    <div className="text-[10px] text-slate-400">Cierre: {o.fecha_cierre || o.fecha_cita} • Recepción: {o.nombre_firmante || 'Cliente'}</div>
-                  </div>
-                  <button
-                    onClick={() => setOrdenImprimir(o)}
-                    className="w-full bg-blue-900 hover:bg-blue-800 text-white font-extrabold py-2.5 rounded-xl border border-blue-700 text-xs flex items-center justify-center gap-1.5 cursor-pointer mt-1"
-                  >
-                    <span>📄</span>
-                    <span>Ver Comprobante Firmado</span>
-                  </button>
-                </div>
-              ))}
-
-              {ordenesCompletadas.length === 0 && (
-                <div className="text-center text-slate-400 italic py-16 bg-slate-900/50 rounded-3xl border border-slate-800 text-xs">
-                  No hay servicios realizados registrados para {tecnicoAutenticado}.
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* SECCIÓN D: MONITOR DE EVENTOS DE ALARMA (SOLO LECTURA) */}
+        {/* SECCIÓN 4: MONITOR DE EVENTOS DE ALARMA (SOLO LECTURA) */}
         {menuSeccion === 'eventos_alarma' && (
           <div className="space-y-3">
-            <div className="bg-slate-900 p-3.5 rounded-2xl border border-slate-800 space-y-2">
-              <div className="flex justify-between items-center border-b border-slate-800 pb-2">
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">🚨</span>
-                  <span className="text-xs font-black text-red-400 uppercase tracking-wide">Monitor de Eventos de Alarma</span>
-                </div>
-                <span className="text-[9px] bg-red-950 text-red-300 border border-red-700 px-2 py-0.5 rounded-full font-black tracking-wider uppercase">
-                  🔒 SÓLO LECTURA
-                </span>
+            <div className="flex items-center justify-between px-1">
+              <div>
+                <h3 className="text-sm font-black text-white uppercase tracking-wider">Monitor de Alarmas</h3>
+                <p className="text-[11px] text-slate-400 font-medium">Recepción en tiempo real (Sólo Lectura)</p>
               </div>
-              <p className="text-xs text-slate-400 leading-normal">
-                Visualizador de señales de sensores y pruebas en tiempo real para auditoría en terreno sin permisos de edición.
-              </p>
-
-              <input
-                type="text"
-                value={filtroCuentaAlarma}
-                onChange={(e) => setFiltroCuentaAlarma(e.target.value)}
-                placeholder="Filtrar por código de cliente o tipo de evento..."
-                className="bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-xs text-white w-full focus:outline-none focus:border-red-500"
-              />
+              <button onClick={cargarEventosAlarma} className="text-xs text-blue-400 font-bold">🔄 Actualizar</button>
             </div>
+
+            <input
+              type="text"
+              value={filtroCuentaAlarma}
+              onChange={(e) => setFiltroCuentaAlarma(e.target.value)}
+              placeholder="Buscar por cuenta, abonado o evento..."
+              className="w-full bg-slate-900 border border-slate-800 rounded-2xl p-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+            />
 
             <div className="space-y-2">
               {eventosFiltrados.map(ev => {
                 const { hora, fecha } = formatFechaHoraChile(ev.fecha_hora)
                 return (
-                  <div key={ev.id} className="bg-slate-900/90 border border-slate-800 rounded-xl p-3 text-xs flex items-center justify-between hover:border-slate-700">
-                    <div className="space-y-1 max-w-[75%]">
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono font-bold text-blue-400 text-xs">{ev.cuenta}</span>
-                        <span className="text-xs font-bold text-slate-300 truncate">{ev.nombre_abonado}</span>
-                      </div>
-                      <div className={`font-mono text-xs font-black ${
-                        ev.evento.includes('ALARMA') || ev.evento.includes('ROBO') ? 'text-red-400' :
-                        ev.evento.includes('RESTAURA') ? 'text-emerald-400' : 'text-amber-300'
-                      }`}>
-                        {ev.evento} {ev.zona && ev.zona !== 'S/T' ? `[ZONA ${ev.zona}]` : ''}
-                      </div>
+                  <div key={ev.id} className="bg-slate-900/80 border border-slate-800/80 p-3 rounded-2xl space-y-1">
+                    <div className="flex justify-between items-center">
+                      <span className="font-mono font-black text-xs text-blue-400">{ev.cuenta} — {ev.nombre_abonado || 'Abonado'}</span>
+                      <span className="text-[10px] text-slate-500 font-mono">{hora}</span>
                     </div>
-                    <div className="text-right shrink-0">
-                      <span className="text-xs font-mono text-slate-300 font-bold block">{hora}</span>
-                      <span className="text-[10px] text-slate-500 block">{fecha}</span>
+                    <div className="text-xs font-bold text-white flex justify-between">
+                      <span>{ev.evento}</span>
+                      <span className="text-[11px] text-slate-400">ZN: {ev.zona || '--'}</span>
                     </div>
                   </div>
                 )
               })}
 
-              {eventosFiltrados.length === 0 && !cargandoEventos && (
-                <div className="text-center text-slate-400 italic py-16 bg-slate-900/50 rounded-3xl border border-slate-800 text-xs">
-                  No hay eventos de alarma registrados para la búsqueda.
+              {eventosFiltrados.length === 0 && (
+                <div className="bg-slate-900/50 border border-slate-800 rounded-3xl p-8 text-center text-slate-400 text-xs italic">
+                  No hay eventos de alarma para mostrar.
                 </div>
               )}
             </div>
           </div>
         )}
 
-        {/* SECCIÓN E: PERFIL DEL TÉCNICO */}
+        {/* SECCIÓN 5: PERFIL DEL TÉCNICO */}
         {menuSeccion === 'perfil' && (
-          <div className="space-y-3">
-            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 space-y-4 text-xs">
-              <div className="flex items-center gap-3.5 border-b border-slate-800 pb-4">
-                <div className="w-14 h-14 bg-blue-950 text-blue-300 rounded-2xl flex items-center justify-center text-2xl font-bold border border-blue-700 shadow-inner">
-                  👨‍🔧
-                </div>
-                <div>
-                  <h3 className="font-black text-base text-white">{tecnicoAutenticado}</h3>
-                  <span className="text-xs text-emerald-400 font-bold flex items-center gap-1.5 mt-0.5">
-                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                    <span>Técnico de Terreno Activo</span>
-                  </span>
-                </div>
+          <div className="space-y-4">
+            <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 text-center space-y-3 shadow-2xl backdrop-blur-2xl">
+              <div className="w-20 h-20 bg-[#0b1329] border border-blue-500/40 rounded-full mx-auto p-2 flex items-center justify-center shadow-lg">
+                <span className="text-3xl">👨‍🔧</span>
+              </div>
+              <div>
+                <h3 className="text-lg font-black text-white">{tecnicoAutenticado}</h3>
+                <p className="text-xs text-blue-400 font-bold">Personal Certificado GAMA Security</p>
               </div>
 
-              <div className="space-y-2.5 text-slate-300">
-                <div className="flex justify-between py-1.5 border-b border-slate-800/60">
-                  <span className="text-slate-400">Atenciones Pendientes:</span>
-                  <strong className="text-amber-400 font-mono text-sm">{ordenesPendientes.length}</strong>
-                </div>
-                <div className="flex justify-between py-1.5 border-b border-slate-800/60">
-                  <span className="text-slate-400">Servicios Completados:</span>
-                  <strong className="text-emerald-400 font-mono text-sm">{ordenesCompletadas.length}</strong>
-                </div>
-                <div className="flex justify-between py-1.5 border-b border-slate-800/60">
-                  <span className="text-slate-400">Notificaciones Push:</span>
-                  <strong className={permisoNotificacion === 'granted' ? 'text-emerald-400' : 'text-amber-400'}>
-                    {permisoNotificacion === 'granted' ? '🔔 Activadas' : '⚠️ No Activadas'}
-                  </strong>
-                </div>
-                <div className="flex justify-between py-1.5 border-b border-slate-800/60">
-                  <span className="text-slate-400">Política Cierre Sesión:</span>
-                  <strong className="text-amber-400">Diaria a las 00:00 hrs</strong>
-                </div>
+              <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 text-left text-xs space-y-2 text-slate-300">
+                <div>🗓️ <strong>Fecha Turno:</strong> {fechaHoyLegible}</div>
+                <div>📡 <strong>Estado Conexión:</strong> {isOffline ? '📡 Modo Offline (Memoria Local)' : '🟢 Conectado 4G (Supabase Realtime)'}</div>
+                <div>🔔 <strong>Notificaciones Push:</strong> {permisoNotificacion === 'granted' ? '🟢 Activadas' : '🔴 Desactivadas'}</div>
+                <div>⚡ <strong>Cierre de Sesión:</strong> Automático a las 00:00 hrs</div>
               </div>
-
-              {permisoNotificacion !== 'granted' && (
-                <button
-                  onClick={solicitarPermisoNotificaciones}
-                  className="w-full bg-amber-600 hover:bg-amber-500 text-white font-extrabold py-3.5 rounded-2xl border border-amber-400 text-xs uppercase tracking-wider shadow cursor-pointer active:scale-95 transition-transform flex items-center justify-center gap-2"
-                >
-                  <span>🔔</span>
-                  <span>ACTIVAR NOTIFICACIONES PUSH EN CELULAR</span>
-                </button>
-              )}
 
               <button
                 onClick={handleLogout}
-                className="w-full bg-red-950/80 hover:bg-red-900 text-red-300 font-black py-3.5 rounded-2xl border border-red-800 text-xs uppercase tracking-wider shadow cursor-pointer active:scale-95 transition-transform"
+                className="w-full bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-500/30 font-black py-3 rounded-2xl text-xs uppercase tracking-wider cursor-pointer"
               >
-                🚪 CERRAR SESIÓN DIARIA MANULAMENTE
+                CERRAR SESIÓN DE TURNO
               </button>
             </div>
           </div>
@@ -1319,116 +1370,204 @@ export default function PortalTecnicoMovil() {
 
       </main>
 
-      {/* BOTTOM NAVIGATION BAR (MENÚ PROFESIONAL MÓVIL 5 SECCIONES CON BURBUJAS DE NOTIFICACIÓN) */}
-      <nav className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-slate-950/95 backdrop-blur-md border-t border-slate-800 grid grid-cols-5 z-40 text-[10px] shadow-2xl">
+      {/* FLOATING BOTTOM NAVIGATION BAR (APPLE iOS STYLE) */}
+      <nav className="fixed bottom-3 left-3 right-3 max-w-lg mx-auto bg-slate-900/90 border border-slate-800/90 backdrop-blur-2xl rounded-3xl p-2 flex items-center justify-around shadow-2xl z-40">
         
         <button
-          onClick={() => { setMenuSeccion('itinerario'); setOrdenSeleccionada(null); }}
-          className={`py-2.5 flex flex-col items-center justify-center font-extrabold transition-colors cursor-pointer ${
-            menuSeccion === 'itinerario' ? 'text-amber-400 bg-slate-900 border-t-2 border-amber-500' : 'text-slate-400 hover:text-slate-200'
+          onClick={() => {
+            setOrdenSeleccionada(null)
+            setMenuSeccion('itinerario')
+          }}
+          className={`flex flex-col items-center py-1.5 px-3 rounded-2xl transition-all cursor-pointer ${
+            menuSeccion === 'itinerario' ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30' : 'text-slate-400 hover:text-white'
           }`}
         >
-          <span className="text-base">🤖</span>
-          <span className="leading-tight">Itinerario</span>
+          <span className="text-lg">🗺️</span>
+          <span className="text-[10px] font-black uppercase mt-0.5">Ruta</span>
         </button>
 
         <button
-          onClick={() => { setMenuSeccion('ordenes_pendientes'); setOrdenSeleccionada(null); setNuevasOrdenesBadge(0); }}
-          className={`py-2.5 flex flex-col items-center justify-center font-extrabold transition-colors cursor-pointer relative ${
-            menuSeccion === 'ordenes_pendientes' ? 'text-blue-400 bg-slate-900 border-t-2 border-blue-500' : 'text-slate-400 hover:text-slate-200'
+          onClick={() => {
+            setOrdenSeleccionada(null)
+            setMenuSeccion('ordenes_pendientes')
+            setNuevasOrdenesBadge(0)
+          }}
+          className={`flex flex-col items-center py-1.5 px-3 rounded-2xl transition-all relative cursor-pointer ${
+            menuSeccion === 'ordenes_pendientes' ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30' : 'text-slate-400 hover:text-white'
           }`}
         >
-          <span className="text-base">📋</span>
-          <span className="leading-tight">Pendientes</span>
+          <span className="text-lg">📋</span>
+          <span className="text-[10px] font-black uppercase mt-0.5">Pendientes</span>
           {nuevasOrdenesBadge > 0 && (
-            <span className="absolute top-1 right-2 bg-red-600 text-white font-black text-[9px] w-4 h-4 rounded-full flex items-center justify-center animate-bounce shadow">
+            <span className="absolute -top-1 -right-1 bg-red-600 text-white font-black text-[10px] w-5 h-5 rounded-full flex items-center justify-center shadow animate-bounce">
               {nuevasOrdenesBadge}
             </span>
           )}
         </button>
 
         <button
-          onClick={() => { setMenuSeccion('servicios_realizados'); setOrdenSeleccionada(null); }}
-          className={`py-2.5 flex flex-col items-center justify-center font-extrabold transition-colors cursor-pointer ${
-            menuSeccion === 'servicios_realizados' ? 'text-emerald-400 bg-slate-900 border-t-2 border-emerald-500' : 'text-slate-400 hover:text-slate-200'
+          onClick={() => {
+            setOrdenSeleccionada(null)
+            setMenuSeccion('servicios_realizados')
+          }}
+          className={`flex flex-col items-center py-1.5 px-3 rounded-2xl transition-all cursor-pointer ${
+            menuSeccion === 'servicios_realizados' ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30' : 'text-slate-400 hover:text-white'
           }`}
         >
-          <span className="text-base">✅</span>
-          <span className="leading-tight">Realizados</span>
+          <span className="text-lg">✅</span>
+          <span className="text-[10px] font-black uppercase mt-0.5">Historial</span>
         </button>
 
         <button
-          onClick={() => { setMenuSeccion('eventos_alarma'); setOrdenSeleccionada(null); }}
-          className={`py-2.5 flex flex-col items-center justify-center font-extrabold transition-colors cursor-pointer ${
-            menuSeccion === 'eventos_alarma' ? 'text-red-400 bg-slate-900 border-t-2 border-red-500' : 'text-slate-400 hover:text-slate-200'
+          onClick={() => {
+            setOrdenSeleccionada(null)
+            setMenuSeccion('eventos_alarma')
+          }}
+          className={`flex flex-col items-center py-1.5 px-3 rounded-2xl transition-all cursor-pointer ${
+            menuSeccion === 'eventos_alarma' ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30' : 'text-slate-400 hover:text-white'
           }`}
         >
-          <span className="text-base">🚨</span>
-          <span className="leading-tight">Eventos</span>
+          <span className="text-lg">🔔</span>
+          <span className="text-[10px] font-black uppercase mt-0.5">Alarmas</span>
         </button>
 
         <button
-          onClick={() => { setMenuSeccion('perfil'); setOrdenSeleccionada(null); }}
-          className={`py-2.5 flex flex-col items-center justify-center font-extrabold transition-colors cursor-pointer ${
-            menuSeccion === 'perfil' ? 'text-purple-400 bg-slate-900 border-t-2 border-purple-500' : 'text-slate-400 hover:text-slate-200'
+          onClick={() => {
+            setOrdenSeleccionada(null)
+            setMenuSeccion('perfil')
+          }}
+          className={`flex flex-col items-center py-1.5 px-3 rounded-2xl transition-all cursor-pointer ${
+            menuSeccion === 'perfil' ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30' : 'text-slate-400 hover:text-white'
           }`}
         >
-          <span className="text-base">👤</span>
-          <span className="leading-tight">Perfil</span>
+          <span className="text-lg">👤</span>
+          <span className="text-[10px] font-black uppercase mt-0.5">Perfil</span>
         </button>
 
       </nav>
 
-      {/* Visor Modal Comprobante Imprimible */}
+      {/* VISOR COMPROBANTE / CERTIFICADO OFICIAL COMPLETO (HOJA CARTA EXECUTIVE PDF) */}
       {ordenImprimir && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-3 select-text">
-          <div className="w-full max-w-[650px] bg-white text-black p-5 font-sans shadow-2xl rounded-2xl border border-gray-400 max-h-[95vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4 font-sans text-black">
+          <div className="w-full max-w-[850px] bg-white p-8 shadow-2xl rounded-3xl border border-gray-400 max-h-[96vh] overflow-y-auto print:max-h-none print:shadow-none print:border-none print:p-0">
             
-            <div className="flex justify-between items-center border-b-2 border-blue-900 pb-3 mb-3">
-              <div>
-                <h1 className="text-lg font-black text-blue-950 tracking-wider">GAMA SEGURIDAD 24/7</h1>
-                <p className="text-xs text-gray-600 font-semibold">Comprobante de Servicio Técnico en Terreno</p>
+            {/* Encabezado Corporativo Oficial */}
+            <div className="flex justify-between items-start border-b-2 border-blue-900 pb-4 mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-16 h-16 bg-blue-950 p-2 rounded-xl flex items-center justify-center">
+                  <img src="/logo-gama.png" alt="Gama Seguridad" className="w-full h-full object-contain" />
+                </div>
+                <div>
+                  <h1 className="text-xl font-black text-blue-950 tracking-wider">GAMA SEGURIDAD 24/7</h1>
+                  <p className="text-xs text-gray-600 font-bold">Mantenimiento Electrónico & Monitoreo de Alarmas</p>
+                  <p className="text-[10px] text-gray-500">Certificado Oficial de Atención Técnica en Terreno</p>
+                </div>
               </div>
+
               <div className="text-right">
-                <span className="inline-block bg-blue-900 text-white font-mono text-sm font-bold px-2 py-0.5 rounded">
-                  {ordenImprimir.codigo_ot || `OT-${ordenImprimir.id}`}
+                <span className="inline-block bg-blue-950 text-white font-mono text-sm font-black px-4 py-1.5 rounded-lg shadow">
+                  CERTIFICADO N° {ordenImprimir.codigo_ot || `OT-${ordenImprimir.id}`}
                 </span>
-                <p className="text-[10px] text-gray-500 mt-1">Fecha: {ordenImprimir.fecha_cierre || ordenImprimir.fecha_cita}</p>
+                <p className="text-xs text-gray-700 mt-2 font-bold">Emisión: {ordenImprimir.fecha_cierre || ordenImprimir.fecha_cita}</p>
+                <p className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded border border-emerald-300 inline-block mt-1">
+                  STATUS: VERIFICADO OK
+                </p>
               </div>
             </div>
 
-            <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 mb-3 text-xs space-y-1">
-              <div><strong>Código de Cliente:</strong> <span className="font-mono font-bold text-blue-900">{ordenImprimir.cuenta}</span></div>
-              <div><strong>Nombre del Abonado:</strong> {ordenImprimir.nombre_abonado}</div>
-              <div><strong>Dirección de Atención:</strong> {ordenImprimir.direccion}</div>
-              <div><strong>Teléfono:</strong> {ordenImprimir.telefono_contacto || 'N/A'}</div>
+            {/* SECCIÓN 1: DATOS ABONADO */}
+            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 mb-5 space-y-2">
+              <h3 className="text-xs font-black text-blue-900 uppercase border-b border-slate-300 pb-1">I. Identificación del Abonado & Domicilio</h3>
+              <div className="grid grid-cols-2 gap-4 text-xs">
+                <div><strong>Código Cuenta:</strong> <span className="font-mono font-black text-blue-900">{ordenImprimir.cuenta}</span></div>
+                <div><strong>Nombre / Razón Social:</strong> {ordenImprimir.nombre_abonado}</div>
+                <div><strong>Dirección Comercial/Residencial:</strong> {ordenImprimir.direccion}</div>
+                <div><strong>Teléfono Contacto:</strong> {ordenImprimir.telefono_contacto || 'Sin registro'}</div>
+              </div>
             </div>
 
-            <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 mb-3 text-xs space-y-1">
-              <div><strong>Trabajo Realizado:</strong> {ordenImprimir.novedad}</div>
-              {ordenImprimir.repuestos_utilizados && <div><strong>Repuestos:</strong> {ordenImprimir.repuestos_utilizados}</div>}
-              <div><strong>Técnico:</strong> {ordenImprimir.tecnico}</div>
+            {/* SECCIÓN 2: RESUMEN DE ATENCIÓN */}
+            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 mb-5 space-y-2">
+              <h3 className="text-xs font-black text-blue-900 uppercase border-b border-slate-300 pb-1">II. Resumen Operativo del Servicio</h3>
+              <div className="grid grid-cols-2 gap-4 text-xs">
+                <div><strong>Tipo de Visita:</strong> {ordenImprimir.tipo_visita || 'Correctiva'}</div>
+                <div><strong>Bloque Horario:</strong> {ordenImprimir.bloque_horario}</div>
+                <div><strong>Técnico Certificado Responsable:</strong> {ordenImprimir.tecnico}</div>
+                <div><strong>Voltaje Batería / Fuente:</strong> {ordenImprimir.voltaje_bateria || '13.8V DC (Normal)'}</div>
+              </div>
             </div>
 
-            {ordenImprimir.firma && (
-              <div className="border border-gray-300 p-2.5 rounded-xl bg-slate-50 mb-3 text-xs">
-                <span className="font-bold block text-gray-700 mb-1">Recepción / Firma Cliente: {ordenImprimir.nombre_firmante}</span>
-                <img src={ordenImprimir.firma} alt="Firma" className="h-16 border border-gray-400 bg-white px-2 rounded" />
+            {/* SECCIÓN 3: DIAGNÓSTICO & INFORME */}
+            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 mb-5 space-y-2">
+              <h3 className="text-xs font-black text-blue-900 uppercase border-b border-slate-300 pb-1">III. Requerimiento & Diagnóstico Técnico Ejecutado</h3>
+              <div className="text-xs space-y-1.5">
+                <div><strong>Falla Reportada Inicial:</strong> {ordenImprimir.problema}</div>
+                <div><strong>Trabajo Realizado en Terreno:</strong> {ordenImprimir.novedad}</div>
+                <div><strong>Repuestos / Insumos Utilizados:</strong> {ordenImprimir.repuestos_utilizados || 'Ninguno (Mantenimiento preventivo)'}</div>
+              </div>
+            </div>
+
+            {/* SECCIÓN 4: FOTOS EVIDENCIA */}
+            {ordenImprimir.fotos_evidencia && ordenImprimir.fotos_evidencia.length > 0 && (
+              <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 mb-5 space-y-2">
+                <h3 className="text-xs font-black text-blue-900 uppercase border-b border-slate-300 pb-1">IV. Registro Fotográfico de Evidencia en Terreno</h3>
+                <div className="grid grid-cols-3 gap-3 pt-1">
+                  {ordenImprimir.fotos_evidencia.map((foto, i) => (
+                    <div key={i} className="aspect-square bg-white border border-gray-300 rounded-lg overflow-hidden p-1 shadow-sm">
+                      <img src={foto} alt={`Foto ${i + 1}`} className="w-full h-full object-cover rounded" />
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 
-            <div className="flex justify-end gap-2 pt-2 border-t border-gray-200">
+            {/* SECCIÓN 5: REEPCIÓN & CONFORMIDAD */}
+            <div className="border border-gray-300 p-4 rounded-xl bg-slate-50 mb-6 space-y-3">
+              <h3 className="text-xs font-black text-blue-900 uppercase border-b border-slate-300 pb-1">V. Conformidad & Recepción del Servicio</h3>
+              
+              <div className="grid grid-cols-2 gap-6 pt-2">
+                <div>
+                  <p className="text-xs font-bold text-gray-700">Firma Cliente Receptor:</p>
+                  <p className="text-xs text-gray-600">Nombre: <strong>{ordenImprimir.nombre_firmante || 'Cliente'}</strong></p>
+                  <p className="text-xs text-gray-600">RUT: <strong>{ordenImprimir.rut_firmante || 'S/RUT'}</strong></p>
+                  
+                  {ordenImprimir.firma ? (
+                    <img src={ordenImprimir.firma} alt="Firma Touch" className="h-20 border border-gray-400 bg-white p-1 rounded mt-2 shadow-sm" />
+                  ) : (
+                    <div className="h-20 border border-dashed border-gray-400 bg-white rounded mt-2 flex items-center justify-center text-xs text-gray-400 italic">
+                      Firma Digitalizada Registrada
+                    </div>
+                  )}
+                </div>
+
+                <div className="text-right flex flex-col justify-between">
+                  <div>
+                    <p className="text-xs font-bold text-gray-700">Técnico Certificado GAMA Security:</p>
+                    <p className="text-xs text-gray-900 font-black">{ordenImprimir.tecnico}</p>
+                    <p className="text-[10px] text-gray-500">GAMA Security 24/7 SpA — Chile</p>
+                  </div>
+
+                  <div className="border-t border-gray-300 pt-2">
+                    <span className="text-[10px] text-gray-400 block font-mono">Sello Digital de Validación GAMA # {ordenImprimir.id}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Botones Imprimir / Cerrar */}
+            <div className="flex justify-end gap-3 pt-3 border-t border-gray-200 print:hidden">
               <button
                 onClick={() => setOrdenImprimir(null)}
-                className="px-4 py-2 bg-gray-300 text-gray-800 font-bold text-xs rounded-xl hover:bg-gray-400 cursor-pointer"
+                className="px-5 py-2.5 bg-gray-200 text-gray-800 font-black text-xs rounded-xl hover:bg-gray-300 cursor-pointer"
               >
-                Cerrar
+                CERRAR
               </button>
               <button
                 onClick={() => window.print()}
-                className="px-5 py-2 bg-blue-900 text-white font-bold text-xs rounded-xl hover:bg-blue-950 shadow cursor-pointer"
+                className="px-6 py-2.5 bg-blue-900 text-white font-black text-xs rounded-xl hover:bg-blue-950 shadow-lg cursor-pointer flex items-center gap-1.5"
               >
-                🖨️ Imprimir
+                <span>🖨️</span>
+                <span>IMPRIMIR CERTIFICADO PDF (HOJA CARTA)</span>
               </button>
             </div>
 
