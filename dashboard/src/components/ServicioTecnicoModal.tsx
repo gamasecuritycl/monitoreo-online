@@ -32,6 +32,7 @@ interface Props {
   usuarioActivo?: Operator
 }
 
+const TECNITOS_NORMALIZADOS = ['Juan Perez', 'Diego Reyes', 'Mauricio Tapia', 'Cristian Munoz']
 const TECNICOS = ['Juan Pérez', 'Diego Reyes', 'Mauricio Tapia', 'Cristian Muñoz']
 const TIPOS_VISITA = ['Correctiva', 'Preventiva', 'Cambio de Batería', 'Instalación', 'Revisión de Cámaras'] as const
 const BLOQUES_HORARIOS = ['Mañana (09:00 - 13:00)', 'Tarde (14:00 - 18:00)'] as const
@@ -91,7 +92,7 @@ export default function ServicioTecnicoModal({ onClose, clientesMap = {}, usuari
   // Visor de Comprobante Oficial Imprimible
   const [ordenImprimir, setOrdenImprimir] = useState<OrdenTrabajo | null>(null)
 
-  // Cargar órdenes desde Supabase (Fila especial cuenta: 'ORDENES_TRABAJO')
+  // Cargar órdenes desde Supabase (Fila especial cuenta: 'ORDENES_TRABAJO' con id desc)
   const cargarOrdenes = async () => {
     setCargando(true)
     try {
@@ -244,34 +245,39 @@ export default function ServicioTecnicoModal({ onClose, clientesMap = {}, usuari
       const ctx = canvas.getContext('2d')
       if (ctx) {
         ctx.strokeStyle = '#000080'
-        ctx.lineWidth = 2
+        ctx.lineWidth = 3
       }
     }
   }, [tabActive, ordenSeleccionada])
 
-  const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    setFirmando(true)
-    const canvas = canvasRef.current
-    if (canvas) {
-      const rect = canvas.getBoundingClientRect()
-      const ctx = canvas.getContext('2d')
-      if (ctx) {
-        ctx.beginPath()
-        ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top)
-      }
+  const getPos = (e: any) => {
+    if (!canvasRef.current) return { x: 0, y: 0 }
+    const rect = canvasRef.current.getBoundingClientRect()
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY
+    return {
+      x: clientX - rect.left,
+      y: clientY - rect.top
     }
   }
 
-  const draw = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  const startDrawing = (e: any) => {
+    setFirmando(true)
+    const p = getPos(e)
+    const ctx = canvasRef.current?.getContext('2d')
+    if (ctx) {
+      ctx.beginPath()
+      ctx.moveTo(p.x, p.y)
+    }
+  }
+
+  const draw = (e: any) => {
     if (!firmando) return
-    const canvas = canvasRef.current
-    if (canvas) {
-      const rect = canvas.getBoundingClientRect()
-      const ctx = canvas.getContext('2d')
-      if (ctx) {
-        ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top)
-        ctx.stroke()
-      }
+    const p = getPos(e)
+    const ctx = canvasRef.current?.getContext('2d')
+    if (ctx) {
+      ctx.lineTo(p.x, p.y)
+      ctx.stroke()
     }
   }
 
@@ -286,14 +292,12 @@ export default function ServicioTecnicoModal({ onClose, clientesMap = {}, usuari
     const canvas = canvasRef.current
     if (canvas) {
       const ctx = canvas.getContext('2d')
-      if (ctx) {
-        ctx.clearRect(0, 0, canvas.width, canvas.height)
-      }
+      if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height)
       setFirmaImagen('')
     }
   }
 
-  // Finalizar Orden, firmar y notificar al cliente
+  // Finalizar Orden desde el módulo técnico
   const handleFinalizarOrden = async () => {
     if (!ordenSeleccionada) return
     if (!novedadTexto.trim()) {
@@ -304,7 +308,6 @@ export default function ServicioTecnicoModal({ onClose, clientesMap = {}, usuari
     const fechaCierreStr = new Date().toISOString().slice(0, 16).replace('T', ' ')
 
     try {
-      // 1. Insertar evento en la bitácora general de monitoreo
       await supabase.from('eventos_monitoreo').insert({
         fecha_hora: new Date().toISOString(),
         cuenta: ordenSeleccionada.cuenta,
@@ -314,7 +317,6 @@ export default function ServicioTecnicoModal({ onClose, clientesMap = {}, usuari
         usuario: 'TEC'
       })
 
-      // 2. Actualizar la OT en el listado
       const ordenCompletada: OrdenTrabajo = {
         ...ordenSeleccionada,
         estado: 'Completada',
@@ -328,18 +330,13 @@ export default function ServicioTecnicoModal({ onClose, clientesMap = {}, usuari
       const listaNueva = ordenes.map(o => o.id === ordenSeleccionada.id ? ordenCompletada : o)
       await guardarOrdenesBase(listaNueva)
 
-      // 3. Notificación de término por WhatsApp
       if (ordenCompletada.telefono_contacto) {
         const msgWA = `✅ *GAMA SEGURIDAD 24/7 - Atención Finalizada*\n\nSu orden de servicio técnico *#${ordenCompletada.codigo_ot || 'OT'}* ha sido completada exitosamente.\n\n• *Trabajo Realizado:* ${novedadTexto.trim()}\n• *Repuestos:* ${repuestosTexto.trim() || 'Ninguno'}\n• *Atendido por:* ${ordenCompletada.tecnico}\n\nGracias por su confianza.`
         enviarNotificacionWhatsApp(ordenCompletada.telefono_contacto, msgWA)
       }
 
       alert('🎉 ¡Orden de trabajo completada, firma capturada y notificada con éxito!')
-      
-      // Mostrar comprobante imprimible
       setOrdenImprimir(ordenCompletada)
-
-      // Resetear estados de terreno
       setOrdenSeleccionada(null)
       setNovedadTexto('')
       setRepuestosTexto('')
@@ -359,30 +356,33 @@ export default function ServicioTecnicoModal({ onClose, clientesMap = {}, usuari
     .slice(0, 5)
 
   // Órdenes asignadas al técnico simulado
-  const ordenesTécnico = ordenes.filter(o => o.tecnico === tecnicoSimulado)
+  const ordenesTécnico = ordenes.filter(o => coincideTecnico(o.tecnico, tecnicoSimulado))
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-3 font-mono">
-      <div className="bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 w-full max-w-5xl max-h-[92vh] flex flex-col shadow-2xl text-black select-none overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 font-sans select-none">
+      <div className="bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 w-[96vw] max-w-[1550px] h-[92vh] flex flex-col shadow-2xl text-black overflow-hidden rounded-md">
         
-        {/* Title bar */}
-        <div className="bg-[#8B0000] text-white px-2 py-1 flex justify-between items-center shrink-0">
-          <div className="font-bold text-xs tracking-wide">Scorpion - Módulo de Servicio Técnico en Terreno</div>
+        {/* Title bar Ampliado */}
+        <div className="bg-[#8B0000] text-white px-4 py-2.5 flex justify-between items-center shrink-0 border-b border-red-950">
+          <div className="font-black text-sm md:text-base tracking-wider flex items-center gap-2">
+            <span>🛠️</span>
+            <span>Scorpion — Módulo de Servicio Técnico & Agendamiento en Terreno</span>
+          </div>
           <button 
             onClick={onClose} 
-            className="bg-[#c0c0c0] text-black font-bold border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 px-2 leading-none hover:bg-[#d0d0d0] cursor-pointer"
+            className="bg-[#c0c0c0] text-black font-black text-sm border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 px-3 py-1 leading-none hover:bg-[#d0d0d0] cursor-pointer"
           >
-            X
+            ✕ CERRAR
           </button>
         </div>
 
-        {/* Windows Style Tabs Menu */}
-        <div className="bg-[#c0c0c0] px-2 pt-1 flex gap-0.5 border-b-2 border-white shrink-0">
+        {/* Windows Style Tabs Menu Ampliado */}
+        <div className="bg-[#c0c0c0] px-3 pt-2 flex gap-1 border-b-2 border-white shrink-0">
           {usuarioActivo?.rol !== 'Técnico' && (
             <button
               onClick={() => setTabActive('despacho')}
-              className={`px-3 py-1 font-bold text-xs border-t-2 border-l-2 border-r-2 border-white rounded-t-sm cursor-pointer ${
-                tabActive === 'despacho' ? 'bg-[#d4d0c8] pb-1.5 -mb-0.5 z-10' : 'bg-[#b0b0b0] text-gray-700'
+              className={`px-4 py-2 font-black text-xs md:text-sm border-t-2 border-l-2 border-r-2 border-white rounded-t-md cursor-pointer transition-colors ${
+                tabActive === 'despacho' ? 'bg-[#d4d0c8] pb-2.5 -mb-0.5 z-10 text-blue-950' : 'bg-[#b0b0b0] text-gray-700 hover:bg-[#c0c0c0]'
               }`}
             >
               🖥️ DESPACHO Y AGENDAMIENTO (CENTRAL)
@@ -390,8 +390,8 @@ export default function ServicioTecnicoModal({ onClose, clientesMap = {}, usuari
           )}
           <button
             onClick={() => setTabActive('tecnico_movil')}
-            className={`px-3 py-1 font-bold text-xs border-t-2 border-l-2 border-r-2 border-white rounded-t-sm cursor-pointer ${
-              tabActive === 'tecnico_movil' ? 'bg-[#d4d0c8] pb-1.5 -mb-0.5 z-10' : 'bg-[#b0b0b0] text-gray-700'
+            className={`px-4 py-2 font-black text-xs md:text-sm border-t-2 border-l-2 border-r-2 border-white rounded-t-md cursor-pointer transition-colors ${
+              tabActive === 'tecnico_movil' ? 'bg-[#d4d0c8] pb-2.5 -mb-0.5 z-10 text-blue-950' : 'bg-[#b0b0b0] text-gray-700 hover:bg-[#c0c0c0]'
             }`}
           >
             {usuarioActivo?.rol === 'Técnico' ? '📱 PORTAL TÉCNICO EN TERRENO' : '📱 SIMULADOR PORTAL TÉCNICO (TERRENO)'}
@@ -399,32 +399,32 @@ export default function ServicioTecnicoModal({ onClose, clientesMap = {}, usuari
         </div>
 
         {/* Tab Content area */}
-        <div className="p-3 bg-[#d4d0c8] flex-1 flex flex-col overflow-hidden min-h-0">
+        <div className="p-4 bg-[#d4d0c8] flex-1 flex flex-col overflow-hidden min-h-0">
           
           {/* TAB 1: DESPACHO CENTRAL */}
           {tabActive === 'despacho' && (
-            <div className="flex-1 flex flex-col md:flex-row gap-4 overflow-hidden min-h-0">
+            <div className="flex-1 flex flex-col md:flex-row gap-5 overflow-hidden min-h-0">
               
-              {/* Formulario Asignación Izquierda */}
-              <div className="w-full md:w-[320px] bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 p-3 flex flex-col justify-between shrink-0 overflow-y-auto">
-                <div className="space-y-2.5">
-                  <div className="bg-[#000080] text-white text-[11px] font-bold px-2 py-0.5 uppercase tracking-wider text-center">
-                    Agendar Orden de Trabajo
+              {/* Formulario Asignación Izquierda (AMPLIADO A 460px) */}
+              <div className="w-full md:w-[440px] lg:w-[460px] bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 p-4 flex flex-col justify-between shrink-0 overflow-y-auto shadow-inner">
+                <div className="space-y-4">
+                  <div className="bg-[#000080] text-white text-xs md:text-sm font-black px-3 py-1.5 uppercase tracking-wider text-center rounded-sm">
+                    ➕ AGENDAR ORDEN DE TRABAJO
                   </div>
                   
                   {/* Buscador de Abonado */}
-                  <div className="space-y-1 relative">
-                    <label className="text-[10px] font-bold text-gray-700 uppercase">Buscar Abonado:</label>
+                  <div className="space-y-1.5 relative">
+                    <label className="text-xs font-black text-gray-800 uppercase block">1. BUSCAR ABONADO / CLIENTE:</label>
                     <input
                       type="text"
                       value={buscarCuenta}
                       onChange={(e) => setBuscarCuenta(e.target.value)}
-                      placeholder="Escriba cuenta o nombre..."
-                      className="bg-white border border-gray-400 font-bold px-2 py-1 text-xs text-black select-text focus:outline-none w-full"
+                      placeholder="Escriba código de cuenta o nombre..."
+                      className="bg-white border-2 border-gray-500 font-bold px-3 py-2 text-sm text-black select-text focus:outline-none focus:border-blue-800 w-full rounded"
                     />
                     
                     {buscarCuenta && !cuentaSeleccionada && (
-                      <div className="absolute top-full left-0 right-0 bg-white border border-gray-400 shadow-lg z-30 divide-y divide-gray-200">
+                      <div className="absolute top-full left-0 right-0 bg-white border-2 border-gray-500 shadow-2xl z-30 divide-y divide-gray-200 rounded">
                         {clientesFiltrados.map(([cuenta, c]) => (
                           <div
                             key={cuenta}
@@ -432,26 +432,26 @@ export default function ServicioTecnicoModal({ onClose, clientesMap = {}, usuari
                               setCuentaSeleccionada(cuenta)
                               setBuscarCuenta(`${cuenta} - ${c.nombre}`)
                             }}
-                            className="p-1 text-[10px] hover:bg-blue-800 hover:text-white cursor-pointer truncate"
+                            className="p-2 text-xs font-bold hover:bg-blue-900 hover:text-white cursor-pointer truncate"
                           >
-                            <strong>{cuenta}</strong> - {c.nombre}
+                            <strong className="font-mono text-blue-900 font-black">{cuenta}</strong> — {c.nombre}
                           </div>
                         ))}
                         {clientesFiltrados.length === 0 && (
-                          <div className="p-1 text-[10px] text-gray-500 italic">No se encontraron clientes</div>
+                          <div className="p-2 text-xs text-gray-500 italic">No se encontraron clientes</div>
                         )}
                       </div>
                     )}
                   </div>
 
-                  {/* Tipo de Visita */}
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-gray-700 uppercase">Tipo de Visita:</label>
+                  {/* Tipo de Visita & Técnico */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-black text-gray-800 uppercase block">Tipo de Visita:</label>
                       <select
                         value={tipoVisita}
                         onChange={(e: any) => setTipoVisita(e.target.value)}
-                        className="bg-white border border-gray-400 font-bold px-1 py-1 text-[10px] text-black focus:outline-none w-full"
+                        className="bg-white border-2 border-gray-500 font-bold px-2 py-2 text-xs md:text-sm text-black focus:outline-none w-full rounded"
                       >
                         {TIPOS_VISITA.map(t => (
                           <option key={t} value={t}>{t}</option>
@@ -459,12 +459,12 @@ export default function ServicioTecnicoModal({ onClose, clientesMap = {}, usuari
                       </select>
                     </div>
 
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-gray-700 uppercase">Técnico:</label>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-black text-gray-800 uppercase block">Técnico Asignado:</label>
                       <select
                         value={tecnicoAsignado}
                         onChange={(e) => setTecnicoAsignado(e.target.value)}
-                        className="bg-white border border-gray-400 font-bold px-1 py-1 text-[10px] text-black focus:outline-none w-full"
+                        className="bg-white border-2 border-gray-500 font-bold px-2 py-2 text-xs md:text-sm text-black focus:outline-none w-full rounded"
                       >
                         {TECNICOS.map(t => (
                           <option key={t} value={t}>{t}</option>
@@ -474,23 +474,23 @@ export default function ServicioTecnicoModal({ onClose, clientesMap = {}, usuari
                   </div>
 
                   {/* Fecha y Bloque Horario */}
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-gray-700 uppercase">Fecha Cita:</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-black text-gray-800 uppercase block">Fecha Programada:</label>
                       <input
                         type="date"
                         value={fechaCita}
                         onChange={(e) => setFechaCita(e.target.value)}
-                        className="bg-white border border-gray-400 font-bold px-1 py-0.5 text-[10px] text-black focus:outline-none w-full"
+                        className="bg-white border-2 border-gray-500 font-bold px-2 py-1.5 text-xs md:text-sm text-black focus:outline-none w-full rounded"
                       />
                     </div>
 
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-gray-700 uppercase">Bloque Horario:</label>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-black text-gray-800 uppercase block">Bloque Horario:</label>
                       <select
                         value={bloqueHorario}
                         onChange={(e: any) => setBloqueHorario(e.target.value)}
-                        className="bg-white border border-gray-400 font-bold px-1 py-0.5 text-[9px] text-black focus:outline-none w-full"
+                        className="bg-white border-2 border-gray-500 font-bold px-1.5 py-2 text-xs text-black focus:outline-none w-full rounded"
                       >
                         {BLOQUES_HORARIOS.map(b => (
                           <option key={b} value={b}>{b}</option>
@@ -500,94 +500,97 @@ export default function ServicioTecnicoModal({ onClose, clientesMap = {}, usuari
                   </div>
 
                   {/* Teléfono de Contacto */}
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-gray-700 uppercase">Teléfono Contacto (WA):</label>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-black text-gray-800 uppercase block">Teléfono Contacto (WhatsApp):</label>
                     <input
                       type="text"
                       value={telefonoContacto}
                       onChange={(e) => setTelefonoContacto(e.target.value)}
                       placeholder="+56 9 1234 5678"
-                      className="bg-white border border-gray-400 font-bold px-2 py-0.5 text-xs text-black select-text focus:outline-none w-full"
+                      className="bg-white border-2 border-gray-500 font-bold px-3 py-2 text-xs md:text-sm text-black select-text focus:outline-none w-full rounded"
                     />
                   </div>
 
                   {/* Problema Reportado */}
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-gray-700 uppercase">Falla / Trabajo Solicitado:</label>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-black text-gray-800 uppercase block">Requerimiento / Falla Reportada:</label>
                     <textarea
                       value={problemaReportado}
                       onChange={(e) => setProblemaReportado(e.target.value)}
                       placeholder="Ej: Cambio de batería 12V 7Ah en panel DSC y revisión de zona 03..."
-                      className="bg-white border border-gray-400 font-bold px-2 py-1 text-xs text-black select-text focus:outline-none w-full h-20 resize-none"
+                      className="bg-white border-2 border-gray-500 font-bold px-3 py-2 text-xs md:text-sm text-black select-text focus:outline-none w-full h-24 resize-none rounded"
                     />
                   </div>
                 </div>
 
                 <button
                   onClick={handleCrearOrden}
-                  className="bg-[#000080] text-white hover:bg-blue-900 border-2 border-t-white border-l-white border-b-gray-900 border-r-gray-900 w-full py-1.5 font-bold text-xs cursor-pointer active:translate-y-0.5 mt-3 shadow"
+                  className="bg-[#000080] text-white hover:bg-blue-900 border-2 border-t-white border-l-white border-b-gray-900 border-r-gray-900 w-full py-3 font-black text-xs md:text-sm cursor-pointer active:translate-y-0.5 mt-4 shadow-lg rounded"
                 >
-                  ➕ AGENDAR & NOTIFICAR POR WA
+                  ➕ AGENDAR ORDEN & NOTIFICAR POR WA
                 </button>
               </div>
 
-              {/* Listado de Órdenes Derecha */}
-              <div className="flex-1 flex flex-col overflow-hidden min-h-0 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 p-2">
-                <div className="bg-[#000080] text-white text-[11px] font-bold px-2 py-0.5 uppercase tracking-wider mb-2 flex justify-between items-center">
+              {/* Listado de Órdenes Derecha (AMPLIADO Y AMPLIAS TABLAS) */}
+              <div className="flex-1 flex flex-col overflow-hidden min-h-0 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 p-3 shadow-inner">
+                <div className="bg-[#000080] text-white text-xs md:text-sm font-black px-3 py-1.5 uppercase tracking-wider mb-3 flex justify-between items-center rounded-sm">
                   <span>📋 Listado de Órdenes de Trabajo Activas ({ordenes.length})</span>
-                  <button onClick={cargarOrdenes} className="hover:text-yellow-300 text-[10px] font-bold cursor-pointer">🔄 ACTUALIZAR</button>
+                  <button onClick={cargarOrdenes} className="hover:text-yellow-300 text-xs font-black cursor-pointer flex items-center gap-1">
+                    <span>🔄</span>
+                    <span>ACTUALIZAR TABLA</span>
+                  </button>
                 </div>
 
-                <div className="flex-1 overflow-auto border border-gray-400 bg-white">
-                  <table className="w-full text-left border-collapse text-[10px]">
+                <div className="flex-1 overflow-auto border-2 border-gray-500 bg-white rounded">
+                  <table className="w-full text-left border-collapse text-xs md:text-sm">
                     <thead>
-                      <tr className="bg-[#d4d0c8] text-black sticky top-0 border-b border-gray-400 font-bold z-10">
-                        <th className="p-1 border-r border-gray-400 text-center w-20">OT / FECHA</th>
-                        <th className="p-1 border-r border-gray-400 text-center w-12">ESTADO</th>
-                        <th className="p-1 border-r border-gray-400 text-center w-10">CTA</th>
-                        <th className="p-1 border-r border-gray-400">ABONADO</th>
-                        <th className="p-1 border-r border-gray-400">TIPO / TÉCNICO</th>
-                        <th className="p-1 border-r border-gray-400">FALLA REPORTADA</th>
-                        <th className="p-1 text-center w-16">ACCIONES</th>
+                      <tr className="bg-[#d4d0c8] text-black sticky top-0 border-b-2 border-gray-400 font-black z-10">
+                        <th className="p-2.5 border-r border-gray-400 text-center w-28">OT / FECHA</th>
+                        <th className="p-2.5 border-r border-gray-400 text-center w-24">ESTADO</th>
+                        <th className="p-2.5 border-r border-gray-400 text-center w-16">CLIENTE</th>
+                        <th className="p-2.5 border-r border-gray-400">ABONADO</th>
+                        <th className="p-2.5 border-r border-gray-400">TIPO / TÉCNICO</th>
+                        <th className="p-2.5 border-r border-gray-400">FALLA / TRABAJO REPORTADO</th>
+                        <th className="p-2.5 text-center w-24">ACCIONES</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-200">
+                    <tbody className="divide-y divide-gray-300">
                       {ordenes.map(o => (
-                        <tr key={o.id} className="hover:bg-slate-50">
-                          <td className="p-1 border-r border-gray-300 text-center">
-                            <span className="font-bold font-mono text-blue-900 block">{o.codigo_ot || `OT-${o.id.toString().slice(-4)}`}</span>
-                            <span className="text-[8px] text-gray-500">{o.fecha_cita}</span>
+                        <tr key={o.id} className="hover:bg-blue-50 transition-colors">
+                          <td className="p-2.5 border-r border-gray-300 text-center">
+                            <span className="font-black font-mono text-blue-900 text-xs md:text-sm block">{o.codigo_ot || `OT-${o.id.toString().slice(-4)}`}</span>
+                            <span className="text-[11px] text-gray-500 font-bold block">{o.fecha_cita}</span>
                           </td>
-                          <td className="p-1 border-r border-gray-300 text-center font-bold">
-                            <span className={`px-1 py-0.2 rounded-xs text-[8px] whitespace-nowrap ${
-                              o.estado === 'Completada' ? 'bg-green-100 text-green-800 border border-green-300' :
-                              o.estado === 'En Terreno' ? 'bg-purple-100 text-purple-800 border border-purple-300' :
-                              o.estado === 'En Traslado' ? 'bg-yellow-100 text-yellow-800 border border-yellow-300' :
-                              'bg-blue-100 text-blue-800 border border-blue-300'
+                          <td className="p-2.5 border-r border-gray-300 text-center font-bold">
+                            <span className={`px-2.5 py-1 rounded text-xs font-black whitespace-nowrap block ${
+                              o.estado === 'Completada' ? 'bg-emerald-100 text-emerald-900 border border-emerald-400' :
+                              o.estado === 'En Terreno' ? 'bg-purple-100 text-purple-900 border border-purple-400' :
+                              o.estado === 'En Traslado' ? 'bg-amber-100 text-amber-900 border border-amber-400' :
+                              'bg-blue-100 text-blue-900 border border-blue-400'
                             }`}>
                               {o.estado.toUpperCase()}
                             </span>
                           </td>
-                          <td className="p-1 border-r border-gray-300 text-center font-mono font-bold">{o.cuenta}</td>
-                          <td className="p-1 border-r border-gray-300 font-bold truncate max-w-[120px] uppercase">{o.nombre_abonado}</td>
-                          <td className="p-1 border-r border-gray-300">
-                            <span className="font-bold text-gray-800 block text-[9px]">{o.tipo_visita || 'Correctiva'}</span>
-                            <span className="text-gray-500 text-[8px]">{o.tecnico}</span>
+                          <td className="p-2.5 border-r border-gray-300 text-center font-mono font-black text-xs md:text-sm">{o.cuenta}</td>
+                          <td className="p-2.5 border-r border-gray-300 font-black truncate max-w-[180px] uppercase text-xs md:text-sm">{o.nombre_abonado}</td>
+                          <td className="p-2.5 border-r border-gray-300">
+                            <span className="font-black text-gray-900 block text-xs">{o.tipo_visita || 'Correctiva'}</span>
+                            <span className="text-gray-600 font-bold text-[11px]">{o.tecnico}</span>
                           </td>
-                          <td className="p-1 border-r border-gray-300 max-w-[180px] truncate" title={o.problema}>{o.problema}</td>
-                          <td className="p-1 text-center flex items-center justify-center gap-1 pt-2">
+                          <td className="p-2.5 border-r border-gray-300 max-w-[260px] truncate font-medium text-xs md:text-sm" title={o.problema}>{o.problema}</td>
+                          <td className="p-2.5 text-center flex items-center justify-center gap-1.5 pt-3">
                             {o.estado === 'Completada' && (
                               <button
                                 onClick={() => setOrdenImprimir(o)}
-                                className="bg-blue-700 hover:bg-blue-800 text-white border border-blue-600 px-1 py-0.2 text-[9px] cursor-pointer"
+                                className="bg-blue-700 hover:bg-blue-800 text-white border border-blue-600 px-2 py-1 text-xs font-bold rounded cursor-pointer"
                                 title="Ver / Imprimir Comprobante Oficial PDF"
                               >
-                                📄
+                                📄 PDF
                               </button>
                             )}
                             <button
                               onClick={() => handleEliminarOrden(o.id)}
-                              className="bg-red-700 hover:bg-red-600 text-white border border-red-500 px-1 py-0.2 text-[9px] cursor-pointer"
+                              className="bg-red-700 hover:bg-red-600 text-white border border-red-500 px-2 py-1 text-xs font-bold rounded cursor-pointer"
                               title="Eliminar Orden de Trabajo"
                             >
                               🗑️
@@ -597,7 +600,7 @@ export default function ServicioTecnicoModal({ onClose, clientesMap = {}, usuari
                       ))}
                       {ordenes.length === 0 && !cargando && (
                         <tr>
-                          <td colSpan={7} className="p-8 text-center text-gray-400 italic">No hay órdenes de trabajo registradas.</td>
+                          <td colSpan={7} className="p-12 text-center text-gray-400 italic text-sm">No hay órdenes de trabajo registradas.</td>
                         </tr>
                       )}
                     </tbody>
@@ -608,324 +611,189 @@ export default function ServicioTecnicoModal({ onClose, clientesMap = {}, usuari
             </div>
           )}
 
-          {/* TAB 2: PORTAL MOVIL DEL TECNICO */}
+          {/* TAB 2: PORTAL / SIMULADOR TÉCNICO EN TERRENO */}
           {tabActive === 'tecnico_movil' && (
-            <div className="flex-1 flex flex-col items-center justify-start overflow-y-auto py-2">
+            <div className="flex-1 flex flex-col md:flex-row gap-5 overflow-hidden min-h-0">
               
-              {/* Smartphone Frame Container */}
-              <div className="w-full max-w-[360px] bg-[#222] rounded-[36px] border-8 border-[#444] shadow-2xl p-4 flex flex-col overflow-hidden aspect-[9/18] min-h-[600px] text-black">
-                
-                {/* Smartphone Notch */}
-                <div className="w-24 h-4 bg-[#444] rounded-full mx-auto mb-3 flex items-center justify-center shrink-0">
-                  <div className="w-8 h-1 bg-[#222] rounded-full" />
+              {/* Selector de técnico en simulador */}
+              <div className="w-full md:w-[320px] bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 p-3 flex flex-col space-y-3 shrink-0">
+                <div className="bg-[#000080] text-white text-xs font-black px-2 py-1 uppercase text-center">
+                  👨‍🔧 Selección de Técnico
                 </div>
+                <select
+                  value={tecnicoSimulado}
+                  onChange={(e) => {
+                    setTecnicoSimulado(e.target.value)
+                    setOrdenSeleccionada(null)
+                  }}
+                  className="bg-white border-2 border-gray-500 font-black p-2 text-xs md:text-sm text-black focus:outline-none w-full rounded"
+                >
+                  {TECNICOS.map(t => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                </select>
 
-                {/* Smartphone Screen Viewport */}
-                <div className="flex-1 bg-[#c0c0c0] border-2 border-[#111] p-2 flex flex-col overflow-hidden min-h-0 select-text">
-                  
-                  {/* Simulador Selector de Técnico */}
-                  <div className="bg-[#8B0000] text-white p-1 text-[9px] font-bold flex justify-between items-center shrink-0">
-                    <span>{usuarioActivo?.rol === 'Técnico' ? '📱 TÉCNICO:' : '📱 SIMULADOR TÉCNICO:'}</span>
-                    {usuarioActivo?.rol === 'Técnico' ? (
-                      <span className="font-bold text-[9px] uppercase pr-1">{usuarioActivo.nombre}</span>
-                    ) : (
-                      <select
-                        value={tecnicoSimulado}
-                        onChange={(e) => {
-                          setTecnicoSimulado(e.target.value)
-                          setOrdenSeleccionada(null)
-                        }}
-                        className="bg-black text-white font-bold p-0.5 text-[8px] focus:outline-none border-0"
-                      >
-                        {TECNICOS.map(t => (
-                          <option key={t} value={t}>{t}</option>
-                        ))}
-                      </select>
-                    )}
+                <div className="flex-1 overflow-y-auto space-y-2">
+                  <span className="text-xs font-black text-gray-800 uppercase block">Órdenes del Técnico ({ordenesTécnico.length}):</span>
+                  {ordenesTécnico.map(o => (
+                    <div
+                      key={o.id}
+                      onClick={() => {
+                        setOrdenSeleccionada(o)
+                        setNovedadTexto(o.novedad || '')
+                        setRepuestosTexto(o.repuestos_utilizados || '')
+                        setNombreFirmanteText(o.nombre_firmante || '')
+                      }}
+                      className={`p-2.5 border-2 rounded text-xs cursor-pointer ${
+                        ordenSeleccionada?.id === o.id ? 'bg-blue-900 text-white border-blue-950 font-bold' : 'bg-white text-black border-gray-400 hover:bg-slate-100'
+                      }`}
+                    >
+                      <div className="font-black flex justify-between">
+                        <span>{o.codigo_ot || `OT-${o.id}`}</span>
+                        <span>{o.cuenta}</span>
+                      </div>
+                      <div className="truncate text-[11px] font-bold">{o.nombre_abonado}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Vista Móvil Terreno */}
+              <div className="flex-1 bg-slate-900 border-2 border-gray-700 p-4 rounded overflow-y-auto text-white">
+                {ordenSeleccionada ? (
+                  <div className="space-y-4 max-w-lg mx-auto">
+                    <h3 className="text-base font-black text-blue-400 border-b border-slate-700 pb-2">
+                      Atención #{ordenSeleccionada.codigo_ot || ordenSeleccionada.id} — {ordenSeleccionada.nombre_abonado}
+                    </h3>
+                    
+                    <div className="bg-slate-950 p-3 rounded border border-slate-800 text-xs space-y-1">
+                      <div><strong>Cuenta:</strong> {ordenSeleccionada.cuenta}</div>
+                      <div><strong>Dirección:</strong> {ordenSeleccionada.direccion}</div>
+                      <div><strong>Falla Reportada:</strong> {ordenSeleccionada.problema}</div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-slate-300">Trabajo Realizado en Terreno:</label>
+                      <textarea
+                        value={novedadTexto}
+                        onChange={(e) => setNovedadTexto(e.target.value)}
+                        className="bg-slate-950 border border-slate-700 p-2 text-xs text-white w-full h-20 rounded"
+                        placeholder="Descripción de trabajos..."
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-slate-300">Repuestos Utilizados:</label>
+                      <input
+                        type="text"
+                        value={repuestosTexto}
+                        onChange={(e) => setRepuestosTexto(e.target.value)}
+                        className="bg-slate-950 border border-slate-700 p-2 text-xs text-white w-full rounded"
+                        placeholder="Ej: Batería 12V 7Ah..."
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-slate-300">Nombre de quien recibe:</label>
+                      <input
+                        type="text"
+                        value={nombreFirmanteText}
+                        onChange={(e) => setNombreFirmanteText(e.target.value)}
+                        className="bg-slate-950 border border-slate-700 p-2 text-xs text-white w-full rounded"
+                        placeholder="Nombre completo..."
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-slate-300">Firma Touch:</label>
+                      <div className="bg-white p-1 rounded">
+                        <canvas
+                          ref={canvasRef}
+                          width={340}
+                          height={110}
+                          onMouseDown={startDrawing}
+                          onMouseMove={draw}
+                          onMouseUp={stopDrawing}
+                          onMouseLeave={stopDrawing}
+                          onTouchStart={startDrawing}
+                          onTouchMove={draw}
+                          onTouchEnd={stopDrawing}
+                          className="w-full cursor-crosshair bg-white rounded"
+                        />
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={handleFinalizarOrden}
+                      className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-3 rounded-xl text-xs uppercase"
+                    >
+                      ✔️ FINALIZAR Y GENERAR COMPROBANTE
+                    </button>
                   </div>
-
-                  {ordenSeleccionada ? (
-                    /* Detalle de la Orden del Técnico */
-                    <div className="flex-1 flex flex-col justify-between overflow-hidden min-h-0 pt-2 text-[10px]">
-                      
-                      <div className="flex-1 overflow-y-auto space-y-2 pr-0.5">
-                        {/* Botón Volver */}
-                        <button
-                          onClick={() => setOrdenSeleccionada(null)}
-                          className="bg-[#d4d0c8] hover:bg-white border border-gray-600 px-2 py-0.5 font-bold cursor-pointer text-[8px]"
-                        >
-                          ◀ VOLVER A LA LISTA
-                        </button>
-
-                        <div className="bg-white p-2 border border-gray-400 space-y-1">
-                          <div className="flex justify-between font-bold text-blue-900 border-b border-gray-300 pb-0.5">
-                            <span>OT #{ordenSeleccionada.codigo_ot || ordenSeleccionada.id}</span>
-                            <span className="bg-blue-100 text-blue-900 px-1 text-[8px]">{ordenSeleccionada.tipo_visita || 'Correctiva'}</span>
-                          </div>
-                          <div><strong>CTA:</strong> <span className="font-mono">{ordenSeleccionada.cuenta}</span></div>
-                          <div><strong>ABONADO:</strong> {ordenSeleccionada.nombre_abonado}</div>
-                          <div><strong>DIRECCIÓN:</strong> {ordenSeleccionada.direccion}</div>
-                          <div><strong>FALLA:</strong> {ordenSeleccionada.problema}</div>
-                        </div>
-
-                        {/* Controles de Estado Operativo con GPS y WhatsApp */}
-                        <div className="bg-[#e0e0e0] border border-gray-400 p-1.5 space-y-1">
-                          <span className="font-bold block text-[8px] text-gray-700 uppercase border-b border-gray-400 pb-0.5">🚦 ESTADO DE LA ATENCIÓN & GPS:</span>
-                          <div className="grid grid-cols-2 gap-1 pt-0.5">
-                            <button
-                              onClick={async () => {
-                                const eta = prompt('Tiempo estimado de llegada (ETA en minutos):', '15') || '15'
-                                  cambiarEstadoOrden(ordenSeleccionada.id, 'En Traslado')
-                                  if (ordenSeleccionada.telefono_contacto) {
-                                    const msg = `🚚 *GAMA SEGURIDAD 24/7 - Técnico en camino*\n\nEstimado cliente, el técnico *${ordenSeleccionada.tecnico}* va en camino a su domicilio (*${ordenSeleccionada.direccion}*).\n\n• *ETA Estimado:* ~${eta} minutos\n• *Orden de Trabajo:* #${ordenSeleccionada.codigo_ot || ordenSeleccionada.id}\n\nQuedamos atentos a su recepción.`
-                                    enviarNotificacionWhatsApp(ordenSeleccionada.telefono_contacto, msg)
-                                  }
-                              }}
-                              className={`py-1 font-bold text-[8px] border border-gray-600 cursor-pointer ${
-                                ordenSeleccionada.estado === 'En Traslado' ? 'bg-yellow-400 text-black font-bold' : 'bg-gray-200'
-                              }`}
-                            >
-                              🚗 EN TRASLADO (+WA ETA)
-                            </button>
-                            <button
-                              onClick={() => {
-                                cambiarEstadoOrden(ordenSeleccionada.id, 'En Terreno')
-                                if (ordenSeleccionada.telefono_contacto) {
-                                  const msg = `📍 *GAMA SEGURIDAD 24/7 - Técnico en Domicilio*\n\nNuestro técnico *${ordenSeleccionada.tecnico}* ha arribado a su domicilio (*${ordenSeleccionada.direccion}*) para iniciar la atención de la OT *#${ordenSeleccionada.codigo_ot || ordenSeleccionada.id}*.`
-                                  enviarNotificacionWhatsApp(ordenSeleccionada.telefono_contacto, msg)
-                                }
-                              }}
-                              className={`py-1 font-bold text-[8px] border border-gray-600 cursor-pointer ${
-                                ordenSeleccionada.estado === 'En Terreno' ? 'bg-purple-600 text-white font-bold' : 'bg-gray-200'
-                              }`}
-                            >
-                              📍 EN TERRENO (+WA LLEGADA)
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* Checklist Pruebas de Zonificación en Terreno */}
-                        <div className="bg-slate-100 border border-blue-900/40 p-1.5 rounded-xs space-y-1">
-                          <div className="flex justify-between items-center border-b border-gray-300 pb-0.5">
-                            <span className="font-bold text-[8px] text-blue-900 uppercase">📋 PRUEBAS DE ZONIFICACIÓN Y SENSORES</span>
-                            <span className="text-[7px] bg-blue-900 text-white px-1 font-bold">AUTO-VALIDADO</span>
-                          </div>
-                          <div className="space-y-1 text-[8px]">
-                            {['ZONA 01: PIR Living', 'ZONA 02: Magnético Puerta Principal', 'ZONA 03: PIR Comedor', 'ZONA 04: Humo Cocina'].map((z, idx) => (
-                              <div key={z} className="flex justify-between items-center bg-white p-1 border border-gray-300 rounded-xs">
-                                <span className="font-bold">{z}</span>
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    const btn = e.currentTarget
-                                    btn.innerText = '✅ TEST OK'
-                                    btn.className = 'bg-green-700 text-white text-[7px] font-bold px-1 rounded-xs'
-                                  }}
-                                  className="bg-blue-800 text-white text-[7px] font-bold px-1 rounded-xs hover:bg-blue-900 cursor-pointer"
-                                >
-                                  ⚡ PROBAR SENSOR
-                                </button>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* Reporte de terreno */}
-                        <div className="space-y-1">
-                          <label className="font-bold text-[9px] text-gray-700 uppercase">Trabajo / Solución Realizada:</label>
-                          <textarea
-                            value={novedadTexto}
-                            onChange={(e) => setNovedadTexto(e.target.value)}
-                            placeholder="Describa los cambios de batería, reparación de cableado o pruebas efectivas..."
-                            className="bg-white border border-gray-400 p-1 text-[9px] text-black w-full h-14 resize-none select-text focus:outline-none"
-                          />
-                        </div>
-
-                        {/* Repuestos Utilizados */}
-                        <div className="space-y-1">
-                          <label className="font-bold text-[9px] text-gray-700 uppercase">Repuestos / Baterías Cambiadas:</label>
-                          <input
-                            type="text"
-                            value={repuestosTexto}
-                            onChange={(e) => setRepuestosTexto(e.target.value)}
-                            placeholder="Ej: 1 Batería 12V 7Ah, 1 Sensor PIR DSC..."
-                            className="bg-white border border-gray-400 p-1 text-[9px] text-black w-full focus:outline-none"
-                          />
-                        </div>
-
-                        {/* Nombre del Firmante */}
-                        <div className="space-y-1">
-                          <label className="font-bold text-[9px] text-gray-700 uppercase">Nombre del Cliente / Firmante:</label>
-                          <input
-                            type="text"
-                            value={nombreFirmanteText}
-                            onChange={(e) => setNombreFirmanteText(e.target.value)}
-                            placeholder="Nombre y apellido de quien recibe..."
-                            className="bg-white border border-gray-400 p-1 text-[9px] text-black w-full focus:outline-none"
-                          />
-                        </div>
-
-                        {/* Dibujar Firma digital */}
-                        <div className="space-y-0.5">
-                          <div className="flex justify-between items-center">
-                            <label className="font-bold text-[8px] text-gray-700 uppercase">Firma del Cliente:</label>
-                            <button onClick={clearFirma} className="text-[7px] text-red-700 hover:underline">LIMPIAR</button>
-                          </div>
-                          <canvas
-                            ref={canvasRef}
-                            width={300}
-                            height={60}
-                            onMouseDown={startDrawing}
-                            onMouseMove={draw}
-                            onMouseUp={stopDrawing}
-                            onMouseLeave={stopDrawing}
-                            className="bg-white border border-gray-400 cursor-crosshair w-full rounded-sm"
-                          />
-                        </div>
-                      </div>
-
-                      <button
-                        onClick={handleFinalizarOrden}
-                        className="bg-green-700 hover:bg-green-600 text-white font-bold py-1.5 border border-green-600 w-full mt-2 cursor-pointer rounded-sm shadow"
-                      >
-                        ✔️ FINALIZAR Y ENVIAR COMPROBANTE WA
-                      </button>
-
-                    </div>
-                  ) : (
-                    /* Listado de Órdenes del Técnico */
-                    <div className="flex-1 flex flex-col overflow-hidden min-h-0 pt-2 text-[10px]">
-                      <span className="font-bold text-[8px] text-gray-600 block mb-1">MIS TRABAJOS ASIGNADOS ({ordenesTécnico.length}):</span>
-                      
-                      <div className="flex-1 overflow-y-auto space-y-1.5 pr-0.5">
-                        {ordenesTécnico.map(o => (
-                          <div
-                            key={o.id}
-                            onClick={() => {
-                              setOrdenSeleccionada(o)
-                              setNovedadTexto(o.novedad || '')
-                              setRepuestosTexto(o.repuestos_utilizados || '')
-                              setNombreFirmanteText(o.nombre_firmante || '')
-                            }}
-                            className={`p-2 border border-gray-400 bg-white cursor-pointer hover:bg-slate-100 space-y-1 ${
-                              o.estado === 'Completada' ? 'opacity-70 bg-green-50' : ''
-                            }`}
-                          >
-                            <div className="flex justify-between font-bold">
-                              <span className="font-mono text-blue-900">{o.cuenta} ({o.codigo_ot || 'OT'})</span>
-                              <span className={`px-1 text-[7px] rounded-xs ${
-                                o.estado === 'Completada' ? 'bg-green-200 text-green-900' : 'bg-yellow-200 text-yellow-900'
-                              }`}>{o.estado.toUpperCase()}</span>
-                            </div>
-                            <div className="font-bold text-[9px] truncate">{o.nombre_abonado}</div>
-                            <div className="text-[8px] text-gray-500 truncate">{o.problema}</div>
-                          </div>
-                        ))}
-                        {ordenesTécnico.length === 0 && (
-                          <div className="text-center text-gray-500 italic py-12">No tienes órdenes asignadas hoy.</div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                </div>
-
-                {/* Smartphone Home Button */}
-                <div className="w-10 h-10 rounded-full border-2 border-[#444] bg-[#222] mx-auto mt-2 shrink-0 flex items-center justify-center cursor-pointer hover:bg-[#333]">
-                  <div className="w-3.5 h-3.5 border border-[#555] rounded-xs" />
-                </div>
-
+                ) : (
+                  <div className="text-center text-slate-400 py-16 text-sm italic">
+                    Seleccione una orden de trabajo de la lista para simular la atención.
+                  </div>
+                )}
               </div>
 
             </div>
           )}
 
         </div>
+
       </div>
 
-      {/* MODAL COMPROBANTE OFICIAL IMPRIMIBLE (PDF / RECEIPT) */}
+      {/* Visor Modal Comprobante Imprimible */}
       {ordenImprimir && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-3">
-          <div className="w-full max-w-[650px] bg-white text-black p-6 font-sans shadow-2xl rounded border border-gray-400 max-h-[92vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4">
+          <div className="w-full max-w-[750px] bg-white text-black p-6 font-sans shadow-2xl rounded-2xl border border-gray-400 max-h-[95vh] overflow-y-auto">
             
-            {/* Header Corporativo */}
             <div className="flex justify-between items-center border-b-2 border-blue-900 pb-3 mb-4">
               <div>
-                <h1 className="text-xl font-bold text-blue-950 tracking-wider">GAMA SEGURIDAD 24/7</h1>
-                <p className="text-xs text-gray-600 font-semibold">Central de Monitoreo & Servicios Técnicos en Terreno</p>
-                <p className="text-[10px] text-gray-500">Santiago, Chile • Fono: +56 9 9101 6912</p>
+                <h1 className="text-xl font-black text-blue-950 tracking-wider">GAMA SEGURIDAD 24/7</h1>
+                <p className="text-xs text-gray-600 font-bold">Comprobante de Servicio Técnico en Terreno</p>
               </div>
               <div className="text-right">
-                <span className="inline-block bg-blue-900 text-white font-mono text-sm font-bold px-2.5 py-1 rounded">
+                <span className="inline-block bg-blue-900 text-white font-mono text-base font-black px-3 py-1 rounded">
                   {ordenImprimir.codigo_ot || `OT-${ordenImprimir.id}`}
                 </span>
-                <p className="text-[10px] text-gray-500 mt-1">Fecha: {ordenImprimir.fecha_cita || ordenImprimir.fecha_creacion}</p>
+                <p className="text-xs text-gray-600 mt-1 font-bold">Fecha: {ordenImprimir.fecha_cierre || ordenImprimir.fecha_cita}</p>
               </div>
             </div>
 
-            {/* Datos del Cliente */}
-            <div className="bg-slate-50 p-3 rounded border border-slate-200 mb-4 text-xs space-y-1">
-              <div className="font-bold text-blue-900 border-b border-slate-300 pb-1 mb-1 uppercase text-[11px]">
-                DATOS DEL ABONADO
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div><strong>Cuenta:</strong> <span className="font-mono font-bold text-blue-900">{ordenImprimir.cuenta}</span></div>
-                <div><strong>Nombre Titular:</strong> {ordenImprimir.nombre_abonado}</div>
-                <div><strong>Dirección:</strong> {ordenImprimir.direccion}</div>
-                <div><strong>Teléfono Contacto:</strong> {ordenImprimir.telefono_contacto || 'N/A'}</div>
-              </div>
+            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 mb-4 text-xs md:text-sm space-y-1.5">
+              <div><strong>Código de Cliente:</strong> <span className="font-mono font-black text-blue-900">{ordenImprimir.cuenta}</span></div>
+              <div><strong>Nombre del Abonado:</strong> {ordenImprimir.nombre_abonado}</div>
+              <div><strong>Dirección de Atención:</strong> {ordenImprimir.direccion}</div>
+              <div><strong>Teléfono:</strong> {ordenImprimir.telefono_contacto || 'N/A'}</div>
             </div>
 
-            {/* Detalle del Servicio */}
-            <div className="bg-slate-50 p-3 rounded border border-slate-200 mb-4 text-xs space-y-2">
-              <div className="font-bold text-blue-900 border-b border-slate-300 pb-1 uppercase text-[11px]">
-                DETALLE DE LA ATENCIÓN TÉCNICA
-              </div>
-              <div><strong>Tipo de Visita:</strong> <span className="font-bold text-slate-800">{ordenImprimir.tipo_visita || 'Correctiva'}</span></div>
-              <div><strong>Técnico Asignado:</strong> {ordenImprimir.tecnico}</div>
-              <div><strong>Falla Reportada:</strong> {ordenImprimir.problema}</div>
-              <div className="pt-1 border-t border-slate-200">
-                <strong>Trabajo Realizado:</strong>
-                <p className="text-gray-800 bg-white p-2 border border-slate-300 rounded mt-1 text-[11px] whitespace-pre-wrap">
-                  {ordenImprimir.novedad || 'Trabajo completado en terreno sin observaciones.'}
-                </p>
-              </div>
-              {ordenImprimir.repuestos_utilizados && (
-                <div>
-                  <strong>Repuestos Utilizados:</strong>
-                  <p className="text-gray-800 bg-white p-1.5 border border-slate-300 rounded mt-0.5 text-[11px]">
-                    {ordenImprimir.repuestos_utilizados}
-                  </p>
-                </div>
-              )}
+            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 mb-4 text-xs md:text-sm space-y-1.5">
+              <div><strong>Trabajo Realizado:</strong> {ordenImprimir.novedad}</div>
+              {ordenImprimir.repuestos_utilizados && <div><strong>Repuestos:</strong> {ordenImprimir.repuestos_utilizados}</div>}
+              <div><strong>Técnico:</strong> {ordenImprimir.tecnico}</div>
             </div>
 
-            {/* Firma del Cliente */}
-            <div className="border border-gray-300 p-3 rounded bg-slate-50 mb-4 flex justify-between items-center">
-              <div>
-                <span className="font-bold text-xs block text-gray-700">CONFORMIDAD DEL CLIENTE:</span>
-                <span className="text-xs text-gray-600">Recepción: {ordenImprimir.nombre_firmante || ordenImprimir.nombre_abonado}</span>
+            {ordenImprimir.firma && (
+              <div className="border border-gray-300 p-3 rounded-xl bg-slate-50 mb-4 text-xs md:text-sm">
+                <span className="font-bold block text-gray-700 mb-1.5">Recepción / Firma Cliente: {ordenImprimir.nombre_firmante}</span>
+                <img src={ordenImprimir.firma} alt="Firma" className="h-16 border border-gray-400 bg-white px-2 rounded" />
               </div>
-              {ordenImprimir.firma ? (
-                <img src={ordenImprimir.firma} alt="Firma Cliente" className="h-16 border border-gray-400 bg-white px-2 rounded" />
-              ) : (
-                <span className="text-xs text-gray-400 italic">Sin firma registrada</span>
-              )}
-            </div>
+            )}
 
-            {/* Botones de Acción */}
-            <div className="flex justify-end gap-2 pt-2 border-t border-gray-200">
+            <div className="flex justify-end gap-3 pt-3 border-t border-gray-200">
               <button
                 onClick={() => setOrdenImprimir(null)}
-                className="px-3 py-1 bg-gray-300 text-gray-800 font-bold text-xs rounded hover:bg-gray-400 cursor-pointer"
+                className="px-4 py-2 bg-gray-300 text-gray-800 font-black text-xs md:text-sm rounded-xl hover:bg-gray-400 cursor-pointer"
               >
                 Cerrar
               </button>
               <button
                 onClick={() => window.print()}
-                className="px-4 py-1 bg-blue-900 text-white font-bold text-xs rounded hover:bg-blue-950 shadow cursor-pointer flex items-center gap-1"
+                className="px-5 py-2 bg-blue-900 text-white font-black text-xs md:text-sm rounded-xl hover:bg-blue-950 shadow cursor-pointer"
               >
-                <span>🖨️ Imprimir Comprobante</span>
+                🖨️ Imprimir PDF
               </button>
             </div>
 
