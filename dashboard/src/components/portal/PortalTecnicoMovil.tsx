@@ -1387,7 +1387,7 @@ export default function PortalTecnicoMovil() {
       </header>
 
       {/* Main Mobile Body Container */}
-      <main className="p-4 space-y-4 max-w-lg mx-auto w-full flex-1">
+      <main className="p-4 pb-36 space-y-4 max-w-lg mx-auto w-full flex-1">
         
         {/* SECCIÓN 1: ITINERARIO ASISTENTE & BIENVENIDA */}
         {menuSeccion === 'itinerario' && (
@@ -2036,12 +2036,12 @@ export default function PortalTecnicoMovil() {
               </div>
 
               {/* BOTÓN ENVIAR LEVANTAMIENTO */}
-              <div className="pt-2">
+              <div className="pt-4 pb-4">
                 <button
                   type="button"
                   disabled={levEnviando}
                   onClick={handleEnviarLevantamiento}
-                  className="w-full py-3.5 px-4 bg-gradient-to-r from-blue-600 via-cyan-600 to-blue-700 hover:from-blue-500 hover:to-cyan-500 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-xl transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                  className="w-full py-4 px-4 bg-gradient-to-r from-blue-600 via-cyan-600 to-blue-700 hover:from-blue-500 hover:to-cyan-500 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-2xl transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 active:scale-98"
                 >
                   {levEnviando ? (
                     <>
@@ -2055,7 +2055,7 @@ export default function PortalTecnicoMovil() {
                     </>
                   )}
                 </button>
-                <p className="text-[10px] text-slate-500 text-center mt-2">
+                <p className="text-[10px] text-slate-400 text-center mt-2.5 font-medium">
                   * Se enviará automáticamente a Tomás Toro (tetoromoreno@gamasecurity.cl) y M. Rebolledo (mrebolledo@gamasecurity.cl).
                 </p>
               </div>

@@ -31,7 +31,7 @@ export async function POST(req: Request) {
       }
     ] : []
 
-    const data = await resend.emails.send({
+    let response = await resend.emails.send({
       from: 'Gama Seguridad <reportes@gamasecurity.cl>',
       to: toList,
       subject: asunto,
@@ -39,7 +39,22 @@ export async function POST(req: Request) {
       attachments
     })
 
-    return NextResponse.json({ ok: true, data })
+    if (response.error) {
+      console.warn('Fallback a onboarding@resend.dev por error en dominio corporativo:', response.error)
+      response = await resend.emails.send({
+        from: 'Gama Seguridad <onboarding@resend.dev>',
+        to: toList,
+        subject: asunto,
+        html,
+        attachments
+      })
+    }
+
+    if (response.error) {
+      return NextResponse.json({ error: response.error.message || 'Error de envío en API Resend' }, { status: 500 })
+    }
+
+    return NextResponse.json({ ok: true, data: response.data })
   } catch (e: any) {
     console.error('Error enviando reporte Resend:', e)
     return NextResponse.json({ error: e.message || 'Error al enviar email' }, { status: 500 })
