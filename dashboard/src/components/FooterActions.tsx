@@ -240,6 +240,16 @@ export default function FooterActions({
           >
             <span className="text-[11px] font-bold text-amber-900 tracking-wider whitespace-nowrap">📝 ENTREGA TURNO</span>
           </button>
+          {/* Botón APERTURAS & CIERRES */}
+          <button
+            onClick={() => onModalOpen('aperturas-cierres')}
+            title="Control de Aperturas y Cierres por Partición (Semáforo)"
+            className="h-10 bg-[#d4d0c8] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 flex items-center justify-center cursor-pointer select-none hover:bg-gray-200 active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white shadow-sm px-2.5"
+          >
+            <span className="text-[11px] font-bold text-emerald-800 tracking-wider whitespace-nowrap flex items-center gap-1">
+              🔑 APERTURAS / CIERRES
+            </span>
+          </button>
 
           {BOTONES_RETRO.map((btn) => (
             <button

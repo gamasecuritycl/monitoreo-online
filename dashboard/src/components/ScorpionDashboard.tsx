@@ -26,6 +26,7 @@ import SimuladorEventosModal from './SimuladorEventosModal'
 import IACopilotCard from './IACopilotCard'
 import EntregaTurnoModal from './EntregaTurnoModal'
 import HealthTelemetryModal from './HealthTelemetryModal'
+import AperturasCierresModal from './AperturasCierresModal'
 import { lookupContactId } from '@/lib/contact_id_library'
 import { sendMessage, generarMensajeAlerta, generarMensajeEnergia, detectarPatronEvento, type EventInfo } from '@/lib/whatsapp'
 import { Operator, ensureUserAttributes, OPERADORES_PREDETERMINADOS } from '@/types/operator'
@@ -1673,6 +1674,13 @@ export default function ScorpionDashboard() {
           onClose={() => setModalActivo(null)}
           sincronizadorVivo={sincronizadorVivo}
           ultimoHeartbeat={ultimoHeartbeat}
+        />
+      )}
+
+      {/* Aperturas & Cierres Modal */}
+      {modalActivo === 'aperturas-cierres' && (
+        <AperturasCierresModal
+          onClose={() => setModalActivo(null)}
         />
       )}
 
