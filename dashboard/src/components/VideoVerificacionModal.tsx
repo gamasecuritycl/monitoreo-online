@@ -396,31 +396,13 @@ export default function VideoVerificacionModal({ onClose, evento, esCierre, clie
         clearTimeout(timeoutId)
 
         if (!res.ok) return
-        const isLiveHeader = res.headers.get('X-Frame-Live') !== 'false'
-        const ageHeader = parseInt(res.headers.get('X-Frame-Age') || '0')
-        const tsHeader = res.headers.get('X-Frame-Timestamp') || ''
-
         const blob = await res.blob()
         const reader = new FileReader()
         reader.onloadend = () => {
           if (activePolling && reader.result) {
-            if (isLiveHeader && ageHeader < 60) {
-              setEdadFrameActual(ageHeader)
-              setSenalPerdida(false)
-              setTimestampFrameArchivado('')
-            } else {
-              setSenalPerdida(true)
-              setEdadFrameActual(ageHeader)
-              if (tsHeader) {
-                try {
-                  const d = new Date(tsHeader)
-                  const formattedDate = d.toLocaleDateString('es-CL') + ' ' + d.toLocaleTimeString('es-CL')
-                  setTimestampFrameArchivado(formattedDate)
-                } catch {
-                  setTimestampFrameArchivado(tsHeader)
-                }
-              }
-            }
+            setEdadFrameActual(0)
+            setSenalPerdida(false)
+            setTimestampFrameArchivado('')
             setFramesMap(prev => ({
               ...prev,
               [`${cam.serialNumber}_${cam.canal}`]: reader.result as string
@@ -615,22 +597,6 @@ export default function VideoVerificacionModal({ onClose, evento, esCierre, clie
                       />
                       <AIOverlay imgRef={imgRef} activo={iaActiva} onToggle={toggleIA} />
 
-                      {senalPerdida && (
-                        <div className="absolute bottom-3 left-3 right-3 z-20 bg-red-950/90 border border-red-500/80 rounded-lg p-2.5 backdrop-blur-md flex flex-col md:flex-row items-center justify-between gap-2 shadow-2xl">
-                          <div className="flex items-center gap-2 text-red-200 text-[11px] font-mono">
-                            <span className="w-3 h-3 rounded-full bg-red-500 animate-ping shrink-0" />
-                            <div>
-                              <div className="font-bold text-white uppercase tracking-wider">⚠️ ALERTA 24/7: CÁMARA DESCONECTADA EN CLIENTE</div>
-                              <div className="text-red-300 text-[10px]">Sin energía o internet en el sitio. Mostrando fotograma archivado previo al corte.</div>
-                            </div>
-                          </div>
-                          {timestampFrameArchivado && (
-                            <div className="bg-black/80 border border-red-700 px-2.5 py-1 rounded text-[10px] font-mono text-yellow-300 font-bold shrink-0 shadow">
-                              📷 FOTOGRAMA PRE-CORTE: {timestampFrameArchivado}
-                            </div>
-                          )}
-                        </div>
-                      )}
                     </div>
                   ) : (
                     <div className="flex flex-col items-center justify-center gap-3 p-6 text-center w-full max-w-md">
