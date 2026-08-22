@@ -399,6 +399,8 @@ export default function VideoVerificacionModal({ onClose, evento, esCierre, clie
         const reader = new FileReader()
         reader.onloadend = () => {
           if (activePolling && reader.result) {
+            setEdadFrameActual(0)
+            setSenalPerdida(false)
             setFramesMap(prev => ({
               ...prev,
               [`${cam.serialNumber}_${cam.canal}`]: reader.result as string
@@ -576,6 +578,11 @@ export default function VideoVerificacionModal({ onClose, evento, esCierre, clie
                     ) : (
                       <span className="ml-2 text-green-400 text-[10px]">{edadFrameActual <= 1 ? 'EN VIVO' : edadFrameActual + 's'}</span>
                     )}
+                  </div>
+                  <div className="absolute top-2 right-2 z-10 bg-black/80 backdrop-blur-sm border border-cyan-500/40 px-2.5 py-1 rounded text-[11px] font-mono text-cyan-400 flex items-center gap-1.5 shadow-lg">
+                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping" />
+                    <span>{new Date().toISOString().slice(0, 10)} {new Date().toLocaleTimeString('es-CL')}</span>
+                    <span className="text-[9px] bg-cyan-950 text-cyan-300 px-1 rounded ml-1 font-bold">LIVE REFRESH</span>
                   </div>
 
                   {framesMap[`${selectedCamara.serialNumber}_${selectedCamara.canal}`] ? (
