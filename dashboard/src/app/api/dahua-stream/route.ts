@@ -153,15 +153,18 @@ export async function GET(request: NextRequest) {
             buffer = Buffer.from(b64, 'base64')
           }
           if (buffer && buffer.length > 100) {
-            const ageSec = ts ? Math.round((Date.now() - new Date(ts).getTime()) / 1000) : 0
-            return new NextResponse(new Uint8Array(buffer), {
-              headers: {
-                'Content-Type': 'image/jpeg',
-                'Cache-Control': 'no-cache, no-store, must-revalidate',
-                'X-Dahua-Source': 'SUPABASE_CLOUD_LIVE',
-                'X-Frame-Age': ageSec.toString()
-              }
-            })
+            const ageSec = ts ? Math.round((Date.now() - new Date(ts).getTime()) / 1000) : 9999
+            // Solo servir fotograma real si tiene menos de 60 segundos de antigüedad (EN VIVO)
+            if (ageSec < 60) {
+              return new NextResponse(new Uint8Array(buffer), {
+                headers: {
+                  'Content-Type': 'image/jpeg',
+                  'Cache-Control': 'no-cache, no-store, must-revalidate',
+                  'X-Dahua-Source': 'SUPABASE_CLOUD_LIVE',
+                  'X-Frame-Age': ageSec.toString()
+                }
+              })
+            }
           }
         }
       }
