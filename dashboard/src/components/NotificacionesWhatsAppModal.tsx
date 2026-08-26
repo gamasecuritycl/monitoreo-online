@@ -135,8 +135,12 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
   // Asignar chatActivo inicial si viene por prop
   useEffect(() => {
     if (telefonoInicial) {
-      const limpio = telefonoInicial.replace(/[^0-9]/g, '')
-      setChatActivo(limpio)
+      const limpio = normalizarTelefono(telefonoInicial)
+      if (limpio) {
+        setChatActivo(limpio)
+        setTelefonoDestino(limpio)
+        setTelefonoManual(limpio)
+      }
     }
   }, [telefonoInicial])
 
@@ -293,7 +297,10 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
           .limit(200)
         if (data && data.length > 0) {
           setTodosLosChats(data)
-          if (!chatActivo && data[0]?.numero) setChatActivo(data[0].numero)
+          if (!telefonoInicial && data[0]?.numero) {
+            const numClean = data[0].numero.replace(/[^0-9]/g, '')
+            setChatActivo(prev => prev || numClean)
+          }
         }
       } catch {}
     }
@@ -433,6 +440,36 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
       })
     }
   })
+
+  // Asegurar que si viene por prop telefonoInicial, esté presente como chat activo
+  if (telefonoInicial) {
+    const numClean = normalizarTelefono(telefonoInicial)
+    if (numClean && !recientesMap.has(numClean)) {
+      let ctaFound = cuentaInicial || ''
+      let nombreDisplay = `📱 ${formatearNumeroDisplay(numClean)}`
+      if (!ctaFound) {
+        for (const [cta, datos] of Object.entries(clientesMap)) {
+          const str = JSON.stringify(datos)
+          if (str.includes(numClean)) {
+            ctaFound = cta
+            nombreDisplay = `[${cta}] ${datos.nombre || 'Abonado'}`
+            break
+          }
+        }
+      } else if (clientesMap[ctaFound]) {
+        nombreDisplay = `[${ctaFound}] ${clientesMap[ctaFound].nombre || 'Abonado'}`
+      }
+      recientesMap.set(numClean, {
+        numero: numClean,
+        nombreDisplay,
+        cuenta: ctaFound,
+        ultimoMsg: 'Nuevo chat iniciado',
+        hora: 'Ahora',
+        esEntrante: false,
+        requiereHumano: false
+      })
+    }
+  }
 
   const listaRecientes = Array.from(recientesMap.values()).filter(r => {
     if (!busquedaChat.trim()) return true

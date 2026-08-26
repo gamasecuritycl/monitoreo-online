@@ -44,12 +44,59 @@ const SYSTEM_ACCOUNTS = new Set([
 function isRealAccount(cuentaRaw?: string): boolean {
   if (!cuentaRaw) return false
   const c = cuentaRaw.trim().toUpperCase()
-  if (!c || c.length < 3 || c.length > 6) return false
-  if (c.includes(':') || c.includes('-') || c.includes('/') || c.includes(' ')) return false
+  if (!c || c.length < 2 || c.length > 8) return false
+  if (c.includes(':') || c.includes('/') || c.includes(' ')) return false
   if (SYSTEM_ACCOUNTS.has(c) || c.startsWith('__') || c.startsWith('DAHUA') || c.startsWith('CAMARA') || c.startsWith('CONFIG')) return false
   if (/\d+:\d+:\d+/.test(c)) return false
-  if (!/^[A-Z0-9]{3,6}$/.test(c)) return false
   return true
+}
+
+/**
+ * Parsea cualquier marca de tiempo de eventos_monitoreo ("DD-MM-YYYY HH:mm:ss" o "YYYY-MM-DD HH:mm:ss" o ISO)
+ */
+function parseEventDate(rawStr?: string): number {
+  if (!rawStr) return 0
+  const s = rawStr.trim()
+
+  // 1. Formato "DD-MM-YYYY HH:mm:ss" o "DD/MM/YYYY HH:mm:ss" (ej: "25-08-2026 20:53:57")
+  const matchDDMM = s.match(/^(\d{2})[-/](\d{2})[-/](\d{4})(?:\s+(\d{2}):(\d{2}):(\d{2}))?/)
+  if (matchDDMM) {
+    const [, dia, mes, anio, hh = '00', mm = '00', ss = '00'] = matchDDMM
+    return new Date(Number(anio), Number(mes) - 1, Number(dia), Number(hh), Number(mm), Number(ss)).getTime()
+  }
+
+  // 2. Formato "YYYY-MM-DD HH:mm:ss" o "2026-08-25 20:53:57"
+  const matchYYYYMM = s.match(/^(\d{4})[-/](\d{2})[-/](\d{2})(?:[T\s]+(\d{2}):(\d{2}):(\d{2}))?/)
+  if (matchYYYYMM) {
+    const [, anio, mes, dia, hh = '00', mm = '00', ss = '00'] = matchYYYYMM
+    return new Date(Number(anio), Number(mes) - 1, Number(dia), Number(hh), Number(mm), Number(ss)).getTime()
+  }
+
+  // 3. Native Date parse
+  const d = new Date(s)
+  return isNaN(d.getTime()) ? 0 : d.getTime()
+}
+
+/**
+ * Genera variantes de cuenta para cubrir C701, 0701, 701, C0701, etc.
+ */
+function obtenerVariantesCuenta(termRaw: string): string[] {
+  const t = termRaw.trim().toUpperCase()
+  if (!t) return []
+  
+  const sinC = t.replace(/^C/, '')
+  const soloDigitos = sinC.replace(/^0+/, '')
+  
+  const set = new Set<string>()
+  set.add(t)
+  set.add(sinC)
+  if (soloDigitos) {
+    set.add(soloDigitos)
+    set.add(soloDigitos.padStart(4, '0'))
+    set.add('C' + soloDigitos.padStart(4, '0'))
+    set.add('C' + soloDigitos)
+  }
+  return Array.from(set).filter(Boolean)
 }
 
 export default function BuscadorUniversalModal({
@@ -92,7 +139,7 @@ export default function BuscadorUniversalModal({
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [onClose])
 
-  // 🔍 BÚSQUEDA UNIVERSAL (Realtime / Cache DB + Supabase query)
+  // 🔍 BÚSQUEDA UNIVERSAL MULTI-CRITERIO
   const ejecutarBusquedaUniversal = useCallback(async (q: string) => {
     const term = q.trim().toUpperCase()
     if (!term) {
@@ -101,25 +148,77 @@ export default function BuscadorUniversalModal({
     }
     try {
       setCargandoUniversal(true)
+      const variantes = obtenerVariantesCuenta(term)
+      
+      // 1. Buscar en la Base de Datos de Clientes Local (clientesMap)
+      const eventosClienteDirectos: EventoMonitoreo[] = []
+      Object.entries(clientesMap).forEach(([cuentaKey, info]) => {
+        const ctaUpper = cuentaKey.toUpperCase()
+        const ctaSinC = ctaUpper.replace(/^C/, '')
+        const ctaSoloDigitos = ctaSinC.replace(/^0+/, '')
+
+        const coincideCuenta = variantes.some(v => v === ctaUpper || v === ctaSinC || v === ctaSoloDigitos)
+        const coincideTexto = (info.nombre || '').toUpperCase().includes(term) ||
+                              (info.direccion || '').toUpperCase().includes(term) ||
+                              (info.sector || info.ciudad || '').toUpperCase().includes(term)
+
+        if (coincideCuenta || coincideTexto) {
+          eventosClienteDirectos.push({
+            id: Math.floor(Math.random() * -100000),
+            fecha_hora: new Date().toLocaleString('es-CL'),
+            cuenta: cuentaKey.padStart(4, '0'),
+            nombre_abonado: info.nombre || 'ABONADO REGISTRADO',
+            evento: coincideCuenta ? 'ABONADO REGISTRADO EN CENTRAL' : `COINCIDENCIA EN FICHA (${term})`,
+            zona: '--',
+            usuario: '--'
+          })
+        }
+      })
+
+      // 2. Buscar en Supabase (eventos_monitoreo) usando OR con todas las variantes
+      const orClauses: string[] = []
+      variantes.forEach(v => {
+        orClauses.push(`cuenta.ilike.%${v}%`)
+      })
+      orClauses.push(`nombre_abonado.ilike.%${term}%`)
+      orClauses.push(`evento.ilike.%${term}%`)
+      orClauses.push(`zona.ilike.%${term}%`)
+      orClauses.push(`usuario.ilike.%${term}%`)
+
       const { data, error } = await supabase
         .from('eventos_monitoreo')
         .select('*')
-        .or(`cuenta.ilike.%${term}%,nombre_abonado.ilike.%${term}%,evento.ilike.%${term}%,zona.ilike.%${term}%,usuario.ilike.%${term}%`)
-        .order('fecha_hora', { ascending: false })
-        .limit(150)
+        .or(orClauses.join(','))
+        .order('id', { ascending: false })
+        .limit(200)
 
       if (error) {
         console.error('Error buscando eventos:', error)
-      } else {
-        const filtrados = (data || []).filter(e => isRealAccount(e.cuenta))
-        setResultadosEventos(filtrados)
       }
+
+      const dbEventos = (data || []).filter(e => isRealAccount(e.cuenta))
+
+      // Combinar resultados (priorizar clientes directos arriba, luego eventos históricos)
+      const combinados = [...eventosClienteDirectos, ...dbEventos]
+      
+      // Deduplicar manteniendo orden
+      const vistos = new Set<string>()
+      const unicos: EventoMonitoreo[] = []
+      for (const ev of combinados) {
+        const key = `${ev.cuenta}_${ev.evento}_${ev.fecha_hora}`
+        if (!vistos.has(key)) {
+          vistos.add(key)
+          unicos.push(ev)
+        }
+      }
+
+      setResultadosEventos(unicos)
     } catch (err) {
       console.error('Error en búsqueda universal:', err)
     } finally {
       setCargandoUniversal(false)
     }
-  }, [])
+  }, [clientesMap])
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -132,25 +231,20 @@ export default function BuscadorUniversalModal({
     return () => clearTimeout(timer)
   }, [queryUniversal, ejecutarBusquedaUniversal])
 
-  // 📁 BÚSQUEDA HISTÓRICA PROFUNDA CON FILTROS
+  // 📁 BÚSQUEDA HISTÓRICA PROFUNDA CON FILTROS DE FECHA Y CATEGORÍA
   const ejecutarBusquedaHistorica = useCallback(async () => {
     try {
       setCargandoHistorico(true)
       let query = supabase
         .from('eventos_monitoreo')
         .select('*')
-        .order('fecha_hora', { ascending: false })
-        .limit(limiteFiltro)
+        .order('id', { ascending: false })
+        .limit(2500)
 
-      if (fechaDesde) {
-        query = query.gte('fecha_hora', `${fechaDesde}T00:00:00`)
-      }
-      if (fechaHasta) {
-        query = query.lte('fecha_hora', `${fechaHasta}T23:59:59`)
-      }
       if (cuentaFiltro.trim()) {
-        const cNorm = cuentaFiltro.trim().toUpperCase()
-        query = query.ilike('cuenta', `%${cNorm}%`)
+        const variantes = obtenerVariantesCuenta(cuentaFiltro)
+        const orClauses = variantes.map(v => `cuenta.ilike.%${v}%`).join(',')
+        query = query.or(orClauses)
       }
 
       const { data, error } = await query
@@ -162,11 +256,22 @@ export default function BuscadorUniversalModal({
 
       let res = (data || []).filter(e => isRealAccount(e.cuenta))
 
+      // Parsear rango de fechas en timestamps
+      const startMs = fechaDesde ? new Date(`${fechaDesde}T00:00:00`).getTime() : 0
+      const endMs = fechaHasta ? new Date(`${fechaHasta}T23:59:59`).getTime() : Infinity
+
+      // Filtrar por Rango de Fechas
+      res = res.filter(e => {
+        const evTime = parseEventDate(e.fecha_hora)
+        if (evTime === 0) return true // Si no se parsea fecha, incluir por seguridad
+        return evTime >= startMs && evTime <= endMs
+      })
+
       // Filtrar por categoría
       if (categoriaFiltro !== 'todos') {
         res = res.filter(e => {
           const ev = (e.evento || '').toLowerCase()
-          if (categoriaFiltro === 'robo') return ev.includes('robo') || ev.includes('alarma') || ev.includes('intrus')
+          if (categoriaFiltro === 'robo') return ev.includes('robo') || ev.includes('alarma') || ev.includes('intrus') || ev.includes('rob')
           if (categoriaFiltro === 'incendio_panico') return ev.includes('incendio') || ev.includes('panico') || ev.includes('medica') || ev.includes('humo') || ev.includes('fuego')
           if (categoriaFiltro === 'aperturas_cierres') return ev.includes('cierre') || ev.includes('apertura') || ev.includes('armado') || ev.includes('desarmado')
           if (categoriaFiltro === 'energia_tecnico') return ev.includes('energia') || ev.includes('bateria') || ev.includes('corte') || ev.includes('tecnico') || ev.includes('fallo') || ev.includes('red')
@@ -175,7 +280,7 @@ export default function BuscadorUniversalModal({
         })
       }
 
-      setEventosHistoricos(res)
+      setEventosHistoricos(res.slice(0, limiteFiltro))
     } catch (err) {
       console.error('Error ejecutando consulta histórica:', err)
     } finally {
@@ -337,7 +442,7 @@ export default function BuscadorUniversalModal({
                   : 'bg-[#b0b0b0] border-gray-400 text-gray-700 hover:bg-[#c8c8c8]'
               }`}
             >
-              🔍 BÚSQUEDA UNIVERSAL RAPIDA
+              🔍 BÚSQUEDA UNIVERSAL RÁPIDA
             </button>
             <button
               onClick={() => setPestana('historico')}
@@ -380,7 +485,7 @@ export default function BuscadorUniversalModal({
                     type="text"
                     value={queryUniversal}
                     onChange={(e) => setQueryUniversal(e.target.value)}
-                    placeholder="Escriba número de cuenta (ej: C7C9, 0014), nombre abonado, zona, evento o usuario..."
+                    placeholder="Escriba número de cuenta (ej: C701, 0701, 701), nombre abonado, zona, evento o usuario..."
                     autoFocus
                     className="w-full bg-white border-2 border-t-gray-700 border-l-gray-700 border-b-white border-r-white px-3 py-1.5 text-xs font-bold text-black focus:outline-none focus:bg-yellow-50"
                   />
@@ -395,7 +500,7 @@ export default function BuscadorUniversalModal({
                 </div>
                 {cargandoUniversal && (
                   <span className="text-xs font-bold text-blue-800 animate-pulse whitespace-nowrap">
-                    Buscando en Supabase...
+                    Buscando en Central y Supabase...
                   </span>
                 )}
               </div>
@@ -407,11 +512,11 @@ export default function BuscadorUniversalModal({
                     <span className="text-3xl">🔍</span>
                     <p className="text-xs font-bold text-gray-700">
                       {queryUniversal.trim()
-                        ? 'No se encontraron eventos coincidentes con su criterio.'
-                        : 'Ingrese un término de búsqueda arriba para consultar eventos en tiempo real.'}
+                        ? 'No se encontraron eventos o abonados coincidentes con su criterio.'
+                        : 'Ingrese un término de búsqueda arriba para consultar la base de clientes y registros en tiempo real.'}
                     </p>
                     <p className="text-[11px] text-gray-500 max-w-md">
-                      Puede buscar por código de cuenta (ej: 0014), palabras clave del evento (ej: ALARMA DE ROBO, APERTURA), o nombre del cliente.
+                      Puede buscar por código de cuenta (ej: C701, 0014), palabras clave del evento (ej: ALARMA DE ROBO, APERTURA), o nombre del cliente.
                     </p>
                   </div>
                 ) : (
@@ -421,7 +526,7 @@ export default function BuscadorUniversalModal({
                         <th className="p-2 border-r border-gray-400">FECHA / HORA</th>
                         <th className="p-2 border-r border-gray-400">CTA</th>
                         <th className="p-2 border-r border-gray-400">ABONADO / DIRECCIÓN</th>
-                        <th className="p-2 border-r border-gray-400">EVENTO</th>
+                        <th className="p-2 border-r border-gray-400">EVENTO / RESULTADO</th>
                         <th className="p-2 border-r border-gray-400 text-center">ZN</th>
                         <th className="p-2 border-r border-gray-400 text-center">US</th>
                         <th className="p-2 text-center">ACCIONES RÁPIDAS</th>
@@ -429,9 +534,8 @@ export default function BuscadorUniversalModal({
                     </thead>
                     <tbody className="divide-y divide-gray-200">
                       {resultadosEventos.map((ev, idx) => {
-                        const infoCli = clientesMap[ev.cuenta] || {}
-                        const telContacto = infoCli.t1 || infoCli.telefono1 || ''
-                        const tieneCamaras = infoCli.camaras || infoCli.cctv
+                        const infoCli = clientesMap[ev.cuenta] || clientesMap[ev.cuenta.replace(/^C/, '')] || {}
+                        const telContacto = infoCli.t1 || infoCli.telefono1 || infoCli.telefono || ''
                         return (
                           <tr key={idx} className="hover:bg-blue-50 font-mono transition-colors">
                             <td className="p-2 whitespace-nowrap font-bold text-slate-800">
@@ -462,7 +566,7 @@ export default function BuscadorUniversalModal({
                                 {onVerExpediente && (
                                   <button
                                     onClick={() => onVerExpediente(ev.cuenta)}
-                                    className="px-2 py-0.5 bg-[#d4d0c8] border border-t-white border-l-white border-b-gray-700 border-r-gray-700 text-[10px] font-bold hover:bg-white active:translate-y-0.5"
+                                    className="px-2 py-0.5 bg-[#d4d0c8] border border-t-white border-l-white border-b-gray-700 border-r-gray-700 text-[10px] font-bold hover:bg-white active:translate-y-0.5 cursor-pointer"
                                     title="Abrir Expediente"
                                   >
                                     📋 Ficha
@@ -471,7 +575,7 @@ export default function BuscadorUniversalModal({
                                 {onVerZonificacion && (
                                   <button
                                     onClick={() => onVerZonificacion(ev.cuenta)}
-                                    className="px-2 py-0.5 bg-[#d4d0c8] border border-t-white border-l-white border-b-gray-700 border-r-gray-700 text-[10px] font-bold hover:bg-white active:translate-y-0.5"
+                                    className="px-2 py-0.5 bg-[#d4d0c8] border border-t-white border-l-white border-b-gray-700 border-r-gray-700 text-[10px] font-bold hover:bg-white active:translate-y-0.5 cursor-pointer"
                                     title="Ver Zonas"
                                   >
                                     🌿 Zonas
@@ -480,7 +584,7 @@ export default function BuscadorUniversalModal({
                                 {onVerCamaras && (
                                   <button
                                     onClick={() => onVerCamaras(ev.cuenta)}
-                                    className="px-2 py-0.5 bg-blue-900 text-white border border-t-blue-400 border-l-blue-400 border-b-black border-r-black text-[10px] font-bold hover:bg-blue-800 active:translate-y-0.5"
+                                    className="px-2 py-0.5 bg-blue-900 text-white border border-t-blue-400 border-l-blue-400 border-b-black border-r-black text-[10px] font-bold hover:bg-blue-800 active:translate-y-0.5 cursor-pointer"
                                     title="Ver Cámaras"
                                   >
                                     🎥 CCTV
@@ -489,7 +593,7 @@ export default function BuscadorUniversalModal({
                                 {onEnviarWhatsApp && telContacto && (
                                   <button
                                     onClick={() => onEnviarWhatsApp(telContacto, ev.cuenta)}
-                                    className="px-2 py-0.5 bg-emerald-700 text-white border border-t-emerald-400 border-l-emerald-400 border-b-black border-r-black text-[10px] font-bold hover:bg-emerald-600 active:translate-y-0.5"
+                                    className="px-2 py-0.5 bg-emerald-700 text-white border border-t-emerald-400 border-l-emerald-400 border-b-black border-r-black text-[10px] font-bold hover:bg-emerald-600 active:translate-y-0.5 cursor-pointer"
                                     title="Enviar WhatsApp"
                                   >
                                     💬 WA
@@ -606,7 +710,7 @@ export default function BuscadorUniversalModal({
                           <td className="p-2 text-center text-gray-500">{idx + 1}</td>
                           <td className="p-2 whitespace-nowrap font-bold text-gray-800">{ev.fecha_hora}</td>
                           <td className="p-2 text-center font-black text-blue-900 bg-blue-50">{ev.cuenta}</td>
-                          <td className="p-2 font-sans font-bold text-gray-900">{ev.nombre_abonado || '---'}</td>
+                          <td className="p-2 font-sans font-bold text-gray-900">{ev.nombre_abonado || clientesMap[ev.cuenta]?.nombre || '---'}</td>
                           <td className="p-2 font-sans font-bold text-slate-900">{ev.evento}</td>
                           <td className="p-2 text-center font-bold text-amber-800">{ev.zona || '--'}</td>
                           <td className="p-2 text-center font-bold text-emerald-800">{ev.usuario || '--'}</td>
