@@ -212,7 +212,7 @@ export default function FooterActions({
         - Centro: Botonera de herramientas retro 16-bits
         - Derecha: Reloj digital e información de fecha/hora en vivo
       */}
-      <footer className="min-h-[50px] max-h-[54px] h-[52px] shrink-0 bg-[#d4d0c8] border-t-2 border-white px-3 pb-1.5 pt-0.5 flex items-center justify-between select-none z-40 sticky bottom-0 left-0 right-0 w-full shadow-md">
+      <footer className="min-h-[64px] max-h-[68px] h-[66px] shrink-0 bg-[#d4d0c8] border-t-2 border-white px-3 pb-4 pt-1 flex items-center justify-between select-none z-40 sticky bottom-0 left-0 right-0 w-full shadow-md">
         
         {/* LADO IZQUIERDO (ESCRITORIO): Estado e Identificación del Operador (Bisel Hundido Retro) */}
         <div className="hidden lg:flex items-center gap-2 shrink-0">
