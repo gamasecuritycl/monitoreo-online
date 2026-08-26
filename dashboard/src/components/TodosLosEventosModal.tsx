@@ -195,26 +195,39 @@ export default function TodosLosEventosModal({ onClose }: Props) {
     setEventos([])
 
     try {
-      // 1. Traer un bloque amplio de hasta 3000 eventos recientes o filtrados por ventana de 36 horas
+      // 1. Definir rango de 36 horas en UTC para cubrir exactamente todo el día en Chile (00:00:00 a 23:59:59)
       const targetUtcStart = `${fecha}T00:00:00Z`
       const targetDateObj = new Date(targetUtcStart)
       const rangeStart = new Date(targetDateObj.getTime() - 6 * 3600 * 1000).toISOString()
       const rangeEnd = new Date(targetDateObj.getTime() + 30 * 3600 * 1000).toISOString()
 
+      // Filtrar directamente en Supabase para excluir cámaras/frames y ordenar de menor a mayor (00:00:00 en adelante)
       let { data, error } = await supabase
         .from('eventos_monitoreo')
         .select('*')
+        .not('cuenta', 'in', '(CLIENTES,CODIGOS,ZONAS,__SINCRONIZADOR__,CONFIG_OPERADORES,CLIENTES_MAESTROS_CRM,EMPRESAS_CONGLOMERADO,COTIZACIONES_DOLIBARR,ORDENES_TRABAJO,HORARIOS,ENTREGAS_TURNO,CAMARAS,CONFIGURACION,CONFIGURACIONES,NOVEDADES)')
+        .not('cuenta', 'like', 'CAMARAS_DAHUA_%')
+        .not('cuenta', 'like', 'DAHUA_%')
+        .not('cuenta', 'like', 'SNAPSHOT_%')
+        .not('cuenta', 'like', 'CONFIG_%')
+        .not('cuenta', 'like', '__%')
         .gte('fecha_hora', rangeStart)
         .lte('fecha_hora', rangeEnd)
-        .order('id', { ascending: false })
-        .limit(3000)
+        .order('id', { ascending: true }) // <--- ASCENDENTE DESDE 00:00:00
+        .limit(10000)
 
       if ((!data || data.length === 0) && !error) {
         const { data: fallbackData } = await supabase
           .from('eventos_monitoreo')
           .select('*')
-          .order('id', { ascending: false })
-          .limit(3000)
+          .not('cuenta', 'in', '(CLIENTES,CODIGOS,ZONAS,__SINCRONIZADOR__,CONFIG_OPERADORES,ORDENES_TRABAJO,HORARIOS,ENTREGAS_TURNO,CAMARAS,NOVEDADES)')
+          .not('cuenta', 'like', 'CAMARAS_DAHUA_%')
+          .not('cuenta', 'like', 'DAHUA_%')
+          .not('cuenta', 'like', 'SNAPSHOT_%')
+          .not('cuenta', 'like', 'CONFIG_%')
+          .not('cuenta', 'like', '__%')
+          .order('id', { ascending: true })
+          .limit(5000)
         data = fallbackData || []
       }
 
