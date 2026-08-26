@@ -212,11 +212,11 @@ export default function FooterActions({
         - Centro: Botonera de herramientas retro 16-bits
         - Derecha: Reloj digital e información de fecha/hora en vivo
       */}
-      <footer className="min-h-[42px] max-h-[46px] shrink-0 bg-[#d4d0c8] border-t-2 border-white px-3 flex items-center justify-between select-none z-30 relative w-full shadow-md">
+      <footer className="min-h-[40px] max-h-[44px] h-[42px] shrink-0 bg-[#d4d0c8] border-t-2 border-white px-3 flex items-center justify-between select-none z-40 sticky bottom-0 left-0 right-0 w-full shadow-md">
         
         {/* LADO IZQUIERDO (ESCRITORIO): Estado e Identificación del Operador (Bisel Hundido Retro) */}
         <div className="hidden lg:flex items-center gap-2 shrink-0">
-          <div className="bg-[#b0b0b0] border-2 border-t-gray-700 border-l-gray-700 border-b-white border-r-white px-2.5 py-1 text-[11px] font-mono text-gray-900 font-bold flex items-center gap-1.5">
+          <div className="bg-[#b0b0b0] border-2 border-t-gray-700 border-l-gray-700 border-b-white border-r-white px-2.5 py-0.5 text-[11px] font-mono text-gray-900 font-bold flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse" />
             <span>OPERADOR: {operadorNombre ? operadorNombre.toUpperCase() : 'CENTRAL'} {operadorRol ? `(${operadorRol.toUpperCase()})` : ''}</span>
           </div>
@@ -228,7 +228,7 @@ export default function FooterActions({
           <button
             onClick={() => onModalOpen('bitacora')}
             title="Bitácora de Eventos"
-            className="h-10 bg-[#d4d0c8] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 flex items-center justify-center cursor-pointer select-none hover:bg-gray-200 active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white shadow-sm px-2.5"
+            className="h-[34px] bg-[#d4d0c8] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 flex items-center justify-center cursor-pointer select-none hover:bg-gray-200 active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white shadow-sm px-2.5"
           >
             <span className="text-[12px] font-bold text-[#000080] tracking-wider whitespace-nowrap">BITÁCORA</span>
           </button>
@@ -236,7 +236,7 @@ export default function FooterActions({
           <button
             onClick={() => onModalOpen('entrega-turno')}
             title="Ingresar Novedades de Entrega de Turno"
-            className="h-10 bg-[#d4d0c8] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 flex items-center justify-center cursor-pointer select-none hover:bg-gray-200 active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white shadow-sm px-2.5"
+            className="h-[34px] bg-[#d4d0c8] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 flex items-center justify-center cursor-pointer select-none hover:bg-gray-200 active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white shadow-sm px-2.5"
           >
             <span className="text-[11px] font-bold text-amber-900 tracking-wider whitespace-nowrap">📝 ENTREGA TURNO</span>
           </button>
@@ -244,7 +244,7 @@ export default function FooterActions({
           <button
             onClick={() => onModalOpen('aperturas-cierres')}
             title="Control de Aperturas y Cierres por Partición (Semáforo)"
-            className="h-10 bg-[#d4d0c8] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 flex items-center justify-center cursor-pointer select-none hover:bg-gray-200 active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white shadow-sm px-2.5"
+            className="h-[34px] bg-[#d4d0c8] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 flex items-center justify-center cursor-pointer select-none hover:bg-gray-200 active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white shadow-sm px-2.5"
           >
             <span className="text-[11px] font-bold text-emerald-800 tracking-wider whitespace-nowrap flex items-center gap-1">
               🔑 APERTURAS / CIERRES
@@ -256,9 +256,9 @@ export default function FooterActions({
               key={btn.id}
               onClick={() => onModalOpen(btn.id)}
               title={btn.title}
-              className="relative w-10 h-10 bg-[#d4d0c8] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 flex items-center justify-center cursor-pointer select-none hover:bg-gray-200 active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white shadow-sm shrink-0"
+              className="relative w-9 h-[34px] bg-[#d4d0c8] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 flex items-center justify-center cursor-pointer select-none hover:bg-gray-200 active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white shadow-sm shrink-0"
             >
-              <div className="w-6 h-6 flex items-center justify-center">
+              <div className="w-5 h-5 flex items-center justify-center">
                 {btn.renderSVG()}
               </div>
 

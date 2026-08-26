@@ -34,6 +34,8 @@ interface Props {
   onClose: () => void
   clientesMap?: Record<string, Record<string, string>>
   usuarioActivo?: Operator
+  initialCuenta?: string
+  initialProblema?: string
 }
 
 const TECNITOS_NORMALIZADOS = ['Juan Perez', 'Diego Reyes', 'Mauricio Tapia', 'Cristian Munoz']
@@ -55,7 +57,7 @@ function coincideTecnico(t1?: string | null, t2?: string | null) {
   return false
 }
 
-export default function ServicioTecnicoModal({ onClose, clientesMap = {}, usuarioActivo }: Props) {
+export default function ServicioTecnicoModal({ onClose, clientesMap = {}, usuarioActivo, initialCuenta, initialProblema }: Props) {
   const [tabActive, setTabActive] = useState<'despacho' | 'tecnico_movil'>('despacho')
 
   // Bloqueo a vista móvil si inició sesión como Técnico
@@ -72,15 +74,17 @@ export default function ServicioTecnicoModal({ onClose, clientesMap = {}, usuari
   const [cargando, setCargando] = useState(false)
 
   // Formulario creación en Despacho
-  const [buscarCuenta, setBuscarCuenta] = useState('')
-  const [cuentaSeleccionada, setCuentaSeleccionada] = useState('')
+  const [buscarCuenta, setBuscarCuenta] = useState(
+    initialCuenta ? `${initialCuenta}${clientesMap[initialCuenta]?.nombre ? ' - ' + clientesMap[initialCuenta].nombre : ''}` : ''
+  )
+  const [cuentaSeleccionada, setCuentaSeleccionada] = useState(initialCuenta || '')
   const [tecnicoAsignado, setTecnicoAsignado] = useState(TECNICOS[0])
   const [tipoVisita, setTipoVisita] = useState<typeof TIPOS_VISITA[number]>('Correctiva')
   const [fechaCita, setFechaCita] = useState(new Date().toISOString().slice(0, 10))
   const [bloqueHorario, setBloqueHorario] = useState<typeof BLOQUES_HORARIOS[number]>('Mañana (09:00 - 13:00)')
   const [telefonoContacto, setTelefonoContacto] = useState('')
   const [direccionAbonado, setDireccionAbonado] = useState('')
-  const [problemaReportado, setProblemaReportado] = useState('')
+  const [problemaReportado, setProblemaReportado] = useState(initialProblema || '')
 
   // Técnico Móvil (Terreno)
   const [tecnicoSimulado, setTecnicoSimulado] = useState(TECNICOS[0])

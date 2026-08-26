@@ -13,7 +13,7 @@ export interface DiagnosticoMantenimiento {
   direccion: string
   comuna: string
   telefono: string
-  tipoFalla: 'bateria_post_corte' | 'bateria_panel' | 'bateria_sensor' | 'corte_ac_prolongado' | 'test_perdido'
+  tipoFalla: 'bateria_post_corte' | 'bateria_panel' | 'bateria_sensor' | 'corte_ac_prolongado' | 'test_perdido' | 'zona_inestable_recurrente'
   severidad: 'critico' | 'alto' | 'medio'
   titulo: string
   descripcion: string
@@ -196,6 +196,46 @@ export default function PredictorMantenimientoModal({
           duracionEstimadaBateria: '~1 a 2 semanas antes de desconexión'
         })
       }
+
+      // CASO 5: ⚠️ ZONA INESTABLE POR RECURRENCIA MULTI-DÍA (2+ DÍAS/NOCHES DISTINTOS)
+      if (!map.has(cta)) {
+        const eventosPorZona: Record<string, { fechasSet: Set<string>; ultFecha: string }> = {}
+        evs.forEach(e => {
+          if (!e.zona || e.zona === 'None' || e.zona === '00' || e.zona === 'S/T') return
+          const evName = (e.evento || '').toUpperCase()
+          if (evName.includes('AUTOTEST') || evName.includes('CIERRE') || evName.includes('APERTURA') || evName.includes('CONFIGURACION')) return
+
+          const znKey = e.zona.trim()
+          const fechaDia = (e.fecha_hora || '').slice(0, 10)
+          if (!eventosPorZona[znKey]) {
+            eventosPorZona[znKey] = { fechasSet: new Set(), ultFecha: e.fecha_hora || '' }
+          }
+          if (fechaDia) {
+            eventosPorZona[znKey].fechasSet.add(fechaDia)
+          }
+        })
+
+        Object.entries(eventosPorZona).forEach(([znKey, data]) => {
+          if (data.fechasSet.size >= 2 && !map.has(cta)) {
+            const fechasArr = Array.from(data.fechasSet).sort()
+            map.set(cta, {
+              cuenta: cta,
+              nombre: nombreAbonado,
+              direccion,
+              comuna,
+              telefono,
+              tipoFalla: 'zona_inestable_recurrente',
+              severidad: 'alto',
+              titulo: `⚠️ Zona ${znKey} Inestable por Recurrencia Multi-Día (${data.fechasSet.size} Noches/Días)`,
+              descripcion: `La Zona ${znKey} registró disparos en ${data.fechasSet.size} fechas distintas (${fechasArr.join(', ')}). Al ocurrir en 2+ días distintos, descarta un robo puntual en curso y confirma falla o inestabilidad del detector.`,
+              accionSugerida: `Generar Orden de Trabajo para revisar/limpiar el detector de Zona ${znKey} o sustituir el sensor.`,
+              zonaAfectada: `Zona ${znKey}`,
+              fechaUltimoEvento: data.ultFecha,
+              duracionEstimadaBateria: 'Requiere mantención correctiva'
+            })
+          }
+        })
+      }
     })
 
     // Si hay pocas o ninguna cuenta en el buffer real, inyectar diagnósticos demostrativos basados en clientes reales
@@ -286,6 +326,9 @@ export default function PredictorMantenimientoModal({
     if (d.tipoFalla === 'bateria_sensor') {
       return `Estimado cliente de Gama Seguridad (#${d.cuenta}): Nuestro sistema detectó batería baja en su sensor inalámbrico (${d.zonaAfectada || 'Sensor'}). Le sugerimos coordinar el cambio de pila para evitar falsas alarmas o pérdida de cobertura. Contáctenos para coordinar.`
     }
+    if (d.tipoFalla === 'zona_inestable_recurrente') {
+      return `Estimado cliente de Gama Seguridad (#${d.cuenta} - ${d.nombre}): Nuestro sistema de monitoreo 24/7 registra activaciones recurrentes en su ${d.zonaAfectada || 'zona'} en 2 o más fechas distintas. Le recomendamos coordinar una inspección técnica para revisar o ajustar el sensor. Responda a este mensaje para agendar.`
+    }
     return `Estimado cliente (#${d.cuenta}), informamos que registramos una alerta técnica en su sistema de alarma. Le sugerimos revisar la energía de su propiedad o contactar a nuestra central de monitoreo.`
   }
 
@@ -305,7 +348,7 @@ export default function PredictorMantenimientoModal({
   // Ejecutar Acción: Crear OT
   const handleCrearOT = (d: DiagnosticoMantenimiento) => {
     const problema = `${d.titulo}: ${d.descripcion}. Acción recomendada: ${d.accionSugerida}`
-    const tipo = d.tipoFalla === 'bateria_sensor' ? 'Preventiva' : 'Cambio de Batería'
+    const tipo = d.tipoFalla === 'bateria_sensor' ? 'Preventiva' : d.tipoFalla === 'zona_inestable_recurrente' ? 'Correctiva' : 'Cambio de Batería'
     if (onCrearOrdenTecnica) {
       onCrearOrdenTecnica(d.cuenta, tipo, problema)
     }

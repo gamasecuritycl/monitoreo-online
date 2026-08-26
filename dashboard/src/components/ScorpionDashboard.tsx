@@ -124,6 +124,7 @@ export default function ScorpionDashboard() {
   const [mostrarMenuNotificaciones, setMostrarMenuNotificaciones] = useState(false)
   const [mostrarMenuReportes, setMostrarMenuReportes] = useState(false)
   const [whatsappTelefonoInicial, setWhatsappTelefonoInicial] = useState<string | undefined>(undefined)
+  const [servicioTecnicoInitialData, setServicioTecnicoInitialData] = useState<{ cuenta?: string; problema?: string } | null>(null)
   
   // Mapa de clientes cargado en tiempo real
   const [clientesMap, setClientesMap] = useState<Record<string, Record<string, string>>>({})
@@ -1052,7 +1053,7 @@ export default function ScorpionDashboard() {
   }
 
   return (
-    <div className="h-screen max-h-screen w-full flex flex-col bg-[#070b13] text-slate-100 overflow-hidden select-none relative" style={{ fontFamily: "'Consolas', 'Courier New', monospace" }}>
+    <div className="h-screen h-[100dvh] max-h-screen max-h-[100dvh] w-full flex flex-col bg-[#070b13] text-slate-100 overflow-hidden select-none relative" style={{ fontFamily: "'Consolas', 'Courier New', monospace" }}>
 
       {/* Top Bar Navy Bevel Style */}
       <header className="flex flex-col sm:flex-row items-center justify-between px-4 py-1.5 bg-[#0f172a] border-b border-[#1e293b] shrink-0 shadow-md gap-2 sm:gap-0 z-10">
@@ -1649,9 +1650,11 @@ export default function ScorpionDashboard() {
       {/* Servicio Técnico Modal */}
       {modalActivo === 'servicio-tecnico' && (
         <ServicioTecnicoModal 
-          onClose={() => setModalActivo(null)} 
+          onClose={() => { setModalActivo(null); setServicioTecnicoInitialData(null); }} 
           clientesMap={clientesMap}
           usuarioActivo={usuarioActivo}
+          initialCuenta={servicioTecnicoInitialData?.cuenta}
+          initialProblema={servicioTecnicoInitialData?.problema}
         />
       )}
 
@@ -1700,6 +1703,7 @@ export default function ScorpionDashboard() {
           eventos={eventos}
           clientesMap={clientesMap}
           onCrearOrdenTecnica={(cuenta, tipo, problema) => {
+            setServicioTecnicoInitialData({ cuenta, problema })
             setModalActivo('servicio-tecnico')
           }}
           onEnviarWhatsApp={(telefono, mensaje) => {
