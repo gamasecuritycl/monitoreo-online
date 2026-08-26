@@ -440,6 +440,89 @@ export default function OperacionCRM() {
   const [progresoEnvioText, setProgresoEnvioText] = useState('')
   const [toastNotificacion, setToastNotificacion] = useState<{ tipo: 'exito' | 'error', texto: string } | null>(null)
 
+  // ── ESTADOS DE BITÁCORA ACUMULATIVA DE COBRANZA Y EDICIÓN DE CORREOS DE CLIENTE ──
+  const [facturaSeleccionadaCobranza, setFacturaSeleccionadaCobranza] = useState<FacturaIndividual | null>(null)
+  const [bitacoraCobranzaFacturas, setBitacoraCobranzaFacturas] = useState<Record<string, Array<{ id: string; fecha: string; autor: string; tipo: string; nota: string }>>>({
+    'FAC-1001': [
+      { id: 'n1', fecha: '25-08-2026 11:20:00', autor: 'Tomás Toro (Admin)', tipo: 'Llamada', nota: 'Se llamó al cliente. Indica que autorizará la transferencia el viernes 28.' },
+      { id: 'n2', fecha: '20-08-2026 09:15:00', autor: 'Central Operativa', tipo: 'WhatsApp', nota: 'Aviso de vencimiento de factura enviado por WhatsApp.' }
+    ]
+  })
+  const [nuevaNotaTexto, setNuevaNotaTexto] = useState('')
+  const [nuevaNotaTipo, setNuevaNotaTipo] = useState<'Llamada' | 'WhatsApp' | 'Correo' | 'Promesa de Pago' | 'Abono' | 'Nota'>('Llamada')
+  const [clienteEditingEmail, setClienteEditingEmail] = useState<{ rut: string; razon_social: string; email_cobranza: string; email_contacto: string; telefono: string } | null>(null)
+
+  const handleAgregarNotaCobranza = async (factura: FacturaIndividual) => {
+    if (!nuevaNotaTexto.trim()) return
+    const key = factura.id
+    const nueva = {
+      id: 'N-' + Date.now(),
+      fecha: new Date().toLocaleString('es-CL'),
+      autor: 'Operador Central',
+      tipo: nuevaNotaTipo,
+      nota: nuevaNotaTexto.trim()
+    }
+
+    setBitacoraCobranzaFacturas(prev => ({
+      ...prev,
+      [key]: [nueva, ...(prev[key] || [])]
+    }))
+
+    try {
+      await supabase.from('eventos_monitoreo').insert({
+        cuenta: factura.cuenta_asociada || factura.numero_factura || 'COBRANZA',
+        nombre_abonado: factura.razon_social || 'CLIENTE',
+        evento: `COBRANZA_NOTA_${nuevaNotaTipo.toUpperCase()}`,
+        zona: 'Operador Central',
+        usuario: nuevaNotaTexto.trim(),
+        fecha_hora: new Date().toLocaleString('es-CL')
+      })
+    } catch (e) {
+      console.error('Error guardando nota de cobranza:', e)
+    }
+
+    setNuevaNotaTexto('')
+  }
+
+  const handleGuardarEmailCliente = async () => {
+    if (!clienteEditingEmail) return
+    const { rut, email_cobranza, email_contacto, telefono } = clienteEditingEmail
+
+    setClientesMaestros(prev => {
+      const copy = { ...prev }
+      if (copy[rut]) {
+        copy[rut] = {
+          ...copy[rut],
+          email_cobranza,
+          telefono
+        }
+      }
+      return copy
+    })
+
+    try {
+      await supabase.from('eventos_monitoreo').insert({
+        cuenta: 'CLIENTE_MAESTRO',
+        nombre_abonado: JSON.stringify({ rut, email_cobranza, email_contacto, telefono }),
+        evento: 'ACTUALIZACION_CORREO_CLIENTE',
+        fecha_hora: new Date().toISOString()
+      })
+      alert(`✅ Correos de cobranza guardados permanentemente para ${clienteEditingEmail.razon_social}.`)
+    } catch (e) {
+      alert(`⚠️ Guardado en memoria local`)
+    }
+
+    setClienteEditingEmail(null)
+  }
+
+  const handleAbrirPortalCliente = (cuenta?: string) => {
+    const cta = (cuenta || 'C701').toUpperCase().trim()
+    try {
+      localStorage.setItem('gama_portal_cuenta', cta)
+    } catch {}
+    window.open(`/portal?cuenta=${encodeURIComponent(cta)}`, '_blank')
+  }
+
   // Órdenes de Trabajo & Facturas & Cotizaciones
   const [ordenesTrabajo, setOrdenesTrabajo] = useState<OrdenDeTrabajo[]>([
     { id: 'OT-1', codigo_ot: 'OT-2026-081', cuenta: '0999', cliente_nombre: 'GAMA SEGURIDAD SPA DEMO', tipo_servicio: 'Mantención Perimetral Alarma', tecnico_asignado: 'Técnico Juan Pérez', fecha_programada: '2026-07-22', prioridad_sla: 'Crítica (2h)', estado: 'En Proceso', observaciones: 'Revisión urgente de sensor infrarrojo' },
@@ -3553,18 +3636,57 @@ export default function OperacionCRM() {
                               {f.estado.toUpperCase()}
                             </span>
                           </td>
-                          <td className="p-3.5 text-center flex items-center justify-center">
-                            <button
-                              onClick={() => {
-                                setFacturaAbonando(f)
-                                setMontoAbonoInput((f.saldo_pendiente || 0).toString())
-                                setMostrarModalAbono(true)
-                              }}
-                              className="px-3 py-1.5 bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white rounded-lg text-xs font-bold cursor-pointer transition-all shadow-xs flex items-center gap-1.5 active:scale-95"
-                            >
-                              <DollarSign className="h-3.5 w-3.5" />
-                              <span>Registrar Abono</span>
-                            </button>
+                          <td className="p-3.5 text-center">
+                            <div className="flex items-center justify-center gap-1.5 flex-wrap">
+                              <button
+                                onClick={() => {
+                                  setFacturaAbonando(f)
+                                  setMontoAbonoInput((f.saldo_pendiente || 0).toString())
+                                  setMostrarModalAbono(true)
+                                }}
+                                title="Registrar Abono / Pago"
+                                className="px-2.5 py-1.5 bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white rounded-lg text-xs font-bold cursor-pointer transition-all shadow-xs flex items-center gap-1 active:scale-95"
+                              >
+                                <DollarSign className="h-3.5 w-3.5" />
+                                <span>Abono</span>
+                              </button>
+                              
+                              <button
+                                onClick={() => setFacturaSeleccionadaCobranza(f)}
+                                title="Bitácora Acumulativa de Gestión de Cobranza"
+                                className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-xs font-bold cursor-pointer transition-all shadow-xs flex items-center gap-1 active:scale-95"
+                              >
+                                <ClipboardList className="h-3.5 w-3.5 text-amber-400" />
+                                <span>Bitácora</span>
+                              </button>
+
+                              <button
+                                onClick={() => {
+                                  const cli = clientesMaestros[f.rut_cliente] || { rut: f.rut_cliente, razon_social: f.razon_social, email_cobranza: '', email_contacto: '', telefono: '' }
+                                  setClienteEditingEmail({
+                                    rut: f.rut_cliente,
+                                    razon_social: f.razon_social,
+                                    email_cobranza: cli.email_cobranza || '',
+                                    email_contacto: (cli as any).email_contacto || '',
+                                    telefono: cli.telefono || ''
+                                  })
+                                }}
+                                title="Editar Correo de Cobranza (Guardar para la posteridad)"
+                                className="px-2 py-1.5 bg-emerald-700 hover:bg-emerald-600 text-white rounded-lg text-xs font-bold cursor-pointer transition-all shadow-xs flex items-center gap-1 active:scale-95"
+                              >
+                                <Mail className="h-3.5 w-3.5" />
+                                <span>Correo</span>
+                              </button>
+
+                              <button
+                                onClick={() => handleAbrirPortalCliente(f.cuenta_asociada || 'C701')}
+                                title="Abrir Portal de Cliente Gama (/portal)"
+                                className="px-2 py-1.5 bg-purple-700 hover:bg-purple-600 text-white rounded-lg text-xs font-bold cursor-pointer transition-all shadow-xs flex items-center gap-1 active:scale-95"
+                              >
+                                <ExternalLink className="h-3.5 w-3.5" />
+                                <span>Portal</span>
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       )
@@ -6051,6 +6173,179 @@ export default function OperacionCRM() {
         clientesMaestros={clientesMaestros}
         abonadosCentrosCosto={abonadosCentrosCosto}
       />
+
+      {/* ── MODAL BITÁCORA ACUMULATIVA DE COBRANZA ── */}
+      {facturaSeleccionadaCobranza && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm p-4 md:p-6 flex justify-center items-center overflow-y-auto no-imprimir font-sans">
+          <div className="bg-[#E0E5EC] border border-slate-300 w-full max-w-2xl rounded-2xl shadow-[12px_12px_24px_#bec8d2,-12px_-12px_24px_#ffffff] p-6 md:p-8 flex flex-col gap-5 text-xs text-slate-900 my-auto">
+            
+            <div className="flex justify-between items-start pb-3 border-b border-slate-300">
+              <div>
+                <h3 className="font-black text-base text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                  <ClipboardList className="h-5 w-5 text-[#005bea]" />
+                  <span>Bitácora de Gestión de Cobranza ({facturaSeleccionadaCobranza.numero_factura})</span>
+                </h3>
+                <p className="text-xs text-slate-600 font-bold">
+                  Cliente: <span className="text-slate-900">{facturaSeleccionadaCobranza.razon_social}</span> | RUT: {facturaSeleccionadaCobranza.rut_cliente}
+                </p>
+                <div className="flex items-center gap-3 text-[11px] font-mono mt-1 font-bold">
+                  <span className="text-slate-700">Monto: ${facturaSeleccionadaCobranza.monto_total.toLocaleString('es-CL')}</span>
+                  <span className="text-red-700">Saldo Pendiente: ${(facturaSeleccionadaCobranza.saldo_pendiente || 0).toLocaleString('es-CL')}</span>
+                </div>
+              </div>
+              <button
+                onClick={() => setFacturaSeleccionadaCobranza(null)}
+                className="text-slate-400 hover:text-slate-700 font-bold text-lg cursor-pointer p-1"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* FORMULARIO AGREGAR NUEVA NOTA */}
+            <div className="bg-[#E0E5EC] p-4 rounded-xl shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] space-y-3">
+              <span className="font-black text-xs text-slate-900 uppercase tracking-wider block">
+                + AGREGAR NUEVA GESTIÓN DE COBRO:
+              </span>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <select
+                  value={nuevaNotaTipo}
+                  onChange={(e: any) => setNuevaNotaTipo(e.target.value)}
+                  className="bg-[#E0E5EC] shadow-[2px_2px_4px_#bec8d2,-2px_-2px_4px_#ffffff] px-3 py-2 rounded-lg font-bold text-xs text-slate-900"
+                >
+                  <option value="Llamada">📞 Llamada Telefónica</option>
+                  <option value="WhatsApp">💬 WhatsApp Enviado</option>
+                  <option value="Correo">✉️ Correo Electrónico</option>
+                  <option value="Promesa de Pago">🤝 Promesa de Pago</option>
+                  <option value="Abono">💰 Abono / Pago Parcial</option>
+                  <option value="Nota">📝 Observación General</option>
+                </select>
+                <input
+                  type="text"
+                  value={nuevaNotaTexto}
+                  onChange={(e) => setNuevaNotaTexto(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleAgregarNotaCobranza(facturaSeleccionadaCobranza) }}
+                  placeholder="Detalle de la gestión (ej: Cliente promete transferir el viernes 28/08...)"
+                  className="flex-1 bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs font-bold text-slate-900 focus:outline-none"
+                />
+                <button
+                  onClick={() => handleAgregarNotaCobranza(facturaSeleccionadaCobranza)}
+                  className="px-4 py-2 bg-[#005bea] text-white font-bold rounded-lg text-xs shadow-md hover:bg-blue-600 cursor-pointer whitespace-nowrap active:scale-95"
+                >
+                  Guardar Nota
+                </button>
+              </div>
+            </div>
+
+            {/* TIMELINE HISTÓRICO DE NOTAS DE COBRANZA */}
+            <div className="space-y-2">
+              <span className="font-black text-xs text-slate-900 uppercase tracking-wider block">
+                HISTORIAL DE GESTIONES ACUMULADAS ({ (bitacoraCobranzaFacturas[facturaSeleccionadaCobranza.id] || []).length } Registros):
+              </span>
+              <div className="max-h-64 overflow-y-auto space-y-2 bg-[#E0E5EC] shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] p-3 rounded-xl">
+                {(!bitacoraCobranzaFacturas[facturaSeleccionadaCobranza.id] || bitacoraCobranzaFacturas[facturaSeleccionadaCobranza.id].length === 0) ? (
+                  <div className="p-4 text-center text-slate-500 font-bold text-xs italic">
+                    Sin gestiones de cobranza registradas aún. Ingrese una arriba.
+                  </div>
+                ) : (
+                  bitacoraCobranzaFacturas[facturaSeleccionadaCobranza.id].map((item) => (
+                    <div key={item.id} className="bg-white p-3 rounded-xl border border-slate-300 shadow-xs space-y-1">
+                      <div className="flex justify-between items-center text-[10px]">
+                        <span className="font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-900 uppercase">
+                          {item.tipo}
+                        </span>
+                        <span className="font-mono text-slate-500">{item.fecha} — {item.autor}</span>
+                      </div>
+                      <p className="text-xs text-slate-900 font-semibold">{item.nota}</p>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            <div className="pt-3 flex justify-end border-t border-slate-300">
+              <button
+                onClick={() => setFacturaSeleccionadaCobranza(null)}
+                className="px-5 py-2.5 bg-[#E0E5EC] shadow-[4px_4px_8px_#bec8d2,-4px_-4px_8px_#ffffff] text-slate-800 font-bold rounded-xl text-xs cursor-pointer"
+              >
+                Cerrar
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL EDICIÓN DE CORREO DEL CLIENTE PARA LA POSTERIDAD ── */}
+      {clienteEditingEmail && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm p-4 md:p-6 flex justify-center items-center overflow-y-auto no-imprimir font-sans">
+          <div className="bg-[#E0E5EC] border border-slate-300 w-full max-w-lg rounded-2xl shadow-[12px_12px_24px_#bec8d2,-12px_-12px_24px_#ffffff] p-6 md:p-8 flex flex-col gap-5 text-xs text-slate-900 my-auto">
+            <div className="flex justify-between items-center pb-3 border-b border-slate-300">
+              <div>
+                <h3 className="font-black text-base text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                  <Mail className="h-5 w-5 text-[#005bea]" />
+                  <span>REGISTRO PERMANENTE DE CORREOS & CONTACTO</span>
+                </h3>
+                <p className="text-xs text-slate-600 font-bold">{clienteEditingEmail.razon_social} (RUT: {clienteEditingEmail.rut})</p>
+              </div>
+              <button onClick={() => setClienteEditingEmail(null)} className="text-slate-400 hover:text-slate-700 font-bold text-lg cursor-pointer">✕</button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">CORREO ELECTRÓNICO DE COBRANZA:</label>
+                <input
+                  type="email"
+                  value={clienteEditingEmail.email_cobranza}
+                  onChange={(e) => setClienteEditingEmail({ ...clienteEditingEmail, email_cobranza: e.target.value })}
+                  placeholder="ejemplo: cobranza@empresa.cl"
+                  className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-900 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">CORREO ELECTRÓNICO DE CONTACTO PRINCIPAL:</label>
+                <input
+                  type="email"
+                  value={clienteEditingEmail.email_contacto}
+                  onChange={(e) => setClienteEditingEmail({ ...clienteEditingEmail, email_contacto: e.target.value })}
+                  placeholder="ejemplo: gerencia@empresa.cl"
+                  className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-900 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">TELÉFONO DE CONTACTO:</label>
+                <input
+                  type="text"
+                  value={clienteEditingEmail.telefono}
+                  onChange={(e) => setClienteEditingEmail({ ...clienteEditingEmail, telefono: e.target.value })}
+                  placeholder="ejemplo: +56991234567"
+                  className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-900 focus:outline-none"
+                />
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 p-3 rounded-xl text-[11px] text-blue-900 font-semibold">
+                ℹ️ Estos datos se guardarán de forma permanente en la base de datos central de Gama Seguridad y alimentarán automáticamente el <strong>Portal de Cliente Gama (/portal)</strong>.
+              </div>
+            </div>
+
+            <div className="pt-3 flex justify-end gap-3 border-t border-slate-300">
+              <button
+                onClick={() => setClienteEditingEmail(null)}
+                className="px-5 py-2.5 bg-[#E0E5EC] shadow-[4px_4px_8px_#bec8d2,-4px_-4px_8px_#ffffff] text-slate-800 font-bold rounded-xl text-xs cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleGuardarEmailCliente}
+                className="px-6 py-2.5 bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white font-bold rounded-xl text-xs shadow-md hover:brightness-110 cursor-pointer active:scale-95"
+              >
+                💾 Guardar Correos para la Posteridad
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── SLIDE-OVER DRAWER (INSPECCIÓN DE EXPEDIENTES FLUIDA) ── */}
       <SlideOverDrawer
