@@ -119,6 +119,17 @@ export default function ScorpionDashboard() {
   const [busqueda, setBusqueda] = useState('')
   const [eventoSeleccionado, setEventoSeleccionado] = useState<EventoMonitoreo | null>(null)
   const [modalActivo, setModalActivo] = useState<string | null>(null)
+  const [modalRetorno, setModalRetorno] = useState<string | null>(null)
+
+  const cerrarModalConRetorno = useCallback(() => {
+    if (modalRetorno) {
+      setModalActivo(modalRetorno)
+      setModalRetorno(null)
+    } else {
+      setModalActivo(null)
+    }
+  }, [modalRetorno])
+
   const [camaraGridCuenta, setCamaraGridCuenta] = useState<string | null>(null)
   const [expedientePestana, setExpedientePestana] = useState<'telefonos' | 'horarios' | 'camara'>('telefonos')
   const [horaLocal, setHoraLocal] = useState('')
@@ -1596,18 +1607,22 @@ export default function ScorpionDashboard() {
             const evFake: any = eventos.find(e => e.cuenta === cuenta) || { cuenta, nombre_abonado: clientesMap[cuenta]?.nombre || cuenta }
             setEventoSeleccionado(evFake)
             setExpedientePestana('telefonos')
+            setModalRetorno('search')
             setModalActivo('bar-chart')
           }}
           onVerZonificacion={(cuenta) => {
             const evFake: any = eventos.find(e => e.cuenta === cuenta) || { cuenta, nombre_abonado: clientesMap[cuenta]?.nombre || cuenta }
             setEventoSeleccionado(evFake)
+            setModalRetorno('search')
             setModalActivo('zones-tree')
           }}
           onVerCamaras={(cuenta) => {
+            setModalRetorno('search')
             setCamaraGridCuenta(`CAMARAS_DAHUA_${cuenta.padStart(4, '0')}`)
           }}
           onEnviarWhatsApp={(telefono) => {
             setWhatsappTelefonoInicial(telefono)
+            setModalRetorno('search')
             setModalActivo('notificaciones-whatsapp')
           }}
         />
@@ -1618,7 +1633,7 @@ export default function ScorpionDashboard() {
         <ExpedienteModal
           evento={activeEvent}
           pestanaInicial={expedientePestana}
-          onClose={() => setModalActivo(null)}
+          onClose={cerrarModalConRetorno}
           usuarioRol={usuarioActivo.rol}
         />
       )}
@@ -1627,7 +1642,7 @@ export default function ScorpionDashboard() {
       {modalActivo === 'checklist' && (
         <EventosPorUsuarioModal
           eventoInicial={activeEvent || undefined}
-          onClose={() => setModalActivo(null)}
+          onClose={cerrarModalConRetorno}
         />
       )}
 
@@ -1635,7 +1650,7 @@ export default function ScorpionDashboard() {
       {modalActivo === 'zones-tree' && (
         <ZonificacionModal
           eventoInicial={activeEvent || undefined}
-          onClose={() => setModalActivo(null)}
+          onClose={cerrarModalConRetorno}
           usuarioRol={usuarioActivo.rol}
         />
       )}
@@ -1643,7 +1658,7 @@ export default function ScorpionDashboard() {
       {/* Notificaciones Mail Modal (Controlado desde el menú superior) */}
       {modalActivo === 'notificaciones-mail' && (
         <NotificacionesMailModal
-          onClose={() => setModalActivo(null)}
+          onClose={cerrarModalConRetorno}
           clientesMap={clientesMap}
         />
       )}
@@ -1652,8 +1667,8 @@ export default function ScorpionDashboard() {
       {modalActivo === 'notificaciones-whatsapp' && (
         <NotificacionesWhatsAppModal
           onClose={() => {
-            setModalActivo(null)
             setWhatsappTelefonoInicial(undefined)
+            cerrarModalConRetorno()
           }}
           clientesMap={clientesMap}
           cuentaInicial={activeEvent?.cuenta || undefined}
@@ -1775,7 +1790,10 @@ export default function ScorpionDashboard() {
       {camaraGridCuenta && (
         <CamaraGridModal
           cuenta={camaraGridCuenta}
-          onClose={() => setCamaraGridCuenta(null)}
+          onClose={() => {
+            setCamaraGridCuenta(null)
+            cerrarModalConRetorno()
+          }}
         />
       )}
 
