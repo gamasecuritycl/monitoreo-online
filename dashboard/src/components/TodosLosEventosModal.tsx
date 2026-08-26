@@ -15,12 +15,62 @@ interface Props {
   onClose: () => void
 }
 
-function formatHora(isoString: string) {
+const SYSTEM_ACCOUNTS = new Set([
+  'CLIENTES',
+  'CODIGOS',
+  'ZONAS',
+  '__SINCRONIZADOR__',
+  'CAMARAS',
+  'CONFIG_OPERADORES',
+  'HORARIOS',
+  'ORDENES_TRABAJO',
+  'ENTREGAS_TURNO',
+  'CONFIGURACION',
+  'CONFIGURACIONES',
+  'NOVEDADES'
+])
+
+function isSystemAccount(cuentaRaw?: string): boolean {
+  if (!cuentaRaw) return true
+  const c = cuentaRaw.toUpperCase().trim()
+  if (SYSTEM_ACCOUNTS.has(c)) return true
+  if (c.length > 7 || c.startsWith('__')) return true
+  return false
+}
+
+function getChileDateString(isoString: string): string {
   try {
     const d = new Date(isoString)
-    const h = d.getHours().toString().padStart(2, '0')
-    const m = d.getMinutes().toString().padStart(2, '0')
-    const s = d.getSeconds().toString().padStart(2, '0')
+    if (isNaN(d.getTime())) return isoString.slice(0, 10)
+    const parts = new Intl.DateTimeFormat('es-CL', {
+      timeZone: 'America/Santiago',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).formatToParts(d)
+    const dia = parts.find(p => p.type === 'day')?.value
+    const mes = parts.find(p => p.type === 'month')?.value
+    const anio = parts.find(p => p.type === 'year')?.value
+    return `${anio}-${mes}-${dia}`
+  } catch {
+    return isoString.slice(0, 10)
+  }
+}
+
+function formatHora(isoString: string): string {
+  try {
+    const d = new Date(isoString)
+    if (isNaN(d.getTime())) return '00:00:00'
+    const parts = new Intl.DateTimeFormat('es-CL', {
+      timeZone: 'America/Santiago',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    }).formatToParts(d)
+    const h = (parts.find(p => p.type === 'hour')?.value || '00').padStart(2, '0')
+    const m = (parts.find(p => p.type === 'minute')?.value || '00').padStart(2, '0')
+    const s = (parts.find(p => p.type === 'second')?.value || '00').padStart(2, '0')
     return `${h}:${m}:${s}`
   } catch {
     return '00:00:00'
@@ -28,7 +78,7 @@ function formatHora(isoString: string) {
 }
 
 function formatTrama(cuenta: string, eventoText: string, zona: string, usuario: string) {
-  const upperEv = eventoText.toUpperCase()
+  const upperEv = (eventoText || '').toUpperCase()
   // Intentar extraer código de Contact ID (ej. E130, R401)
   const match = upperEv.match(/[ER]\d{3}/)
   let code = match ? match[0] : 'E130'
@@ -43,7 +93,7 @@ function formatTrama(cuenta: string, eventoText: string, zona: string, usuario: 
     else if (upperEv.includes('RESTABLEC') || upperEv.includes('REST') || upperEv.includes('RESTAUR')) code = 'R130'
   }
 
-  const cleanCuenta = cuenta.trim().padStart(4, '0')
+  const cleanCuenta = (cuenta || '').trim().padStart(4, '0')
   const cleanUserOrZone = (usuario && usuario !== 'None' ? usuario : (zona && zona !== 'None' ? zona : '---'))
     .trim()
     .slice(0, 3)
@@ -53,11 +103,11 @@ function formatTrama(cuenta: string, eventoText: string, zona: string, usuario: 
 }
 
 function getRowStyle(eventoTexto: string) {
-  const upper = eventoTexto.toUpperCase()
+  const upper = (eventoTexto || '').toUpperCase()
 
   // 1. Aperturas / Cierres -> Fondo blanco o celeste aleatorio
   if (upper.includes('APERTURA') || upper.includes('CIERRE') || upper.includes('DESARMADO') || upper.includes('ARMADO')) {
-    const hash = eventoTexto.split('').reduce((a, c) => a + c.charCodeAt(0), 0)
+    const hash = (eventoTexto || '').split('').reduce((a, c) => a + c.charCodeAt(0), 0)
     return hash % 2 === 0
       ? { bg: '#FFFFFF', text: '#000000' }
       : { bg: '#E0F0FF', text: '#000000' }
@@ -107,19 +157,33 @@ export default function TodosLosEventosModal({ onClose }: Props) {
     setEventos([])
 
     try {
-      // Filtrar por el día seleccionado desde las 00:00:00 hasta las 23:59:59
+      // Calcular ventana de 2 días alrededor de la fecha elegida para abarcar diferencias de UTC/Chile local
+      const targetDateObj = new Date(`${fecha}T12:00:00`)
+      const prevDateStr = new Date(targetDateObj.getTime() - 24 * 3600 * 1000).toISOString().slice(0, 10)
+      const nextDateStr = new Date(targetDateObj.getTime() + 24 * 3600 * 1000).toISOString().slice(0, 10)
+
       const { data, error } = await supabase
         .from('eventos_monitoreo')
         .select('*')
-        .not('cuenta', 'in', '(CLIENTES,CODIGOS,ZONAS,__SINCRONIZADOR__)')
-        .gte('fecha_hora', `${fecha}T00:00:00`)
-        .lte('fecha_hora', `${fecha}T23:59:59`)
+        .gte('fecha_hora', `${prevDateStr}T00:00:00`)
+        .lte('fecha_hora', `${nextDateStr}T23:59:59`)
         .order('fecha_hora', { ascending: true })
 
       if (error) throw error
+
       if (data && data.length > 0) {
-        setEventos(data)
-        setMensaje(`Eventos encontrados!`)
+        // Filtrar cuentas de sistema y asociar eventos estrictamente pertenecientes al día en hora local Chile
+        const eventosFiltrados = data
+          .filter(e => !isSystemAccount(e.cuenta))
+          .filter(e => getChileDateString(e.fecha_hora) === fecha)
+          .sort((a, b) => new Date(a.fecha_hora).getTime() - new Date(b.fecha_hora).getTime())
+
+        setEventos(eventosFiltrados)
+        if (eventosFiltrados.length > 0) {
+          setMensaje(`¡${eventosFiltrados.length} eventos encontrados para el ${fecha}!`)
+        } else {
+          setMensaje(`No hay eventos registrados para el ${fecha}.`)
+        }
       } else {
         setMensaje('No se encontraron eventos para esta fecha.')
       }
