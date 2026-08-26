@@ -50,69 +50,58 @@ function isRealAccount(cuentaRaw?: string, eventoRaw?: string): boolean {
   return true
 }
 
-interface ParsedChileDate {
-  dateChileStr: string // Formato "YYYY-MM-DD"
-  horaChileStr: string // Formato "HH:mm:ss"
+interface ParsedEventDate {
+  dateIsoStr: string // "YYYY-MM-DD"
+  horaStr: string    // "HH:mm:ss"
   timestamp: number
 }
 
 /**
- * Convierte cualquier marca de tiempo de Supabase (UTC / ISO / Local) a la Hora Local Real de Chile (America/Santiago).
+ * Parsea cualquier marca de tiempo de eventos_monitoreo ("DD-MM-YYYY HH:mm:ss" o "YYYY-MM-DD HH:mm:ss" o ISO)
  */
-function parseAndConvertToChile(rawStr?: string): ParsedChileDate {
-  if (!rawStr) return { dateChileStr: '', horaChileStr: '00:00:00', timestamp: 0 }
-  
-  try {
-    let d: Date
-    const s = rawStr.trim()
+function parseEventDate(rawStr?: string): ParsedEventDate {
+  if (!rawStr) return { dateIsoStr: '', horaStr: '00:00:00', timestamp: 0 }
+  const s = rawStr.trim()
 
-    // 1. Si viene en formato "DD-MM-YYYY HH:mm:ss"
-    const matchDDMM = s.match(/^(\d{2})[-/](\d{2})[-/](\d{4})\s+(\d{2}):(\d{2}):(\d{2})/)
-    if (matchDDMM) {
-      const [, dia, mes, anio, hh, mm, ss] = matchDDMM
-      d = new Date(`${anio}-${mes}-${dia}T${hh}:${mm}:${ss}-04:00`)
-    } else if (s.includes('T') || s.endsWith('Z')) {
-      d = new Date(s)
-    } else {
-      // Reemplazar espacio por T y asumir UTC para marcas de PostgreSQL
-      d = new Date(s.replace(' ', 'T') + 'Z')
-    }
-
-    if (isNaN(d.getTime())) {
-      d = new Date(s)
-    }
-
-    // Formateadores Intl con zona horaria de Chile
-    const formatterDate = new Intl.DateTimeFormat('en-CA', {
-      timeZone: 'America/Santiago',
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit'
-    }) // Produce "YYYY-MM-DD"
-
-    const formatterTime = new Intl.DateTimeFormat('es-CL', {
-      timeZone: 'America/Santiago',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hour12: false
-    })
-
-    const dateChileStr = formatterDate.format(d)
-    const partsTime = formatterTime.formatToParts(d)
-    const hh = (partsTime.find(p => p.type === 'hour')?.value || '00').padStart(2, '0')
-    const mm = (partsTime.find(p => p.type === 'minute')?.value || '00').padStart(2, '0')
-    const ss = (partsTime.find(p => p.type === 'second')?.value || '00').padStart(2, '0')
-    const horaChileStr = `${hh}:${mm}:${ss}`
-
-    return {
-      dateChileStr,
-      horaChileStr,
-      timestamp: d.getTime()
-    }
-  } catch {
-    return { dateChileStr: '', horaChileStr: '00:00:00', timestamp: 0 }
+  // Formato "DD-MM-YYYY HH:mm:ss" (ej: "25-08-2026 20:52:17" o "25/08/2026 20:52:17")
+  const matchDDMM = s.match(/^(\d{2})[-/](\d{2})[-/](\d{4})(?:\s+(\d{2}):(\d{2}):(\d{2}))?/)
+  if (matchDDMM) {
+    const [, dia, mes, anio, hh = '00', mm = '00', ss = '00'] = matchDDMM
+    const dateIsoStr = `${anio}-${mes}-${dia}`
+    const horaStr = `${hh}:${mm}:${ss}`
+    const dObj = new Date(Number(anio), Number(mes) - 1, Number(dia), Number(hh), Number(mm), Number(ss))
+    return { dateIsoStr, horaStr, timestamp: dObj.getTime() }
   }
+
+  // Formato "YYYY-MM-DD HH:mm:ss" o "2026-08-25T20:52:17"
+  const matchYYYYMM = s.match(/^(\d{4})[-/](\d{2})[-/](\d{2})(?:[T\s]+(\d{2}):(\d{2}):(\d{2}))?/)
+  if (matchYYYYMM) {
+    const [, anio, mes, dia, hh = '00', mm = '00', ss = '00'] = matchYYYYMM
+    const dateIsoStr = `${anio}-${mes}-${dia}`
+    const horaStr = `${hh}:${mm}:${ss}`
+    const dObj = new Date(Number(anio), Number(mes) - 1, Number(dia), Number(hh), Number(mm), Number(ss))
+    return { dateIsoStr, horaStr, timestamp: dObj.getTime() }
+  }
+
+  // Fallback con Date object nativo
+  try {
+    const d = new Date(s)
+    if (!isNaN(d.getTime())) {
+      const anio = d.getFullYear()
+      const mes = (d.getMonth() + 1).toString().padStart(2, '0')
+      const dia = d.getDate().toString().padStart(2, '0')
+      const hh = d.getHours().toString().padStart(2, '0')
+      const mm = d.getMinutes().toString().padStart(2, '0')
+      const ss = d.getSeconds().toString().padStart(2, '0')
+      return {
+        dateIsoStr: `${anio}-${mes}-${dia}`,
+        horaStr: `${hh}:${mm}:${ss}`,
+        timestamp: d.getTime()
+      }
+    }
+  } catch {}
+
+  return { dateIsoStr: s.slice(0, 10), horaStr: '00:00:00', timestamp: 0 }
 }
 
 function formatTrama(cuenta: string, eventoText: string, zona: string, usuario: string) {
@@ -195,62 +184,48 @@ export default function TodosLosEventosModal({ onClose }: Props) {
     setEventos([])
 
     try {
-      // 1. Definir rango de 36 horas en UTC para cubrir exactamente todo el día en Chile (00:00:00 a 23:59:59)
-      const targetUtcStart = `${fecha}T00:00:00Z`
-      const targetDateObj = new Date(targetUtcStart)
-      const rangeStart = new Date(targetDateObj.getTime() - 6 * 3600 * 1000).toISOString()
-      const rangeEnd = new Date(targetDateObj.getTime() + 30 * 3600 * 1000).toISOString()
+      const [anio, mes, dia] = fecha.split('-')
+      const dateChileStr = `${dia}-${mes}-${anio}` // "25-08-2026"
+      const dateIsoStr = `${anio}-${mes}-${dia}`   // "2026-08-25"
 
-      // Filtrar directamente en Supabase para excluir cámaras/frames y ordenar de menor a mayor (00:00:00 en adelante)
+      // 1. Consultar directamente a la tabla 'eventos_monitoreo' de Supabase
       let { data, error } = await supabase
         .from('eventos_monitoreo')
         .select('*')
-        .not('cuenta', 'in', '(CLIENTES,CODIGOS,ZONAS,__SINCRONIZADOR__,CONFIG_OPERADORES,CLIENTES_MAESTROS_CRM,EMPRESAS_CONGLOMERADO,COTIZACIONES_DOLIBARR,ORDENES_TRABAJO,HORARIOS,ENTREGAS_TURNO,CAMARAS,CONFIGURACION,CONFIGURACIONES,NOVEDADES)')
-        .not('cuenta', 'like', 'CAMARAS_DAHUA_%')
-        .not('cuenta', 'like', 'DAHUA_%')
-        .not('cuenta', 'like', 'SNAPSHOT_%')
-        .not('cuenta', 'like', 'CONFIG_%')
-        .not('cuenta', 'like', '__%')
-        .gte('fecha_hora', rangeStart)
-        .lte('fecha_hora', rangeEnd)
-        .order('id', { ascending: true }) // <--- ASCENDENTE DESDE 00:00:00
-        .limit(10000)
+        .or(`fecha_hora.ilike.%${dateChileStr}%,fecha_hora.ilike.%${dateIsoStr}%`)
+        .order('id', { ascending: true })
+        .limit(5000)
 
+      // Fallback: si no retornó filas por ilike, traer bloque amplio de los últimos 5000 registros
       if ((!data || data.length === 0) && !error) {
         const { data: fallbackData } = await supabase
           .from('eventos_monitoreo')
           .select('*')
-          .not('cuenta', 'in', '(CLIENTES,CODIGOS,ZONAS,__SINCRONIZADOR__,CONFIG_OPERADORES,ORDENES_TRABAJO,HORARIOS,ENTREGAS_TURNO,CAMARAS,NOVEDADES)')
-          .not('cuenta', 'like', 'CAMARAS_DAHUA_%')
-          .not('cuenta', 'like', 'DAHUA_%')
-          .not('cuenta', 'like', 'SNAPSHOT_%')
-          .not('cuenta', 'like', 'CONFIG_%')
-          .not('cuenta', 'like', '__%')
-          .order('id', { ascending: true })
+          .order('id', { ascending: false })
           .limit(5000)
         data = fallbackData || []
       }
 
       if (error) throw error
 
-      // 2. Filtrar estrictamente solo cuentas reales de abonados y asociar a la fecha chilena exacta
+      // 2. Procesar, filtrar solo cuentas de abonados reales y asociar a la fecha solicitada
       const eventosProcesados = (data || [])
         .filter(e => isRealAccount(e.cuenta, e.evento))
         .map(e => {
-          const parsed = parseAndConvertToChile(e.fecha_hora)
+          const parsed = parseEventDate(e.fecha_hora)
           return {
             ...e,
-            _dateChileStr: parsed.dateChileStr,
-            _horaChileStr: parsed.horaChileStr,
+            _dateIsoStr: parsed.dateIsoStr,
+            _horaFormatted: parsed.horaStr,
             _timestamp: parsed.timestamp
           }
         })
-        .filter(e => e._dateChileStr === fecha)
-        .sort((a, b) => a._timestamp - b._timestamp) // ORDEN ASCENDENTE CRONOLÓGICO REAL (00:00:00 -> 23:59:59)
+        .filter(e => e._dateIsoStr === fecha)
+        .sort((a, b) => a._timestamp - b._timestamp) // ORDEN CRONOLÓGICO ASCENDENTE (00:00:00 -> 23:59:59)
 
       setEventos(eventosProcesados)
       if (eventosProcesados.length > 0) {
-        setMensaje(`¡${eventosProcesados.length} eventos reales de abonados encontrados para el ${fecha}!`)
+        setMensaje(`¡${eventosProcesados.length} eventos de abonados cargados para el ${fecha}!`)
       } else {
         setMensaje(`No hay eventos de abonados registrados para el ${fecha}.`)
       }
@@ -313,7 +288,7 @@ export default function TodosLosEventosModal({ onClose }: Props) {
                   const par = (e.zona && e.zona !== 'None' ? '01' : '---')
                   const zn = (e.zona && e.zona !== 'None' ? e.zona.padStart(2, '0') : '---')
                   const usr = (e.usuario && e.usuario !== 'None' ? e.usuario.padStart(3, '0') : '---')
-                  const horaDisplay = (e as any)._horaChileStr || parseAndConvertToChile(e.fecha_hora).horaChileStr
+                  const horaDisplay = (e as any)._horaFormatted || parseEventDate(e.fecha_hora).horaStr
                   
                   return (
                     <tr 
