@@ -27,6 +27,7 @@ import IACopilotCard from './IACopilotCard'
 import EntregaTurnoModal from './EntregaTurnoModal'
 import HealthTelemetryModal from './HealthTelemetryModal'
 import AperturasCierresModal from './AperturasCierresModal'
+import BuscadorUniversalModal from './BuscadorUniversalModal'
 import { lookupContactId } from '@/lib/contact_id_library'
 import { sendMessage, generarMensajeAlerta, generarMensajeEnergia, detectarPatronEvento, type EventInfo } from '@/lib/whatsapp'
 import { Operator, ensureUserAttributes, OPERADORES_PREDETERMINADOS } from '@/types/operator'
@@ -1576,12 +1577,39 @@ export default function ScorpionDashboard() {
       </div>
 
       {/* Tool Modals */}
-      {modalActivo && ['tools', 'user-key', 'file-edit', 'network', 'shield', 'book', 'grid-check', 'list-details', 'home', 'search', 'archive'].includes(modalActivo) && (
+      {modalActivo && ['tools', 'user-key', 'file-edit', 'network', 'shield', 'book', 'grid-check', 'list-details', 'home', 'archive'].includes(modalActivo) && (
         <ToolModal
           modalId={modalActivo}
           onClose={() => setModalActivo(null)}
           operadores={operadores}
           onUpdateOperadores={(nuevosOps) => guardarOperadoresBase(nuevosOps)}
+        />
+      )}
+
+      {/* Buscador Universal & Auditoría Histórica Modal (Asociado al botón de Lupa 'search' del footer) */}
+      {modalActivo === 'search' && (
+        <BuscadorUniversalModal
+          onClose={() => setModalActivo(null)}
+          clientesMap={clientesMap}
+          codigosMap={codigosMap}
+          onVerExpediente={(cuenta) => {
+            const evFake: any = eventos.find(e => e.cuenta === cuenta) || { cuenta, nombre_abonado: clientesMap[cuenta]?.nombre || cuenta }
+            setEventoSeleccionado(evFake)
+            setExpedientePestana('telefonos')
+            setModalActivo('bar-chart')
+          }}
+          onVerZonificacion={(cuenta) => {
+            const evFake: any = eventos.find(e => e.cuenta === cuenta) || { cuenta, nombre_abonado: clientesMap[cuenta]?.nombre || cuenta }
+            setEventoSeleccionado(evFake)
+            setModalActivo('zones-tree')
+          }}
+          onVerCamaras={(cuenta) => {
+            setCamaraGridCuenta(`CAMARAS_DAHUA_${cuenta.padStart(4, '0')}`)
+          }}
+          onEnviarWhatsApp={(telefono) => {
+            setWhatsappTelefonoInicial(telefono)
+            setModalActivo('notificaciones-whatsapp')
+          }}
         />
       )}
 
