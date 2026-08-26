@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { supabase } from '@/lib/supabase'
 
 interface Evento {
@@ -30,67 +30,89 @@ const SYSTEM_ACCOUNTS = new Set([
   'NOVEDADES'
 ])
 
-function isSystemAccount(cuentaRaw?: string): boolean {
-  if (!cuentaRaw) return true
-  const c = cuentaRaw.toUpperCase().trim()
-  if (SYSTEM_ACCOUNTS.has(c)) return true
-  if (c.length > 7 || c.startsWith('__')) return true
-  return false
+/**
+ * Validador Nuclear de Cuentas Reales de Abonados.
+ * Elimina 100% registros basura de metadatos o filas donde la "cuenta" sea un timestamp (ej: 6:10:25).
+ */
+function isRealAccount(cuentaRaw?: string, eventoRaw?: string): boolean {
+  if (!cuentaRaw) return false
+  const c = cuentaRaw.trim().toUpperCase()
+  if (!c || c.length < 3 || c.length > 6) return false
+  if (c.includes(':') || c.includes('-') || c.includes('/') || c.includes(' ')) return false
+  if (SYSTEM_ACCOUNTS.has(c) || c.startsWith('__')) return false
+  
+  // Si la cuenta contiene formato de hora HH:MM:SS -> Descartar automáticamente
+  if (/\d+:\d+:\d+/.test(c)) return false
+
+  // Una cuenta válida de Scorpion es alfanumérica de 3 a 6 caracteres (ej: C7B3, 0535, C7A1, C7BF)
+  if (!/^[A-Z0-9]{3,6}$/.test(c)) return false
+
+  return true
 }
 
-interface ParsedFechaHora {
-  dateIsoStr: string
-  horaStr: string
+interface ParsedChileDate {
+  dateChileStr: string // Formato "YYYY-MM-DD"
+  horaChileStr: string // Formato "HH:mm:ss"
   timestamp: number
 }
 
-function parseFechaHora(rawStr?: string): ParsedFechaHora {
-  if (!rawStr) return { dateIsoStr: '', horaStr: '00:00:00', timestamp: 0 }
-  const s = rawStr.trim()
-
-  // 1. Formato "DD-MM-YYYY HH:mm:ss" (ej: "25-08-2026 20:38:06" o "25/08/2026 20:38:06")
-  const matchDDMM = s.match(/^(\d{2})[-/](\d{2})[-/](\d{4})(?:\s+(\d{2}):(\d{2}):(\d{2}))?/)
-  if (matchDDMM) {
-    const [, dia, mes, anio, hh = '00', mm = '00', ss = '00'] = matchDDMM
-    const dateIsoStr = `${anio}-${mes}-${dia}`
-    const horaStr = `${hh}:${mm}:${ss}`
-    const dObj = new Date(Number(anio), Number(mes) - 1, Number(dia), Number(hh), Number(mm), Number(ss))
-    return { dateIsoStr, horaStr, timestamp: dObj.getTime() }
-  }
-
-  // 2. Formato "YYYY-MM-DD HH:mm:ss" o "2026-08-25T20:38:06"
-  const matchYYYYMM = s.match(/^(\d{4})[-/](\d{2})[-/](\d{2})(?:[T\s]+(\d{2}):(\d{2}):(\d{2}))?/)
-  if (matchYYYYMM) {
-    const [, anio, mes, dia, hh = '00', mm = '00', ss = '00'] = matchYYYYMM
-    const dateIsoStr = `${anio}-${mes}-${dia}`
-    const horaStr = `${hh}:${mm}:${ss}`
-    const dObj = new Date(Number(anio), Number(mes) - 1, Number(dia), Number(hh), Number(mm), Number(ss))
-    return { dateIsoStr, horaStr, timestamp: dObj.getTime() }
-  }
-
-  // 3. Fallback con objeto Date nativo
+/**
+ * Convierte cualquier marca de tiempo de Supabase (UTC / ISO / Local) a la Hora Local Real de Chile (America/Santiago).
+ */
+function parseAndConvertToChile(rawStr?: string): ParsedChileDate {
+  if (!rawStr) return { dateChileStr: '', horaChileStr: '00:00:00', timestamp: 0 }
+  
   try {
-    const d = new Date(s)
-    if (!isNaN(d.getTime())) {
-      const anio = d.getFullYear()
-      const mes = (d.getMonth() + 1).toString().padStart(2, '0')
-      const dia = d.getDate().toString().padStart(2, '0')
-      const hh = d.getHours().toString().padStart(2, '0')
-      const mm = d.getMinutes().toString().padStart(2, '0')
-      const ss = d.getSeconds().toString().padStart(2, '0')
-      return {
-        dateIsoStr: `${anio}-${mes}-${dia}`,
-        horaStr: `${hh}:${mm}:${ss}`,
-        timestamp: d.getTime()
-      }
+    let d: Date
+    const s = rawStr.trim()
+
+    // 1. Si viene en formato "DD-MM-YYYY HH:mm:ss"
+    const matchDDMM = s.match(/^(\d{2})[-/](\d{2})[-/](\d{4})\s+(\d{2}):(\d{2}):(\d{2})/)
+    if (matchDDMM) {
+      const [, dia, mes, anio, hh, mm, ss] = matchDDMM
+      d = new Date(`${anio}-${mes}-${dia}T${hh}:${mm}:${ss}-04:00`)
+    } else if (s.includes('T') || s.endsWith('Z')) {
+      d = new Date(s)
+    } else {
+      // Reemplazar espacio por T y asumir UTC para marcas de PostgreSQL
+      d = new Date(s.replace(' ', 'T') + 'Z')
     }
-  } catch {}
 
-  return { dateIsoStr: s.slice(0, 10), horaStr: '00:00:00', timestamp: 0 }
-}
+    if (isNaN(d.getTime())) {
+      d = new Date(s)
+    }
 
-function formatHora(isoString: string): string {
-  return parseFechaHora(isoString).horaStr
+    // Formateadores Intl con zona horaria de Chile
+    const formatterDate = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/Santiago',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }) // Produce "YYYY-MM-DD"
+
+    const formatterTime = new Intl.DateTimeFormat('es-CL', {
+      timeZone: 'America/Santiago',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    })
+
+    const dateChileStr = formatterDate.format(d)
+    const partsTime = formatterTime.formatToParts(d)
+    const hh = (partsTime.find(p => p.type === 'hour')?.value || '00').padStart(2, '0')
+    const mm = (partsTime.find(p => p.type === 'minute')?.value || '00').padStart(2, '0')
+    const ss = (partsTime.find(p => p.type === 'second')?.value || '00').padStart(2, '0')
+    const horaChileStr = `${hh}:${mm}:${ss}`
+
+    return {
+      dateChileStr,
+      horaChileStr,
+      timestamp: d.getTime()
+    }
+  } catch {
+    return { dateChileStr: '', horaChileStr: '00:00:00', timestamp: 0 }
+  }
 }
 
 function formatTrama(cuenta: string, eventoText: string, zona: string, usuario: string) {
@@ -173,62 +195,51 @@ export default function TodosLosEventosModal({ onClose }: Props) {
     setEventos([])
 
     try {
-      // 1. Consulta estándar con marcas de tiempo con zona horaria de Chile (-04:00)
-      const startChileIso = `${fecha}T00:00:00-04:00`
-      const endChileIso = `${fecha}T23:59:59-04:00`
+      // 1. Traer un bloque amplio de hasta 3000 eventos recientes o filtrados por ventana de 36 horas
+      const targetUtcStart = `${fecha}T00:00:00Z`
+      const targetDateObj = new Date(targetUtcStart)
+      const rangeStart = new Date(targetDateObj.getTime() - 6 * 3600 * 1000).toISOString()
+      const rangeEnd = new Date(targetDateObj.getTime() + 30 * 3600 * 1000).toISOString()
 
       let { data, error } = await supabase
         .from('eventos_monitoreo')
         .select('*')
-        .gte('fecha_hora', startChileIso)
-        .lte('fecha_hora', endChileIso)
-        .order('fecha_hora', { ascending: true })
+        .gte('fecha_hora', rangeStart)
+        .lte('fecha_hora', rangeEnd)
+        .order('id', { ascending: false })
         .limit(3000)
 
-      // Fallback si por formato de cadena de fecha no arrojó resultados
       if ((!data || data.length === 0) && !error) {
         const { data: fallbackData } = await supabase
           .from('eventos_monitoreo')
           .select('*')
           .order('id', { ascending: false })
-          .limit(2000)
+          .limit(3000)
         data = fallbackData || []
       }
 
       if (error) throw error
 
-      let rawRecords = data || []
-
-      // 2. Si no retornó datos por patrón de fecha, usar fallback trayendo las 2000 filas más recientes
-      if (rawRecords.length === 0) {
-        const { data: fallbackData } = await supabase
-          .from('eventos_monitoreo')
-          .select('*')
-          .order('id', { ascending: false })
-          .limit(2000)
-        rawRecords = fallbackData || []
-      }
-
-      // 3. Parsear, filtrar cuentas de sistema y asociar eventos pertenecientes a la fecha elegida
-      const eventosProcesados = rawRecords
-        .filter(e => !isSystemAccount(e.cuenta))
+      // 2. Filtrar estrictamente solo cuentas reales de abonados y asociar a la fecha chilena exacta
+      const eventosProcesados = (data || [])
+        .filter(e => isRealAccount(e.cuenta, e.evento))
         .map(e => {
-          const parsed = parseFechaHora(e.fecha_hora)
+          const parsed = parseAndConvertToChile(e.fecha_hora)
           return {
             ...e,
-            _dateIsoStr: parsed.dateIsoStr,
-            _horaFormatted: parsed.horaStr,
+            _dateChileStr: parsed.dateChileStr,
+            _horaChileStr: parsed.horaChileStr,
             _timestamp: parsed.timestamp
           }
         })
-        .filter(e => e._dateIsoStr === fecha)
-        .sort((a, b) => a._timestamp - b._timestamp) // ORDEN ASCENDENTE POR HORARIO (00:00:00 -> 23:59:59)
+        .filter(e => e._dateChileStr === fecha)
+        .sort((a, b) => a._timestamp - b._timestamp) // ORDEN ASCENDENTE CRONOLÓGICO REAL (00:00:00 -> 23:59:59)
 
       setEventos(eventosProcesados)
       if (eventosProcesados.length > 0) {
-        setMensaje(`¡${eventosProcesados.length} eventos encontrados para el ${fecha}!`)
+        setMensaje(`¡${eventosProcesados.length} eventos reales de abonados encontrados para el ${fecha}!`)
       } else {
-        setMensaje(`No hay eventos registrados para el ${fecha}.`)
+        setMensaje(`No hay eventos de abonados registrados para el ${fecha}.`)
       }
     } catch (err: any) {
       setMensaje('❌ Error de consulta: ' + err.message)
@@ -236,9 +247,6 @@ export default function TodosLosEventosModal({ onClose }: Props) {
       setCargando(false)
     }
   }
-
-  // NO cargar automáticamente - esperar a que el usuario presione VER
-  // useEffect(() => { cargarEventos() }, [])
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 font-mono">
@@ -292,6 +300,7 @@ export default function TodosLosEventosModal({ onClose }: Props) {
                   const par = (e.zona && e.zona !== 'None' ? '01' : '---')
                   const zn = (e.zona && e.zona !== 'None' ? e.zona.padStart(2, '0') : '---')
                   const usr = (e.usuario && e.usuario !== 'None' ? e.usuario.padStart(3, '0') : '---')
+                  const horaDisplay = (e as any)._horaChileStr || parseAndConvertToChile(e.fecha_hora).horaChileStr
                   
                   return (
                     <tr 
@@ -299,7 +308,7 @@ export default function TodosLosEventosModal({ onClose }: Props) {
                       className="hover:opacity-90 border-b border-gray-300"
                       style={{ backgroundColor: rowBg, color: rowFg }}
                     >
-                      <td className="p-1 border-r border-gray-300 text-center font-mono">{(e as any)._horaFormatted || formatHora(e.fecha_hora)}</td>
+                      <td className="p-1 border-r border-gray-300 text-center font-mono">{horaDisplay}</td>
                       <td className="p-1 border-r border-gray-300 text-center font-mono">{e.cuenta}</td>
                       <td className="p-1 border-r border-gray-300 max-w-[200px] truncate uppercase">{e.nombre_abonado || '******** RECEPTOR ********'}</td>
                       <td className="p-1 border-r border-gray-300 uppercase">{e.evento}</td>
