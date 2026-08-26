@@ -38,43 +38,59 @@ function isSystemAccount(cuentaRaw?: string): boolean {
   return false
 }
 
-function getChileDateString(isoString: string): string {
-  try {
-    const d = new Date(isoString)
-    if (isNaN(d.getTime())) return isoString.slice(0, 10)
-    const parts = new Intl.DateTimeFormat('es-CL', {
-      timeZone: 'America/Santiago',
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit'
-    }).formatToParts(d)
-    const dia = parts.find(p => p.type === 'day')?.value
-    const mes = parts.find(p => p.type === 'month')?.value
-    const anio = parts.find(p => p.type === 'year')?.value
-    return `${anio}-${mes}-${dia}`
-  } catch {
-    return isoString.slice(0, 10)
+interface ParsedFechaHora {
+  dateIsoStr: string
+  horaStr: string
+  timestamp: number
+}
+
+function parseFechaHora(rawStr?: string): ParsedFechaHora {
+  if (!rawStr) return { dateIsoStr: '', horaStr: '00:00:00', timestamp: 0 }
+  const s = rawStr.trim()
+
+  // 1. Formato "DD-MM-YYYY HH:mm:ss" (ej: "25-08-2026 20:38:06" o "25/08/2026 20:38:06")
+  const matchDDMM = s.match(/^(\d{2})[-/](\d{2})[-/](\d{4})(?:\s+(\d{2}):(\d{2}):(\d{2}))?/)
+  if (matchDDMM) {
+    const [, dia, mes, anio, hh = '00', mm = '00', ss = '00'] = matchDDMM
+    const dateIsoStr = `${anio}-${mes}-${dia}`
+    const horaStr = `${hh}:${mm}:${ss}`
+    const dObj = new Date(Number(anio), Number(mes) - 1, Number(dia), Number(hh), Number(mm), Number(ss))
+    return { dateIsoStr, horaStr, timestamp: dObj.getTime() }
   }
+
+  // 2. Formato "YYYY-MM-DD HH:mm:ss" o "2026-08-25T20:38:06"
+  const matchYYYYMM = s.match(/^(\d{4})[-/](\d{2})[-/](\d{2})(?:[T\s]+(\d{2}):(\d{2}):(\d{2}))?/)
+  if (matchYYYYMM) {
+    const [, anio, mes, dia, hh = '00', mm = '00', ss = '00'] = matchYYYYMM
+    const dateIsoStr = `${anio}-${mes}-${dia}`
+    const horaStr = `${hh}:${mm}:${ss}`
+    const dObj = new Date(Number(anio), Number(mes) - 1, Number(dia), Number(hh), Number(mm), Number(ss))
+    return { dateIsoStr, horaStr, timestamp: dObj.getTime() }
+  }
+
+  // 3. Fallback con objeto Date nativo
+  try {
+    const d = new Date(s)
+    if (!isNaN(d.getTime())) {
+      const anio = d.getFullYear()
+      const mes = (d.getMonth() + 1).toString().padStart(2, '0')
+      const dia = d.getDate().toString().padStart(2, '0')
+      const hh = d.getHours().toString().padStart(2, '0')
+      const mm = d.getMinutes().toString().padStart(2, '0')
+      const ss = d.getSeconds().toString().padStart(2, '0')
+      return {
+        dateIsoStr: `${anio}-${mes}-${dia}`,
+        horaStr: `${hh}:${mm}:${ss}`,
+        timestamp: d.getTime()
+      }
+    }
+  } catch {}
+
+  return { dateIsoStr: s.slice(0, 10), horaStr: '00:00:00', timestamp: 0 }
 }
 
 function formatHora(isoString: string): string {
-  try {
-    const d = new Date(isoString)
-    if (isNaN(d.getTime())) return '00:00:00'
-    const parts = new Intl.DateTimeFormat('es-CL', {
-      timeZone: 'America/Santiago',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hour12: false
-    }).formatToParts(d)
-    const h = (parts.find(p => p.type === 'hour')?.value || '00').padStart(2, '0')
-    const m = (parts.find(p => p.type === 'minute')?.value || '00').padStart(2, '0')
-    const s = (parts.find(p => p.type === 'second')?.value || '00').padStart(2, '0')
-    return `${h}:${m}:${s}`
-  } catch {
-    return '00:00:00'
-  }
+  return parseFechaHora(isoString).horaStr
 }
 
 function formatTrama(cuenta: string, eventoText: string, zona: string, usuario: string) {
@@ -157,35 +173,52 @@ export default function TodosLosEventosModal({ onClose }: Props) {
     setEventos([])
 
     try {
-      // Calcular ventana de 2 días alrededor de la fecha elegida para abarcar diferencias de UTC/Chile local
-      const targetDateObj = new Date(`${fecha}T12:00:00`)
-      const prevDateStr = new Date(targetDateObj.getTime() - 24 * 3600 * 1000).toISOString().slice(0, 10)
-      const nextDateStr = new Date(targetDateObj.getTime() + 24 * 3600 * 1000).toISOString().slice(0, 10)
+      const [anio, mes, dia] = fecha.split('-')
+      const dateIso = `${anio}-${mes}-${dia}`     // "2026-08-25"
+      const dateChile = `${dia}-${mes}-${anio}`   // "25-08-2026"
 
+      // 1. Intentar consulta por patrones de fecha en Supabase
       const { data, error } = await supabase
         .from('eventos_monitoreo')
         .select('*')
-        .gte('fecha_hora', `${prevDateStr}T00:00:00`)
-        .lte('fecha_hora', `${nextDateStr}T23:59:59`)
-        .order('fecha_hora', { ascending: true })
+        .or(`fecha_hora.ilike.%${dateIso}%,fecha_hora.ilike.%${dateChile}%`)
+        .order('id', { ascending: false })
+        .limit(2000)
 
       if (error) throw error
 
-      if (data && data.length > 0) {
-        // Filtrar cuentas de sistema y asociar eventos estrictamente pertenecientes al día en hora local Chile
-        const eventosFiltrados = data
-          .filter(e => !isSystemAccount(e.cuenta))
-          .filter(e => getChileDateString(e.fecha_hora) === fecha)
-          .sort((a, b) => new Date(a.fecha_hora).getTime() - new Date(b.fecha_hora).getTime())
+      let rawRecords = data || []
 
-        setEventos(eventosFiltrados)
-        if (eventosFiltrados.length > 0) {
-          setMensaje(`¡${eventosFiltrados.length} eventos encontrados para el ${fecha}!`)
-        } else {
-          setMensaje(`No hay eventos registrados para el ${fecha}.`)
-        }
+      // 2. Si no retornó datos por patrón de fecha, usar fallback trayendo las 2000 filas más recientes
+      if (rawRecords.length === 0) {
+        const { data: fallbackData } = await supabase
+          .from('eventos_monitoreo')
+          .select('*')
+          .order('id', { ascending: false })
+          .limit(2000)
+        rawRecords = fallbackData || []
+      }
+
+      // 3. Parsear, filtrar cuentas de sistema y asociar eventos pertenecientes a la fecha elegida
+      const eventosProcesados = rawRecords
+        .filter(e => !isSystemAccount(e.cuenta))
+        .map(e => {
+          const parsed = parseFechaHora(e.fecha_hora)
+          return {
+            ...e,
+            _dateIsoStr: parsed.dateIsoStr,
+            _horaFormatted: parsed.horaStr,
+            _timestamp: parsed.timestamp
+          }
+        })
+        .filter(e => e._dateIsoStr === fecha)
+        .sort((a, b) => a._timestamp - b._timestamp) // ORDEN ASCENDENTE POR HORARIO (00:00:00 -> 23:59:59)
+
+      setEventos(eventosProcesados)
+      if (eventosProcesados.length > 0) {
+        setMensaje(`¡${eventosProcesados.length} eventos encontrados para el ${fecha}!`)
       } else {
-        setMensaje('No se encontraron eventos para esta fecha.')
+        setMensaje(`No hay eventos registrados para el ${fecha}.`)
       }
     } catch (err: any) {
       setMensaje('❌ Error de consulta: ' + err.message)
@@ -256,7 +289,7 @@ export default function TodosLosEventosModal({ onClose }: Props) {
                       className="hover:opacity-90 border-b border-gray-300"
                       style={{ backgroundColor: rowBg, color: rowFg }}
                     >
-                      <td className="p-1 border-r border-gray-300 text-center font-mono">{formatHora(e.fecha_hora)}</td>
+                      <td className="p-1 border-r border-gray-300 text-center font-mono">{(e as any)._horaFormatted || formatHora(e.fecha_hora)}</td>
                       <td className="p-1 border-r border-gray-300 text-center font-mono">{e.cuenta}</td>
                       <td className="p-1 border-r border-gray-300 max-w-[200px] truncate uppercase">{e.nombre_abonado || '******** RECEPTOR ********'}</td>
                       <td className="p-1 border-r border-gray-300 uppercase">{e.evento}</td>
