@@ -173,17 +173,27 @@ export default function TodosLosEventosModal({ onClose }: Props) {
     setEventos([])
 
     try {
-      const [anio, mes, dia] = fecha.split('-')
-      const dateIso = `${anio}-${mes}-${dia}`     // "2026-08-25"
-      const dateChile = `${dia}-${mes}-${anio}`   // "25-08-2026"
+      // 1. Consulta estándar con marcas de tiempo con zona horaria de Chile (-04:00)
+      const startChileIso = `${fecha}T00:00:00-04:00`
+      const endChileIso = `${fecha}T23:59:59-04:00`
 
-      // 1. Intentar consulta por patrones de fecha en Supabase
-      const { data, error } = await supabase
+      let { data, error } = await supabase
         .from('eventos_monitoreo')
         .select('*')
-        .or(`fecha_hora.ilike.%${dateIso}%,fecha_hora.ilike.%${dateChile}%`)
-        .order('id', { ascending: false })
-        .limit(2000)
+        .gte('fecha_hora', startChileIso)
+        .lte('fecha_hora', endChileIso)
+        .order('fecha_hora', { ascending: true })
+        .limit(3000)
+
+      // Fallback si por formato de cadena de fecha no arrojó resultados
+      if ((!data || data.length === 0) && !error) {
+        const { data: fallbackData } = await supabase
+          .from('eventos_monitoreo')
+          .select('*')
+          .order('id', { ascending: false })
+          .limit(2000)
+        data = fallbackData || []
+      }
 
       if (error) throw error
 
