@@ -11,15 +11,15 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const {
       cuenta,
-      tipoOperacion = 'EDITAR_CONTACTOS',
-      datosNuevos,
+      tipoOperacion = 'EDITAR_GENERAL',
+      datosNuevos = {},
       datosAnteriores,
       operador = { nombre: 'OPERADOR CENTRAL', codigo: '01', rol: 'Administrador' }
     } = body
 
-    if (!cuenta || !datosNuevos) {
+    if (!cuenta) {
       return NextResponse.json(
-        { success: false, error: 'Faltan parámetros requeridos (cuenta, datosNuevos).' },
+        { success: false, error: 'Falta el parámetro requerido cuenta.' },
         { status: 400 }
       )
     }
@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
     const cuentaNormalizada = cuenta.toUpperCase().trim()
     const nowIso = new Date().toISOString()
 
-    // 1. Encolar orden en 'ordenes_editor_remoto' (con fallback a 'eventos_monitoreo')
+    // 1. Encolar orden en 'ordenes_editor_remoto'
     let ordenId = `ORD-${Date.now()}`
     try {
       const { data, error } = await supabase
@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
       })
     }
 
-    // 2. Actualizar el mapa maestro de CLIENTES en Supabase en caliente para persistencia y reflejo instantáneo
+    // 2. Actualizar el mapa maestro de CLIENTES en Supabase en caliente
     try {
       const { data: clientesData } = await supabase
         .from('eventos_monitoreo')
@@ -83,8 +83,13 @@ export async function POST(req: NextRequest) {
         } catch (e) {
           clientesMap = {}
         }
+      }
 
-        // Fusionar campos editados de la cuenta
+      if (tipoOperacion === 'ELIMINAR_ABONADO') {
+        // Eliminar del mapa
+        delete clientesMap[cuentaNormalizada]
+      } else {
+        // Fusionar o crear abonado
         clientesMap[cuentaNormalizada] = {
           ...(clientesMap[cuentaNormalizada] || {}),
           ...datosNuevos,
@@ -92,7 +97,9 @@ export async function POST(req: NextRequest) {
           _actualizadoRemotoEl: nowIso,
           _actualizadoPor: operador.nombre
         }
+      }
 
+      if (clientesData && clientesData.length > 0) {
         await supabase
           .from('eventos_monitoreo')
           .update({
@@ -101,14 +108,6 @@ export async function POST(req: NextRequest) {
           })
           .eq('id', clientesData[0].id)
       } else {
-        // No existía fila CLIENTES, crearla
-        clientesMap[cuentaNormalizada] = {
-          ...datosNuevos,
-          cuenta: cuentaNormalizada,
-          _actualizadoRemotoEl: nowIso,
-          _actualizadoPor: operador.nombre
-        }
-
         await supabase
           .from('eventos_monitoreo')
           .insert({
@@ -124,10 +123,16 @@ export async function POST(req: NextRequest) {
 
     // 3. Registrar auditoría en Bitácora Operativa
     try {
+      const descAccion = tipoOperacion === 'NUEVO_ABONADO'
+        ? `Abonado CREADO por ${operador.nombre}.`
+        : tipoOperacion === 'ELIMINAR_ABONADO'
+        ? `Abonado DADO DE BAJA / ELIMINADO por ${operador.nombre}.`
+        : `Abonado EDITADO por ${operador.nombre} (${Object.keys(datosNuevos).length} campos actualizados).`
+
       await supabase.from('eventos_monitoreo').insert({
         cuenta: cuentaNormalizada,
         evento: `EDITOR REMOTO: ${tipoOperacion.replace(/_/g, ' ')}`,
-        nombre_abonado: `Modificado por ${operador.nombre} (${operador.rol || 'Operador'}). ${Object.keys(datosNuevos).length} campos actualizados.`,
+        nombre_abonado: descAccion,
         fecha_hora: nowIso,
         zona: 'SYS',
         usuario: operador.codigo || '01'
@@ -140,7 +145,8 @@ export async function POST(req: NextRequest) {
       success: true,
       ordenId,
       cuenta: cuentaNormalizada,
-      mensaje: 'Orden de edición procesada, guardada en base de datos y lista para sincronización local.'
+      tipoOperacion,
+      mensaje: `Operación ${tipoOperacion} encolada y procesada exitosamente en base de datos.`
     })
   } catch (error: any) {
     console.error('[EDITOR REMOTO API ERROR]:', error)
