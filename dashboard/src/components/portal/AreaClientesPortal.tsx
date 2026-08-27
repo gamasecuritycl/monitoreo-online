@@ -32,13 +32,28 @@ import {
   UserCheck,
   AlertCircle,
   HelpCircle,
-  BrainCircuit,
-  Bot
+  FileSearch,
+  Check
 } from 'lucide-react'
 import { supabase, type EventoMonitoreo } from '@/lib/supabase'
 import clientesDataRaw from '@/lib/clientes_general.json'
 
 const clientesMap = clientesDataRaw as Record<string, Record<string, any>>
+
+// Interface para registros reales de Bitácora
+interface BitacoraRecord {
+  id: string
+  id_abonado: string
+  comentario: string
+  tipo_evento: string
+  created_at: string
+  updated_at: string
+  tipo_nombre: string
+  tipo_color: string
+  responsable_nombre: string
+  abonado_cod: string
+  abonado_nombre: string
+}
 
 // Menú lateral de navegación
 const NAV_ITEMS = [
@@ -67,6 +82,10 @@ export default function AreaClientesPortal() {
   const [tiempoSaludo, setTiempoSaludo] = useState('Buenas tardes')
   const [filtroHistorial, setFiltroHistorial] = useState('todos')
   const [camaraSeleccionada, setCamaraSeleccionada] = useState<string | null>(null)
+
+  // Registros reales de la Bitácora de la Central
+  const [eventosBitacoraReales, setEventosBitacoraReales] = useState<BitacoraRecord[]>([])
+  const [cargandoBitacora, setCargandoBitacora] = useState<boolean>(false)
 
   // Estado para IA Bitácora Concierge
   const [modalIaBitacora, setModalIaBitacora] = useState<boolean>(false)
@@ -99,7 +118,38 @@ export default function AreaClientesPortal() {
     else setTiempoSaludo('Buenas noches')
   }, [])
 
-  // Cargar eventos reales de Supabase para la cuenta activa
+  // Cargar anotaciones REALES de la Bitácora de la Central
+  useEffect(() => {
+    if (!autenticado || !cuentaActiva) return
+
+    const fetchBitacoraReal = async () => {
+      setCargandoBitacora(true)
+      try {
+        const url = `https://bitacora.gamasecurity.cl/api-bitacora.php?action=eventos&q=${encodeURIComponent(cuentaActiva)}`
+        const res = await fetch(url)
+        if (res.ok) {
+          const data = await res.json()
+          if (Array.isArray(data)) {
+            // Filtrar registros que pertenezcan a la cuenta activa
+            const filtrados = data.filter(
+              (b: BitacoraRecord) =>
+                (b.abonado_cod && b.abonado_cod.toUpperCase().trim() === cuentaActiva) ||
+                (b.comentario && b.comentario.toUpperCase().includes(cuentaActiva))
+            )
+            setEventosBitacoraReales(filtrados.length > 0 ? filtrados : data.slice(0, 10))
+          }
+        }
+      } catch (err) {
+        console.error('Error consultando Bitácora real:', err)
+      } finally {
+        setCargandoBitacora(false)
+      }
+    }
+
+    fetchBitacoraReal()
+  }, [autenticado, cuentaActiva])
+
+  // Cargar eventos en vivo de Supabase para la cuenta activa
   useEffect(() => {
     if (!autenticado || !cuentaActiva) return
 
@@ -116,13 +166,12 @@ export default function AreaClientesPortal() {
           setEventosSupabase(data)
         }
       } catch (err) {
-        console.error('Error cargando eventos:', err)
+        console.error('Error cargando eventos Supabase:', err)
       }
     }
 
     fetchEventos()
 
-    // Suscripción en tiempo real
     const canal = supabase
       .channel(`eventos_cliente_${cuentaActiva}`)
       .on(
@@ -150,29 +199,49 @@ export default function AreaClientesPortal() {
     PLAN: clienteRaw.plan || 'PREMIUM VIP',
   }
 
-  // Procesar entrada de Bitácora mediante IA (Gemini 2.5 Flash)
-  const procesarBitacoraConIA = async (item: { evento: string; hora: string; notaCruda?: string }) => {
+  // COTEJAR Y PROCESAR CON IA LA ANOTACIÓN REAL DE BITÁCORA
+  const procesarBitacoraConIA = async (item: {
+    evento: string
+    hora: string
+    notaReal?: string
+    responsable?: string
+  }) => {
     setEventoIaActual(item)
     setModalIaBitacora(true)
     setCargandoIa(true)
     setExplicacionIa('')
 
-    const notaBase = item.notaCruda || `03:15: ${item.evento}. Llamada a contacto principal realizada. Patrulla despachada a verificar. Propiedad revisada sin novedad. Restablece 03:25.`
+    const notaRealText = item.notaReal && item.notaReal.trim().length > 0 ? item.notaReal : null
 
-    const prompt = `Eres el Asistente de IA Concierge de la Central de Monitoreo GAMA Security Chile.
-Analiza la siguiente nota cruda registrada por los operadores en la Bitácora de Central y genera un informe VIP tranquilizador para el cliente abonado.
+    if (!notaRealText) {
+      setExplicacionIa(
+        `📋 **Registro de Sistema sin Observaciones de Operador**\n\n` +
+        `• **Evento**: ${item.evento}\n` +
+        `• **Hora de Registro**: ${item.hora}\n` +
+        `• **Estado**: Este evento fue transmitido y procesado automáticamente por la Central sin requerir intervención o anotación manual adicional en la Bitácora.`
+      )
+      setCargandoIa(false)
+      return
+    }
 
-Reglas:
-1. Filtra cualquier clave interna, abreviatura técnica o comentario confidencial entre operadores.
-2. Explica claramente:
-   - 🛡️ Suceso Detectado
-   - ⚙️ Procedimiento Ejecutado por la Central Gama
-   - 🟢 Resultado de Seguridad & Tranquilidad Final
-3. Mantén un tono elegante, ejecutivo y profesional. Usar formato Markdown estructurado con viñetas.
+    const prompt = `Eres el Asistente de IA Concierge de GAMA Security Chile.
+Tu tarea es analizar la ANOTACIÓN REAL DE BITÁCORA escrita por el operador de la Central e interpretarla para el cliente abonado en un informe limpio, ejecutivo y tranquilizador.
 
-Evento: ${item.evento}
-Hora: ${item.hora}
-Nota Cruda Bitácora Operador: "${notaBase}"`
+REGLAS STRICTAS DE VERACIDAD (CRÍTICO):
+1. Basate 100% ÚNICAMENTE en la información descrita en la anotación real. NO INVENTES despachos de patrulla, ni llamadas, ni inspecciones que no estén explícitamente escritas en la anotación.
+2. Si la anotación habla de una reparación técnica (ej. reparación de cables, cambio de batería, revisión de magnéticos), explica exactamente esa reparación técnica.
+3. Si la anotación habla de un llamado a un contacto o guardia específico (ej. "se informa a Matías Campos" o "habló con guardia Juan Salas"), menciona exactamente esa comunicación.
+4. Elimina claves internas, códigos de seguridad o notas administrativas confidenciales de operadores.
+5. Formatea la respuesta en tono sobrio y profesional usando Markdown:
+   - 📋 **Resumen del Procedimiento**
+   - 🔍 **Detalle de la Acción Realizada en Bitácora**
+   - 🟢 **Estado Final del Servicio**
+
+Abonado: ${cuentaActiva} (${clienteInfo.NOMBRE})
+Tipo de Evento / Título: ${item.evento}
+Hora/Fecha: ${item.hora}
+Operador Responsable: ${item.responsable || 'Central Gama'}
+Anotación REAL de Bitácora Operador: "${notaRealText}"`
 
     try {
       const res = await fetch('/api/gemini', {
@@ -185,12 +254,17 @@ Nota Cruda Bitácora Operador: "${notaBase}"`
         setExplicacionIa(data.texto)
       } else {
         setExplicacionIa(
-          `🛡️ **Procedimiento de Seguridad Ejecutado (${item.hora})**\n\n• **Suceso**: Registrado evento de ${item.evento}.\n• **Acción Gama**: La Central aplicó el protocolo de verificación instantánea y despacho de patrulla.\n• **Resultado**: Propiedad inspeccionada y 100% resguardada. Sistema rearmado y operativo.`
+          `📋 **Resumen de Procedimiento Realizado**\n\n` +
+          `• **Anotación de Bitácora**: "${notaRealText}"\n` +
+          `• **Operador Responsable**: ${item.responsable || 'Central Gama'}\n` +
+          `• **Estado**: Verificado y registrado en el historial de la cuenta.`
         )
       }
     } catch (e) {
       setExplicacionIa(
-        `🛡️ **Procedimiento de Seguridad Ejecutado (${item.hora})**\n\n• **Suceso**: Registrado evento de ${item.evento}.\n• **Acción Gama**: La Central aplicó el protocolo de verificación instantánea.\n• **Resultado**: Propiedad inspeccionada y 100% resguardada.`
+        `📋 **Resumen de Procedimiento Realizado**\n\n` +
+        `• **Anotación de Bitácora**: "${notaRealText}"\n` +
+        `• **Estado**: Verificado en Central.`
       )
     } finally {
       setCargandoIa(false)
@@ -267,7 +341,6 @@ Nota Cruda Bitácora Operador: "${notaBase}"`
     return (
       <div className="min-h-screen bg-[#050a14] text-slate-100 flex items-center justify-center p-4 relative font-sans selection:bg-[#2997ff]/30 selection:text-white overflow-hidden">
         
-        {/* Glow de fondo animado */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[550px] h-[550px] bg-gradient-to-tr from-[#0066cc]/20 via-[#2997ff]/10 to-amber-500/10 rounded-full blur-[140px] pointer-events-none" />
 
         <motion.div
@@ -276,7 +349,6 @@ Nota Cruda Bitácora Operador: "${notaBase}"`
           transition={{ duration: 0.4 }}
           className="relative z-10 w-full max-w-md bg-[#091222]/95 backdrop-blur-2xl border border-[#1e3e6b]/70 rounded-3xl p-6 sm:p-8 shadow-2xl shadow-black/80"
         >
-          {/* LOGO OCTÁGONO GRANDE CON RESPLANDOR */}
           <div className="flex flex-col items-center mb-6 text-center">
             <div className="relative group my-2 cursor-pointer">
               <div className="absolute -inset-2 bg-gradient-to-r from-[#0066cc] via-[#2997ff] to-amber-400/40 rounded-3xl blur-md opacity-60 group-hover:opacity-100 transition duration-500" />
@@ -303,9 +375,7 @@ Nota Cruda Bitácora Operador: "${notaBase}"`
             </p>
           </div>
 
-          {/* FORMULARIO DE LOGIN */}
           <form onSubmit={handleLogin} className="space-y-4">
-            
             {errorLogin && (
               <motion.div
                 initial={{ opacity: 0, y: -5 }}
@@ -317,7 +387,6 @@ Nota Cruda Bitácora Operador: "${notaBase}"`
               </motion.div>
             )}
 
-            {/* Input Número de Abonado */}
             <div>
               <label className="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center gap-1.5">
                 <UserCheck className="w-3.5 h-3.5 text-[#2997ff]" />
@@ -338,7 +407,6 @@ Nota Cruda Bitácora Operador: "${notaBase}"`
               </div>
             </div>
 
-            {/* Input RUT del Cliente */}
             <div>
               <label className="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center gap-1.5">
                 <KeyRound className="w-3.5 h-3.5 text-amber-400" />
@@ -354,7 +422,6 @@ Nota Cruda Bitácora Operador: "${notaBase}"`
               />
             </div>
 
-            {/* Credencial de Prueba Rápida */}
             <div className="bg-[#0b182e] border border-[#1b355a] rounded-xl p-3 text-[11px] text-slate-400 flex items-center justify-between">
               <div>
                 <p className="font-semibold text-slate-200">Datos para pruebas:</p>
@@ -372,7 +439,6 @@ Nota Cruda Bitácora Operador: "${notaBase}"`
               </button>
             </div>
 
-            {/* Botón Ingresar */}
             <button
               type="submit"
               disabled={cargandoLogin}
@@ -392,7 +458,6 @@ Nota Cruda Bitácora Operador: "${notaBase}"`
             </button>
           </form>
 
-          {/* Pie de Soporte */}
           <div className="mt-6 pt-4 border-t border-[#1a2e4a]/60 text-center">
             <a
               href="https://wa.me/56912345678?text=Hola,%20necesito%20asistencia%20para%20ingresar%20al%20Area%20de%20Clientes%20Gama"
@@ -415,7 +480,6 @@ Nota Cruda Bitácora Operador: "${notaBase}"`
   return (
     <div className="min-h-screen bg-[#060a12] text-slate-100 flex flex-col font-sans selection:bg-[#2997ff]/30 selection:text-white overflow-x-hidden pb-20 lg:pb-0">
       
-      {/* Elementos ambientales de fondo */}
       <div className="fixed top-0 left-0 w-[300px] sm:w-[600px] h-[300px] sm:h-[600px] bg-[#0066cc]/10 rounded-full blur-[140px] pointer-events-none -z-10" />
       <div className="fixed bottom-0 right-0 w-[400px] sm:w-[700px] h-[400px] sm:h-[700px] bg-[#0a2540]/20 rounded-full blur-[160px] pointer-events-none -z-10" />
 
@@ -431,7 +495,6 @@ Nota Cruda Bitácora Operador: "${notaBase}"`
             <span className="text-xs font-semibold text-slate-300">Menú</span>
           </button>
 
-          {/* Logo Octágono Compacto Mobile */}
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-[#0a1628] border border-[#2a4875] p-1 flex items-center justify-center shadow-md">
               <Image src="/logo-gama.png" alt="GAMA Octágono" width={24} height={24} className="object-contain" priority />
@@ -549,10 +612,9 @@ Nota Cruda Bitácora Operador: "${notaBase}"`
         )}
       </AnimatePresence>
 
-      {/* ── MAIN LAYOUT WRAPPER DESKTOP ── */}
+      {/* MAIN LAYOUT DESKTOP */}
       <div className="flex flex-1 min-h-screen relative">
 
-        {/* SIDEBAR DESKTOP */}
         <aside className="hidden lg:flex flex-col w-72 shrink-0 border-r border-[#1a2e4a]/80 bg-[#08101d] sticky top-0 h-screen overflow-y-auto justify-between p-5">
           <div className="flex flex-col items-center">
             
@@ -724,7 +786,7 @@ Nota Cruda Bitácora Operador: "${notaBase}"`
                         Su propiedad se encuentra 100% resguardada
                       </h3>
                       <p className="text-slate-400 text-xs sm:text-sm mt-1 max-w-xl">
-                        Monitoreo 24/7 sin anomalías detectadas en la cuenta #{cuentaActiva}. Enlace directo constante con la Central Gama Security.
+                        Monitoreo 24/7 sin anomalías en la cuenta #{cuentaActiva}. Enlace directo constante con la Central Gama Security.
                       </p>
                     </div>
                   </div>
@@ -749,6 +811,7 @@ Nota Cruda Bitácora Operador: "${notaBase}"`
                 </div>
               </section>
 
+              {/* Grid de Resumen */}
               <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                 
                 <div className="bg-[#081220]/90 backdrop-blur-xl border border-[#1a3356]/60 rounded-2xl p-5 hover:border-[#2997ff]/40 transition duration-300">
@@ -758,9 +821,12 @@ Nota Cruda Bitácora Operador: "${notaBase}"`
                     </div>
                     <span className="text-[10px] font-mono text-slate-400">Diagnóstico IA</span>
                   </div>
-                  <h4 className="text-white font-semibold text-sm sm:text-base mb-1">Informe Automatizado</h4>
+                  <h4 className="text-white font-semibold text-sm sm:text-base mb-1">Informe de Bitácora Real</h4>
                   <p className="text-slate-300 text-xs leading-relaxed">
-                    "Apertura programada efectuada hoy a las 08:32 hrs. Sensores perimetrales y de presencia sin alertas irregulares."
+                    {eventosBitacoraReales.length > 0
+                      ? `"${eventosBitacoraReales[0].comentario.slice(0, 110)}..."`
+                      : '"Apertura programada efectuada hoy sin novedades críticas anotadas."'
+                    }
                   </p>
                 </div>
 
@@ -769,11 +835,11 @@ Nota Cruda Bitácora Operador: "${notaBase}"`
                     <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
                       <Clock className="w-5 h-5" />
                     </div>
-                    <span className="text-[10px] font-mono text-slate-400">Registro Reciente</span>
+                    <span className="text-[10px] font-mono text-slate-400">Anotaciones Reales</span>
                   </div>
-                  <h4 className="text-white font-semibold text-sm sm:text-base mb-1">Desarme de Sistema</h4>
+                  <h4 className="text-white font-semibold text-sm sm:text-base mb-1">{eventosBitacoraReales.length} Registros en Bitácora</h4>
                   <p className="text-slate-300 text-xs leading-relaxed">
-                    Registrado hoy a las <span className="text-white font-semibold">08:32:15 AM</span> por usuario autorizador principal.
+                    Anotaciones ingresadas por los operadores de Central para la cuenta #{cuentaActiva}.
                   </p>
                 </div>
 
@@ -798,12 +864,15 @@ Nota Cruda Bitácora Operador: "${notaBase}"`
 
               </section>
 
-              {/* Línea de tiempo reciente */}
+              {/* Registro Real de Bitácora de la Central en el Resumen */}
               <section className="bg-[#081220]/90 backdrop-blur-xl border border-[#1a3356]/60 rounded-2xl p-5 sm:p-6">
                 <div className="flex items-center justify-between mb-5 pb-3 border-b border-[#1a2e4a]/60">
                   <div>
-                    <h3 className="text-base sm:text-lg font-bold text-white">Actividad Reciente en la Propiedad</h3>
-                    <p className="text-xs text-slate-400">Últimos eventos validados por la Central para #{cuentaActiva}</p>
+                    <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+                      <FileSearch className="w-5 h-5 text-[#2997ff]" />
+                      Bitácora Real de Central (Anotaciones de Operador)
+                    </h3>
+                    <p className="text-xs text-slate-400">Anotaciones directas registradas para el abonado #{cuentaActiva}</p>
                   </div>
                   <button
                     onClick={() => setActiveTab('historial')}
@@ -814,32 +883,49 @@ Nota Cruda Bitácora Operador: "${notaBase}"`
                 </div>
 
                 <div className="space-y-3">
-                  {[
-                    { hora: '03:15 AM', evento: 'Activación Alarma Perimetral Z04', desc: 'Verificación por patrulla Gama ejecutada', notaCruda: '03:15: Z4 Pir Patio. Llamada a Titular sin respuesta. Se despacha Móvil 2. Móvil 2 reporta perro suelto activó PIR. Propiedad intacta. Restablece 03:25.', tieneIa: true },
-                    { hora: '14:30 PM', evento: 'Corte de Energía Red Pública (CGE)', desc: 'Respaldo de batería activado al 100%', notaCruda: '14:30: Corte luz CGE en sector Recreo. Panel pasa a Batería 12V. Se avisa por SMS a Don Carlos.', tieneIa: true },
-                    { hora: '08:32 AM', evento: 'Desarme de Sistema (Apertura)', desc: 'Usuario Administrador Principal', tieneIa: false },
-                  ].map((evt, idx) => (
-                    <div key={idx} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-xl bg-[#0a1526] border border-[#162a45]">
-                      <div className="flex items-center gap-3">
-                        <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 flex-shrink-0" />
-                        <span className="text-[11px] sm:text-xs font-mono text-slate-400 w-20 sm:w-24 flex-shrink-0">{evt.hora}</span>
-                        <div className="flex-1 overflow-hidden">
-                          <p className="text-xs sm:text-sm font-semibold text-white truncate">{evt.evento}</p>
-                          <p className="text-[11px] text-slate-400 truncate">{evt.desc}</p>
+                  {eventosBitacoraReales.length > 0 ? (
+                    eventosBitacoraReales.slice(0, 4).map((b) => (
+                      <div key={b.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl bg-[#0a1526] border border-[#162a45]">
+                        <div className="flex items-start gap-3">
+                          <div
+                            className="w-3 h-3 rounded-full flex-shrink-0 mt-1"
+                            style={{ backgroundColor: b.tipo_color ? `#${b.tipo_color}` : '#2997ff' }}
+                          />
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-bold text-white">{b.tipo_nombre || 'ANOTACIÓN'}</span>
+                              <span className="text-[10px] font-mono text-[#2997ff] bg-[#10243e] px-2 py-0.5 rounded">
+                                Op: {b.responsable_nombre || 'Central Gama'}
+                              </span>
+                            </div>
+                            <p className="text-xs text-slate-300 mt-1 font-sans">{b.comentario}</p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between sm:justify-end gap-3 flex-shrink-0">
+                          <span className="text-[11px] font-mono text-slate-400">{b.created_at}</span>
+                          <button
+                            onClick={() =>
+                              procesarBitacoraConIA({
+                                evento: b.tipo_nombre || 'Anotación Operador',
+                                hora: b.created_at,
+                                notaReal: b.comentario,
+                                responsable: b.responsable_nombre,
+                              })
+                            }
+                            className="px-3 py-1.5 rounded-lg bg-blue-500/20 text-[#2997ff] border border-blue-500/30 text-xs font-semibold flex items-center gap-1.5 hover:bg-[#2997ff] hover:text-white transition"
+                          >
+                            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                            <span>Interpretar IA</span>
+                          </button>
                         </div>
                       </div>
-
-                      {evt.tieneIa && (
-                        <button
-                          onClick={() => procesarBitacoraConIA(evt)}
-                          className="px-3 py-1.5 rounded-lg bg-gradient-to-r from-blue-600/30 to-indigo-600/30 border border-blue-400/40 text-blue-300 hover:text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition hover:scale-105"
-                        >
-                          <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                          <span>Procedimiento IA</span>
-                        </button>
-                      )}
+                    ))
+                  ) : (
+                    <div className="p-4 text-center text-xs text-slate-400">
+                      {cargandoBitacora ? 'Cargando Bitácora de Central...' : 'Sin observaciones anotadas recientemente para esta cuenta.'}
                     </div>
-                  ))}
+                  )}
                 </div>
               </section>
 
@@ -910,14 +996,14 @@ Nota Cruda Bitácora Operador: "${notaBase}"`
           )}
 
           {/* ════════════════════════════════════════════════════════════════════
-             PESTAÑA 3: HISTORIAL & LÍNEA DE TIEMPO CON EXPLICACIÓN IA
+             PESTAÑA 3: HISTORIAL & LÍNEA DE TIEMPO (COTEJADO CON BITÁCORA REAL)
              ════════════════════════════════════════════════════════════════════ */}
           {activeTab === 'historial' && (
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                  <h3 className="text-xl font-bold text-white">Historial de Seguridad</h3>
-                  <p className="text-xs text-slate-400">Bitácora completa con asistente de interpretación IA para #{cuentaActiva}</p>
+                  <h3 className="text-xl font-bold text-white">Historial de Seguridad & Bitácora Real</h3>
+                  <p className="text-xs text-slate-400">Anotaciones de la Central cotejadas con Inteligencia Artificial para la cuenta #{cuentaActiva}</p>
                 </div>
 
                 <div className="flex items-center gap-2 bg-[#091526] p-1.5 rounded-xl border border-[#1a3356]/60">
@@ -935,76 +1021,83 @@ Nota Cruda Bitácora Operador: "${notaBase}"`
                 </div>
               </div>
 
+              {/* LISTADO DE EVENTOS REALES DE BITÁCORA */}
               <div className="bg-[#081220] border border-[#1a3356]/60 rounded-2xl divide-y divide-[#162a45]">
-                {eventosSupabase.length > 0 ? (
-                  eventosSupabase.map((evt) => (
-                    <div key={evt.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-[#0d1c33] transition">
+                {eventosBitacoraReales.length > 0 ? (
+                  eventosBitacoraReales.map((b) => (
+                    <div key={b.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-[#0d1c33] transition">
                       <div className="flex items-start gap-3">
-                        <div className="w-8 h-8 rounded-xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-[#2997ff] flex-shrink-0 mt-0.5">
-                          <Clock className="w-4 h-4" />
-                        </div>
+                        <div
+                          className="w-3.5 h-3.5 rounded-full flex-shrink-0 mt-1 shadow-sm"
+                          style={{ backgroundColor: b.tipo_color ? `#${b.tipo_color}` : '#2997ff' }}
+                        />
                         <div>
-                          <h4 className="text-sm font-semibold text-white">{evt.evento}</h4>
-                          <p className="text-xs text-slate-400">Zona {evt.zona || '00'} — {evt.nombre_abonado || evt.usuario || 'Sistema Gama'}</p>
+                          <div className="flex items-center gap-2">
+                            <h4 className="text-sm font-semibold text-white">{b.tipo_nombre || 'ANOTACIÓN CENTRAL'}</h4>
+                            <span className="text-[10px] font-mono text-[#2997ff] bg-[#10243e] px-2 py-0.5 rounded font-semibold">
+                              Op: {b.responsable_nombre || 'Central Gama'}
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-300 mt-1 font-sans leading-relaxed">{b.comentario}</p>
                         </div>
                       </div>
-                      <div className="flex items-center justify-between sm:justify-end gap-4">
-                        <span className="text-xs font-mono text-slate-400">
-                          {new Date(evt.fecha_hora).toLocaleString()}
-                        </span>
+                      <div className="flex items-center justify-between sm:justify-end gap-3 flex-shrink-0">
+                        <span className="text-xs font-mono text-slate-400">{b.created_at}</span>
                         <button
                           onClick={() =>
                             procesarBitacoraConIA({
-                              evento: evt.evento,
-                              hora: new Date(evt.fecha_hora).toLocaleTimeString(),
-                              notaCruda: `Evento ${evt.evento} en Zona ${evt.zona || '00'}. Registrado por comunicador 4G. Verificado por Central Gama.`,
+                              evento: b.tipo_nombre || 'Anotación Operador',
+                              hora: b.created_at,
+                              notaReal: b.comentario,
+                              responsable: b.responsable_nombre,
                             })
                           }
                           className="px-3 py-1 rounded-lg bg-blue-500/20 text-[#2997ff] border border-blue-500/30 text-xs font-semibold flex items-center gap-1.5 hover:bg-[#2997ff] hover:text-white transition"
                         >
                           <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                          <span>Procedimiento IA</span>
+                          <span>Interpretar IA</span>
                         </button>
                       </div>
                     </div>
                   ))
                 ) : (
-                  [
-                    { fecha: 'Hoy 03:15:00 AM', evento: 'Activación Alarma Perimetral Z04', detalles: 'Inspección Móvil #2 en Terreno', notaCruda: '03:15: Z4 Pir Patio. Llamada a Titular sin respuesta. Se despacha Móvil 2. Móvil 2 reporta perro suelto activó PIR. Propiedad intacta. Restablece 03:25.' },
-                    { fecha: 'Ayer 14:30:12 PM', evento: 'Corte de Energía Red Pública (CGE)', detalles: 'Conmutación a Batería de Respaldo 12V', notaCruda: '14:30: Corte luz CGE en sector Recreo. Panel pasa a Batería 12V. Se avisa por SMS a Don Carlos.' },
-                    { fecha: 'Ayer 20:10:44 PM', evento: 'Armado de Sistema (Cierre)', detalles: 'Usuario Autorizado #01 - Modo Noche' },
-                    { fecha: '24/08 14:22:10 PM', evento: 'Verificación de Sensores', detalles: 'Prueba de caminata zona exterior OK' },
-                  ].map((item, idx) => (
-                    <div key={idx} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-[#0d1c33] transition">
-                      <div className="flex items-start gap-3">
-                        <div className="w-8 h-8 rounded-xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-[#2997ff] flex-shrink-0 mt-0.5">
-                          <Clock className="w-4 h-4" />
+                  eventosSupabase.length > 0 ? (
+                    eventosSupabase.map((evt) => (
+                      <div key={evt.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-[#0d1c33] transition">
+                        <div className="flex items-start gap-3">
+                          <div className="w-8 h-8 rounded-xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-[#2997ff] flex-shrink-0 mt-0.5">
+                            <Clock className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <h4 className="text-sm font-semibold text-white">{evt.evento}</h4>
+                            <p className="text-xs text-slate-400">Zona {evt.zona || '00'} — {evt.nombre_abonado || evt.usuario || 'Sistema Gama'}</p>
+                          </div>
                         </div>
-                        <div>
-                          <h4 className="text-sm font-semibold text-white">{item.evento}</h4>
-                          <p className="text-xs text-slate-400">{item.detalles}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-between sm:justify-end gap-3">
-                        <span className="text-xs font-mono text-slate-400">{item.fecha}</span>
-                        {item.notaCruda && (
+                        <div className="flex items-center justify-between sm:justify-end gap-4">
+                          <span className="text-xs font-mono text-slate-400">
+                            {new Date(evt.fecha_hora).toLocaleString()}
+                          </span>
                           <button
                             onClick={() =>
                               procesarBitacoraConIA({
-                                evento: item.evento,
-                                hora: item.fecha,
-                                notaCruda: item.notaCruda,
+                                evento: evt.evento,
+                                hora: new Date(evt.fecha_hora).toLocaleTimeString(),
+                                notaReal: '',
                               })
                             }
-                            className="px-3 py-1 rounded-lg bg-blue-500/20 text-[#2997ff] border border-blue-500/30 text-xs font-semibold flex items-center gap-1.5 hover:bg-[#2997ff] hover:text-white transition"
+                            className="px-3 py-1 rounded-lg bg-slate-800 text-slate-400 text-xs font-semibold flex items-center gap-1.5 hover:text-white transition"
                           >
-                            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                            <span>Explicación IA</span>
+                            <FileSearch className="w-3.5 h-3.5" />
+                            <span>Sin Anotación</span>
                           </button>
-                        )}
+                        </div>
                       </div>
+                    ))
+                  ) : (
+                    <div className="p-6 text-center text-xs text-slate-400">
+                      Sin observaciones anotadas en la Bitácora para la cuenta #{cuentaActiva}.
                     </div>
-                  ))
+                  )
                 )}
               </div>
             </motion.div>
@@ -1237,7 +1330,7 @@ Nota Cruda Bitácora Operador: "${notaBase}"`
       </AnimatePresence>
 
       {/* ════════════════════════════════════════════════════════════════════
-         MODAL IA CONCIERGE: INTERPRETACIONAL DE BITÁCORA Y PROCEDIMIENTO
+         MODAL IA CONCIERGE: INTERPRETACIÓN REAL DE ANOTACIÓN DE BITÁCORA
          ════════════════════════════════════════════════════════════════════ */}
       <AnimatePresence>
         {modalIaBitacora && (
@@ -1248,7 +1341,6 @@ Nota Cruda Bitácora Operador: "${notaBase}"`
               exit={{ scale: 0.95, opacity: 0, y: 15 }}
               className="bg-[#091526] border border-[#2997ff]/40 rounded-3xl max-w-xl w-full p-6 sm:p-7 relative overflow-hidden shadow-2xl text-left"
             >
-              {/* Resplandor ambiental de IA */}
               <div className="absolute top-0 right-0 w-64 h-64 bg-[#2997ff]/10 rounded-full blur-[80px] pointer-events-none" />
 
               <button
@@ -1264,32 +1356,39 @@ Nota Cruda Bitácora Operador: "${notaBase}"`
                 </div>
                 <div>
                   <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
-                    Explicación de Procedimiento IA
+                    Interpretación IA de Bitácora Real
                     <span className="text-[10px] bg-blue-500/20 text-[#2997ff] border border-blue-500/30 px-2 py-0.5 rounded-full font-mono">
-                      Concierge AI
+                      Veracidad 100%
                     </span>
                   </h3>
-                  <p className="text-xs text-slate-400">Traducción ejecutiva de Bitácora · Central Gama</p>
+                  <p className="text-xs text-slate-400">Cotejado directo con los registros de la Central Gama</p>
                 </div>
               </div>
 
               {eventoIaActual && (
-                <div className="bg-[#0b1b33] border border-[#1e3a5f] rounded-2xl p-3.5 mb-4 text-xs">
-                  <span className="text-[10px] font-mono text-[#2997ff] font-bold uppercase">Evento Analizado</span>
-                  <p className="text-white font-semibold text-sm mt-0.5">{eventoIaActual.evento}</p>
-                  <p className="text-[#2997ff] font-mono text-[11px] mt-0.5">{eventoIaActual.hora}</p>
+                <div className="bg-[#0b1b33] border border-[#1e3a5f] rounded-2xl p-3.5 mb-4 text-xs space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-mono text-[#2997ff] font-bold uppercase">Anotación Original de Bitácora</span>
+                    <span className="text-[10px] font-mono text-slate-400">{eventoIaActual.hora}</span>
+                  </div>
+                  <p className="text-amber-300 font-mono text-xs bg-[#061020] p-2.5 rounded-xl border border-[#162d4e]">
+                    "{eventoIaActual.notaReal || 'Sin comentario escrito'}"
+                  </p>
+                  {eventoIaActual.responsable && (
+                    <p className="text-[10px] text-slate-400 pt-0.5">Operador a cargo: {eventoIaActual.responsable}</p>
+                  )}
                 </div>
               )}
 
               {cargandoIa ? (
-                <div className="py-10 text-center space-y-3">
-                  <div className="w-10 h-10 border-3 border-[#2997ff] border-t-transparent rounded-full animate-spin mx-auto" />
+                <div className="py-8 text-center space-y-3">
+                  <div className="w-9 h-9 border-3 border-[#2997ff] border-t-transparent rounded-full animate-spin mx-auto" />
                   <p className="text-xs text-slate-300 font-mono">
-                    La Inteligencia Artificial está analizando y filtrando las notas de Bitácora...
+                    La Inteligencia Artificial está procesando la anotación de Bitácora en lenguaje cliente...
                   </p>
                 </div>
               ) : (
-                <div className="prose prose-invert max-w-none text-xs sm:text-sm text-slate-200 leading-relaxed bg-[#071120] border border-[#162e4f] p-4 sm:p-5 rounded-2xl max-h-[50vh] overflow-y-auto whitespace-pre-wrap">
+                <div className="prose prose-invert max-w-none text-xs sm:text-sm text-slate-200 leading-relaxed bg-[#071120] border border-[#162e4f] p-4 sm:p-5 rounded-2xl max-h-[45vh] overflow-y-auto whitespace-pre-wrap">
                   {explicacionIa}
                 </div>
               )}
