@@ -344,19 +344,18 @@ Anotación REAL de Bitácora Operador: "${item.notaReal}"`
           transition={{ duration: 0.4 }}
           className="relative z-10 w-full max-w-md bg-[#091222]/95 backdrop-blur-2xl border border-[#1e3e6b]/70 rounded-3xl p-6 sm:p-8 shadow-2xl shadow-black/80"
         >
+          {/* LOGO AISLADO SIN CUADRADO OSCURO */}
           <div className="flex flex-col items-center mb-6 text-center">
-            <div className="relative group my-2 cursor-pointer">
-              <div className="absolute -inset-2 bg-gradient-to-r from-[#0066cc] via-[#2997ff] to-amber-400/40 rounded-3xl blur-md opacity-60 group-hover:opacity-100 transition duration-500" />
+            <div className="relative group my-2 cursor-pointer flex flex-col items-center">
+              <div className="absolute -inset-4 bg-gradient-to-tr from-[#0066cc]/40 via-[#2997ff]/20 to-amber-400/30 rounded-full blur-2xl opacity-70 group-hover:opacity-100 transition duration-500 pointer-events-none" />
               
-              <div className="relative w-28 h-28 bg-[#0a1628] border border-[#2a4875] rounded-3xl p-4 flex items-center justify-center shadow-2xl">
-                <div className="absolute top-2 right-2 w-3 h-3 bg-emerald-500 rounded-full animate-ping" />
-                <div className="absolute top-2 right-2 w-3 h-3 bg-emerald-500 rounded-full border-2 border-[#0a1628]" />
+              <div className="relative w-28 h-28 flex items-center justify-center">
                 <Image
                   src="/logo-gama.png"
                   alt="GAMA SEGURIDAD Octágono"
-                  width={90}
-                  height={90}
-                  className="object-contain filter drop-shadow(0 4px 14px rgba(0,102,204,0.6))"
+                  width={110}
+                  height={110}
+                  className="object-contain filter drop-shadow(0 0 22px rgba(0,102,204,0.85)) transition-transform duration-300 group-hover:scale-105"
                   priority
                 />
               </div>
@@ -490,10 +489,16 @@ Anotación REAL de Bitácora Operador: "${item.notaReal}"`
             <span className="text-xs font-semibold text-slate-300">Menú</span>
           </button>
 
+          {/* LOGO AISLADO MOBILE */}
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-[#0a1628] border border-[#2a4875] p-1 flex items-center justify-center shadow-md">
-              <Image src="/logo-gama.png" alt="GAMA Octágono" width={24} height={24} className="object-contain" priority />
-            </div>
+            <Image
+              src="/logo-gama.png"
+              alt="GAMA SEGURIDAD Octágono"
+              width={32}
+              height={32}
+              className="object-contain filter drop-shadow(0 0 10px rgba(0,102,204,0.85))"
+              priority
+            />
             <span className="font-extrabold text-sm tracking-wider text-white font-mono">
               GAMA<span className="text-[#2997ff]">SEGURIDAD</span>
             </span>
@@ -534,14 +539,16 @@ Anotación REAL de Bitácora Operador: "${item.notaReal}"`
                   </button>
                 </div>
 
+                {/* LOGO AISLADO MOBILE DRAWER */}
                 <div className="my-5 flex flex-col items-center">
-                  <div className="relative w-24 h-24 bg-[#0a1628] border border-[#2a4875] rounded-2xl p-3 flex items-center justify-center shadow-xl">
+                  <div className="relative w-24 h-24 flex items-center justify-center">
+                    <div className="absolute -inset-3 bg-[#0066cc]/30 rounded-full blur-xl pointer-events-none" />
                     <Image
                       src="/logo-gama.png"
                       alt="GAMA SEGURIDAD Octágono"
-                      width={72}
-                      height={72}
-                      className="object-contain filter drop-shadow(0 4px 12px rgba(0,102,204,0.5))"
+                      width={90}
+                      height={90}
+                      className="object-contain filter drop-shadow(0 0 16px rgba(0,102,204,0.75))"
                       priority
                     />
                   </div>
@@ -605,23 +612,22 @@ Anotación REAL de Bitácora Operador: "${item.notaReal}"`
         <aside className="hidden lg:flex flex-col w-72 shrink-0 border-r border-[#1a2e4a]/80 bg-[#08101d] sticky top-0 h-screen overflow-y-auto justify-between p-5">
           <div className="flex flex-col items-center">
             
-            <div className="relative group cursor-pointer my-3 flex flex-col items-center w-full">
-              <div className="absolute -inset-2 bg-gradient-to-r from-[#0066cc] via-[#2997ff] to-amber-500/40 rounded-3xl blur-md opacity-40 group-hover:opacity-80 transition duration-500" />
+            {/* LOGO AISLADO DESKTOP SIDEBAR */}
+            <div className="relative group cursor-pointer my-4 flex flex-col items-center w-full">
+              <div className="absolute -inset-4 bg-gradient-to-tr from-[#0066cc]/30 via-[#2997ff]/20 to-amber-500/30 rounded-full blur-2xl opacity-60 group-hover:opacity-90 transition duration-500 pointer-events-none" />
               
-              <div className="relative w-32 h-32 bg-[#0a1628] border border-[#2a4875] rounded-3xl p-4 flex items-center justify-center shadow-2xl shadow-[#0066cc]/30 transition-transform duration-300 group-hover:scale-105">
-                <div className="absolute top-2 right-2 w-3 h-3 bg-emerald-500 rounded-full animate-ping" />
-                <div className="absolute top-2 right-2 w-3 h-3 bg-emerald-500 rounded-full border-2 border-[#0a1628]" />
+              <div className="relative w-32 h-32 flex items-center justify-center">
                 <Image
                   src="/logo-gama.png"
                   alt="GAMA SEGURIDAD Octágono"
-                  width={96}
-                  height={96}
-                  className="object-contain filter drop-shadow(0 6px 16px rgba(0,102,204,0.6))"
+                  width={120}
+                  height={120}
+                  className="object-contain filter drop-shadow(0 0 25px rgba(0,102,204,0.75)) transition-transform duration-300 group-hover:scale-105"
                   priority
                 />
               </div>
 
-              <div className="mt-4 text-center">
+              <div className="mt-3 text-center">
                 <h2 className="text-white font-extrabold text-xl tracking-wider uppercase font-mono">
                   GAMA<span className="text-[#2997ff]">SEGURIDAD</span>
                 </h2>
@@ -1098,10 +1104,10 @@ Anotación REAL de Bitácora Operador: "${item.notaReal}"`
           )}
 
           {/* ════════════════════════════════════════════════════════════════════
-             PESTAÑA 4: CONTACTOS AUTORIZADOS (CON BOTÓN WHATSAPP AL MEDIO ABAJO)
+             PESTAÑA 4: CONTACTOS AUTORIZADOS (CON BOTÓN WHATSAPP INDEPENDIENTE ABAJO)
              ════════════════════════════════════════════════════════════════════ */}
           {activeTab === 'contactos' && (
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
               <div>
                 <h3 className="text-xl font-bold text-white">Directorio de Contactos de Emergencia</h3>
                 <p className="text-xs text-slate-400">Personas autorizadas para llamadas de verificación de la Central</p>
@@ -1124,15 +1130,15 @@ Anotación REAL de Bitácora Operador: "${item.notaReal}"`
                 ))}
               </div>
 
-              {/* BOTÓN AL MEDIO ABAJO PARA ACTUALIZAR INFORMACIÓN VÍA WHATSAPP (+56948855190) */}
-              <div className="pt-6 flex justify-center">
+              {/* BOTÓN WHATSAPP INDEPENDIENTE SEPARADO AL MEDIO ABAJO */}
+              <div className="pt-10 pb-6 flex justify-center">
                 <a
                   href={linkWhatsAppContactos}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-sm uppercase tracking-wider rounded-2xl flex items-center justify-center gap-3 shadow-xl shadow-emerald-950/50 hover:scale-105 transition-all duration-200 border border-emerald-400/30"
+                  className="w-full sm:w-auto px-8 py-4 bg-[#25D366] hover:bg-[#20bd5a] text-white font-extrabold text-sm uppercase tracking-wider rounded-2xl flex items-center justify-center gap-3 shadow-xl shadow-emerald-950/60 hover:scale-105 transition-all duration-200 border border-emerald-400/40"
                 >
-                  <MessageSquare className="w-5 h-5 text-white animate-bounce" />
+                  <MessageSquare className="w-5 h-5 text-white" />
                   <span>ACTUALIZAR INFORMACIÓN</span>
                 </a>
               </div>
@@ -1191,9 +1197,9 @@ Anotación REAL de Bitácora Operador: "${item.notaReal}"`
                     href={linkWhatsAppServicio}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-full py-3.5 bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl flex items-center justify-center gap-2 transition shadow-lg shadow-emerald-950/40 border border-emerald-400/30"
+                    className="w-full py-3.5 bg-[#25D366] hover:bg-[#20bd5a] text-white font-extrabold text-xs uppercase tracking-wider rounded-xl flex items-center justify-center gap-2 transition shadow-lg shadow-emerald-950/40 border border-emerald-400/40"
                   >
-                    <MessageSquare className="w-4 h-4" />
+                    <MessageSquare className="w-4 h-4 text-white" />
                     <span>SOLICITAR SERVICIO TÉCNICO</span>
                   </a>
                 </div>
@@ -1227,7 +1233,7 @@ Anotación REAL de Bitácora Operador: "${item.notaReal}"`
                     href={`https://wa.me/56948855190?text=${encodeURIComponent(`Le habla el cliente ${cuentaActiva} ${clienteInfo.NOMBRE} quisiera consultar a la Central.`)}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition shadow-lg shadow-emerald-950/50 flex items-center justify-center gap-2"
+                    className="py-3.5 bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold text-xs uppercase tracking-wider rounded-xl transition shadow-lg shadow-emerald-950/50 flex items-center justify-center gap-2"
                   >
                     <MessageSquare className="w-4 h-4" />
                     WhatsApp Operador
