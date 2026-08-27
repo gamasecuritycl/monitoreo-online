@@ -269,10 +269,11 @@ export default function ReportesModal({
 
       const rawEventos: EventoMonitoreo[] = data || []
 
-      // Deduplicar eventos duplicados si hubiese
+      // Deduplicar eventos duplicados si hubiese e ignorar filas no operativas
       const vistos = new Set<string>()
       const unicos: EventoMonitoreo[] = []
       for (const ev of rawEventos) {
+        if ((ev.evento || '').toUpperCase().trim() === 'PREMIUM') continue
         const key = `${ev.cuenta}_${ev.evento}_${ev.zona}_${ev.usuario}_${ev.fecha_hora}`
         if (!vistos.has(key)) {
           vistos.add(key)
