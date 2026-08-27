@@ -1064,12 +1064,13 @@ export default function ScorpionDashboard() {
         <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%)] bg-[size:100%_4px] z-10" />
         
         <LoginModal
-          onClose={() => {}}
+          onClose={() => setSesionIniciada(true)}
           onLoginSuccess={(op) => {
             setUsuarioActivo(op)
             setSesionIniciada(true)
           }}
           operadores={operadores}
+          usuarioActual={usuarioActivo}
         />
       </div>
     )
