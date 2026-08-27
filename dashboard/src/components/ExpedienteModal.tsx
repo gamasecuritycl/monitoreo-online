@@ -187,6 +187,93 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
     }
   }
 
+  // Estados para Editor Remoto de Contactos (Scorpion GENERAL.MDB)
+  const [editandoContactos, setEditandoContactos] = useState(false)
+  const [contactosForm, setContactosForm] = useState<Array<{ num: number; nombre: string; direccion: string; cargo: string; telefono: string }>>([])
+  const [guardandoRemoto, setGuardandoRemoto] = useState(false)
+  const [syncFeedback, setSyncFeedback] = useState<{ tipo: 'idle' | 'enviando' | 'ok' | 'error'; msg: string }>({ tipo: 'idle', msg: '' })
+
+  const abrirEditorContactos = () => {
+    const c = clientesMap[cuentaActiva] || clientesGeneralFallback[cuentaActiva] || {}
+    const list = []
+    for (let i = 1; i <= 7; i++) {
+      list.push({
+        num: i,
+        nombre: c[`nombre${i}`] || '',
+        direccion: c[`direccion${i}`] || '',
+        cargo: c[`carg${i}`] || '',
+        telefono: c[`t${i}`] || ''
+      })
+    }
+    setContactosForm(list)
+    setEditandoContactos(true)
+    setSyncFeedback({ tipo: 'idle', msg: '' })
+  }
+
+  const guardarContactosRemoto = async () => {
+    setGuardandoRemoto(true)
+    setSyncFeedback({ tipo: 'enviando', msg: 'Enviando orden a PC Scorpion...' })
+
+    try {
+      const c = clientesMap[cuentaActiva] || clientesGeneralFallback[cuentaActiva] || {}
+      const datosNuevos: Record<string, string> = {}
+      const datosAnteriores: Record<string, string> = {}
+
+      contactosForm.forEach(item => {
+        const i = item.num
+        datosNuevos[`nombre${i}`] = item.nombre.trim()
+        datosNuevos[`direccion${i}`] = item.direccion.trim()
+        datosNuevos[`carg${i}`] = item.cargo.trim()
+        datosNuevos[`t${i}`] = item.telefono.trim()
+
+        datosAnteriores[`nombre${i}`] = c[`nombre${i}`] || ''
+        datosAnteriores[`direccion${i}`] = c[`direccion${i}`] || ''
+        datosAnteriores[`carg${i}`] = c[`carg${i}`] || ''
+        datosAnteriores[`t${i}`] = c[`t${i}`] || ''
+      })
+
+      // Llamada a la API de Editor Remoto
+      const res = await fetch('/api/editor-remoto', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          cuenta: cuentaActiva,
+          tipoOperacion: 'EDITAR_CONTACTOS',
+          datosNuevos,
+          datosAnteriores,
+          operador: { nombre: 'OPERADOR CENTRAL', rol: usuarioRol }
+        })
+      })
+
+      const json = await res.json()
+
+      if (!res.ok || !json.success) {
+        throw new Error(json.error || 'Error al guardar en el servidor')
+      }
+
+      // Actualizar cliente local en memoria
+      setClientesMap(prev => ({
+        ...prev,
+        [cuentaActiva]: {
+          ...(prev[cuentaActiva] || {}),
+          ...datosNuevos
+        }
+      }))
+
+      setSyncFeedback({ tipo: 'ok', msg: '✅ Sincronizado en PC Scorpion (GENERAL.MDB)' })
+      setTimeout(() => {
+        setEditandoContactos(false)
+        setSyncFeedback({ tipo: 'idle', msg: '' })
+      }, 1500)
+
+    } catch (err: any) {
+      console.error('Error guardando contactos remoto:', err)
+      setSyncFeedback({ tipo: 'error', msg: `❌ Error: ${err.message}` })
+    } finally {
+      setGuardandoRemoto(false)
+    }
+  }
+
   const aplicarPlantillaExpediente = (tipo: 'comercio' | 'retail' | 'industrial' | '24_7') => {
     if (tipo === 'comercio') {
       setHorariosDias([
@@ -1059,36 +1146,167 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
                 )}
                 {tabEmergentes === 'telefonos' && (
                   <div className="border border-gray-400 p-1 relative flex-1 bg-[#d4d0c8] flex flex-col overflow-hidden">
-                    <div className="absolute -top-2 left-2 bg-[#d4d0c8] px-1 text-[8px] font-bold text-gray-700">
-                      NUMEROS DE EMERGENCIA
-                    </div>
-                    <div className="flex-1 bg-[#ffffd0] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white overflow-y-auto">
-                      <table className="w-full border-collapse text-[10px] text-left">
-                        <thead>
-                          <tr className="bg-[#b0b0b0] border-b border-gray-400 font-bold sticky top-0">
-                            <th className="p-0.5 border-r border-gray-400 w-1/4">Nombre</th>
-                            <th className="p-0.5 border-r border-gray-400 w-1/4">Dirección</th>
-                            <th className="p-0.5 border-r border-gray-400 w-1/6">Cargo</th>
-                            <th className="p-0.5">Teléfono</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-300">
-                          {telefonosEmergencia.map((tel, idx) => (
-                            <tr key={idx} className="hover:bg-blue-100 font-bold text-gray-800 h-5">
-                              <td className="p-0.5 border-r border-gray-300 truncate max-w-[80px] sm:max-w-[120px]">{tel.nombre}</td>
-                              <td className="p-0.5 border-r border-gray-300 truncate max-w-[80px] sm:max-w-[180px]">{tel.direccion}</td>
-                              <td className="p-0.5 border-r border-gray-300 truncate max-w-[50px] sm:max-w-[80px]">{tel.cargo}</td>
-                              <td className="p-0.5 font-mono text-blue-900 truncate max-w-[80px]">{tel.telefono}</td>
-                            </tr>
-                          ))}
-                          {telefonosEmergencia.length === 0 && (
-                            <tr>
-                              <td colSpan={4} className="p-2 text-center text-gray-400 italic">No hay contactos</td>
-                            </tr>
+                    <div className="flex justify-between items-center bg-[#d4d0c8] px-1 pb-1 border-b border-gray-300 shrink-0">
+                      <span className="text-[10px] font-bold text-gray-800 uppercase flex items-center gap-1">
+                        <span>📞</span> PERSONAS AUTORIZADAS Y CONTACTOS ({telefonosEmergencia.length})
+                      </span>
+                      {!editandoContactos ? (
+                        <button
+                          type="button"
+                          onClick={abrirEditorContactos}
+                          className="bg-[#000080] text-white border border-t-blue-300 border-l-blue-300 border-b-black border-r-black px-2 py-0.5 text-[9px] font-bold hover:bg-blue-900 cursor-pointer flex items-center gap-1 shadow-xs"
+                          title="Modificar contactos directamente en la base de datos de Scorpion"
+                        >
+                          <span>✏️</span> EDITAR CONTACTOS (EDITOR REMOTO)
+                        </button>
+                      ) : (
+                        <div className="flex items-center gap-1.5">
+                          {syncFeedback.tipo === 'enviando' && (
+                            <span className="text-[9px] font-bold text-amber-800 animate-pulse">
+                              ⏳ Sincronizando con PC Scorpion...
+                            </span>
                           )}
-                        </tbody>
-                      </table>
+                          {syncFeedback.tipo === 'ok' && (
+                            <span className="text-[9px] font-bold text-green-800 bg-green-200 px-1 rounded-xs">
+                              {syncFeedback.msg}
+                            </span>
+                          )}
+                          {syncFeedback.tipo === 'error' && (
+                            <span className="text-[9px] font-bold text-red-800 bg-red-200 px-1 rounded-xs">
+                              {syncFeedback.msg}
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </div>
+
+                    {!editandoContactos ? (
+                      <div className="flex-1 bg-[#ffffd0] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white overflow-y-auto mt-1">
+                        <table className="w-full border-collapse text-[10px] text-left">
+                          <thead>
+                            <tr className="bg-[#b0b0b0] border-b border-gray-400 font-bold sticky top-0">
+                              <th className="p-1 border-r border-gray-400 w-8 text-center">PR</th>
+                              <th className="p-1 border-r border-gray-400 w-1/4">Nombre / Contacto</th>
+                              <th className="p-1 border-r border-gray-400 w-1/4">Instrucción / Contraseña</th>
+                              <th className="p-1 border-r border-gray-400 w-1/6">Cargo</th>
+                              <th className="p-1">Teléfono</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-300">
+                            {telefonosEmergencia.map((tel, idx) => (
+                              <tr key={idx} className="hover:bg-blue-100 font-bold text-gray-800 h-5">
+                                <td className="p-1 border-r border-gray-300 font-mono text-center text-blue-950 font-black">{tel.num}</td>
+                                <td className="p-1 border-r border-gray-300 truncate max-w-[80px] sm:max-w-[120px]">{tel.nombre}</td>
+                                <td className="p-1 border-r border-gray-300 truncate max-w-[80px] sm:max-w-[180px] text-gray-700">{tel.direccion}</td>
+                                <td className="p-1 border-r border-gray-300 truncate max-w-[50px] sm:max-w-[80px]">{tel.cargo}</td>
+                                <td className="p-1 font-mono text-blue-900 font-black truncate max-w-[90px]">{tel.telefono}</td>
+                              </tr>
+                            ))}
+                            {telefonosEmergencia.length === 0 && (
+                              <tr>
+                                <td colSpan={5} className="p-3 text-center text-gray-400 italic">No hay contactos registrados</td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <div className="flex-1 bg-white border border-t-gray-700 border-l-gray-700 border-b-white border-r-white flex flex-col overflow-hidden mt-1 p-1">
+                        <div className="flex-1 overflow-y-auto">
+                          <table className="w-full border-collapse text-[10px] text-left">
+                            <thead className="bg-[#000080] text-white font-bold sticky top-0 text-[9px]">
+                              <tr>
+                                <th className="p-1 w-8 text-center">PR</th>
+                                <th className="p-1 w-[26%]">Nombre Contacto</th>
+                                <th className="p-1 w-[20%]">Cargo / Relación</th>
+                                <th className="p-1 w-[24%]">Teléfono</th>
+                                <th className="p-1 w-[26%]">Instrucción / Contraseña</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-300">
+                              {contactosForm.map((item, idx) => (
+                                <tr key={item.num} className="hover:bg-blue-50">
+                                  <td className="p-1 text-center font-bold font-mono text-blue-900">{item.num}</td>
+                                  <td className="p-1">
+                                    <input
+                                      type="text"
+                                      value={item.nombre}
+                                      onChange={(e) => {
+                                        const v = e.target.value
+                                        setContactosForm(prev => prev.map((c, i) => i === idx ? { ...c, nombre: v } : c))
+                                      }}
+                                      placeholder={`Contacto ${item.num}...`}
+                                      className="w-full bg-[#ffffd0] border border-gray-400 px-1 py-0.5 font-bold text-gray-900 focus:outline-none focus:border-blue-600"
+                                    />
+                                  </td>
+                                  <td className="p-1">
+                                    <input
+                                      type="text"
+                                      value={item.cargo}
+                                      onChange={(e) => {
+                                        const v = e.target.value
+                                        setContactosForm(prev => prev.map((c, i) => i === idx ? { ...c, cargo: v } : c))
+                                      }}
+                                      placeholder="Ej: TITULAR, VECINO..."
+                                      className="w-full bg-white border border-gray-300 px-1 py-0.5 text-gray-800 focus:outline-none focus:border-blue-600"
+                                    />
+                                  </td>
+                                  <td className="p-1">
+                                    <input
+                                      type="text"
+                                      value={item.telefono}
+                                      onChange={(e) => {
+                                        const v = e.target.value
+                                        setContactosForm(prev => prev.map((c, i) => i === idx ? { ...c, telefono: v } : c))
+                                      }}
+                                      placeholder="Ej: 987654321..."
+                                      className="w-full bg-[#ffffd0] border border-gray-400 px-1 py-0.5 font-mono font-bold text-blue-950 focus:outline-none focus:border-blue-600"
+                                    />
+                                  </td>
+                                  <td className="p-1">
+                                    <input
+                                      type="text"
+                                      value={item.direccion}
+                                      onChange={(e) => {
+                                        const v = e.target.value
+                                        setContactosForm(prev => prev.map((c, i) => i === idx ? { ...c, direccion: v } : c))
+                                      }}
+                                      placeholder="Instrucción / Clave..."
+                                      className="w-full bg-white border border-gray-300 px-1 py-0.5 text-gray-800 focus:outline-none focus:border-blue-600"
+                                    />
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+
+                        {/* Botonera de Guardar Cambios */}
+                        <div className="flex justify-between items-center pt-1.5 border-t border-gray-300 bg-[#e8e8e8] px-2 py-1 mt-1 shrink-0">
+                          <span className="text-[9px] text-gray-600 font-mono">
+                            Modificando base de datos Scorpion de la cuenta <strong>[{cuentaActiva}]</strong>
+                          </span>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setEditandoContactos(false)}
+                              disabled={guardandoRemoto}
+                              className="bg-[#d4d0c8] border border-t-white border-l-white border-b-black border-r-black px-2 py-0.5 text-[9px] font-bold text-black hover:bg-[#e0e0e0] cursor-pointer"
+                            >
+                              Cancelar
+                            </button>
+                            <button
+                              type="button"
+                              onClick={guardarContactosRemoto}
+                              disabled={guardandoRemoto}
+                              className="bg-[#000080] text-white border border-t-blue-400 border-l-blue-400 border-b-black border-r-black px-3 py-0.5 text-[9px] font-bold hover:bg-blue-900 active:border-t-black active:border-l-black active:border-b-white active:border-r-white cursor-pointer shadow-xs disabled:opacity-50"
+                            >
+                              {guardandoRemoto ? 'Sincronizando...' : '💾 GUARDAR Y SINCRONIZAR EN SCORPION'}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 

@@ -9,6 +9,7 @@ export interface UserAttributes {
   enviarMensajesWhatsApp: boolean    // Envío directo de mensajes WhatsApp y notificaciones
   editarZonificacion: boolean        // Edición de zonas MDB, sensores y paneles
   controlTestSimulador: boolean      // Simulador de eventos y control de pruebas (test)
+  editarAbonadosRemoto: boolean      // Editor Remoto: Modificación de teléfonos, contactos y fichas en Scorpion
 }
 
 export interface Operator {
@@ -63,6 +64,11 @@ export const ATRIBUTOS_DESCRIPCION: Record<keyof UserAttributes, { label: string
     desc: 'Pruebas manuales de comunicación, simulador de señales y pruebas periódicas.',
     icon: '🧪',
   },
+  editarAbonadosRemoto: {
+    label: 'Editor Remoto (Scorpion .MDB)',
+    desc: 'Modificación remota de teléfonos, contactos, referencias y alta de abonados.',
+    icon: '✏️',
+  },
 }
 
 const PERMISOS_OPERADOR: UserAttributes = {
@@ -74,6 +80,7 @@ const PERMISOS_OPERADOR: UserAttributes = {
   enviarMensajesWhatsApp: true,
   editarZonificacion: false,
   controlTestSimulador: true,
+  editarAbonadosRemoto: false,
 }
 
 export const DEFAULT_ATTRIBUTES_BY_ROLE: Record<UserRole, UserAttributes> = {
@@ -86,6 +93,7 @@ export const DEFAULT_ATTRIBUTES_BY_ROLE: Record<UserRole, UserAttributes> = {
     enviarMensajesWhatsApp: true,
     editarZonificacion: true,
     controlTestSimulador: true,
+    editarAbonadosRemoto: true,
   },
   Supervisor: {
     verMonitoreoEnVivo: true,
@@ -96,6 +104,7 @@ export const DEFAULT_ATTRIBUTES_BY_ROLE: Record<UserRole, UserAttributes> = {
     enviarMensajesWhatsApp: true,
     editarZonificacion: true,
     controlTestSimulador: true,
+    editarAbonadosRemoto: true,
   },
   Operador: PERMISOS_OPERADOR,
   Operadora: PERMISOS_OPERADOR,
@@ -108,6 +117,7 @@ export const DEFAULT_ATTRIBUTES_BY_ROLE: Record<UserRole, UserAttributes> = {
     enviarMensajesWhatsApp: false,
     editarZonificacion: true,
     controlTestSimulador: true,
+    editarAbonadosRemoto: false,
   },
 }
 
