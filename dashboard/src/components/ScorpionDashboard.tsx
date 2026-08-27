@@ -137,6 +137,8 @@ export default function ScorpionDashboard() {
   const [whatsappTelefonoInicial, setWhatsappTelefonoInicial] = useState<string | undefined>(undefined)
   const [servicioTecnicoInitialData, setServicioTecnicoInitialData] = useState<{ cuenta?: string; problema?: string } | null>(null)
   
+  const [tabGeneralActiva, setTabGeneralActiva] = useState<'referencias' | 'caracteristicas' | 'observaciones'>('referencias')
+  
   // Mapa de clientes cargado en tiempo real
   const [clientesMap, setClientesMap] = useState<Record<string, Record<string, string>>>({})
   
@@ -1335,20 +1337,33 @@ export default function ScorpionDashboard() {
         {/* Lado Derecho: Réplica Panel Scorpion (Oculto en móvil, visible en PC) */}
         <div className="hidden md:flex flex-1 flex-col bg-[#c0c0c0] text-black overflow-y-auto border-l border-white p-1 gap-1 select-text text-[11px]">
           
-          {/* Fila 1: Logo GAMA / SCORPION + Estado en Negro */}
-          <div className="grid grid-cols-2 gap-1 shrink-0">
-            {/* Box Izquierdo GAMA */}
-            <div className="bg-[#e0e0e0] border border-t-white border-l-white border-b-gray-600 border-r-gray-600 p-1 flex items-center justify-center">
-              <span className="text-[#0a1a5c] font-black text-2xl tracking-wider" style={{ fontFamily: 'sans-serif' }}>GAMA</span>
+          {/* 1. INFORMACION BASICA (EN EL TOPE SUPERIOR) */}
+          <div className="bg-[#e0e0e0] border border-t-white border-l-white border-b-gray-600 border-r-gray-600 flex flex-col shrink-0 shadow-xs">
+            <div className="bg-[#000080] text-white text-[10px] font-bold px-2 py-0.5 tracking-wider uppercase flex items-center justify-between">
+              <span>Informacion Basica</span>
+              <span className="font-mono text-cyan-300 text-[9px]">GENERAL.MDB</span>
             </div>
-            {/* Box Derecho SCORPION */}
-            <div className="bg-[#000080] border border-t-white border-l-white border-b-gray-600 border-r-gray-600 p-1 flex flex-col items-center justify-center text-white">
-              <span className="font-bold text-xs tracking-wide" style={{ fontFamily: 'sans-serif' }}>SCORPION</span>
-              <span className="text-[8px] opacity-75">monitoring software</span>
+            <div className="p-1 space-y-0.5 text-[11px]">
+              <div className="grid grid-cols-4 gap-1">
+                <span className="font-bold text-gray-700">Abonado:</span>
+                <span className="col-span-3 bg-white px-1 border border-gray-400 font-mono font-bold text-blue-900">{activeEvent?.cuenta || '---'}</span>
+              </div>
+              <div className="grid grid-cols-4 gap-1">
+                <span className="font-bold text-gray-700">Nombre:</span>
+                <span className="col-span-3 bg-white px-1 border border-gray-400 truncate font-bold text-gray-900">{activeEvent?.nombre_abonado || clientData?.nombre || '---'}</span>
+              </div>
+              <div className="grid grid-cols-4 gap-1">
+                <span className="font-bold text-gray-700">Dirección:</span>
+                <span className="col-span-3 bg-white px-1 border border-gray-400 truncate text-gray-800">{clientData?.direccion || '---'}</span>
+              </div>
+              <div className="grid grid-cols-4 gap-1">
+                <span className="font-bold text-gray-700">Comuna:</span>
+                <span className="col-span-3 bg-white px-1 border border-gray-400 truncate text-gray-800">{clientData?.comuna || '---'}</span>
+              </div>
             </div>
           </div>
 
-          {/* Visor de Señal Activa (Negro) */}
+          {/* 2. Visor de Señal Activa (Negro) */}
           <div className="bg-black border border-t-gray-600 border-l-gray-600 border-b-white border-r-white p-1.5 font-mono text-green-400 text-[10px] shrink-0 space-y-0.5">
             <div className="flex justify-between font-bold text-xs border-b border-green-900 pb-0.5">
               <span>CTA: {activeEvent?.cuenta || '-----'}</span>
@@ -1367,45 +1382,111 @@ export default function ScorpionDashboard() {
             </div>
           </div>
 
-          {/* TARJETA IA COPILOT GAMA */}
-          <IACopilotCard
-            evento={activeEvent}
-            historialEventos={eventos}
-            clientData={clientData}
-            zonas={buscarZonasAbonado(activeEvent?.cuenta)}
-            tieneCamaras={tieneCamaras}
-            cantCamaras={cantCamarasActiva}
-            onAbrirVideo={() => setModalActivo('video-verificacion')}
-            onAbrirPredictor={() => setModalActivo('predictor-ia')}
-            onEnviarWhatsApp={(telefono) => {
-              setWhatsappTelefonoInicial(telefono)
-              setModalActivo('notificaciones-whatsapp')
-            }}
-            usuarioOperador={usuarioActivo.nombre}
-          />
-
-          {/* Box 2: INFORMACION BASICA */}
-          <div className="bg-[#e0e0e0] border border-t-white border-l-white border-b-gray-600 border-r-gray-600 flex flex-col shrink-0">
-            <div className="bg-[#000080] text-white text-[10px] font-bold px-2 py-0.5 tracking-wider uppercase">
-              Informacion Basica
+          {/* 3. NUEVO: CUADRO CON PESTAÑAS (GENERAL.MDB: Referencias, Características, Observaciones & Fecha) */}
+          <div className="bg-[#e0e0e0] border border-t-white border-l-white border-b-gray-600 border-r-gray-600 flex flex-col shrink-0 shadow-xs">
+            {/* Barra de Pestañas estilo Scorpion / Windows */}
+            <div className="flex items-center bg-[#c0c0c0] border-b border-gray-500 pt-1 px-1 gap-1 select-none">
+              {[
+                { id: 'referencias', label: 'Referencias (REFERENCIA1)' },
+                { id: 'caracteristicas', label: 'Características (CARACT ADIC1)' },
+                { id: 'observaciones', label: 'Observaciones (OBSERVACION1)' },
+              ].map((t) => {
+                const esActiva = tabGeneralActiva === t.id
+                return (
+                  <button
+                    key={t.id}
+                    onClick={() => setTabGeneralActiva(t.id as any)}
+                    className={`px-2 py-0.5 text-[10px] font-bold border-t border-l border-r rounded-t-sm transition-colors cursor-pointer ${
+                      esActiva
+                        ? 'bg-white text-[#000080] border-t-gray-400 border-l-gray-400 border-r-gray-600 font-black shadow-xs -mb-[1px] z-10'
+                        : 'bg-[#d0d0d0] text-gray-700 border-t-white border-l-white border-r-gray-600 hover:bg-[#e0e0e0]'
+                    }`}
+                  >
+                    {t.id === 'referencias' && '📌 '}
+                    {t.id === 'caracteristicas' && '⚙️ '}
+                    {t.id === 'observaciones' && '📝 '}
+                    {t.label.split(' ')[0]}
+                  </button>
+                )
+              })}
             </div>
-            <div className="p-1 space-y-0.5 text-[11px]">
-              <div className="grid grid-cols-4 gap-1">
-                <span className="font-bold text-gray-700">Abonado:</span>
-                <span className="col-span-3 bg-white px-1 border border-gray-400 font-bold">{activeEvent?.cuenta || '---'}</span>
-              </div>
-              <div className="grid grid-cols-4 gap-1">
-                <span className="font-bold text-gray-700">Nombre:</span>
-                <span className="col-span-3 bg-white px-1 border border-gray-400 truncate">{activeEvent?.nombre_abonado || '---'}</span>
-              </div>
-              <div className="grid grid-cols-4 gap-1">
-                <span className="font-bold text-gray-700">Dirección:</span>
-                <span className="col-span-3 bg-white px-1 border border-gray-400 truncate">{clientData?.direccion || '---'}</span>
-              </div>
-              <div className="grid grid-cols-4 gap-1">
-                <span className="font-bold text-gray-700">Comuna:</span>
-                <span className="col-span-3 bg-white px-1 border border-gray-400 truncate">{clientData?.comuna || '---'}</span>
-              </div>
+
+            {/* Contenido dinámico de la pestaña activa */}
+            <div className="p-1.5 bg-white min-h-[85px] max-h-[135px] overflow-y-auto border border-gray-400 m-1 font-sans text-xs text-gray-900 leading-relaxed shadow-inner">
+              {(() => {
+                const refTexto = (clienteDb?.referencia1 || clienteDb?.referencia || '').trim()
+                const caractTexto = (clienteDb?.['caract adic1'] || clienteDb?.caract_adic1 || clienteDb?.caracteristicas || '').trim()
+                const obsTexto = (clienteDb?.observacion1 || clienteDb?.observacion || '').trim()
+                const fechaTexto = (clienteDb?.fecha || clienteDb?.FECHA || '').trim()
+
+                if (!activeEvent) {
+                  return <div className="text-gray-400 italic text-center py-4 text-xs">Seleccione un abonado en la grilla para ver sus datos</div>
+                }
+
+                if (tabGeneralActiva === 'referencias') {
+                  return (
+                    <div className="space-y-1">
+                      <div className="text-[10px] font-black text-[#000080] uppercase flex items-center gap-1 border-b border-gray-200 pb-0.5">
+                        <span>Puntos de Referencia & Fachada (REFERENCIA1)</span>
+                      </div>
+                      {refTexto ? (
+                        <div className="whitespace-pre-wrap font-semibold text-gray-800 text-[11px] leading-snug">
+                          {refTexto}
+                        </div>
+                      ) : (
+                        <div className="text-gray-400 italic text-[11px]">Sin referencias registradas para este abonado.</div>
+                      )}
+                    </div>
+                  )
+                }
+
+                if (tabGeneralActiva === 'caracteristicas') {
+                  return (
+                    <div className="space-y-1">
+                      <div className="text-[10px] font-black text-[#000080] uppercase flex items-center gap-1 border-b border-gray-200 pb-0.5">
+                        <span>Características Adicionales & Horarios (CARACT ADIC1)</span>
+                      </div>
+                      {caractTexto ? (
+                        <div className="whitespace-pre-wrap font-semibold text-gray-800 text-[11px] leading-snug">
+                          {caractTexto}
+                        </div>
+                      ) : (
+                        <div className="text-gray-400 italic text-[11px]">Sin características adicionales registradas.</div>
+                      )}
+                    </div>
+                  )
+                }
+
+                if (tabGeneralActiva === 'observaciones') {
+                  return (
+                    <div className="space-y-1.5">
+                      <div className="text-[10px] font-black text-[#000080] uppercase flex items-center justify-between border-b border-gray-200 pb-0.5">
+                        <span>Observaciones Operativas (OBSERVACION1)</span>
+                        {fechaTexto && (
+                          <span className="font-mono text-amber-800 font-bold text-[9px] bg-amber-100 border border-amber-300 px-1 rounded">
+                            FECHA: {fechaTexto}
+                          </span>
+                        )}
+                      </div>
+                      {fechaTexto && (
+                        <div className="bg-blue-50 border-l-2 border-[#000080] px-1.5 py-0.5 text-[10px] text-blue-900 font-bold flex items-center gap-1">
+                          <span>📅 Fecha / Batería:</span>
+                          <span className="font-mono">{fechaTexto}</span>
+                        </div>
+                      )}
+                      {obsTexto ? (
+                        <div className="whitespace-pre-wrap font-semibold text-gray-800 text-[11px] leading-snug">
+                          {obsTexto}
+                        </div>
+                      ) : (
+                        <div className="text-gray-400 italic text-[11px]">Sin observaciones registradas para este abonado.</div>
+                      )}
+                    </div>
+                  )
+                }
+
+                return null
+              })()}
             </div>
           </div>
 
