@@ -1219,43 +1219,52 @@ export default function ScorpionDashboard() {
         )
       })()}
 
-      {/* ── BARRA DE MENÚ ESTILO SCORPION DESAGRUPADA Y ESPACIOSA (solo PC, navegación clara y cómoda) ── */}
+      {/* ── BARRA DE MENÚ ESTILO SCORPION EQUILIBRADA (8 botones amplios, sin colisión a 100% de zoom) ── */}
       <nav id="menu-nav-container" className="hidden md:flex items-center bg-[#8B0000] border-b border-[#600000] shrink-0 select-none overflow-x-auto" style={{ fontFamily: "'Arial', sans-serif" }}>
-        {/* Items del menú separados con botones individuales y cómodos */}
         {[
           { label: 'OPERADORES', id: 'menu-operadores', modal: 'user-key' },
           { label: 'ZONIFICACIÓN', id: 'menu-zonificacion', modal: 'zones-tree' },
           { label: 'HORARIOS', id: 'menu-horarios', modal: 'horarios' },
           { label: 'REPORTES', id: 'menu-reportes', modal: 'reportes' },
-          { label: 'SERV. TÉCNICO', id: 'menu-serv-tecnico', modal: 'servicio-tecnico' },
-          { label: 'PREDICTOR IA', id: 'menu-predictor-ia', modal: 'predictor-ia' },
-          { label: 'CONTROL TEST', id: 'menu-control-test', modal: 'control-test' },
-          { label: 'TABLAS CONTACT ID', id: 'menu-tablas-cid', modal: 'book' },
-          { label: 'UTILIDADES', id: 'menu-utilidades', modal: 'tools' },
+          {
+            label: 'SERV. TÉCNICO ▾',
+            id: 'menu-serv-tecnico',
+            hasDropdown: true,
+            items: [
+              { label: 'Órdenes de Servicio Técnico (OT)', modal: 'servicio-tecnico', desc: 'Averías, baterías y solicitudes técnicas' },
+              { label: 'Predictor IA (Mantenimiento)', modal: 'predictor-ia', desc: 'Detección proactiva de anomalías' },
+              { label: 'Control Test de Señales', modal: 'control-test', desc: 'Panel de verificación de transmisores' },
+            ]
+          },
+          {
+            label: 'TABLAS & SISTEMA ▾',
+            id: 'menu-tablas',
+            hasDropdown: true,
+            items: [
+              { label: 'Tablas Contact ID (SIA DC-05)', modal: 'book', desc: 'Diccionario completo de interacción E y R' },
+              { label: 'Utilidades & Diagnóstico', modal: 'tools', desc: 'Herramientas de integridad y pipeline' },
+              { label: 'Búsqueda Histórica de Eventos', modal: 'search', desc: 'Consulta en la nube por abonado y fecha' },
+            ]
+          },
           {
             label: 'NOTIFICACIONES ▾',
             id: 'menu-notificaciones',
             hasDropdown: true,
             items: [
-              { label: 'Centro WhatsApp 360 & Chat', modal: 'notificaciones-whatsapp', desc: 'Atención y mensajería en tiempo real' },
-              { label: 'Notificaciones por Correo Mail', modal: 'notificaciones-mail', desc: 'Envío de reportes y alertas por SMTP' },
-              { label: 'Notificaciones por Llamada / SMS', modal: 'notificaciones-llamadas-sms', desc: 'Despacho automatizado por voz y SMS' },
+              { label: 'Centro WhatsApp 360 & Chat', modal: 'notificaciones-whatsapp', desc: 'Atención al cliente y mensajería en vivo' },
+              { label: 'Notificaciones por Correo Mail', modal: 'notificaciones-mail', desc: 'Despacho automatizado de reportes por SMTP' },
+              { label: 'Notificaciones por Llamada / SMS', modal: 'notificaciones-llamadas-sms', desc: 'Alertas críticas por voz y SMS' },
             ]
           },
-          { label: 'EVENTOS', id: 'menu-eventos', modal: 'search' },
           { label: 'AYUDA', id: 'menu-ayuda', modal: 'network' },
         ].filter(item => {
           const attrs = ensureUserAttributes(usuarioActivo)
           if (item.id === 'menu-operadores') return attrs.verConfiguracion || usuarioActivo.rol === 'Administrador'
           if (item.id === 'menu-zonificacion') return attrs.editarZonificacion || ['Administrador', 'Supervisor', 'Técnico'].includes(usuarioActivo.rol)
           if (item.id === 'menu-serv-tecnico') return attrs.verTelemetriaTecnica
-          if (item.id === 'menu-predictor-ia') return attrs.verTelemetriaTecnica
-          if (item.id === 'menu-control-test') return attrs.verTelemetriaTecnica
-          if (item.id === 'menu-tablas-cid') return attrs.verCRM
-          if (item.id === 'menu-utilidades') return attrs.verConfiguracion || usuarioActivo.rol === 'Administrador'
+          if (item.id === 'menu-tablas') return attrs.verCRM
           if (item.id === 'menu-reportes') return attrs.verReportes
           if (item.id === 'menu-notificaciones') return attrs.enviarMensajesWhatsApp
-          if (item.id === 'menu-eventos') return attrs.verMonitoreoEnVivo
           return true
         }).map((item, idx) => (
           <div key={idx} className="relative">
@@ -1269,7 +1278,7 @@ export default function ScorpionDashboard() {
                   setMenuDropdownAbierto(null)
                 }
               }}
-              className={`px-3 py-1.5 text-[11px] font-bold text-white tracking-wider whitespace-nowrap border-r border-black/40 cursor-pointer transition-colors hover:bg-[#a00000] active:bg-[#700000] flex items-center gap-1 ${
+              className={`px-4 py-1.5 text-xs font-bold text-white tracking-wider whitespace-nowrap border-r border-black/40 cursor-pointer transition-colors hover:bg-[#a00000] active:bg-[#700000] flex items-center gap-1.5 shrink-0 ${
                 menuDropdownAbierto === item.id ? 'bg-[#a00000]' : ''
               }`}
               style={{ fontFamily: "'Arial', sans-serif" }}
@@ -1277,20 +1286,20 @@ export default function ScorpionDashboard() {
               <span>{item.label}</span>
             </button>
 
-            {/* Submenú desplegable espacioso y bien separado */}
+            {/* Submenú desplegable amplio, espacioso y delimitado */}
             {item.hasDropdown && item.items && menuDropdownAbierto === item.id && (
-              <div className="absolute top-full left-0 bg-[#d8d8d8] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 shadow-2xl z-50 py-1 min-w-[280px] divide-y divide-gray-300">
+              <div className="absolute top-full left-0 bg-[#d8d8d8] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 shadow-2xl z-50 py-1 min-w-[300px]">
                 {item.items.map((sub, sIdx) => (
                   <button
                     key={sIdx}
-                    className="w-full text-left px-4 py-2 text-xs text-black font-bold hover:bg-[#000080] hover:text-white flex flex-col transition-colors cursor-pointer gap-0.5"
+                    className="w-full text-left px-4 py-2.5 text-xs text-black font-bold hover:bg-[#000080] hover:text-white flex flex-col transition-colors cursor-pointer border-b border-gray-300 last:border-b-0 gap-0.5"
                     onClick={() => {
                       setModalActivo(sub.modal)
                       setMenuDropdownAbierto(null)
                     }}
                   >
                     <span className="font-bold text-xs">{sub.label}</span>
-                    <span className="text-[10px] text-gray-600 group-hover:text-slate-200 font-normal">{sub.desc}</span>
+                    <span className="text-[10px] text-gray-600 hover:text-slate-200 font-normal">{sub.desc}</span>
                   </button>
                 ))}
               </div>
