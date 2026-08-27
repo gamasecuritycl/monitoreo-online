@@ -892,6 +892,127 @@ export default function ToolModal({ modalId, onClose, operadores = [], onUpdateO
             </div>
           </div>
         )
+      case 'ayuda-faq':
+        return (
+          <div className="space-y-4 font-sans max-h-[62vh] overflow-y-auto pr-1">
+            <div className="border-b border-[#1e293b] pb-2">
+              <p className="text-xs text-blue-400 font-bold uppercase tracking-wider">Centro de Ayuda • Preguntas Frecuentes de la Central</p>
+              <p className="text-[11px] text-slate-400">Guía rápida de procedimientos para operadores de monitoreo GAMA Security 24/7.</p>
+            </div>
+
+            <div className="space-y-2.5 text-xs text-slate-200">
+              <div className="bg-[#0b1324] border border-[#1e3a5f] p-3 rounded-md space-y-1">
+                <span className="text-amber-400 font-bold flex items-center gap-1.5 text-xs">
+                  <span>🚨</span> ¿Qué hacer ante una señal de Robo / Intrusión (E130 / E131 / E132)?
+                </span>
+                <p className="text-slate-300 text-[11px] leading-relaxed">
+                  1. Identifique en pantalla la zona afectada y el área de cobertura.<br/>
+                  2. Llame de inmediato a los teléfonos de la lista de <strong>Personas Autorizadas</strong> por orden de prioridad (PR 1, PR 2).<br/>
+                  3. Solicite la <strong>Contraseña / Contraclave</strong> de seguridad antes de anular el procedimiento.<br/>
+                  4. Si no contestan o la clave es errónea, despache móvil de reacción y comunique a Carabineros (Plan Cuadrante).
+                </p>
+              </div>
+
+              <div className="bg-[#0b1324] border border-[#1e3a5f] p-3 rounded-md space-y-1">
+                <span className="text-rose-400 font-bold flex items-center gap-1.5 text-xs">
+                  <span>🆘</span> ¿Cómo actuar ante una señal de Pánico o Coacción / Amago (E120 / E121)?
+                </span>
+                <p className="text-slate-300 text-[11px] leading-relaxed">
+                  <strong>¡MÁXIMA PRIORIDAD!</strong> Nunca llame al abonado preguntando si está en peligro (podría estar bajo amenaza). Despache asistencia policial inmediata al domicilio y active la verificación por cámaras en tiempo real.
+                </p>
+              </div>
+
+              <div className="bg-[#0b1324] border border-[#1e3a5f] p-3 rounded-md space-y-1">
+                <span className="text-yellow-400 font-bold flex items-center gap-1.5 text-xs">
+                  <span>⚡</span> ¿Cuándo notificar una Pérdida de Energía 220V AC (E301)?
+                </span>
+                <p className="text-slate-300 text-[11px] leading-relaxed">
+                  La batería de respaldo del panel brinda entre 8 y 24 horas de autonomía. Se recomienda enviar aviso por WhatsApp o llamar solo si el corte se prolonga más de 30 minutos o si el cliente tiene protocolo especial en sus Características.
+                </p>
+              </div>
+
+              <div className="bg-[#0b1324] border border-[#1e3a5f] p-3 rounded-md space-y-1">
+                <span className="text-emerald-400 font-bold flex items-center gap-1.5 text-xs">
+                  <span>🔑</span> ¿Cómo realizar el Relevo de Guardia y Cambio de Turno?
+                </span>
+                <p className="text-slate-300 text-[11px] leading-relaxed">
+                  Abra el botón <strong>&quot;ENTREGA TURNO&quot;</strong> en la barra inferior, complete el checklist de novedades y guarde el acta. Luego presione el botón de la <strong>Llave 🔑</strong> para ingresar con el código del nuevo operador.
+                </p>
+              </div>
+            </div>
+          </div>
+        )
+      case 'ayuda-manuales':
+        return (
+          <div className="space-y-4 font-sans max-h-[62vh] overflow-y-auto pr-1">
+            <div className="border-b border-[#1e293b] pb-2">
+              <p className="text-xs text-blue-400 font-bold uppercase tracking-wider">Manuales y Guías Operativas de Turno</p>
+              <p className="text-[11px] text-slate-400">Documentación de uso del Command Center, atajos y protocolos operativos.</p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
+              <div className="bg-[#0b1324] border border-[#1e3a5f] p-3 rounded-md space-y-2 flex flex-col justify-between">
+                <div>
+                  <div className="text-cyan-300 font-bold text-xs flex items-center gap-1.5 mb-1">
+                    <span>📘</span> Manual de Operador Central 24/7
+                  </div>
+                  <p className="text-[11px] text-slate-400 leading-snug">
+                    Guía completa sobre recepción de señales, interpretación de códigos Contact ID, gestión de bitácora y despacho.
+                  </p>
+                </div>
+                <div className="pt-2 border-t border-[#1a2b4a] flex justify-between items-center text-[10px]">
+                  <span className="text-slate-500 font-mono">Rev. 2026.2</span>
+                  <span className="text-green-400 font-bold">VIGENTE</span>
+                </div>
+              </div>
+
+              <div className="bg-[#0b1324] border border-[#1e3a5f] p-3 rounded-md space-y-2 flex flex-col justify-between">
+                <div>
+                  <div className="text-cyan-300 font-bold text-xs flex items-center gap-1.5 mb-1">
+                    <span>🎥</span> Guía de Verificación por Video
+                  </div>
+                  <p className="text-[11px] text-slate-400 leading-snug">
+                    Instrucciones para vincular canales de cámaras Dahua/NVR, visualización de streaming en vivo y clips de alerta.
+                  </p>
+                </div>
+                <div className="pt-2 border-t border-[#1a2b4a] flex justify-between items-center text-[10px]">
+                  <span className="text-slate-500 font-mono">Dahua AI Sync</span>
+                  <span className="text-green-400 font-bold">VIGENTE</span>
+                </div>
+              </div>
+
+              <div className="bg-[#0b1324] border border-[#1e3a5f] p-3 rounded-md space-y-2 flex flex-col justify-between">
+                <div>
+                  <div className="text-cyan-300 font-bold text-xs flex items-center gap-1.5 mb-1">
+                    <span>💬</span> Protocolo WhatsApp & Despacho
+                  </div>
+                  <p className="text-[11px] text-slate-400 leading-snug">
+                    Plantillas de mensajes predefinidos para apertura/cierre fuera de horario, avisos de corte de luz y confirmación de alarmas.
+                  </p>
+                </div>
+                <div className="pt-2 border-t border-[#1a2b4a] flex justify-between items-center text-[10px]">
+                  <span className="text-slate-500 font-mono">Baileys Core</span>
+                  <span className="text-green-400 font-bold">VIGENTE</span>
+                </div>
+              </div>
+
+              <div className="bg-[#0b1324] border border-[#1e3a5f] p-3 rounded-md space-y-2 flex flex-col justify-between">
+                <div>
+                  <div className="text-cyan-300 font-bold text-xs flex items-center gap-1.5 mb-1">
+                    <span>🛠️</span> Guía de Órdenes Técnicas (OT)
+                  </div>
+                  <p className="text-[11px] text-slate-400 leading-snug">
+                    Procedimiento para registrar fallas de batería, sensores dañados y asignación de visitas para técnicos en terreno.
+                  </p>
+                </div>
+                <div className="pt-2 border-t border-[#1a2b4a] flex justify-between items-center text-[10px]">
+                  <span className="text-slate-500 font-mono">Servicio Técnico</span>
+                  <span className="text-green-400 font-bold">VIGENTE</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )
       default:
         return <p className="text-xs text-slate-400">Módulo en desarrollo.</p>
     }
@@ -906,12 +1027,14 @@ export default function ToolModal({ modalId, onClose, operadores = [], onUpdateO
       'file-edit': { titulo: '📝 CONFIGURACIONES SYSTEM', desc: '' },
       'network': { titulo: '🔗 ESTADO DE RECEPTORAS', desc: '' },
       'shield': { titulo: '🛡️ AUDITORÍA DE SEGURIDAD', desc: '' },
-      'book': { titulo: '📖 CÓDIGOS CONTACT ID', desc: '' },
+      'book': { titulo: '📖 CÓDIGOS CONTACT ID (SIA DC-05)', desc: '' },
       'grid-check': { titulo: '✅ VALIDACIÓN DE DATOS', desc: '' },
       'list-details': { titulo: '📋 BUSCADOR DE ABONADOS', desc: '' },
       'home': { titulo: '🏠 RESUMEN GENERAL CENTRAL', desc: '' },
-      'search': { titulo: '🔍 BÚSQUEDA HISTÓRICA', desc: '' },
+      'search': { titulo: '🔍 BÚSQUEDA HISTÓRICA DE EVENTOS', desc: '' },
       'archive': { titulo: '📦 ARCHIVOS MDB RESPALDADOS', desc: '' },
+      'ayuda-faq': { titulo: '❓ PREGUNTAS FRECUENTES (FAQ)', desc: '' },
+      'ayuda-manuales': { titulo: '📚 MANUALES DE OPERADOR', desc: '' },
     }
     return titles[modalId] || defaultInfo
   }
@@ -920,10 +1043,12 @@ export default function ToolModal({ modalId, onClose, operadores = [], onUpdateO
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-xs font-mono"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-xs font-mono p-4"
       onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
     >
-      <div className={`w-full ${modalId === 'book' ? 'max-w-5xl' : 'max-w-md'} mx-4 bg-[#080d19] border border-[#1e293b] rounded-md shadow-2xl overflow-hidden`}>
+      <div className={`w-full ${
+        modalId === 'book' ? 'max-w-5xl' : ['ayuda-faq', 'ayuda-manuales'].includes(modalId) ? 'max-w-3xl' : 'max-w-md'
+      } bg-[#080d19] border border-[#1e293b] rounded-md shadow-2xl overflow-hidden`}>
         {/* Header style Windows Desktop bevel */}
         <div className="flex items-center justify-between px-4 py-2 bg-[#111827] border-b border-[#1e293b]">
           <h2 className="text-xs font-bold text-slate-200 tracking-wider font-mono">{info.titulo}</h2>

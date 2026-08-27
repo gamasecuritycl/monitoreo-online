@@ -1242,7 +1242,6 @@ export default function ScorpionDashboard() {
             hasDropdown: true,
             items: [
               { label: 'Tablas Contact ID (SIA DC-05)', modal: 'book', desc: 'Diccionario completo de interacción E y R' },
-              { label: 'Utilidades & Diagnóstico', modal: 'tools', desc: 'Herramientas de integridad y pipeline' },
               { label: 'Búsqueda Histórica de Eventos', modal: 'search', desc: 'Consulta en la nube por abonado y fecha' },
             ]
           },
@@ -1251,12 +1250,19 @@ export default function ScorpionDashboard() {
             id: 'menu-notificaciones',
             hasDropdown: true,
             items: [
-              { label: 'Centro WhatsApp 360 & Chat', modal: 'notificaciones-whatsapp', desc: 'Atención al cliente y mensajería en vivo' },
-              { label: 'Notificaciones por Correo Mail', modal: 'notificaciones-mail', desc: 'Despacho automatizado de reportes por SMTP' },
+              { label: 'WhatsApp', modal: 'notificaciones-whatsapp', desc: 'Atención y mensajería en tiempo real' },
               { label: 'Notificaciones por Llamada / SMS', modal: 'notificaciones-llamadas-sms', desc: 'Alertas críticas por voz y SMS' },
             ]
           },
-          { label: 'AYUDA', id: 'menu-ayuda', modal: 'network' },
+          {
+            label: 'AYUDA ▾',
+            id: 'menu-ayuda',
+            hasDropdown: true,
+            items: [
+              { label: 'Preguntas Frecuentes', modal: 'ayuda-faq', desc: 'Guía rápida de procedimientos para operadores' },
+              { label: 'Manuales de Operador', modal: 'ayuda-manuales', desc: 'Documentación y protocolos operativos' },
+            ]
+          },
         ].filter(item => {
           const attrs = ensureUserAttributes(usuarioActivo)
           if (item.id === 'menu-operadores') return attrs.verConfiguracion || usuarioActivo.rol === 'Administrador'
