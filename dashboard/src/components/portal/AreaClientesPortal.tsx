@@ -62,7 +62,7 @@ const NAV_ITEMS = [
   { id: 'historial', label: 'Línea de Tiempo', icon: Clock },
   { id: 'contactos', label: 'Contactos Autorizados', icon: Users },
   { id: 'servicios', label: 'Estado del Servicio', icon: FileText },
-  { id: 'soporte', label: 'Asistencia SOS 24/7', icon: PhoneCall, highlight: true },
+  { id: 'soporte', label: 'Asistencia 24/7', icon: PhoneCall },
 ]
 
 export default function AreaClientesPortal() {
@@ -131,14 +131,11 @@ export default function AreaClientesPortal() {
           const data = await res.json()
           if (Array.isArray(data)) {
             const ctaUpper = cuentaActiva.toUpperCase().trim()
-            // Filtrar ESTRICTAMENTE solo los registros correspondientes a la cuenta activa
             const filtrados = data.filter((b: BitacoraRecord) => {
               const codMatches = b.abonado_cod && b.abonado_cod.toUpperCase().trim() === ctaUpper
               const comMatches = b.comentario && b.comentario.toUpperCase().includes(ctaUpper)
               return codMatches || comMatches
             })
-            // REGLA STRICTA: Si no tiene registros en Bitácora (como C701), queda en [] (VACÍO).
-            // NUNCA mostrar registros de otros abonados.
             setEventosBitacoraReales(filtrados)
           }
         }
@@ -202,6 +199,14 @@ export default function AreaClientesPortal() {
     PLAN: clienteRaw.plan || 'PREMIUM VIP',
   }
 
+  // Mensaje pre-configurado para actualizar contactos vía WhatsApp (+56948855190)
+  const msgActualizarContactos = `Le habla el cliente ${cuentaActiva} ${clienteInfo.NOMBRE} quisiera hacer modificaciones sobre los contactos de emergencia y personas autorizadas.`
+  const linkWhatsAppContactos = `https://wa.me/56948855190?text=${encodeURIComponent(msgActualizarContactos)}`
+
+  // Mensaje pre-configurado para solicitar servicio técnico vía WhatsApp (+56948855190)
+  const msgServicioTecnico = `Le habla el cliente ${cuentaActiva} ${clienteInfo.NOMBRE} quisiera solicitar servicio tecnico.`
+  const linkWhatsAppServicio = `https://wa.me/56948855190?text=${encodeURIComponent(msgServicioTecnico)}`
+
   // COTEJAR Y PROCESAR CON IA ÚNICAMENTE CUANDO EXISTE ANOTACIÓN REAL
   const procesarBitacoraConIA = async (item: {
     evento: string
@@ -214,7 +219,7 @@ export default function AreaClientesPortal() {
     setCargandoIa(true)
     setExplicacionIa('')
 
-    const prompt = `Eres el Asistente de IA Concierge de GAMA Security Chile.
+    const prompt = `Eres el Asistente de IA Concierge de GAMA SEGURIDAD Chile.
 Tu tarea es analizar la ANOTACIÓN REAL DE BITÁCORA escrita por el operador de la Central e interpretarla para el cliente abonado en un informe limpio, ejecutivo y tranquilizador.
 
 REGLAS STRICTAS DE VERACIDAD (CRÍTICO):
@@ -348,7 +353,7 @@ Anotación REAL de Bitácora Operador: "${item.notaReal}"`
                 <div className="absolute top-2 right-2 w-3 h-3 bg-emerald-500 rounded-full border-2 border-[#0a1628]" />
                 <Image
                   src="/logo-gama.png"
-                  alt="GAMA Security Octágono"
+                  alt="GAMA SEGURIDAD Octágono"
                   width={90}
                   height={90}
                   className="object-contain filter drop-shadow(0 4px 14px rgba(0,102,204,0.6))"
@@ -358,7 +363,7 @@ Anotación REAL de Bitácora Operador: "${item.notaReal}"`
             </div>
 
             <h1 className="text-2xl font-extrabold tracking-wider uppercase font-mono mt-3 text-white">
-              GAMA<span className="text-[#2997ff]">SECURITY</span>
+              GAMA<span className="text-[#2997ff]">SEGURIDAD</span>
             </h1>
             <p className="text-xs text-slate-400 font-semibold tracking-widest uppercase mt-0.5">
               Portal Exclusivo Abonados
@@ -450,7 +455,7 @@ Anotación REAL de Bitácora Operador: "${item.notaReal}"`
 
           <div className="mt-6 pt-4 border-t border-[#1a2e4a]/60 text-center">
             <a
-              href="https://wa.me/56912345678?text=Hola,%20necesito%20asistencia%20para%20ingresar%20al%20Area%20de%20Clientes%20Gama"
+              href="https://wa.me/56948855190?text=Hola,%20necesito%20asistencia%20para%20ingresar%20al%20Area%20de%20Clientes%20Gama"
               target="_blank"
               rel="noopener noreferrer"
               className="text-xs text-slate-400 hover:text-[#2997ff] transition flex items-center justify-center gap-1.5"
@@ -490,18 +495,10 @@ Anotación REAL de Bitácora Operador: "${item.notaReal}"`
               <Image src="/logo-gama.png" alt="GAMA Octágono" width={24} height={24} className="object-contain" priority />
             </div>
             <span className="font-extrabold text-sm tracking-wider text-white font-mono">
-              GAMA<span className="text-[#2997ff]">SECURITY</span>
+              GAMA<span className="text-[#2997ff]">SEGURIDAD</span>
             </span>
           </div>
         </div>
-
-        <button
-          onClick={() => setModalSos(true)}
-          className="px-3 py-1.5 rounded-lg bg-red-600 text-white font-bold text-[11px] uppercase tracking-wider flex items-center gap-1.5 shadow-md shadow-red-900/40"
-        >
-          <BellRing className="w-3.5 h-3.5 animate-bounce" />
-          SOS
-        </button>
       </header>
 
       {/* DRAWER MOBILE (< lg) */}
@@ -541,7 +538,7 @@ Anotación REAL de Bitácora Operador: "${item.notaReal}"`
                   <div className="relative w-24 h-24 bg-[#0a1628] border border-[#2a4875] rounded-2xl p-3 flex items-center justify-center shadow-xl">
                     <Image
                       src="/logo-gama.png"
-                      alt="GAMA Security Octágono"
+                      alt="GAMA SEGURIDAD Octágono"
                       width={72}
                       height={72}
                       className="object-contain filter drop-shadow(0 4px 12px rgba(0,102,204,0.5))"
@@ -549,7 +546,7 @@ Anotación REAL de Bitácora Operador: "${item.notaReal}"`
                     />
                   </div>
                   <h2 className="text-white font-extrabold text-lg tracking-wider uppercase font-mono mt-3">
-                    GAMA<span className="text-[#2997ff]">SECURITY</span>
+                    GAMA<span className="text-[#2997ff]">SEGURIDAD</span>
                   </h2>
                   <p className="text-[10px] text-slate-400 uppercase tracking-widest font-semibold">
                     Portal Abonados VIP
@@ -616,7 +613,7 @@ Anotación REAL de Bitácora Operador: "${item.notaReal}"`
                 <div className="absolute top-2 right-2 w-3 h-3 bg-emerald-500 rounded-full border-2 border-[#0a1628]" />
                 <Image
                   src="/logo-gama.png"
-                  alt="GAMA Security Octágono"
+                  alt="GAMA SEGURIDAD Octágono"
                   width={96}
                   height={96}
                   className="object-contain filter drop-shadow(0 6px 16px rgba(0,102,204,0.6))"
@@ -626,7 +623,7 @@ Anotación REAL de Bitácora Operador: "${item.notaReal}"`
 
               <div className="mt-4 text-center">
                 <h2 className="text-white font-extrabold text-xl tracking-wider uppercase font-mono">
-                  GAMA<span className="text-[#2997ff]">SECURITY</span>
+                  GAMA<span className="text-[#2997ff]">SEGURIDAD</span>
                 </h2>
                 <p className="text-[10px] tracking-widest text-slate-400 font-semibold uppercase mt-0.5">
                   Área Exclusiva Clientes VIP
@@ -662,8 +659,6 @@ Anotación REAL de Bitácora Operador: "${item.notaReal}"`
                       className={`w-5 h-5 flex-shrink-0 transition-colors ${
                         isActive
                           ? 'text-[#2997ff]'
-                          : item.highlight
-                          ? 'text-amber-400 group-hover:text-amber-300'
                           : 'text-slate-400 group-hover:text-slate-200'
                       }`}
                     />
@@ -725,25 +720,27 @@ Anotación REAL de Bitácora Operador: "${item.notaReal}"`
               </p>
             </div>
 
-            <div className="flex items-center gap-3 flex-wrap">
+            {/* ESTADO DE ALARMA: APERTURA (DESACTIVADA) / CIERRE (ACTIVADA) */}
+            <div className="flex items-center gap-3">
               <button
                 onClick={() => setSistemaArmado(!sistemaArmado)}
-                className={`flex-1 sm:flex-initial px-4 py-2.5 rounded-xl border text-xs font-semibold flex items-center justify-center gap-2 transition-all duration-200 ${
+                className={`px-4 py-3 rounded-2xl border text-xs font-bold flex items-center gap-2.5 transition-all duration-200 shadow-xl ${
                   sistemaArmado
-                    ? 'bg-emerald-950/50 border-emerald-500/50 text-emerald-300 hover:bg-emerald-900/60 shadow-lg shadow-emerald-950/40'
-                    : 'bg-amber-950/50 border-amber-500/50 text-amber-300 hover:bg-amber-900/60 shadow-lg shadow-amber-950/40'
+                    ? 'bg-emerald-950/60 border-emerald-500/60 text-emerald-300 hover:bg-emerald-900/70 shadow-emerald-950/50'
+                    : 'bg-amber-950/60 border-amber-500/60 text-amber-300 hover:bg-amber-900/70 shadow-amber-950/50'
                 }`}
               >
-                {sistemaArmado ? <Lock className="w-4 h-4 text-emerald-400" /> : <Unlock className="w-4 h-4 text-amber-400" />}
-                {sistemaArmado ? 'Sistema Armado' : 'Sistema Desarmado'}
-              </button>
-
-              <button
-                onClick={() => setModalSos(true)}
-                className="hidden lg:flex px-4 py-2.5 rounded-xl bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-500 hover:to-rose-600 text-white font-semibold text-xs uppercase tracking-wider items-center gap-2 shadow-lg shadow-red-900/30 transition border border-red-400/30"
-              >
-                <BellRing className="w-4 h-4 animate-bounce" />
-                SOS 24/7
+                {sistemaArmado ? (
+                  <>
+                    <Lock className="w-4 h-4 text-emerald-400 animate-pulse" />
+                    <span>CIERRE (Alarma Activada)</span>
+                  </>
+                ) : (
+                  <>
+                    <Unlock className="w-4 h-4 text-amber-400 animate-pulse" />
+                    <span>APERTURA (Alarma Desactivada)</span>
+                  </>
+                )}
               </button>
             </div>
           </header>
@@ -770,30 +767,23 @@ Anotación REAL de Bitácora Operador: "${item.notaReal}"`
                     <div>
                       <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[11px] sm:text-xs font-semibold mb-1.5">
                         <CheckCircle2 className="w-3.5 h-3.5" />
-                        Protección Activa en Regla
+                        {sistemaArmado ? 'CIERRE · Alarma Activada' : 'APERTURA · Alarma Desactivada'}
                       </div>
                       <h3 className="text-lg sm:text-2xl font-extrabold text-white">
                         Su propiedad se encuentra 100% resguardada
                       </h3>
                       <p className="text-slate-400 text-xs sm:text-sm mt-1 max-w-xl">
-                        Monitoreo 24/7 sin anomalías en la cuenta #{cuentaActiva}. Enlace directo constante con la Central Gama Security.
+                        Monitoreo 24/7 en la cuenta #{cuentaActiva}. Enlace directo constante con la Central Gama Seguridad.
                       </p>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3 sm:gap-4 border-t lg:border-t-0 lg:border-l border-[#1e3a5f]/60 pt-4 lg:pt-0 lg:pl-8">
-                    <div className="bg-[#091424]/90 p-3.5 sm:p-4 rounded-2xl border border-[#1a3356]/60">
-                      <span className="text-[10px] sm:text-[11px] text-slate-400 font-medium">Test de Enlace</span>
-                      <p className="text-sm sm:text-base font-bold text-emerald-400 flex items-center gap-1.5 mt-0.5">
+                  <div className="flex items-center border-t lg:border-t-0 lg:border-l border-[#1e3a5f]/60 pt-4 lg:pt-0 lg:pl-8">
+                    <div className="bg-[#091424]/90 p-4 rounded-2xl border border-[#1a3356]/60 w-full sm:w-48 text-center sm:text-left">
+                      <span className="text-[11px] text-slate-400 font-medium">Test de Enlace</span>
+                      <p className="text-base font-bold text-emerald-400 flex items-center justify-center sm:justify-start gap-1.5 mt-1">
                         <Activity className="w-4 h-4 text-emerald-400" />
                         OK · En línea
-                      </p>
-                    </div>
-                    <div className="bg-[#091424]/90 p-3.5 sm:p-4 rounded-2xl border border-[#1a3356]/60">
-                      <span className="text-[10px] sm:text-[11px] text-slate-400 font-medium">Batería Panel</span>
-                      <p className="text-sm sm:text-base font-bold text-white flex items-center gap-1.5 mt-0.5">
-                        <Zap className="w-4 h-4 text-amber-400" />
-                        100% Carga
                       </p>
                     </div>
                   </div>
@@ -1079,9 +1069,9 @@ Anotación REAL de Bitácora Operador: "${item.notaReal}"`
                   ))
                 ) : (
                   [
-                    { fecha: 'Hoy 08:32:15 AM', evento: 'Desarme (Apertura)', detalles: 'Usuario Autorizado #01 - Panel Principal', estado: 'Normal' },
+                    { fecha: 'Hoy 08:32:15 AM', evento: 'APERTURA (Alarma Desactivada)', detalles: 'Usuario Autorizado #01 - Panel Principal', estado: 'Normal' },
                     { fecha: 'Hoy 03:15:00 AM', evento: 'Test Autocontrol GPRS/IP', detalles: 'Verificación diaria de enlace Gama OK', estado: 'Normal' },
-                    { fecha: 'Ayer 20:10:44 PM', evento: 'Armado (Cierre)', detalles: 'Usuario Autorizado #01 - Modo Noche', estado: 'Normal' },
+                    { fecha: 'Ayer 20:10:44 PM', evento: 'CIERRE (Alarma Activada)', detalles: 'Usuario Autorizado #01 - Modo Noche', estado: 'Normal' },
                     { fecha: '24/08 14:22:10 PM', evento: 'Verificación de Sensores', detalles: 'Prueba de caminata zona exterior OK', estado: 'Prueba' },
                   ].map((item, idx) => (
                     <div key={idx} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-[#0d1c33] transition">
@@ -1108,7 +1098,7 @@ Anotación REAL de Bitácora Operador: "${item.notaReal}"`
           )}
 
           {/* ════════════════════════════════════════════════════════════════════
-             PESTAÑA 4: CONTACTOS AUTORIZADOS
+             PESTAÑA 4: CONTACTOS AUTORIZADOS (CON BOTÓN WHATSAPP AL MEDIO ABAJO)
              ════════════════════════════════════════════════════════════════════ */}
           {activeTab === 'contactos' && (
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
@@ -1130,22 +1120,27 @@ Anotación REAL de Bitácora Operador: "${item.notaReal}"`
                     <h4 className="text-white font-bold text-base mt-3">{c.nombre}</h4>
                     <p className="text-xs text-slate-400 mt-0.5">{c.cargo}</p>
                     <p className="text-xs font-mono text-[#2997ff] mt-3">{c.fono}</p>
-
-                    <a
-                      href={`tel:${c.fono.replace(/\s+/g, '')}`}
-                      className="mt-4 w-full py-2 bg-[#0e1e36] hover:bg-[#2997ff] hover:text-white text-slate-300 text-xs font-semibold rounded-xl flex items-center justify-center gap-2 transition"
-                    >
-                      <Phone className="w-3.5 h-3.5" />
-                      Llamar Contacto
-                    </a>
                   </div>
                 ))}
+              </div>
+
+              {/* BOTÓN AL MEDIO ABAJO PARA ACTUALIZAR INFORMACIÓN VÍA WHATSAPP (+56948855190) */}
+              <div className="pt-6 flex justify-center">
+                <a
+                  href={linkWhatsAppContactos}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-sm uppercase tracking-wider rounded-2xl flex items-center justify-center gap-3 shadow-xl shadow-emerald-950/50 hover:scale-105 transition-all duration-200 border border-emerald-400/30"
+                >
+                  <MessageSquare className="w-5 h-5 text-white animate-bounce" />
+                  <span>ACTUALIZAR INFORMACIÓN</span>
+                </a>
               </div>
             </motion.div>
           )}
 
           {/* ════════════════════════════════════════════════════════════════════
-             PESTAÑA 5: ESTADO DEL SERVICIO
+             PESTAÑA 5: ESTADO DEL SERVICIO (CON PREMENSAJE DE SERVICIO TÉCNICO)
              ════════════════════════════════════════════════════════════════════ */}
           {activeTab === 'servicios' && (
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
@@ -1193,13 +1188,13 @@ Anotación REAL de Bitácora Operador: "${item.notaReal}"`
                     Si requiere revisión de sensores, cambio de batería o ampliación de cámaras, puede solicitar la visita de nuestros técnicos certificados Gama.
                   </p>
                   <a
-                    href={`https://wa.me/56912345678?text=Hola,%20solicito%20revisi%C3%B3n%20t%C3%A9cnica%20para%20la%20cuenta%20${cuentaActiva}`}
+                    href={linkWhatsAppServicio}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-full py-3 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-500 hover:to-teal-600 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-2 transition shadow-lg shadow-emerald-950/40"
+                    className="w-full py-3.5 bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl flex items-center justify-center gap-2 transition shadow-lg shadow-emerald-950/40 border border-emerald-400/30"
                   >
                     <MessageSquare className="w-4 h-4" />
-                    Agendar por WhatsApp VIP
+                    <span>SOLICITAR SERVICIO TÉCNICO</span>
                   </a>
                 </div>
               </div>
@@ -1207,29 +1202,29 @@ Anotación REAL de Bitácora Operador: "${item.notaReal}"`
           )}
 
           {/* ════════════════════════════════════════════════════════════════════
-             PESTAÑA 6: ASISTENCIA SOS 24/7
+             PESTAÑA 6: ASISTENCIA 24/7
              ════════════════════════════════════════════════════════════════════ */}
           {activeTab === 'soporte' && (
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-              <div className="bg-gradient-to-br from-red-950/40 via-[#0d1626] to-[#070d18] border border-red-500/30 rounded-3xl p-6 sm:p-8 text-center space-y-4 shadow-2xl">
-                <div className="w-16 h-16 rounded-full bg-red-600/20 border border-red-500/40 flex items-center justify-center mx-auto text-red-400">
-                  <BellRing className="w-8 h-8 animate-bounce" />
+              <div className="bg-gradient-to-br from-blue-950/40 via-[#0d1626] to-[#070d18] border border-blue-500/30 rounded-3xl p-6 sm:p-8 text-center space-y-4 shadow-2xl">
+                <div className="w-16 h-16 rounded-full bg-blue-600/20 border border-blue-500/40 flex items-center justify-center mx-auto text-blue-400">
+                  <PhoneCall className="w-8 h-8" />
                 </div>
                 <h3 className="text-2xl font-extrabold text-white">Central de Monitoreo Gama 24/7</h3>
                 <p className="text-xs sm:text-sm text-slate-300 max-w-lg mx-auto">
-                  Operadores supervisores en línea las 24 horas del día. En caso de emergencia o asistencia inmediata para la cuenta #{cuentaActiva}:
+                  Operadores supervisores en línea las 24 horas del día. Asistencia directa para la cuenta #{cuentaActiva}:
                 </p>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-lg mx-auto pt-4">
                   <a
-                    href="tel:+56912345678"
-                    className="py-3.5 bg-red-600 hover:bg-red-500 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition shadow-lg shadow-red-950/50 flex items-center justify-center gap-2"
+                    href="tel:+56948855190"
+                    className="py-3.5 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition shadow-lg shadow-blue-950/50 flex items-center justify-center gap-2"
                   >
                     <Phone className="w-4 h-4" />
-                    Llamar Urgente Central
+                    Llamar a Central Gama
                   </a>
                   <a
-                    href={`https://wa.me/56912345678?text=EMERGENCIA%20CUENTA%20${cuentaActiva}`}
+                    href={`https://wa.me/56948855190?text=${encodeURIComponent(`Le habla el cliente ${cuentaActiva} ${clienteInfo.NOMBRE} quisiera consultar a la Central.`)}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition shadow-lg shadow-emerald-950/50 flex items-center justify-center gap-2"
@@ -1251,7 +1246,7 @@ Anotación REAL de Bitácora Operador: "${item.notaReal}"`
           { id: 'inicio', label: 'Inicio', icon: ShieldCheck },
           { id: 'camaras', label: 'Cámaras', icon: Camera },
           { id: 'historial', label: 'Historial', icon: Clock },
-          { id: 'soporte', label: 'SOS', icon: PhoneCall, alert: true },
+          { id: 'soporte', label: 'Contacto', icon: PhoneCall },
         ].map((m) => {
           const Icon = m.icon
           const isActive = activeTab === m.id
@@ -1260,7 +1255,7 @@ Anotación REAL de Bitácora Operador: "${item.notaReal}"`
               key={m.id}
               onClick={() => selectTab(m.id)}
               className={`flex flex-col items-center gap-1 px-3 py-1.5 rounded-xl transition ${
-                isActive ? 'text-[#2997ff] bg-[#102038]' : m.alert ? 'text-red-400' : 'text-slate-400'
+                isActive ? 'text-[#2997ff] bg-[#102038]' : 'text-slate-400'
               }`}
             >
               <Icon className="w-5 h-5" />
@@ -1289,44 +1284,6 @@ Anotación REAL de Bitácora Operador: "${item.notaReal}"`
               <h3 className="text-lg font-bold text-white mb-4">{camaraSeleccionada}</h3>
               <div className="aspect-video bg-black rounded-2xl flex items-center justify-center border border-slate-800">
                 <p className="text-xs text-slate-400 font-mono">REPRODUCTOR HD EN TIEMPO REAL</p>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* MODAL SOS */}
-      <AnimatePresence>
-        {modalSos && (
-          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-[#0d1829] border border-red-500/40 rounded-3xl max-w-md w-full p-6 text-center shadow-2xl relative"
-            >
-              <div className="w-16 h-16 rounded-full bg-red-600/20 border border-red-500/40 flex items-center justify-center mx-auto mb-4 text-red-400">
-                <BellRing className="w-8 h-8 animate-bounce" />
-              </div>
-              <h3 className="text-xl font-bold text-white">Solicitud de Asistencia VIP</h3>
-              <p className="text-xs text-slate-300 mt-2">
-                Estableciendo enlace prioritario con la Central de Monitoreo Gama Security Chile para la cuenta #{cuentaActiva}.
-              </p>
-
-              <div className="mt-6 flex flex-col gap-3">
-                <a
-                  href="tel:+56912345678"
-                  className="w-full py-3 bg-red-600 hover:bg-red-500 text-white font-bold text-sm rounded-xl transition shadow-lg shadow-red-900/40 flex items-center justify-center gap-2"
-                >
-                  <Phone className="w-4 h-4" />
-                  Llamar a Central Gama Ahora
-                </a>
-                <button
-                  onClick={() => setModalSos(false)}
-                  className="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl"
-                >
-                  Cancelar
-                </button>
               </div>
             </motion.div>
           </div>
