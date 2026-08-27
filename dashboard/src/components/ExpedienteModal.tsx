@@ -14,7 +14,7 @@ import clientesDataRaw from '@/lib/clientes_general.json'
 const clientesGeneralFallback = clientesDataRaw as Record<string, Record<string, string>>
 
 interface ExpedienteModalProps {
-  evento: EventoMonitoreo
+  evento?: EventoMonitoreo
   pestanaInicial?: 'telefonos' | 'horarios' | 'camara'
   onClose: () => void
   usuarioRol?: string
@@ -22,9 +22,14 @@ interface ExpedienteModalProps {
 
 export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuarioRol = 'Administrador' }: ExpedienteModalProps) {
   const modalRef = useRef<HTMLDivElement>(null)
+  const buscarInputRef = useRef<HTMLInputElement>(null)
   
-  // Cuenta activa seleccionada
-  const [cuentaActiva, setCuentaActiva] = useState(evento.cuenta.toUpperCase().trim() || 'C701')
+  // Cuenta activa seleccionada (inicia vacía salvo que venga de un evento con cuenta explícita)
+  const cuentaInicial = evento?.cuenta && evento.cuenta !== 'SYS' && evento.cuenta !== '0000' && evento.cuenta !== 'ZONAS'
+    ? evento.cuenta.toUpperCase().trim()
+    : ''
+
+  const [cuentaActiva, setCuentaActiva] = useState(cuentaInicial)
   const [buscarCuentaInput, setBuscarCuentaInput] = useState('')
   
   // Cache en memoria para todos los datos de clientes cargados
@@ -54,6 +59,13 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
   const [tabInstalacion, setTabInstalacion] = useState<'instalacion' | 'ucontrol' | 'tiempos' | 'teclados' | 'sirenas'>('instalacion')
 
   const [ordenesCuenta, setOrdenesCuenta] = useState<any[]>([])
+
+  // Foco automático en la casilla de búsqueda de NOMBRE al abrir el modal
+  useEffect(() => {
+    setTimeout(() => {
+      buscarInputRef.current?.focus()
+    }, 150)
+  }, [])
 
   // Cargar clientes desde Supabase en segundo plano y sincronizar con caché
   useEffect(() => {
@@ -85,18 +97,23 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
     fetchClientesSupabase()
   }, [])
 
-  // Sincronizar el formulario al cambiar cuentaActiva o clientesMap (si no estamos en creación nueva)
+  // Sincronizar el formulario al cambiar cuentaActiva o clientesMap
   useEffect(() => {
     if (esNuevo) return
+    if (!cuentaActiva) {
+      setClienteForm({})
+      return
+    }
     const target = clientesMap[cuentaActiva] || clientesGeneralFallback[cuentaActiva] || {
       cuenta: cuentaActiva,
-      nombre: evento.nombre_abonado || 'ABONADO SIN REGISTRO',
+      nombre: '',
       ciudad: 'LIMACHE',
-      direccion: 'DIRECCIÓN NO DISPONIBLE',
+      direccion: '',
       sector: ''
     }
     setClienteForm({ ...target, cuenta: cuentaActiva })
-  }, [cuentaActiva, clientesMap, esNuevo, evento.nombre_abonado])
+    setModoEdicion(false)
+  }, [cuentaActiva, clientesMap, esNuevo])
 
   // Cargar historial de Órdenes de Trabajo para la cuenta activa
   useEffect(() => {
@@ -124,7 +141,6 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
   const [horariosTelWA, setHorariosTelWA] = useState('')
   const [horariosAlertaInhabitual, setHorariosAlertaInhabitual] = useState(true)
   const [guardandoHorarios, setGuardandoHorarios] = useState(false)
-  const [horariosMsg, setHorariosMsg] = useState('')
 
   useEffect(() => {
     if (!cuentaActiva) return
@@ -169,8 +185,11 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
   }, [cuentaActiva, clienteForm?.telefono1, clienteForm?.t1])
 
   const guardarHorariosExpediente = async () => {
+    if (!cuentaActiva) {
+      alert('Seleccione un abonado antes de configurar horarios.')
+      return
+    }
     setGuardandoHorarios(true)
-    setHorariosMsg('Guardando horarios...')
     try {
       const payload: ConfigHorarioAbonado = {
         cuenta: cuentaActiva,
@@ -189,10 +208,10 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
         fecha_hora: new Date().toISOString()
       })
       if (error) throw error
-      setHorariosMsg('✅ Horarios guardados con éxito')
-      setTimeout(() => setHorariosMsg(''), 3000)
+      setStatusMsg({ tipo: 'ok', texto: '✅ Horarios guardados con éxito' })
+      setTimeout(() => setStatusMsg(null), 3000)
     } catch (e: any) {
-      setHorariosMsg('❌ Error al guardar: ' + e.message)
+      setStatusMsg({ tipo: 'error', texto: '❌ Error al guardar horarios: ' + e.message })
     } finally {
       setGuardandoHorarios(false)
     }
@@ -200,6 +219,10 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
 
   // BOTÓN 1: EDITAR
   const handleEditar = () => {
+    if (!cuentaActiva) {
+      alert('Seleccione un abonado en la lista de abajo antes de editar.')
+      return
+    }
     setModoEdicion(true)
     setStatusMsg({
       tipo: 'info',
@@ -276,11 +299,11 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
 
     const nuevoRegistro: Record<string, string> = {
       cuenta: cClean,
-      nombre: 'NUEVO ABONADO',
+      nombre: '',
       ciudad: 'LIMACHE',
       plan: 'PREMIUM',
       tipo1: 'COMERCIO',
-      direccion: 'DIRECCIÓN PRINCIPAL',
+      direccion: '',
       sector: '',
       telefono1: '',
       telefono2: '',
@@ -311,6 +334,10 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
 
   // BOTÓN 4: ELIMINAR / DAR DE BAJA
   const handleEliminar = async () => {
+    if (!cuentaActiva) {
+      alert('Seleccione un abonado para eliminar.')
+      return
+    }
     const cuentaClean = cuentaActiva.toUpperCase().trim()
     const nombreAbonado = clienteForm.nombre || clientesMap[cuentaClean]?.nombre || 'ABONADO'
 
@@ -345,10 +372,8 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
         throw new Error(json.error || 'Error al eliminar en el servidor')
       }
 
-      // 3. Seleccionar el siguiente abonado disponible
-      const disponibles = Object.keys(newMap)
-      const siguienteCuenta = disponibles.length > 0 ? disponibles[0] : 'C701'
-      setCuentaActiva(siguienteCuenta)
+      setCuentaActiva('')
+      setClienteForm({})
       setModoEdicion(false)
       setEsNuevo(false)
 
@@ -369,11 +394,10 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
   // BOTÓN 5: CANCELAR
   const handleCancelar = () => {
     if (esNuevo) {
-      const disponibles = Object.keys(clientesMap)
-      const primera = disponibles.length > 0 ? disponibles[0] : 'C701'
-      setCuentaActiva(primera)
+      setCuentaActiva('')
+      setClienteForm({})
       setEsNuevo(false)
-    } else {
+    } else if (cuentaActiva) {
       const target = clientesMap[cuentaActiva] || clientesGeneralFallback[cuentaActiva] || {}
       setClienteForm({ ...target, cuenta: cuentaActiva })
     }
@@ -398,6 +422,7 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
     : listaAbonados
 
   const updateField = (key: string, val: string) => {
+    if (!modoEdicion) return
     setClienteForm(prev => ({ ...prev, [key]: val }))
   }
 
@@ -410,7 +435,7 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
       <div
         ref={modalRef}
         tabIndex={-1}
-        className="w-[96vw] max-w-[1020px] bg-[#d4d0c8] text-black border-2 border-t-white border-l-white border-b-[#808080] border-r-[#808080] p-1.5 shadow-[4px_4px_24px_rgba(0,0,0,0.85)] focus:outline-none flex flex-col justify-between select-none"
+        className="w-[96vw] max-w-[1020px] bg-[#d4d0c8] text-black border-2 border-t-white border-l-white border-b-[#808080] border-r-[#808080] shadow-[4px_4px_24px_rgba(0,0,0,0.85)] focus:outline-none flex flex-col justify-between select-none"
         style={{ fontSize: '11px' }}
       >
         {/* Barra de Título */}
@@ -437,15 +462,15 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
           </button>
         </div>
 
-        {/* CONTENIDO PRINCIPAL */}
-        <div className="p-1 flex flex-col gap-2 overflow-y-auto">
+        {/* CONTENIDO PRINCIPAL CON ESPACIADO SUPERIOR ADECUADO PARA NO TAPAR INFORMACION BASICA */}
+        <div className="px-2 pt-3.5 pb-2 flex flex-col gap-2.5 overflow-y-auto">
           
           {/* FILA 1: INFORMACION BASICA + FOTOGRAFIA */}
           <div className="flex flex-col md:flex-row gap-2 shrink-0">
             
             {/* Caja INFORMACION BASICA */}
-            <div className="flex-1 border border-gray-400 p-2 relative pt-3 flex flex-col gap-1.5 bg-[#d4d0c8]">
-              <div className="absolute -top-2 left-2 bg-[#d4d0c8] px-1 font-bold text-[9px] uppercase tracking-wider text-gray-800">
+            <div className="flex-1 border border-gray-400 p-2 relative pt-3.5 flex flex-col gap-1.5 bg-[#d4d0c8]">
+              <div className="absolute -top-2.5 left-2.5 bg-[#d4d0c8] px-1 font-bold text-[9px] uppercase tracking-wider text-gray-800">
                 INFORMACION BASICA:
               </div>
 
@@ -455,9 +480,10 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
                   <span className="font-bold text-[11px]">Cuenta:</span>
                   <input
                     type="text"
-                    value={clienteForm.cuenta || cuentaActiva}
+                    value={clienteForm.cuenta || cuentaActiva || ''}
                     readOnly={!esNuevo}
                     onChange={(e) => updateField('cuenta', e.target.value.toUpperCase())}
+                    placeholder="—"
                     className={`w-16 border border-t-gray-700 border-l-gray-700 border-b-white border-r-white px-1 py-0.5 font-mono font-bold text-blue-900 text-[11px] ${
                       esNuevo ? 'bg-white focus:outline-blue-700' : 'bg-[#ffffd0]'
                     }`}
@@ -468,8 +494,12 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
                   <input
                     type="text"
                     value={clienteForm.nombre || ''}
+                    readOnly={!modoEdicion}
                     onChange={(e) => updateField('nombre', e.target.value.toUpperCase())}
-                    className="w-full bg-[#ffffd0] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white font-bold px-1.5 py-0.5 text-blue-900 text-[11px] truncate focus:outline-none focus:bg-white"
+                    placeholder={cuentaActiva ? '' : 'Seleccione un abonado en la lista de abajo...'}
+                    className={`w-full border border-t-gray-700 border-l-gray-700 border-b-white border-r-white font-bold px-1.5 py-0.5 text-blue-900 text-[11px] truncate focus:outline-none ${
+                      modoEdicion ? 'bg-white focus:ring-1 focus:ring-blue-600' : 'bg-[#ffffd0]'
+                    }`}
                   />
                 </div>
               </div>
@@ -480,8 +510,9 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
                   <span className="font-bold text-[11px]">Ciudad</span>
                   <select
                     value={clienteForm.ciudad || 'LIMACHE'}
+                    disabled={!modoEdicion}
                     onChange={(e) => updateField('ciudad', e.target.value.toUpperCase())}
-                    className="w-full bg-[#ffffd0] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white font-bold px-1 py-0.5 text-blue-900 text-[11px] focus:outline-none"
+                    className="w-full bg-[#ffffd0] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white font-bold px-1 py-0.5 text-blue-900 text-[11px] focus:outline-none disabled:opacity-90"
                   >
                     <option value="LIMACHE">LIMACHE</option>
                     <option value="VIÑA DEL MAR">VIÑA DEL MAR</option>
@@ -499,8 +530,11 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
                   <input
                     type="text"
                     value={clienteForm.plan || ''}
+                    readOnly={!modoEdicion}
                     onChange={(e) => updateField('plan', e.target.value.toUpperCase())}
-                    className="w-full bg-[#ffffd0] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white font-bold px-1 py-0.5 text-blue-900 text-[11px] focus:outline-none focus:bg-white"
+                    className={`w-full border border-t-gray-700 border-l-gray-700 border-b-white border-r-white font-bold px-1 py-0.5 text-blue-900 text-[11px] focus:outline-none ${
+                      modoEdicion ? 'bg-white' : 'bg-[#ffffd0]'
+                    }`}
                   />
                 </div>
                 <div className="flex items-center gap-1 w-36">
@@ -508,8 +542,11 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
                   <input
                     type="text"
                     value={clienteForm.tipo1 || ''}
+                    readOnly={!modoEdicion}
                     onChange={(e) => updateField('tipo1', e.target.value.toUpperCase())}
-                    className="w-full bg-[#ffffd0] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white font-bold px-1 py-0.5 text-blue-900 text-[11px] focus:outline-none focus:bg-white"
+                    className={`w-full border border-t-gray-700 border-l-gray-700 border-b-white border-r-white font-bold px-1 py-0.5 text-blue-900 text-[11px] focus:outline-none ${
+                      modoEdicion ? 'bg-white' : 'bg-[#ffffd0]'
+                    }`}
                   />
                 </div>
               </div>
@@ -521,8 +558,11 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
                   <input
                     type="text"
                     value={clienteForm.direccion || ''}
+                    readOnly={!modoEdicion}
                     onChange={(e) => updateField('direccion', e.target.value.toUpperCase())}
-                    className="w-full bg-[#ffffd0] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white font-bold px-1.5 py-0.5 text-blue-900 text-[11px] truncate focus:outline-none focus:bg-white"
+                    className={`w-full border border-t-gray-700 border-l-gray-700 border-b-white border-r-white font-bold px-1.5 py-0.5 text-blue-900 text-[11px] truncate focus:outline-none ${
+                      modoEdicion ? 'bg-white' : 'bg-[#ffffd0]'
+                    }`}
                   />
                 </div>
                 <div className="flex items-center gap-1 w-44">
@@ -530,15 +570,18 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
                   <input
                     type="text"
                     value={clienteForm.sector || ''}
+                    readOnly={!modoEdicion}
                     onChange={(e) => updateField('sector', e.target.value.toUpperCase())}
-                    className="w-full bg-[#ffffd0] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white font-bold px-1 py-0.5 text-blue-900 text-[11px] focus:outline-none focus:bg-white"
+                    className={`w-full border border-t-gray-700 border-l-gray-700 border-b-white border-r-white font-bold px-1 py-0.5 text-blue-900 text-[11px] focus:outline-none ${
+                      modoEdicion ? 'bg-white' : 'bg-[#ffffd0]'
+                    }`}
                   />
                 </div>
               </div>
 
               {/* Fila 4: Marco TELEFONOS */}
-              <div className="border border-gray-400 p-1 relative mt-1 bg-[#d4d0c8]">
-                <div className="absolute -top-2 left-2 bg-[#d4d0c8] px-1 text-[8px] font-bold text-gray-700">
+              <div className="border border-gray-400 p-1.5 relative mt-2 bg-[#d4d0c8]">
+                <div className="absolute -top-2.5 left-2 bg-[#d4d0c8] px-1 text-[8px] font-bold text-gray-700">
                   TELEFONOS:
                 </div>
                 <div className="grid grid-cols-6 gap-1 pt-0.5">
@@ -547,9 +590,12 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
                       key={i}
                       type="text"
                       value={clienteForm[`telefono${i + 1}`] || ''}
+                      readOnly={!modoEdicion}
                       onChange={(e) => updateField(`telefono${i + 1}`, e.target.value)}
                       placeholder=""
-                      className="w-full bg-[#ffffd0] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white px-1 py-0.5 text-center font-bold text-blue-900 text-[10px] focus:outline-none focus:bg-white"
+                      className={`w-full border border-t-gray-700 border-l-gray-700 border-b-white border-r-white px-1 py-0.5 text-center font-bold text-blue-900 text-[10px] focus:outline-none ${
+                        modoEdicion ? 'bg-white' : 'bg-[#ffffd0]'
+                      }`}
                     />
                   ))}
                 </div>
@@ -622,8 +668,8 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
               {/* Contenedor Pestaña Izquierda */}
               <div className="border border-white bg-[#d4d0c8] p-1 flex-1 flex flex-col justify-start">
                 {tabEmergentes === 'telefonos' && (
-                  <div className="border border-gray-400 p-1 relative flex-1 bg-[#d4d0c8] flex flex-col">
-                    <div className="absolute -top-2 left-2 bg-[#d4d0c8] px-1 text-[8px] font-bold text-gray-700 uppercase">
+                  <div className="border border-gray-400 p-1 relative flex-1 bg-[#d4d0c8] flex flex-col mt-0.5">
+                    <div className="absolute -top-2.5 left-2 bg-[#d4d0c8] px-1 text-[8px] font-bold text-gray-700 uppercase">
                       NUMEROS DE EMERGENCIA
                     </div>
                     <div className="mt-1">
@@ -645,32 +691,44 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
                                   <input
                                     type="text"
                                     value={clienteForm[`nombre${num}`] || ''}
+                                    readOnly={!modoEdicion}
                                     onChange={(e) => updateField(`nombre${num}`, e.target.value.toUpperCase())}
-                                    className="w-full bg-[#ffffd0] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white px-1 py-0.5 font-bold text-blue-900 text-[10px] focus:outline-none focus:bg-white"
+                                    className={`w-full border border-t-gray-700 border-l-gray-700 border-b-white border-r-white px-1 py-0.5 font-bold text-blue-900 text-[10px] focus:outline-none ${
+                                      modoEdicion ? 'bg-white' : 'bg-[#ffffd0]'
+                                    }`}
                                   />
                                 </td>
                                 <td className="p-0.5">
                                   <input
                                     type="text"
                                     value={clienteForm[`direccion${num}`] || ''}
+                                    readOnly={!modoEdicion}
                                     onChange={(e) => updateField(`direccion${num}`, e.target.value.toUpperCase())}
-                                    className="w-full bg-[#ffffd0] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white px-1 py-0.5 font-bold text-blue-900 text-[10px] focus:outline-none focus:bg-white"
+                                    className={`w-full border border-t-gray-700 border-l-gray-700 border-b-white border-r-white px-1 py-0.5 font-bold text-blue-900 text-[10px] focus:outline-none ${
+                                      modoEdicion ? 'bg-white' : 'bg-[#ffffd0]'
+                                    }`}
                                   />
                                 </td>
                                 <td className="p-0.5">
                                   <input
                                     type="text"
                                     value={clienteForm[`carg${num}`] || ''}
+                                    readOnly={!modoEdicion}
                                     onChange={(e) => updateField(`carg${num}`, e.target.value.toUpperCase())}
-                                    className="w-full bg-[#ffffd0] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white px-1 py-0.5 font-bold text-blue-900 text-[10px] focus:outline-none focus:bg-white"
+                                    className={`w-full border border-t-gray-700 border-l-gray-700 border-b-white border-r-white px-1 py-0.5 font-bold text-blue-900 text-[10px] focus:outline-none ${
+                                      modoEdicion ? 'bg-white' : 'bg-[#ffffd0]'
+                                    }`}
                                   />
                                 </td>
                                 <td className="p-0.5">
                                   <input
                                     type="text"
                                     value={clienteForm[`t${num}`] || ''}
+                                    readOnly={!modoEdicion}
                                     onChange={(e) => updateField(`t${num}`, e.target.value)}
-                                    className="w-full bg-[#ffffd0] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white px-1 py-0.5 font-bold text-blue-900 text-[10px] focus:outline-none focus:bg-white"
+                                    className={`w-full border border-t-gray-700 border-l-gray-700 border-b-white border-r-white px-1 py-0.5 font-bold text-blue-900 text-[10px] focus:outline-none ${
+                                      modoEdicion ? 'bg-white' : 'bg-[#ffffd0]'
+                                    }`}
                                   />
                                 </td>
                               </tr>
@@ -684,7 +742,7 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
 
                 {tabEmergentes === 'horarios' && (
                   <div className="border border-gray-400 bg-[#d4d0c8] p-1.5 flex flex-col gap-1 text-[10px]">
-                    <div className="font-bold text-blue-950 mb-1">⏰ HORARIOS DE APERTURA Y CIERRE [{cuentaActiva}]</div>
+                    <div className="font-bold text-blue-950 mb-1">⏰ HORARIOS DE APERTURA Y CIERRE [{cuentaActiva || 'SIN SELECCIÓN'}]</div>
                     <div className="overflow-y-auto max-h-[140px] bg-white border border-gray-500">
                       <table className="w-full text-[10px]">
                         <thead className="bg-[#b0b0b0] font-bold">
@@ -702,6 +760,7 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
                               <td className="p-1 text-center">
                                 <button
                                   type="button"
+                                  disabled={!modoEdicion}
                                   onClick={() => {
                                     const next = [...horariosDias]
                                     next[i] = { ...next[i], habilitado: !d.habilitado }
@@ -715,7 +774,7 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
                               <td className="p-1 text-center">
                                 <input
                                   type="time"
-                                  disabled={!d.habilitado}
+                                  disabled={!d.habilitado || !modoEdicion}
                                   value={d.apertura}
                                   onChange={(e) => {
                                     const next = [...horariosDias]
@@ -728,7 +787,7 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
                               <td className="p-1 text-center">
                                 <input
                                   type="time"
-                                  disabled={!d.habilitado}
+                                  disabled={!d.habilitado || !modoEdicion}
                                   value={d.cierre}
                                   onChange={(e) => {
                                     const next = [...horariosDias]
@@ -791,8 +850,8 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
               </div>
 
               <div className="border border-white bg-[#d4d0c8] p-1 flex-1 flex flex-col">
-                <div className="border border-gray-400 p-1 relative flex-1 bg-[#d4d0c8] flex flex-col">
-                  <div className="absolute -top-2 left-2 bg-[#d4d0c8] px-1 text-[8px] font-bold text-gray-700 uppercase">
+                <div className="border border-gray-400 p-1 relative flex-1 bg-[#d4d0c8] flex flex-col mt-0.5">
+                  <div className="absolute -top-2.5 left-2 bg-[#d4d0c8] px-1 text-[8px] font-bold text-gray-700 uppercase">
                     {tabInfo === 'caracteristicas' ? 'CARACTERISTICAS' : tabInfo === 'referencias' ? 'REFERENCIAS' : 'OBSERVACIONES'}
                   </div>
                   <textarea
@@ -803,12 +862,15 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
                         ? clienteForm['referencia1'] || ''
                         : clienteForm['observacion1'] || ''
                     }
+                    readOnly={!modoEdicion}
                     onChange={(e) => {
                       const k = tabInfo === 'caracteristicas' ? 'caract adic1' : tabInfo === 'referencias' ? 'referencia1' : 'observacion1'
                       updateField(k, e.target.value)
                     }}
                     rows={7}
-                    className="w-full h-full bg-[#ffffd0] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white p-1 font-bold text-blue-900 text-[10px] resize-none focus:outline-none focus:bg-white mt-1"
+                    className={`w-full h-full border border-t-gray-700 border-l-gray-700 border-b-white border-r-white p-1 font-bold text-blue-900 text-[10px] resize-none focus:outline-none mt-1 ${
+                      modoEdicion ? 'bg-white' : 'bg-[#ffffd0]'
+                    }`}
                   />
                 </div>
               </div>
@@ -877,8 +939,11 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
                       <input
                         type="text"
                         value={clienteForm.fecha || ''}
+                        readOnly={!modoEdicion}
                         onChange={(e) => updateField('fecha', e.target.value)}
-                        className="flex-1 bg-[#ffffd0] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white px-1.5 py-0.5 font-bold text-blue-900 focus:outline-none focus:bg-white"
+                        className={`flex-1 border border-t-gray-700 border-l-gray-700 border-b-white border-r-white px-1.5 py-0.5 font-bold text-blue-900 focus:outline-none ${
+                          modoEdicion ? 'bg-white' : 'bg-[#ffffd0]'
+                        }`}
                       />
                     </div>
                     <div className="flex items-center gap-1">
@@ -886,8 +951,11 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
                       <input
                         type="text"
                         value={clienteForm.instalador || ''}
+                        readOnly={!modoEdicion}
                         onChange={(e) => updateField('instalador', e.target.value)}
-                        className="flex-1 bg-[#ffffd0] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white px-1.5 py-0.5 font-bold text-blue-900 truncate focus:outline-none focus:bg-white"
+                        className={`flex-1 border border-t-gray-700 border-l-gray-700 border-b-white border-r-white px-1.5 py-0.5 font-bold text-blue-900 truncate focus:outline-none ${
+                          modoEdicion ? 'bg-white' : 'bg-[#ffffd0]'
+                        }`}
                       />
                     </div>
                   </div>
@@ -899,8 +967,11 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
                       <input
                         type="text"
                         value={`${clienteForm.marca || ''} ${clienteForm.modelo || ''}`.trim()}
+                        readOnly={!modoEdicion}
                         onChange={(e) => updateField('modelo', e.target.value)}
-                        className="flex-1 bg-[#ffffd0] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white px-1.5 py-0.5 font-bold text-blue-900 focus:outline-none focus:bg-white"
+                        className={`flex-1 border border-t-gray-700 border-l-gray-700 border-b-white border-r-white px-1.5 py-0.5 font-bold text-blue-900 focus:outline-none ${
+                          modoEdicion ? 'bg-white' : 'bg-[#ffffd0]'
+                        }`}
                       />
                     </div>
                     <div className="flex items-center gap-1">
@@ -908,8 +979,11 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
                       <input
                         type="text"
                         value={clienteForm.ubicacion_uc || ''}
+                        readOnly={!modoEdicion}
                         onChange={(e) => updateField('ubicacion_uc', e.target.value)}
-                        className="flex-1 bg-[#ffffd0] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white px-1.5 py-0.5 font-bold text-blue-900 truncate focus:outline-none focus:bg-white"
+                        className={`flex-1 border border-t-gray-700 border-l-gray-700 border-b-white border-r-white px-1.5 py-0.5 font-bold text-blue-900 truncate focus:outline-none ${
+                          modoEdicion ? 'bg-white' : 'bg-[#ffffd0]'
+                        }`}
                       />
                     </div>
                   </div>
@@ -918,8 +992,8 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
             </div>
 
             {/* BUSCAR USUARIO */}
-            <div className="flex-1 border border-gray-400 p-2 relative bg-[#d4d0c8] flex flex-col gap-1 min-h-[110px]">
-              <div className="absolute -top-2 left-2 bg-[#d4d0c8] px-1 text-[8px] font-bold text-gray-700 uppercase">
+            <div className="flex-1 border border-gray-400 p-2 relative bg-[#d4d0c8] flex flex-col gap-1 min-h-[110px] mt-0.5">
+              <div className="absolute -top-2.5 left-2 bg-[#d4d0c8] px-1 text-[8px] font-bold text-gray-700 uppercase">
                 BUSCAR USUARIO
               </div>
 
@@ -930,16 +1004,18 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
                     type="text"
                     value={cuentaActiva}
                     readOnly
+                    placeholder="—"
                     className="w-16 bg-white border border-t-gray-700 border-l-gray-700 border-b-white border-r-white font-mono font-bold px-1.5 py-0.5 text-black"
                   />
                 </div>
                 <div className="flex-1 flex items-center gap-1">
                   <span className="font-bold text-[10px]">NOMBRE:</span>
                   <input
+                    ref={buscarInputRef}
                     type="text"
                     value={buscarCuentaInput}
                     onChange={(e) => setBuscarCuentaInput(e.target.value)}
-                    className="flex-1 bg-white border border-t-gray-700 border-l-gray-700 border-b-white border-r-white font-bold px-1.5 py-0.5 text-black text-[10px]"
+                    className="flex-1 bg-white border border-t-gray-700 border-l-gray-700 border-b-white border-r-white font-bold px-1.5 py-0.5 text-black text-[10px] focus:outline-blue-700"
                     placeholder="Ingrese el nombre o parte del nombre del usuario"
                   />
                 </div>
@@ -981,7 +1057,7 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
               <button
                 type="button"
                 onClick={handleGuardar}
-                disabled={guardando}
+                disabled={guardando || !modoEdicion}
                 className="flex-1 md:flex-none h-7 bg-[#d4d0c8] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 text-gray-900 font-extrabold active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white cursor-pointer hover:bg-[#e0e0e0] text-[10px] shadow-xs disabled:opacity-50"
               >
                 {guardando ? 'GUARDANDO...' : 'GUARDAR'}
@@ -996,7 +1072,7 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
               <button
                 type="button"
                 onClick={handleEliminar}
-                disabled={guardando}
+                disabled={guardando || !cuentaActiva}
                 className="flex-1 md:flex-none h-7 bg-[#d4d0c8] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 text-gray-900 font-extrabold active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white cursor-pointer hover:bg-[#e0e0e0] text-[10px] shadow-xs disabled:opacity-50"
               >
                 ELIMINAR
