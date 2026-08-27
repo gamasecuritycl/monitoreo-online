@@ -32,6 +32,11 @@ import { lookupContactId } from '@/lib/contact_id_library'
 import { sendMessage, generarMensajeAlerta, generarMensajeEnergia, detectarPatronEvento, type EventInfo } from '@/lib/whatsapp'
 import { Operator, ensureUserAttributes, OPERADORES_PREDETERMINADOS } from '@/types/operator'
 
+// Base de datos de clientes precargada de GENERAL.MDB
+import clientesDataRaw from '@/lib/clientes_general.json'
+
+const clientesGeneralFallback = clientesDataRaw as Record<string, Record<string, string>>
+
 // ── Contactos del Panel Lateral de Scorpion y Entidades de Emergencia ──
 interface ContactoAutorizado {
   prioridad: number
@@ -139,8 +144,51 @@ export default function ScorpionDashboard() {
   
   const [tabGeneralActiva, setTabGeneralActiva] = useState<'referencias' | 'caracteristicas' | 'observaciones'>('referencias')
   
-  // Mapa de clientes cargado en tiempo real
-  const [clientesMap, setClientesMap] = useState<Record<string, Record<string, string>>>({})
+  // Mapa de clientes cargado en tiempo real con fallback inmediato de GENERAL.MDB
+  const [clientesMap, setClientesMap] = useState<Record<string, Record<string, string>>>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const local = localStorage.getItem('gama_clientes_cache')
+        if (local) {
+          const parsed = JSON.parse(local)
+          if (parsed && typeof parsed === 'object' && Object.keys(parsed).length > 0) {
+            return { ...clientesGeneralFallback, ...parsed }
+          }
+        }
+      } catch (e) {}
+    }
+    return clientesGeneralFallback
+  })
+
+  // Cargar clientes desde Supabase en segundo plano y fusionar en tiempo real
+  useEffect(() => {
+    const fetchClientesSupabase = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('eventos_monitoreo')
+          .select('nombre_abonado')
+          .eq('cuenta', 'CLIENTES')
+          .order('id', { ascending: false })
+          .limit(1)
+
+        if (data && data.length > 0 && !error && data[0].nombre_abonado) {
+          try {
+            const remoteMap = JSON.parse(data[0].nombre_abonado)
+            if (remoteMap && typeof remoteMap === 'object') {
+              setClientesMap(prev => {
+                const combined = { ...clientesGeneralFallback, ...prev, ...remoteMap }
+                try { localStorage.setItem('gama_clientes_cache', JSON.stringify(combined)) } catch (e) {}
+                return combined
+              })
+            }
+          } catch (errJson) {}
+        }
+      } catch (err) {
+        console.warn('[DASHBOARD] Error cargando CLIENTES desde Supabase:', err)
+      }
+    }
+    fetchClientesSupabase()
+  }, [])
   
   // Mapa de códigos de color desde CODIGOS.MDB
   const [codigosMap, setCodigosMap] = useState<Record<string, { descripcion: string; zn_us: string; color: string }> | undefined>(undefined)
@@ -960,7 +1008,7 @@ export default function ScorpionDashboard() {
   // Extraer datos del abonado activo para poblar las tarjetas derechas
   const activeEvent = eventoSeleccionado || (eventos.length > 0 ? eventos[eventos.length - 1] : null)
   const cuentaKey = activeEvent ? activeEvent.cuenta.toUpperCase().trim() : ''
-  const clienteDb = cuentaKey ? (clientesMap[cuentaKey] || null) : null
+  const clienteDb = cuentaKey ? (clientesMap[cuentaKey] || clientesGeneralFallback[cuentaKey] || null) : null
 
   // Cargar contactos reales guardados en Expediente (Supabase: notificaciones_whatsapp / eventos_monitoreo)
   const [contactosSupabase, setContactosSupabase] = useState<ContactoAutorizado[]>([])
