@@ -28,6 +28,7 @@ export default function ToolModal({ modalId, onClose, operadores = [], onUpdateO
   const [validating, setValidating] = useState(false)
   const [validationSteps, setValidationSteps] = useState<string[]>([])
   const [contactIdQuery, setContactIdQuery] = useState('')
+  const [contactIdCat, setContactIdCat] = useState('TODOS')
   const [searchAccount, setSearchAccount] = useState('')
   const [searchResults, setSearchResults] = useState<any[]>([])
 
@@ -99,7 +100,7 @@ export default function ToolModal({ modalId, onClose, operadores = [], onUpdateO
     setTimeout(() => {
       setSyncing(false)
       setSyncDone(true)
-    }, 1500)
+    }, 2000)
   }
 
   // Trigger config save simulation
@@ -113,102 +114,198 @@ export default function ToolModal({ modalId, onClose, operadores = [], onUpdateO
     setValidating(true)
     setValidationSteps([])
     const steps = [
-      'Verificando esquema de tablas en Supabase...',
-      'Verificando cadenas de conexión pyodbc...',
-      'Validando formatos de fecha y hora...',
-      'Buscando anomalías de abonados sin cuenta...',
+      'Conectando a base de datos Supabase...',
+      'Verificando esquema de tabla eventos_monitoreo...',
+      'Revisando integridad referencial en cuentas...',
+      'Validando formato de timestamps UTC...',
+      'Comprobando duplicidad en IDs de eventos...',
+      'Verificando índices de búsqueda por fecha_hora...',
+      'Base de datos íntegra. 0 inconsistencias detectadas.'
     ]
     
     steps.forEach((step, idx) => {
       setTimeout(() => {
-        setValidationSteps(prev => [...prev, `[OK] ${step}`])
+        setValidationSteps(prev => [...prev, step])
         if (idx === steps.length - 1) {
           setValidating(false)
         }
-      }, (idx + 1) * 600)
+      }, (idx + 1) * 400)
     })
   }
 
   // Dummy search simulation
   const handleSearch = () => {
-    if (!searchAccount) return
     setSearchResults([
-      { fecha_hora: '2026-06-30T10:14:02', cuenta: searchAccount, evento: 'ALARMA DE ROBO', zona: '03', usuario: '--' },
-      { fecha_hora: '2026-06-30T08:02:11', cuenta: searchAccount, evento: 'APERTURA', zona: '--', usuario: '01' },
-      { fecha_hora: '2026-06-29T20:10:45', cuenta: searchAccount, evento: 'CIERRE', zona: '--', usuario: '01' },
-      { fecha_hora: '2026-06-29T12:00:00', cuenta: searchAccount, evento: 'AUTOTEST', zona: '--', usuario: '--' },
+      { fecha_hora: '2026-08-25T14:32:00', evento: 'ALARMA ROBO - ZONA 02' },
+      { fecha_hora: '2026-08-25T14:35:12', evento: 'RESTAURACIÓN ROBO - ZONA 02' },
+      { fecha_hora: '2026-08-26T08:02:11', evento: 'DESARMADO POR USUARIO 01' },
+      { fecha_hora: '2026-08-26T18:45:00', evento: 'ARMADO POR USUARIO 01' },
     ])
   }
 
-  // Contact ID database
-  const contactIdCodes = [
-    { code: '100', name: 'ALARMA MÉDICA', desc: 'Emergencia médica o botón colgante presionado' },
-    { code: '101', name: 'PÁNICO MÉDICO', desc: 'Transmisor médico de emergencia personal' },
-    { code: '110', name: 'ALARMA DE INCENDIO', desc: 'Activación de sensor de humo o calor' },
-    { code: '111', name: 'ESTACIÓN MANUAL INCENDIO', desc: 'Tirador manual de alarma de incendio' },
-    { code: '112', name: 'DETECTOR DE COMBUSTIÓN', desc: 'Sensor térmico o detector de llama activado' },
-    { code: '113', name: 'FLUJO DE AGUA INCENDIO', desc: 'Sensor de flujo de agua en tubería de extinción' },
-    { code: '120', name: 'ALARMA DE PÁNICO', desc: 'Botón de pánico presionado por el usuario' },
-    { code: '121', name: 'PÁNICO SILENCIOSO / AMAGO', desc: 'Presión bajo amenaza o botón silencioso' },
-    { code: '122', name: 'PÁNICO AUDIBLE', desc: 'Botón de pánico con activación de sirena' },
-    { code: '123', name: 'CÓDIGO DE COACCIÓN', desc: 'Desarmado del sistema bajo coacción/amenaza' },
-    { code: '130', name: 'ALARMA DE ROBO', desc: 'Intrusión detectada en zona perimetral/interior' },
-    { code: '131', name: 'ALARMA ROBO PERIMETRAL', desc: 'Apertura de puerta o ventana protegida' },
-    { code: '132', name: 'ALARMA ROBO INTERIOR', desc: 'Detección de movimiento en zona interior' },
-    { code: '133', name: 'ALARMA ROBO 24 HORAS', desc: 'Violación de zona activa las 24 horas' },
-    { code: '134', name: 'ALARMA ZONA ENTRADA/SALIDA', desc: 'Intrusión en la ruta de retardo de tiempo' },
-    { code: '135', name: 'ALARMA ROBO DÍA/NOCHE', desc: 'Alarma instantánea en zona con control horario' },
-    { code: '136', name: 'ALARMA ROBO EXTERIOR', desc: 'Detección en patio, terraza o barrera exterior' },
-    { code: '137', name: 'TAMPER / SABOTAJE', desc: 'Sabotaje físico de caja de panel, sirena o sensor' },
-    { code: '138', name: 'PRE-ALARMA / ROBO CERCANO', desc: 'Primer cruce de haz en zona perimetral' },
-    { code: '140', name: 'ALARMA DE GAS', desc: 'Detección de fuga de gas combustible o tóxico' },
-    { code: '144', name: 'INUNDACIÓN / FUEGO AGUA', desc: 'Sensor de nivel de agua o fuga de líquido activado' },
-    { code: '150', name: 'ALARMA AMBIENTAL 24H', desc: 'Monitoreo de variable ambiental crítica' },
-    { code: '154', name: 'ALTA TEMPERATURA', desc: 'Temperatura superior al umbral configurado' },
-    { code: '155', name: 'BAJA TEMPERATURA', desc: 'Temperatura inferior al umbral configurado (congelamiento)' },
-    { code: '158', name: 'ALTO NIVEL DE AGUA', desc: 'Estanque o pozo superó límite de llenado' },
-    { code: '300', name: 'FALLO DEL SISTEMA', desc: 'Falla crítica de hardware en el panel principal' },
-    { code: '301', name: 'FALLO DE ENERGÍA AC', desc: 'Pérdida de alimentación de corriente alterna 220V' },
-    { code: '302', name: 'BATERÍA BAJA PANEL', desc: 'Batería de respaldo del panel descargada o ausente' },
-    { code: '305', name: 'RESET DE SISTEMA', desc: 'Reinicio completo del microprocesador del panel' },
-    { code: '306', name: 'CAMBIO DE PROGRAMACIÓN', desc: 'Modificación de parámetros en memoria de panel' },
-    { code: '308', name: 'APAGADO DEL SISTEMA', desc: 'Desconexión controlada del panel' },
-    { code: '309', name: 'FALLO TEST BATERÍA', desc: 'La batería no soportó el test de carga automático' },
-    { code: '311', name: 'FALLO MÓDULO EXPANSOR', desc: 'Pérdida de comunicación con placa receptora de zonas' },
-    { code: '321', name: 'FALLO DE SIRENA 1', desc: 'Corte de cable o cortocircuito en salida de campana' },
-    { code: '333', name: 'FALLO TRANSMISOR RADIO', desc: 'Avería en la antena o módulo de comunicación celular' },
-    { code: '350', name: 'FALLO DE TRANSMISIÓN', desc: 'Incapacidad de conectar con receptor de monitoreo' },
-    { code: '351', name: 'FALLO LÍNEA TELEFÓNICA 1', desc: 'Pérdida de tono en la línea de teléfono fija' },
-    { code: '354', name: 'FALLO AL COMUNICAR', desc: 'Receptor rechazó intentos de reporte del panel' },
-    { code: '373', name: 'FALLO LAZO DE FUEGO', desc: 'Circuito de sensores de humo abierto o cortocircuitado' },
-    { code: '380', name: 'FALLO EN ZONA', desc: 'Avería genérica en la supervisión de cableado de zona' },
-    { code: '381', name: 'FALLO SUPERVISIÓN RF', desc: 'Pérdida de enlace con sensor inalámbrico' },
-    { code: '383', name: 'SABOTAJE SENSOR / TAMPER RF', desc: 'Apertura de carcasa de detector inalámbrico' },
-    { code: '384', name: 'BATERÍA BAJA SENSOR RF', desc: 'Pila baja en detector magnético o de movimiento' },
-    { code: '400', name: 'APERTURA / CIERRE', desc: 'Desarmado o armado del sistema de intrusión' },
-    { code: '401', name: 'DESARMADO / ARMADO USUARIO', desc: 'Apertura o cierre manual con código numérico' },
-    { code: '402', name: 'DESARMADO / ARMADO AUTO', desc: 'Armado automático programado por horario' },
-    { code: '403', name: 'DESARMADO / ARMADO LLAVE', desc: 'Control físico mediante chapa o interruptor de llave' },
-    { code: '406', name: 'CANCELACIÓN DE ALARMA', desc: 'Usuario desactivó alarma tras una activación' },
-    { code: '407', name: 'DESARMADO / ARMADO REMOTO', desc: 'Acceso efectuado por software de descarga o red' },
-    { code: '408', name: 'ARMADO RÁPIDO', desc: 'Cierre del sistema sin ingresar código de usuario' },
-    { code: '409', name: 'ARMADO PARCIAL', desc: 'Armado nocturno o modo en casa' },
-    { code: '570', name: 'ZONA ANULADA / BYPASS', desc: 'Exclusión voluntaria de una zona al armar el panel' },
-    { code: '571', name: 'ANULACIÓN DE FUEGO', desc: 'Exclusión manual de zona de incendios' },
-    { code: '572', name: 'ANULACIÓN ZONA 24H', desc: 'Exclusión manual de zona activa permanente' },
-    { code: '573', name: 'ANULACIÓN TAMPER', desc: 'Exclusión manual de zona de sabotaje' },
-    { code: '601', name: 'TEST MANUAL', desc: 'Prueba de comunicación iniciada por el operador/instalador' },
-    { code: '602', name: 'AUTOTEST PERIÓDICO', desc: 'Señal automática de verificación del sistema (24 horas)' },
-    { code: '607', name: 'TEST DE CAMINATA INICIADO', desc: 'Plazo de prueba local de sensores por instalador' },
-    { code: '608', name: 'AUTOTEST CON AVERÍA AC', desc: 'Prueba de control periódico con falta de energía alterna' },
-    { code: '623', name: 'MEMORIA DE EVENTOS BORRADA', desc: 'Vaciado del registro de historial del panel' },
-    { code: '627', name: 'ENTRADA PROGRAMACIÓN', desc: 'Técnico ingresó al menú de configuración local' },
-    { code: '628', name: 'SALIDA PROGRAMACIÓN', desc: 'Técnico salió del menú de configuración local' },
+  // Diccionario Oficial SIA DC-05 Contact ID Ademco Exhaustivo con interacción E (Evento) y R (Restauración)
+  const contactIdFullCodes = [
+    // ── 100-109: EMERGENCIA MÉDICA ──────────────────────────────────
+    { code: '100', cat: 'MÉDICA', eCode: 'E100', eName: 'ALARMA MÉDICA', eDesc: 'Emergencia médica o botón de auxilio', rCode: 'R100', rName: 'RESTABLECIMIENTO MÉDICO', rDesc: 'Condición médica normalizada' },
+    { code: '101', cat: 'MÉDICA', eCode: 'E101', eName: 'PÁNICO MÉDICO', eDesc: 'Transmisor colgante de emergencia personal', rCode: 'R101', rName: 'REST. PÁNICO MÉDICO', rDesc: 'Pulsador personal restablecido' },
+    { code: '102', cat: 'MÉDICA', eCode: 'E102', eName: 'FALLO DE REPORTE MÉDICO', eDesc: 'Falta de confirmación médica en ventana de tiempo', rCode: 'R102', rName: 'REST. REPORTE MÉDICO', rDesc: 'Reporte médico confirmado' },
+
+    // ── 110-119: FUEGO / INCENDIO ───────────────────────────────────
+    { code: '110', cat: 'INCENDIO', eCode: 'E110', eName: 'ALARMA DE FUEGO / INCENDIO', eDesc: 'Activación de sensor de humo o calor general', rCode: 'R110', rName: 'RESTABLECIMIENTO DE FUEGO', rDesc: 'Lazo de incendio en reposo y seguro' },
+    { code: '111', cat: 'INCENDIO', eCode: 'E111', eName: 'SENSOR DE HUMO', eDesc: 'Detección de partículas de humo en zona', rCode: 'R111', rName: 'REST. SENSOR DE HUMO', rDesc: 'Cámara de humo despejada' },
+    { code: '112', cat: 'INCENDIO', eCode: 'E112', eName: 'DETECTOR DE COMBUSTIÓN', eDesc: 'Detección de gases de combustión temprana', rCode: 'R112', rName: 'REST. COMBUSTIÓN', rDesc: 'Nivel de combustión normalizado' },
+    { code: '113', cat: 'INCENDIO', eCode: 'E113', eName: 'FLUJO DE AGUA (SPRINKLER)', eDesc: 'Sensor de flujo activado en red de rociadores', rCode: 'R113', rName: 'REST. FLUJO DE AGUA', rDesc: 'Flujo de agua cerrado y en reposo' },
+    { code: '114', cat: 'INCENDIO', eCode: 'E114', eName: 'DETECTOR DE CALOR', eDesc: 'Temperatura térmica crítica superada', rCode: 'R114', rName: 'REST. DETECTOR DE CALOR', rDesc: 'Temperatura térmica normalizada' },
+    { code: '115', cat: 'INCENDIO', eCode: 'E115', eName: 'ESTACIÓN MANUAL DE JALÓN', eDesc: 'Tirador manual de emergencia activado', rCode: 'R115', rName: 'REST. ESTACIÓN MANUAL', rDesc: 'Tirador rearmado físicamente con llave' },
+    { code: '116', cat: 'INCENDIO', eCode: 'E116', eName: 'DETECTOR DE DUCTO', eDesc: 'Humo detectado en ducto de aire acondicionado', rCode: 'R116', rName: 'REST. DETECTOR DUCTO', rDesc: 'Ducto de aire ventilado' },
+    { code: '117', cat: 'INCENDIO', eCode: 'E117', eName: 'DETECTOR DE LLAMA', eDesc: 'Detección óptica de llama abierta (UV/IR)', rCode: 'R117', rName: 'REST. DETECTOR DE LLAMA', rDesc: 'Llama extinguida y despejada' },
+    { code: '118', cat: 'INCENDIO', eCode: 'E118', eName: 'PRE-ALARMA DE FUEGO', eDesc: 'Alerta previa antes de disparo general', rCode: 'R118', rName: 'REST. PRE-ALARMA', rDesc: 'Pre-alarma despejada' },
+
+    // ── 120-129: PÁNICO / AMAGO / COACCIÓN ──────────────────────────
+    { code: '120', cat: 'PÁNICO', eCode: 'E120', eName: 'ALARMA DE PÁNICO', eDesc: 'Pulsador de pánico presionado por el usuario', rCode: 'R120', rName: 'RESTABLECIMIENTO DE PÁNICO', rDesc: 'Botón de pánico rearmado' },
+    { code: '121', cat: 'PÁNICO', eCode: 'E121', eName: 'CÓDIGO DE COACCIÓN / AMAGO', eDesc: 'Desarmado bajo amenaza o emboscada', rCode: 'R121', rName: 'REST. AMAGO / COACCIÓN', rDesc: 'Sistema normalizado tras verificación' },
+    { code: '122', cat: 'PÁNICO', eCode: 'E122', eName: 'PÁNICO SILENCIOSO 24H', eDesc: 'Alerta sin sirena local para protección de vida', rCode: 'R122', rName: 'REST. PÁNICO SILENCIOSO', rDesc: 'Pulsador silencioso rearmado' },
+    { code: '123', cat: 'PÁNICO', eCode: 'E123', eName: 'PÁNICO AUDIBLE 24H', eDesc: 'Alerta de pánico con activación de sirena', rCode: 'R123', rName: 'REST. PÁNICO AUDIBLE', rDesc: 'Sirena detenida y pulsador en reposo' },
+    { code: '124', cat: 'PÁNICO', eCode: 'E124', eName: 'ACCESO FORZADO (PÁNICO)', eDesc: 'Violación física violenta de puerta de acceso', rCode: 'R124', rName: 'REST. ACCESO FORZADO', rDesc: 'Punto de acceso asegurado' },
+    { code: '125', cat: 'PÁNICO', eCode: 'E125', eName: 'SALIDA FORZADA (PÁNICO)', eDesc: 'Apertura violenta de vía de evacuación', rCode: 'R125', rName: 'REST. SALIDA FORZADA', rDesc: 'Vía de salida asegurada' },
+
+    // ── 130-139: ROBO / INTRUSIÓN ───────────────────────────────────
+    { code: '130', cat: 'ROBO', eCode: 'E130', eName: 'ALARMA DE ROBO / INTRUSIÓN', eDesc: 'Intrusión detectada en zona armada', rCode: 'R130', rName: 'RESTABLECIMIENTO DE ROBO', rDesc: 'Zona de intrusión vuelve a reposo' },
+    { code: '131', cat: 'ROBO', eCode: 'E131', eName: 'ROBO PERIMETRAL', eDesc: 'Apertura de puerta, portón o ventana exterior', rCode: 'R131', rName: 'REST. ROBO PERIMETRAL', rDesc: 'Apertura perimetral cerrada' },
+    { code: '132', cat: 'ROBO', eCode: 'E132', eName: 'ROBO INTERIOR', eDesc: 'Detección de movimiento PIR en interior', rCode: 'R132', rName: 'REST. ROBO INTERIOR', rDesc: 'Detector de movimiento despejado' },
+    { code: '133', cat: 'ROBO', eCode: 'E133', eName: 'ALARMA ROBO 24 HORAS', eDesc: 'Zona de intrusión activa las 24 horas violada', rCode: 'R133', rName: 'REST. ROBO 24H', rDesc: 'Zona 24h vuelve a reposo' },
+    { code: '134', cat: 'ROBO', eCode: 'E134', eName: 'ALARMA ENTRADA / SALIDA', eDesc: 'Intrusión en ruta de retardo sin desarmar', rCode: 'R134', rName: 'REST. ENTRADA/SALIDA', rDesc: 'Zona de retardo normalizada' },
+    { code: '135', cat: 'ROBO', eCode: 'E135', eName: 'ALARMA DÍA / NOCHE', eDesc: 'Alarma instantánea con control horario', rCode: 'R135', rName: 'REST. DÍA/NOCHE', rDesc: 'Zona día/noche en reposo' },
+    { code: '136', cat: 'ROBO', eCode: 'E136', eName: 'ALARMA ROBO EXTERIOR', eDesc: 'Detección en patio, terraza o barrera fotoeléctrica', rCode: 'R136', rName: 'REST. ROBO EXTERIOR', rDesc: 'Barrera o detector exterior despejado' },
+    { code: '137', cat: 'ROBO', eCode: 'E137', eName: 'TAMPER / SABOTAJE FÍSICO', eDesc: 'Apertura de caja de panel, sirena o sensor', rCode: 'R137', rName: 'RESTABLECIMIENTO DE TAMPER', rDesc: 'Carcasa o caja cerrada correctamente' },
+    { code: '138', cat: 'ROBO', eCode: 'E138', eName: 'PRE-ALARMA DE ROBO', eDesc: 'Primer corte de haz en barreras perimetrales', rCode: 'R138', rName: 'REST. PRE-ALARMA', rDesc: 'Lazo de pre-alarma despejado' },
+
+    // ── 140-162: ALARMAS TÉCNICAS Y AMBIENTALES ────────────────────
+    { code: '140', cat: 'TÉCNICA', eCode: 'E140', eName: 'ALARMA GENERAL', eDesc: 'Disparo no clasificado en zona general', rCode: 'R140', rName: 'REST. ALARMA GENERAL', rDesc: 'Zona general restablecida' },
+    { code: '141', cat: 'TÉCNICA', eCode: 'E141', eName: 'POLLING LOOP ABIERTO', eDesc: 'Lazo de comunicación multiplexado abierto', rCode: 'R141', rName: 'REST. POLLING LOOP', rDesc: 'Lazo de multiplexado cerrado' },
+    { code: '142', cat: 'TÉCNICA', eCode: 'E142', eName: 'POLLING LOOP EN CORTO', eDesc: 'Cortocircuito en cable de lazo multiplexado', rCode: 'R142', rName: 'REST. CORTO LOOP', rDesc: 'Cortocircuito de lazo reparado' },
+    { code: '143', cat: 'TÉCNICA', eCode: 'E143', eName: 'ALARMA MÓDULO EXPANSOR', eDesc: 'Falla o disparo en placa de expansión de zonas', rCode: 'R143', rName: 'REST. MÓDULO EXPANSOR', rDesc: 'Módulo expansor normalizado' },
+    { code: '144', cat: 'TÉCNICA', eCode: 'E144', eName: 'TAMPER EN SENSOR', eDesc: 'Sabotaje en microswitch de sensor cableado', rCode: 'R144', rName: 'REST. TAMPER SENSOR', rDesc: 'Sensor cerrado y colocado en su base' },
+    { code: '145', cat: 'TÉCNICA', eCode: 'E145', eName: 'TAMPER TAPA EXPANSOR', eDesc: 'Sabotaje en gabinete de expansor', rCode: 'R145', rName: 'REST. TAMPER EXPANSOR', rDesc: 'Gabinete de expansor cerrado' },
+    { code: '150', cat: 'TÉCNICA', eCode: 'E150', eName: 'ALARMA 24H AMBIENTAL', eDesc: 'Condición ambiental crítica fuera de rango', rCode: 'R150', rName: 'REST. 24H AMBIENTAL', rDesc: 'Variable ambiental normalizada' },
+    { code: '151', cat: 'TÉCNICA', eCode: 'E151', eName: 'DETECCIÓN DE GAS', eDesc: 'Fuga de gas combustible o tóxico', rCode: 'R151', rName: 'REST. DETECCIÓN DE GAS', rDesc: 'Ambiente ventilado libre de gas' },
+    { code: '152', cat: 'TÉCNICA', eCode: 'E152', eName: 'FALLA DE REFRIGERACIÓN', eDesc: 'Pérdida de frío en cámara frigorífica', rCode: 'R152', rName: 'REST. REFRIGERACIÓN', rDesc: 'Cadena de frío restablecida' },
+    { code: '153', cat: 'TÉCNICA', eCode: 'E153', eName: 'PÉRDIDA DE CALOR / CALEFACCIÓN', eDesc: 'Caída crítica de calefacción', rCode: 'R153', rName: 'REST. CALEFACCIÓN', rDesc: 'Calefacción normalizada' },
+    { code: '154', cat: 'TÉCNICA', eCode: 'E154', eName: 'INUNDACIÓN / FUGA DE AGUA', eDesc: 'Detección de líquido en piso o sala técnica', rCode: 'R154', rName: 'REST. INUNDACIÓN', rDesc: 'Sensor de agua seco y en reposo' },
+    { code: '155', cat: 'ROBO', eCode: 'E155', eName: 'RUPTURA DE CRISTAL', eDesc: 'Sensor acústico de rotura de vidrio activado', rCode: 'R155', rName: 'REST. RUPTURA CRISTAL', rDesc: 'Sensor acústico normalizado' },
+    { code: '156', cat: 'TÉCNICA', eCode: 'E156', eName: 'PROBLEMA DE DÍA', eDesc: 'Avería detectada en jornada diurna', rCode: 'R156', rName: 'REST. PROBLEMA DE DÍA', rDesc: 'Avería diurna corregida' },
+    { code: '157', cat: 'TÉCNICA', eCode: 'E157', eName: 'NIVEL BAJO GAS ENVASADO', eDesc: 'Presión baja en estanque o cilindro de gas', rCode: 'R157', rName: 'REST. NIVEL DE GAS', rDesc: 'Estanque de gas recargado' },
+    { code: '158', cat: 'TÉCNICA', eCode: 'E158', eName: 'TEMPERATURA ALTA', eDesc: 'Temperatura sobre umbral de seguridad', rCode: 'R158', rName: 'REST. TEMPERATURA ALTA', rDesc: 'Temperatura en rango normal' },
+    { code: '159', cat: 'TÉCNICA', eCode: 'E159', eName: 'TEMPERATURA BAJA (HELADA)', eDesc: 'Temperatura bajo umbral de congelamiento', rCode: 'R159', rName: 'REST. TEMPERATURA BAJA', rDesc: 'Temperatura normalizada' },
+    { code: '161', cat: 'TÉCNICA', eCode: 'E161', eName: 'MONÓXIDO DE CARBONO (CO)', eDesc: 'Concentración peligrosa de gas CO detectada', rCode: 'R161', rName: 'REST. MONÓXIDO (CO)', rDesc: 'Nivel de CO en cero seguro' },
+
+    // ── 200-206: SUPERVISIÓN DE INCENDIO / HIDRÁULICA ───────────────
+    { code: '200', cat: 'SUPERVISIÓN', eCode: 'E200', eName: 'SUPERVISIÓN DE FUEGO', eDesc: 'Avería o anomalía en sistema de extinción', rCode: 'R200', rName: 'REST. SUPERVISIÓN FUEGO', rDesc: 'Sistema de extinción supervisado OK' },
+    { code: '201', cat: 'SUPERVISIÓN', eCode: 'E201', eName: 'PRESIÓN BAJA DE AGUA', eDesc: 'Caída de presión en matriz de extinción', rCode: 'R201', rName: 'REST. PRESIÓN DE AGUA', rDesc: 'Presión de agua restablecida' },
+    { code: '202', cat: 'SUPERVISIÓN', eCode: 'E202', eName: 'NIVEL BAJO DE CO2', eDesc: 'Nivel bajo en cilindro de inundación por gas', rCode: 'R202', rName: 'REST. NIVEL DE CO2', rDesc: 'Cilindro de CO2 recargado' },
+    { code: '203', cat: 'SUPERVISIÓN', eCode: 'E203', eName: 'VÁLVULA DE COMPUERTA', eDesc: 'Válvula de red contra incendios manipulada', rCode: 'R203', rName: 'REST. VÁLVULA COMPUERTA', rDesc: 'Válvula abierta y asegurada' },
+    { code: '204', cat: 'SUPERVISIÓN', eCode: 'E204', eName: 'NIVEL BAJO ESTANQUE AGUA', eDesc: 'Nivel insuficiente en estanque de bomberos', rCode: 'R204', rName: 'REST. NIVEL ESTANQUE', rDesc: 'Estanque de agua lleno' },
+    { code: '205', cat: 'SUPERVISIÓN', eCode: 'E205', eName: 'BOMBA DE INCENDIO ACTIVADA', eDesc: 'Arranque de bomba principal de impulsión', rCode: 'R205', rName: 'BOMBA INCENDIO DETENIDA', rDesc: 'Bomba de incendio en reposo' },
+    { code: '206', cat: 'SUPERVISIÓN', eCode: 'E206', eName: 'FALLA / AUSENCIA DE BOMBA', eDesc: 'Falla eléctrica en tablero de bomba de agua', rCode: 'R206', rName: 'REST. FALLA DE BOMBA', rDesc: 'Tablero de bomba operativo' },
+
+    // ── 300-399: PROBLEMAS DE SISTEMA, ENERGÍA Y HARDWARE ───────────
+    { code: '300', cat: 'ENERGÍA & SISTEMA', eCode: 'E300', eName: 'PROBLEMA EN EL SISTEMA', eDesc: 'Falla crítica de hardware en placa principal', rCode: 'R300', rName: 'RESTABLECIMIENTO SISTEMA', rDesc: 'Placa principal operativa' },
+    { code: '301', cat: 'ENERGÍA & SISTEMA', eCode: 'E301', eName: 'PÉRDIDA DE CORRIENTE AC 220V', eDesc: 'Corte de suministro eléctrico en la propiedad', rCode: 'R301', rName: 'RESTABLECIMIENTO ENERGÍA AC', rDesc: 'Energía 220V AC restablecida' },
+    { code: '302', cat: 'ENERGÍA & SISTEMA', eCode: 'E302', eName: 'BATERÍA BAJA DEL PANEL', eDesc: 'Batería de respaldo descargada (<11.5V)', rCode: 'R302', rName: 'RESTABLECIMIENTO BATERÍA', rDesc: 'Batería recargada a nivel óptimo' },
+    { code: '303', cat: 'ENERGÍA & SISTEMA', eCode: 'E303', eName: 'ERROR CHECKSUM RAM', eDesc: 'Falla en memoria volátil de panel', rCode: 'R303', rName: 'REST. MEMORIA RAM', rDesc: 'Memoria RAM normalizada' },
+    { code: '304', cat: 'ENERGÍA & SISTEMA', eCode: 'E304', eName: 'ERROR CHECKSUM ROM', eDesc: 'Falla en memoria de firmware del panel', rCode: 'R304', rName: 'REST. MEMORIA ROM', rDesc: 'Memoria ROM verificada' },
+    { code: '305', cat: 'ENERGÍA & SISTEMA', eCode: 'E305', eName: 'REINICIO / RESET DE SISTEMA', eDesc: 'Reinicio de microprocesador por caída de tensión', rCode: 'R305', rName: 'SISTEMA EN LÍNEA TRAS RESET', rDesc: 'Secuencia de arranque completada' },
+    { code: '306', cat: 'ENERGÍA & SISTEMA', eCode: 'E306', eName: 'CAMBIO DE PROGRAMACIÓN', eDesc: 'Parámetros del panel modificados en memoria', rCode: 'R306', rName: 'PROGRAMACIÓN GUARDADA', rDesc: 'Memoria de configuración asegurada' },
+    { code: '307', cat: 'ENERGÍA & SISTEMA', eCode: 'E307', eName: 'FALLO DE AUTO-PRUEBA', eDesc: 'Prueba automática de diagnóstico rechazada', rCode: 'R307', rName: 'REST. AUTO-PRUEBA', rDesc: 'Auto-prueba ejecutada con éxito' },
+    { code: '308', cat: 'ENERGÍA & SISTEMA', eCode: 'E308', eName: 'SISTEMA APAGADO / DESCONECTADO', eDesc: 'Apagado total de central de alarma', rCode: 'R308', rName: 'SISTEMA ENCENDIDO', rDesc: 'Sistema encendido y transmitiendo' },
+    { code: '309', cat: 'ENERGÍA & SISTEMA', eCode: 'E309', eName: 'FALLO TEST DE BATERÍA', eDesc: 'La batería no sostuvo la carga bajo test dinámico', rCode: 'R309', rName: 'TEST DE BATERÍA EXITOSO', rDesc: 'Batería superó test de carga' },
+    { code: '310', cat: 'ENERGÍA & SISTEMA', eCode: 'E310', eName: 'AVERÍA DE PUESTA A TIERRA', eDesc: 'Fuga de corriente a tierra detectada', rCode: 'R310', rName: 'REST. PUESTA A TIERRA', rDesc: 'Circuito de tierra normalizado' },
+    { code: '311', cat: 'ENERGÍA & SISTEMA', eCode: 'E311', eName: 'BATERÍA AUSENTE O DESCONECTADA', eDesc: 'Borne de batería desconectado o fusible quemado', rCode: 'R311', rName: 'BATERÍA CONECTADA', rDesc: 'Batería conectada y detectada' },
+    { code: '312', cat: 'ENERGÍA & SISTEMA', eCode: 'E312', eName: 'SOBRECORRIENTE EN FUENTE', eDesc: 'Consumo excesivo de corriente en auxiliares', rCode: 'R312', rName: 'REST. CORRIENTE FUENTE', rDesc: 'Consumo auxiliar en rango normal' },
+    { code: '313', cat: 'ENERGÍA & SISTEMA', eCode: 'E313', eName: 'RESET POR TÉCNICO', eDesc: 'Reinicio manual efectuado por personal técnico', rCode: 'R313', rName: 'NORMALIZADO TRAS RESET', rDesc: 'Operación normal reanudada' },
+    { code: '320', cat: 'ENERGÍA & SISTEMA', eCode: 'E320', eName: 'PROBLEMA EN RELEVADOR SONIDO', eDesc: 'Avería en relé de salida de sirena', rCode: 'R320', rName: 'REST. RELEVADOR SONIDO', rDesc: 'Relé de sonido operativo' },
+    { code: '321', cat: 'ENERGÍA & SISTEMA', eCode: 'E321', eName: 'FALLO DE SIRENA 1', eDesc: 'Corte de cable o cortocircuito en sirena 1', rCode: 'R321', rName: 'RESTABLECIMIENTO SIRENA 1', rDesc: 'Circuito de sirena 1 reparado' },
+    { code: '322', cat: 'ENERGÍA & SISTEMA', eCode: 'E322', eName: 'FALLO DE SIRENA 2', eDesc: 'Corte de cable o avería en sirena 2', rCode: 'R322', rName: 'RESTABLECIMIENTO SIRENA 2', rDesc: 'Circuito de sirena 2 reparado' },
+    { code: '330', cat: 'ENERGÍA & SISTEMA', eCode: 'E330', eName: 'FALLO EN PERIFÉRICO SISTEMA', eDesc: 'Pérdida de enlace con teclado o módulo bus', rCode: 'R330', rName: 'REST. PERIFÉRICO SISTEMA', rDesc: 'Periférico enlazado y respondiendo' },
+    { code: '333', cat: 'ENERGÍA & SISTEMA', eCode: 'E333', eName: 'SUPERVISIÓN MÓDULO EXPANSIÓN', eDesc: 'Pérdida de comunicación con expansor de zonas', rCode: 'R333', rName: 'REST. MÓDULO EXPANSIÓN', rDesc: 'Comunicación con expansor restaurada' },
+    { code: '350', cat: 'COMUNICACIÓN', eCode: 'E350', eName: 'PROBLEMAS DE COMUNICACIÓN', eDesc: 'Incapacidad de conectar con receptora', rCode: 'R350', rName: 'REST. DE COMUNICACIÓN', rDesc: 'Enlace con central restablecido' },
+    { code: '351', cat: 'COMUNICACIÓN', eCode: 'E351', eName: 'FALLO LÍNEA TELEFÓNICA 1', eDesc: 'Pérdida de voltaje o tono de línea fija', rCode: 'R351', rName: 'REST. LÍNEA TELEFÓNICA 1', rDesc: 'Línea telefónica con tono y voltaje' },
+    { code: '352', cat: 'COMUNICACIÓN', eCode: 'E352', eName: 'FALLO LÍNEA TELEFÓNICA 2', eDesc: 'Pérdida de línea de respaldo telefónico', rCode: 'R352', rName: 'REST. LÍNEA TELEFÓNICA 2', rDesc: 'Línea de respaldo restaurada' },
+    { code: '353', cat: 'COMUNICACIÓN', eCode: 'E353', eName: 'FALLO TRANSMISOR RADIO / 4G', eDesc: 'Pérdida de señal celular o radio comunicador', rCode: 'R353', rName: 'REST. TRANSMISOR RADIO/4G', rDesc: 'Señal celular / 4G conectada' },
+    { code: '354', cat: 'COMUNICACIÓN', eCode: 'E354', eName: 'FALLO AL COMUNICAR (FTC)', eDesc: 'Superado el número máximo de reintentos', rCode: 'R354', rName: 'COMUNICACIÓN EXITOSA (FTC)', rDesc: 'Canal de reporte confirmado por ACK' },
+    { code: '355', cat: 'COMUNICACIÓN', eCode: 'E355', eName: 'SUPERVISIÓN LAZO DE RADIO', eDesc: 'Pérdida de sondeo con torre de radio', rCode: 'R355', rName: 'REST. SUPERVISIÓN RADIO', rDesc: 'Sondeo de radio confirmado' },
+    { code: '370', cat: 'FALLAS DE ZONA', eCode: 'E370', eName: 'PROTECCIÓN DE LAZO ABIERTA', eDesc: 'Circuito de zona abierto o cable cortado', rCode: 'R370', rName: 'REST. LAZO DE PROTECCIÓN', rDesc: 'Circuito de zona cerrado' },
+    { code: '371', cat: 'FALLAS DE ZONA', eCode: 'E371', eName: 'CORTO EN LAZO DE PROTECCIÓN', eDesc: 'Cortocircuito en cableado de zona', rCode: 'R371', rName: 'REST. CORTO DE PROTECCIÓN', rDesc: 'Cortocircuito de zona reparado' },
+    { code: '373', cat: 'INCENDIO', eCode: 'E373', eName: 'AVERÍA EN LAZO DE FUEGO', eDesc: 'Avería eléctrica en circuito de sensores humo', rCode: 'R373', rName: 'REST. LAZO DE FUEGO', rDesc: 'Lazo de humo en resistencia normal' },
+    { code: '380', cat: 'FALLAS DE ZONA', eCode: 'E380', eName: 'PROBLEMA / AVERÍA EN ZONA', eDesc: 'Falla genérica de supervisión en sensor', rCode: 'R380', rName: 'RESTABLECIMIENTO DE ZONA', rDesc: 'Zona operativa y en reposo' },
+    { code: '381', cat: 'FALLAS DE ZONA', eCode: 'E381', eName: 'PÉRDIDA SUPERVISIÓN SENSOR RF', eDesc: 'Sensor inalámbrico dejó de transmitir presencia', rCode: 'R381', rName: 'REST. SUPERVISIÓN SENSOR RF', rDesc: 'Enlace inalámbrico RF recuperado' },
+    { code: '383', cat: 'FALLAS DE ZONA', eCode: 'E383', eName: 'TAMPER EN SENSOR INALÁMBRICO', eDesc: 'Carcasa de sensor inalámbrico abierta', rCode: 'R383', rName: 'REST. TAMPER SENSOR RF', rDesc: 'Sensor inalámbrico cerrado' },
+    { code: '384', cat: 'ENERGÍA & SISTEMA', eCode: 'E384', eName: 'BATERÍA BAJA EN SENSOR RF', eDesc: 'Pila de sensor inalámbrico agotándose', rCode: 'R384', rName: 'REST. BATERÍA SENSOR RF', rDesc: 'Pila cambiada por nueva' },
+
+    // ── 400-466: APERTURAS Y CIERRES (ARMADO / DESARMADO) ────────────
+    { code: '400', cat: 'APERTURA / CIERRE', eCode: 'E400', eName: 'DESARMADO GENERAL (APERTURA)', eDesc: 'Apertura del sistema de seguridad', rCode: 'R400', rName: 'ARMADO GENERAL (CIERRE)', rDesc: 'Cierre del sistema de seguridad' },
+    { code: '401', cat: 'APERTURA / CIERRE', eCode: 'E401', eName: 'DESARMADO POR USUARIO (APERTURA)', eDesc: 'Apertura manual ingresando código en teclado', rCode: 'R401', rName: 'ARMADO POR USUARIO (CIERRE)', rDesc: 'Cierre manual ingresando código en teclado' },
+    { code: '402', cat: 'APERTURA / CIERRE', eCode: 'E402', eName: 'DESARMADO POR GRUPO', eDesc: 'Apertura simultánea de partición o grupo', rCode: 'R402', rName: 'ARMADO POR GRUPO', rDesc: 'Cierre de partición o grupo' },
+    { code: '403', cat: 'APERTURA / CIERRE', eCode: 'E403', eName: 'DESARMADO AUTOMÁTICO', eDesc: 'Apertura automática programada por reloj', rCode: 'R403', rName: 'ARMADO AUTOMÁTICO', rDesc: 'Cierre automático programado por reloj' },
+    { code: '404', cat: 'APERTURA / CIERRE', eCode: 'E404', eName: 'DESARMADO TARDÍO', eDesc: 'Apertura efectuada después de la hora pactada', rCode: 'R404', rName: 'ARMADO TARDÍO', rDesc: 'Cierre efectuado después de la hora pactada' },
+    { code: '405', cat: 'APERTURA / CIERRE', eCode: 'E405', eName: 'DESARMADO DIFERIDO', eDesc: 'Postergación autorizada de horario de apertura', rCode: 'R405', rName: 'ARMADO DIFERIDO', rDesc: 'Postergación de horario de cierre' },
+    { code: '406', cat: 'APERTURA / CIERRE', eCode: 'E406', eName: 'CANCELACIÓN DE ALARMA', eDesc: 'Usuario desactivó alarma tras una activación', rCode: 'R406', rName: 'CONFIRMACIÓN TRAS CANCELACIÓN', rDesc: 'Sistema armado nuevamente' },
+    { code: '407', cat: 'APERTURA / CIERRE', eCode: 'E407', eName: 'DESARMADO REMOTO (APP/WEB)', eDesc: 'Apertura mediante app móvil o software', rCode: 'R407', rName: 'ARMADO REMOTO (APP/WEB)', rDesc: 'Cierre mediante app móvil o software' },
+    { code: '408', cat: 'APERTURA / CIERRE', eCode: 'E408', eName: 'ARMADO RÁPIDO (QUICK ARM)', eDesc: 'Cierre rápido presionando tecla sin código', rCode: 'R408', rName: 'DESARMADO TRAS ARMADO RÁPIDO', rDesc: 'Apertura con código de usuario' },
+    { code: '409', cat: 'APERTURA / CIERRE', eCode: 'E409', eName: 'DESARMADO CON LLAVE (KEYSWITCH)', eDesc: 'Apertura física con chapa de llave', rCode: 'R409', rName: 'ARMADO CON LLAVE (KEYSWITCH)', rDesc: 'Cierre físico con chapa de llave' },
+    { code: '441', cat: 'APERTURA / CIERRE', eCode: 'E441', eName: 'ARMADO PARCIAL (MODO STAY)', eDesc: 'Cierre con personas dentro (excluye PIR interior)', rCode: 'R441', rName: 'DESARMADO MODO STAY', rDesc: 'Apertura total de modo en casa' },
+    { code: '456', cat: 'APERTURA / CIERRE', eCode: 'E456', eName: 'ARMADO PARCIAL CON EXCLUSIÓN', eDesc: 'Cierre dejando zonas anuladas activas', rCode: 'R456', rName: 'DESARMADO TRAS ARMADO PARCIAL', rDesc: 'Apertura del sistema' },
+    { code: '457', cat: 'APERTURA / CIERRE', eCode: 'E457', eName: 'ERROR DE SALIDA POR USUARIO', eDesc: 'No se desalojó la propiedad en el tiempo de salida', rCode: 'R457', rName: 'REST. ERROR DE SALIDA', rDesc: 'Zona de salida normalizada' },
+    { code: '459', cat: 'APERTURA / CIERRE', eCode: 'E459', eName: 'CIERRE RECIENTE', eDesc: 'Activación de alarma pocos minutos tras armar', rCode: 'R459', rName: 'REST. TRAS CIERRE RECIENTE', rDesc: 'Zona asegurada' },
+
+    // ── 500-575: ANULACIONES (BYPASS) Y DESHABILITACIONES ───────────
+    { code: '520', cat: 'ANULACIÓN / BYPASS', eCode: 'E520', eName: 'RELEVADOR DESHABILITADO', eDesc: 'Salida de relé deshabilitada por configuración', rCode: 'R520', rName: 'RELEVADOR HABILITADO', rDesc: 'Salida de relé habilitada' },
+    { code: '521', cat: 'ANULACIÓN / BYPASS', eCode: 'E521', eName: 'SIRENA 1 DESHABILITADA', eDesc: 'Salida de sirena 1 inhibida', rCode: 'R521', rName: 'SIRENA 1 HABILITADA', rDesc: 'Salida de sirena 1 activa' },
+    { code: '522', cat: 'ANULACIÓN / BYPASS', eCode: 'E522', eName: 'SIRENA 2 DESHABILITADA', eDesc: 'Salida de sirena 2 inhibida', rCode: 'R522', rName: 'SIRENA 2 HABILITADA', rDesc: 'Salida de sirena 2 activa' },
+    { code: '551', cat: 'ANULACIÓN / BYPASS', eCode: 'E551', eName: 'COMUNICADOR (DIALER) INHIBIDO', eDesc: 'Marcador telefónico desactivado', rCode: 'R551', rName: 'COMUNICADOR HABILITADO', rDesc: 'Marcador telefónico activado' },
+    { code: '552', cat: 'ANULACIÓN / BYPASS', eCode: 'E552', eName: 'RADIO XMTR DESHABILITADA', eDesc: 'Transmisor de radio desactivado', rCode: 'R552', rName: 'RADIO XMTR HABILITADA', rDesc: 'Transmisor de radio activado' },
+    { code: '570', cat: 'ANULACIÓN / BYPASS', eCode: 'E570', eName: 'ZONA ANULADA (BYPASS)', eDesc: 'Exclusión voluntaria de zona antes de armar', rCode: 'R570', rName: 'ZONA DESANULADA (UNBYPASS)', rDesc: 'Zona reincorporada a la protección activa' },
+    { code: '571', cat: 'ANULACIÓN / BYPASS', eCode: 'E571', eName: 'ZONA FUEGO ANULADA', eDesc: 'Exclusión manual de zona contra incendios', rCode: 'R571', rName: 'ZONA FUEGO DESANULADA', rDesc: 'Zona de fuego reincorporada' },
+    { code: '572', cat: 'ANULACIÓN / BYPASS', eCode: 'E572', eName: 'ZONA 24 HORAS ANULADA', eDesc: 'Exclusión manual de zona permanente 24h', rCode: 'R572', rName: 'ZONA 24H DESANULADA', rDesc: 'Zona 24h reincorporada' },
+    { code: '573', cat: 'ANULACIÓN / BYPASS', eCode: 'E573', eName: 'ZONA ROBO ANULADA', eDesc: 'Exclusión manual de zona de intrusión', rCode: 'R573', rName: 'ZONA ROBO DESANULADA', rDesc: 'Zona de robo reincorporada' },
+    { code: '574', cat: 'ANULACIÓN / BYPASS', eCode: 'E574', eName: 'GRUPO DE ZONAS ANULADO', eDesc: 'Exclusión simultánea de grupo de sensores', rCode: 'R574', rName: 'GRUPO DE ZONAS DESANULADO', rDesc: 'Grupo de zonas reincorporado' },
+
+    // ── 600-654: TESTS, PRUEBAS Y MANTENIMIENTO TÉCNICO ─────────────
+    { code: '601', cat: 'TESTS & SISTEMA', eCode: 'E601', eName: 'TEST MANUAL INICIADO', eDesc: 'Prueba de comunicación provocada por operador', rCode: 'R601', rName: 'FIN DE TEST MANUAL', rDesc: 'Prueba manual completada' },
+    { code: '602', cat: 'TESTS & SISTEMA', eCode: 'E602', eName: 'TEST PERIÓDICO DE VIDA (24H)', eDesc: 'Señal automática de supervivencia de comunicador', rCode: 'R602', rName: 'TEST PERIÓDICO CONFIRMADO', rDesc: 'Enlace y receptor confirmados' },
+    { code: '603', cat: 'TESTS & SISTEMA', eCode: 'E603', eName: 'TRANSMISIÓN PERIÓDICA RF', eDesc: 'Prueba de enlace inalámbrico periódica', rCode: 'R603', rName: 'TEST RF CONFIRMADO', rDesc: 'Enlace RF confirmado' },
+    { code: '604', cat: 'TESTS & SISTEMA', eCode: 'E604', eName: 'TEST DE FUEGO / SIMULACRO', eDesc: 'Prueba de sirenas y lazo contra incendios', rCode: 'R604', rName: 'FIN DE TEST DE FUEGO', rDesc: 'Simulacro de fuego finalizado' },
+    { code: '607', cat: 'TESTS & SISTEMA', eCode: 'E607', eName: 'TEST DE CAMINATA (WALK TEST)', eDesc: 'Técnico inicia prueba de cobertura de sensores', rCode: 'R607', rName: 'FIN DE TEST DE CAMINATA', rDesc: 'Técnico concluye prueba de paso' },
+    { code: '608', cat: 'TESTS & SISTEMA', eCode: 'E608', eName: 'AUTOTEST CON AVERÍA AC', eDesc: 'Prueba de 24h reportada mientras no hay luz 220V', rCode: 'R608', rName: 'AUTOTEST CON AC NORMAL', rDesc: 'Prueba de 24h con energía 220V OK' },
+    { code: '621', cat: 'TESTS & SISTEMA', eCode: 'E621', eName: 'MEMORIA DE EVENTOS BORRADA', eDesc: 'Historial interno del panel reseteado a cero', rCode: 'R621', rName: 'REGISTRO DE EVENTOS ACTIVO', rDesc: 'Registro de memoria operativo' },
+    { code: '623', cat: 'TESTS & SISTEMA', eCode: 'E623', eName: 'MEMORIA DE EVENTOS AL 90%', eDesc: 'Buffer interno de eventos casi lleno', rCode: 'R623', rName: 'MEMORIA DE EVENTOS DESPEJADA', rDesc: 'Eventos descargados y liberados' },
+    { code: '625', cat: 'TESTS & SISTEMA', eCode: 'E625', eName: 'RESET TIEMPO Y FECHA', eDesc: 'Pérdida de reloj interno por corte prolongado', rCode: 'R625', rName: 'RELOJ DE PANEL ACTUALIZADO', rDesc: 'Hora y fecha sincronizadas' },
+    { code: '626', cat: 'TESTS & SISTEMA', eCode: 'E626', eName: 'TIEMPO / FECHA INCORRECTO', eDesc: 'Desfase horario superior a tolerancia', rCode: 'R626', rName: 'HORA EXACTA SINCRONIZADA', rDesc: 'Reloj interno sincronizado' },
+    { code: '627', cat: 'TESTS & SISTEMA', eCode: 'E627', eName: 'ENTRADA A MODO PROGRAMACIÓN', eDesc: 'Técnico / instalador ingresó a configuración', rCode: 'R627', rName: 'SALIDA DE PROGRAMACIÓN', rDesc: 'Técnico salió del menú de configuración' },
+    { code: '628', cat: 'TESTS & SISTEMA', eCode: 'E628', eName: 'SALIDA DE MODO PROGRAMACIÓN', eDesc: 'Panel regresa a modo de monitoreo en vivo', rCode: 'R628', rName: 'MODO OPERATIVO ACTIVO', rDesc: 'Protección operativa restablecida' },
+    { code: '631', cat: 'TESTS & SISTEMA', eCode: 'E631', eName: 'EXCEPCIÓN DE HORARIO', eDesc: 'Horario especial de feriado o festivo activo', rCode: 'R631', rName: 'HORARIO HABITUAL REANUDADO', rDesc: 'Horario regular de apertura/cierre' },
+    { code: '654', cat: 'TESTS & SISTEMA', eCode: 'E654', eName: 'INACTIVIDAD DEL SISTEMA', eDesc: 'Sin eventos ni aperturas en período prolongado', rCode: 'R654', rName: 'ACTIVIDAD NORMAL REANUDADA', rDesc: 'El usuario reanudó el uso del sistema' },
   ]
 
-  const filteredCodes = contactIdCodes.filter(
-    c => c.code.includes(contactIdQuery) || c.name.toLowerCase().includes(contactIdQuery.toLowerCase())
-  )
+  const contactIdCategories = ['TODOS', 'ROBO', 'INCENDIO', 'PÁNICO', 'ENERGÍA & SISTEMA', 'APERTURA / CIERRE', 'SUPERVISIÓN', 'TÉCNICA', 'FALLAS DE ZONA', 'ANULACIÓN / BYPASS', 'TESTS & SISTEMA', 'MÉDICA']
+
+  const filteredFullCodes = contactIdFullCodes.filter(c => {
+    const query = contactIdQuery.toLowerCase().trim()
+    const matchCat = contactIdCat === 'TODOS' || c.cat === contactIdCat
+    if (!matchCat) return false
+
+    if (!query) return true
+    return (
+      c.code.includes(query) ||
+      c.eCode.toLowerCase().includes(query) ||
+      c.rCode.toLowerCase().includes(query) ||
+      c.eName.toLowerCase().includes(query) ||
+      c.rName.toLowerCase().includes(query) ||
+      c.eDesc.toLowerCase().includes(query) ||
+      c.rDesc.toLowerCase().includes(query) ||
+      c.cat.toLowerCase().includes(query)
+    )
+  })
 
   // Render modal content based on active id
   const renderContent = () => {
@@ -446,39 +543,162 @@ export default function ToolModal({ modalId, onClose, operadores = [], onUpdateO
         )
       case 'book':
         return (
-          <div className="space-y-3">
-            <p className="text-xs text-slate-400">Diccionario y manual de protocolos Contact ID Ademco.</p>
-            <input
-              type="text"
-              placeholder="Buscar por código o nombre (ej. 130 o ROBO)..."
-              value={contactIdQuery}
-              onChange={(e) => setContactIdQuery(e.target.value)}
-              className="w-full bg-black border border-[#1a2340] rounded p-2 text-xs text-slate-200 focus:outline-none focus:border-blue-500 font-mono"
-            />
-            <div className="max-h-48 overflow-y-auto border border-[#1a2340] rounded">
-              <table className="w-full text-left border-collapse text-xs font-mono">
-                <thead>
-                  <tr className="bg-[#111827] text-slate-400">
-                    <th className="p-2 border-b border-[#1a2340] w-12">Código</th>
-                    <th className="p-2 border-b border-[#1a2340]">Señal</th>
-                    <th className="p-2 border-b border-[#1a2340]">Definición</th>
+          <div className="space-y-3 font-sans">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#1e293b] pb-2">
+              <div>
+                <p className="text-xs text-slate-300 font-semibold">
+                  Diccionario Oficial de Protocolos SIA DC-05 Contact ID Ademco
+                </p>
+                <p className="text-[10px] text-slate-500">
+                  Interacción directa entre activación de Evento (E) y Normalización de Restauración (R).
+                </p>
+              </div>
+              <div className="flex items-center gap-1.5 shrink-0 font-mono text-[10px]">
+                <span className="bg-red-950/80 text-red-400 border border-red-800/60 px-1.5 py-0.5 rounded font-bold">E = Evento / Alarma</span>
+                <span className="text-slate-600">⇄</span>
+                <span className="bg-green-950/80 text-green-400 border border-green-800/60 px-1.5 py-0.5 rounded font-bold">R = Restauración</span>
+              </div>
+            </div>
+
+            {/* Buscador Rápido y Predictivo */}
+            <div className="flex flex-col sm:flex-row items-center gap-2">
+              <div className="relative flex-1 w-full">
+                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500 text-xs font-mono">🔍</span>
+                <input
+                  type="text"
+                  placeholder="Buscar por código (ej. 130, 301), señal (ej. E130, R401), palabra (ej. batería, robo, fuego)..."
+                  value={contactIdQuery}
+                  onChange={(e) => setContactIdQuery(e.target.value)}
+                  className="w-full bg-[#050914] border border-[#1a2340] rounded-md pl-8 pr-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500 font-mono"
+                  autoFocus
+                />
+              </div>
+              {contactIdQuery && (
+                <button
+                  onClick={() => setContactIdQuery('')}
+                  className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-bold rounded cursor-pointer shrink-0"
+                >
+                  Limpiar filtro
+                </button>
+              )}
+            </div>
+
+            {/* Filtros por Categoría */}
+            <div className="flex items-center gap-1 overflow-x-auto pb-1 scrollbar-thin">
+              {contactIdCategories.map((cat) => {
+                const esActiva = contactIdCat === cat
+                return (
+                  <button
+                    key={cat}
+                    onClick={() => setContactIdCat(cat)}
+                    className={`px-2 py-0.5 text-[10px] font-bold rounded-sm whitespace-nowrap transition-colors cursor-pointer border ${
+                      esActiva
+                        ? 'bg-blue-600 border-blue-400 text-white shadow-xs'
+                        : 'bg-[#0f172a] border-[#1e293b] text-slate-400 hover:text-slate-200 hover:bg-[#1e293b]'
+                    }`}
+                  >
+                    {cat}
+                  </button>
+                )
+              })}
+            </div>
+
+            {/* Tabla Completa con Interacción E y R */}
+            <div className="max-h-[52vh] overflow-y-auto border border-[#1e293b] rounded-md bg-[#050914]">
+              <table className="w-full text-left border-collapse text-xs">
+                <thead className="sticky top-0 bg-[#0c1322] border-b border-[#1e293b] z-10 text-slate-300 font-mono text-[11px]">
+                  <tr>
+                    <th className="p-2 border-r border-[#1e293b] w-14 text-center">CÓDIGO</th>
+                    <th className="p-2 border-r border-[#1e293b] w-[42%]">
+                      <div className="flex items-center gap-1.5 text-red-400">
+                        <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                        <span>EVENTO (E) — Disparo / Falla / Apertura</span>
+                      </div>
+                    </th>
+                    <th className="p-2 border-r border-[#1e293b] w-[42%]">
+                      <div className="flex items-center gap-1.5 text-green-400">
+                        <span className="w-2 h-2 rounded-full bg-green-500" />
+                        <span>RESTAURACIÓN (R) — Normal / Armado</span>
+                      </div>
+                    </th>
+                    <th className="p-2 text-center w-28">CATEGORÍA</th>
                   </tr>
                 </thead>
-                <tbody className="text-slate-300 divide-y divide-[#131b30]">
-                  {filteredCodes.map((c) => (
-                    <tr key={c.code} className="hover:bg-[#131b30]">
-                      <td className="p-2 text-yellow-400 font-bold">{c.code}</td>
-                      <td className="p-2 font-bold text-slate-200">{c.name}</td>
-                      <td className="p-2 text-slate-400 text-[10px]">{c.desc}</td>
-                    </tr>
-                  ))}
-                  {filteredCodes.length === 0 && (
+                <tbody className="divide-y divide-[#131b30] font-sans">
+                  {filteredFullCodes.map((c) => {
+                    // Badge color por categoría
+                    let badgeColor = 'bg-slate-800 text-slate-300 border-slate-700'
+                    if (c.cat === 'ROBO') badgeColor = 'bg-red-950/70 text-red-300 border-red-800'
+                    if (c.cat === 'INCENDIO') badgeColor = 'bg-orange-950/70 text-orange-300 border-orange-800'
+                    if (c.cat === 'PÁNICO') badgeColor = 'bg-rose-950/70 text-rose-300 border-rose-800'
+                    if (c.cat === 'ENERGÍA & SISTEMA') badgeColor = 'bg-yellow-950/70 text-yellow-300 border-yellow-800'
+                    if (c.cat === 'APERTURA / CIERRE') badgeColor = 'bg-blue-950/70 text-blue-300 border-blue-800'
+                    if (c.cat === 'SUPERVISIÓN') badgeColor = 'bg-amber-950/70 text-amber-300 border-amber-800'
+                    if (c.cat === 'ANULACIÓN / BYPASS') badgeColor = 'bg-purple-950/70 text-purple-300 border-purple-800'
+                    if (c.cat === 'TESTS & SISTEMA') badgeColor = 'bg-cyan-950/70 text-cyan-300 border-cyan-800'
+                    if (c.cat === 'MÉDICA') badgeColor = 'bg-pink-950/70 text-pink-300 border-pink-800'
+
+                    return (
+                      <tr key={c.code} className="hover:bg-[#0c1424] transition-colors">
+                        {/* Código Base */}
+                        <td className="p-2 border-r border-[#1e293b] text-center font-mono font-black text-amber-400 text-sm">
+                          {c.code}
+                        </td>
+
+                        {/* Columna Evento E */}
+                        <td className="p-2 border-r border-[#1e293b] space-y-0.5">
+                          <div className="flex items-center gap-1.5">
+                            <span className="bg-red-900/60 text-red-300 border border-red-700/80 font-mono font-black text-[10px] px-1.5 py-0.2 rounded">
+                              {c.eCode}
+                            </span>
+                            <span className="font-bold text-slate-100 text-xs">
+                              {c.eName}
+                            </span>
+                          </div>
+                          <p className="text-[10px] text-slate-400 leading-snug">
+                            {c.eDesc}
+                          </p>
+                        </td>
+
+                        {/* Columna Restauración R */}
+                        <td className="p-2 border-r border-[#1e293b] space-y-0.5 bg-green-950/10">
+                          <div className="flex items-center gap-1.5">
+                            <span className="bg-green-900/60 text-green-300 border border-green-700/80 font-mono font-black text-[10px] px-1.5 py-0.2 rounded">
+                              {c.rCode}
+                            </span>
+                            <span className="font-bold text-emerald-200 text-xs">
+                              {c.rName}
+                            </span>
+                          </div>
+                          <p className="text-[10px] text-slate-400 leading-snug">
+                            {c.rDesc}
+                          </p>
+                        </td>
+
+                        {/* Categoría */}
+                        <td className="p-2 text-center">
+                          <span className={`inline-block text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border ${badgeColor}`}>
+                            {c.cat}
+                          </span>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                  {filteredFullCodes.length === 0 && (
                     <tr>
-                      <td colSpan={3} className="p-3 text-center text-slate-500">Ningún código coincide.</td>
+                      <td colSpan={4} className="p-6 text-center text-slate-500 italic">
+                        No se encontró ningún comando Contact ID que coincida con &quot;{contactIdQuery}&quot;.
+                      </td>
                     </tr>
                   )}
                 </tbody>
               </table>
+            </div>
+
+            {/* Contador de resultados */}
+            <div className="flex items-center justify-between text-[10px] text-slate-500 font-mono pt-1">
+              <span>Mostrando {filteredFullCodes.length} de {contactIdFullCodes.length} comandos estándar Contact ID</span>
+              <span className="text-slate-400 font-bold">Protocolo SIA DC-05 Oficial</span>
             </div>
           </div>
         )
@@ -703,7 +923,7 @@ export default function ToolModal({ modalId, onClose, operadores = [], onUpdateO
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-xs font-mono"
       onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
     >
-      <div className="w-full max-w-md mx-4 bg-[#080d19] border border-[#1e293b] rounded-md shadow-2xl overflow-hidden">
+      <div className={`w-full ${modalId === 'book' ? 'max-w-5xl' : 'max-w-md'} mx-4 bg-[#080d19] border border-[#1e293b] rounded-md shadow-2xl overflow-hidden`}>
         {/* Header style Windows Desktop bevel */}
         <div className="flex items-center justify-between px-4 py-2 bg-[#111827] border-b border-[#1e293b]">
           <h2 className="text-xs font-bold text-slate-200 tracking-wider font-mono">{info.titulo}</h2>
