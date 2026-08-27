@@ -1219,8 +1219,8 @@ export default function ScorpionDashboard() {
         )
       })()}
 
-      {/* ── BARRA DE MENÚ ESTILO SCORPION EQUILIBRADA (8 botones amplios, sin colisión a 100% de zoom) ── */}
-      <nav id="menu-nav-container" className="hidden md:flex items-center bg-[#8B0000] border-b border-[#600000] shrink-0 select-none overflow-x-auto" style={{ fontFamily: "'Arial', sans-serif" }}>
+      {/* ── BARRA DE MENÚ ESTILO SCORPION CON BOTONES SEPARADOS Y SUBMENÚS FLOTANTES ── */}
+      <nav id="menu-nav-container" className="hidden md:flex items-center bg-[#8B0000] border-b border-[#600000] shrink-0 select-none relative z-40 px-2 py-1 gap-1.5" style={{ fontFamily: "'Arial', sans-serif" }}>
         {[
           { label: 'OPERADORES', id: 'menu-operadores', modal: 'user-key' },
           { label: 'ZONIFICACIÓN', id: 'menu-zonificacion', modal: 'zones-tree' },
@@ -1270,7 +1270,8 @@ export default function ScorpionDashboard() {
           <div key={idx} className="relative">
             <button
               id={item.id}
-              onClick={() => {
+              onClick={(e) => {
+                e.stopPropagation()
                 if (item.hasDropdown) {
                   setMenuDropdownAbierto(menuDropdownAbierto === item.id ? null : item.id)
                 } else if (item.modal) {
@@ -1278,28 +1279,33 @@ export default function ScorpionDashboard() {
                   setMenuDropdownAbierto(null)
                 }
               }}
-              className={`px-4 py-1.5 text-xs font-bold text-white tracking-wider whitespace-nowrap border-r border-black/40 cursor-pointer transition-colors hover:bg-[#a00000] active:bg-[#700000] flex items-center gap-1.5 shrink-0 ${
-                menuDropdownAbierto === item.id ? 'bg-[#a00000]' : ''
+              className={`px-3 py-1 text-xs font-bold text-white tracking-wider whitespace-nowrap rounded-xs cursor-pointer transition-all border flex items-center gap-1 shadow-xs ${
+                menuDropdownAbierto === item.id
+                  ? 'bg-[#000080] border-t-blue-400 border-l-blue-400 border-b-black border-r-black'
+                  : 'bg-[#9b0000] hover:bg-[#b80000] active:bg-[#7a0000] border-t-[#c82020] border-l-[#c82020] border-b-[#500000] border-r-[#500000]'
               }`}
               style={{ fontFamily: "'Arial', sans-serif" }}
             >
               <span>{item.label}</span>
             </button>
 
-            {/* Submenú desplegable amplio, espacioso y delimitado */}
+            {/* Submenú desplegable visible con z-index alto sin recorte */}
             {item.hasDropdown && item.items && menuDropdownAbierto === item.id && (
-              <div className="absolute top-full left-0 bg-[#d8d8d8] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 shadow-2xl z-50 py-1 min-w-[300px]">
+              <div 
+                className="absolute top-full left-0 mt-1 bg-[#d4d0c8] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 shadow-[0_12px_28px_rgba(0,0,0,0.8)] z-[999] py-1 min-w-[310px]"
+                onClick={(e) => e.stopPropagation()}
+              >
                 {item.items.map((sub, sIdx) => (
                   <button
                     key={sIdx}
-                    className="w-full text-left px-4 py-2.5 text-xs text-black font-bold hover:bg-[#000080] hover:text-white flex flex-col transition-colors cursor-pointer border-b border-gray-300 last:border-b-0 gap-0.5"
+                    className="w-full text-left px-4 py-2.5 text-xs text-black font-bold hover:bg-[#000080] hover:text-white flex flex-col transition-colors cursor-pointer border-b border-gray-300 last:border-b-0 gap-0.5 group"
                     onClick={() => {
                       setModalActivo(sub.modal)
                       setMenuDropdownAbierto(null)
                     }}
                   >
                     <span className="font-bold text-xs">{sub.label}</span>
-                    <span className="text-[10px] text-gray-600 hover:text-slate-200 font-normal">{sub.desc}</span>
+                    <span className="text-[10px] text-gray-700 group-hover:text-slate-200 font-normal">{sub.desc}</span>
                   </button>
                 ))}
               </div>
