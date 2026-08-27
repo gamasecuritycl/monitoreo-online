@@ -1219,43 +1219,29 @@ export default function ScorpionDashboard() {
         )
       })()}
 
-      {/* ── BARRA DE MENÚ ESTILO SCORPION AGRUPADA (solo PC, visible sin requerir zoom 75%) ── */}
-      <nav id="menu-nav-container" className="hidden md:flex items-center bg-[#8B0000] border-b border-[#600000] shrink-0 select-none" style={{ fontFamily: "'Arial', sans-serif" }}>
-        {/* Items del menú agrupados inteligentemente */}
+      {/* ── BARRA DE MENÚ ESTILO SCORPION DESAGRUPADA Y ESPACIOSA (solo PC, navegación clara y cómoda) ── */}
+      <nav id="menu-nav-container" className="hidden md:flex items-center bg-[#8B0000] border-b border-[#600000] shrink-0 select-none overflow-x-auto" style={{ fontFamily: "'Arial', sans-serif" }}>
+        {/* Items del menú separados con botones individuales y cómodos */}
         {[
           { label: 'OPERADORES', id: 'menu-operadores', modal: 'user-key' },
-          {
-            label: 'SERV. TÉCNICO & IA ▾',
-            id: 'menu-serv-tecnico',
-            hasDropdown: true,
-            items: [
-              { label: 'SERVICIOS TÉCNICOS (OT)', modal: 'servicio-tecnico' },
-              { label: 'PREDICTOR IA (MANTENIMIENTO)', modal: 'predictor-ia' },
-              { label: 'CONTROL TEST DE SEÑALES', modal: 'control-test' },
-            ]
-          },
           { label: 'ZONIFICACIÓN', id: 'menu-zonificacion', modal: 'zones-tree' },
           { label: 'HORARIOS', id: 'menu-horarios', modal: 'horarios' },
-          {
-            label: 'TABLAS & UTILIDADES ▾',
-            id: 'menu-tablas',
-            hasDropdown: true,
-            items: [
-              { label: 'TABLAS (CONTACT ID)', modal: 'book' },
-              { label: 'UTILIDADES DEL SISTEMA', modal: 'tools' },
-            ]
-          },
+          { label: 'REPORTES', id: 'menu-reportes', modal: 'reportes' },
+          { label: 'SERV. TÉCNICO', id: 'menu-serv-tecnico', modal: 'servicio-tecnico' },
+          { label: 'PREDICTOR IA', id: 'menu-predictor-ia', modal: 'predictor-ia' },
+          { label: 'CONTROL TEST', id: 'menu-control-test', modal: 'control-test' },
+          { label: 'TABLAS CONTACT ID', id: 'menu-tablas-cid', modal: 'book' },
+          { label: 'UTILIDADES', id: 'menu-utilidades', modal: 'tools' },
           {
             label: 'NOTIFICACIONES ▾',
             id: 'menu-notificaciones',
             hasDropdown: true,
             items: [
-              { label: 'POR MAIL', modal: 'notificaciones-mail' },
-              { label: 'POR LLAMADA / WA', modal: 'notificaciones-llamadas-sms' },
-              { label: 'CENTRO WHATSAPP 360', modal: 'notificaciones-whatsapp' },
+              { label: 'Centro WhatsApp 360 & Chat', modal: 'notificaciones-whatsapp', desc: 'Atención y mensajería en tiempo real' },
+              { label: 'Notificaciones por Correo Mail', modal: 'notificaciones-mail', desc: 'Envío de reportes y alertas por SMTP' },
+              { label: 'Notificaciones por Llamada / SMS', modal: 'notificaciones-llamadas-sms', desc: 'Despacho automatizado por voz y SMS' },
             ]
           },
-          { label: 'REPORTES', id: 'menu-reportes', modal: 'reportes' },
           { label: 'EVENTOS', id: 'menu-eventos', modal: 'search' },
           { label: 'AYUDA', id: 'menu-ayuda', modal: 'network' },
         ].filter(item => {
@@ -1263,8 +1249,11 @@ export default function ScorpionDashboard() {
           if (item.id === 'menu-operadores') return attrs.verConfiguracion || usuarioActivo.rol === 'Administrador'
           if (item.id === 'menu-zonificacion') return attrs.editarZonificacion || ['Administrador', 'Supervisor', 'Técnico'].includes(usuarioActivo.rol)
           if (item.id === 'menu-serv-tecnico') return attrs.verTelemetriaTecnica
+          if (item.id === 'menu-predictor-ia') return attrs.verTelemetriaTecnica
+          if (item.id === 'menu-control-test') return attrs.verTelemetriaTecnica
+          if (item.id === 'menu-tablas-cid') return attrs.verCRM
+          if (item.id === 'menu-utilidades') return attrs.verConfiguracion || usuarioActivo.rol === 'Administrador'
           if (item.id === 'menu-reportes') return attrs.verReportes
-          if (item.id === 'menu-tablas') return attrs.verCRM
           if (item.id === 'menu-notificaciones') return attrs.enviarMensajesWhatsApp
           if (item.id === 'menu-eventos') return attrs.verMonitoreoEnVivo
           return true
@@ -1280,27 +1269,28 @@ export default function ScorpionDashboard() {
                   setMenuDropdownAbierto(null)
                 }
               }}
-              className={`px-3.5 py-1 text-[11px] font-bold text-white tracking-wider whitespace-nowrap border-r border-black/35 cursor-pointer transition-colors hover:bg-[#a00000] active:bg-[#700000] flex items-center gap-1 ${
+              className={`px-3 py-1.5 text-[11px] font-bold text-white tracking-wider whitespace-nowrap border-r border-black/40 cursor-pointer transition-colors hover:bg-[#a00000] active:bg-[#700000] flex items-center gap-1 ${
                 menuDropdownAbierto === item.id ? 'bg-[#a00000]' : ''
               }`}
-              style={{ fontFamily: "'Arial', sans-serif", paddingLeft: '14px', paddingRight: '14px', paddingTop: '4px', paddingBottom: '4px' }}
+              style={{ fontFamily: "'Arial', sans-serif" }}
             >
               <span>{item.label}</span>
             </button>
 
-            {/* Submenú desplegable estilo Scorpion 3D */}
+            {/* Submenú desplegable espacioso y bien separado */}
             {item.hasDropdown && item.items && menuDropdownAbierto === item.id && (
-              <div className="absolute top-full left-0 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 shadow-2xl z-50 py-1 min-w-[220px]">
+              <div className="absolute top-full left-0 bg-[#d8d8d8] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 shadow-2xl z-50 py-1 min-w-[280px] divide-y divide-gray-300">
                 {item.items.map((sub, sIdx) => (
                   <button
                     key={sIdx}
-                    className="w-full text-left px-3.5 py-1.5 text-xs text-black font-bold hover:bg-[#000080] hover:text-white flex items-center justify-between transition-colors cursor-pointer"
+                    className="w-full text-left px-4 py-2 text-xs text-black font-bold hover:bg-[#000080] hover:text-white flex flex-col transition-colors cursor-pointer gap-0.5"
                     onClick={() => {
                       setModalActivo(sub.modal)
                       setMenuDropdownAbierto(null)
                     }}
                   >
-                    <span>{sub.label}</span>
+                    <span className="font-bold text-xs">{sub.label}</span>
+                    <span className="text-[10px] text-gray-600 group-hover:text-slate-200 font-normal">{sub.desc}</span>
                   </button>
                 ))}
               </div>
