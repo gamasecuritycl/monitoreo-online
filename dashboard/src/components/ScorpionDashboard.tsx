@@ -133,8 +133,7 @@ export default function ScorpionDashboard() {
   const [camaraGridCuenta, setCamaraGridCuenta] = useState<string | null>(null)
   const [expedientePestana, setExpedientePestana] = useState<'telefonos' | 'horarios' | 'camara'>('telefonos')
   const [horaLocal, setHoraLocal] = useState('')
-  const [mostrarMenuNotificaciones, setMostrarMenuNotificaciones] = useState(false)
-  const [mostrarMenuReportes, setMostrarMenuReportes] = useState(false)
+  const [menuDropdownAbierto, setMenuDropdownAbierto] = useState<string | null>(null)
   const [whatsappTelefonoInicial, setWhatsappTelefonoInicial] = useState<string | undefined>(undefined)
   const [servicioTecnicoInitialData, setServicioTecnicoInitialData] = useState<{ cuenta?: string; problema?: string } | null>(null)
   
@@ -458,6 +457,18 @@ export default function ScorpionDashboard() {
     tick()
     const t = setInterval(tick, 1000)
     return () => clearInterval(t)
+  }, [])
+
+  // Auto-cerrar dropdowns del menú superior al hacer clic fuera
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement
+      if (!target.closest('#menu-nav-container')) {
+        setMenuDropdownAbierto(null)
+      }
+    }
+    window.addEventListener('click', handleClickOutside)
+    return () => window.removeEventListener('click', handleClickOutside)
   }, [])
 
   // Fetch inicial ordenado por ID (para evitar problemas de desfase de hora de red)
@@ -1205,35 +1216,52 @@ export default function ScorpionDashboard() {
         )
       })()}
 
-      {/* ── BARRA DE MENÚ ESTILO SCORPION (solo PC, oculto en responsive) ── */}
-      <nav className="hidden md:flex items-center bg-[#8B0000] border-b border-[#600000] shrink-0 select-none" style={{ fontFamily: "'Arial', sans-serif" }}>
-        {/* Items del menú */}
+      {/* ── BARRA DE MENÚ ESTILO SCORPION AGRUPADA (solo PC, visible sin requerir zoom 75%) ── */}
+      <nav id="menu-nav-container" className="hidden md:flex items-center bg-[#8B0000] border-b border-[#600000] shrink-0 select-none" style={{ fontFamily: "'Arial', sans-serif" }}>
+        {/* Items del menú agrupados inteligentemente */}
         {[
-          { label: 'OPERADORES',     id: 'menu-operadores' },
-          { label: 'USUARIOS',       id: 'menu-usuarios' },
-          { label: 'CONFIGURACION',  id: 'menu-configuracion' },
-          { label: 'SERV. TECNICO',  id: 'menu-serv-tecnico' },
-          { label: 'ZONIFICACION',   id: 'menu-zonificacion' },
-          { label: 'PREDICTOR IA',   id: 'menu-predictor-ia' },
-          { label: 'CONTROL TEST',   id: 'menu-control-test' },
-          { label: 'HORARIOS',       id: 'menu-horarios' },
-          { label: 'TABLAS (CONTACT ID)', id: 'menu-tablas' },
-          { label: 'UTILIDADES',     id: 'menu-utilidades' },
-          { label: 'NOTIFICACIONES', id: 'menu-notificaciones', hasDropdown: true },
-          { label: 'REPORTES',       id: 'menu-reportes', hasDropdown: true },
-          { label: 'EVENTOS',        id: 'menu-eventos' },
-          { label: 'CAMARAS',       id: 'menu-camaras' },
-          { label: 'SIMULADOR',      id: 'menu-simulador' },
-          { label: 'AYUDA',          id: 'menu-ayuda' },
+          { label: 'OPERADORES', id: 'menu-operadores', modal: 'user-key' },
+          {
+            label: 'SERV. TÉCNICO & IA ▾',
+            id: 'menu-serv-tecnico',
+            hasDropdown: true,
+            items: [
+              { label: 'SERVICIOS TÉCNICOS (OT)', modal: 'servicio-tecnico' },
+              { label: 'PREDICTOR IA (MANTENIMIENTO)', modal: 'predictor-ia' },
+              { label: 'CONTROL TEST DE SEÑALES', modal: 'control-test' },
+            ]
+          },
+          { label: 'ZONIFICACIÓN', id: 'menu-zonificacion', modal: 'zones-tree' },
+          { label: 'HORARIOS', id: 'menu-horarios', modal: 'horarios' },
+          {
+            label: 'TABLAS & UTILIDADES ▾',
+            id: 'menu-tablas',
+            hasDropdown: true,
+            items: [
+              { label: 'TABLAS (CONTACT ID)', modal: 'book' },
+              { label: 'UTILIDADES DEL SISTEMA', modal: 'tools' },
+            ]
+          },
+          {
+            label: 'NOTIFICACIONES ▾',
+            id: 'menu-notificaciones',
+            hasDropdown: true,
+            items: [
+              { label: 'POR MAIL', modal: 'notificaciones-mail' },
+              { label: 'POR LLAMADA / WA', modal: 'notificaciones-llamadas-sms' },
+              { label: 'CENTRO WHATSAPP 360', modal: 'notificaciones-whatsapp' },
+            ]
+          },
+          { label: 'REPORTES', id: 'menu-reportes', modal: 'reportes' },
+          { label: 'EVENTOS', id: 'menu-eventos', modal: 'search' },
+          { label: 'AYUDA', id: 'menu-ayuda', modal: 'network' },
         ].filter(item => {
           const attrs = ensureUserAttributes(usuarioActivo)
-          if (item.id === 'menu-configuracion' || item.id === 'menu-operadores') return attrs.verConfiguracion || usuarioActivo.rol === 'Administrador'
-          if (item.id === 'menu-[#zonificacion]' || item.id === 'menu-zonificacion') return attrs.editarZonificacion || ['Administrador', 'Supervisor', 'Técnico'].includes(usuarioActivo.rol)
-          if (item.id === 'menu-serv-tecnico' || item.id === 'menu-predictor-ia' || item.id === 'menu-camaras') return attrs.verTelemetriaTecnica
-          if (item.id === 'menu-control-test') return true
-          if (item.id === 'menu-simulador') return attrs.controlTestSimulador
+          if (item.id === 'menu-operadores') return attrs.verConfiguracion || usuarioActivo.rol === 'Administrador'
+          if (item.id === 'menu-zonificacion') return attrs.editarZonificacion || ['Administrador', 'Supervisor', 'Técnico'].includes(usuarioActivo.rol)
+          if (item.id === 'menu-serv-tecnico') return attrs.verTelemetriaTecnica
           if (item.id === 'menu-reportes') return attrs.verReportes
-          if (item.id === 'menu-tablas' || item.id === 'menu-usuarios') return attrs.verCRM
+          if (item.id === 'menu-tablas') return attrs.verCRM
           if (item.id === 'menu-notificaciones') return attrs.enviarMensajesWhatsApp
           if (item.id === 'menu-eventos') return attrs.verMonitoreoEnVivo
           return true
@@ -1242,115 +1270,36 @@ export default function ScorpionDashboard() {
             <button
               id={item.id}
               onClick={() => {
-                if (item.id === 'menu-notificaciones') {
-                  setMostrarMenuNotificaciones(!mostrarMenuNotificaciones)
-                  setMostrarMenuReportes(false)
-                } else if (item.id === 'menu-reportes') {
-                  setMostrarMenuReportes(!mostrarMenuReportes)
-                  setMostrarMenuNotificaciones(false)
-                } else if (item.id === 'menu-zonificacion') {
-                  setModalActivo('zones-tree')
-                  setMostrarMenuNotificaciones(false)
-                  setMostrarMenuReportes(false)
-                } else if (item.id === 'menu-configuracion') {
-                  setModalActivo('file-edit')
-                  setMostrarMenuNotificaciones(false)
-                  setMostrarMenuReportes(false)
-                } else if (item.id === 'menu-serv-tecnico') {
-                  setModalActivo('servicio-tecnico')
-                  setMostrarMenuNotificaciones(false)
-                  setMostrarMenuReportes(false)
-                } else if (item.id === 'menu-predictor-ia') {
-                  setModalActivo('predictor-ia')
-                  setMostrarMenuNotificaciones(false)
-                  setMostrarMenuReportes(false)
-                } else if (item.id === 'menu-simulador') {
-                  setModalActivo('simulador')
-                  setMostrarMenuNotificaciones(false)
-                  setMostrarMenuReportes(false)
-                } else if (item.id === 'menu-control-test') {
-                  setModalActivo('control-test')
-                  setMostrarMenuNotificaciones(false)
-                  setMostrarMenuReportes(false)
-                } else if (item.id === 'menu-horarios') {
-                  setModalActivo('horarios')
-                  setMostrarMenuNotificaciones(false)
-                  setMostrarMenuReportes(false)
-                } else if (item.id === 'menu-operadores') {
-                  setModalActivo('user-key')
-                  setMostrarMenuNotificaciones(false)
-                  setMostrarMenuReportes(false)
-                } else if (item.id === 'menu-usuarios') {
-                  setModalActivo('list-details')
-                  setMostrarMenuNotificaciones(false)
-                  setMostrarMenuReportes(false)
-                } else if (item.id === 'menu-marcador') {
-                  setModalActivo('notificaciones-llamadas-sms')
-                  setMostrarMenuNotificaciones(false)
-                  setMostrarMenuReportes(false)
-                } else if (item.id === 'menu-tablas') {
-                  setModalActivo('book')
-                  setMostrarMenuNotificaciones(false)
-                  setMostrarMenuReportes(false)
-                } else if (item.id === 'menu-utilidades') {
-                  setModalActivo('tools')
-                  setMostrarMenuNotificaciones(false)
-                  setMostrarMenuReportes(false)
-                } else if (item.id === 'menu-camaras') {
-                  const cuenta = prompt('Ingresa numero de cuenta (ej: 0034):')
-                  if (cuenta) {
-                    const padded = cuenta.padStart(4, '0')
-                    setCamaraGridCuenta(`CAMARAS_DAHUA_${padded}`)
-                  }
-                  setMostrarMenuNotificaciones(false)
-                  setMostrarMenuReportes(false)
-                } else if (item.id === 'menu-eventos') {
-                  setModalActivo('search')
-                  setMostrarMenuNotificaciones(false)
-                  setMostrarMenuReportes(false)
-                } else if (item.id === 'menu-ayuda') {
-                  setModalActivo('network')
-                  setMostrarMenuNotificaciones(false)
-                  setMostrarMenuReportes(false)
-                } else if (item.id === 'menu-whatsapp') {
-                  setModalActivo('notificaciones-whatsapp')
-                  setMostrarMenuNotificaciones(false)
-                  setMostrarMenuReportes(false)
-                } else {
-                  setMostrarMenuNotificaciones(false)
-                  setMostrarMenuReportes(false)
+                if (item.hasDropdown) {
+                  setMenuDropdownAbierto(menuDropdownAbierto === item.id ? null : item.id)
+                } else if (item.modal) {
+                  setModalActivo(item.modal)
+                  setMenuDropdownAbierto(null)
                 }
               }}
-              className="px-4 py-1 text-[11px] font-bold text-white tracking-wider whitespace-nowrap border-r border-black/35 cursor-pointer transition-colors hover:bg-[#a00000] active:bg-[#700000]"
-              style={{ fontFamily: "'Arial', sans-serif", paddingLeft: '16px', paddingRight: '16px', paddingTop: '4px', paddingBottom: '4px' }}
+              className={`px-3.5 py-1 text-[11px] font-bold text-white tracking-wider whitespace-nowrap border-r border-black/35 cursor-pointer transition-colors hover:bg-[#a00000] active:bg-[#700000] flex items-center gap-1 ${
+                menuDropdownAbierto === item.id ? 'bg-[#a00000]' : ''
+              }`}
+              style={{ fontFamily: "'Arial', sans-serif", paddingLeft: '14px', paddingRight: '14px', paddingTop: '4px', paddingBottom: '4px' }}
             >
-              {item.label}
+              <span>{item.label}</span>
             </button>
-            {item.hasDropdown && item.id === 'menu-notificaciones' && mostrarMenuNotificaciones && (
-              <div className="absolute top-full left-0 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 shadow-xl z-50 py-1 min-w-[140px]">
-                <button
-                  className="w-full text-left px-4 py-1.5 text-xs text-black font-bold hover:bg-[#000080] hover:text-white"
-                  onClick={() => { setModalActivo('notificaciones-mail'); setMostrarMenuNotificaciones(false); }}
-                >
-                  POR MAIL
-                </button>
-                <button
-                  className="w-full text-left px-4 py-1.5 text-xs text-black font-bold hover:bg-[#000080] hover:text-white"
-                  onClick={() => { setModalActivo('notificaciones-llamadas-sms'); setMostrarMenuNotificaciones(false); }}
-                >
-                  POR LLAMADA / WA
-                </button>
-              </div>
-            )}
-            {item.hasDropdown && item.id === 'menu-reportes' && mostrarMenuReportes && (
-              <div className="absolute top-full left-0 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 shadow-xl z-50 py-1 min-w-[200px]">
-                <button
-                  className="w-full text-left px-4 py-1.5 text-xs text-black font-bold hover:bg-[#000080] hover:text-white flex items-center justify-between"
-                  onClick={() => { setModalActivo('reportes'); setMostrarMenuReportes(false); }}
-                >
-                  <span>REPORTE DE EVENTOS</span>
-                  <span className="text-[10px] opacity-75 font-mono">SEÑALES</span>
-                </button>
+
+            {/* Submenú desplegable estilo Scorpion 3D */}
+            {item.hasDropdown && item.items && menuDropdownAbierto === item.id && (
+              <div className="absolute top-full left-0 bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 shadow-2xl z-50 py-1 min-w-[220px]">
+                {item.items.map((sub, sIdx) => (
+                  <button
+                    key={sIdx}
+                    className="w-full text-left px-3.5 py-1.5 text-xs text-black font-bold hover:bg-[#000080] hover:text-white flex items-center justify-between transition-colors cursor-pointer"
+                    onClick={() => {
+                      setModalActivo(sub.modal)
+                      setMenuDropdownAbierto(null)
+                    }}
+                  >
+                    <span>{sub.label}</span>
+                  </button>
+                ))}
               </div>
             )}
           </div>
