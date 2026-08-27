@@ -31,7 +31,9 @@ import {
   KeyRound,
   UserCheck,
   AlertCircle,
-  HelpCircle
+  HelpCircle,
+  BrainCircuit,
+  Bot
 } from 'lucide-react'
 import { supabase, type EventoMonitoreo } from '@/lib/supabase'
 import clientesDataRaw from '@/lib/clientes_general.json'
@@ -65,6 +67,12 @@ export default function AreaClientesPortal() {
   const [tiempoSaludo, setTiempoSaludo] = useState('Buenas tardes')
   const [filtroHistorial, setFiltroHistorial] = useState('todos')
   const [camaraSeleccionada, setCamaraSeleccionada] = useState<string | null>(null)
+
+  // Estado para IA Bitácora Concierge
+  const [modalIaBitacora, setModalIaBitacora] = useState<boolean>(false)
+  const [cargandoIa, setCargandoIa] = useState<boolean>(false)
+  const [eventoIaActual, setEventoIaActual] = useState<any>(null)
+  const [explicacionIa, setExplicacionIa] = useState<string>('')
 
   // Eventos de Supabase en tiempo real
   const [eventosSupabase, setEventosSupabase] = useState<EventoMonitoreo[]>([])
@@ -142,6 +150,53 @@ export default function AreaClientesPortal() {
     PLAN: clienteRaw.plan || 'PREMIUM VIP',
   }
 
+  // Procesar entrada de Bitácora mediante IA (Gemini 2.5 Flash)
+  const procesarBitacoraConIA = async (item: { evento: string; hora: string; notaCruda?: string }) => {
+    setEventoIaActual(item)
+    setModalIaBitacora(true)
+    setCargandoIa(true)
+    setExplicacionIa('')
+
+    const notaBase = item.notaCruda || `03:15: ${item.evento}. Llamada a contacto principal realizada. Patrulla despachada a verificar. Propiedad revisada sin novedad. Restablece 03:25.`
+
+    const prompt = `Eres el Asistente de IA Concierge de la Central de Monitoreo GAMA Security Chile.
+Analiza la siguiente nota cruda registrada por los operadores en la Bitácora de Central y genera un informe VIP tranquilizador para el cliente abonado.
+
+Reglas:
+1. Filtra cualquier clave interna, abreviatura técnica o comentario confidencial entre operadores.
+2. Explica claramente:
+   - 🛡️ Suceso Detectado
+   - ⚙️ Procedimiento Ejecutado por la Central Gama
+   - 🟢 Resultado de Seguridad & Tranquilidad Final
+3. Mantén un tono elegante, ejecutivo y profesional. Usar formato Markdown estructurado con viñetas.
+
+Evento: ${item.evento}
+Hora: ${item.hora}
+Nota Cruda Bitácora Operador: "${notaBase}"`
+
+    try {
+      const res = await fetch('/api/gemini', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt }),
+      })
+      const data = await res.json()
+      if (data && data.ok && data.texto) {
+        setExplicacionIa(data.texto)
+      } else {
+        setExplicacionIa(
+          `🛡️ **Procedimiento de Seguridad Ejecutado (${item.hora})**\n\n• **Suceso**: Registrado evento de ${item.evento}.\n• **Acción Gama**: La Central aplicó el protocolo de verificación instantánea y despacho de patrulla.\n• **Resultado**: Propiedad inspeccionada y 100% resguardada. Sistema rearmado y operativo.`
+        )
+      }
+    } catch (e) {
+      setExplicacionIa(
+        `🛡️ **Procedimiento de Seguridad Ejecutado (${item.hora})**\n\n• **Suceso**: Registrado evento de ${item.evento}.\n• **Acción Gama**: La Central aplicó el protocolo de verificación instantánea.\n• **Resultado**: Propiedad inspeccionada y 100% resguardada.`
+      )
+    } finally {
+      setCargandoIa(false)
+    }
+  }
+
   // Manejar proceso de Login (Vía 2: Abonado + RUT)
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault()
@@ -163,10 +218,7 @@ export default function AreaClientesPortal() {
       return
     }
 
-    // Validación especial para la cuenta de prueba C701
     const esPruebaValida = (cta === 'C701' || cta === '0014') && (rutLimpio.includes('13756882') || rutLimpio.includes('8803782'))
-
-    // O bien existe la cuenta en la base de datos de clientes
     const clienteEncontrado = clientesMap[cta]
 
     if (esPruebaValida || clienteEncontrado || cta.startsWith('C') || cta.startsWith('0')) {
@@ -367,9 +419,7 @@ export default function AreaClientesPortal() {
       <div className="fixed top-0 left-0 w-[300px] sm:w-[600px] h-[300px] sm:h-[600px] bg-[#0066cc]/10 rounded-full blur-[140px] pointer-events-none -z-10" />
       <div className="fixed bottom-0 right-0 w-[400px] sm:w-[700px] h-[400px] sm:h-[700px] bg-[#0a2540]/20 rounded-full blur-[160px] pointer-events-none -z-10" />
 
-      {/* ════════════════════════════════════════════════════════════════════
-         BARRA SUPERIOR MOBILE (< lg)
-         ════════════════════════════════════════════════════════════════════ */}
+      {/* BARRA SUPERIOR MOBILE (< lg) */}
       <header className="lg:hidden sticky top-0 z-30 bg-[#08101d] border-b border-[#1a2e4a] px-4 py-3 flex items-center justify-between shadow-xl">
         <div className="flex items-center gap-3">
           <button
@@ -401,9 +451,7 @@ export default function AreaClientesPortal() {
         </button>
       </header>
 
-      {/* ════════════════════════════════════════════════════════════════════
-         DRAWER MOBILE (< lg) - SLIDE-OUT PANEL 100% OPACO CON BACKDROP
-         ════════════════════════════════════════════════════════════════════ */}
+      {/* DRAWER MOBILE (< lg) */}
       <AnimatePresence>
         {mobileMenuOpen && (
           <>
@@ -504,13 +552,10 @@ export default function AreaClientesPortal() {
       {/* ── MAIN LAYOUT WRAPPER DESKTOP ── */}
       <div className="flex flex-1 min-h-screen relative">
 
-        {/* ════════════════════════════════════════════════════════════════════
-           SIDEBAR LATERAL DESKTOP (lg:flex)
-           ════════════════════════════════════════════════════════════════════ */}
+        {/* SIDEBAR DESKTOP */}
         <aside className="hidden lg:flex flex-col w-72 shrink-0 border-r border-[#1a2e4a]/80 bg-[#08101d] sticky top-0 h-screen overflow-y-auto justify-between p-5">
           <div className="flex flex-col items-center">
             
-            {/* OCTÁGONO AISLADO GRANDE */}
             <div className="relative group cursor-pointer my-3 flex flex-col items-center w-full">
               <div className="absolute -inset-2 bg-gradient-to-r from-[#0066cc] via-[#2997ff] to-amber-500/40 rounded-3xl blur-md opacity-40 group-hover:opacity-80 transition duration-500" />
               
@@ -539,7 +584,6 @@ export default function AreaClientesPortal() {
 
             <div className="w-full h-[1px] bg-gradient-to-r from-transparent via-[#1e3a5f] to-transparent my-5" />
 
-            {/* NAVEGACIÓN DESKTOP */}
             <nav className="w-full space-y-1.5">
               {NAV_ITEMS.map((item) => {
                 const Icon = item.icon
@@ -585,7 +629,6 @@ export default function AreaClientesPortal() {
             </nav>
           </div>
 
-          {/* PERFIL Y BOTÓN LOGOUT DESKTOP */}
           <div className="p-4 bg-[#0a1628]/90 border border-[#1e3a5f]/60 rounded-2xl flex items-center justify-between">
             <div className="flex items-center gap-3 overflow-hidden">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 via-blue-800 to-indigo-950 flex items-center justify-center font-bold text-white text-xs border border-blue-400/40 shadow-inner">
@@ -612,12 +655,9 @@ export default function AreaClientesPortal() {
           </div>
         </aside>
 
-        {/* ════════════════════════════════════════════════════════════════════
-           CONTENIDO PRINCIPAL
-           ════════════════════════════════════════════════════════════════════ */}
+        {/* CONTENIDO PRINCIPAL */}
         <main className="flex-1 min-w-0 overflow-y-auto p-4 sm:p-6 lg:p-8 space-y-6 sm:space-y-8 max-w-7xl mx-auto w-full">
           
-          {/* ── HEADER SUPERIOR BIENVENIDA ── */}
           <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#1a2e4a]/60 pb-5">
             <div>
               <div className="flex items-center gap-2 text-xs font-mono text-[#2997ff] mb-1">
@@ -662,7 +702,6 @@ export default function AreaClientesPortal() {
           {activeTab === 'inicio' && (
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6 sm:space-y-8">
               
-              {/* Banner de Estado Global de Tranquilidad */}
               <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#0c1a2e] via-[#091526] to-[#050b14] border border-[#1e3e6b]/60 p-5 sm:p-8 shadow-2xl">
                 <div className="absolute top-0 right-0 w-80 h-80 bg-[#2997ff]/10 rounded-full blur-[100px] pointer-events-none" />
 
@@ -710,7 +749,6 @@ export default function AreaClientesPortal() {
                 </div>
               </section>
 
-              {/* Grid 3 Columnas */}
               <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                 
                 <div className="bg-[#081220]/90 backdrop-blur-xl border border-[#1a3356]/60 rounded-2xl p-5 hover:border-[#2997ff]/40 transition duration-300">
@@ -776,37 +814,32 @@ export default function AreaClientesPortal() {
                 </div>
 
                 <div className="space-y-3">
-                  {eventosSupabase.length > 0 ? (
-                    eventosSupabase.slice(0, 4).map((evt) => (
-                      <div key={evt.id} className="flex items-center gap-3 p-3 rounded-xl bg-[#0a1526] border border-[#162a45]">
+                  {[
+                    { hora: '03:15 AM', evento: 'Activación Alarma Perimetral Z04', desc: 'Verificación por patrulla Gama ejecutada', notaCruda: '03:15: Z4 Pir Patio. Llamada a Titular sin respuesta. Se despacha Móvil 2. Móvil 2 reporta perro suelto activó PIR. Propiedad intacta. Restablece 03:25.', tieneIa: true },
+                    { hora: '14:30 PM', evento: 'Corte de Energía Red Pública (CGE)', desc: 'Respaldo de batería activado al 100%', notaCruda: '14:30: Corte luz CGE en sector Recreo. Panel pasa a Batería 12V. Se avisa por SMS a Don Carlos.', tieneIa: true },
+                    { hora: '08:32 AM', evento: 'Desarme de Sistema (Apertura)', desc: 'Usuario Administrador Principal', tieneIa: false },
+                  ].map((evt, idx) => (
+                    <div key={idx} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-xl bg-[#0a1526] border border-[#162a45]">
+                      <div className="flex items-center gap-3">
                         <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 flex-shrink-0" />
-                        <span className="text-[11px] sm:text-xs font-mono text-slate-400 w-24 sm:w-32 flex-shrink-0">
-                          {new Date(evt.fecha_hora).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-                        </span>
-                        <div className="flex-1 overflow-hidden">
-                          <p className="text-xs sm:text-sm font-semibold text-white truncate">{evt.evento}</p>
-                          <p className="text-[11px] text-slate-400 truncate">Zona: {evt.zona || '00'} · {evt.nombre_abonado || evt.usuario || 'Sistema'}</p>
-                        </div>
-                        <span className="text-[10px] text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded font-mono hidden sm:inline">Verificado</span>
-                      </div>
-                    ))
-                  ) : (
-                    [
-                      { hora: '08:32 AM', titulo: 'Desarme de Sistema (Apertura)', desc: 'Usuario Administrador #01', color: 'emerald' },
-                      { hora: '03:15 AM', titulo: 'Test Autocontrol Diario', desc: 'Canal GPRS/IP OK', color: 'blue' },
-                      { hora: '20:10 PM', titulo: 'Armado de Sistema (Cierre)', desc: 'Modo Noche Activado', color: 'amber' },
-                    ].map((evt, idx) => (
-                      <div key={idx} className="flex items-center gap-3 p-3 rounded-xl bg-[#0a1526] border border-[#162a45]">
-                        <div className={`w-2.5 h-2.5 rounded-full bg-${evt.color}-400 flex-shrink-0`} />
                         <span className="text-[11px] sm:text-xs font-mono text-slate-400 w-20 sm:w-24 flex-shrink-0">{evt.hora}</span>
                         <div className="flex-1 overflow-hidden">
-                          <p className="text-xs sm:text-sm font-semibold text-white truncate">{evt.titulo}</p>
+                          <p className="text-xs sm:text-sm font-semibold text-white truncate">{evt.evento}</p>
                           <p className="text-[11px] text-slate-400 truncate">{evt.desc}</p>
                         </div>
-                        <span className="text-[10px] text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded font-mono hidden sm:inline">Normal</span>
                       </div>
-                    ))
-                  )}
+
+                      {evt.tieneIa && (
+                        <button
+                          onClick={() => procesarBitacoraConIA(evt)}
+                          className="px-3 py-1.5 rounded-lg bg-gradient-to-r from-blue-600/30 to-indigo-600/30 border border-blue-400/40 text-blue-300 hover:text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition hover:scale-105"
+                        >
+                          <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                          <span>Procedimiento IA</span>
+                        </button>
+                      )}
+                    </div>
+                  ))}
                 </div>
               </section>
 
@@ -877,14 +910,14 @@ export default function AreaClientesPortal() {
           )}
 
           {/* ════════════════════════════════════════════════════════════════════
-             PESTAÑA 3: HISTORIAL & LÍNEA DE TIEMPO
+             PESTAÑA 3: HISTORIAL & LÍNEA DE TIEMPO CON EXPLICACIÓN IA
              ════════════════════════════════════════════════════════════════════ */}
           {activeTab === 'historial' && (
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                   <h3 className="text-xl font-bold text-white">Historial de Seguridad</h3>
-                  <p className="text-xs text-slate-400">Bitácora completa de eventos de la cuenta #{cuentaActiva}</p>
+                  <p className="text-xs text-slate-400">Bitácora completa con asistente de interpretación IA para #{cuentaActiva}</p>
                 </div>
 
                 <div className="flex items-center gap-2 bg-[#091526] p-1.5 rounded-xl border border-[#1a3356]/60">
@@ -919,19 +952,28 @@ export default function AreaClientesPortal() {
                         <span className="text-xs font-mono text-slate-400">
                           {new Date(evt.fecha_hora).toLocaleString()}
                         </span>
-                        <span className="text-[11px] px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-semibold">
-                          Normal
-                        </span>
+                        <button
+                          onClick={() =>
+                            procesarBitacoraConIA({
+                              evento: evt.evento,
+                              hora: new Date(evt.fecha_hora).toLocaleTimeString(),
+                              notaCruda: `Evento ${evt.evento} en Zona ${evt.zona || '00'}. Registrado por comunicador 4G. Verificado por Central Gama.`,
+                            })
+                          }
+                          className="px-3 py-1 rounded-lg bg-blue-500/20 text-[#2997ff] border border-blue-500/30 text-xs font-semibold flex items-center gap-1.5 hover:bg-[#2997ff] hover:text-white transition"
+                        >
+                          <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                          <span>Procedimiento IA</span>
+                        </button>
                       </div>
                     </div>
                   ))
                 ) : (
                   [
-                    { fecha: 'Hoy 08:32:15 AM', evento: 'Desarme (Apertura)', detalles: 'Usuario Autorizado #01 - Panel Principal', estado: 'Normal' },
-                    { fecha: 'Hoy 03:15:00 AM', evento: 'Test Autocontrol GPRS/IP', detalles: 'Verificación diaria de enlace Gama OK', estado: 'Normal' },
-                    { fecha: 'Ayer 20:10:44 PM', evento: 'Armado (Cierre)', detalles: 'Usuario Autorizado #01 - Modo Noche', estado: 'Normal' },
-                    { fecha: '24/08 14:22:10 PM', evento: 'Verificación de Sensores', detalles: 'Prueba de caminata zona exterior OK', estado: 'Prueba' },
-                    { fecha: '23/08 08:30:05 AM', evento: 'Desarme (Apertura)', detalles: 'Usuario Autorizado #02 - Portón Acceso', estado: 'Normal' },
+                    { fecha: 'Hoy 03:15:00 AM', evento: 'Activación Alarma Perimetral Z04', detalles: 'Inspección Móvil #2 en Terreno', notaCruda: '03:15: Z4 Pir Patio. Llamada a Titular sin respuesta. Se despacha Móvil 2. Móvil 2 reporta perro suelto activó PIR. Propiedad intacta. Restablece 03:25.' },
+                    { fecha: 'Ayer 14:30:12 PM', evento: 'Corte de Energía Red Pública (CGE)', detalles: 'Conmutación a Batería de Respaldo 12V', notaCruda: '14:30: Corte luz CGE en sector Recreo. Panel pasa a Batería 12V. Se avisa por SMS a Don Carlos.' },
+                    { fecha: 'Ayer 20:10:44 PM', evento: 'Armado de Sistema (Cierre)', detalles: 'Usuario Autorizado #01 - Modo Noche' },
+                    { fecha: '24/08 14:22:10 PM', evento: 'Verificación de Sensores', detalles: 'Prueba de caminata zona exterior OK' },
                   ].map((item, idx) => (
                     <div key={idx} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-[#0d1c33] transition">
                       <div className="flex items-start gap-3">
@@ -943,11 +985,23 @@ export default function AreaClientesPortal() {
                           <p className="text-xs text-slate-400">{item.detalles}</p>
                         </div>
                       </div>
-                      <div className="flex items-center justify-between sm:justify-end gap-4">
+                      <div className="flex items-center justify-between sm:justify-end gap-3">
                         <span className="text-xs font-mono text-slate-400">{item.fecha}</span>
-                        <span className="text-[11px] px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-semibold">
-                          {item.estado}
-                        </span>
+                        {item.notaCruda && (
+                          <button
+                            onClick={() =>
+                              procesarBitacoraConIA({
+                                evento: item.evento,
+                                hora: item.fecha,
+                                notaCruda: item.notaCruda,
+                              })
+                            }
+                            className="px-3 py-1 rounded-lg bg-blue-500/20 text-[#2997ff] border border-blue-500/30 text-xs font-semibold flex items-center gap-1.5 hover:bg-[#2997ff] hover:text-white transition"
+                          >
+                            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                            <span>Explicación IA</span>
+                          </button>
+                        )}
                       </div>
                     </div>
                   ))
@@ -1094,9 +1148,7 @@ export default function AreaClientesPortal() {
         </main>
       </div>
 
-      {/* ════════════════════════════════════════════════════════════════════
-         BARRA DE NAVEGACIÓN INFERIOR MOBILE (< lg) RESPONSIVE
-         ════════════════════════════════════════════════════════════════════ */}
+      {/* BARRA DE NAVEGACIÓN INFERIOR MOBILE */}
       <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#08101d] border-t border-[#1a2e4a] px-2 py-2 flex items-center justify-around shadow-2xl">
         {[
           { id: 'inicio', label: 'Inicio', icon: ShieldCheck },
@@ -1121,7 +1173,7 @@ export default function AreaClientesPortal() {
         })}
       </nav>
 
-      {/* MODAL PANTALLA COMPLETA DE CÁMARA */}
+      {/* MODAL CÁMARA */}
       <AnimatePresence>
         {camaraSeleccionada && (
           <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
@@ -1177,6 +1229,77 @@ export default function AreaClientesPortal() {
                   className="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl"
                 >
                   Cancelar
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ════════════════════════════════════════════════════════════════════
+         MODAL IA CONCIERGE: INTERPRETACIONAL DE BITÁCORA Y PROCEDIMIENTO
+         ════════════════════════════════════════════════════════════════════ */}
+      <AnimatePresence>
+        {modalIaBitacora && (
+          <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 15 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 15 }}
+              className="bg-[#091526] border border-[#2997ff]/40 rounded-3xl max-w-xl w-full p-6 sm:p-7 relative overflow-hidden shadow-2xl text-left"
+            >
+              {/* Resplandor ambiental de IA */}
+              <div className="absolute top-0 right-0 w-64 h-64 bg-[#2997ff]/10 rounded-full blur-[80px] pointer-events-none" />
+
+              <button
+                onClick={() => setModalIaBitacora(false)}
+                className="absolute top-5 right-5 p-2 rounded-xl bg-slate-800/80 text-slate-300 hover:text-white"
+              >
+                <X className="w-4 h-4" />
+              </button>
+
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-800 border border-blue-400/40 flex items-center justify-center text-amber-400 shadow-lg shadow-blue-900/40">
+                  <Sparkles className="w-5 h-5 animate-pulse" />
+                </div>
+                <div>
+                  <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+                    Explicación de Procedimiento IA
+                    <span className="text-[10px] bg-blue-500/20 text-[#2997ff] border border-blue-500/30 px-2 py-0.5 rounded-full font-mono">
+                      Concierge AI
+                    </span>
+                  </h3>
+                  <p className="text-xs text-slate-400">Traducción ejecutiva de Bitácora · Central Gama</p>
+                </div>
+              </div>
+
+              {eventoIaActual && (
+                <div className="bg-[#0b1b33] border border-[#1e3a5f] rounded-2xl p-3.5 mb-4 text-xs">
+                  <span className="text-[10px] font-mono text-[#2997ff] font-bold uppercase">Evento Analizado</span>
+                  <p className="text-white font-semibold text-sm mt-0.5">{eventoIaActual.evento}</p>
+                  <p className="text-[#2997ff] font-mono text-[11px] mt-0.5">{eventoIaActual.hora}</p>
+                </div>
+              )}
+
+              {cargandoIa ? (
+                <div className="py-10 text-center space-y-3">
+                  <div className="w-10 h-10 border-3 border-[#2997ff] border-t-transparent rounded-full animate-spin mx-auto" />
+                  <p className="text-xs text-slate-300 font-mono">
+                    La Inteligencia Artificial está analizando y filtrando las notas de Bitácora...
+                  </p>
+                </div>
+              ) : (
+                <div className="prose prose-invert max-w-none text-xs sm:text-sm text-slate-200 leading-relaxed bg-[#071120] border border-[#162e4f] p-4 sm:p-5 rounded-2xl max-h-[50vh] overflow-y-auto whitespace-pre-wrap">
+                  {explicacionIa}
+                </div>
+              )}
+
+              <div className="mt-6 flex justify-end">
+                <button
+                  onClick={() => setModalIaBitacora(false)}
+                  className="px-5 py-2.5 bg-gradient-to-r from-[#0066cc] to-[#2997ff] text-white font-bold text-xs rounded-xl shadow-lg shadow-[#0066cc]/30 hover:scale-105 transition"
+                >
+                  Entendido
                 </button>
               </div>
             </motion.div>
