@@ -105,6 +105,7 @@ switch ($action) {
     // ── LISTAR EVENTOS ──
     case 'eventos':
         $abonadoId = $_GET['id'] ?? '';
+        $q = $_GET['q'] ?? $_GET['cuenta'] ?? $_GET['cod'] ?? '';
         $desde = $_GET['desde'] ?? '';
         $hasta = $_GET['hasta'] ?? '';
 
@@ -124,12 +125,27 @@ switch ($action) {
         $params = [];
 
         if ($abonadoId) {
-            $sql .= " AND e.id_abonado = ?";
-            $params[] = $abonadoId;
+            if (is_numeric($abonadoId)) {
+                $sql .= " AND e.id_abonado = ?";
+                $params[] = (int)$abonadoId;
+            } else {
+                $sql .= " AND (a.cod = ? OR a.cod LIKE ?)";
+                $params[] = $abonadoId;
+                $params[] = "%$abonadoId%";
+            }
         }
 
-        // Si no hay filtro de fecha, usar turno actual por defecto
-        if (!$desde && !$hasta) {
+        if ($q) {
+            $sql .= " AND (a.cod = ? OR a.cod LIKE ? OR a.nombre LIKE ? OR e.comentario LIKE ?)";
+            $params[] = $q;
+            $params[] = "%$q%";
+            $params[] = "%$q%";
+            $params[] = "%$q%";
+        }
+
+        // Solo usar turno por defecto si NO hay filtro por abonado/q Y NO hay fechas explícitas Y NO se pidió histórico
+        $sinFiltroEspecifico = empty($abonadoId) && empty($q) && !isset($_GET['all']) && !isset($_GET['historico']);
+        if (!$desde && !$hasta && $sinFiltroEspecifico) {
             $h = (int)date('H');
             $hoy = date('Y-m-d');
             $ayer = date('Y-m-d', strtotime('-1 day'));

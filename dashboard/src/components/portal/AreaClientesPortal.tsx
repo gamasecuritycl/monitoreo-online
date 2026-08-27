@@ -125,17 +125,48 @@ export default function AreaClientesPortal() {
     const fetchBitacoraReal = async () => {
       setCargandoBitacora(true)
       try {
-        const url = `https://bitacora.gamasecurity.cl/api-bitacora.php?action=eventos&q=${encodeURIComponent(cuentaActiva)}`
+        const ctaUpper = cuentaActiva.toUpperCase().trim()
+
+        // 1. Intentar resolver id_abonado de la base de datos MySQL de Bitácora
+        let idAbonado: string | null = null
+        try {
+          const resAb = await fetch(`https://bitacora.gamasecurity.cl/api-bitacora.php?action=abonados&q=${encodeURIComponent(ctaUpper)}`)
+          if (resAb.ok) {
+            const dataAb = await resAb.json()
+            if (Array.isArray(dataAb) && dataAb.length > 0) {
+              const exactMatch = dataAb.find((a: any) => a.cod && a.cod.toUpperCase().trim() === ctaUpper)
+              if (exactMatch && exactMatch.id) {
+                idAbonado = String(exactMatch.id)
+              } else if (dataAb[0]?.id) {
+                idAbonado = String(dataAb[0].id)
+              }
+            }
+          }
+        } catch (e) {
+          console.warn('Error resolviendo id de abonado:', e)
+        }
+
+        // 2. Consultar eventos con rango amplio de fechas (desde 2020) para no limitar por turno/antigüedad
+        const desdeParam = '2020-01-01 00:00'
+        const hastaParam = '2099-12-31 23:59'
+        const url = idAbonado
+          ? `https://bitacora.gamasecurity.cl/api-bitacora.php?action=eventos&id=${idAbonado}&desde=${encodeURIComponent(desdeParam)}&hasta=${encodeURIComponent(hastaParam)}`
+          : `https://bitacora.gamasecurity.cl/api-bitacora.php?action=eventos&q=${encodeURIComponent(ctaUpper)}&desde=${encodeURIComponent(desdeParam)}&hasta=${encodeURIComponent(hastaParam)}`
+
         const res = await fetch(url)
         if (res.ok) {
           const data = await res.json()
           if (Array.isArray(data)) {
-            const ctaUpper = cuentaActiva.toUpperCase().trim()
             const filtrados = data.filter((b: BitacoraRecord) => {
               const codMatches = b.abonado_cod && b.abonado_cod.toUpperCase().trim() === ctaUpper
               const comMatches = b.comentario && b.comentario.toUpperCase().includes(ctaUpper)
-              return codMatches || comMatches
+              const idMatches = idAbonado && String(b.id_abonado) === String(idAbonado)
+              return codMatches || comMatches || idMatches
             })
+            // Ordenar por fecha descendente (últimos primero)
+            filtrados.sort((a: BitacoraRecord, b: BitacoraRecord) =>
+              new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+            )
             setEventosBitacoraReales(filtrados)
           }
         }
