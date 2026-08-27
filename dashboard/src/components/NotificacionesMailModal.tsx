@@ -129,7 +129,10 @@ export default function NotificacionesMailModal({ onClose, clientesMap }: Notifi
         
         {/* Header Modal */}
         <div className="bg-[#000080] text-white px-2 py-1 flex justify-between items-center shrink-0">
-          <div className="font-bold text-sm tracking-wide">CONFIGURACION NOTIFICACIONES POR MAIL</div>
+          <div className="font-bold text-sm tracking-wide flex items-center gap-2">
+            <span>CONFIGURACION NOTIFICACIONES POR MAIL</span>
+            <span className="bg-amber-400 text-black px-1.5 py-0.2 rounded-xs text-[10px] font-black">EN DESARROLLO</span>
+          </div>
           <button 
             onClick={onClose}
             className="bg-[#c0c0c0] text-black font-bold border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 px-2 leading-none hover:bg-[#d0d0d0] active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white"

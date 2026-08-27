@@ -1251,7 +1251,7 @@ export default function ScorpionDashboard() {
             hasDropdown: true,
             items: [
               { label: 'WhatsApp', modal: 'notificaciones-whatsapp', desc: 'Atención y mensajería en tiempo real' },
-              { label: 'Notificaciones por Llamada / SMS', modal: 'notificaciones-llamadas-sms', desc: 'Alertas críticas por voz y SMS' },
+              { label: 'Notificaciones por Correo (En desarrollo)', modal: 'notificaciones-mail', desc: 'Módulo en desarrollo para despacho por SMTP' },
             ]
           },
           {
