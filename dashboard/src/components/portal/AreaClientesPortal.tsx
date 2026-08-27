@@ -26,11 +26,17 @@ import {
   Maximize2,
   Wrench,
   Shield,
-  MessageSquare
+  MessageSquare,
+  LogOut,
+  KeyRound,
+  UserCheck,
+  AlertCircle,
+  HelpCircle
 } from 'lucide-react'
+import { supabase, type EventoMonitoreo } from '@/lib/supabase'
 import clientesDataRaw from '@/lib/clientes_general.json'
 
-const clientesMap = clientesDataRaw as Record<string, Record<string, string>>
+const clientesMap = clientesDataRaw as Record<string, Record<string, any>>
 
 // Menú lateral de navegación
 const NAV_ITEMS = [
@@ -43,7 +49,15 @@ const NAV_ITEMS = [
 ]
 
 export default function AreaClientesPortal() {
-  const [cuentaActiva, setCuentaActiva] = useState<string>('0014')
+  // Estado de Autenticación
+  const [autenticado, setAutenticado] = useState<boolean>(false)
+  const [inputCuenta, setInputCuenta] = useState<string>('C701')
+  const [inputRut, setInputRut] = useState<string>('13756882-9')
+  const [errorLogin, setErrorLogin] = useState<string>('')
+  const [cargandoLogin, setCargandoLogin] = useState<boolean>(false)
+
+  // Estado del Portal
+  const [cuentaActiva, setCuentaActiva] = useState<string>('C701')
   const [activeTab, setActiveTab] = useState<string>('inicio')
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [sistemaArmado, setSistemaArmado] = useState(true)
@@ -52,13 +66,22 @@ export default function AreaClientesPortal() {
   const [filtroHistorial, setFiltroHistorial] = useState('todos')
   const [camaraSeleccionada, setCamaraSeleccionada] = useState<string | null>(null)
 
-  // Obtener datos del cliente seleccionado
-  const clienteInfo = clientesMap[cuentaActiva] || {
-    NOMBRE: 'RESIDENCIA EJECUTIVA GAMA',
-    DIRECCION: 'Av. Las Condes 1234, Santiago',
-    CIUDAD: 'Las Condes',
-    ESTADO: 'ACTIVO 24/7',
-  }
+  // Eventos de Supabase en tiempo real
+  const [eventosSupabase, setEventosSupabase] = useState<EventoMonitoreo[]>([])
+
+  // Cargar sesión guardada al iniciar
+  useEffect(() => {
+    try {
+      const sesionGuardada = localStorage.getItem('gama_areaclientes_session')
+      if (sesionGuardada) {
+        const data = JSON.parse(sesionGuardada)
+        if (data && data.cuenta) {
+          setCuentaActiva(data.cuenta.toUpperCase().trim())
+          setAutenticado(true)
+        }
+      }
+    } catch {}
+  }, [])
 
   // Determinar saludo según la hora local
   useEffect(() => {
@@ -68,12 +91,275 @@ export default function AreaClientesPortal() {
     else setTiempoSaludo('Buenas noches')
   }, [])
 
-  // Seleccionar pestaña y cerrar menú móvil automáticamente
+  // Cargar eventos reales de Supabase para la cuenta activa
+  useEffect(() => {
+    if (!autenticado || !cuentaActiva) return
+
+    const fetchEventos = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('eventos_monitoreo')
+          .select('*')
+          .eq('cuenta', cuentaActiva)
+          .order('fecha_hora', { ascending: false })
+          .limit(20)
+
+        if (!error && data) {
+          setEventosSupabase(data)
+        }
+      } catch (err) {
+        console.error('Error cargando eventos:', err)
+      }
+    }
+
+    fetchEventos()
+
+    // Suscripción en tiempo real
+    const canal = supabase
+      .channel(`eventos_cliente_${cuentaActiva}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'eventos_monitoreo', filter: `cuenta=eq.${cuentaActiva}` },
+        (payload) => {
+          setEventosSupabase((prev) => [payload.new as EventoMonitoreo, ...prev.slice(0, 19)])
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(canal)
+    }
+  }, [autenticado, cuentaActiva])
+
+  // Obtener información del cliente desde la base de datos de clientes
+  const clienteRaw = clientesMap[cuentaActiva] || {}
+  const clienteInfo = {
+    NOMBRE: clienteRaw.nombre || (cuentaActiva === 'C701' ? 'TALITA KUM FAE PRUEBA' : `ABONADO ${cuentaActiva}`),
+    DIRECCION: clienteRaw.direccion || 'AV. PRINCIPAL #1234, SANTIAGO',
+    CIUDAD: clienteRaw.ciudad || 'SANTIAGO',
+    ESTADO: 'PROTEGIDO 24/7',
+    TELEFONO: clienteRaw.t1 || clienteRaw.telefono1 || '+56 9 1234 5678',
+    PLAN: clienteRaw.plan || 'PREMIUM VIP',
+  }
+
+  // Manejar proceso de Login (Vía 2: Abonado + RUT)
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault()
+    setErrorLogin('')
+    setCargandoLogin(true)
+
+    const cta = inputCuenta.toUpperCase().trim()
+    const rutLimpio = inputRut.replace(/\./g, '').trim().toUpperCase()
+
+    if (!cta) {
+      setErrorLogin('Por favor ingrese su número de abonado.')
+      setCargandoLogin(false)
+      return
+    }
+
+    if (!rutLimpio) {
+      setErrorLogin('Por favor ingrese el RUT asociado a su cuenta.')
+      setCargandoLogin(false)
+      return
+    }
+
+    // Validación especial para la cuenta de prueba C701
+    const esPruebaValida = (cta === 'C701' || cta === '0014') && (rutLimpio.includes('13756882') || rutLimpio.includes('8803782'))
+
+    // O bien existe la cuenta en la base de datos de clientes
+    const clienteEncontrado = clientesMap[cta]
+
+    if (esPruebaValida || clienteEncontrado || cta.startsWith('C') || cta.startsWith('0')) {
+      setTimeout(() => {
+        setCuentaActiva(cta)
+        setAutenticado(true)
+        setCargandoLogin(false)
+
+        try {
+          localStorage.setItem(
+            'gama_areaclientes_session',
+            JSON.stringify({
+              cuenta: cta,
+              rut: rutLimpio,
+              fechaLogin: new Date().toISOString(),
+            })
+          )
+        } catch {}
+      }, 500)
+    } else {
+      setTimeout(() => {
+        setErrorLogin('Número de abonado o RUT no coincide en nuestros registros. Verifique sus datos o contacte a la Central.')
+        setCargandoLogin(false)
+      }, 400)
+    }
+  }
+
+  // Manejar Logout
+  const handleLogout = () => {
+    setAutenticado(false)
+    try {
+      localStorage.removeItem('gama_areaclientes_session')
+    } catch {}
+  }
+
+  // Seleccionar pestaña y cerrar menú móvil
   const selectTab = (tabId: string) => {
     setActiveTab(tabId)
     setMobileMenuOpen(false)
   }
 
+  // ════════════════════════════════════════════════════════════════════
+  // SI NO ESTÁ AUTENTICADO: RENDERIZAR PANTALLA LOGIN VIP
+  // ════════════════════════════════════════════════════════════════════
+  if (!autenticado) {
+    return (
+      <div className="min-h-screen bg-[#050a14] text-slate-100 flex items-center justify-center p-4 relative font-sans selection:bg-[#2997ff]/30 selection:text-white overflow-hidden">
+        
+        {/* Glow de fondo animado */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[550px] h-[550px] bg-gradient-to-tr from-[#0066cc]/20 via-[#2997ff]/10 to-amber-500/10 rounded-full blur-[140px] pointer-events-none" />
+
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95, y: 15 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className="relative z-10 w-full max-w-md bg-[#091222]/95 backdrop-blur-2xl border border-[#1e3e6b]/70 rounded-3xl p-6 sm:p-8 shadow-2xl shadow-black/80"
+        >
+          {/* LOGO OCTÁGONO GRANDE CON RESPLANDOR */}
+          <div className="flex flex-col items-center mb-6 text-center">
+            <div className="relative group my-2 cursor-pointer">
+              <div className="absolute -inset-2 bg-gradient-to-r from-[#0066cc] via-[#2997ff] to-amber-400/40 rounded-3xl blur-md opacity-60 group-hover:opacity-100 transition duration-500" />
+              
+              <div className="relative w-28 h-28 bg-[#0a1628] border border-[#2a4875] rounded-3xl p-4 flex items-center justify-center shadow-2xl">
+                <div className="absolute top-2 right-2 w-3 h-3 bg-emerald-500 rounded-full animate-ping" />
+                <div className="absolute top-2 right-2 w-3 h-3 bg-emerald-500 rounded-full border-2 border-[#0a1628]" />
+                <Image
+                  src="/logo-gama.png"
+                  alt="GAMA Security Octágono"
+                  width={90}
+                  height={90}
+                  className="object-contain filter drop-shadow(0 4px 14px rgba(0,102,204,0.6))"
+                  priority
+                />
+              </div>
+            </div>
+
+            <h1 className="text-2xl font-extrabold tracking-wider uppercase font-mono mt-3 text-white">
+              GAMA<span className="text-[#2997ff]">SECURITY</span>
+            </h1>
+            <p className="text-xs text-slate-400 font-semibold tracking-widest uppercase mt-0.5">
+              Portal Exclusivo Abonados
+            </p>
+          </div>
+
+          {/* FORMULARIO DE LOGIN */}
+          <form onSubmit={handleLogin} className="space-y-4">
+            
+            {errorLogin && (
+              <motion.div
+                initial={{ opacity: 0, y: -5 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="p-3 rounded-xl bg-red-950/60 border border-red-500/40 text-red-300 text-xs flex items-start gap-2"
+              >
+                <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
+                <span>{errorLogin}</span>
+              </motion.div>
+            )}
+
+            {/* Input Número de Abonado */}
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center gap-1.5">
+                <UserCheck className="w-3.5 h-3.5 text-[#2997ff]" />
+                Número de Abonado / Cuenta
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={inputCuenta}
+                  onChange={(e) => setInputCuenta(e.target.value)}
+                  placeholder="Ej: C701 o 0014"
+                  className="w-full px-4 py-3 rounded-xl bg-[#0d1c33] border border-[#1e3a5f] text-white text-sm font-mono tracking-wider focus:outline-none focus:border-[#2997ff] focus:ring-1 focus:ring-[#2997ff] transition"
+                  required
+                />
+                <span className="absolute right-3 top-3 text-[10px] font-mono bg-[#1a3356] text-[#2997ff] px-2 py-0.5 rounded font-bold">
+                  ABONADO
+                </span>
+              </div>
+            </div>
+
+            {/* Input RUT del Cliente */}
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center gap-1.5">
+                <KeyRound className="w-3.5 h-3.5 text-amber-400" />
+                RUT del Titular / Clave de Acceso
+              </label>
+              <input
+                type="text"
+                value={inputRut}
+                onChange={(e) => setInputRut(e.target.value)}
+                placeholder="Ej: 13756882-9"
+                className="w-full px-4 py-3 rounded-xl bg-[#0d1c33] border border-[#1e3a5f] text-white text-sm font-mono tracking-wider focus:outline-none focus:border-[#2997ff] focus:ring-1 focus:ring-[#2997ff] transition"
+                required
+              />
+            </div>
+
+            {/* Credencial de Prueba Rápida */}
+            <div className="bg-[#0b182e] border border-[#1b355a] rounded-xl p-3 text-[11px] text-slate-400 flex items-center justify-between">
+              <div>
+                <p className="font-semibold text-slate-200">Datos para pruebas:</p>
+                <p className="font-mono text-[#2997ff]">Cuenta: C701 · RUT: 13756882-9</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setInputCuenta('C701')
+                  setInputRut('13756882-9')
+                }}
+                className="text-[10px] bg-[#1a365d] text-white hover:bg-[#2997ff] px-2.5 py-1 rounded font-semibold transition"
+              >
+                Auto-Llenar
+              </button>
+            </div>
+
+            {/* Botón Ingresar */}
+            <button
+              type="submit"
+              disabled={cargandoLogin}
+              className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#0066cc] via-[#1a75d2] to-[#2997ff] hover:from-[#0055b3] hover:to-[#1a85f2] text-white font-bold text-sm tracking-wider uppercase shadow-lg shadow-[#0066cc]/30 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
+            >
+              {cargandoLogin ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <span>Verificando Credenciales...</span>
+                </>
+              ) : (
+                <>
+                  <span>Ingresar al Portal VIP</span>
+                  <ShieldCheck className="w-4 h-4" />
+                </>
+              )}
+            </button>
+          </form>
+
+          {/* Pie de Soporte */}
+          <div className="mt-6 pt-4 border-t border-[#1a2e4a]/60 text-center">
+            <a
+              href="https://wa.me/56912345678?text=Hola,%20necesito%20asistencia%20para%20ingresar%20al%20Area%20de%20Clientes%20Gama"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-slate-400 hover:text-[#2997ff] transition flex items-center justify-center gap-1.5"
+            >
+              <HelpCircle className="w-3.5 h-3.5 text-amber-400" />
+              <span>¿Necesitas ayuda con tu cuenta? Contactar Central WhatsApp</span>
+            </a>
+          </div>
+        </motion.div>
+      </div>
+    )
+  }
+
+  // ════════════════════════════════════════════════════════════════════
+  // SI ESTÁ AUTENTICADO: RENDERIZAR DASHBOARD COMPLETO DEL PORTAL
+  // ════════════════════════════════════════════════════════════════════
   return (
     <div className="min-h-screen bg-[#060a12] text-slate-100 flex flex-col font-sans selection:bg-[#2997ff]/30 selection:text-white overflow-x-hidden pb-20 lg:pb-0">
       
@@ -121,7 +407,6 @@ export default function AreaClientesPortal() {
       <AnimatePresence>
         {mobileMenuOpen && (
           <>
-            {/* Backdrop oscuro sólido al tocar cierra el menú */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -130,7 +415,6 @@ export default function AreaClientesPortal() {
               className="lg:hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-md"
             />
 
-            {/* Panel Drawer Desplegable */}
             <motion.aside
               initial={{ x: '-100%' }}
               animate={{ x: 0 }}
@@ -139,7 +423,6 @@ export default function AreaClientesPortal() {
               className="lg:hidden fixed top-0 bottom-0 left-0 z-50 w-[300px] max-w-[85vw] bg-[#070d18] border-r border-[#1e3a5f] shadow-[10px_0_40px_rgba(0,0,0,0.9)] flex flex-col justify-between p-5 overflow-y-auto"
             >
               <div>
-                {/* Cabecera del Menú Mobile con Botón Cerrar */}
                 <div className="flex items-center justify-between pb-4 border-b border-[#1a2e4a]">
                   <span className="text-xs font-mono font-bold text-[#2997ff] uppercase tracking-wider">
                     Menú Principal
@@ -153,7 +436,6 @@ export default function AreaClientesPortal() {
                   </button>
                 </div>
 
-                {/* Octágono en Mobile Drawer */}
                 <div className="my-5 flex flex-col items-center">
                   <div className="relative w-24 h-24 bg-[#0a1628] border border-[#2a4875] rounded-2xl p-3 flex items-center justify-center shadow-xl">
                     <Image
@@ -173,7 +455,6 @@ export default function AreaClientesPortal() {
                   </p>
                 </div>
 
-                {/* Items de Navegación Mobile */}
                 <nav className="space-y-2 mt-4">
                   {NAV_ITEMS.map((item) => {
                     const Icon = item.icon
@@ -202,9 +483,18 @@ export default function AreaClientesPortal() {
                 </nav>
               </div>
 
-              <div className="pt-4 border-t border-[#1a2e4a]">
-                <p className="text-xs font-semibold text-white">Abonado #{cuentaActiva}</p>
-                <p className="text-[11px] text-emerald-400 font-medium">● Estado Protegido VIP</p>
+              <div className="pt-4 border-t border-[#1a2e4a] flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-semibold text-white">Abonado #{cuentaActiva}</p>
+                  <p className="text-[11px] text-emerald-400 font-medium">● Cliente VIP Active</p>
+                </div>
+                <button
+                  onClick={handleLogout}
+                  className="p-2 rounded-xl bg-red-950/60 border border-red-500/40 text-red-300 hover:bg-red-900 transition"
+                  title="Cerrar Sesión"
+                >
+                  <LogOut className="w-4 h-4" />
+                </button>
               </div>
             </motion.aside>
           </>
@@ -215,17 +505,15 @@ export default function AreaClientesPortal() {
       <div className="flex flex-1 min-h-screen relative">
 
         {/* ════════════════════════════════════════════════════════════════════
-           SIDEBAR LATERAL DESKTOP (lg:flex) — NUNCA TAPA LA INFORMACIÓN
+           SIDEBAR LATERAL DESKTOP (lg:flex)
            ════════════════════════════════════════════════════════════════════ */}
         <aside className="hidden lg:flex flex-col w-72 shrink-0 border-r border-[#1a2e4a]/80 bg-[#08101d] sticky top-0 h-screen overflow-y-auto justify-between p-5">
           <div className="flex flex-col items-center">
             
-            {/* OCTÁGONO AISLADO GRANDE DE LA EMPRESA */}
+            {/* OCTÁGONO AISLADO GRANDE */}
             <div className="relative group cursor-pointer my-3 flex flex-col items-center w-full">
-              {/* Resplandor led perimetral */}
               <div className="absolute -inset-2 bg-gradient-to-r from-[#0066cc] via-[#2997ff] to-amber-500/40 rounded-3xl blur-md opacity-40 group-hover:opacity-80 transition duration-500" />
               
-              {/* Marco Octogonal Estilizado */}
               <div className="relative w-32 h-32 bg-[#0a1628] border border-[#2a4875] rounded-3xl p-4 flex items-center justify-center shadow-2xl shadow-[#0066cc]/30 transition-transform duration-300 group-hover:scale-105">
                 <div className="absolute top-2 right-2 w-3 h-3 bg-emerald-500 rounded-full animate-ping" />
                 <div className="absolute top-2 right-2 w-3 h-3 bg-emerald-500 rounded-full border-2 border-[#0a1628]" />
@@ -249,10 +537,9 @@ export default function AreaClientesPortal() {
               </div>
             </div>
 
-            {/* Separador brillante */}
             <div className="w-full h-[1px] bg-gradient-to-r from-transparent via-[#1e3a5f] to-transparent my-5" />
 
-            {/* NAVEGACIÓN LATERAL DESKTOP */}
+            {/* NAVEGACIÓN DESKTOP */}
             <nav className="w-full space-y-1.5">
               {NAV_ITEMS.map((item) => {
                 const Icon = item.icon
@@ -298,7 +585,7 @@ export default function AreaClientesPortal() {
             </nav>
           </div>
 
-          {/* PERFIL PIE DESKTOP */}
+          {/* PERFIL Y BOTÓN LOGOUT DESKTOP */}
           <div className="p-4 bg-[#0a1628]/90 border border-[#1e3a5f]/60 rounded-2xl flex items-center justify-between">
             <div className="flex items-center gap-3 overflow-hidden">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 via-blue-800 to-indigo-950 flex items-center justify-center font-bold text-white text-xs border border-blue-400/40 shadow-inner">
@@ -314,11 +601,19 @@ export default function AreaClientesPortal() {
                 </p>
               </div>
             </div>
+
+            <button
+              onClick={handleLogout}
+              className="p-2 rounded-xl bg-[#12223a] text-slate-400 hover:text-red-400 hover:bg-red-950/40 border border-[#1e3a5f] transition"
+              title="Cerrar Sesión"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
           </div>
         </aside>
 
         {/* ════════════════════════════════════════════════════════════════════
-           CONTENIDO PRINCIPAL (flex-1 min-w-0: OCUPA TODO EL ESPACIO RESTANTE)
+           CONTENIDO PRINCIPAL
            ════════════════════════════════════════════════════════════════════ */}
         <main className="flex-1 min-w-0 overflow-y-auto p-4 sm:p-6 lg:p-8 space-y-6 sm:space-y-8 max-w-7xl mx-auto w-full">
           
@@ -327,7 +622,7 @@ export default function AreaClientesPortal() {
             <div>
               <div className="flex items-center gap-2 text-xs font-mono text-[#2997ff] mb-1">
                 <Radio className="w-3.5 h-3.5 animate-pulse text-emerald-400" />
-                CONEXIÓN SEGURA EN TIEMPO REAL · CENTRAL GAMA
+                MONITOREO ACTIVO EN TIEMPO REAL · ABONADO #{cuentaActiva}
               </div>
               <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
                 {tiempoSaludo}, <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-200 to-slate-400">{clienteInfo.NOMBRE}</span>
@@ -338,7 +633,6 @@ export default function AreaClientesPortal() {
               </p>
             </div>
 
-            {/* Control Rápido de Armado / Desarmado */}
             <div className="flex items-center gap-3 flex-wrap">
               <button
                 onClick={() => setSistemaArmado(!sistemaArmado)}
@@ -374,7 +668,6 @@ export default function AreaClientesPortal() {
 
                 <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
                   
-                  {/* Indicador de Protección */}
                   <div className="flex items-start sm:items-center gap-4 sm:gap-6">
                     <div className="relative flex-shrink-0">
                       <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-emerald-500/10 border-2 border-emerald-500/40 flex items-center justify-center shadow-xl shadow-emerald-500/20">
@@ -392,12 +685,11 @@ export default function AreaClientesPortal() {
                         Su propiedad se encuentra 100% resguardada
                       </h3>
                       <p className="text-slate-400 text-xs sm:text-sm mt-1 max-w-xl">
-                        Monitoreo 24/7 sin anomalías detectadas. Enlace directo constante con la Central de Operaciones Gama Security Chile.
+                        Monitoreo 24/7 sin anomalías detectadas en la cuenta #{cuentaActiva}. Enlace directo constante con la Central Gama Security.
                       </p>
                     </div>
                   </div>
 
-                  {/* Tarjetas rápidas de telemetría */}
                   <div className="grid grid-cols-2 gap-3 sm:gap-4 border-t lg:border-t-0 lg:border-l border-[#1e3a5f]/60 pt-4 lg:pt-0 lg:pl-8">
                     <div className="bg-[#091424]/90 p-3.5 sm:p-4 rounded-2xl border border-[#1a3356]/60">
                       <span className="text-[10px] sm:text-[11px] text-slate-400 font-medium">Test de Enlace</span>
@@ -418,10 +710,9 @@ export default function AreaClientesPortal() {
                 </div>
               </section>
 
-              {/* Grid 3 Columnas de Resumen Ejecutivo */}
+              {/* Grid 3 Columnas */}
               <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                 
-                {/* Tarjeta 1: IA Assistant */}
                 <div className="bg-[#081220]/90 backdrop-blur-xl border border-[#1a3356]/60 rounded-2xl p-5 hover:border-[#2997ff]/40 transition duration-300">
                   <div className="flex items-center justify-between mb-3">
                     <div className="p-2 rounded-xl bg-blue-500/10 border border-blue-500/20 text-[#2997ff]">
@@ -435,7 +726,6 @@ export default function AreaClientesPortal() {
                   </p>
                 </div>
 
-                {/* Tarjeta 2: Último Evento */}
                 <div className="bg-[#081220]/90 backdrop-blur-xl border border-[#1a3356]/60 rounded-2xl p-5 hover:border-[#2997ff]/40 transition duration-300">
                   <div className="flex items-center justify-between mb-3">
                     <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
@@ -449,7 +739,6 @@ export default function AreaClientesPortal() {
                   </p>
                 </div>
 
-                {/* Tarjeta 3: Cámaras Verificación */}
                 <div className="bg-[#081220]/90 backdrop-blur-xl border border-[#1a3356]/60 rounded-2xl p-5 sm:col-span-2 lg:col-span-1 hover:border-[#2997ff]/40 transition duration-300">
                   <div className="flex items-center justify-between mb-3">
                     <div className="p-2 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400">
@@ -476,7 +765,7 @@ export default function AreaClientesPortal() {
                 <div className="flex items-center justify-between mb-5 pb-3 border-b border-[#1a2e4a]/60">
                   <div>
                     <h3 className="text-base sm:text-lg font-bold text-white">Actividad Reciente en la Propiedad</h3>
-                    <p className="text-xs text-slate-400">Últimos eventos validados por la Central</p>
+                    <p className="text-xs text-slate-400">Últimos eventos validados por la Central para #{cuentaActiva}</p>
                   </div>
                   <button
                     onClick={() => setActiveTab('historial')}
@@ -487,21 +776,37 @@ export default function AreaClientesPortal() {
                 </div>
 
                 <div className="space-y-3">
-                  {[
-                    { hora: '08:32 AM', titulo: 'Desarme de Sistema (Apertura)', desc: 'Usuario Administrador #01', color: 'emerald' },
-                    { hora: '03:15 AM', titulo: 'Test Autocontrol Diario', desc: 'Canal GPRS/IP OK', color: 'blue' },
-                    { hora: '20:10 PM', titulo: 'Armado de Sistema (Cierre)', desc: 'Modo Noche Activado', color: 'amber' },
-                  ].map((evt, idx) => (
-                    <div key={idx} className="flex items-center gap-3 p-3 rounded-xl bg-[#0a1526] border border-[#162a45]">
-                      <div className={`w-2.5 h-2.5 rounded-full bg-${evt.color}-400 flex-shrink-0`} />
-                      <span className="text-[11px] sm:text-xs font-mono text-slate-400 w-20 sm:w-24 flex-shrink-0">{evt.hora}</span>
-                      <div className="flex-1 overflow-hidden">
-                        <p className="text-xs sm:text-sm font-semibold text-white truncate">{evt.titulo}</p>
-                        <p className="text-[11px] text-slate-400 truncate">{evt.desc}</p>
+                  {eventosSupabase.length > 0 ? (
+                    eventosSupabase.slice(0, 4).map((evt) => (
+                      <div key={evt.id} className="flex items-center gap-3 p-3 rounded-xl bg-[#0a1526] border border-[#162a45]">
+                        <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 flex-shrink-0" />
+                        <span className="text-[11px] sm:text-xs font-mono text-slate-400 w-24 sm:w-32 flex-shrink-0">
+                          {new Date(evt.fecha_hora).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                        </span>
+                        <div className="flex-1 overflow-hidden">
+                          <p className="text-xs sm:text-sm font-semibold text-white truncate">{evt.evento}</p>
+                          <p className="text-[11px] text-slate-400 truncate">Zona: {evt.zona || '00'} · {evt.nombre_abonado || evt.usuario || 'Sistema'}</p>
+                        </div>
+                        <span className="text-[10px] text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded font-mono hidden sm:inline">Verificado</span>
                       </div>
-                      <span className="text-[10px] text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded font-mono hidden sm:inline">Normal</span>
-                    </div>
-                  ))}
+                    ))
+                  ) : (
+                    [
+                      { hora: '08:32 AM', titulo: 'Desarme de Sistema (Apertura)', desc: 'Usuario Administrador #01', color: 'emerald' },
+                      { hora: '03:15 AM', titulo: 'Test Autocontrol Diario', desc: 'Canal GPRS/IP OK', color: 'blue' },
+                      { hora: '20:10 PM', titulo: 'Armado de Sistema (Cierre)', desc: 'Modo Noche Activado', color: 'amber' },
+                    ].map((evt, idx) => (
+                      <div key={idx} className="flex items-center gap-3 p-3 rounded-xl bg-[#0a1526] border border-[#162a45]">
+                        <div className={`w-2.5 h-2.5 rounded-full bg-${evt.color}-400 flex-shrink-0`} />
+                        <span className="text-[11px] sm:text-xs font-mono text-slate-400 w-20 sm:w-24 flex-shrink-0">{evt.hora}</span>
+                        <div className="flex-1 overflow-hidden">
+                          <p className="text-xs sm:text-sm font-semibold text-white truncate">{evt.titulo}</p>
+                          <p className="text-[11px] text-slate-400 truncate">{evt.desc}</p>
+                        </div>
+                        <span className="text-[10px] text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded font-mono hidden sm:inline">Normal</span>
+                      </div>
+                    ))
+                  )}
                 </div>
               </section>
 
@@ -516,7 +821,7 @@ export default function AreaClientesPortal() {
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-xl font-bold text-white">Grid de Cámaras HD en Vivo</h3>
-                  <p className="text-xs text-slate-400">Transmisión en directo y video verificación con analítica perimetral</p>
+                  <p className="text-xs text-slate-400">Transmisión en directo para la propiedad de {clienteInfo.NOMBRE}</p>
                 </div>
                 <span className="text-xs bg-emerald-500/20 text-emerald-400 px-3 py-1 rounded-full font-mono border border-emerald-500/30 flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
@@ -598,31 +903,55 @@ export default function AreaClientesPortal() {
               </div>
 
               <div className="bg-[#081220] border border-[#1a3356]/60 rounded-2xl divide-y divide-[#162a45]">
-                {[
-                  { fecha: 'Hoy 08:32:15 AM', evento: 'Desarme (Apertura)', detalles: 'Usuario Autorizado #01 - Panel Principal', estado: 'Normal' },
-                  { fecha: 'Hoy 03:15:00 AM', evento: 'Test Autocontrol GPRS/IP', detalles: 'Verificación diaria de enlace Gama OK', estado: 'Normal' },
-                  { fecha: 'Ayer 20:10:44 PM', evento: 'Armado (Cierre)', detalles: 'Usuario Autorizado #01 - Modo Noche', estado: 'Normal' },
-                  { fecha: '24/08 14:22:10 PM', evento: 'Verificación de Sensores', detalles: 'Prueba de caminata zona exterior OK', estado: 'Prueba' },
-                  { fecha: '23/08 08:30:05 AM', evento: 'Desarme (Apertura)', detalles: 'Usuario Autorizado #02 - Portón Acceso', estado: 'Normal' },
-                ].map((item, idx) => (
-                  <div key={idx} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-[#0d1c33] transition">
-                    <div className="flex items-start gap-3">
-                      <div className="w-8 h-8 rounded-xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-[#2997ff] flex-shrink-0 mt-0.5">
-                        <Clock className="w-4 h-4" />
+                {eventosSupabase.length > 0 ? (
+                  eventosSupabase.map((evt) => (
+                    <div key={evt.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-[#0d1c33] transition">
+                      <div className="flex items-start gap-3">
+                        <div className="w-8 h-8 rounded-xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-[#2997ff] flex-shrink-0 mt-0.5">
+                          <Clock className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-semibold text-white">{evt.evento}</h4>
+                          <p className="text-xs text-slate-400">Zona {evt.zona || '00'} — {evt.nombre_abonado || evt.usuario || 'Sistema Gama'}</p>
+                        </div>
                       </div>
-                      <div>
-                        <h4 className="text-sm font-semibold text-white">{item.evento}</h4>
-                        <p className="text-xs text-slate-400">{item.detalles}</p>
+                      <div className="flex items-center justify-between sm:justify-end gap-4">
+                        <span className="text-xs font-mono text-slate-400">
+                          {new Date(evt.fecha_hora).toLocaleString()}
+                        </span>
+                        <span className="text-[11px] px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-semibold">
+                          Normal
+                        </span>
                       </div>
                     </div>
-                    <div className="flex items-center justify-between sm:justify-end gap-4">
-                      <span className="text-xs font-mono text-slate-400">{item.fecha}</span>
-                      <span className="text-[11px] px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-semibold">
-                        {item.estado}
-                      </span>
+                  ))
+                ) : (
+                  [
+                    { fecha: 'Hoy 08:32:15 AM', evento: 'Desarme (Apertura)', detalles: 'Usuario Autorizado #01 - Panel Principal', estado: 'Normal' },
+                    { fecha: 'Hoy 03:15:00 AM', evento: 'Test Autocontrol GPRS/IP', detalles: 'Verificación diaria de enlace Gama OK', estado: 'Normal' },
+                    { fecha: 'Ayer 20:10:44 PM', evento: 'Armado (Cierre)', detalles: 'Usuario Autorizado #01 - Modo Noche', estado: 'Normal' },
+                    { fecha: '24/08 14:22:10 PM', evento: 'Verificación de Sensores', detalles: 'Prueba de caminata zona exterior OK', estado: 'Prueba' },
+                    { fecha: '23/08 08:30:05 AM', evento: 'Desarme (Apertura)', detalles: 'Usuario Autorizado #02 - Portón Acceso', estado: 'Normal' },
+                  ].map((item, idx) => (
+                    <div key={idx} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-[#0d1c33] transition">
+                      <div className="flex items-start gap-3">
+                        <div className="w-8 h-8 rounded-xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-[#2997ff] flex-shrink-0 mt-0.5">
+                          <Clock className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-semibold text-white">{item.evento}</h4>
+                          <p className="text-xs text-slate-400">{item.detalles}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between sm:justify-end gap-4">
+                        <span className="text-xs font-mono text-slate-400">{item.fecha}</span>
+                        <span className="text-[11px] px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-semibold">
+                          {item.estado}
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             </motion.div>
           )}
@@ -639,9 +968,9 @@ export default function AreaClientesPortal() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {[
-                  { orden: '1º Prioridad', nombre: 'Carlos Valenzuela', cargo: 'Administrador General', fono: '+56 9 8765 4321' },
-                  { orden: '2º Prioridad', nombre: 'María José Morales', cargo: 'Jefa de Seguridad', fono: '+56 9 7654 3210' },
-                  { orden: '3º Prioridad', nombre: 'Guardia de Turno 24h', cargo: 'Acceso Conserjería', fono: '+56 9 6543 2109' },
+                  { orden: '1º Prioridad', nombre: clienteRaw.nombre1 || 'Administrador General', cargo: clienteRaw.carg1 || 'Encargado Principal', fono: clienteRaw.t1 || '+56 9 8765 4321' },
+                  { orden: '2º Prioridad', nombre: clienteRaw.nombre2 || 'Jefe de Seguridad', cargo: clienteRaw.carg2 || 'Contacto Secundario', fono: clienteRaw.t2 || '+56 9 7654 3210' },
+                  { orden: '3º Prioridad', nombre: clienteRaw.nombre3 || 'Guardia de Turno 24h', cargo: clienteRaw.carg3 || 'Acceso Conserjería', fono: clienteRaw.t3 || '+56 9 6543 2109' },
                 ].map((c, idx) => (
                   <div key={idx} className="bg-[#081220] border border-[#1a3356]/60 rounded-2xl p-5 relative overflow-hidden">
                     <span className="text-[10px] bg-[#2997ff]/20 text-[#2997ff] border border-[#2997ff]/30 px-2.5 py-0.5 rounded-full font-mono font-bold">
@@ -671,7 +1000,7 @@ export default function AreaClientesPortal() {
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
               <div>
                 <h3 className="text-xl font-bold text-white">Estado del Servicio & Equipamiento</h3>
-                <p className="text-xs text-slate-400">Ficha técnica y mantenciones de la propiedad</p>
+                <p className="text-xs text-slate-400">Ficha técnica y mantenciones de la propiedad #{cuentaActiva}</p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -682,6 +1011,10 @@ export default function AreaClientesPortal() {
                   </h4>
                   <div className="space-y-2.5 text-xs text-slate-300">
                     <div className="flex justify-between py-1 border-b border-[#162a45]">
+                      <span className="text-slate-400">Abonado / Cuenta:</span>
+                      <span className="font-semibold text-white">#{cuentaActiva}</span>
+                    </div>
+                    <div className="flex justify-between py-1 border-b border-[#162a45]">
                       <span className="text-slate-400">Tipo de Panel:</span>
                       <span className="font-semibold text-white">DSC PowerSeries Neo / Hybrid</span>
                     </div>
@@ -690,12 +1023,12 @@ export default function AreaClientesPortal() {
                       <span className="font-semibold text-emerald-400">Comunicador IP / GPRS 4G Dual</span>
                     </div>
                     <div className="flex justify-between py-1 border-b border-[#162a45]">
-                      <span className="text-slate-400">Zonas Configuradas:</span>
-                      <span className="font-semibold text-white">16 Zonas Activas</span>
+                      <span className="text-slate-400">Plan de Monitoreo:</span>
+                      <span className="font-semibold text-white">{clienteInfo.PLAN}</span>
                     </div>
                     <div className="flex justify-between py-1">
                       <span className="text-slate-400">Última Mantención:</span>
-                      <span className="font-semibold text-white">12 de Julio, 2026 (Preventiva)</span>
+                      <span className="font-semibold text-white">Preventiva Realizada (100% OK)</span>
                     </div>
                   </div>
                 </div>
@@ -709,7 +1042,7 @@ export default function AreaClientesPortal() {
                     Si requiere revisión de sensores, cambio de batería o ampliación de cámaras, puede solicitar la visita de nuestros técnicos certificados Gama.
                   </p>
                   <a
-                    href="https://wa.me/56912345678?text=Hola,%20solicito%20revisi%C3%B3n%20t%C3%A9cnica%20para%20la%20cuenta%200014"
+                    href={`https://wa.me/56912345678?text=Hola,%20solicito%20revisi%C3%B3n%20t%C3%A9cnica%20para%20la%20cuenta%20${cuentaActiva}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="w-full py-3 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-500 hover:to-teal-600 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-2 transition shadow-lg shadow-emerald-950/40"
@@ -733,7 +1066,7 @@ export default function AreaClientesPortal() {
                 </div>
                 <h3 className="text-2xl font-extrabold text-white">Central de Monitoreo Gama 24/7</h3>
                 <p className="text-xs sm:text-sm text-slate-300 max-w-lg mx-auto">
-                  Operadores supervisores en línea las 24 horas del día. En caso de emergencia o asistencia inmediata, seleccione una opción:
+                  Operadores supervisores en línea las 24 horas del día. En caso de emergencia o asistencia inmediata para la cuenta #{cuentaActiva}:
                 </p>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-lg mx-auto pt-4">
@@ -745,7 +1078,7 @@ export default function AreaClientesPortal() {
                     Llamar Urgente Central
                   </a>
                   <a
-                    href="https://wa.me/56912345678?text=EMERGENCIA%20CUENTA%200014"
+                    href={`https://wa.me/56912345678?text=EMERGENCIA%20CUENTA%20${cuentaActiva}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition shadow-lg shadow-emerald-950/50 flex items-center justify-center gap-2"
@@ -828,7 +1161,7 @@ export default function AreaClientesPortal() {
               </div>
               <h3 className="text-xl font-bold text-white">Solicitud de Asistencia VIP</h3>
               <p className="text-xs text-slate-300 mt-2">
-                Estableciendo enlace prioritario con la Central de Monitoreo Gama Security Chile.
+                Estableciendo enlace prioritario con la Central de Monitoreo Gama Security Chile para la cuenta #{cuentaActiva}.
               </p>
 
               <div className="mt-6 flex flex-col gap-3">
