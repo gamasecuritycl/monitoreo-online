@@ -1,10 +1,9 @@
 'use client'
 
-import { useEffect, useRef, useState, Fragment } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { EventoMonitoreo } from '@/lib/supabase'
 import { supabase, supabaseIA } from '@/lib/supabase'
 import VideoVerificacionModal from './VideoVerificacionModal'
-
 import { cleanRut } from '@/lib/rut'
 import { esAbonadoInactivo } from '@/lib/inactivos_filter'
 import { DIAS_SEMANA_DEFAULT, type DiaHorario, type ConfigHorarioAbonado } from './HorariosModal'
@@ -25,21 +24,77 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
   const modalRef = useRef<HTMLDivElement>(null)
   
   // Cuenta activa seleccionada
-  const [cuentaActiva, setCuentaActiva] = useState(evento.cuenta.toUpperCase().trim() || 'C745')
+  const [cuentaActiva, setCuentaActiva] = useState(evento.cuenta.toUpperCase().trim() || 'C701')
   const [buscarCuentaInput, setBuscarCuentaInput] = useState('')
   
   // Cache en memoria para todos los datos de clientes cargados
-  const [clientesMap, setClientesMap] = useState<Record<string, Record<string, string>>>(clientesGeneralFallback)
-  
+  const [clientesMap, setClientesMap] = useState<Record<string, Record<string, string>>>(() => {
+    try {
+      const local = localStorage.getItem('gama_clientes_cache')
+      if (local) {
+        const parsed = JSON.parse(local)
+        if (parsed && typeof parsed === 'object') {
+          return { ...clientesGeneralFallback, ...parsed }
+        }
+      }
+    } catch (e) {}
+    return clientesGeneralFallback
+  })
+
+  // Buffer de edición local para la cuenta activa
+  const [clienteForm, setClienteForm] = useState<Record<string, string>>({})
+  const [modoEdicion, setModoEdicion] = useState(false)
+  const [guardando, setGuardando] = useState(false)
+  const [statusMsg, setStatusMsg] = useState('')
+
   // Control de pestañas
   const [tabEmergentes, setTabEmergentes] = useState<'telefonos' | 'horarios' | 'camara' | 'servicio_tecnico'>(pestanaInicial || 'telefonos')
+  const [tabInfo, setTabInfo] = useState<'caracteristicas' | 'referencias' | 'observaciones'>('caracteristicas')
+  const [tabInstalacion, setTabInstalacion] = useState<'instalacion' | 'ucontrol' | 'tiempos' | 'teclados' | 'sirenas'>('instalacion')
+
   const [ordenesCuenta, setOrdenesCuenta] = useState<any[]>([])
-  
+
+  // Cargar clientes desde Supabase en segundo plano y sincronizar con caché
   useEffect(() => {
-    if (pestanaInicial) {
-      setTabEmergentes(pestanaInicial)
+    const fetchClientesSupabase = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('eventos_monitoreo')
+          .select('nombre_abonado')
+          .eq('cuenta', 'CLIENTES')
+          .order('id', { ascending: false })
+          .limit(1)
+
+        if (data && data.length > 0 && !error && data[0].nombre_abonado) {
+          try {
+            const remoteMap = JSON.parse(data[0].nombre_abonado)
+            if (remoteMap && typeof remoteMap === 'object') {
+              setClientesMap(prev => {
+                const combined = { ...prev, ...remoteMap }
+                try { localStorage.setItem('gama_clientes_cache', JSON.stringify(combined)) } catch (e) {}
+                return combined
+              })
+            }
+          } catch (errJson) {}
+        }
+      } catch (err) {
+        console.warn('[EXPEDIENTE] Error cargando CLIENTES desde Supabase:', err)
+      }
     }
-  }, [pestanaInicial])
+    fetchClientesSupabase()
+  }, [])
+
+  // Sincronizar el formulario al cambiar cuentaActiva o clientesMap
+  useEffect(() => {
+    const target = clientesMap[cuentaActiva] || clientesGeneralFallback[cuentaActiva] || {
+      cuenta: cuentaActiva,
+      nombre: evento.nombre_abonado || 'SIN NOMBRE REGISTRADO',
+      ciudad: 'LIMACHE',
+      direccion: 'DIRECCIÓN NO DISPONIBLE',
+      sector: ''
+    }
+    setClienteForm({ ...target, cuenta: cuentaActiva })
+  }, [cuentaActiva, clientesMap, evento.nombre_abonado])
 
   // Cargar historial de Órdenes de Trabajo para la cuenta activa
   useEffect(() => {
@@ -61,50 +116,7 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
     fetchOTs()
   }, [cuentaActiva])
 
-  const [tabInfo, setTabInfo] = useState<'caracteristicas' | 'referencias' | 'observaciones'>('caracteristicas')
-  const [tabInstalacion, setTabInstalacion] = useState<'instalacion' | 'ucontrol'>('instalacion')
-
-  // Video-Verificación por IA States
-  const [activeCamera, setActiveCamera] = useState<'CAM-01' | 'CAM-02' | 'CAM-03'>('CAM-01')
-
-  // Custom Cameras configuration states
-  const [todasLasCamaras, setTodasLasCamaras] = useState<Record<string, { cam01?: string; cam02?: string; cam03?: string }>>({})
-  const [editandoCamaras, setEditandoCamaras] = useState(false)
-  const [inputCam01, setInputCam01] = useState('')
-  const [inputCam02, setInputCam02] = useState('')
-  const [inputCam03, setInputCam03] = useState('')
-
-  // Dahua P2P Cameras CRUD State
-  const [dahuaCams, setDahuaCams] = useState<Array<{
-    id: string
-    nombre: string
-    serialNumber: string
-    usuario: string
-    password?: string
-    canal: number
-    substream: boolean
-  }>>([])
-  const [inputDahuaSN, setInputDahuaSN] = useState('')
-  const [inputDahuaUser, setInputDahuaUser] = useState('admin')
-  const [inputDahuaPass, setInputDahuaPass] = useState('')
-  const [inputDahuaCanal, setInputDahuaCanal] = useState('1')
-  const [inputDahuaNombre, setInputDahuaNombre] = useState('')
-  const [editingDahuaId, setEditingDahuaId] = useState<string | null>(null)
-  const [selectedDahuaCamId, setSelectedDahuaCamId] = useState<string>('')
-  const [testingDahuaCam, setTestingDahuaCam] = useState<any | null>(null)
-  const [emailsVideo, setEmailsVideo] = useState<string[]>([])
-  const [inputEmailVideo, setInputEmailVideo] = useState('')
-  const [whatsappsVideo, setWhatsappsVideo] = useState<{ telefono: string, nombre: string }[]>([])
-  const [inputWhatsappTel, setInputWhatsappTel] = useState('')
-  const [inputWhatsappNombre, setInputWhatsappNombre] = useState('')  // Estados para RUT y Alias de Unidad (Edición restringida a Administrador)
-  const [inputRut, setInputRut] = useState('')
-  const [inputAlias, setInputAlias] = useState('')
-  const [editandoRut, setEditandoRut] = useState(false)
-  const [mostrarModalExcel, setMostrarModalExcel] = useState(false)
-  const [excelTextRaw, setExcelTextRaw] = useState('')
-  const [cargandoExcel, setCargandoExcel] = useState(false)
-
-  // Estados para Horarios de Apertura y Cierre de Abonado
+  // Estados de Horarios
   const [horariosDias, setHorariosDias] = useState<DiaHorario[]>(DIAS_SEMANA_DEFAULT)
   const [horariosNoCierre, setHorariosNoCierre] = useState(true)
   const [horariosTelWA, setHorariosTelWA] = useState('')
@@ -112,7 +124,6 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
   const [guardandoHorarios, setGuardandoHorarios] = useState(false)
   const [horariosMsg, setHorariosMsg] = useState('')
 
-  // Cargar configuración de horarios al cambiar cuentaActiva
   useEffect(() => {
     if (!cuentaActiva) return
     const fetchH = async () => {
@@ -145,8 +156,7 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
             return
           }
         }
-        const cActual = clientesMap[cuentaActiva] || clientesGeneralFallback[cuentaActiva]
-        const t = cActual?.telefono1 || cActual?.t1 || ''
+        const t = clienteForm?.telefono1 || clienteForm?.t1 || ''
         setHorariosDias(DIAS_SEMANA_DEFAULT)
         setHorariosNoCierre(true)
         setHorariosTelWA(t.replace(/[^0-9+]/g, ''))
@@ -154,16 +164,15 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
       } catch (e) {}
     }
     fetchH()
-  }, [cuentaActiva, clientesMap])
+  }, [cuentaActiva, clienteForm?.telefono1, clienteForm?.t1])
 
   const guardarHorariosExpediente = async () => {
     setGuardandoHorarios(true)
     setHorariosMsg('Guardando horarios...')
     try {
-      const cActual = clientesMap[cuentaActiva] || clientesGeneralFallback[cuentaActiva]
       const payload: ConfigHorarioAbonado = {
         cuenta: cuentaActiva,
-        nombre: cActual?.nombre || 'ABONADO',
+        nombre: clienteForm.nombre || 'ABONADO',
         dias: horariosDias,
         notificarNoCierre: horariosNoCierre,
         telefonoWhatsApp: horariosTelWA.trim(),
@@ -178,8 +187,8 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
         fecha_hora: new Date().toISOString()
       })
       if (error) throw error
-      setHorariosMsg('✅ Horarios guardados exitosamente')
-      setTimeout(() => setHorariosMsg(''), 3500)
+      setHorariosMsg('✅ Horarios guardados con éxito')
+      setTimeout(() => setHorariosMsg(''), 3000)
     } catch (e: any) {
       setHorariosMsg('❌ Error al guardar: ' + e.message)
     } finally {
@@ -187,627 +196,51 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
     }
   }
 
-  // Estados para Editor Remoto de Contactos (Scorpion GENERAL.MDB)
-  const [editandoContactos, setEditandoContactos] = useState(false)
-  const [contactosForm, setContactosForm] = useState<Array<{ num: number; nombre: string; direccion: string; cargo: string; telefono: string }>>([])
-  const [guardandoRemoto, setGuardandoRemoto] = useState(false)
-  const [syncFeedback, setSyncFeedback] = useState<{ tipo: 'idle' | 'enviando' | 'ok' | 'error'; msg: string }>({ tipo: 'idle', msg: '' })
+  // Cámaras Dahua e IA
+  const [testingDahuaCam, setTestingDahuaCam] = useState<any | null>(null)
 
-  const abrirEditorContactos = () => {
-    const c = clientesMap[cuentaActiva] || clientesGeneralFallback[cuentaActiva] || {}
-    const list = []
-    for (let i = 1; i <= 7; i++) {
-      list.push({
-        num: i,
-        nombre: c[`nombre${i}`] || '',
-        direccion: c[`direccion${i}`] || '',
-        cargo: c[`carg${i}`] || '',
-        telefono: c[`t${i}`] || ''
-      })
-    }
-    setContactosForm(list)
-    setEditandoContactos(true)
-    setSyncFeedback({ tipo: 'idle', msg: '' })
-  }
-
-  const guardarContactosRemoto = async () => {
-    setGuardandoRemoto(true)
-    setSyncFeedback({ tipo: 'enviando', msg: 'Enviando orden a PC Scorpion...' })
-
+  // Guardar Cambios Generales / Editor Remoto
+  const guardarCambiosGenerales = async () => {
+    setGuardando(true)
+    setStatusMsg('⏳ Guardando y sincronizando con Scorpion...')
     try {
-      const c = clientesMap[cuentaActiva] || clientesGeneralFallback[cuentaActiva] || {}
-      const datosNuevos: Record<string, string> = {}
-      const datosAnteriores: Record<string, string> = {}
+      const cuentaClean = cuentaActiva.toUpperCase().trim()
+      const datosNuevos = { ...clienteForm, cuenta: cuentaClean }
 
-      contactosForm.forEach(item => {
-        const i = item.num
-        datosNuevos[`nombre${i}`] = item.nombre.trim()
-        datosNuevos[`direccion${i}`] = item.direccion.trim()
-        datosNuevos[`carg${i}`] = item.cargo.trim()
-        datosNuevos[`t${i}`] = item.telefono.trim()
+      // 1. Actualización local inmediata
+      const newMap = { ...clientesMap, [cuentaClean]: datosNuevos }
+      setClientesMap(newMap)
+      try { localStorage.setItem('gama_clientes_cache', JSON.stringify(newMap)) } catch (e) {}
 
-        datosAnteriores[`nombre${i}`] = c[`nombre${i}`] || ''
-        datosAnteriores[`direccion${i}`] = c[`direccion${i}`] || ''
-        datosAnteriores[`carg${i}`] = c[`carg${i}`] || ''
-        datosAnteriores[`t${i}`] = c[`t${i}`] || ''
-      })
-
-      // Llamada a la API de Editor Remoto
+      // 2. Envío a API Editor Remoto para cola transaccional y persistencia Supabase
       const res = await fetch('/api/editor-remoto', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          cuenta: cuentaActiva,
-          tipoOperacion: 'EDITAR_CONTACTOS',
+          cuenta: cuentaClean,
+          tipoOperacion: 'EDITAR_GENERAL',
           datosNuevos,
-          datosAnteriores,
           operador: { nombre: 'OPERADOR CENTRAL', rol: usuarioRol }
         })
       })
 
       const json = await res.json()
-
       if (!res.ok || !json.success) {
         throw new Error(json.error || 'Error al guardar en el servidor')
       }
 
-      // Actualizar cliente local en memoria
-      setClientesMap(prev => ({
-        ...prev,
-        [cuentaActiva]: {
-          ...(prev[cuentaActiva] || {}),
-          ...datosNuevos
-        }
-      }))
-
-      setSyncFeedback({ tipo: 'ok', msg: '✅ Sincronizado en PC Scorpion (GENERAL.MDB)' })
-      setTimeout(() => {
-        setEditandoContactos(false)
-        setSyncFeedback({ tipo: 'idle', msg: '' })
-      }, 1500)
-
+      setModoEdicion(false)
+      setStatusMsg('✅ GUARDADO Y SINCRONIZADO EN SCORPION')
+      setTimeout(() => setStatusMsg(''), 3500)
     } catch (err: any) {
-      console.error('Error guardando contactos remoto:', err)
-      setSyncFeedback({ tipo: 'error', msg: `❌ Error: ${err.message}` })
+      console.error('Error guardando cambios:', err)
+      setStatusMsg(`❌ Error: ${err.message}`)
     } finally {
-      setGuardandoRemoto(false)
+      setGuardando(false)
     }
   }
 
-  const aplicarPlantillaExpediente = (tipo: 'comercio' | 'retail' | 'industrial' | '24_7') => {
-    if (tipo === 'comercio') {
-      setHorariosDias([
-        { dia: 'lunes', label: 'Lunes', habilitado: true, apertura: '08:30', cierre: '19:00', toleranciaMin: 30 },
-        { dia: 'martes', label: 'Martes', habilitado: true, apertura: '08:30', cierre: '19:00', toleranciaMin: 30 },
-        { dia: 'miercoles', label: 'Miércoles', habilitado: true, apertura: '08:30', cierre: '19:00', toleranciaMin: 30 },
-        { dia: 'jueves', label: 'Jueves', habilitado: true, apertura: '08:30', cierre: '19:00', toleranciaMin: 30 },
-        { dia: 'viernes', label: 'Viernes', habilitado: true, apertura: '08:30', cierre: '19:00', toleranciaMin: 30 },
-        { dia: 'sabado', label: 'Sábado', habilitado: true, apertura: '09:00', cierre: '14:00', toleranciaMin: 30 },
-        { dia: 'domingo', label: 'Domingo', habilitado: false, apertura: '00:00', cierre: '00:00', toleranciaMin: 0 },
-        { dia: 'festivos', label: 'Festivos', habilitado: false, apertura: '00:00', cierre: '00:00', toleranciaMin: 0 }
-      ])
-    } else if (tipo === 'retail') {
-      setHorariosDias([
-        { dia: 'lunes', label: 'Lunes', habilitado: true, apertura: '10:00', cierre: '21:00', toleranciaMin: 30 },
-        { dia: 'martes', label: 'Martes', habilitado: true, apertura: '10:00', cierre: '21:00', toleranciaMin: 30 },
-        { dia: 'miercoles', label: 'Miércoles', habilitado: true, apertura: '10:00', cierre: '21:00', toleranciaMin: 30 },
-        { dia: 'jueves', label: 'Jueves', habilitado: true, apertura: '10:00', cierre: '21:00', toleranciaMin: 30 },
-        { dia: 'viernes', label: 'Viernes', habilitado: true, apertura: '10:00', cierre: '21:30', toleranciaMin: 30 },
-        { dia: 'sabado', label: 'Sábado', habilitado: true, apertura: '10:00', cierre: '21:30', toleranciaMin: 30 },
-        { dia: 'domingo', label: 'Domingo', habilitado: true, apertura: '11:00', cierre: '20:00', toleranciaMin: 30 },
-        { dia: 'festivos', label: 'Festivos', habilitado: true, apertura: '11:00', cierre: '20:00', toleranciaMin: 30 }
-      ])
-    } else if (tipo === 'industrial') {
-      setHorariosDias([
-        { dia: 'lunes', label: 'Lunes', habilitado: true, apertura: '07:30', cierre: '20:00', toleranciaMin: 45 },
-        { dia: 'martes', label: 'Martes', habilitado: true, apertura: '07:30', cierre: '20:00', toleranciaMin: 45 },
-        { dia: 'miercoles', label: 'Miércoles', habilitado: true, apertura: '07:30', cierre: '20:00', toleranciaMin: 45 },
-        { dia: 'jueves', label: 'Jueves', habilitado: true, apertura: '07:30', cierre: '20:00', toleranciaMin: 45 },
-        { dia: 'viernes', label: 'Viernes', habilitado: true, apertura: '07:30', cierre: '20:00', toleranciaMin: 45 },
-        { dia: 'sabado', label: 'Sábado', habilitado: true, apertura: '08:00', cierre: '13:00', toleranciaMin: 30 },
-        { dia: 'domingo', label: 'Domingo', habilitado: false, apertura: '00:00', cierre: '00:00', toleranciaMin: 0 },
-        { dia: 'festivos', label: 'Festivos', habilitado: false, apertura: '00:00', cierre: '00:00', toleranciaMin: 0 }
-      ])
-    } else if (tipo === '24_7') {
-      setHorariosDias(DIAS_SEMANA_DEFAULT.map(d => ({
-        ...d,
-        habilitado: true,
-        apertura: '00:00',
-        cierre: '23:59',
-        toleranciaMin: 0
-      })))
-    }
-  }
-
-  // Estados de integración con BD IABD IA
-  const [camarasIA, setCamarasIA] = useState<Array<{ id: string; nombre: string; rtsp_url?: string; activa: boolean }>>([])
-  const [clipsIA, setClipsIA] = useState<Array<{ id: string; camara_id: string; clip_path: string; fecha_hora: string; motivo?: string }>>([])
-  const [clipSeleccionado, setClipSeleccionado] = useState<string | null>(null)
-  const [cargandoIA, setCargandoIA] = useState(false)
-  const [selectedCamaraIAId, setSelectedCamaraIAId] = useState<string>('')
-
-  // Load custom cameras config from Supabase
-  useEffect(() => {
-    const fetchCamaras = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('eventos_monitoreo')
-          .select('nombre_abonado')
-          .eq('cuenta', 'CAMARAS')
-          .order('id', { ascending: false })
-          .limit(1)
-        if (data && data.length > 0 && !error) {
-          const parsed = JSON.parse(data[0].nombre_abonado || '{}')
-          setTodasLasCamaras(parsed)
-        }
-      } catch (err) {
-        console.warn('Error loading custom cameras list:', err)
-      }
-    }
-    fetchCamaras()
-  }, [])
-
-  const camarasActivas = todasLasCamaras[cuentaActiva] || { cam01: '', cam02: '', cam03: '' }
-
-  useEffect(() => {
-    setInputCam01(camarasActivas.cam01 || '')
-    setInputCam02(camarasActivas.cam02 || '')
-    setInputCam03(camarasActivas.cam03 || '')
-  }, [cuentaActiva, todasLasCamaras])
-
-  // Cargar lista actualizada de abonados desde la fila especial CLIENTES en eventos_monitoreo
-  useEffect(() => {
-    const fetchClientes = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('eventos_monitoreo')
-          .select('*')
-          .eq('cuenta', 'CLIENTES')
-          .limit(1)
-        
-        if (data && data.length > 0 && !error) {
-          const rawJson = data[0].nombre_abonado
-          if (rawJson) {
-            const map = JSON.parse(rawJson)
-            setClientesMap(map)
-            console.log(`[SUPABASE REST] ${Object.keys(map).length} expedientes de clientes sincronizados exitosamente en tiempo real.`)
-          }
-        } else if (error) {
-          console.warn('[SUPABASE REST] Fallo al consultar eventos_monitoreo:', error)
-        }
-      } catch (err) {
-        console.warn('[SUPABASE REST] Error de red, usando base de datos local.')
-      }
-    }
-    fetchClientes()
-  }, [])
-
-  useEffect(() => {
-    const handleEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
-    window.addEventListener('keydown', handleEsc)
-    return () => window.removeEventListener('keydown', handleEsc)
-  }, [onClose])
-
-  // Cargar cámaras e IA desde la BD de Analítica cuando cambia la cuenta
-  useEffect(() => {
-    const fetchCamarasIA = async () => {
-      if (!cuentaActiva) return
-      setCargandoIA(true)
-      setCamarasIA([])
-      setClipsIA([])
-      setClipSeleccionado(null)
-      setSelectedCamaraIAId('')
-      try {
-        // 1. Buscar cliente en BD IA cuyo campo 'empresa' coincide con el código de cuenta
-        const { data: clientes } = await supabaseIA
-          .from('clientes')
-          .select('id, nombre')
-          .eq('empresa', cuentaActiva)
-          .limit(5)
-
-        if (!clientes || clientes.length === 0) {
-          setCargandoIA(false)
-          return
-        }
-
-        const clienteIds = clientes.map((c: any) => c.id)
-
-        // 2. Obtener cámaras activas de esos clientes
-        const { data: cams } = await supabaseIA
-          .from('camaras')
-          .select('id, nombre, rtsp_url, activa')
-          .in('cliente_id', clienteIds)
-          .eq('activa', true)
-
-        const camarasList = cams || []
-        setCamarasIA(camarasList)
-        if (camarasList.length > 0) setSelectedCamaraIAId(camarasList[0].id)
-
-        // 3. Obtener alertas con clips de esas cámaras
-        if (camarasList.length > 0) {
-          const camIds = camarasList.map((c: any) => c.id)
-          const { data: alertas } = await supabaseIA
-            .from('alertas')
-            .select('id, camara_id, clip_path, fecha_hora, motivo')
-            .in('camara_id', camIds)
-            .not('clip_path', 'is', null)
-            .order('fecha_hora', { ascending: false })
-            .limit(20)
-          setClipsIA(alertas || [])
-        }
-      } catch (err) {
-        console.warn('[IA DB] Error al cargar cámaras de analítica:', err)
-      } finally {
-        setCargandoIA(false)
-      }
-    }
-    fetchCamarasIA()
-  }, [cuentaActiva])
-
-
-
-  // Cargar cámaras Dahua P2P asociadas al abonado activo
-  useEffect(() => {
-    const fetchDahuaCams = async () => {
-      try {
-        const localSaved = localStorage.getItem(`gama_dahua_sn_${cuentaActiva}`)
-        if (localSaved) {
-          try {
-            const parsed = JSON.parse(localSaved)
-            if (Array.isArray(parsed) && parsed.length > 0) {
-              setDahuaCams(parsed)
-              setSelectedDahuaCamId(parsed[0].id)
-              return
-            }
-          } catch (e) {}
-        }
-
-        const { data } = await supabase
-          .from('eventos_monitoreo')
-          .select('nombre_abonado')
-          .eq('cuenta', `CAMARAS_DAHUA_${cuentaActiva}`)
-          .order('id', { ascending: false })
-          .limit(1)
-
-        if (data && data.length > 0 && data[0].nombre_abonado) {
-          let parsed = JSON.parse(data[0].nombre_abonado)
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            if (cuentaActiva === 'C701' || parsed.some((c: any) => c.serialNumber?.includes('AE0970'))) {
-              parsed = parsed.map((c: any) => ({
-                ...c,
-                serialNumber: c.serialNumber === 'AE09700PAG00815' ? 'AE0970BPAG00815' : (c.serialNumber || 'AE0970BPAG00815'),
-                password: (cuentaActiva === 'C701' && (c.password === '123456789' || !c.password)) ? 'L2D55413' : c.password
-              }))
-            }
-            setDahuaCams(parsed)
-            setSelectedDahuaCamId(parsed[0].id)
-            localStorage.setItem(`gama_dahua_sn_${cuentaActiva}`, JSON.stringify(parsed))
-            return
-          }
-        }
-
-        // Por defecto para abonados nuevos o sin cámaras registradas: Lista vacía (salvo C701)
-        if (cuentaActiva === 'C701') {
-          const preloaded = [{
-            id: 'DH-C701-1',
-            nombre: 'CÁMARA ACCESO PRINCIPAL P2P',
-            serialNumber: 'AE0970BPAG00815',
-            usuario: 'admin',
-            password: 'L2D55413',
-            canal: 1,
-            substream: true,
-            activa: true
-          }]
-          setDahuaCams(preloaded)
-          setSelectedDahuaCamId('DH-C701-1')
-          localStorage.setItem(`gama_dahua_sn_${cuentaActiva}`, JSON.stringify(preloaded))
-        } else {
-          setDahuaCams([])
-          setSelectedDahuaCamId('')
-        }
-      } catch (err) {
-        console.warn('Error cargando cámaras Dahua:', err)
-        setDahuaCams([])
-        setSelectedDahuaCamId('')
-      }
-    }
-    fetchDahuaCams()
-    ;(async () => {
-      try {
-        const { data } = await supabase
-          .from('notificaciones_mail')
-          .select('emails')
-          .eq('cuenta', cuentaActiva)
-          .single()
-        if (data?.emails) setEmailsVideo(data.emails)
-      } catch {}
-      try {
-        const { data: waData } = await supabase
-          .from('notificaciones_whatsapp')
-          .select('contactos_escalamiento')
-          .eq('cuenta', cuentaActiva)
-          .single()
-        const contactos = (waData?.contactos_escalamiento as any[]) || []
-        const snapshotContacts = contactos.filter((c: any) => c.parentesco === 'SNAPSHOT')
-        if (snapshotContacts.length > 0) setWhatsappsVideo(snapshotContacts.map((c: any) => ({ telefono: c.telefono, nombre: c.nombre || '' })))
-      } catch {}
-    })()
-  }, [cuentaActiva])
-
-  const guardarCamaraDahuaP2P = async () => {
-    if (!inputDahuaSN.trim()) {
-      alert('Por favor ingresa un Número de Serie (SN) Dahua válido.')
-      return
-    }
-
-    let listActualizada = [...dahuaCams]
-    if (editingDahuaId) {
-      listActualizada = listActualizada.map(c => c.id === editingDahuaId ? {
-        ...c,
-        nombre: inputDahuaNombre.trim().toUpperCase(),
-        serialNumber: inputDahuaSN.trim().toUpperCase(),
-        usuario: inputDahuaUser.trim() || 'admin',
-        password: inputDahuaPass.trim(),
-        canal: Number(inputDahuaCanal) || 1
-      } : c)
-    } else {
-      const nueva: any = {
-        id: `DH-${Date.now()}`,
-        nombre: inputDahuaNombre.trim().toUpperCase() || 'CÁMARA P2P',
-        serialNumber: inputDahuaSN.trim().toUpperCase(),
-        usuario: inputDahuaUser.trim() || 'admin',
-        password: inputDahuaPass.trim(),
-        canal: Number(inputDahuaCanal) || 1,
-        substream: true,
-        activa: true
-      }
-      listActualizada.push(nueva)
-    }
-
-    setDahuaCams(listActualizada)
-    localStorage.setItem(`gama_dahua_sn_${cuentaActiva}`, JSON.stringify(listActualizada))
-
-    try {
-      await supabase.from('eventos_monitoreo').upsert({
-        cuenta: `CAMARAS_DAHUA_${cuentaActiva}`,
-        nombre_abonado: JSON.stringify(listActualizada),
-        evento: 'CONFIGURACION_DAHUA_CRUD',
-        fecha_hora: new Date().toISOString()
-      })
-      await supabase.from('notificaciones_mail').upsert(
-        { cuenta: cuentaActiva, emails: emailsVideo },
-        { onConflict: 'cuenta' }
-      )
-      await supabase.from('notificaciones_whatsapp').upsert(
-        { cuenta: cuentaActiva, telefono: whatsappsVideo[0]?.telefono || '0000000000', contactos_escalamiento: whatsappsVideo.map(w => ({ nombre: w.nombre || 'SNAPSHOT', telefono: w.telefono, parentesco: 'SNAPSHOT' })), activo: true },
-        { onConflict: 'cuenta' }
-      )
-      alert(`✅ Configuración P2P Dahua guardada para la cuenta ${cuentaActiva}.`)
-      setEditingDahuaId(null)
-    } catch (err: any) {
-      alert('Error guardando en BD: ' + err.message)
-    }
-  }
-
-  const generarNVRMulticanalDahuaP2P = async (cantCanales: number = 10) => {
-    const snPrompt = prompt('Ingrese el Número de Serie (SN) del NVR / DVR / XVR Dahua:', inputDahuaSN.trim() || '2B02339PAYPW68F')
-    if (!snPrompt) return
-    const userPrompt = prompt('Usuario del NVR / DVR:', inputDahuaUser.trim() || 'admin') || 'admin'
-    const passPrompt = prompt('Contraseña del NVR / DVR:', inputDahuaPass.trim() || 'L2D55413') || ''
-
-    const canalesNuevos: any[] = []
-    for (let ch = 1; ch <= cantCanales; ch++) {
-      canalesNuevos.push({
-        id: `DH-NVR-${snPrompt.trim()}-CH${ch}`,
-        nombre: `CÁMARA ${ch} (CH-${ch})`,
-        serialNumber: snPrompt.trim().toUpperCase(),
-        usuario: userPrompt.trim(),
-        password: passPrompt.trim(),
-        canal: ch,
-        substream: true,
-        activa: true
-      })
-    }
-
-    setDahuaCams(canalesNuevos)
-    localStorage.setItem(`gama_dahua_sn_${cuentaActiva}`, JSON.stringify(canalesNuevos))
-
-    try {
-      await supabase.from('eventos_monitoreo').upsert({
-        cuenta: `CAMARAS_DAHUA_${cuentaActiva}`,
-        nombre_abonado: JSON.stringify(canalesNuevos),
-        evento: 'GENERACION_NVR_MULTICANAL',
-        fecha_hora: new Date().toISOString()
-      })
-      alert(`✅ NVR/DVR multicanal con ${cantCanales} canales cargado exitosamente para la cuenta ${cuentaActiva}.`)
-    } catch (err: any) {
-      alert('Error guardando NVR en BD: ' + err.message)
-    }
-  }
-
-  const eliminarCamaraDahuaP2P = async (id: string) => {
-    if (!confirm('¿Seguro que deseas eliminar esta cámara Dahua P2P?')) return
-    const filtrada = dahuaCams.filter(c => c.id !== id)
-    setDahuaCams(filtrada)
-    localStorage.setItem(`gama_dahua_sn_${cuentaActiva}`, JSON.stringify(filtrada))
-    await supabase.from('eventos_monitoreo').upsert({
-      cuenta: `CAMARAS_DAHUA_${cuentaActiva}`,
-      nombre_abonado: JSON.stringify(filtrada),
-      evento: 'ELIMINACION_DAHUA_CRUD',
-      fecha_hora: new Date().toISOString()
-    })
-  }
-
-  // Sincronizar inputs de RUT y Alias al cambiar de cuenta
-  useEffect(() => {
-    const r = clientesMap[cuentaActiva]?.rut || clientesGeneralFallback[cuentaActiva]?.rut || ''
-    const a = clientesMap[cuentaActiva]?.alias_unidad || clientesGeneralFallback[cuentaActiva]?.alias_unidad || ''
-    setInputRut(cleanRut(r))
-    setInputAlias(a)
-    setEditandoRut(false)
-  }, [cuentaActiva, clientesMap])
-
-  // Guardar RUT y Alias de Unidad individual (Restringido a Administrador)
-  const guardarRutYAlias = async () => {
-    if (usuarioRol !== 'Administrador') {
-      alert('🔒 Acción denegada: Solo usuarios con rol Administrador pueden modificar RUTs y Alias de Propiedad.')
-      return
-    }
-
-    const rutFormateado = cleanRut(inputRut)
-    const aliasFormateado = inputAlias.trim().toUpperCase()
-
-    const updatedCliente = {
-      ...(clientesMap[cuentaActiva] || {}),
-      cuenta: cuentaActiva,
-      rut: rutFormateado,
-      alias_unidad: aliasFormateado
-    }
-
-    const updatedMap = {
-      ...clientesMap,
-      [cuentaActiva]: updatedCliente
-    }
-
-    try {
-      const { error } = await supabase
-        .from('eventos_monitoreo')
-        .upsert({
-          cuenta: 'CLIENTES',
-          nombre_abonado: JSON.stringify(updatedMap),
-          evento: 'CONFIGURACION_RUT',
-          fecha_hora: new Date().toISOString()
-        })
-
-      if (!error) {
-        setClientesMap(updatedMap)
-        setEditandoRut(false)
-        alert(`✅ RUT [${rutFormateado}] y Alias [${aliasFormateado || 'SIN ALIAS'}] guardados exitosamente para la cuenta ${cuentaActiva}.`)
-      } else {
-        throw error
-      }
-    } catch (err: any) {
-      alert('❌ Error al guardar datos de RUT: ' + err.message)
-    }
-  }
-
-  // Descargar plantilla Excel/CSV oficial de ejemplo
-  const descargarPlantillaExcel = () => {
-    const contenidoCsv = "N_ABONADO;NOMBRE;RUT;SUCURSAL\nC774;MARIA CECILIA ACUÑA;12123123-6;CASA SANTO DOMINGO\nC775;COMERCIAL GAMA LTDA;76123456-K;LOCAL CENTRO\nC810;JUAN PEREZ;15987654-3;CASA MARBELLA"
-    const blob = new Blob(["\uFEFF" + contenidoCsv], { type: 'text/csv;charset=utf-8;' })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.setAttribute('href', url)
-    link.setAttribute('download', 'Plantilla_Maestro_RUT_GamaSeguridad.csv')
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-  }
-
-  // Carga Masiva desde Excel Maestro (.xlsx / .csv / TSV)
-  const procesarCargaMasivaExcel = async () => {
-    if (usuarioRol !== 'Administrador') {
-      alert('🔒 Acceso denegado: Solo administradores pueden cargar archivos de Excel Maestro.')
-      return
-    }
-
-    if (!excelTextRaw.trim()) {
-      alert('Por favor pega el contenido del archivo Excel Maestro (o selecciona/arrastra el texto).')
-      return
-    }
-
-    setCargandoExcel(true)
-    try {
-      const lineas = excelTextRaw.split(/\r?\n/).filter(l => l.trim().length > 0)
-      let actualizados = 0
-      const nuevoMap = { ...clientesMap }
-
-      for (const linea of lineas) {
-        // Separa por tabuladores (copiado desde Excel) o comas / punto y coma / pipe
-        const cols = linea.split(/\t|;|\|/).map(c => c.trim().replace(/^["']|["']$/g, ''))
-        if (cols.length < 2) continue
-
-        // Saltar línea de encabezados si contiene "abonado", "cuenta", "nombre", "rut"
-        const col0Lower = cols[0].toLowerCase()
-        if (col0Lower.includes('abonado') || col0Lower.includes('cuenta') || col0Lower.includes('nombre') || col0Lower === 'n°') continue
-
-        // ORDEN ESTRICTO SOLICITADO: Col 0: N° Abonado | Col 1: Nombre | Col 2: RUT | Col 3: Sucursal / Alias
-        let cuentaStr = cols[0] ? cols[0].toUpperCase().trim() : ''
-        let nombreStr = cols[1] || ''
-        let rutStr = cols[2] || ''
-        let sucursalStr = cols[3] || ''
-
-        // Detección de seguridad si invirtió RUT y Nombre (Col 1 vs Col 2)
-        if (cleanRut(cols[1]).includes('-') && !cleanRut(cols[2]).includes('-')) {
-          rutStr = cols[1]
-          nombreStr = cols[2]
-        }
-
-        if (!cuentaStr) continue
-        if (!cuentaStr.startsWith('C') && /^\d+$/.test(cuentaStr)) {
-          cuentaStr = `C${cuentaStr}`
-        }
-
-        const rutFormateado = cleanRut(rutStr)
-
-        nuevoMap[cuentaStr] = {
-          ...(nuevoMap[cuentaStr] || {}),
-          cuenta: cuentaStr,
-          nombre: nombreStr || nuevoMap[cuentaStr]?.nombre || '',
-          rut: rutFormateado || nuevoMap[cuentaStr]?.rut || '',
-          alias_unidad: sucursalStr.toUpperCase() || nuevoMap[cuentaStr]?.alias_unidad || ''
-        }
-        actualizados++
-      }
-
-      if (actualizados === 0) {
-        alert('No se detectaron filas válidas con formato N° ABONADO, NOMBRE, RUT y SUCURSAL.')
-        return
-      }
-
-      // Guardar en Supabase fila especial CLIENTES
-      const { error } = await supabase
-        .from('eventos_monitoreo')
-        .upsert({
-          cuenta: 'CLIENTES',
-          nombre_abonado: JSON.stringify(nuevoMap),
-          evento: 'CARGA_MASIVA_EXCEL',
-          fecha_hora: new Date().toISOString()
-        })
-
-      if (!error) {
-        setClientesMap(nuevoMap)
-        setMostrarModalExcel(false)
-        setExcelTextRaw('')
-        alert(`🎉 ¡Éxito! Se actualizaron ${actualizados} abonados desde el Excel Maestro en la base de datos.`)
-      } else {
-        throw error
-      }
-    } catch (err: any) {
-      alert('❌ Error al procesar Excel Maestro: ' + err.message)
-    } finally {
-      setCargandoExcel(false)
-    }
-  }
-
-  // Buscar el registro completo del cliente en el mapa
-  const cliente = clientesMap[cuentaActiva] || clientesGeneralFallback[cuentaActiva] || {
-    cuenta: cuentaActiva,
-    nombre: evento.nombre_abonado || 'SIN NOMBRE REGISTRADO',
-    ciudad: 'SANTIAGO',
-    direccion: 'DIRECCIÓN NO DISPONIBLE',
-    sector: 'NO DISPONIBLE'
-  }
-
-  // Calcular otras unidades vinculadas al mismo RUT
-  const otrasUnidadesRut = Object.values(clientesMap).filter(c => {
-    const rActual = cleanRut(cliente.rut || '')
-    const rComparar = cleanRut(c.rut || '')
-    const cCode = (c.cuenta || '').toUpperCase().trim()
-    return rActual && rComparar === rActual && cCode !== cuentaActiva
-  })
-
-  // Lista de todos los clientes activos para el buscador inferior (excluyendo inactivos)
+  // Lista de todos los abonados para el buscador inferior
   const listaAbonados = Object.values(clientesMap)
     .filter(c => !esAbonadoInactivo(c.cuenta || '', c.nombre || ''))
     .map(c => ({
@@ -815,7 +248,6 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
       nombre: (c.nombre || '').toUpperCase().trim()
     })).sort((a, b) => a.cuenta.localeCompare(b.cuenta))
 
-  // Filtrar lista de abonados según el input de búsqueda
   const listaFiltrada = buscarCuentaInput.trim()
     ? listaAbonados.filter(a => 
         a.cuenta.toLowerCase().includes(buscarCuentaInput.toLowerCase()) ||
@@ -823,216 +255,145 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
       )
     : listaAbonados
 
-  // Extraer teléfonos de emergencia indexados (nombre1, direccion1, t1...)
-  const telefonosEmergencia = []
-  for (let i = 1; i <= 7; i++) {
-    const nom = cliente[`nombre${i}`] || ''
-    const dir = cliente[`direccion${i}`] || ''
-    const carg = cliente[`carg${i}`] || ''
-    const tel = cliente[`t${i}`] || ''
-    if (nom || tel) {
-      telefonosEmergencia.push({
-        num: i,
-        nombre: nom,
-        direccion: dir,
-        cargo: carg,
-        telefono: tel
-      })
-    }
+  const updateField = (key: string, val: string) => {
+    setClienteForm(prev => ({ ...prev, [key]: val }))
   }
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 font-mono p-2 overflow-y-auto"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 font-sans p-2 overflow-y-auto"
       onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
     >
-      {/* 
-        VENTANA RETRO PIXEL-PERFECT COMPACTA
-        PC: Ancho 950px, Alto 510px fijos.
-        Móvil: Ancho completo fluido, scrollbar vertical de formulario para autoajuste completo.
-      */}
+      {/* VENTANA SCORPION RETRO EXACTA */}
       <div
         ref={modalRef}
         tabIndex={-1}
-        className="w-[98vw] max-w-[1850px] h-[96vh] bg-[#d4d0c8] text-black border-2 border-t-white border-l-white border-b-[#808080] border-r-[#808080] p-2 shadow-[4px_4px_24px_rgba(0,0,0,0.85)] focus:outline-none flex flex-col justify-between select-none"
+        className="w-[96vw] max-w-[1020px] bg-[#d4d0c8] text-black border-2 border-t-white border-l-white border-b-[#808080] border-r-[#808080] p-1.5 shadow-[4px_4px_24px_rgba(0,0,0,0.85)] focus:outline-none flex flex-col justify-between select-none"
         style={{ fontSize: '11px' }}
       >
         {/* Barra de Título */}
-        <div className="bg-[#000080] text-white font-bold px-2 py-1 flex justify-between items-center select-none shrink-0 h-6">
+        <div className="bg-[#000080] text-white font-bold px-2 py-0.5 flex justify-between items-center select-none shrink-0 h-6">
           <div className="flex items-center gap-1.5">
             <span className="text-xs">📖</span>
-            <span className="text-[11px] tracking-wide">Scorpion - Expediente de Usuario</span>
-            <button
-              type="button"
-              onClick={() => {
-                try {
-                  localStorage.setItem('gama_portal_cuenta', cuentaActiva)
-                } catch {}
-                window.open('/portal', '_blank')
-              }}
-              title="Abrir Vista Móvil PWA del Cliente para esta cuenta"
-              className="ml-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-sans text-[9px] font-bold px-2 py-0.5 rounded shadow cursor-pointer flex items-center gap-1"
-            >
-              📱 Abrir Portal PWA Cliente
-            </button>
+            <span className="text-[11px] tracking-wide font-sans">Scorpion - Expediente de Usuario</span>
           </div>
           <button 
             onClick={onClose} 
-            className="w-4 h-4 bg-[#d4d0c8] border border-t-white border-l-white border-b-black border-r-black text-black font-bold flex items-center justify-center active:border-t-black active:border-l-black active:border-b-white active:border-r-white text-[9px] pb-0.5 cursor-pointer"
+            className="w-4 h-4 bg-[#d4d0c8] border border-t-white border-l-white border-b-black border-r-black text-black font-bold flex items-center justify-center active:border-t-black active:border-l-black active:border-b-white active:border-r-white text-[10px] pb-0.5 cursor-pointer leading-none"
           >
-            r
+            ✕
           </button>
         </div>
 
-        {/* CONTENEDOR PRINCIPAL INTERNO */}
-        <div className="flex-1 p-1 flex flex-col gap-2 overflow-y-auto md:overflow-hidden">
+        {/* CONTENIDO PRINCIPAL */}
+        <div className="p-1 flex flex-col gap-2 overflow-y-auto">
           
-          {/* FILA 1: INFORMACIÓN BÁSICA + FOTOGRAFÍA */}
-          <div className="h-auto md:h-[195px] flex flex-col md:flex-row gap-2 shrink-0">
+          {/* FILA 1: INFORMACION BASICA + FOTOGRAFIA */}
+          <div className="flex flex-col md:flex-row gap-2 shrink-0">
             
-            {/* Caja Información Básica */}
-            <div className="flex-1 border-2 border-t-[#808080] border-l-[#808080] border-b-white border-r-white p-2.5 relative pt-4 flex flex-col justify-between gap-1.5">
-              <div className="absolute -top-2 left-3 bg-[#d4d0c8] px-1 font-bold text-[9px] uppercase tracking-wider text-gray-700">
+            {/* Caja INFORMACION BASICA */}
+            <div className="flex-1 border border-gray-400 p-2 relative pt-3 flex flex-col gap-1.5 bg-[#d4d0c8]">
+              <div className="absolute -top-2 left-2 bg-[#d4d0c8] px-1 font-bold text-[9px] uppercase tracking-wider text-gray-800">
                 INFORMACION BASICA:
               </div>
 
-              {/* LÍNEA 1: Cuenta, RUT y Nombre */}
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+              {/* Fila 1: Cuenta y Nombre */}
+              <div className="flex items-center gap-2">
                 <div className="flex items-center gap-1">
-                  <span className="font-bold w-[45px] sm:w-auto">Cuenta:</span>
-                  <input 
-                    type="text" 
-                    readOnly 
-                    value={cliente.cuenta || ''} 
-                    className="w-full sm:w-[60px] bg-[#ffffd0] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white font-bold px-1 py-0.5 text-blue-900 focus:outline-none text-[11px]" 
+                  <span className="font-bold text-[11px]">Cuenta:</span>
+                  <input
+                    type="text"
+                    value={clienteForm.cuenta || cuentaActiva}
+                    readOnly
+                    className="w-16 bg-[#ffffd0] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white px-1 py-0.5 font-mono font-bold text-blue-900 text-[11px]"
                   />
                 </div>
-
-                {/* RUT del Titular / Empresa (Formato 12123123-6) */}
-                <div className="flex items-center gap-1">
-                  <span className="font-bold text-red-900">RUT:</span>
-                  <input 
-                    type="text" 
-                    readOnly={usuarioRol !== 'Administrador'}
-                    value={inputRut} 
-                    onChange={(e) => setInputRut(cleanRut(e.target.value))}
-                    placeholder="12123123-6"
-                    className={`w-full sm:w-[90px] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white font-bold px-1 py-0.5 text-[11px] ${
-                      usuarioRol === 'Administrador' ? 'bg-white text-black focus:ring-1 focus:ring-blue-600' : 'bg-[#ffffd0] text-blue-900'
-                    }`}
-                  />
-                </div>
-
-                {/* Nombre del Titular */}
                 <div className="flex-1 flex items-center gap-1">
-                  <span className="font-bold w-[45px] sm:w-auto">Nombre:</span>
-                  <input 
-                    type="text" 
-                    readOnly 
-                    value={cliente.nombre || ''} 
-                    className="w-full bg-[#ffffd0] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white font-bold px-1.5 py-0.5 text-blue-900 focus:outline-none text-[11px] truncate" 
+                  <span className="font-bold text-[11px]">Nombre:</span>
+                  <input
+                    type="text"
+                    value={clienteForm.nombre || ''}
+                    onChange={(e) => updateField('nombre', e.target.value.toUpperCase())}
+                    className="w-full bg-[#ffffd0] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white font-bold px-1.5 py-0.5 text-blue-900 text-[11px] truncate"
                   />
                 </div>
               </div>
 
-              {/* LÍNEA 2: Alias / Unidad de Monitoreo + Botones Admin */}
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                <div className="flex-1 flex items-center gap-1">
-                  <span className="font-bold text-blue-900 w-[70px] sm:w-auto">Unidad/Alias:</span>
-                  <input 
-                    type="text" 
-                    readOnly={usuarioRol !== 'Administrador'}
-                    value={inputAlias} 
-                    onChange={(e) => setInputAlias(e.target.value)}
-                    placeholder="EJ: CASA SANTO DOMINGO"
-                    className={`w-full border border-t-gray-700 border-l-gray-700 border-b-white border-r-white font-bold px-1.5 py-0.5 text-[11px] truncate ${
-                      usuarioRol === 'Administrador' ? 'bg-white text-black focus:ring-1 focus:ring-blue-600' : 'bg-[#ffffd0] text-blue-900'
-                    }`}
-                  />
-                </div>
-
-                {/* Botón de Guardar RUT / Excel (SOLO ADMINISTRADOR) */}
-                {usuarioRol === 'Administrador' && (
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <button
-                      onClick={guardarRutYAlias}
-                      className="px-2.5 py-0.5 bg-[#000080] text-white font-bold rounded-sm text-[10px] hover:bg-blue-900 shadow active:translate-y-0.5 cursor-pointer"
-                      title="Guardar RUT y Alias de Unidad para esta cuenta"
-                    >
-                      💾 Guardar
-                    </button>
-                    <button
-                      onClick={() => setMostrarModalExcel(true)}
-                      className="px-2.5 py-0.5 bg-[#008080] text-white font-bold rounded-sm text-[10px] hover:bg-teal-900 shadow active:translate-y-0.5 cursor-pointer"
-                      title="Importar Excel Maestro de RUTs y Unidades"
-                    >
-                      📊 Cargar Excel Maestro
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {/* Banner de Otras Unidades con el mismo RUT */}
-              {otrasUnidadesRut.length > 0 && (
-                <div className="bg-[#e6f2ff] border border-blue-400 px-1.5 py-0.5 flex items-center gap-1.5 text-[10px] text-blue-900 shrink-0">
-                  <span className="font-bold shrink-0">🏢 Unidades del mismo RUT ({cleanRut(cliente.rut)}):</span>
-                  <div className="flex flex-wrap gap-1 overflow-x-auto">
-                    {otrasUnidadesRut.map(u => (
-                      <button
-                        key={u.cuenta}
-                        onClick={() => setCuentaActiva((u.cuenta || '').toUpperCase().trim())}
-                        className="bg-blue-700 text-white font-bold px-1.5 py-0.2 rounded-xs text-[9px] hover:bg-blue-900 cursor-pointer shadow-xs whitespace-nowrap"
-                      >
-                        {u.cuenta} - {u.alias_unidad || u.nombre || 'Unidad'}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Ciudad, Plan y Tipo */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                <div className="flex items-center gap-1">
-                  <span className="font-bold w-[45px] sm:w-auto">Ciudad:</span>
-                  <select disabled className="w-full bg-[#ffffd0] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white font-bold py-0.5 px-1 text-black text-[11px]">
-                    <option>{cliente.ciudad || 'SANTIAGO'}</option>
+              {/* Fila 2: Ciudad, Plan y Tipo */}
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 flex-1">
+                  <span className="font-bold text-[11px]">Ciudad</span>
+                  <select
+                    value={clienteForm.ciudad || 'LIMACHE'}
+                    onChange={(e) => updateField('ciudad', e.target.value.toUpperCase())}
+                    className="w-full bg-[#ffffd0] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white font-bold px-1 py-0.5 text-blue-900 text-[11px]"
+                  >
+                    <option value="LIMACHE">LIMACHE</option>
+                    <option value="VIÑA DEL MAR">VIÑA DEL MAR</option>
+                    <option value="VALPARAISO">VALPARAISO</option>
+                    <option value="QUILPUE">QUILPUE</option>
+                    <option value="VILLA ALEMANA">VILLA ALEMANA</option>
+                    <option value="CON CON">CON CON</option>
+                    <option value="QUILLOTA">QUILLOTA</option>
+                    <option value="SANTIAGO">SANTIAGO</option>
                   </select>
                 </div>
-                <div className="flex items-center gap-1">
-                  <span className="font-bold w-[45px] sm:w-auto">Plan:</span>
-                  <input type="text" readOnly value={cliente.plan || ''} className="w-full bg-[#ffffd0] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white font-bold px-1 py-0.5 text-[11px]" />
+                <div className="flex items-center gap-1 w-36">
+                  <span className="font-bold text-[11px]">Plan</span>
+                  <input
+                    type="text"
+                    value={clienteForm.plan || ''}
+                    onChange={(e) => updateField('plan', e.target.value.toUpperCase())}
+                    className="w-full bg-[#ffffd0] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white font-bold px-1 py-0.5 text-blue-900 text-[11px]"
+                  />
                 </div>
-                <div className="flex items-center gap-1">
-                  <span className="font-bold w-[45px] sm:w-auto">Tipo:</span>
-                  <input type="text" readOnly value={cliente.tipo1 || ''} className="w-full bg-[#ffffd0] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white font-bold px-1 py-0.5 text-[11px]" />
-                </div>
-              </div>
-
-              {/* Dirección y Sector */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <div className="flex items-center gap-1">
-                  <span className="font-bold w-[45px] sm:w-auto">Dirección:</span>
-                  <input type="text" readOnly value={cliente.direccion || ''} className="w-full bg-[#ffffd0] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white font-bold px-1.5 py-0.5 text-[11px] truncate" />
-                </div>
-                <div className="flex items-center gap-1">
-                  <span className="font-bold w-[45px] sm:w-auto">Sector:</span>
-                  <input type="text" readOnly value={cliente.sector || ''} className="w-full bg-[#ffffd0] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white font-bold px-1.5 py-0.5 text-[11px] truncate" />
+                <div className="flex items-center gap-1 w-36">
+                  <span className="font-bold text-[11px]">Tipo</span>
+                  <input
+                    type="text"
+                    value={clienteForm.tipo1 || ''}
+                    onChange={(e) => updateField('tipo1', e.target.value.toUpperCase())}
+                    className="w-full bg-[#ffffd0] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white font-bold px-1 py-0.5 text-blue-900 text-[11px]"
+                  />
                 </div>
               </div>
 
-              {/* Teléfonos del Cliente */}
-              <div className="border border-gray-400 p-1 relative bg-[#d4d0c8]">
+              {/* Fila 3: Dirección y Sector */}
+              <div className="flex items-center gap-2">
+                <div className="flex-1 flex items-center gap-1">
+                  <span className="font-bold text-[11px]">Dirección:</span>
+                  <input
+                    type="text"
+                    value={clienteForm.direccion || ''}
+                    onChange={(e) => updateField('direccion', e.target.value.toUpperCase())}
+                    className="w-full bg-[#ffffd0] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white font-bold px-1.5 py-0.5 text-blue-900 text-[11px] truncate"
+                  />
+                </div>
+                <div className="flex items-center gap-1 w-44">
+                  <span className="font-bold text-[11px]">Sector:</span>
+                  <input
+                    type="text"
+                    value={clienteForm.sector || ''}
+                    onChange={(e) => updateField('sector', e.target.value.toUpperCase())}
+                    className="w-full bg-[#ffffd0] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white font-bold px-1 py-0.5 text-blue-900 text-[11px]"
+                  />
+                </div>
+              </div>
+
+              {/* Fila 4: Marco TELEFONOS */}
+              <div className="border border-gray-400 p-1 relative mt-1 bg-[#d4d0c8]">
                 <div className="absolute -top-2 left-2 bg-[#d4d0c8] px-1 text-[8px] font-bold text-gray-700">
                   TELEFONOS:
                 </div>
-                <div className="grid grid-cols-3 sm:grid-cols-6 gap-1">
+                <div className="grid grid-cols-6 gap-1 pt-0.5">
                   {Array.from({ length: 6 }).map((_, i) => (
                     <input
                       key={i}
                       type="text"
-                      readOnly
-                      value={cliente[`telefono${i + 1}`] || ''}
-                      className="w-full bg-[#ffffd0] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white px-1 py-0.5 text-center font-bold text-gray-800 text-[10px]"
+                      value={clienteForm[`telefono${i + 1}`] || ''}
+                      onChange={(e) => updateField(`telefono${i + 1}`, e.target.value)}
+                      placeholder=""
+                      className="w-full bg-[#ffffd0] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white px-1 py-0.5 text-center font-bold text-blue-900 text-[10px]"
                     />
                   ))}
                 </div>
@@ -1040,28 +401,32 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
 
             </div>
 
-            {/* Caja de Fotografía (Oculta en móviles muy chicos, visible en md) */}
-            <div className="hidden sm:flex md:w-[200px] border-2 border-t-[#808080] border-l-[#808080] border-b-white border-r-white p-1 flex-col justify-between bg-[#d4d0c8] shrink-0 h-[100px] md:h-auto">
-              <div className="bg-[#808080] text-white text-center font-bold text-[9px] py-0.5 border border-t-black border-l-black border-b-white border-r-white">
+            {/* Caja FOTOGRAFIA */}
+            <div className="w-full md:w-[280px] border border-gray-400 p-1 flex flex-col justify-between bg-[#d4d0c8] shrink-0">
+              <div className="text-center font-bold text-[10px] text-gray-800 tracking-wider">
                 FOTOGRAFIA
               </div>
-              <div className="flex-1 bg-white border border-t-gray-700 border-l-gray-700 border-b-white border-r-white my-0.5 flex items-center justify-center min-h-[40px]">
-                <span className="text-gray-300 text-2xl">👤</span>
+              <div className="h-[105px] bg-[#ffffd0] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white my-1 flex items-center justify-center overflow-hidden">
+                <span className="text-gray-400 text-3xl">👤</span>
               </div>
-              <button disabled className="w-full bg-[#d4d0c8] border border-t-white border-l-white border-b-gray-500 border-r-gray-500 text-[9px] py-0.5 font-bold uppercase tracking-wider text-gray-500">
-                Insertar / Cambiar Fotografia
+              <button
+                type="button"
+                className="w-full bg-[#d4d0c8] border border-t-white border-l-white border-b-gray-700 border-r-gray-700 text-[9px] py-1 font-bold uppercase tracking-wider text-gray-800 hover:bg-[#e0e0e0] active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white cursor-pointer"
+              >
+                INSERTAR / CAMBIAR FOTOGRAFIA
               </button>
             </div>
 
           </div>
 
-          {/* FILA 2: PESTAÑAS MEDIAS (Emergentes y Características) */}
-          <div className="h-auto md:h-[170px] flex flex-col md:flex-row gap-2 shrink-0">
+          {/* FILA 2: PESTAÑAS MEDIAS (TELEFONOS EMERGENTES + CARACTERISTICAS) */}
+          <div className="flex flex-col md:flex-row gap-2 shrink-0">
             
-            {/* Lado Izquierdo: Teléfonos Emergentes y Cámara de Verificación (MÁXIMO ESPACIO HORIZONTAL flex-1) */}
-            <div className="w-full flex-1 flex flex-col min-w-0">
-              <div className="flex flex-wrap gap-0.5 text-[9px]">
+            {/* Lado Izquierdo: Pestañas Telefónicas / Horarios / Cámaras */}
+            <div className="flex-1 flex flex-col min-w-0">
+              <div className="flex gap-0.5 text-[9px]">
                 <button
+                  type="button"
                   onClick={() => setTabEmergentes('telefonos')}
                   className={`px-2 py-1 font-bold border-t border-l border-r border-white rounded-t-sm cursor-pointer ${
                     tabEmergentes === 'telefonos' ? 'bg-[#d4d0c8] pb-1 -mb-0.5 z-10' : 'bg-[#b0b0b0] text-gray-700'
@@ -1070,14 +435,16 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
                   TELEFONOS EMERGENTES
                 </button>
                 <button
+                  type="button"
                   onClick={() => setTabEmergentes('horarios')}
                   className={`px-2 py-1 font-bold border-t border-l border-r border-white rounded-t-sm cursor-pointer ${
                     tabEmergentes === 'horarios' ? 'bg-[#d4d0c8] pb-1 -mb-0.5 z-10' : 'bg-[#b0b0b0] text-gray-700'
                   }`}
                 >
-                  HORARIOS
+                  HORARIOS APERTURA Y CIERRE
                 </button>
                 <button
+                  type="button"
                   onClick={() => setTabEmergentes('camara')}
                   className={`px-2 py-1 font-bold border-t border-l border-r border-white rounded-t-sm cursor-pointer ${
                     tabEmergentes === 'camara' ? 'bg-[#d4d0c8] pb-1 -mb-0.5 z-10' : 'bg-[#b0b0b0] text-gray-700'
@@ -1086,6 +453,7 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
                   CAMARA DE VERIFICACION
                 </button>
                 <button
+                  type="button"
                   onClick={() => setTabEmergentes('servicio_tecnico')}
                   className={`px-2 py-1 font-bold border-t border-l border-r border-white rounded-t-sm cursor-pointer ${
                     tabEmergentes === 'servicio_tecnico' ? 'bg-[#d4d0c8] pb-1 -mb-0.5 z-10' : 'bg-[#b0b0b0] text-gray-700'
@@ -1094,819 +462,151 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
                   🛠️ SERVICIO TECNICO ({ordenesCuenta.length})
                 </button>
               </div>
-              
-              <div className="border-2 border-white bg-[#d4d0c8] p-1 flex-1 flex flex-col justify-start overflow-hidden min-h-[110px] md:min-h-0">
-                {tabEmergentes === 'servicio_tecnico' && (
-                  <div className="border border-gray-400 p-1 relative flex-1 bg-[#d4d0c8] flex flex-col overflow-hidden">
+
+              {/* Contenedor Pestaña Izquierda */}
+              <div className="border border-white bg-[#d4d0c8] p-1 flex-1 flex flex-col justify-start">
+                {tabEmergentes === 'telefonos' && (
+                  <div className="border border-gray-400 p-1 relative flex-1 bg-[#d4d0c8] flex flex-col">
                     <div className="absolute -top-2 left-2 bg-[#d4d0c8] px-1 text-[8px] font-bold text-gray-700 uppercase">
-                      HISTORIAL DE ATENCIONES TECNICAS EN TERRENO
+                      NUMEROS DE EMERGENCIA
                     </div>
-                    <div className="flex-1 bg-[#ffffd0] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white overflow-y-auto">
+                    <div className="mt-1">
                       <table className="w-full border-collapse text-[10px] text-left">
                         <thead>
-                          <tr className="bg-[#b0b0b0] border-b border-gray-400 font-bold sticky top-0 text-[9px]">
-                            <th className="p-1 border-r border-gray-400">OT / FECHA</th>
-                            <th className="p-1 border-r border-gray-400">TIPO / TÉCNICO</th>
-                            <th className="p-1 border-r border-gray-400">FALLA REPORTADA</th>
-                            <th className="p-1 border-r border-gray-400">TRABAJO REALIZADO</th>
-                            <th className="p-1 text-center">ESTADO</th>
+                          <tr className="text-gray-800 font-bold text-[10px]">
+                            <th className="p-0.5 w-[30%] text-center">Nombre</th>
+                            <th className="p-0.5 w-[28%] text-center">Dirección</th>
+                            <th className="p-0.5 w-[22%] text-center">Cargo/Afinidad</th>
+                            <th className="p-0.5 w-[20%] text-center">Teléfono</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-300">
-                          {ordenesCuenta.map((o, idx) => (
-                            <tr key={idx} className="hover:bg-blue-100 font-bold text-gray-800 text-[10px]">
-                              <td className="p-1 border-r border-gray-300 font-mono text-blue-900">
-                                <div>{o.codigo_ot || `OT-${o.id}`}</div>
-                                <div className="text-[8px] text-gray-500">{o.fecha_cita || o.fecha}</div>
-                              </td>
-                              <td className="p-1 border-r border-gray-300">
-                                <div>{o.tipo_visita || 'Correctiva'}</div>
-                                <div className="text-[8px] text-gray-500">{o.tecnico}</div>
-                              </td>
-                              <td className="p-1 border-r border-gray-300 max-w-[120px] truncate" title={o.problema}>{o.problema}</td>
-                              <td className="p-1 border-r border-gray-300 italic text-slate-700 max-w-[150px] truncate" title={o.novedad}>{o.novedad || 'En atención'}</td>
-                              <td className="p-1 text-center">
-                                <span className={`px-1 py-0.2 text-[8px] font-bold rounded-xs ${
-                                  o.estado === 'Completada' ? 'bg-green-700 text-white' : 'bg-yellow-600 text-white'
-                                }`}>
-                                  {o.estado || 'PENDIENTE'}
-                                </span>
-                              </td>
-                            </tr>
-                          ))}
-                          {ordenesCuenta.length === 0 && (
-                            <tr>
-                              <td colSpan={5} className="p-4 text-center text-gray-400 italic">No hay órdenes de servicio técnico registradas para este abonado.</td>
-                            </tr>
-                          )}
+                        <tbody className="space-y-0.5">
+                          {Array.from({ length: 7 }).map((_, idx) => {
+                            const num = idx + 1
+                            return (
+                              <tr key={num}>
+                                <td className="p-0.5">
+                                  <input
+                                    type="text"
+                                    value={clienteForm[`nombre${num}`] || ''}
+                                    onChange={(e) => updateField(`nombre${num}`, e.target.value.toUpperCase())}
+                                    className="w-full bg-[#ffffd0] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white px-1 py-0.5 font-bold text-blue-900 text-[10px]"
+                                  />
+                                </td>
+                                <td className="p-0.5">
+                                  <input
+                                    type="text"
+                                    value={clienteForm[`direccion${num}`] || ''}
+                                    onChange={(e) => updateField(`direccion${num}`, e.target.value.toUpperCase())}
+                                    className="w-full bg-[#ffffd0] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white px-1 py-0.5 font-bold text-blue-900 text-[10px]"
+                                  />
+                                </td>
+                                <td className="p-0.5">
+                                  <input
+                                    type="text"
+                                    value={clienteForm[`carg${num}`] || ''}
+                                    onChange={(e) => updateField(`carg${num}`, e.target.value.toUpperCase())}
+                                    className="w-full bg-[#ffffd0] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white px-1 py-0.5 font-bold text-blue-900 text-[10px]"
+                                  />
+                                </td>
+                                <td className="p-0.5">
+                                  <input
+                                    type="text"
+                                    value={clienteForm[`t${num}`] || ''}
+                                    onChange={(e) => updateField(`t${num}`, e.target.value)}
+                                    className="w-full bg-[#ffffd0] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white px-1 py-0.5 font-bold text-blue-900 text-[10px]"
+                                  />
+                                </td>
+                              </tr>
+                            )
+                          })}
                         </tbody>
                       </table>
                     </div>
                   </div>
                 )}
-                {tabEmergentes === 'telefonos' && (
-                  <div className="border border-gray-400 p-1 relative flex-1 bg-[#d4d0c8] flex flex-col overflow-hidden">
-                    <div className="flex justify-between items-center bg-[#d4d0c8] px-1 pb-1 border-b border-gray-300 shrink-0">
-                      <span className="text-[10px] font-bold text-gray-800 uppercase flex items-center gap-1">
-                        <span>📞</span> PERSONAS AUTORIZADAS Y CONTACTOS ({telefonosEmergencia.length})
-                      </span>
-                      {!editandoContactos ? (
-                        <button
-                          type="button"
-                          onClick={abrirEditorContactos}
-                          className="bg-[#000080] text-white border border-t-blue-300 border-l-blue-300 border-b-black border-r-black px-2 py-0.5 text-[9px] font-bold hover:bg-blue-900 cursor-pointer flex items-center gap-1 shadow-xs"
-                          title="Modificar contactos directamente en la base de datos de Scorpion"
-                        >
-                          <span>✏️</span> EDITAR CONTACTOS (EDITOR REMOTO)
-                        </button>
-                      ) : (
-                        <div className="flex items-center gap-1.5">
-                          {syncFeedback.tipo === 'enviando' && (
-                            <span className="text-[9px] font-bold text-amber-800 animate-pulse">
-                              ⏳ Sincronizando con PC Scorpion...
-                            </span>
-                          )}
-                          {syncFeedback.tipo === 'ok' && (
-                            <span className="text-[9px] font-bold text-green-800 bg-green-200 px-1 rounded-xs">
-                              {syncFeedback.msg}
-                            </span>
-                          )}
-                          {syncFeedback.tipo === 'error' && (
-                            <span className="text-[9px] font-bold text-red-800 bg-red-200 px-1 rounded-xs">
-                              {syncFeedback.msg}
-                            </span>
-                          )}
-                        </div>
-                      )}
-                    </div>
-
-                    {!editandoContactos ? (
-                      <div className="flex-1 bg-[#ffffd0] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white overflow-y-auto mt-1">
-                        <table className="w-full border-collapse text-[10px] text-left">
-                          <thead>
-                            <tr className="bg-[#b0b0b0] border-b border-gray-400 font-bold sticky top-0">
-                              <th className="p-1 border-r border-gray-400 w-8 text-center">PR</th>
-                              <th className="p-1 border-r border-gray-400 w-1/4">Nombre / Contacto</th>
-                              <th className="p-1 border-r border-gray-400 w-1/4">Instrucción / Contraseña</th>
-                              <th className="p-1 border-r border-gray-400 w-1/6">Cargo</th>
-                              <th className="p-1">Teléfono</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-gray-300">
-                            {telefonosEmergencia.map((tel, idx) => (
-                              <tr key={idx} className="hover:bg-blue-100 font-bold text-gray-800 h-5">
-                                <td className="p-1 border-r border-gray-300 font-mono text-center text-blue-950 font-black">{tel.num}</td>
-                                <td className="p-1 border-r border-gray-300 truncate max-w-[80px] sm:max-w-[120px]">{tel.nombre}</td>
-                                <td className="p-1 border-r border-gray-300 truncate max-w-[80px] sm:max-w-[180px] text-gray-700">{tel.direccion}</td>
-                                <td className="p-1 border-r border-gray-300 truncate max-w-[50px] sm:max-w-[80px]">{tel.cargo}</td>
-                                <td className="p-1 font-mono text-blue-900 font-black truncate max-w-[90px]">{tel.telefono}</td>
-                              </tr>
-                            ))}
-                            {telefonosEmergencia.length === 0 && (
-                              <tr>
-                                <td colSpan={5} className="p-3 text-center text-gray-400 italic">No hay contactos registrados</td>
-                              </tr>
-                            )}
-                          </tbody>
-                        </table>
-                      </div>
-                    ) : (
-                      <div className="flex-1 bg-white border border-t-gray-700 border-l-gray-700 border-b-white border-r-white flex flex-col overflow-hidden mt-1 p-1">
-                        <div className="flex-1 overflow-y-auto">
-                          <table className="w-full border-collapse text-[10px] text-left">
-                            <thead className="bg-[#000080] text-white font-bold sticky top-0 text-[9px]">
-                              <tr>
-                                <th className="p-1 w-8 text-center">PR</th>
-                                <th className="p-1 w-[26%]">Nombre Contacto</th>
-                                <th className="p-1 w-[20%]">Cargo / Relación</th>
-                                <th className="p-1 w-[24%]">Teléfono</th>
-                                <th className="p-1 w-[26%]">Instrucción / Contraseña</th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-300">
-                              {contactosForm.map((item, idx) => (
-                                <tr key={item.num} className="hover:bg-blue-50">
-                                  <td className="p-1 text-center font-bold font-mono text-blue-900">{item.num}</td>
-                                  <td className="p-1">
-                                    <input
-                                      type="text"
-                                      value={item.nombre}
-                                      onChange={(e) => {
-                                        const v = e.target.value
-                                        setContactosForm(prev => prev.map((c, i) => i === idx ? { ...c, nombre: v } : c))
-                                      }}
-                                      placeholder={`Contacto ${item.num}...`}
-                                      className="w-full bg-[#ffffd0] border border-gray-400 px-1 py-0.5 font-bold text-gray-900 focus:outline-none focus:border-blue-600"
-                                    />
-                                  </td>
-                                  <td className="p-1">
-                                    <input
-                                      type="text"
-                                      value={item.cargo}
-                                      onChange={(e) => {
-                                        const v = e.target.value
-                                        setContactosForm(prev => prev.map((c, i) => i === idx ? { ...c, cargo: v } : c))
-                                      }}
-                                      placeholder="Ej: TITULAR, VECINO..."
-                                      className="w-full bg-white border border-gray-300 px-1 py-0.5 text-gray-800 focus:outline-none focus:border-blue-600"
-                                    />
-                                  </td>
-                                  <td className="p-1">
-                                    <input
-                                      type="text"
-                                      value={item.telefono}
-                                      onChange={(e) => {
-                                        const v = e.target.value
-                                        setContactosForm(prev => prev.map((c, i) => i === idx ? { ...c, telefono: v } : c))
-                                      }}
-                                      placeholder="Ej: 987654321..."
-                                      className="w-full bg-[#ffffd0] border border-gray-400 px-1 py-0.5 font-mono font-bold text-blue-950 focus:outline-none focus:border-blue-600"
-                                    />
-                                  </td>
-                                  <td className="p-1">
-                                    <input
-                                      type="text"
-                                      value={item.direccion}
-                                      onChange={(e) => {
-                                        const v = e.target.value
-                                        setContactosForm(prev => prev.map((c, i) => i === idx ? { ...c, direccion: v } : c))
-                                      }}
-                                      placeholder="Instrucción / Clave..."
-                                      className="w-full bg-white border border-gray-300 px-1 py-0.5 text-gray-800 focus:outline-none focus:border-blue-600"
-                                    />
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-
-                        {/* Botonera de Guardar Cambios */}
-                        <div className="flex justify-between items-center pt-1.5 border-t border-gray-300 bg-[#e8e8e8] px-2 py-1 mt-1 shrink-0">
-                          <span className="text-[9px] text-gray-600 font-mono">
-                            Modificando base de datos Scorpion de la cuenta <strong>[{cuentaActiva}]</strong>
-                          </span>
-                          <div className="flex items-center gap-2">
-                            <button
-                              type="button"
-                              onClick={() => setEditandoContactos(false)}
-                              disabled={guardandoRemoto}
-                              className="bg-[#d4d0c8] border border-t-white border-l-white border-b-black border-r-black px-2 py-0.5 text-[9px] font-bold text-black hover:bg-[#e0e0e0] cursor-pointer"
-                            >
-                              Cancelar
-                            </button>
-                            <button
-                              type="button"
-                              onClick={guardarContactosRemoto}
-                              disabled={guardandoRemoto}
-                              className="bg-[#000080] text-white border border-t-blue-400 border-l-blue-400 border-b-black border-r-black px-3 py-0.5 text-[9px] font-bold hover:bg-blue-900 active:border-t-black active:border-l-black active:border-b-white active:border-r-white cursor-pointer shadow-xs disabled:opacity-50"
-                            >
-                              {guardandoRemoto ? 'Sincronizando...' : '💾 GUARDAR Y SINCRONIZAR EN SCORPION'}
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
 
                 {tabEmergentes === 'horarios' && (
-                  <div className="border border-gray-400 bg-[#d4d0c8] flex-1 flex flex-col overflow-hidden p-1.5 gap-1.5">
-                    {/* Header y Plantillas */}
-                    <div className="flex flex-wrap items-center justify-between bg-[#e6f0fa] border border-blue-400 p-1.5 rounded-xs shrink-0 text-[10px]">
-                      <div className="flex items-center gap-1.5">
-                        <span className="font-bold text-blue-950">⏰ HORARIOS ABONADO [{cuentaActiva}]:</span>
-                        <span className="text-gray-600 truncate max-w-[240px]">{cliente.nombre}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <span className="font-bold text-gray-700 text-[9px] uppercase">Plantilla:</span>
-                        <button
-                          type="button"
-                          onClick={() => aplicarPlantillaExpediente('comercio')}
-                          className="bg-[#d4d0c8] border border-t-white border-l-white border-b-black border-r-black px-1.5 py-0.5 text-[9px] font-bold hover:bg-[#e8e8e8] cursor-pointer"
-                        >
-                          🏢 Comercio
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => aplicarPlantillaExpediente('retail')}
-                          className="bg-[#d4d0c8] border border-t-white border-l-white border-b-black border-r-black px-1.5 py-0.5 text-[9px] font-bold hover:bg-[#e8e8e8] cursor-pointer"
-                        >
-                          🛍️ Retail
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => aplicarPlantillaExpediente('industrial')}
-                          className="bg-[#d4d0c8] border border-t-white border-l-white border-b-black border-r-black px-1.5 py-0.5 text-[9px] font-bold hover:bg-[#e8e8e8] cursor-pointer"
-                        >
-                          🏭 Industrial
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => aplicarPlantillaExpediente('24_7')}
-                          className="bg-[#d4d0c8] border border-t-white border-l-white border-b-black border-r-black px-1.5 py-0.5 text-[9px] font-bold hover:bg-[#e8e8e8] cursor-pointer"
-                        >
-                          🕒 24/7
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Tabla de Días */}
-                    <div className="flex-1 bg-white border border-t-gray-700 border-l-gray-700 border-b-white border-r-white overflow-y-auto min-h-0">
-                      <table className="w-full border-collapse text-[10px] text-left">
-                        <thead className="bg-[#b0b0b0] border-b border-gray-400 font-bold sticky top-0 z-10">
+                  <div className="border border-gray-400 bg-[#d4d0c8] p-1.5 flex flex-col gap-1 text-[10px]">
+                    <div className="font-bold text-blue-950 mb-1">⏰ HORARIOS DE APERTURA Y CIERRE [{cuentaActiva}]</div>
+                    <div className="overflow-y-auto max-h-[140px] bg-white border border-gray-500">
+                      <table className="w-full text-[10px]">
+                        <thead className="bg-[#b0b0b0] font-bold">
                           <tr>
-                            <th className="p-1 border-r border-gray-400 w-24">Día</th>
-                            <th className="p-1 border-r border-gray-400 w-24 text-center">Estado</th>
-                            <th className="p-1 border-r border-gray-400 w-28 text-center">Apertura</th>
-                            <th className="p-1 border-r border-gray-400 w-28 text-center">Cierre</th>
-                            <th className="p-1 border-r border-gray-400 w-24 text-center">Tolerancia</th>
-                            <th className="p-1">Observación</th>
+                            <th className="p-1 border-r">Día</th>
+                            <th className="p-1 border-r text-center">Estado</th>
+                            <th className="p-1 border-r text-center">Apertura</th>
+                            <th className="p-1 border-r text-center">Cierre</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-300 font-bold">
-                          {horariosDias.map((d, idx) => (
-                            <tr key={d.dia} className={`hover:bg-blue-50 ${!d.habilitado ? 'bg-gray-100 text-gray-400' : 'text-gray-900'}`}>
-                              <td className="p-1 border-r border-gray-300 font-extrabold flex items-center gap-1">
-                                <span className={`w-1.5 h-1.5 rounded-full ${d.habilitado ? 'bg-green-600' : 'bg-gray-400'}`} />
-                                <span>{d.label}</span>
-                              </td>
-                              <td className="p-1 border-r border-gray-300 text-center">
+                        <tbody>
+                          {horariosDias.map((d, i) => (
+                            <tr key={d.dia} className="border-b">
+                              <td className="p-1 font-bold">{d.label}</td>
+                              <td className="p-1 text-center">
                                 <button
                                   type="button"
                                   onClick={() => {
                                     const next = [...horariosDias]
-                                    next[idx] = { ...next[idx], habilitado: !d.habilitado }
+                                    next[i] = { ...next[i], habilitado: !d.habilitado }
                                     setHorariosDias(next)
                                   }}
-                                  className={`px-1.5 py-0.5 text-[8px] font-bold rounded-xs cursor-pointer ${
-                                    d.habilitado ? 'bg-green-700 text-white' : 'bg-gray-400 text-black'
-                                  }`}
+                                  className={`px-1.5 py-0.2 text-[8px] font-bold ${d.habilitado ? 'bg-green-700 text-white' : 'bg-gray-400 text-black'}`}
                                 >
                                   {d.habilitado ? 'ABIERTO' : 'CERRADO'}
                                 </button>
                               </td>
-                              <td className="p-1 border-r border-gray-300 text-center">
+                              <td className="p-1 text-center">
                                 <input
                                   type="time"
                                   disabled={!d.habilitado}
                                   value={d.apertura}
                                   onChange={(e) => {
                                     const next = [...horariosDias]
-                                    next[idx] = { ...next[idx], apertura: e.target.value }
+                                    next[i] = { ...next[i], apertura: e.target.value }
                                     setHorariosDias(next)
                                   }}
-                                  className={`px-1 border font-mono text-center text-[10px] font-bold ${
-                                    d.habilitado ? 'bg-[#ffffd0] text-blue-900 border-gray-400' : 'bg-gray-200 text-gray-400 border-gray-300'
-                                  }`}
+                                  className="bg-[#ffffd0] border border-gray-400 font-mono px-1"
                                 />
                               </td>
-                              <td className="p-1 border-r border-gray-300 text-center">
+                              <td className="p-1 text-center">
                                 <input
                                   type="time"
                                   disabled={!d.habilitado}
                                   value={d.cierre}
                                   onChange={(e) => {
                                     const next = [...horariosDias]
-                                    next[idx] = { ...next[idx], cierre: e.target.value }
+                                    next[i] = { ...next[i], cierre: e.target.value }
                                     setHorariosDias(next)
                                   }}
-                                  className={`px-1 border font-mono text-center text-[10px] font-bold ${
-                                    d.habilitado ? 'bg-[#ffffd0] text-blue-900 border-gray-400' : 'bg-gray-200 text-gray-400 border-gray-300'
-                                  }`}
+                                  className="bg-[#ffffd0] border border-gray-400 font-mono px-1"
                                 />
-                              </td>
-                              <td className="p-1 border-r border-gray-300 text-center">
-                                <select
-                                  disabled={!d.habilitado}
-                                  value={d.toleranciaMin}
-                                  onChange={(e) => {
-                                    const next = [...horariosDias]
-                                    next[idx] = { ...next[idx], toleranciaMin: Number(e.target.value) }
-                                    setHorariosDias(next)
-                                  }}
-                                  className={`px-1 border font-bold text-[9px] ${
-                                    d.habilitado ? 'bg-[#ffffd0] text-black border-gray-400' : 'bg-gray-200 text-gray-400 border-gray-300'
-                                  }`}
-                                >
-                                  <option value={0}>0m</option>
-                                  <option value={15}>±15m</option>
-                                  <option value={30}>±30m</option>
-                                  <option value={45}>±45m</option>
-                                  <option value={60}>±60m</option>
-                                </select>
-                              </td>
-                              <td className="p-1 text-[9px] text-gray-600 truncate">
-                                {d.habilitado ? `Apertura ${d.apertura} - Cierre ${d.cierre}` : 'Cerrado todo el día'}
                               </td>
                             </tr>
                           ))}
                         </tbody>
                       </table>
                     </div>
-
-                    {/* Guardián and Save Bar */}
-                    <div className="bg-[#e8e4dc] border border-gray-400 p-1.5 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 shrink-0 text-[10px]">
-                      <div className="flex flex-wrap items-center gap-3">
-                        <label className="flex items-center gap-1 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={horariosAlertaInhabitual}
-                            onChange={(e) => setHorariosAlertaInhabitual(e.target.checked)}
-                          />
-                          <span className="font-bold text-gray-800">Alertar Desarme Fuera de Horario</span>
-                        </label>
-                        <label className="flex items-center gap-1 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={horariosNoCierre}
-                            onChange={(e) => setHorariosNoCierre(e.target.checked)}
-                          />
-                          <span className="font-bold text-gray-800">Alertar No-Cierre</span>
-                        </label>
-                        {horariosNoCierre && (
-                          <div className="flex items-center gap-1">
-                            <span className="font-bold text-emerald-900">WhatsApp:</span>
-                            <input
-                              type="text"
-                              placeholder="569..."
-                              value={horariosTelWA}
-                              onChange={(e) => setHorariosTelWA(e.target.value)}
-                              className="bg-white border border-gray-400 px-1 py-0.5 font-mono text-[10px] w-28"
-                            />
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        {horariosMsg && <span className="font-bold text-blue-900 animate-pulse text-[10px]">{horariosMsg}</span>}
-                        <button
-                          type="button"
-                          onClick={guardarHorariosExpediente}
-                          disabled={guardandoHorarios}
-                          className="bg-[#000080] border border-t-white border-l-white border-b-black border-r-black px-3 py-1 text-xs font-bold text-white hover:bg-blue-900 active:border-t-black active:border-l-black active:border-b-white active:border-r-white cursor-pointer shadow-xs disabled:opacity-50"
-                        >
-                          {guardandoHorarios ? 'Guardando...' : '💾 Guardar Horarios'}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {tabEmergentes === 'camara' && (
-                  <div className="border border-gray-400 bg-black flex-1 flex flex-col overflow-hidden text-white font-mono p-1">
-                    
-                    {/* Controls Row */}
-                    <div className="flex items-center justify-between bg-[#111] p-1 border-b border-gray-700 text-[10px] shrink-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-gray-400 font-bold">CÁMARA:</span>
-                        {cargandoIA ? (
-                          <span className="text-yellow-400 text-[9px]">⏳ Cargando BD...</span>
-                        ) : dahuaCams.length > 0 ? (
-                          <div className="flex items-center gap-1.5">
-                            <select
-                              value={selectedDahuaCamId}
-                              disabled={editandoCamaras}
-                              onChange={(e) => setSelectedDahuaCamId(e.target.value)}
-                              className="bg-[#222] text-yellow-300 border border-yellow-600 font-bold py-0.5 px-1 focus:outline-none text-[9px]"
-                            >
-                              {dahuaCams.map(c => (
-                                <option key={c.id} value={c.id}>
-                                  {c.nombre} (SN: {c.serialNumber} | CH-{c.canal})
-                                </option>
-                              ))}
-                            </select>
-                            <button
-                              onClick={() => {
-                                const targetCam = dahuaCams.find(c => c.id === selectedDahuaCamId) || dahuaCams[0]
-                                if (targetCam) setTestingDahuaCam(targetCam)
-                              }}
-                              className="bg-green-700 hover:bg-green-600 text-white font-extrabold px-2 py-0.5 rounded text-[9px] cursor-pointer shadow flex items-center gap-1"
-                            >
-                              ▶ PROBAR CÁMARA P2P
-                            </button>
-                          </div>
-                        ) : (
-                          <span className="text-yellow-500 font-bold text-[9px] bg-yellow-950/50 px-2 py-0.5 border border-yellow-800 rounded">
-                            ⚠️ Sin cámaras Dahua registradas
-                          </span>
-                        )}
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        {!editandoCamaras && usuarioRol !== 'Operadora' && (
-                          <button
-                            onClick={() => setEditandoCamaras(true)}
-                            className="bg-yellow-600 hover:bg-yellow-500 text-black font-extrabold border border-yellow-400 px-2 py-0.5 rounded cursor-pointer text-[9px] shadow"
-                          >
-                            ⚙️ CONFIGURAR P2P DAHUA / NVR
-                          </button>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Viewport + Clips Panel */}
-                    <div className="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0">
-                      
-                      {editandoCamaras ? (
-                        <div className="flex-1 bg-[#12141c] p-3 text-xs space-y-3 overflow-y-auto flex flex-col justify-between">
-                          <div className="space-y-2">
-                            <div className="text-yellow-400 font-bold border-b border-gray-800 pb-1 uppercase tracking-wider text-[10px] flex items-center justify-between">
-                              <span>⚙️ GESTIÓN CRUD DE CÁMARAS & DVR/NVR DAHUA P2P (CTA: {cuentaActiva})</span>
-                              <span className="text-[9px] text-gray-400 font-normal">Soporte nativo SN sin apertura de puertos</span>
-                            </div>
-                            
-                            {/* Formulario CRUD */}
-                            <div className="bg-black/50 border border-gray-800 p-2 rounded grid grid-cols-2 md:grid-cols-4 gap-2 text-[10px]">
-                              <div>
-                                <label className="text-gray-300 font-bold block mb-0.5">Nombre/Ubicación:</label>
-                                <input
-                                  type="text"
-                                  value={inputDahuaNombre}
-                                  onChange={(e) => setInputDahuaNombre(e.target.value)}
-                                  placeholder="Ej: ENTRADA PRINCIPAL"
-                                  className="w-full bg-[#111] border border-gray-700 p-1 font-mono text-white text-[10px]"
-                                />
-                              </div>
-
-                              <div>
-                                <label className="text-yellow-400 font-bold block mb-0.5">Número de Serie (SN):</label>
-                                <input
-                                  type="text"
-                                  value={inputDahuaSN}
-                                  onChange={(e) => setInputDahuaSN(e.target.value.toUpperCase())}
-                                  placeholder="Ej: AE0970BPAG00815"
-                                  className="w-full bg-[#111] border border-yellow-600/70 p-1 font-mono text-yellow-300 font-bold text-[10px] uppercase"
-                                />
-                              </div>
-
-                              <div>
-                                <label className="text-gray-300 font-bold block mb-0.5">Usuario (admin):</label>
-                                <input
-                                  type="text"
-                                  value={inputDahuaUser}
-                                  onChange={(e) => setInputDahuaUser(e.target.value)}
-                                  className="w-full bg-[#111] border border-gray-700 p-1 font-mono text-white text-[10px]"
-                                />
-                              </div>
-
-                                <div>
-                                  <label className="text-gray-300 font-bold block mb-0.5">Contraseña del Dispositivo:</label>
-                                  <input
-                                    type="password"
-                                    value={inputDahuaPass}
-                                    onChange={(e) => setInputDahuaPass(e.target.value)}
-                                    placeholder="••••••••"
-                                    className="w-full bg-[#111] border border-gray-700 p-1 font-mono text-white text-[10px]"
-                                  />
-                                </div>
-                            </div>
-
-                            <div className="flex items-center justify-between">
-                              <span className="text-[9px] text-gray-400 italic">Equipos Dahua P2P registrados en esta cuenta:</span>
-                              <div className="flex items-center gap-1.5">
-                                <button
-                                  onClick={() => generarNVRMulticanalDahuaP2P(10)}
-                                  className="bg-purple-900 hover:bg-purple-800 text-purple-200 font-bold px-2.5 py-1 text-[10px] rounded border border-purple-600 cursor-pointer transition shadow"
-                                  title="Generar automáticamente los 10 canales de un NVR / DVR Dahua"
-                                >
-                                  📦 GENERAR NVR/DVR (10 CH)
-                                </button>
-                                <button
-                                  onClick={guardarCamaraDahuaP2P}
-                                  className="bg-yellow-500 hover:bg-yellow-400 text-black font-extrabold px-3 py-1 text-[10px] rounded cursor-pointer transition shadow"
-                                >
-                                  {editingDahuaId ? '✏️ ACTUALIZAR CÁMARA' : '➕ GUARDAR CÁMARA P2P'}
-                                </button>
-                              </div>
-                            </div>
-
-                            {/* Tabla/Lista CRUD */}
-                            <div className="space-y-1 pt-1 max-h-[140px] overflow-y-auto">
-                              {dahuaCams.map((c) => (
-                                <div key={c.id} className="bg-black/40 border border-gray-800 p-1.5 rounded flex items-center justify-between text-[10px]">
-                                  <div className="flex items-center gap-2 font-mono">
-                                    <span className="text-white font-bold">{c.nombre}</span>
-                                    <span className="text-yellow-400">SN: {c.serialNumber}</span>
-                                    <span className="text-gray-400">CH-{c.canal}</span>
-                                    <span className="text-gray-500">User: {c.usuario}</span>
-                                  </div>
-                                  <div className="flex items-center gap-1">
-                                    <button
-                                      onClick={() => setTestingDahuaCam(c)}
-                                      className="bg-green-800 text-white hover:bg-green-700 border border-green-600 px-2 py-0.5 rounded text-[9px] font-bold"
-                                    >
-                                      ▶ PROBAR CONEXIÓN P2P
-                                    </button>
-                                    <button
-                                      onClick={() => {
-                                        setEditingDahuaId(c.id)
-                                        setInputDahuaNombre(c.nombre)
-                                        setInputDahuaSN(c.serialNumber)
-                                        setInputDahuaUser(c.usuario)
-                                        setInputDahuaPass(c.password || '')
-                                        setInputDahuaCanal(c.canal.toString())
-                                      }}
-                                      className="bg-blue-950 text-blue-300 hover:bg-blue-900 border border-blue-700 px-2 py-0.5 rounded text-[9px]"
-                                    >
-                                      ✏️ Editar
-                                    </button>
-                                    <button
-                                      onClick={() => eliminarCamaraDahuaP2P(c.id)}
-                                      className="bg-red-950 text-red-300 hover:bg-red-900 border border-red-700 px-2 py-0.5 rounded text-[9px]"
-                                    >
-                                      🗑️ Eliminar
-                                    </button>
-                                  </div>
-                                </div>
-                              ))}
-                              {dahuaCams.length === 0 && (
-                                <div className="text-[10px] text-gray-500 italic p-2 text-center">No hay cámaras Dahua P2P registradas para esta cuenta.</div>
-                              )}
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2">
-                              <div className="border border-gray-700 rounded p-3 bg-black/40">
-                                <div className="text-[11px] text-blue-400 font-bold mb-2">📧 CORREOS ELECTRÓNICOS</div>
-                                <div className="flex gap-1 mb-2">
-                                  <input
-                                    type="email"
-                                    value={inputEmailVideo}
-                                    onChange={(e) => setInputEmailVideo(e.target.value)}
-                                    onKeyDown={(e) => {
-                                      if (e.key === 'Enter' && inputEmailVideo.includes('@')) {
-                                        const email = inputEmailVideo.trim().toLowerCase()
-                                        setEmailsVideo(prev => [...prev.filter(e => e !== email), email])
-                                        setInputEmailVideo('')
-                                        ;(async () => { await supabase.from('notificaciones_mail').upsert(
-                                          { cuenta: cuentaActiva, emails: [...emailsVideo.filter(e => e !== email), email] },
-                                          { onConflict: 'cuenta' }
-                                        ) })()
-                                      }
-                                    }}
-                                    placeholder="correo@ejemplo.com"
-                                    className="flex-1 bg-[#111] border border-gray-700 p-1.5 font-mono text-white text-[11px]"
-                                  />
-                                  <button
-                                    onClick={() => {
-                                      if (!inputEmailVideo.includes('@')) return
-                                      const email = inputEmailVideo.trim().toLowerCase()
-                                      setEmailsVideo(prev => [...prev.filter(e => e !== email), email])
-                                      setInputEmailVideo('')
-                                      ;(async () => { await supabase.from('notificaciones_mail').upsert(
-                                        { cuenta: cuentaActiva, emails: [...emailsVideo.filter(e => e !== email), email] },
-                                        { onConflict: 'cuenta' }
-                                      ) })()
-                                    }}
-                                    className="bg-blue-800 hover:bg-blue-700 text-white font-bold px-3 py-1.5 text-[11px] rounded cursor-pointer"
-                                  >
-                                    + Agregar
-                                  </button>
-                                </div>
-                                <div className="flex flex-wrap gap-1.5 max-h-[100px] overflow-y-auto">
-                                  {emailsVideo.length === 0 ? (
-                                    <span className="text-[10px] text-gray-600 italic">Sin correos registrados</span>
-                                  ) : emailsVideo.map((email, i) => (
-                                    <span key={i} className="bg-blue-950/60 border border-blue-800 text-blue-300 text-[10px] px-2 py-1 rounded flex items-center gap-1.5">
-                                      {email}
-                                      <button
-                                        onClick={() => {
-                                          const nuevos = emailsVideo.filter(e => e !== email)
-                                          setEmailsVideo(nuevos)
-                                          ;(async () => { await supabase.from('notificaciones_mail').upsert(
-                                            { cuenta: cuentaActiva, emails: nuevos },
-                                            { onConflict: 'cuenta' }
-                                          ) })()
-                                        }}
-                                        className="text-red-400 hover:text-red-300 font-bold leading-none"
-                                      >
-                                        ×
-                                      </button>
-                                    </span>
-                                  ))}
-                                </div>
-                              </div>
-
-                              <div className="border border-gray-700 rounded p-3 bg-black/40">
-                                <div className="text-[11px] text-green-400 font-bold mb-2">📱 WHATSAPP</div>
-                                <div className="flex gap-1 mb-2">
-                                  <input
-                                    type="text"
-                                    value={inputWhatsappNombre}
-                                    onChange={(e) => setInputWhatsappNombre(e.target.value)}
-                                    placeholder="Nombre"
-                                    className="w-24 bg-[#111] border border-gray-700 p-1.5 font-mono text-white text-[11px]"
-                                  />
-                                  <input
-                                    type="tel"
-                                    value={inputWhatsappTel}
-                                    onChange={(e) => setInputWhatsappTel(e.target.value.replace(/[^0-9+]/g, ''))}
-                                    placeholder="+56 9 1234 5678"
-                                    className="flex-1 bg-[#111] border border-gray-700 p-1.5 font-mono text-white text-[11px]"
-                                  />
-                                  <button
-                                    onClick={async () => {
-                                      if (!inputWhatsappTel.trim()) return
-                                      const tel = inputWhatsappTel.trim()
-                                      const nombre = inputWhatsappNombre.trim()
-                                      setWhatsappsVideo(prev => [...prev, { telefono: tel, nombre }])
-                                      setInputWhatsappTel('')
-                                      setInputWhatsappNombre('')
-                                      try {
-                                        const { data: existing } = await supabase.from('notificaciones_whatsapp').select('contactos_escalamiento').eq('cuenta', cuentaActiva).maybeSingle()
-                                        const contactos = (existing?.contactos_escalamiento as any[]) || []
-                                        contactos.push({ nombre: nombre || 'SNAPSHOT', telefono: tel, parentesco: 'SNAPSHOT' })
-                                        await supabase.from('notificaciones_whatsapp').upsert(
-                                          { cuenta: cuentaActiva, telefono: tel, contactos_escalamiento: contactos, activo: true },
-                                          { onConflict: 'cuenta' }
-                                        )
-                                      } catch (e) { console.warn('Error guardando WhatsApp:', e) }
-                                    }}
-                                    className="bg-green-800 hover:bg-green-700 text-white font-bold px-3 py-1.5 text-[11px] rounded cursor-pointer"
-                                  >
-                                    + Agregar
-                                  </button>
-                                </div>
-                                <div className="flex flex-col gap-1 max-h-[100px] overflow-y-auto">
-                                  {whatsappsVideo.length === 0 ? (
-                                    <span className="text-[10px] text-gray-600 italic">Sin teléfonos registrados</span>
-                                  ) : whatsappsVideo.map((wa, i) => (
-                                    <div key={i} className="bg-green-950/40 border border-green-800 text-green-300 text-[10px] px-2 py-1 rounded flex items-center justify-between">
-                                      <span>{wa.nombre ? `${wa.nombre}: ` : ''}{wa.telefono}</span>
-                                      <button
-                                        onClick={async () => {
-                                          const nuevos = whatsappsVideo.filter((_, j) => j !== i)
-                                          setWhatsappsVideo(nuevos)
-                                          try {
-                                            const { data: existing } = await supabase.from('notificaciones_whatsapp').select('contactos_escalamiento').eq('cuenta', cuentaActiva).maybeSingle()
-                                            const contactos = ((existing?.contactos_escalamiento as any[]) || []).filter((c: any) => c.telefono !== wa.telefono || c.parentesco !== 'SNAPSHOT')
-                                            if (contactos.length > 0) {
-                                              await supabase.from('notificaciones_whatsapp').upsert(
-                                                { cuenta: cuentaActiva, telefono: contactos[0].telefono, contactos_escalamiento: contactos, activo: true },
-                                                { onConflict: 'cuenta' }
-                                              )
-                                            } else {
-                                              await supabase.from('notificaciones_whatsapp').delete().eq('cuenta', cuentaActiva)
-                                            }
-                                          } catch (e) { console.warn('Error eliminando WhatsApp:', e) }
-                                        }}
-                                        className="text-red-400 hover:text-red-300 font-bold leading-none ml-2"
-                                      >
-                                        ×
-                                      </button>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                          <div className="flex justify-end gap-2 border-t border-gray-800 pt-2 shrink-0">
-                            <button onClick={() => setEditandoCamaras(false)} className="bg-gray-800 hover:bg-gray-700 text-white font-bold border border-gray-600 px-4 py-1 text-[10px] cursor-pointer">CERRAR CONFIGURACIÓN</button>
-                          </div>
-                        </div>
-                      ) : (
-                        <>
-                          {/* Video Player Box */}
-                          <div className="relative flex-1 bg-[#050505] overflow-hidden flex items-center justify-center border-b md:border-b-0 md:border-r border-gray-800 min-h-[120px] md:min-h-0">
-                            <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.4)_100%)] z-10" />
-                            <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%)] bg-[size:100%_4px] z-10" />
-
-                            {/* Renderizado del feed: clip IA > url manual > imagen demo */}
-                            {(() => {
-                              // Prioridad 1: Clip seleccionado de BD IA
-                              if (clipSeleccionado) {
-                                return (
-                                  <video
-                                    key={clipSeleccionado}
-                                    src={`https://usuzyqayiecsburbsipl.supabase.co/storage/v1/object/public/clips/${clipSeleccionado}`}
-                                    autoPlay
-                                    controls
-                                    playsInline
-                                    className="w-full h-full object-contain bg-black"
-                                  />
-                                )
-                              }
-                              // Prioridad 2: URL manual configurada
-                              const url = activeCamera === 'CAM-01' ? camarasActivas.cam01 : activeCamera === 'CAM-02' ? camarasActivas.cam02 : camarasActivas.cam03
-                              if (url) {
-                                const lowerUrl = url.toLowerCase()
-                                const isVideo = lowerUrl.includes('.mp4') || lowerUrl.includes('.webm') || lowerUrl.includes('.ogg')
-                                const isImage = lowerUrl.includes('.jpg') || lowerUrl.includes('.jpeg') || lowerUrl.includes('.png') || lowerUrl.includes('.webp')
-                                if (isVideo) return <video src={url} autoPlay loop muted playsInline className="w-full h-full object-cover" />
-                                if (isImage) return <img src={url} alt="feed" className="w-full h-full object-cover" />
-                                return <iframe src={url} title="cam" className="w-full h-full border-0 bg-black" allow="autoplay" allowFullScreen />
-                              }
-                              // Prioridad 3: Demo simulado
-                              return (
-                                <>
-                                  <img
-                                    src={activeCamera === 'CAM-01' ? '/cctv_intruder.png' : '/cctv_false_alarm.png'}
-                                    alt="Demo"
-                                    className={`w-full h-full object-cover select-none ${
-                                      activeCamera === 'CAM-03' ? 'grayscale hue-rotate-90 brightness-75' :
-                                      activeCamera === 'CAM-02' ? 'hue-rotate-180 brightness-90' : 'brightness-90'
-                                    }`}
-                                  />
-                                  <div className="absolute bottom-1 left-1.5 bg-yellow-700/90 text-white text-[7px] px-1 py-0.5 rounded font-bold z-20">
-                                    ⚠️ SIM — Sin cámaras IA vinculadas
-                                  </div>
-                                </>
-                              )
-                            })()}
-
-                            {/* HUD */}
-                            {!clipSeleccionado && (
-                              <div className="absolute top-1 left-1.5 flex items-center gap-1 bg-black/60 px-1 py-0.5 rounded text-[8px] tracking-wider z-20">
-                                <div className="w-1.5 h-1.5 bg-red-600 rounded-full animate-ping" />
-                                <span>{camarasIA.length > 0 ? (camarasIA.find(c => c.id === selectedCamaraIAId)?.nombre || 'CAM-IA') : activeCamera}</span>
-                              </div>
-                            )}
-                            {clipSeleccionado && (
-                              <div className="absolute top-1 left-1.5 flex items-center gap-1 bg-blue-900/80 px-1 py-0.5 rounded text-[8px] tracking-wider z-20">
-                                <span>📦 CLIP IA</span>
-                                <button onClick={() => setClipSeleccionado(null)} className="ml-1 text-red-400 font-bold cursor-pointer">✕</button>
-                              </div>
-                            )}
-                            <div className="absolute top-1 right-1.5 bg-black/60 px-1 py-0.5 rounded text-[8px] z-20">
-                              {new Date().toISOString().slice(0, 19).replace('T', ' ')}
-                            </div>
-                          </div>
-
-                          {/* Panel lateral: Clips IA */}
-                          {camarasIA.length > 0 && (
-                            <div className="w-full md:w-[140px] bg-[#0a0c14] border-t md:border-t-0 md:border-l border-gray-800 flex flex-col shrink-0">
-                              <div className="text-[8px] font-bold text-blue-400 px-1.5 py-1 border-b border-gray-800 uppercase tracking-wider">📦 Clips IA ({clipsIA.length})</div>
-                              <div className="flex-1 overflow-y-auto">
-                                {clipsIA.length === 0 ? (
-                                  <div className="text-[8px] text-gray-600 p-2 text-center italic">Sin clips grabados aún</div>
-                                ) : clipsIA.map((clip) => (
-                                  <button
-                                    key={clip.id}
-                                    onClick={() => setClipSeleccionado(clip.clip_path)}
-                                    className={`w-full text-left px-1.5 py-1 border-b border-gray-900 cursor-pointer text-[8px] hover:bg-blue-900/40 ${
-                                      clipSeleccionado === clip.clip_path ? 'bg-blue-800/60 text-white' : 'text-gray-400'
-                                    }`}
-                                  >
-                                    <div className="font-bold text-blue-300 truncate">{clip.clip_path?.split('/').pop() || 'clip'}</div>
-                                    <div className="text-gray-600">{clip.fecha_hora ? new Date(clip.fecha_hora).toLocaleString('es-CL') : ''}</div>
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </>
-                      )}
-
+                    <div className="flex justify-end pt-1">
+                      <button
+                        type="button"
+                        onClick={guardarHorariosExpediente}
+                        disabled={guardandoHorarios}
+                        className="bg-[#000080] text-white font-bold px-3 py-0.5 text-[9px]"
+                      >
+                        {guardandoHorarios ? 'Guardando...' : '💾 Guardar Horarios'}
+                      </button>
                     </div>
                   </div>
                 )}
               </div>
             </div>
 
-            {/* Lado Derecho: Características / Referencias / Observaciones (Ancho Compacto 280px) */}
-            <div className="w-full md:w-[280px] flex flex-col shrink-0">
+            {/* Lado Derecho: Pestañas Características / Referencias / Observaciones */}
+            <div className="w-full md:w-[360px] flex flex-col shrink-0">
               <div className="flex gap-0.5 text-[9px]">
                 <button
+                  type="button"
                   onClick={() => setTabInfo('caracteristicas')}
                   className={`px-2 py-1 font-bold border-t border-l border-r border-white rounded-t-sm cursor-pointer ${
                     tabInfo === 'caracteristicas' ? 'bg-[#d4d0c8] pb-1 -mb-0.5 z-10' : 'bg-[#b0b0b0] text-gray-700'
@@ -1915,6 +615,7 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
                   CARACTERISTICAS
                 </button>
                 <button
+                  type="button"
                   onClick={() => setTabInfo('referencias')}
                   className={`px-2 py-1 font-bold border-t border-l border-r border-white rounded-t-sm cursor-pointer ${
                     tabInfo === 'referencias' ? 'bg-[#d4d0c8] pb-1 -mb-0.5 z-10' : 'bg-[#b0b0b0] text-gray-700'
@@ -1923,6 +624,7 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
                   REFERENCIAS
                 </button>
                 <button
+                  type="button"
                   onClick={() => setTabInfo('observaciones')}
                   className={`px-2 py-1 font-bold border-t border-l border-r border-white rounded-t-sm cursor-pointer ${
                     tabInfo === 'observaciones' ? 'bg-[#d4d0c8] pb-1 -mb-0.5 z-10' : 'bg-[#b0b0b0] text-gray-700'
@@ -1932,19 +634,25 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
                 </button>
               </div>
 
-              <div className="border-2 border-white bg-[#d4d0c8] p-1 flex-1 flex flex-col justify-start overflow-hidden min-h-[90px] md:min-h-0">
-                <div className="border border-gray-400 p-1 relative flex-1 flex flex-col bg-[#d4d0c8]">
-                  <div className="absolute -top-2.5 left-2 bg-[#d4d0c8] px-1 text-[8px] font-bold text-gray-700 uppercase">
-                    {tabInfo}
+              <div className="border border-white bg-[#d4d0c8] p-1 flex-1 flex flex-col">
+                <div className="border border-gray-400 p-1 relative flex-1 bg-[#d4d0c8] flex flex-col">
+                  <div className="absolute -top-2 left-2 bg-[#d4d0c8] px-1 text-[8px] font-bold text-gray-700 uppercase">
+                    {tabInfo === 'caracteristicas' ? 'CARACTERISTICAS' : tabInfo === 'referencias' ? 'REFERENCIAS' : 'OBSERVACIONES'}
                   </div>
                   <textarea
-                    readOnly
                     value={
-                      tabInfo === 'caracteristicas' ? (cliente.caract_adic1 || 'Sin características') :
-                      tabInfo === 'referencias' ? (cliente.referencia1 || 'Sin referencias') :
-                      (cliente.observacion1 || 'Sin observaciones')
+                      tabInfo === 'caracteristicas'
+                        ? clienteForm['caract adic1'] || ''
+                        : tabInfo === 'referencias'
+                        ? clienteForm['referencia1'] || ''
+                        : clienteForm['observacion1'] || ''
                     }
-                    className="w-full flex-1 bg-[#ffffd0] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white p-1.5 font-bold font-mono text-[10px] text-gray-800 resize-none focus:outline-none leading-normal h-full overflow-y-auto"
+                    onChange={(e) => {
+                      const k = tabInfo === 'caracteristicas' ? 'caract adic1' : tabInfo === 'referencias' ? 'referencia1' : 'observacion1'
+                      updateField(k, e.target.value)
+                    }}
+                    rows={7}
+                    className="w-full h-full bg-[#ffffd0] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white p-1 font-bold text-blue-900 text-[10px] resize-none focus:outline-none mt-1"
                   />
                 </div>
               </div>
@@ -1952,77 +660,137 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
 
           </div>
 
-          {/* FILA 3: INSTALACIÓN + BUSCADOR + SALIR */}
-          <div className="h-auto md:h-[140px] flex flex-col md:flex-row gap-2 shrink-0">
+          {/* FILA 3: INSTALACION + BUSCAR USUARIO + BOTONES LATERALES */}
+          <div className="flex flex-col md:flex-row gap-2 shrink-0">
             
-            {/* Instalación / U. Control (PC: Ancho 400px, Móvil: Completo) */}
-            <div className="w-full md:w-[400px] flex flex-col shrink-0">
+            {/* Pestañas de Instalación / U. Control */}
+            <div className="w-full md:w-[280px] flex flex-col shrink-0">
               <div className="flex gap-0.5 text-[9px]">
                 <button
+                  type="button"
                   onClick={() => setTabInstalacion('instalacion')}
-                  className={`px-2 py-1 font-bold border-t border-l border-r border-white rounded-t-sm cursor-pointer ${
+                  className={`px-1.5 py-0.5 font-bold border-t border-l border-r border-white rounded-t-sm cursor-pointer ${
                     tabInstalacion === 'instalacion' ? 'bg-[#d4d0c8] pb-1' : 'bg-[#b0b0b0] text-gray-700'
                   }`}
                 >
                   INSTALACION
                 </button>
                 <button
+                  type="button"
                   onClick={() => setTabInstalacion('ucontrol')}
-                  className={`px-2 py-1 font-bold border-t border-l border-r border-white rounded-t-sm cursor-pointer ${
+                  className={`px-1.5 py-0.5 font-bold border-t border-l border-r border-white rounded-t-sm cursor-pointer ${
                     tabInstalacion === 'ucontrol' ? 'bg-[#d4d0c8] pb-1' : 'bg-[#b0b0b0] text-gray-700'
                   }`}
                 >
                   U. CONTROL
                 </button>
+                <button
+                  type="button"
+                  onClick={() => setTabInstalacion('tiempos')}
+                  className={`px-1.5 py-0.5 font-bold border-t border-l border-r border-white rounded-t-sm cursor-pointer ${
+                    tabInstalacion === 'tiempos' ? 'bg-[#d4d0c8] pb-1' : 'bg-[#b0b0b0] text-gray-700'
+                  }`}
+                >
+                  TIEMPOS
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTabInstalacion('teclados')}
+                  className={`px-1.5 py-0.5 font-bold border-t border-l border-r border-white rounded-t-sm cursor-pointer ${
+                    tabInstalacion === 'teclados' ? 'bg-[#d4d0c8] pb-1' : 'bg-[#b0b0b0] text-gray-700'
+                  }`}
+                >
+                  TECLADOS
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTabInstalacion('sirenas')}
+                  className={`px-1.5 py-0.5 font-bold border-t border-l border-r border-white rounded-t-sm cursor-pointer ${
+                    tabInstalacion === 'sirenas' ? 'bg-[#d4d0c8] pb-1' : 'bg-[#b0b0b0] text-gray-700'
+                  }`}
+                >
+                  SIRENAS
+                </button>
               </div>
-              <div className="border border-white bg-[#d4d0c8] p-2 flex-1 flex flex-col justify-center gap-1.5 min-h-[60px] md:min-h-0">
+
+              <div className="border border-white bg-[#d4d0c8] p-2 flex-1 flex flex-col justify-center gap-1.5">
                 {tabInstalacion === 'instalacion' && (
                   <div className="space-y-1.5 text-[10px]">
-                    <div className="grid grid-cols-3 items-center gap-1">
-                      <span className="font-bold text-right text-gray-700">Instalación:</span>
-                      <input type="text" readOnly value={cliente.fecha || ''} className="col-span-2 bg-[#ffffd0] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white px-1.5 py-0.5 font-bold text-gray-800" />
+                    <div className="flex items-center gap-1">
+                      <span className="font-bold w-28 text-right">Fecha de Instalación:</span>
+                      <input
+                        type="text"
+                        value={clienteForm.fecha || ''}
+                        onChange={(e) => updateField('fecha', e.target.value)}
+                        className="flex-1 bg-[#ffffd0] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white px-1.5 py-0.5 font-bold text-blue-900"
+                      />
                     </div>
-                    <div className="grid grid-cols-3 items-center gap-1">
-                      <span className="font-bold text-right text-gray-700">Instalador:</span>
-                      <input type="text" readOnly value={cliente.instalador || ''} className="col-span-2 bg-[#ffffd0] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white px-1.5 py-0.5 font-bold text-gray-800 truncate" />
+                    <div className="flex items-center gap-1">
+                      <span className="font-bold w-28 text-right">Instalador:</span>
+                      <input
+                        type="text"
+                        value={clienteForm.instalador || ''}
+                        onChange={(e) => updateField('instalador', e.target.value)}
+                        className="flex-1 bg-[#ffffd0] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white px-1.5 py-0.5 font-bold text-blue-900 truncate"
+                      />
                     </div>
                   </div>
                 )}
-
                 {tabInstalacion === 'ucontrol' && (
                   <div className="space-y-1.5 text-[10px]">
-                    <div className="grid grid-cols-3 items-center gap-1">
-                      <span className="font-bold text-right text-gray-700">Marca/Mod:</span>
-                      <input type="text" readOnly value={`${cliente.marca || ''} ${cliente.modelo || ''}`} className="col-span-2 bg-[#ffffd0] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white px-1.5 py-0.5 font-bold text-gray-800" />
+                    <div className="flex items-center gap-1">
+                      <span className="font-bold w-20 text-right">Marca/Mod:</span>
+                      <input
+                        type="text"
+                        value={`${clienteForm.marca || ''} ${clienteForm.modelo || ''}`.trim()}
+                        onChange={(e) => updateField('modelo', e.target.value)}
+                        className="flex-1 bg-[#ffffd0] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white px-1.5 py-0.5 font-bold text-blue-900"
+                      />
                     </div>
-                    <div className="grid grid-cols-3 items-center gap-1">
-                      <span className="font-bold text-right text-gray-700">Ubicación UC:</span>
-                      <input type="text" readOnly value={cliente.ubicacion_uc || ''} className="col-span-2 bg-[#ffffd0] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white px-1.5 py-0.5 font-bold text-gray-800 truncate" />
+                    <div className="flex items-center gap-1">
+                      <span className="font-bold w-20 text-right">Ubicación UC:</span>
+                      <input
+                        type="text"
+                        value={clienteForm.ubicacion_uc || ''}
+                        onChange={(e) => updateField('ubicacion_uc', e.target.value)}
+                        className="flex-1 bg-[#ffffd0] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white px-1.5 py-0.5 font-bold text-blue-900 truncate"
+                      />
                     </div>
                   </div>
                 )}
               </div>
             </div>
 
-            {/* BUSCADOR DE USUARIO (Ancho restante) */}
-            <div className="flex-1 border border-gray-400 p-2 relative bg-[#d4d0c8] flex flex-col gap-1 shrink-0 min-h-[120px] md:min-h-0">
-              <div className="absolute -top-2 left-2 bg-[#d4d0c8] px-1 text-[9px] font-bold text-gray-700">
+            {/* BUSCAR USUARIO */}
+            <div className="flex-1 border border-gray-400 p-2 relative bg-[#d4d0c8] flex flex-col gap-1 min-h-[110px]">
+              <div className="absolute -top-2 left-2 bg-[#d4d0c8] px-1 text-[8px] font-bold text-gray-700 uppercase">
                 BUSCAR USUARIO
               </div>
-              
-              <div className="grid grid-cols-4 gap-1 items-center mt-0.5">
-                <span className="font-bold text-gray-700">CUENTA:</span>
-                <input
-                  type="text"
-                  value={buscarCuentaInput}
-                  onChange={(e) => setBuscarCuentaInput(e.target.value)}
-                  className="col-span-3 bg-white border border-t-gray-700 border-l-gray-700 border-b-white border-r-white font-bold px-1.5 py-0.5 text-black"
-                  placeholder="Filtro de búsqueda..."
-                />
+
+              <div className="flex items-center gap-2 mt-0.5">
+                <div className="flex items-center gap-1">
+                  <span className="font-bold text-[10px]">CUENTA:</span>
+                  <input
+                    type="text"
+                    value={cuentaActiva}
+                    readOnly
+                    className="w-16 bg-white border border-t-gray-700 border-l-gray-700 border-b-white border-r-white font-mono font-bold px-1.5 py-0.5 text-black"
+                  />
+                </div>
+                <div className="flex-1 flex items-center gap-1">
+                  <span className="font-bold text-[10px]">NOMBRE:</span>
+                  <input
+                    type="text"
+                    value={buscarCuentaInput}
+                    onChange={(e) => setBuscarCuentaInput(e.target.value)}
+                    className="flex-1 bg-white border border-t-gray-700 border-l-gray-700 border-b-white border-r-white font-bold px-1.5 py-0.5 text-black text-[10px]"
+                    placeholder="Ingrese el nombre o parte del nombre del usuario"
+                  />
+                </div>
               </div>
 
-              {/* Lista azul marino (Scroll y altura adaptable) */}
-              <div className="h-[75px] md:h-[75px] bg-[#000080] text-white border border-t-gray-700 border-l-gray-700 border-b-white border-r-white overflow-y-auto text-[10px]">
+              {/* Lista Azul Marino con scroll */}
+              <div className="h-[70px] bg-[#000080] text-white border border-t-gray-700 border-l-gray-700 border-b-white border-r-white overflow-y-auto font-mono text-[10px]">
                 {listaFiltrada.map((item) => (
                   <div
                     key={item.cuenta}
@@ -2030,24 +798,74 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
                       setCuentaActiva(item.cuenta.toUpperCase().trim())
                       setBuscarCuentaInput('')
                     }}
-                    className={`px-1.5 py-0.5 cursor-pointer font-mono font-bold select-none ${
-                      cuentaActiva === item.cuenta ? 'bg-yellow-500 text-black' : 'hover:bg-blue-900'
+                    className={`px-1.5 py-0.5 cursor-pointer select-none font-bold ${
+                      cuentaActiva === item.cuenta ? 'bg-yellow-400 text-black' : 'hover:bg-blue-900'
                     }`}
                   >
                     {item.cuenta.padEnd(6, ' ')} | {item.nombre}
                   </div>
                 ))}
-                {listaFiltrada.length === 0 && (
-                  <div className="p-2 text-center text-blue-300 italic">No hay coincidencias</div>
-                )}
               </div>
             </div>
 
-            {/* BOTÓN SALIR (Centrado horizontalmente) */}
-            <div className="w-full md:w-[110px] flex items-center justify-center shrink-0 h-10 md:h-full">
-              <button 
+            {/* COLUMNA DE 6 BOTONES A LA DERECHA */}
+            <div className="w-full md:w-[105px] flex md:flex-col gap-1 justify-between shrink-0">
+              <button
+                type="button"
+                onClick={() => setModoEdicion(true)}
+                className="flex-1 md:flex-none h-7 bg-[#d4d0c8] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 text-gray-900 font-extrabold active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white cursor-pointer hover:bg-[#e0e0e0] text-[10px] shadow-xs"
+              >
+                EDITAR
+              </button>
+              <button
+                type="button"
+                onClick={guardarCambiosGenerales}
+                disabled={guardando}
+                className="flex-1 md:flex-none h-7 bg-[#d4d0c8] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 text-gray-900 font-extrabold active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white cursor-pointer hover:bg-[#e0e0e0] text-[10px] shadow-xs disabled:opacity-50"
+              >
+                {guardando ? 'GUARDANDO' : 'GUARDAR'}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const nueva = prompt('Ingrese el código de la nueva cuenta (ej: C800):')
+                  if (!nueva) return
+                  const n = nueva.toUpperCase().trim()
+                  setCuentaActiva(n)
+                  setClienteForm({ cuenta: n, nombre: 'NUEVO ABONADO', ciudad: 'LIMACHE' })
+                  setModoEdicion(true)
+                }}
+                className="flex-1 md:flex-none h-7 bg-[#d4d0c8] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 text-gray-900 font-extrabold active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white cursor-pointer hover:bg-[#e0e0e0] text-[10px] shadow-xs"
+              >
+                NUEVO
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (confirm(`¿Desea eliminar o inactivar la cuenta ${cuentaActiva}?`)) {
+                    alert(`Cuenta ${cuentaActiva} marcada para baja.`)
+                  }
+                }}
+                className="flex-1 md:flex-none h-7 bg-[#d4d0c8] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 text-gray-900 font-extrabold active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white cursor-pointer hover:bg-[#e0e0e0] text-[10px] shadow-xs"
+              >
+                ELIMINAR
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const target = clientesMap[cuentaActiva] || clientesGeneralFallback[cuentaActiva] || {}
+                  setClienteForm({ ...target, cuenta: cuentaActiva })
+                  setModoEdicion(false)
+                  setStatusMsg('')
+                }}
+                className="flex-1 md:flex-none h-7 bg-[#d4d0c8] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 text-gray-900 font-extrabold active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white cursor-pointer hover:bg-[#e0e0e0] text-[10px] shadow-xs"
+              >
+                CANCELAR
+              </button>
+              <button
+                type="button"
                 onClick={onClose}
-                className="w-full h-9 bg-[#d4d0c8] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 text-gray-800 font-extrabold active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white cursor-pointer select-none hover:bg-gray-200 text-[11px] shadow-sm flex items-center justify-center"
+                className="flex-1 md:flex-none h-7 bg-[#d4d0c8] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 text-gray-900 font-extrabold active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white cursor-pointer hover:bg-[#e0e0e0] text-[10px] shadow-xs"
               >
                 SALIR
               </button>
@@ -2055,76 +873,15 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
 
           </div>
 
+          {/* Feedback Bar */}
+          {statusMsg && (
+            <div className="bg-blue-900 text-white font-bold px-2 py-0.5 text-center text-[10px] rounded-xs animate-pulse">
+              {statusMsg}
+            </div>
+          )}
+
         </div>
       </div>
-
-      {/* MODAL IMPORTAR EXCEL MAESTRO (SOLO ADMINISTRADOR) */}
-      {mostrarModalExcel && usuarioRol === 'Administrador' && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-3">
-          <div className="w-full max-w-[650px] bg-[#d4d0c8] border-2 border-t-white border-l-white border-b-black border-r-black p-3 flex flex-col gap-2 font-mono text-[11px] shadow-2xl">
-            <div className="bg-[#000080] text-white font-bold px-2 py-1 flex justify-between items-center">
-              <span>📊 Importación Masiva - Excel Maestro de RUTs y Unidades</span>
-              <button onClick={() => setMostrarModalExcel(false)} className="text-white font-bold cursor-pointer">✕</button>
-            </div>
-
-            <div className="bg-[#ffffd0] p-2 border border-gray-500 text-gray-800 text-[10px]">
-              <strong>Instrucciones:</strong> Copia y pega las filas desde tu archivo Excel o CSV (o descarga la plantilla oficial abajo).<br/>
-              Orden estricto de columnas: <code>[N° ABONADO | NOMBRE | RUT | SUCURSAL]</code>.<br/>
-              <em>El RUT se formateará automáticamente al formato <code>12123123-6</code> (sin puntos, con guión).</em>
-            </div>
-
-            <textarea
-              value={excelTextRaw}
-              onChange={(e) => setExcelTextRaw(e.target.value)}
-              placeholder={"C774\tMARIA CECILIA ACUÑA\t12123123-6\tCASA SANTO DOMINGO\nC775\tCOMERCIAL GAMA LTDA\t76123456-K\tLOCAL CENTRO"}
-              className="w-full h-[180px] bg-white border border-gray-600 p-2 text-[10px] font-mono focus:outline-none"
-            />
-
-            <div className="flex justify-between items-center gap-2 shrink-0 pt-1">
-              <button
-                onClick={descargarPlantillaExcel}
-                className="px-3 py-1 bg-green-700 text-white font-bold rounded-sm text-[10px] hover:bg-green-800 shadow active:translate-y-0.5 cursor-pointer flex items-center gap-1"
-                title="Descargar archivo CSV/Excel de muestra oficial"
-              >
-                <span>📥 Descargar Plantilla Excel</span>
-              </button>
-
-              <div className="flex items-center gap-2">
-                <button
-                  disabled={cargandoExcel}
-                  onClick={() => setMostrarModalExcel(false)}
-                  className="px-3 py-1 bg-gray-300 border border-gray-600 font-bold hover:bg-gray-400 cursor-pointer"
-                >
-                  Cancelar
-                </button>
-                <button
-                  disabled={cargandoExcel}
-                  onClick={procesarCargaMasivaExcel}
-                  className="px-4 py-1 bg-[#008080] text-white font-bold hover:bg-teal-900 shadow active:translate-y-0.5 cursor-pointer"
-                >
-                  {cargandoExcel ? '⏳ Procesando...' : '🚀 Cargar Maestro'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {testingDahuaCam && (
-        <VideoVerificacionModal
-          onClose={() => setTestingDahuaCam(null)}
-          evento={{
-            id: 99999,
-            fecha_hora: new Date().toISOString(),
-            cuenta: cuentaActiva,
-            nombre_abonado: `${clientesMap[cuentaActiva]?.nombre || evento.nombre_abonado || 'Abonado'} [PRUEBA P2P: ${testingDahuaCam.nombre}]`,
-            evento: 'TEST_CONEXION_P2P',
-            zona: `CH-${testingDahuaCam.canal}`,
-            usuario: 'ADMINISTRADOR'
-          }}
-          esCierre={true}
-        />
-      )}
     </div>
   )
 }

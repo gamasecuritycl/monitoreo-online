@@ -11,15 +11,15 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const {
       cuenta,
-      tipoOperacion,
+      tipoOperacion = 'EDITAR_CONTACTOS',
       datosNuevos,
       datosAnteriores,
       operador = { nombre: 'OPERADOR CENTRAL', codigo: '01', rol: 'Administrador' }
     } = body
 
-    if (!cuenta || !tipoOperacion || !datosNuevos) {
+    if (!cuenta || !datosNuevos) {
       return NextResponse.json(
-        { success: false, error: 'Faltan parámetros requeridos (cuenta, tipoOperacion, datosNuevos).' },
+        { success: false, error: 'Faltan parámetros requeridos (cuenta, datosNuevos).' },
         { status: 400 }
       )
     }
@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
     const cuentaNormalizada = cuenta.toUpperCase().trim()
     const nowIso = new Date().toISOString()
 
-    // 1. Encolar orden en 'ordenes_editor_remoto' o fallback a 'eventos_monitoreo'
+    // 1. Encolar orden en 'ordenes_editor_remoto' (con fallback a 'eventos_monitoreo')
     let ordenId = `ORD-${Date.now()}`
     try {
       const { data, error } = await supabase
@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
         ordenId = data.id
       }
     } catch (errCola) {
-      console.warn('[EDITOR REMOTO] Tabla ordenes_editor_remoto no disponible, usando fallback eventos_monitoreo:', errCola)
+      console.warn('[EDITOR REMOTO] Usando fallback eventos_monitoreo para encolar orden:', errCola)
       await supabase.from('eventos_monitoreo').insert({
         cuenta: 'ORDEN_EDITOR_REMOTO',
         evento: tipoOperacion,
@@ -66,38 +66,60 @@ export async function POST(req: NextRequest) {
       })
     }
 
-    // 2. Actualizar el mapa maestro de CLIENTES en Supabase en caliente para reflejo instantáneo
+    // 2. Actualizar el mapa maestro de CLIENTES en Supabase en caliente para persistencia y reflejo instantáneo
     try {
       const { data: clientesData } = await supabase
         .from('eventos_monitoreo')
         .select('*')
         .eq('cuenta', 'CLIENTES')
+        .order('id', { ascending: false })
         .limit(1)
 
+      let clientesMap: Record<string, any> = {}
+
       if (clientesData && clientesData.length > 0) {
-        const rawJson = clientesData[0].nombre_abonado || '{}'
-        const clientesMap = JSON.parse(rawJson)
-
-        if (clientesMap[cuentaNormalizada]) {
-          // Fusionar campos editados
-          clientesMap[cuentaNormalizada] = {
-            ...clientesMap[cuentaNormalizada],
-            ...datosNuevos,
-            _actualizadoRemotoEl: nowIso,
-            _actualizadoPor: operador.nombre
-          }
-
-          await supabase
-            .from('eventos_monitoreo')
-            .update({
-              nombre_abonado: JSON.stringify(clientesMap),
-              fecha_hora: nowIso
-            })
-            .eq('id', clientesData[0].id)
+        try {
+          clientesMap = JSON.parse(clientesData[0].nombre_abonado || '{}')
+        } catch (e) {
+          clientesMap = {}
         }
+
+        // Fusionar campos editados de la cuenta
+        clientesMap[cuentaNormalizada] = {
+          ...(clientesMap[cuentaNormalizada] || {}),
+          ...datosNuevos,
+          cuenta: cuentaNormalizada,
+          _actualizadoRemotoEl: nowIso,
+          _actualizadoPor: operador.nombre
+        }
+
+        await supabase
+          .from('eventos_monitoreo')
+          .update({
+            nombre_abonado: JSON.stringify(clientesMap),
+            fecha_hora: nowIso
+          })
+          .eq('id', clientesData[0].id)
+      } else {
+        // No existía fila CLIENTES, crearla
+        clientesMap[cuentaNormalizada] = {
+          ...datosNuevos,
+          cuenta: cuentaNormalizada,
+          _actualizadoRemotoEl: nowIso,
+          _actualizadoPor: operador.nombre
+        }
+
+        await supabase
+          .from('eventos_monitoreo')
+          .insert({
+            cuenta: 'CLIENTES',
+            evento: 'SINCRONIZACION CLIENTES MDB',
+            nombre_abonado: JSON.stringify(clientesMap),
+            fecha_hora: nowIso
+          })
       }
     } catch (errClientes) {
-      console.warn('[EDITOR REMOTO] Error actualizando cache de CLIENTES:', errClientes)
+      console.warn('[EDITOR REMOTO] Error actualizando cache de CLIENTES en Supabase:', errClientes)
     }
 
     // 3. Registrar auditoría en Bitácora Operativa
@@ -118,7 +140,7 @@ export async function POST(req: NextRequest) {
       success: true,
       ordenId,
       cuenta: cuentaNormalizada,
-      mensaje: 'Orden de edición encolada correctamente y aplicada a la memoria en caliente.'
+      mensaje: 'Orden de edición procesada, guardada en base de datos y lista para sincronización local.'
     })
   } catch (error: any) {
     console.error('[EDITOR REMOTO API ERROR]:', error)

@@ -21,6 +21,10 @@ if exist "%DIR_ACTUAL%sincronizador.py" (
         copy /y "%DIR_ACTUAL%sincronizador_clientes.py" "C:\SCORPION\BASES DE DATOS\sincronizador_clientes.py" >nul 2>&1
         copy /y "%DIR_ACTUAL%sincronizador_clientes.py" "C:\SCORPION\BASES DE DATOS\SCORPION_DEPLOY\sincronizador_clientes.py" >nul 2>&1
     )
+    if exist "%DIR_ACTUAL%editor_remoto.py" (
+        copy /y "%DIR_ACTUAL%editor_remoto.py" "C:\SCORPION\BASES DE DATOS\editor_remoto.py" >nul 2>&1
+        copy /y "%DIR_ACTUAL%editor_remoto.py" "C:\SCORPION\BASES DE DATOS\SCORPION_DEPLOY\editor_remoto.py" >nul 2>&1
+    )
     if exist "%DIR_ACTUAL%watchdog_total.vbs" (
         copy /y "%DIR_ACTUAL%watchdog_total.vbs" "C:\SCORPION\BASES DE DATOS\SCORPION_DEPLOY\watchdog_total.vbs" >nul 2>&1
         copy /y "%DIR_ACTUAL%watchdog_total.vbs" "C:\SCORPION\BASES DE DATOS\watchdog_total.vbs" >nul 2>&1
@@ -51,21 +55,29 @@ echo Ruta Python: %PY_W%
 echo [4/5] Verificando e instalando librerias (pyodbc, supabase)...
 %PY_E% -m pip install pyodbc supabase >nul 2>&1
 
-echo [5/5] Lanzando Sincronizador v5.1 y Sincronizador de Clientes...
+echo [5/5] Lanzando Sincronizador v5.1, Sincronizador Clientes y Editor Remoto...
 cd /d "C:\SCORPION\BASES DE DATOS"
 start "" /b %PY_W% "C:\SCORPION\BASES DE DATOS\sincronizador.py"
 if exist "C:\SCORPION\BASES DE DATOS\sincronizador_clientes.py" (
     start "" /b %PY_W% "C:\SCORPION\BASES DE DATOS\sincronizador_clientes.py"
 )
+if exist "C:\SCORPION\BASES DE DATOS\editor_remoto.py" (
+    start "" /b %PY_W% "C:\SCORPION\BASES DE DATOS\editor_remoto.py"
+)
 start "" /b wscript.exe "C:\SCORPION\BASES DE DATOS\SCORPION_DEPLOY\watchdog_total.vbs" >nul 2>&1
 
-:: Crear Tarea Programada apuntando a la ruta absoluta detectada
+:: Crear Tareas Programadas apuntando a la ruta absoluta detectada
 schtasks /create /tn "GAMA_Sincronizador" /tr "%PY_W% \"C:\SCORPION\BASES DE DATOS\sincronizador.py\"" /sc ONSTART /rl HIGHEST /f >nul 2>&1
 schtasks /run /tn GAMA_Sincronizador >nul 2>&1
 
 if exist "C:\SCORPION\BASES DE DATOS\sincronizador_clientes.py" (
     schtasks /create /tn "GAMA_Sincronizador_Clientes" /tr "%PY_W% \"C:\SCORPION\BASES DE DATOS\sincronizador_clientes.py\"" /sc ONSTART /rl HIGHEST /f >nul 2>&1
     schtasks /run /tn GAMA_Sincronizador_Clientes >nul 2>&1
+)
+
+if exist "C:\SCORPION\BASES DE DATOS\editor_remoto.py" (
+    schtasks /create /tn "GAMA_Editor_Remoto" /tr "%PY_W% \"C:\SCORPION\BASES DE DATOS\editor_remoto.py\"" /sc ONSTART /rl HIGHEST /f >nul 2>&1
+    schtasks /run /tn GAMA_Editor_Remoto >nul 2>&1
 )
 
 timeout /t 5 >nul
