@@ -37,8 +37,17 @@ import {
 } from 'lucide-react'
 import { supabase, type EventoMonitoreo } from '@/lib/supabase'
 import clientesDataRaw from '@/lib/clientes_general.json'
+import personasAutorizadasRaw from '@/lib/personas_autorizadas.json'
 
 const clientesMap = clientesDataRaw as Record<string, Record<string, any>>
+const personasAutorizadasMap = personasAutorizadasRaw as Record<string, Array<{
+  prioridad: number
+  nombre: string
+  contrasena: string
+  cargo: string
+  direccion: string
+  telefono: string
+}>>
 
 // Interface para registros reales de Bitácora
 interface BitacoraRecord {
@@ -1146,20 +1155,50 @@ Anotación REAL de Bitácora Operador: "${item.notaReal}"`
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {[
-                    { orden: '1º Prioridad', nombre: clienteRaw.nombre1 || 'MIRNA REBOLLEDO NUÑEZ', cargo: clienteRaw.carg1 || 'Encargado Principal', fono: clienteRaw.t1 || '948855200' },
-                    { orden: '2º Prioridad', nombre: clienteRaw.nombre2 || 'TOMAS TORO', cargo: clienteRaw.carg2 || 'Contacto Secundario', fono: clienteRaw.t2 || '991016912' },
-                    { orden: '3º Prioridad', nombre: clienteRaw.nombre3 || 'Guardia de Turno 24h', cargo: clienteRaw.carg3 || 'Acceso Conserjería', fono: clienteRaw.t3 || '+56 9 6543 2109' },
-                  ].map((c, idx) => (
-                    <div key={idx} className="bg-[#081220] border border-[#1a3356]/60 rounded-2xl p-5 relative overflow-hidden">
-                      <span className="text-[10px] bg-[#2997ff]/20 text-[#2997ff] border border-[#2997ff]/30 px-2.5 py-0.5 rounded-full font-mono font-bold">
-                        {c.orden}
-                      </span>
-                      <h4 className="text-white font-bold text-base mt-3">{c.nombre}</h4>
-                      <p className="text-xs text-slate-400 mt-0.5">{c.cargo}</p>
-                      <p className="text-xs font-mono text-[#2997ff] mt-3">{c.fono}</p>
-                    </div>
-                  ))}
+                  {(() => {
+                    const cClean = cuentaActiva.trim().toUpperCase()
+                    const list = personasAutorizadasMap[cClean]
+                      || (cClean.startsWith('C') ? personasAutorizadasMap[cClean.slice(1)] : null)
+                      || (!cClean.startsWith('C') ? personasAutorizadasMap[`C${cClean}`] : null)
+                      || personasAutorizadasMap[cClean.replace(/^C/, '').padStart(4, '0')]
+                      || personasAutorizadasMap[`C${cClean.replace(/^C/, '').padStart(4, '0')}`]
+
+                    const items = (list && Array.isArray(list) && list.length > 0)
+                      ? list.map((p, idx) => ({
+                          orden: `${p.prioridad || idx + 1}º Prioridad`,
+                          nombre: p.nombre.toUpperCase(),
+                          cargo: p.cargo || 'Persona Autorizada',
+                          fono: p.telefono || 'Sin teléfono registrado',
+                        }))
+                      : [
+                          { orden: '1º Prioridad', nombre: clienteRaw.nombre1 || 'TITULAR / ENCARGADO', cargo: clienteRaw.carg1 || 'Encargado Principal', fono: clienteRaw.t1 || 'Sin tel.' },
+                          { orden: '2º Prioridad', nombre: clienteRaw.nombre2 || 'CONTACTO SECUNDARIO', cargo: clienteRaw.carg2 || 'Contacto', fono: clienteRaw.t2 || 'Sin tel.' },
+                          { orden: '3º Prioridad', nombre: clienteRaw.nombre3 || 'CONSERJERÍA / SEGURIDAD', cargo: clienteRaw.carg3 || 'Seguridad', fono: clienteRaw.t3 || 'Sin tel.' },
+                        ]
+
+                    return items.map((c, idx) => (
+                      <div key={idx} className="bg-[#081220] border border-[#1a3356]/60 rounded-2xl p-5 relative overflow-hidden flex flex-col justify-between">
+                        <div>
+                          <span className="text-[10px] bg-[#2997ff]/20 text-[#2997ff] border border-[#2997ff]/30 px-2.5 py-0.5 rounded-full font-mono font-bold">
+                            {c.orden}
+                          </span>
+                          <h4 className="text-white font-bold text-base mt-3">{c.nombre}</h4>
+                          <p className="text-xs text-slate-400 mt-0.5">{c.cargo}</p>
+                        </div>
+                        <div className="mt-4 pt-3 border-t border-slate-800/60 flex items-center justify-between">
+                          <p className="text-xs font-mono text-[#2997ff] font-bold">{c.fono}</p>
+                          {c.fono && c.fono !== 'Sin tel.' && (
+                            <a 
+                              href={`tel:${c.fono.replace(/[^0-9+]/g, '')}`}
+                              className="text-[11px] text-slate-400 hover:text-white flex items-center gap-1 bg-slate-800/80 px-2 py-1 rounded-lg border border-slate-700"
+                            >
+                              📞 Llamar
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    ))
+                  })()}
                 </div>
 
                 {/* PIE DE SECCIÓN CÓMODO Y SEPARADO EN EL FOOTER */}

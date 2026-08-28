@@ -28,21 +28,33 @@ import EntregaTurnoModal from './EntregaTurnoModal'
 import HealthTelemetryModal from './HealthTelemetryModal'
 import AperturasCierresModal from './AperturasCierresModal'
 import BuscadorUniversalModal from './BuscadorUniversalModal'
+import PersonasAutorizadasModal from './PersonasAutorizadasModal'
 import { lookupContactId } from '@/lib/contact_id_library'
 import { sendMessage, generarMensajeAlerta, generarMensajeEnergia, detectarPatronEvento, type EventInfo } from '@/lib/whatsapp'
 import { Operator, ensureUserAttributes, OPERADORES_PREDETERMINADOS } from '@/types/operator'
 
 // Base de datos de clientes precargada de GENERAL.MDB
 import clientesDataRaw from '@/lib/clientes_general.json'
+import personasAutorizadasRaw from '@/lib/personas_autorizadas.json'
 
 const clientesGeneralFallback = clientesDataRaw as Record<string, Record<string, string>>
+const personasAutorizadasFallback = personasAutorizadasRaw as Record<string, Array<{
+  prioridad: number
+  nombre: string
+  contrasena: string
+  cargo: string
+  direccion: string
+  telefono: string
+}>>
 
 // ── Contactos del Panel Lateral de Scorpion y Entidades de Emergencia ──
 interface ContactoAutorizado {
   prioridad: number
   nombre: string
   telefono: string
+  contrasena?: string
   cargo?: string
+  direccion?: string
   tipo?: 'autorizado' | 'emergencia' | 'cuadrante' | 'comisaria' | 'seguridad'
 }
 
@@ -1022,7 +1034,31 @@ export default function ScorpionDashboard() {
 
     const loadRealContacts = async () => {
       try {
-        // 1. Cargar desde notificaciones_whatsapp (contactos de escalamiento guardados en Expediente)
+        // 1. Cargar desde PERSONAS AUTORIZADAS.MDB (Prioridad máxima: directorio completo con claves verbales)
+        const cKeyUpper = cuentaKey.trim().toUpperCase()
+        const perAutList = personasAutorizadasFallback[cKeyUpper] 
+          || (cKeyUpper.startsWith('C') ? personasAutorizadasFallback[cKeyUpper.slice(1)] : null)
+          || (!cKeyUpper.startsWith('C') ? personasAutorizadasFallback[`C${cKeyUpper}`] : null)
+          || personasAutorizadasFallback[cKeyUpper.replace(/^C/, '').padStart(4, '0')]
+          || personasAutorizadasFallback[`C${cKeyUpper.replace(/^C/, '').padStart(4, '0')}`]
+
+        if (perAutList && Array.isArray(perAutList) && perAutList.length > 0) {
+          const mappedAut: ContactoAutorizado[] = perAutList.map((p, idx) => ({
+            prioridad: p.prioridad || idx + 1,
+            nombre: p.nombre.toUpperCase(),
+            telefono: p.telefono || '',
+            contrasena: p.contrasena || '',
+            cargo: p.cargo || 'AUTORIZADO',
+            direccion: p.direccion || '',
+            tipo: 'autorizado'
+          }))
+          if (!isCancelled) {
+            setContactosSupabase(mappedAut)
+            return
+          }
+        }
+
+        // 2. Cargar desde notificaciones_whatsapp (contactos de escalamiento guardados en Expediente)
         const { data: waData } = await supabase
           .from('notificaciones_whatsapp')
           .select('contactos_escalamiento')
@@ -1034,6 +1070,7 @@ export default function ScorpionDashboard() {
             prioridad: idx + 1,
             nombre: (c.nombre || c.parentesco || `CONTACTO ${idx + 1}`).toUpperCase(),
             telefono: c.telefono || '',
+            contrasena: '',
             cargo: c.parentesco || 'AUTORIZADO',
             tipo: 'autorizado'
           }))
@@ -1041,7 +1078,7 @@ export default function ScorpionDashboard() {
           return
         }
 
-        // 2. Cargar desde eventos_monitoreo EXPEDIENTE_CONTACTOS_...
+        // 3. Cargar desde eventos_monitoreo EXPEDIENTE_CONTACTOS_...
         const { data: expData } = await supabase
           .from('eventos_monitoreo')
           .select('nombre_abonado')
@@ -1057,6 +1094,7 @@ export default function ScorpionDashboard() {
                 prioridad: idx + 1,
                 nombre: (c.nombre || `CONTACTO ${idx + 1}`).toUpperCase(),
                 telefono: c.telefono || '',
+                contrasena: '',
                 cargo: c.cargo || c.parentesco || 'AUTORIZADO',
                 tipo: 'autorizado'
               }))
@@ -1270,27 +1308,49 @@ export default function ScorpionDashboard() {
       {/* ── BARRA DE MENÚ ESTILO SCORPION CON BOTONES SEPARADOS Y SUBMENÚS FLOTANTES ── */}
       <nav id="menu-nav-container" className="hidden md:flex items-center bg-[#8B0000] border-b border-[#600000] shrink-0 select-none relative z-40 px-2 py-1 gap-1.5" style={{ fontFamily: "'Arial', sans-serif" }}>
         {[
-          { label: 'OPERADORES', id: 'menu-operadores', modal: 'user-key' },
-          { label: 'ZONIFICACIÓN', id: 'menu-zonificacion', modal: 'zones-tree' },
-          { label: 'HORARIOS', id: 'menu-horarios', modal: 'horarios' },
-          { label: 'REPORTES', id: 'menu-reportes', modal: 'reportes' },
           {
-            label: 'SERV. TÉCNICO ▾',
+            label: 'OPERADORES ▾',
+            id: 'menu-operadores',
+            hasDropdown: true,
+            items: [
+              { label: 'Gestión de Operadores y Claves', modal: 'user-key', desc: 'Permisos y perfiles de acceso' },
+              { label: 'Cambio / Entrega de Turno', modal: 'entrega-turno', desc: 'Registro de novedades de puesto' },
+            ]
+          },
+          {
+            label: 'USUARIOS ▾',
+            id: 'menu-usuarios',
+            hasDropdown: true,
+            items: [
+              { label: 'Expedientes (Ficha del Abonado)', modal: 'expediente', desc: 'Datos generales, dirección y teléfonos' },
+              { label: 'Zonificación (Sensores MDB)', modal: 'zones-tree', desc: 'Detectores y áreas de cada cliente' },
+              { label: 'Personas Autorizadas (Claves Verbales)', modal: 'personas-autorizadas', desc: 'Directorio de 990+ contactos y contraseñas' },
+              { label: 'Búsqueda de Abonados', modal: 'buscador-universal', desc: 'Localización por nombre, cuenta o calle' },
+              { label: 'Listado general (CRM 360°)', modal: 'crm', desc: 'Panel integral de clientes y contratos' },
+              { label: 'Horarios de Apertura / Cierre', modal: 'horarios', desc: 'Ventanas horarias y autotest' },
+            ]
+          },
+          { label: 'PUERTOS', id: 'menu-puertos', modal: 'health-telemetry' },
+          { label: 'MARCADOR', id: 'menu-marcador', modal: 'control-test' },
+          {
+            label: 'TABLAS ▾',
+            id: 'menu-tablas',
+            hasDropdown: true,
+            items: [
+              { label: 'Tablas Contact ID (SIA DC-05)', modal: 'book', desc: 'Diccionario completo de códigos E y R' },
+              { label: 'Búsqueda Histórica de Eventos', modal: 'search', desc: 'Consulta en la nube por abonado y fecha' },
+            ]
+          },
+          {
+            label: 'UTILIDADES ▾',
             id: 'menu-serv-tecnico',
             hasDropdown: true,
             items: [
               { label: 'Órdenes de Servicio Técnico (OT)', modal: 'servicio-tecnico', desc: 'Averías, baterías y solicitudes técnicas' },
               { label: 'Predictor IA (Mantenimiento)', modal: 'predictor-ia', desc: 'Detección proactiva de anomalías' },
-              { label: 'Control Test de Señales', modal: 'control-test', desc: 'Panel de verificación de transmisores' },
-            ]
-          },
-          {
-            label: 'TABLAS & SISTEMA ▾',
-            id: 'menu-tablas',
-            hasDropdown: true,
-            items: [
-              { label: 'Tablas Contact ID (SIA DC-05)', modal: 'book', desc: 'Diccionario completo de interacción E y R' },
-              { label: 'Búsqueda Histórica de Eventos', modal: 'search', desc: 'Consulta en la nube por abonado y fecha' },
+              { label: 'Control Test de Transmisores', modal: 'control-test', desc: 'Panel de verificación de señales' },
+              { label: 'Telemetría HealthWatcher IA', modal: 'health-telemetry', desc: 'Diagnóstico en tiempo real y auto-resolución' },
+              { label: 'Simulador de Señales', modal: 'simulador', desc: 'Inyector de eventos para entrenamiento' },
             ]
           },
           {
@@ -1298,8 +1358,28 @@ export default function ScorpionDashboard() {
             id: 'menu-notificaciones',
             hasDropdown: true,
             items: [
-              { label: 'WhatsApp', modal: 'notificaciones-whatsapp', desc: 'Atención y mensajería en tiempo real' },
-              { label: 'Notificaciones por Correo (En desarrollo)', modal: 'notificaciones-mail', desc: 'Módulo en desarrollo para despacho por SMTP' },
+              { label: 'WhatsApp Central 24/7', modal: 'notificaciones-whatsapp', desc: 'Atención y mensajería en tiempo real' },
+              { label: 'Notificaciones por Correo', modal: 'notificaciones-mail', desc: 'Despacho de eventos por email' },
+            ]
+          },
+          {
+            label: 'REPORTES ▾',
+            id: 'menu-reportes',
+            hasDropdown: true,
+            items: [
+              { label: 'Reportes de Señales y Abonados', modal: 'reportes', desc: 'Exportación a PDF Carta y Excel' },
+              { label: 'Aperturas y Cierres Diarios', modal: 'aperturas-cierres', desc: 'Resumen consolidado de actividad' },
+            ]
+          },
+          {
+            label: 'EVENTOS ▾',
+            id: 'menu-eventos',
+            hasDropdown: true,
+            items: [
+              { label: 'Todos los Eventos en Vivo', modal: 'todos-los-eventos', desc: 'Vista completa sin filtros' },
+              { label: 'Bitácora de Eventos Operativos', modal: 'bitacora', desc: 'Gestión y seguimiento de novedades' },
+              { label: 'Videoverificación de Alarmas', modal: 'video-verificacion', desc: 'Verificación visual con cámaras' },
+              { label: 'Mosaico de Cámaras en Vivo', modal: 'camara-grid', desc: 'Matriz multicanal CCTV' },
             ]
           },
           {
@@ -1314,7 +1394,7 @@ export default function ScorpionDashboard() {
         ].filter(item => {
           const attrs = ensureUserAttributes(usuarioActivo)
           if (item.id === 'menu-operadores') return attrs.verConfiguracion || usuarioActivo.rol === 'Administrador'
-          if (item.id === 'menu-zonificacion') return attrs.editarZonificacion || ['Administrador', 'Supervisor', 'Técnico'].includes(usuarioActivo.rol)
+          if (item.id === 'menu-usuarios') return true
           if (item.id === 'menu-serv-tecnico') return attrs.verTelemetriaTecnica
           if (item.id === 'menu-tablas') return attrs.verCRM
           if (item.id === 'menu-reportes') return attrs.verReportes
@@ -1550,44 +1630,74 @@ export default function ScorpionDashboard() {
           </div>
 
           {/* Box 3: CONTACTOS / PERSONAS AUTORIZADAS */}
-          <div className="bg-[#e0e0e0] border border-t-white border-l-white border-b-gray-600 border-r-gray-600 flex flex-col flex-1 min-h-[140px] max-h-[220px] overflow-hidden">
+          <div className="bg-[#e0e0e0] border border-t-white border-l-white border-b-gray-600 border-r-gray-600 flex flex-col flex-1 min-h-[140px] max-h-[240px] overflow-hidden">
             <div className="bg-[#000080] text-white text-xs font-black px-2.5 py-1 tracking-wider uppercase flex items-center justify-between">
               <span>Personas Autorizadas</span>
-              <span className="text-[10px] text-cyan-300 font-mono font-normal">
-                {clientData?.contactos.length || 0} Registrados
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] text-cyan-300 font-mono font-normal">
+                  {clientData?.contactos.length || 0} Registrados
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setModalActivo('personas-autorizadas')}
+                  className="px-2 py-0.5 bg-[#d4d0c8] text-black font-bold text-[10px] border border-t-white border-l-white border-b-gray-800 border-r-gray-800 hover:bg-white active:border-t-gray-800 active:border-l-gray-800 cursor-pointer transition-colors"
+                >
+                  🔑 Directorio 1:1
+                </button>
+              </div>
             </div>
             <div className="flex-1 overflow-y-auto">
               <table className="w-full border-collapse text-xs text-left bg-white">
                 <thead className="sticky top-0 bg-[#c4c0b8] border-b border-gray-400 z-10 text-gray-900">
                   <tr>
                     <th className="p-1.5 font-black border-r border-gray-400 w-8 text-center">PR</th>
-                    <th className="p-1.5 font-black border-r border-gray-400">Nombre / Contacto</th>
-                    <th className="p-1.5 font-black">Teléfono</th>
+                    <th className="p-1.5 font-black border-r border-gray-400">Nombre / Cargo</th>
+                    <th className="p-1.5 font-black">Teléfono / Clave</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-300">
                   {clientData?.contactos.map((contact) => (
                     <tr key={contact.prioridad} className="hover:bg-blue-100 font-bold text-gray-900 text-xs">
                       <td className="p-1 text-center font-mono font-black text-blue-900 border-r border-gray-300">{contact.prioridad}</td>
-                      <td className="p-1 border-r border-gray-300 truncate max-w-[150px] font-extrabold uppercase">{contact.nombre}</td>
+                      <td className="p-1 border-r border-gray-300 truncate max-w-[160px] font-extrabold uppercase">
+                        <div className="truncate">{contact.nombre}</div>
+                        {contact.cargo && <div className="text-[9px] text-gray-500 font-normal truncate">{contact.cargo}</div>}
+                      </td>
                       <td className="p-1 font-mono text-blue-900 flex items-center justify-between gap-1 font-bold">
-                        <span className="truncate max-w-[110px]">{contact.telefono}</span>
+                        <div className="flex flex-col truncate">
+                          <span className="truncate max-w-[110px]">{contact.telefono || 'Sin tel.'}</span>
+                          {contact.contrasena && (
+                            <span className="text-[9px] text-red-800 bg-amber-100 border border-amber-300 px-1 rounded-xs font-bold w-fit mt-0.5 truncate">
+                              🔑 {contact.contrasena}
+                            </span>
+                          )}
+                        </div>
                         <div className="flex gap-0.5 shrink-0">
-                          <button
-                            onClick={() => {
-                              const telLimpio = contact.telefono.replace(/[^0-9]/g, '')
-                              setWhatsappTelefonoInicial(telLimpio)
-                              setModalActivo('notificaciones-whatsapp')
-                            }}
-                            title="Enviar WhatsApp (Interno)"
-                            className="bg-[#c0c0c0] border border-t-white border-l-white border-b-gray-700 border-r-gray-700 px-1.5 py-0.5 hover:bg-[#d0d0d0] active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white flex items-center justify-center cursor-pointer shadow-xs"
-                          >
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                              <path fillRule="evenodd" clipRule="evenodd" d="M12.004 2C6.48 2 2 6.48 2 12.004c0 1.912.54 3.704 1.476 5.23L2 22l4.908-1.28c1.472.8 3.14 1.284 4.936 1.284 5.52 0 10-4.48 10-10.004C21.844 6.48 17.524 2 12.004 2z" fill="#25D366"/>
-                              <path d="M8.7 7.15c-.23-.5-.47-.5-.69-.5h-.58c-.2 0-.52.08-.8.38-.27.3-1.04 1.01-1.04 2.47s1.06 2.87 1.2 3.08c.15.2 2.09 3.2 5.07 4.49.7.3 1.26.49 1.68.62.7.22 1.34.19 1.84.11.57-.08 1.74-.71 1.98-1.4.24-.68.24-1.27.17-1.4-.07-.12-.27-.2-.58-.35s-1.84-.9-2.12-1-.54-.15-.77.19c-.23.34-.89 1.1-.1 1.1.2 1.22.4 1.45.68 1.6.28.15.6.23.92.15.42-.1.7.07 1.01-.08s.1-.3.02-.45c-.07-.15-.7-1.72-.96-2.35-.25-.62-.5-.54-.69-.55l-.59-.01c-.2 0-.52.07-.79.37-.27.3-1.03 1-1.03 2.44s1.05 2.84 1.2 3.05c.14.2 2.06 3.15 5 4.42.7.3 1.24.48 1.66.61.7.22 1.32.19 1.81.11.55-.08 1.7-.7 1.94-1.37.24-.67.24-1.25.17-1.37-.07-.12-.27-.2-.57-.35z" fill="white"/>
-                            </svg>
-                          </button>
+                          {contact.telefono && (
+                            <>
+                              <a 
+                                href={`tel:${contact.telefono.replace(/[^0-9+]/g, '')}`}
+                                title="Llamar"
+                                className="bg-[#c0c0c0] border border-t-white border-l-white border-b-gray-700 border-r-gray-700 px-1 py-0.5 hover:bg-[#d0d0d0] text-[10px]"
+                              >
+                                📞
+                              </a>
+                              <button
+                                onClick={() => {
+                                  const telLimpio = contact.telefono.replace(/[^0-9]/g, '')
+                                  setWhatsappTelefonoInicial(telLimpio)
+                                  setModalActivo('notificaciones-whatsapp')
+                                }}
+                                title="Enviar WhatsApp (Interno)"
+                                className="bg-[#c0c0c0] border border-t-white border-l-white border-b-gray-700 border-r-gray-700 px-1.5 py-0.5 hover:bg-[#d0d0d0] active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white flex items-center justify-center cursor-pointer shadow-xs"
+                              >
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                  <path fillRule="evenodd" clipRule="evenodd" d="M12.004 2C6.48 2 2 6.48 2 12.004c0 1.912.54 3.704 1.476 5.23L2 22l4.908-1.28c1.472.8 3.14 1.284 4.936 1.284 5.52 0 10-4.48 10-10.004C21.844 6.48 17.524 2 12.004 2z" fill="#25D366"/>
+                                  <path d="M8.7 7.15c-.23-.5-.47-.5-.69-.5h-.58c-.2 0-.52.08-.8.38-.27.3-1.04 1.01-1.04 2.47s1.06 2.87 1.2 3.08c.15.2 2.09 3.2 5.07 4.49.7.3 1.26.49 1.68.62.7.22 1.34.19 1.84.11.57-.08 1.74-.71 1.98-1.4.24-.68.24-1.27.17-1.4-.07-.12-.27-.2-.58-.35s-1.84-.9-2.12-1-.54-.15-.77.19c-.23.34-.89 1.1-.1 1.1.2 1.22.4 1.45.68 1.6.28.15.6.23.92.15.42-.1.7.07 1.01-.08s.1-.3.02-.45c-.07-.15-.7-1.72-.96-2.35-.25-.62-.5-.54-.69-.55l-.59-.01c-.2 0-.52.07-.79.37-.27.3-1.03 1-1.03 2.44s1.05 2.84 1.2 3.05c.14.2 2.06 3.15 5 4.42.7.3 1.24.48 1.66.61.7.22 1.32.19 1.81.11.55-.08 1.7-.7 1.94-1.37.24-.67.24-1.25.17-1.37-.07-.12-.27-.2-.57-.35z" fill="white"/>
+                                </svg>
+                              </button>
+                            </>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -1868,6 +1978,17 @@ export default function ScorpionDashboard() {
         <BitacoraModal
           onClose={() => setModalActivo(null)}
           cuentaDefault={activeEvent?.cuenta || undefined}
+        />
+      )}
+
+      {/* Personas Autorizadas Modal (Scorpion 1:1) */}
+      {modalActivo === 'personas-autorizadas' && (
+        <PersonasAutorizadasModal
+          isOpen={true}
+          onClose={() => setModalActivo(null)}
+          cuentaInicial={activeEvent?.cuenta || '0462'}
+          nombreInicial={activeEvent?.nombre_abonado || clientData?.nombre || ''}
+          clientesMap={clientesMap}
         />
       )}
 
