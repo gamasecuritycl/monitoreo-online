@@ -26,44 +26,31 @@ export async function POST(req: NextRequest) {
 
     const cuentaNormalizada = cuenta.toUpperCase().trim()
     const nowIso = new Date().toISOString()
+    const ordenId = `ORD-${Date.now()}`
 
-    // 1. Encolar orden en 'ordenes_editor_remoto'
-    let ordenId = `ORD-${Date.now()}`
+    // 1. Encolar orden en 'eventos_monitoreo' (Canal universal y 100% nativo de Supabase)
+    const payloadOrden = {
+      ordenId,
+      cuenta: cuentaNormalizada,
+      operador,
+      tipoOperacion,
+      datosNuevos,
+      datosAnteriores: datosAnteriores || null,
+      estado: 'PENDIENTE',
+      creado_el: nowIso
+    }
+
     try {
-      const { data, error } = await supabase
-        .from('ordenes_editor_remoto')
-        .insert({
-          operador_nombre: operador.nombre || 'OPERADOR',
-          operador_codigo: operador.codigo || '01',
-          tipo_operacion: tipoOperacion,
-          cuenta: cuentaNormalizada,
-          tabla_destino: 'GENERAL.MDB',
-          datos_nuevos: datosNuevos,
-          datos_anteriores: datosAnteriores || null,
-          estado: 'PENDIENTE'
-        })
-        .select('id')
-        .single()
-
-      if (!error && data?.id) {
-        ordenId = data.id
-      }
-    } catch (errCola) {
-      console.warn('[EDITOR REMOTO] Usando fallback eventos_monitoreo para encolar orden:', errCola)
       await supabase.from('eventos_monitoreo').insert({
         cuenta: 'ORDEN_EDITOR_REMOTO',
         evento: tipoOperacion,
-        nombre_abonado: JSON.stringify({
-          ordenId,
-          cuenta: cuentaNormalizada,
-          operador,
-          datosNuevos,
-          datosAnteriores,
-          estado: 'PENDIENTE',
-          creado_el: nowIso
-        }),
-        fecha_hora: nowIso
+        nombre_abonado: JSON.stringify(payloadOrden),
+        fecha_hora: nowIso,
+        zona: 'SYS',
+        usuario: operador.codigo || '01'
       })
+    } catch (errCola) {
+      console.error('[EDITOR REMOTO] Error encolando orden en eventos_monitoreo:', errCola)
     }
 
     // 2. Actualizar el mapa maestro de CLIENTES en Supabase en caliente
@@ -146,7 +133,7 @@ export async function POST(req: NextRequest) {
       ordenId,
       cuenta: cuentaNormalizada,
       tipoOperacion,
-      mensaje: `Operación ${tipoOperacion} encolada y procesada exitosamente en base de datos.`
+      mensaje: `Operación ${tipoOperacion} procesada y guardada exitosamente en Supabase.`
     })
   } catch (error: any) {
     console.error('[EDITOR REMOTO API ERROR]:', error)

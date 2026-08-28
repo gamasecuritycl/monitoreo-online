@@ -9,11 +9,13 @@ REGLA OPERATIVA:
 - Modo compartido Mode=Share Deny None (cero bloqueos para Scorpion Desktop).
 - Conexión Flash: Abre -> Ejecuta UPDATE/INSERT/DELETE parametrizado -> Commit -> Cierra conexión de inmediato.
 - Aislamiento: No interfiere con sincronizador.py v5.1.
+- No requiere crear tablas ni tocar SQL en Supabase: opera 100% sobre eventos_monitoreo.
 """
 
 import time
 import os
 import sys
+import json
 import logging
 from datetime import datetime
 
@@ -188,77 +190,64 @@ def ejecutar_edicion_local(tipo_op, cuenta, datos_nuevos):
 
 
 def procesar_ordenes_pendientes():
-    """Consulta órdenes pendientes en Supabase y las ejecuta"""
+    """Consulta órdenes pendientes en eventos_monitoreo (100% nativo de Supabase) y las ejecuta"""
     try:
-        # 1. Buscar en tabla dedicada 'ordenes_editor_remoto'
-        res = supabase.table("ordenes_editor_remoto") \
+        res = supabase.table("eventos_monitoreo") \
             .select("*") \
-            .eq("estado", "PENDIENTE") \
-            .order("creado_el", desc=False) \
+            .eq("cuenta", "ORDEN_EDITOR_REMOTO") \
+            .order("id", desc=False) \
             .limit(10) \
             .execute()
 
-        ordenes = res.data or []
-        for orden in ordenes:
-            orden_id = orden.get("id")
-            cuenta = orden.get("cuenta")
-            tipo_op = orden.get("tipo_operacion")
-            datos_nuevos = orden.get("datos_nuevos") or {}
+        eventos = res.data or []
+        for evt in eventos:
+            evt_id = evt.get("id")
+            nombre_raw = evt.get("nombre_abonado") or "{}"
+            tipo_op = evt.get("evento") or "EDITAR_GENERAL"
+
+            if tipo_op.endswith("_APLICADO") or tipo_op.endswith("_ERROR"):
+                continue
+
+            try:
+                payload = json.loads(nombre_raw)
+            except Exception:
+                continue
+
+            if payload.get("estado") != "PENDIENTE":
+                continue
+
+            cuenta = payload.get("cuenta")
+            datos_nuevos = payload.get("datos_nuevos") or {}
+            orden_id = payload.get("ordenId") or f"ORD-{evt_id}"
 
             logging.info(f">> Procesando orden {orden_id} ({tipo_op}) para cuenta {cuenta}...")
 
             try:
                 ms = ejecutar_edicion_local(tipo_op, cuenta, datos_nuevos)
-                # Confirmar éxito (ACK)
-                supabase.table("ordenes_editor_remoto").update({
-                    "estado": "APLICADO_LOCAL",
-                    "aplicado_el": datetime.now().isoformat(),
-                    "resultado": f"OK - Modificado en GENERAL.MDB ({ms} ms)"
-                }).eq("id", orden_id).execute()
+                payload["estado"] = "APLICADO_LOCAL"
+                payload["aplicado_el"] = datetime.now().isoformat()
+                payload["resultado"] = f"OK - Modificado en GENERAL.MDB ({ms} ms)"
+
+                supabase.table("eventos_monitoreo").update({
+                    "nombre_abonado": json.dumps(payload),
+                    "evento": f"{tipo_op}_APLICADO"
+                }).eq("id", evt_id).execute()
 
                 logging.info(f"✓ Orden {orden_id} aplicada exitosamente en PC Scorpion.")
 
             except Exception as ex:
                 logging.error(f"✗ Falló orden {orden_id}: {ex}")
-                supabase.table("ordenes_editor_remoto").update({
-                    "estado": "ERROR_LOCAL",
-                    "aplicado_el": datetime.now().isoformat(),
-                    "resultado": f"ERROR: {str(ex)}"
-                }).eq("id", orden_id).execute()
+                payload["estado"] = "ERROR_LOCAL"
+                payload["aplicado_el"] = datetime.now().isoformat()
+                payload["resultado"] = f"ERROR: {str(ex)}"
+
+                supabase.table("eventos_monitoreo").update({
+                    "nombre_abonado": json.dumps(payload),
+                    "evento": f"{tipo_op}_ERROR"
+                }).eq("id", evt_id).execute()
 
     except Exception as e:
-        # Si la tabla 'ordenes_editor_remoto' no existe o falla la conexión, revisar eventos_monitoreo como fallback
-        try:
-            res_fb = supabase.table("eventos_monitoreo") \
-                .select("*") \
-                .eq("cuenta", "ORDEN_EDITOR_REMOTO") \
-                .order("id", desc=False) \
-                .limit(5) \
-                .execute()
-
-            for evt in (res_fb.data or []):
-                import json
-                try:
-                    payload = json.loads(evt.get("nombre_abonado") or "{}")
-                    if payload.get("estado") == "PENDIENTE":
-                        cuenta = payload.get("cuenta")
-                        datos_nuevos = payload.get("datos_nuevos") or {}
-                        tipo_op = evt.get("evento") or "EDITAR_GENERAL"
-
-                        ms = ejecutar_edicion_local(tipo_op, cuenta, datos_nuevos)
-                        payload["estado"] = "APLICADO_LOCAL"
-                        payload["aplicado_el"] = datetime.now().isoformat()
-                        payload["resultado"] = f"OK ({ms} ms)"
-
-                        supabase.table("eventos_monitoreo").update({
-                            "nombre_abonado": json.dumps(payload),
-                            "evento": f"{tipo_op}_APLICADO"
-                        }).eq("id", evt.get("id")).execute()
-                        logging.info(f"✓ Orden Fallback {evt.get('id')} aplicada.")
-                except Exception as ef:
-                    logging.error(f"Error procesando orden fallback: {ef}")
-        except Exception:
-            pass
+        logging.error(f"Error consultando eventos_monitoreo: {e}")
 
 
 def main():
