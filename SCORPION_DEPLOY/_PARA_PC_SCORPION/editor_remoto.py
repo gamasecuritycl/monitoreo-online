@@ -1,15 +1,15 @@
 """
-GAMA SECURITY - WORKER EDITOR REMOTO (GENERAL.MDB) v1.0
+GAMA SECURITY - WORKER EDITOR REMOTO (GENERAL.MDB) v1.1
 =========================================================
 Worker independiente que corre en segundo plano en PC Scorpion.
 Escucha órdenes de edición encoladas desde el Command Center web y ejecuta
-actualizaciones directas en C:\SCORPION\BASES DE DATOS\GENERAL.MDB vía ODBC Flash (<15 ms).
+actualizaciones directas en la tabla USUARIOS de C:\SCORPION\BASES DE DATOS\GENERAL.MDB.
 
 REGLA OPERATIVA:
-- Modo compartido Mode=Share Deny None (cero bloqueos para Scorpion Desktop).
-- Conexión Flash: Abre -> Ejecuta UPDATE/INSERT/DELETE parametrizado -> Commit -> Cierra conexión de inmediato.
-- Aislamiento: No interfiere con sincronizador.py v5.1.
-- No requiere crear tablas ni tocar SQL en Supabase: opera 100% sobre eventos_monitoreo.
+- Tabla destino en Access: USUARIOS
+- Soporte dual ODBC / ADODB OLEDB
+- Búsqueda exacta y normalizada de cuenta ('C701', '701', '0701')
+- Modo compartido (cero bloqueos para Scorpion Desktop)
 """
 
 import time
@@ -37,7 +37,7 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S"
 )
 
-# Conexión Supabase
+# Conexión Supabase (Clave activa)
 SUPABASE_URL = "https://onxwyrwmpjxtwlmjrosr.supabase.co"
 SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9ueHd5cndtcGp4dHdsbWpyb3NyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI4NTUxNDQsImV4cCI6MjA5ODQzMTE0NH0.8kJRf8hm3rHK8sygMcyBT0R83tyK8hIQCmnAQxannJs"
 
@@ -48,149 +48,170 @@ except Exception as e:
     logging.critical(f"No se pudo inicializar cliente Supabase: {e}")
     sys.exit(1)
 
-try:
-    import pyodbc
-except ImportError:
-    logging.critical("Modulo 'pyodbc' no instalado. Ejecute 'pip install pyodbc'")
-    sys.exit(1)
-
 MDB_PATH = r"C:\SCORPION\BASES DE DATOS\GENERAL.MDB"
 MDB_PWD = "SCORPION7"
 
 
-def get_odbc_connection():
-    """Genera conexión Flash ODBC en modo compartido para no interferir con Scorpion Desktop"""
-    conn_str = (
-        r"DRIVER={Microsoft Access Driver (*.mdb, *.accdb)};"
-        rf"DBQ={MDB_PATH};"
-        rf"PWD={MDB_PWD};"
-        r"ExtendedAnsiSQL=1;"
-        r"Mode=Share Deny None;"
-    )
-    return pyodbc.connect(conn_str, autocommit=False)
-
-
 def ejecutar_edicion_local(tipo_op, cuenta, datos_nuevos):
     """
-    Ejecuta el UPDATE/INSERT/DELETE parametrizado en GENERAL.MDB con reintentos suaves.
-    Tiempo de conexión estimado: < 15 ms.
+    Ejecuta el UPDATE/INSERT/DELETE parametrizado en la tabla USUARIOS de GENERAL.MDB.
     """
     if not os.path.exists(MDB_PATH):
         raise FileNotFoundError(f"No se encontró base de datos en {MDB_PATH}")
 
     cuenta_clean = str(cuenta).strip().upper()
-    max_retries = 3
-    retry_delay = 0.2
+    cuentas_candidatas = [cuenta_clean]
+    if cuenta_clean.startswith("C"):
+        cuentas_candidatas.append(cuenta_clean[1:])
+        cuentas_candidatas.append(cuenta_clean[1:].zfill(4))
+    else:
+        cuentas_candidatas.append(f"C{cuenta_clean}")
 
-    for intento in range(1, max_retries + 1):
-        conn = None
-        cursor = None
-        t_inicio = time.time()
+    t_inicio = time.time()
+    tablas_candidatas = ["USUARIOS", "CLIENTES"]
+
+    # 1. Intentar primero con ADODB (OLEDB)
+    try:
+        import win32com.client
+        conn = win32com.client.Dispatch('ADODB.Connection')
+        conn_str = f"Provider=Microsoft.ACE.OLEDB.12.0;Data Source={MDB_PATH};Jet OLEDB:Database Password={MDB_PWD};Mode=Share Deny None;"
         try:
-            conn = get_odbc_connection()
-            cursor = conn.cursor()
+            conn.Open(conn_str)
+        except Exception:
+            # Fallback OLEDB 4.0
+            conn_str = f"Provider=Microsoft.Jet.OLEDB.4.0;Data Source={MDB_PATH};Jet OLEDB:Database Password={MDB_PWD};Mode=Share Deny None;"
+            conn.Open(conn_str)
 
-            # Operación 1: ELIMINAR ABONADO
-            if tipo_op == "ELIMINAR_ABONADO":
-                sql_delete = "DELETE FROM CLIENTES WHERE CUENTA = ?"
-                cursor.execute(sql_delete, [cuenta_clean])
-                rows_affected = cursor.rowcount
-                if rows_affected == 0 and cuenta_clean.startswith("C"):
-                    cursor.execute(sql_delete, [cuenta_clean[1:]])
-                    rows_affected = cursor.rowcount
-                conn.commit()
-                t_duracion = int((time.time() - t_inicio) * 1000)
-                logging.info(f"[{cuenta_clean}] DELETE exitoso en {t_duracion} ms ({rows_affected} filas eliminadas).")
-                return t_duracion
+        # Detectar columnas existentes en tabla
+        rs_cols = conn.OpenSchema(4)
+        cols_existentes = set()
+        tabla_usada = "USUARIOS"
+        while not rs_cols.EOF:
+            t_name = str(rs_cols.Fields('TABLE_NAME').Value).upper()
+            if t_name in tablas_candidatas:
+                tabla_usada = t_name
+                cols_existentes.add(str(rs_cols.Fields('COLUMN_NAME').Value).upper())
+            rs_cols.MoveNext()
+        rs_cols.Close()
 
-            # Filtrar y mapear campos para UPDATE o INSERT
-            cols = []
-            values = []
-            set_clauses = []
+        # Operación ELIMINAR
+        if tipo_op == "ELIMINAR_ABONADO":
+            for cta in cuentas_candidatas:
+                sql = f"DELETE FROM [{tabla_usada}] WHERE UCASE(TRIM([CUENTA])) = '{cta}'"
+                conn.Execute(sql)
+            conn.Close()
+            ms = int((time.time() - t_inicio) * 1000)
+            logging.info(f"[{cuenta_clean}] ADODB: DELETE ejecutado en {ms} ms.")
+            return ms
 
-            for k, v in (datos_nuevos or {}).items():
-                if k.startswith("_") or k.upper() == "CUENTA":
-                    continue
-                col_name = f"[{k}]" if " " in k else k
-                cols.append(col_name)
-                values.append(str(v) if v is not None else "")
-                set_clauses.append(f"{col_name} = ?")
+        # Preparar UPDATE
+        set_parts = []
+        for k, v in (datos_nuevos or {}).items():
+            if k.startswith("_") or k.upper() == "CUENTA":
+                continue
+            k_upper = k.upper()
+            if k_upper in cols_existentes or not cols_existentes:
+                v_clean = str(v).replace("'", "''").strip() if v is not None else ""
+                col_sql = f"[{k}]" if " " in k else k
+                set_parts.append(f"{col_sql} = '{v_clean}'")
 
-            # Operación 2: NUEVO ABONADO
+        if set_parts:
+            # Probar UPDATE para cada variante de cuenta
+            for cta in cuentas_candidatas:
+                sql_update = f"UPDATE [{tabla_usada}] SET {', '.join(set_parts)} WHERE UCASE(TRIM([CUENTA])) = '{cta}'"
+                conn.Execute(sql_update)
+
+            # Si es NUEVO_ABONADO, verificar si existe o insertar
             if tipo_op == "NUEVO_ABONADO":
-                # Verificar si ya existe
-                cursor.execute("SELECT CUENTA FROM CLIENTES WHERE CUENTA = ?", [cuenta_clean])
-                if cursor.fetchone():
-                    # Si ya existe, hacer UPDATE
-                    if set_clauses:
-                        sql_update = f"UPDATE CLIENTES SET {', '.join(set_clauses)} WHERE CUENTA = ?"
-                        cursor.execute(sql_update, values + [cuenta_clean])
-                else:
-                    # INSERT de cuenta nueva
-                    all_cols = ["CUENTA"] + cols
+                rs_check = win32com.client.Dispatch('ADODB.Recordset')
+                rs_check.Open(f"SELECT [CUENTA] FROM [{tabla_usada}] WHERE UCASE(TRIM([CUENTA])) = '{cuenta_clean}'", conn)
+                if rs_check.EOF:
+                    # INSERT
+                    cols_list = ["[CUENTA]"]
+                    vals_list = [f"'{cuenta_clean}'"]
+                    for k, v in (datos_nuevos or {}).items():
+                        if k.startswith("_") or k.upper() == "CUENTA": continue
+                        v_clean = str(v).replace("'", "''").strip() if v is not None else ""
+                        cols_list.append(f"[{k}]" if " " in k else k)
+                        vals_list.append(f"'{v_clean}'")
+                    sql_insert = f"INSERT INTO [{tabla_usada}] ({', '.join(cols_list)}) VALUES ({', '.join(vals_list)})"
+                    conn.Execute(sql_insert)
+                rs_check.Close()
+
+        conn.Close()
+        ms = int((time.time() - t_inicio) * 1000)
+        logging.info(f"[{cuenta_clean}] ADODB OLEDB: UPDATE exitoso en tabla {tabla_usada} ({ms} ms).")
+        return ms
+
+    except Exception as err_adodb:
+        logging.warning(f"[{cuenta_clean}] ADODB falló ({err_adodb}), intentando pyodbc...")
+
+    # 2. Fallback con pyodbc
+    try:
+        import pyodbc
+        conn_str = (
+            r"DRIVER={Microsoft Access Driver (*.mdb, *.accdb)};"
+            rf"DBQ={MDB_PATH};"
+            rf"PWD={MDB_PWD};"
+            r"ExtendedAnsiSQL=1;"
+            r"Mode=Share Deny None;"
+        )
+        conn = pyodbc.connect(conn_str, autocommit=True)
+        cursor = conn.cursor()
+
+        # Determinar tabla
+        tablas_mdb = [row.table_name.upper() for row in cursor.tables(tableType='TABLE')]
+        tabla_usada = "USUARIOS" if "USUARIOS" in tablas_mdb else ("CLIENTES" if "CLIENTES" in tablas_mdb else "USUARIOS")
+
+        # Operación ELIMINAR
+        if tipo_op == "ELIMINAR_ABONADO":
+            for cta in cuentas_candidatas:
+                cursor.execute(f"DELETE FROM [{tabla_usada}] WHERE UCASE(TRIM([CUENTA])) = ?", [cta])
+            cursor.close()
+            conn.close()
+            ms = int((time.time() - t_inicio) * 1000)
+            logging.info(f"[{cuenta_clean}] PYODBC: DELETE ejecutado en {ms} ms.")
+            return ms
+
+        # Preparar UPDATE
+        cols = []
+        vals = []
+        set_clauses = []
+        for k, v in (datos_nuevos or {}).items():
+            if k.startswith("_") or k.upper() == "CUENTA":
+                continue
+            col_name = f"[{k}]" if " " in k else k
+            cols.append(col_name)
+            vals.append(str(v).strip() if v is not None else "")
+            set_clauses.append(f"{col_name} = ?")
+
+        if set_clauses:
+            for cta in cuentas_candidatas:
+                sql_update = f"UPDATE [{tabla_usada}] SET {', '.join(set_clauses)} WHERE UCASE(TRIM([CUENTA])) = ?"
+                cursor.execute(sql_update, vals + [cta])
+
+            if tipo_op == "NUEVO_ABONADO":
+                cursor.execute(f"SELECT [CUENTA] FROM [{tabla_usada}] WHERE UCASE(TRIM([CUENTA])) = ?", [cuenta_clean])
+                if not cursor.fetchone():
+                    all_cols = ["[CUENTA]"] + cols
                     placeholders = ["?"] * len(all_cols)
-                    all_vals = [cuenta_clean] + values
-                    sql_insert = f"INSERT INTO CLIENTES ({', '.join(all_cols)}) VALUES ({', '.join(placeholders)})"
+                    all_vals = [cuenta_clean] + vals
+                    sql_insert = f"INSERT INTO [{tabla_usada}] ({', '.join(all_cols)}) VALUES ({', '.join(placeholders)})"
                     cursor.execute(sql_insert, all_vals)
 
-                conn.commit()
-                t_duracion = int((time.time() - t_inicio) * 1000)
-                logging.info(f"[{cuenta_clean}] NUEVO_ABONADO procesado en {t_duracion} ms.")
-                return t_duracion
+        cursor.close()
+        conn.close()
+        ms = int((time.time() - t_inicio) * 1000)
+        logging.info(f"[{cuenta_clean}] PYODBC: UPDATE exitoso en tabla {tabla_usada} ({ms} ms).")
+        return ms
 
-            # Operación 3: UPDATE / EDITAR_GENERAL / EDITAR_CONTACTOS
-            if not set_clauses:
-                logging.warning(f"[{cuenta_clean}] No hay campos válidos para actualizar.")
-                return 0
-
-            sql_update = f"UPDATE CLIENTES SET {', '.join(set_clauses)} WHERE CUENTA = ?"
-            values_with_pk = values + [cuenta_clean]
-
-            cursor.execute(sql_update, values_with_pk)
-            rows_affected = cursor.rowcount
-
-            # Si no encontró coincidencia exacta, probar sin la 'C' inicial (ej: 'C745' vs '745')
-            if rows_affected == 0 and cuenta_clean.startswith("C"):
-                cuenta_alt = cuenta_clean[1:]
-                values_alt = values + [cuenta_alt]
-                cursor.execute(sql_update, values_alt)
-                rows_affected = cursor.rowcount
-
-            # Si aún no existe, insertar automáticamente como nuevo registro
-            if rows_affected == 0:
-                all_cols = ["CUENTA"] + cols
-                placeholders = ["?"] * len(all_cols)
-                all_vals = [cuenta_clean] + values
-                sql_insert = f"INSERT INTO CLIENTES ({', '.join(all_cols)}) VALUES ({', '.join(placeholders)})"
-                cursor.execute(sql_insert, all_vals)
-                logging.info(f"[{cuenta_clean}] Cuenta no existía en GENERAL.MDB. Creada e insertada automáticamente.")
-
-            conn.commit()
-            t_duracion = int((time.time() - t_inicio) * 1000)
-
-            logging.info(f"[{cuenta_clean}] UPDATE exitoso en {t_duracion} ms ({rows_affected} filas modificadas). Intento {intento}")
-            return t_duracion
-
-        except pyodbc.Error as odbc_err:
-            logging.warning(f"[{cuenta_clean}] Intento {intento}/{max_retries} bloqueo ODBC: {odbc_err}")
-            if conn:
-                try: conn.rollback()
-                except: pass
-            if intento < max_retries:
-                time.sleep(retry_delay * intento)
-            else:
-                raise odbc_err
-        finally:
-            if cursor:
-                try: cursor.close()
-                except: pass
-            if conn:
-                try: conn.close()
-                except: pass
+    except Exception as err_pyodbc:
+        logging.error(f"[{cuenta_clean}] PYODBC también falló: {err_pyodbc}")
+        raise err_pyodbc
 
 
 def procesar_ordenes_pendientes():
-    """Consulta órdenes pendientes en eventos_monitoreo (100% nativo de Supabase) y las ejecuta"""
+    """Consulta órdenes pendientes en eventos_monitoreo y las ejecuta"""
     try:
         res = supabase.table("eventos_monitoreo") \
             .select("*") \
@@ -226,7 +247,7 @@ def procesar_ordenes_pendientes():
                 ms = ejecutar_edicion_local(tipo_op, cuenta, datos_nuevos)
                 payload["estado"] = "APLICADO_LOCAL"
                 payload["aplicado_el"] = datetime.now().isoformat()
-                payload["resultado"] = f"OK - Modificado en GENERAL.MDB ({ms} ms)"
+                payload["resultado"] = f"OK - Modificado en GENERAL.MDB [USUARIOS] ({ms} ms)"
 
                 supabase.table("eventos_monitoreo").update({
                     "nombre_abonado": json.dumps(payload),
@@ -252,8 +273,8 @@ def procesar_ordenes_pendientes():
 
 def main():
     logging.info("=" * 60)
-    logging.info("  INICIANDO GAMA SECURITY - WORKER EDITOR REMOTO v1.0")
-    logging.info(f"  Base de Datos: {MDB_PATH}")
+    logging.info("  INICIANDO GAMA SECURITY - WORKER EDITOR REMOTO v1.1")
+    logging.info(f"  Base de Datos: {MDB_PATH} (Tabla USUARIOS)")
     logging.info("=" * 60)
 
     while True:
@@ -262,7 +283,7 @@ def main():
         except Exception as e:
             logging.error(f"Error en loop de polling: {e}")
 
-        # Polling ultra ligero cada 3 segundos
+        # Polling cada 3 segundos
         time.sleep(3)
 
 
