@@ -1322,15 +1322,14 @@ export default function ScorpionDashboard() {
             id: 'menu-usuarios',
             hasDropdown: true,
             items: [
-              { label: 'Expedientes (Ficha del Abonado)', modal: 'expediente', desc: 'Datos generales, dirección y teléfonos' },
-              { label: 'Zonificación (Sensores MDB)', modal: 'zones-tree', desc: 'Detectores y áreas de cada cliente' },
-              { label: 'Personas Autorizadas (Claves Verbales)', modal: 'personas-autorizadas', desc: 'Directorio de 990+ contactos y contraseñas' },
-              { label: 'Búsqueda de Abonados', modal: 'buscador-universal', desc: 'Localización por nombre, cuenta o calle' },
-              { label: 'Listado general (CRM 360°)', modal: 'crm', desc: 'Panel integral de clientes y contratos' },
-              { label: 'Horarios de Apertura / Cierre', modal: 'horarios', desc: 'Ventanas horarias y autotest' },
+              { label: 'Expedientes', modal: 'expediente', desc: 'Datos generales, dirección y teléfonos' },
+              { label: 'Zonificación', modal: 'zones-tree', desc: 'Detectores y áreas de cada cliente' },
+              { label: 'Personas Autorizadas', modal: 'personas-autorizadas', desc: 'Directorio de 990+ contactos y contraseñas' },
+              { label: 'Búsqueda', modal: 'buscador-universal', desc: 'Localización por nombre, cuenta o calle' },
+              { label: 'Listado general', modal: 'crm', desc: 'Panel integral de clientes y contratos' },
+              { label: 'Horarios', modal: 'horarios', desc: 'Ventanas horarias y autotest' },
             ]
           },
-          { label: 'PUERTOS', id: 'menu-puertos', modal: 'health-telemetry' },
           { label: 'MARCADOR', id: 'menu-marcador', modal: 'control-test' },
           {
             label: 'TABLAS ▾',
@@ -1437,20 +1436,20 @@ export default function ScorpionDashboard() {
                 {item.items.map((sub, sIdx) => (
                   <button
                     key={sIdx}
-                    className="w-full text-left px-3 py-2 text-xs text-black font-semibold hover:bg-[#000080] hover:text-white flex flex-col transition-colors cursor-pointer border-b border-[#c8c4bc] last:border-b-0 gap-0.5 group focus:outline-none focus:bg-[#000080] focus:text-white"
+                    className="w-full text-left px-3 py-2 text-xs text-black font-semibold hover:!bg-[#000080] hover:!text-white flex flex-col cursor-pointer border-b border-[#c8c4bc] last:border-b-0 gap-0.5 group focus:outline-none focus:!bg-[#000080] focus:!text-white transition-none"
                     onClick={() => {
                       setModalActivo(sub.modal)
                       setMenuDropdownAbierto(null)
                     }}
                   >
                     <div className="flex items-center justify-between w-full">
-                      <span className="font-bold text-xs group-hover:text-white group-focus:text-white flex items-center gap-1.5">
-                        <span className="text-[9px] text-[#000080] group-hover:text-cyan-300 group-focus:text-cyan-300">▶</span>
+                      <span className="font-bold text-xs text-gray-900 group-hover:!text-white group-focus:!text-white flex items-center gap-1.5">
+                        <span className="text-[9px] text-[#000080] group-hover:!text-cyan-300 group-focus:!text-cyan-300">▶</span>
                         {sub.label}
                       </span>
                     </div>
                     {sub.desc && (
-                      <span className="text-[10px] text-gray-700 group-hover:text-cyan-100 group-focus:text-cyan-100 font-normal pl-3.5">
+                      <span className="text-[10px] text-gray-600 group-hover:!text-cyan-100 group-focus:!text-cyan-100 font-normal pl-3.5">
                         {sub.desc}
                       </span>
                     )}
