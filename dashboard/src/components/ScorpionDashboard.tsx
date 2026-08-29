@@ -1017,6 +1017,14 @@ export default function ScorpionDashboard() {
     return () => clearInterval(interval)
   }, [])
 
+  // Cerrar submenús desplegables al hacer clic en cualquier otra parte de la ventana
+  useEffect(() => {
+    if (!menuDropdownAbierto) return
+    const handleClickOutside = () => setMenuDropdownAbierto(null)
+    window.addEventListener('click', handleClickOutside)
+    return () => window.removeEventListener('click', handleClickOutside)
+  }, [menuDropdownAbierto])
+
   // Extraer datos del abonado activo para poblar las tarjetas derechas
   const activeEvent = eventoSeleccionado || (eventos.length > 0 ? eventos[eventos.length - 1] : null)
   const cuentaKey = activeEvent ? activeEvent.cuenta.toUpperCase().trim() : ''
@@ -1436,20 +1444,20 @@ export default function ScorpionDashboard() {
                 {item.items.map((sub, sIdx) => (
                   <button
                     key={sIdx}
-                    className="w-full text-left px-3 py-2 text-xs text-black font-semibold hover:!bg-[#000080] hover:!text-white flex flex-col cursor-pointer border-b border-[#c8c4bc] last:border-b-0 gap-0.5 group focus:outline-none focus:!bg-[#000080] focus:!text-white transition-none"
+                    className="w-full text-left px-3 py-2 text-xs font-semibold text-gray-900 hover:!bg-[#000080] hover:!text-white flex flex-col cursor-pointer border-b border-[#c8c4bc] last:border-b-0 gap-0.5 group focus:outline-none focus:!bg-[#000080] focus:!text-white transition-none select-none"
                     onClick={() => {
                       setModalActivo(sub.modal)
                       setMenuDropdownAbierto(null)
                     }}
                   >
                     <div className="flex items-center justify-between w-full">
-                      <span className="font-bold text-xs text-gray-900 group-hover:!text-white group-focus:!text-white flex items-center gap-1.5">
-                        <span className="text-[9px] text-[#000080] group-hover:!text-cyan-300 group-focus:!text-cyan-300">▶</span>
+                      <span className="font-bold text-xs text-inherit group-hover:!text-white group-focus:!text-white flex items-center gap-1.5">
+                        <span className="text-[9px] text-[#000080] group-hover:!text-[#38bdf8] group-focus:!text-[#38bdf8]">▶</span>
                         {sub.label}
                       </span>
                     </div>
                     {sub.desc && (
-                      <span className="text-[10px] text-gray-600 group-hover:!text-cyan-100 group-focus:!text-cyan-100 font-normal pl-3.5">
+                      <span className="text-[10px] text-gray-600 group-hover:!text-[#dbeafe] group-focus:!text-[#dbeafe] font-normal pl-3.5">
                         {sub.desc}
                       </span>
                     )}
