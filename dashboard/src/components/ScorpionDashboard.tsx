@@ -1435,29 +1435,29 @@ export default function ScorpionDashboard() {
               <span>{item.label}</span>
             </button>
 
-            {/* Submenú desplegable estilo clásico Windows con selección azul Windows */}
+            {/* Submenú desplegable estilo Windows XP / Vista con cápsula de selección celeste suave */}
             {item.hasDropdown && item.items && menuDropdownAbierto === item.id && (
               <div 
-                className="absolute top-full left-0 mt-0.5 bg-[#d4d0c8] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 shadow-[0_12px_28px_rgba(0,0,0,0.85)] z-[999] py-0.5 min-w-[320px] select-none"
+                className="absolute top-full left-0 mt-0.5 bg-[#fcfcfc] border border-[#7f9db9] shadow-[0_12px_28px_rgba(0,0,0,0.55)] z-[999] p-1 min-w-[310px] select-none flex flex-col gap-0.5 rounded-[2px]"
                 onClick={(e) => e.stopPropagation()}
               >
                 {item.items.map((sub, sIdx) => (
                   <button
                     key={sIdx}
-                    className="w-full text-left px-3 py-2 text-xs font-semibold text-gray-900 hover:!bg-[#000080] hover:!text-white flex flex-col cursor-pointer border-b border-[#c8c4bc] last:border-b-0 gap-0.5 group focus:outline-none focus:!bg-[#000080] focus:!text-white transition-none select-none"
+                    className="w-full text-left px-2.5 py-1.5 text-xs text-[#0f172a] rounded-[3px] border border-transparent hover:border-[#7eb4ea] hover:bg-gradient-to-b hover:from-[#edf5fc] hover:via-[#d6ebfc] hover:to-[#c2e2f9] focus:border-[#7eb4ea] focus:bg-gradient-to-b focus:from-[#edf5fc] focus:via-[#d6ebfc] focus:to-[#c2e2f9] focus:outline-none flex flex-col cursor-pointer transition-none select-none group hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]"
                     onClick={() => {
                       setModalActivo(sub.modal)
                       setMenuDropdownAbierto(null)
                     }}
                   >
                     <div className="flex items-center justify-between w-full">
-                      <span className="font-bold text-xs text-inherit group-hover:!text-white group-focus:!text-white flex items-center gap-1.5">
-                        <span className="text-[9px] text-[#000080] group-hover:!text-[#38bdf8] group-focus:!text-[#38bdf8]">▶</span>
+                      <span className="font-bold text-xs text-[#0f172a] flex items-center gap-1.5">
+                        <span className="text-[9px] text-[#2563eb]">▶</span>
                         {sub.label}
                       </span>
                     </div>
                     {sub.desc && (
-                      <span className="text-[10px] text-gray-600 group-hover:!text-[#dbeafe] group-focus:!text-[#dbeafe] font-normal pl-3.5">
+                      <span className="text-[10px] text-[#475569] font-normal pl-3.5 leading-tight">
                         {sub.desc}
                       </span>
                     )}
