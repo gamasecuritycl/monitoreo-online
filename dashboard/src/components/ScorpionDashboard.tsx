@@ -1438,26 +1438,26 @@ export default function ScorpionDashboard() {
             {/* Submenú desplegable estilo Windows XP / Vista con cápsula de selección celeste suave */}
             {item.hasDropdown && item.items && menuDropdownAbierto === item.id && (
               <div 
-                className="absolute top-full left-0 mt-0.5 bg-[#fcfcfc] border border-[#7f9db9] shadow-[0_12px_28px_rgba(0,0,0,0.55)] z-[999] p-1 min-w-[310px] select-none flex flex-col gap-0.5 rounded-[2px]"
+                className="win-xp-menu-container absolute top-full left-0 mt-0.5 z-[999] min-w-[310px] select-none flex flex-col gap-0.5"
                 onClick={(e) => e.stopPropagation()}
               >
                 {item.items.map((sub, sIdx) => (
                   <button
                     key={sIdx}
-                    className="w-full text-left px-2.5 py-1.5 text-xs text-[#0f172a] rounded-[3px] border border-transparent hover:border-[#7eb4ea] hover:bg-gradient-to-b hover:from-[#edf5fc] hover:via-[#d6ebfc] hover:to-[#c2e2f9] focus:border-[#7eb4ea] focus:bg-gradient-to-b focus:from-[#edf5fc] focus:via-[#d6ebfc] focus:to-[#c2e2f9] focus:outline-none flex flex-col cursor-pointer transition-none select-none group hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]"
+                    className="win-xp-menu-btn"
                     onClick={() => {
                       setModalActivo(sub.modal)
                       setMenuDropdownAbierto(null)
                     }}
                   >
                     <div className="flex items-center justify-between w-full">
-                      <span className="font-bold text-xs text-[#0f172a] flex items-center gap-1.5">
-                        <span className="text-[9px] text-[#2563eb]">▶</span>
+                      <span className="win-xp-title">
+                        <span className="win-xp-arrow">▶</span>
                         {sub.label}
                       </span>
                     </div>
                     {sub.desc && (
-                      <span className="text-[10px] text-[#475569] font-normal pl-3.5 leading-tight">
+                      <span className="win-xp-desc">
                         {sub.desc}
                       </span>
                     )}
