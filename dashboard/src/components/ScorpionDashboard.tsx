@@ -1413,33 +1413,47 @@ export default function ScorpionDashboard() {
                   setMenuDropdownAbierto(null)
                 }
               }}
-              className={`px-3 py-1 text-xs font-bold text-white tracking-wider whitespace-nowrap rounded-xs cursor-pointer transition-all border flex items-center gap-1 shadow-xs ${
+              onMouseEnter={() => {
+                if (menuDropdownAbierto && item.hasDropdown) {
+                  setMenuDropdownAbierto(item.id)
+                }
+              }}
+              className={`px-3 py-1 text-xs font-bold text-white tracking-wider whitespace-nowrap rounded-xs cursor-pointer transition-all border flex items-center gap-1 shadow-xs select-none ${
                 menuDropdownAbierto === item.id
                   ? 'bg-[#000080] border-t-blue-400 border-l-blue-400 border-b-black border-r-black'
-                  : 'bg-[#9b0000] hover:bg-[#b80000] active:bg-[#7a0000] border-t-[#c82020] border-l-[#c82020] border-b-[#500000] border-r-[#500000]'
+                  : 'bg-[#9b0000] hover:bg-[#b80000] hover:border-amber-300 active:bg-[#7a0000] border-t-[#c82020] border-l-[#c82020] border-b-[#500000] border-r-[#500000]'
               }`}
-              style={{ fontFamily: "'Arial', sans-serif" }}
+              style={{ fontFamily: "'Arial', 'Tahoma', sans-serif" }}
             >
               <span>{item.label}</span>
             </button>
 
-            {/* Submenú desplegable visible con z-index alto sin recorte */}
+            {/* Submenú desplegable estilo clásico Windows con selección azul Windows */}
             {item.hasDropdown && item.items && menuDropdownAbierto === item.id && (
               <div 
-                className="absolute top-full left-0 mt-1 bg-[#d4d0c8] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 shadow-[0_12px_28px_rgba(0,0,0,0.8)] z-[999] py-1 min-w-[310px]"
+                className="absolute top-full left-0 mt-0.5 bg-[#d4d0c8] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 shadow-[0_12px_28px_rgba(0,0,0,0.85)] z-[999] py-0.5 min-w-[320px] select-none"
                 onClick={(e) => e.stopPropagation()}
               >
                 {item.items.map((sub, sIdx) => (
                   <button
                     key={sIdx}
-                    className="w-full text-left px-4 py-2.5 text-xs text-black font-bold hover:bg-[#000080] hover:text-white flex flex-col transition-colors cursor-pointer border-b border-gray-300 last:border-b-0 gap-0.5 group"
+                    className="w-full text-left px-3 py-2 text-xs text-black font-semibold hover:bg-[#000080] hover:text-white flex flex-col transition-colors cursor-pointer border-b border-[#c8c4bc] last:border-b-0 gap-0.5 group focus:outline-none focus:bg-[#000080] focus:text-white"
                     onClick={() => {
                       setModalActivo(sub.modal)
                       setMenuDropdownAbierto(null)
                     }}
                   >
-                    <span className="font-bold text-xs">{sub.label}</span>
-                    <span className="text-[10px] text-gray-700 group-hover:text-slate-200 font-normal">{sub.desc}</span>
+                    <div className="flex items-center justify-between w-full">
+                      <span className="font-bold text-xs group-hover:text-white group-focus:text-white flex items-center gap-1.5">
+                        <span className="text-[9px] text-[#000080] group-hover:text-cyan-300 group-focus:text-cyan-300">▶</span>
+                        {sub.label}
+                      </span>
+                    </div>
+                    {sub.desc && (
+                      <span className="text-[10px] text-gray-700 group-hover:text-cyan-100 group-focus:text-cyan-100 font-normal pl-3.5">
+                        {sub.desc}
+                      </span>
+                    )}
                   </button>
                 ))}
               </div>
