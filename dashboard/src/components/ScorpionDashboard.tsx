@@ -29,6 +29,7 @@ import HealthTelemetryModal from './HealthTelemetryModal'
 import AperturasCierresModal from './AperturasCierresModal'
 import BuscadorUniversalModal from './BuscadorUniversalModal'
 import PersonasAutorizadasModal from './PersonasAutorizadasModal'
+import RegistroCambiosModal from './RegistroCambiosModal'
 import { lookupContactId } from '@/lib/contact_id_library'
 import { sendMessage, generarMensajeAlerta, generarMensajeEnergia, detectarPatronEvento, type EventInfo } from '@/lib/whatsapp'
 import { Operator, ensureUserAttributes, OPERADORES_PREDETERMINADOS } from '@/types/operator'
@@ -539,8 +540,8 @@ export default function ScorpionDashboard() {
     const c = (cuentaRaw || '').toUpperCase().trim()
     const e = (eventoRaw || '').toUpperCase().trim()
     if (c.startsWith('CAMARAS_DAHUA_') || c.startsWith('DAHUA_FRAME_') || c.startsWith('DAHUA_STREAM_REQ_') || c.startsWith('SNAPSHOT_') || c.startsWith('CLIP_') || c.startsWith('CONFIG_WHATSAPP_') || c.startsWith('CONFIG_APERTURAS_') || c.startsWith('CONFIG_') || c.startsWith('__')) return true
-    if (['CLIENTES', 'CODIGOS', 'ZONAS', '__SINCRONIZADOR__', 'EMPRESAS_CONGLOMERADO', 'COTIZACIONES_DOLIBARR', 'ORDENES_TRABAJO', 'CONFIG_OPERADORES', 'CLIENTES_MAESTROS_CRM', 'CONFIG_APERTURAS_CIERRES_LISTA'].includes(c)) return true
-    if (['PREMIUM', 'ELIMINACION_DAHUA_CRUD', 'GENERACION_NVR_MULTICANAL', 'FRAME_SYNC', 'NVR_DVR_FRAME_SYNC', 'CAMERA_FRAME_SYNC', 'STREAM_REQ', 'SNAPSHOT_OPERADOR', 'CLIP_VIDEO_OPERADOR', 'CONFIG_UPDATE_APERTURAS_CIERRES'].includes(e) || e.startsWith('CONFIG_UPDATE_')) return true
+    if (c.startsWith('ORDEN_') || c.startsWith('AUDITORIA_') || ['CLIENTES', 'CODIGOS', 'ZONAS', '__SINCRONIZADOR__', 'EMPRESAS_CONGLOMERADO', 'COTIZACIONES_DOLIBARR', 'ORDENES_TRABAJO', 'CONFIG_OPERADORES', 'CLIENTES_MAESTROS_CRM', 'CONFIG_APERTURAS_CIERRES_LISTA', 'ORDEN_EDITOR_REMOTO', 'AUDITORIA_EDITOR_REMOTO'].includes(c)) return true
+    if (['PREMIUM', 'ELIMINACION_DAHUA_CRUD', 'GENERACION_NVR_MULTICANAL', 'FRAME_SYNC', 'NVR_DVR_FRAME_SYNC', 'CAMERA_FRAME_SYNC', 'STREAM_REQ', 'SNAPSHOT_OPERADOR', 'CLIP_VIDEO_OPERADOR', 'CONFIG_UPDATE_APERTURAS_CIERRES'].includes(e) || e.startsWith('CONFIG_UPDATE_') || e.startsWith('EDITAR_GENERAL') || e.startsWith('EDITOR REMOTO') || e.includes('EDITOR_REMOTO') || e.includes('EDITAR_GENERAL') || e.startsWith('REGISTRO_CAMBIO')) return true
     return false
   }
 
@@ -562,12 +563,14 @@ export default function ScorpionDashboard() {
       let query = supabase
         .from('eventos_monitoreo')
         .select('*')
-        .not('cuenta', 'in', '(CLIENTES,CODIGOS,ZONAS,__SINCRONIZADOR__,CONFIG_OPERADORES,CLIENTES_MAESTROS_CRM,EMPRESAS_CONGLOMERADO,COTIZACIONES_DOLIBARR,ORDENES_TRABAJO)')
+        .not('cuenta', 'in', '(CLIENTES,CODIGOS,ZONAS,__SINCRONIZADOR__,CONFIG_OPERADORES,CLIENTES_MAESTROS_CRM,EMPRESAS_CONGLOMERADO,COTIZACIONES_DOLIBARR,ORDENES_TRABAJO,ORDEN_EDITOR_REMOTO,AUDITORIA_EDITOR_REMOTO)')
         .not('cuenta', 'like', 'CAMARAS_DAHUA_%')
         .not('cuenta', 'like', 'DAHUA_FRAME_%')
         .not('cuenta', 'like', 'DAHUA_STREAM_REQ_%')
         .not('cuenta', 'like', 'SNAPSHOT_%')
         .not('cuenta', 'like', 'CONFIG_WHATSAPP_%')
+        .not('cuenta', 'like', 'ORDEN_%')
+        .not('cuenta', 'like', 'AUDITORIA_%')
         .order('id', { ascending: false })
         .limit(200)
 
@@ -615,12 +618,14 @@ export default function ScorpionDashboard() {
         const { data, error } = await supabase
           .from('eventos_monitoreo')
           .select('*')
-          .not('cuenta', 'in', '(CLIENTES,CODIGOS,ZONAS,__SINCRONIZADOR__,CONFIG_OPERADORES,CLIENTES_MAESTROS_CRM,EMPRESAS_CONGLOMERADO,COTIZACIONES_DOLIBARR,ORDENES_TRABAJO)')
+          .not('cuenta', 'in', '(CLIENTES,CODIGOS,ZONAS,__SINCRONIZADOR__,CONFIG_OPERADORES,CLIENTES_MAESTROS_CRM,EMPRESAS_CONGLOMERADO,COTIZACIONES_DOLIBARR,ORDENES_TRABAJO,ORDEN_EDITOR_REMOTO,AUDITORIA_EDITOR_REMOTO)')
           .not('cuenta', 'like', 'CAMARAS_DAHUA_%')
           .not('cuenta', 'like', 'DAHUA_FRAME_%')
           .not('cuenta', 'like', 'DAHUA_STREAM_REQ_%')
           .not('cuenta', 'like', 'SNAPSHOT_%')
           .not('cuenta', 'like', 'CONFIG_WHATSAPP_%')
+          .not('cuenta', 'like', 'ORDEN_%')
+          .not('cuenta', 'like', 'AUDITORIA_%')
           .order('id', { ascending: false })
           .limit(200)
 
@@ -1394,6 +1399,7 @@ export default function ScorpionDashboard() {
             id: 'menu-ayuda',
             hasDropdown: true,
             items: [
+              { label: 'Registro de Cambios', modal: 'registro-cambios', desc: 'Historial de modificaciones de abonados y expedientes' },
               { label: 'Preguntas Frecuentes', modal: 'ayuda-faq', desc: 'Guía rápida de procedimientos para operadores' },
               { label: 'Manuales de Operador', modal: 'ayuda-manuales', desc: 'Documentación y protocolos operativos' },
             ]
@@ -2060,6 +2066,14 @@ export default function ScorpionDashboard() {
       {modalActivo === 'aperturas-cierres' && (
         <AperturasCierresModal
           onClose={() => setModalActivo(null)}
+        />
+      )}
+
+      {/* Registro de Cambios Modal (Auditoría de Modificaciones) */}
+      {modalActivo === 'registro-cambios' && (
+        <RegistroCambiosModal
+          onClose={() => setModalActivo(null)}
+          clientesMap={clientesMap}
         />
       )}
 

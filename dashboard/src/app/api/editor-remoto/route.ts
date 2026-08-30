@@ -53,6 +53,8 @@ export async function POST(req: NextRequest) {
       console.error('[EDITOR REMOTO] Error encolando orden en eventos_monitoreo:', errCola)
     }
 
+    let clientesMap: Record<string, any> = {}
+
     // 2. Actualizar el mapa maestro de CLIENTES en Supabase en caliente
     try {
       const { data: clientesData } = await supabase
@@ -61,8 +63,6 @@ export async function POST(req: NextRequest) {
         .eq('cuenta', 'CLIENTES')
         .order('id', { ascending: false })
         .limit(1)
-
-      let clientesMap: Record<string, any> = {}
 
       if (clientesData && clientesData.length > 0) {
         try {
@@ -108,24 +108,50 @@ export async function POST(req: NextRequest) {
       console.warn('[EDITOR REMOTO] Error actualizando cache de CLIENTES en Supabase:', errClientes)
     }
 
-    // 3. Registrar auditoría en Bitácora Operativa
+    // 3. Registrar auditoría detallada en AUDITORIA_EDITOR_REMOTO (para el modal Registro de Cambios)
     try {
-      const descAccion = tipoOperacion === 'NUEVO_ABONADO'
-        ? `Abonado CREADO por ${operador.nombre}.`
-        : tipoOperacion === 'ELIMINAR_ABONADO'
-        ? `Abonado DADO DE BAJA / ELIMINADO por ${operador.nombre}.`
-        : `Abonado EDITADO por ${operador.nombre} (${Object.keys(datosNuevos).length} campos actualizados).`
+      const cambios: { campo: string; valorAnterior: string; valorNuevo: string }[] = []
+      const ant = datosAnteriores || (clientesMap ? clientesMap[cuentaNormalizada] : {}) || {}
+
+      for (const [k, v] of Object.entries(datosNuevos)) {
+        if (k.startsWith('_')) continue
+        const valAnt = ant[k] !== undefined ? String(ant[k]) : ''
+        const valNuev = String(v ?? '')
+        if (valAnt !== valNuev) {
+          cambios.push({
+            campo: k,
+            valorAnterior: valAnt,
+            valorNuevo: valNuev
+          })
+        }
+      }
+
+      const payloadAuditoria = {
+        ordenId,
+        cuenta: cuentaNormalizada,
+        operador,
+        tipoOperacion,
+        cambios,
+        datosNuevos,
+        datosAnteriores: ant,
+        creado_el: nowIso,
+        resumen: tipoOperacion === 'NUEVO_ABONADO'
+          ? `Alta de Abonado ${cuentaNormalizada} por ${operador.nombre}`
+          : tipoOperacion === 'ELIMINAR_ABONADO'
+          ? `Baja de Abonado ${cuentaNormalizada} por ${operador.nombre}`
+          : `Modificación de ${cambios.length} campo(s) en ${cuentaNormalizada} por ${operador.nombre}`
+      }
 
       await supabase.from('eventos_monitoreo').insert({
-        cuenta: cuentaNormalizada,
-        evento: `EDITOR REMOTO: ${tipoOperacion.replace(/_/g, ' ')}`,
-        nombre_abonado: descAccion,
+        cuenta: 'AUDITORIA_EDITOR_REMOTO',
+        evento: 'REGISTRO_CAMBIO',
+        nombre_abonado: JSON.stringify(payloadAuditoria),
         fecha_hora: nowIso,
         zona: 'SYS',
         usuario: operador.codigo || '01'
       })
     } catch (errBitacora) {
-      console.warn('[EDITOR REMOTO] Error registrando bitacora:', errBitacora)
+      console.warn('[EDITOR REMOTO] Error registrando auditoría:', errBitacora)
     }
 
     return NextResponse.json({
