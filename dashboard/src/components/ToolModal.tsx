@@ -259,9 +259,21 @@ export default function ToolModal({ modalId, onClose, operadores = [], onUpdateO
     { code: '459', cat: 'APERTURA / CIERRE', eCode: 'E459', eName: 'CIERRE RECIENTE', eDesc: 'Activación de alarma pocos minutos tras armar', rCode: 'R459', rName: 'REST. TRAS CIERRE RECIENTE', rDesc: 'Zona asegurada' },
 
     // ── 500-575: ANULACIONES (BYPASS) Y DESHABILITACIONES ───────────
+    { code: '500', cat: 'ANULACIÓN / BYPASS', eCode: 'E500', eName: 'CONTROL DE ACCESO / BYPASS', eDesc: 'Punto de acceso inhabilitado', rCode: 'R500', rName: 'REST. CONTROL ACCESO', rDesc: 'Punto de acceso habilitado' },
+    { code: '511', cat: 'ANULACIÓN / BYPASS', eCode: 'E511', eName: 'PUNTO INHABILITADO (BYPASS)', eDesc: 'Punto de detección excluido', rCode: 'R511', rName: 'REST. PUNTO INHABILITADO', rDesc: 'Punto reincorporado' },
+    { code: '512', cat: 'ANULACIÓN / BYPASS', eCode: 'E512', eName: 'ZONA INALÁMBRICA INHIBIDA', eDesc: 'Sensor inalámbrico excluido', rCode: 'R512', rName: 'REST. ZONA INALÁMBRICA', rDesc: 'Sensor inalámbrico activo' },
     { code: '520', cat: 'ANULACIÓN / BYPASS', eCode: 'E520', eName: 'RELEVADOR DESHABILITADO', eDesc: 'Salida de relé deshabilitada por configuración', rCode: 'R520', rName: 'RELEVADOR HABILITADO', rDesc: 'Salida de relé habilitada' },
     { code: '521', cat: 'ANULACIÓN / BYPASS', eCode: 'E521', eName: 'SIRENA 1 DESHABILITADA', eDesc: 'Salida de sirena 1 inhibida', rCode: 'R521', rName: 'SIRENA 1 HABILITADA', rDesc: 'Salida de sirena 1 activa' },
     { code: '522', cat: 'ANULACIÓN / BYPASS', eCode: 'E522', eName: 'SIRENA 2 DESHABILITADA', eDesc: 'Salida de sirena 2 inhibida', rCode: 'R522', rName: 'SIRENA 2 HABILITADA', rDesc: 'Salida de sirena 2 activa' },
+    { code: '523', cat: 'ANULACIÓN / BYPASS', eCode: 'E523', eName: 'BYPASS DE FUEGO', eDesc: 'Zona de fuego inhibida voluntariamente', rCode: 'R523', rName: 'REST. BYPASS FUEGO', rDesc: 'Zona de fuego habilitada' },
+    { code: '524', cat: 'ANULACIÓN / BYPASS', eCode: 'E524', eName: 'ZONA 24H INHABILITADA', eDesc: 'Zona de 24 horas excluida', rCode: 'R524', rName: 'REST. ZONA 24H', rDesc: 'Zona 24 horas activa' },
+    { code: '525', cat: 'ANULACIÓN / BYPASS', eCode: 'E525', eName: 'BYPASS DE ROBO', eDesc: 'Zona de intrusión excluida', rCode: 'R525', rName: 'REST. BYPASS ROBO', rDesc: 'Zona de intrusión activa' },
+    { code: '526', cat: 'ANULACIÓN / BYPASS', eCode: 'E526', eName: 'BYPASS DE GRUPO', eDesc: 'Grupo de zonas excluido', rCode: 'R526', rName: 'REST. BYPASS GRUPO', rDesc: 'Grupo de zonas activo' },
+    { code: '527', cat: 'ANULACIÓN / BYPASS', eCode: 'E527', eName: 'BYPASS SWINGER', eDesc: 'Auto-anulación de zona por disparos reiterados', rCode: 'R527', rName: 'REST. BYPASS SWINGER', rDesc: 'Zona reactivada tras swinger' },
+    { code: '530', cat: 'ANULACIÓN / BYPASS', eCode: 'E530', eName: 'LÍMITE DE BYPASS EXCEDIDO (SWINGER)', eDesc: 'La zona superó el número máximo de disparos y fue bloqueada automáticamente', rCode: 'R530', rName: 'REST. LÍMITE DE BYPASS', rDesc: 'Límite de bypass reseteado y zona habilitada' },
+    { code: '531', cat: 'ANULACIÓN / BYPASS', eCode: 'E531', eName: 'ADVERTENCIA LÍMITE BYPASS', eDesc: 'Zona cercana a alcanzar el límite de disparos', rCode: 'R531', rName: 'REST. ADVERTENCIA BYPASS', rDesc: 'Contador de disparos normalizado' },
+    { code: '532', cat: 'ANULACIÓN / BYPASS', eCode: 'E532', eName: 'LÍMITE BYPASS DE GRUPO', eDesc: 'Grupo de zonas superó el límite de exclusión', rCode: 'R532', rName: 'REST. BYPASS DE GRUPO', rDesc: 'Grupo reactivado' },
+    { code: '538', cat: 'PÁNICO', eCode: 'E538', eName: 'PÁNICO / RETENCIÓN (HOLDUP)', eDesc: 'Pulsador de asalto silencioso activado', rCode: 'R538', rName: 'REST. PÁNICO RETENCIÓN', rDesc: 'Botón de retención restablecido' },
     { code: '551', cat: 'ANULACIÓN / BYPASS', eCode: 'E551', eName: 'COMUNICADOR (DIALER) INHIBIDO', eDesc: 'Marcador telefónico desactivado', rCode: 'R551', rName: 'COMUNICADOR HABILITADO', rDesc: 'Marcador telefónico activado' },
     { code: '552', cat: 'ANULACIÓN / BYPASS', eCode: 'E552', eName: 'RADIO XMTR DESHABILITADA', eDesc: 'Transmisor de radio desactivado', rCode: 'R552', rName: 'RADIO XMTR HABILITADA', rDesc: 'Transmisor de radio activado' },
     { code: '570', cat: 'ANULACIÓN / BYPASS', eCode: 'E570', eName: 'ZONA ANULADA (BYPASS)', eDesc: 'Exclusión voluntaria de zona antes de armar', rCode: 'R570', rName: 'ZONA DESANULADA (UNBYPASS)', rDesc: 'Zona reincorporada a la protección activa' },
@@ -269,6 +281,7 @@ export default function ToolModal({ modalId, onClose, operadores = [], onUpdateO
     { code: '572', cat: 'ANULACIÓN / BYPASS', eCode: 'E572', eName: 'ZONA 24 HORAS ANULADA', eDesc: 'Exclusión manual de zona permanente 24h', rCode: 'R572', rName: 'ZONA 24H DESANULADA', rDesc: 'Zona 24h reincorporada' },
     { code: '573', cat: 'ANULACIÓN / BYPASS', eCode: 'E573', eName: 'ZONA ROBO ANULADA', eDesc: 'Exclusión manual de zona de intrusión', rCode: 'R573', rName: 'ZONA ROBO DESANULADA', rDesc: 'Zona de robo reincorporada' },
     { code: '574', cat: 'ANULACIÓN / BYPASS', eCode: 'E574', eName: 'GRUPO DE ZONAS ANULADO', eDesc: 'Exclusión simultánea de grupo de sensores', rCode: 'R574', rName: 'GRUPO DE ZONAS DESANULADO', rDesc: 'Grupo de zonas reincorporado' },
+    { code: '575', cat: 'ANULACIÓN / BYPASS', eCode: 'E575', eName: 'ZONA SWINGER ANULADA', eDesc: 'Zona anulada tras reiterados falsos disparos', rCode: 'R575', rName: 'REST. ZONA SWINGER', rDesc: 'Zona swinger normalizada' },
 
     // ── 600-654: TESTS, PRUEBAS Y MANTENIMIENTO TÉCNICO ─────────────
     { code: '601', cat: 'TESTS & SISTEMA', eCode: 'E601', eName: 'TEST MANUAL INICIADO', eDesc: 'Prueba de comunicación provocada por operador', rCode: 'R601', rName: 'FIN DE TEST MANUAL', rDesc: 'Prueba manual completada' },
