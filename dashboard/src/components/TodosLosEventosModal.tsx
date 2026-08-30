@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { getSenalLegible } from './EventRow'
 
 interface Evento {
   id: number
@@ -294,7 +295,8 @@ export default function TodosLosEventosModal({ onClose }: Props) {
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {eventos.map((e, index) => {
-                  const customStyle = getRowStyle(e.evento)
+                  const senalLegible = getSenalLegible(e.evento)
+                  const customStyle = getRowStyle(senalLegible || e.evento)
                   const rowBg = customStyle ? customStyle.bg : (index % 2 === 0 ? '#ffffff' : '#f5f5f5')
                   const rowFg = customStyle ? customStyle.text : '#000000'
                   
@@ -313,7 +315,7 @@ export default function TodosLosEventosModal({ onClose }: Props) {
                       <td className="p-1 border-r border-gray-300 text-center font-mono">{horaDisplay}</td>
                       <td className="p-1 border-r border-gray-300 text-center font-mono">{e.cuenta}</td>
                       <td className="p-1 border-r border-gray-300 max-w-[200px] truncate uppercase">{e.nombre_abonado || '******** RECEPTOR ********'}</td>
-                      <td className="p-1 border-r border-gray-300 uppercase">{e.evento}</td>
+                      <td className="p-1 border-r border-gray-300 uppercase" title={e.evento !== senalLegible ? `Código original: ${e.evento}` : undefined}>{senalLegible}</td>
                       <td className="p-1 border-r border-gray-300 text-center font-mono">{par}</td>
                       <td className="p-1 border-r border-gray-300 text-center font-mono">{zn}</td>
                       <td className="p-1 border-r border-gray-300 text-center font-mono">{usr}</td>

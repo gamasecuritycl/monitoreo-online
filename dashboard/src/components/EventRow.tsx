@@ -1,13 +1,15 @@
 'use client'
 
 // ════════════════════════════════════════════════════════════════
-//  GAMA COMMAND CENTER - EventRow v4.0
-//  Colores dinámicos desde CODIGOS.MDB via Supabase
+//  GAMA COMMAND CENTER - EventRow v5.0
+//  Traducción inteligente de Códigos Contact ID / SIA a español
+//  y Colores dinámicos desde CODIGOS.MDB + Diccionario Oficial
 // ════════════════════════════════════════════════════════════════
 
 import type { EventoMonitoreo } from '@/lib/supabase'
+import { lookupContactId } from '@/lib/contact_id_library'
 
-interface CodigoInfo {
+export interface CodigoInfo {
   descripcion: string
   zn_us: string
   color: string
@@ -35,6 +37,32 @@ const COLOR_ACCESS_TO_CSS: Record<string, { bg: string; text: string }> = {
   'COMPROBAR':{ bg: '#FFA500', text: '#000000' }, // Naranja para señales a verificar
 }
 
+/**
+ * Traduce un código crudo (ej: E530, E538, E330, R301, E130) a su texto legible en español.
+ * Si ya viene en texto (ej: "ALARMA DE ROBO", "AUTOTEST", "CIERRE"), lo conserva intacto.
+ */
+export function getSenalLegible(
+  eventoStr: string,
+  codigosMap?: Record<string, CodigoInfo>
+): string {
+  if (!eventoStr) return ''
+  const upper = eventoStr.toUpperCase().trim()
+
+  // 1. Si está en el mapa de CODIGOS.MDB de Scorpion por código exacto (ej: "E330", "R401", "E130")
+  if (codigosMap && codigosMap[upper]?.descripcion) {
+    return codigosMap[upper].descripcion
+  }
+
+  // 2. Si es un código tipo Contact ID (ej: "E530", "R530", "E538", "E301", "530", "BA")
+  const cid = lookupContactId(upper)
+  if (cid && cid.categoria !== 'DESCONOCIDO') {
+    return cid.descripcion
+  }
+
+  // 3. Retornar el texto original si no es un código numérico crudo
+  return eventoStr
+}
+
 // ── Paleta Scorpion de fallback (coincidente 1:1 con Scorpion Monitoring Software) ─
 function getScorpionStyleFallback(evento: string): { bg: string; text: string } {
   const upper = (evento || '').toUpperCase().trim()
@@ -55,15 +83,19 @@ function getScorpionStyleFallback(evento: string): { bg: string; text: string } 
   if (upper.includes('ROBO') || upper.includes('ALARMA') || upper.includes('INTRUSION') || upper.includes('SABOTAJE') || upper.includes('TAMPER')) {
     return { bg: '#FFC0CB', text: '#000000' }
   }
-  // 5. Aperturas -> Celeste / Cyan (#00FFFF) igual a PC Scorpion
+  // 5. Anulaciones y Bypass -> Violeta (#EE82EE)
+  if (upper.includes('BYPASS') || upper.includes('ANULA') || upper.includes('INHIBI') || upper.includes('SWINGER') || upper.includes('E530') || upper.includes('E570')) {
+    return { bg: '#EE82EE', text: '#000000' }
+  }
+  // 6. Aperturas -> Celeste / Cyan (#00FFFF) igual a PC Scorpion
   if (upper.includes('APERTURA')) {
     return { bg: '#00FFFF', text: '#000000' }
   }
-  // 6. Autotests -> Gris / Plateado (#E0E0E0) igual a PC Scorpion
+  // 7. Autotests -> Gris / Plateado (#E0E0E0) igual a PC Scorpion
   if (upper.includes('AUTOTEST')) {
     return { bg: '#E0E0E0', text: '#000000' }
   }
-  // 7. Cierres -> Blanco (#FFFFFF)
+  // 8. Cierres -> Blanco (#FFFFFF)
   if (upper.includes('CIERRE')) {
     return { bg: '#FFFFFF', text: '#000000' }
   }
@@ -73,48 +105,43 @@ function getScorpionStyleFallback(evento: string): { bg: string; text: string } 
 
 /**
  * Determina el color del evento usando CODIGOS.MDB primero, 
- * luego fallback con las reglas predeterminadas de Scorpion.
+ * luego diccionario oficial Contact ID y fallback Scorpion.
  */
 function getEventoStyle(
-  eventoTexto: string,
+  senalLegible: string,
+  rawEvento: string,
   codigosMap?: Record<string, CodigoInfo>
 ): { bg: string; text: string } {
-  const upper = (eventoTexto || '').toUpperCase().trim()
+  const upperRaw = (rawEvento || '').toUpperCase().trim()
+  const upperLegible = (senalLegible || '').toUpperCase().trim()
 
-  // ── Reglas nativas idénticas 1:1 al software de la PC Scorpion ──
-  if (upper.includes('APERTURA')) return { bg: '#00FFFF', text: '#000000' } // Celeste / Cyan
-  if (upper.includes('AUTOTEST')) return { bg: '#E0E0E0', text: '#000000' } // Gris / Plateado
-  if (upper.includes('CIERRE'))   return { bg: '#FFFFFF', text: '#000000' } // Blanco
-  if (upper.includes('RESTABLEC') || upper.includes('RESTAURACION')) return { bg: '#FFFF00', text: '#000000' } // Amarillo
-  if (upper.includes('FALLA AC') || upper.includes('FALLA DE ENERGIA') || upper.includes('CORTE DE LUZ')) return { bg: '#00FF00', text: '#000000' } // Verde
-  if (upper.includes('ROBO') || upper.includes('ALARMA') || upper.includes('INTRUSION') || upper.includes('SABOTAJE')) return { bg: '#FFC0CB', text: '#000000' } // Rosado
+  // 1. Reglas prioritarias nativas de Scorpion
+  if (upperLegible.includes('APERTURA')) return { bg: '#00FFFF', text: '#000000' } // Celeste
+  if (upperLegible.includes('AUTOTEST')) return { bg: '#E0E0E0', text: '#000000' } // Gris
+  if (upperLegible.includes('CIERRE'))   return { bg: '#FFFFFF', text: '#000000' } // Blanco
+  if (upperLegible.includes('RESTABLEC') || upperLegible.includes('RESTAURACION')) return { bg: '#FFFF00', text: '#000000' } // Amarillo
+  if (upperLegible.includes('FALLA AC') || upperLegible.includes('FALLA DE ENERGIA') || upperLegible.includes('CORTE DE LUZ')) return { bg: '#00FF00', text: '#000000' } // Verde
+  if (upperLegible.includes('ROBO') || upperLegible.includes('INTRUSION') || upperLegible.includes('SABOTAJE') || upperLegible.includes('TAMPER')) return { bg: '#FFC0CB', text: '#000000' } // Rosado
+  if (upperLegible.includes('BYPASS') || upperLegible.includes('SWINGER') || upperLegible.includes('ANULA')) return { bg: '#EE82EE', text: '#000000' } // Violeta
 
-  if (codigosMap && eventoTexto) {
-    // 1. Buscar coincidencia exacta por CODIGO (ej: "E130", "R100")
-    if (codigosMap[upper]) {
-      const colorNombre = codigosMap[upper].color
+  // 2. Buscar en CODIGOS.MDB de Scorpion
+  if (codigosMap) {
+    if (codigosMap[upperRaw]) {
+      const colorNombre = codigosMap[upperRaw].color
       if (COLOR_ACCESS_TO_CSS[colorNombre]) {
         return COLOR_ACCESS_TO_CSS[colorNombre]
       }
     }
-    
-    // 2. Buscar por coincidencia de DESCRIPCION en el mapa de códigos
-    for (const [, info] of Object.entries(codigosMap)) {
-      if (
-        info.descripcion &&
-        upper.includes(info.descripcion.toUpperCase().trim()) &&
-        info.descripcion.length > 3
-      ) {
-        const colorNombre = info.color
-        if (COLOR_ACCESS_TO_CSS[colorNombre]) {
-          return COLOR_ACCESS_TO_CSS[colorNombre]
-        }
-      }
-    }
   }
 
-  // 3. Fallback a las reglas predeterminadas de Scorpion
-  return getScorpionStyleFallback(eventoTexto)
+  // 3. Buscar en Diccionario Contact ID SIA DC-05
+  const cid = lookupContactId(upperRaw)
+  if (cid && COLOR_ACCESS_TO_CSS[cid.color]) {
+    return COLOR_ACCESS_TO_CSS[cid.color]
+  }
+
+  // 4. Fallback Scorpion
+  return getScorpionStyleFallback(upperLegible || upperRaw)
 }
 
 function renderFecha(iso: string) {
@@ -140,7 +167,8 @@ function renderFecha(iso: string) {
 }
 
 export default function EventRow({ evento, onClick, isNew, isLatest, codigosMap }: EventRowProps) {
-  const style = getEventoStyle(evento.evento, codigosMap)
+  const senalLegible = getSenalLegible(evento.evento, codigosMap)
+  const style = getEventoStyle(senalLegible, evento.evento, codigosMap)
   const isCritical = ['#FF0000'].includes(style.bg)
 
   const rowClass = [
@@ -148,6 +176,8 @@ export default function EventRow({ evento, onClick, isNew, isLatest, codigosMap 
     isLatest  ? 'row-latest' : '',
     'cursor-pointer hover:opacity-95 transition-all font-bold select-none',
   ].join(' ')
+
+  const tieneTraduccion = evento.evento && evento.evento.trim().toUpperCase() !== senalLegible.trim().toUpperCase()
 
   return (
     <tr
@@ -170,9 +200,12 @@ export default function EventRow({ evento, onClick, isNew, isLatest, codigosMap 
         {evento.nombre_abonado}
       </td>
 
-      {/* SEÑAL */}
-      <td className="px-1 py-0.5 text-[10px] md:text-[11px] font-bold border border-black leading-none align-middle truncate max-w-[80px] md:max-w-none">
-        {evento.evento}
+      {/* SEÑAL (Traducida automáticamente de Contact ID a español si viene como código) */}
+      <td
+        className="px-1 py-0.5 text-[10px] md:text-[11px] font-bold border border-black leading-none align-middle truncate max-w-[120px] md:max-w-none"
+        title={tieneTraduccion ? `Código original transmitido: ${evento.evento}` : undefined}
+      >
+        {senalLegible}
       </td>
 
       {/* ZN */}
