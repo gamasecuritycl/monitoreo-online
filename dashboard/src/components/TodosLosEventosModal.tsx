@@ -28,19 +28,25 @@ const SYSTEM_ACCOUNTS = new Set([
   'ENTREGAS_TURNO',
   'CONFIGURACION',
   'CONFIGURACIONES',
-  'NOVEDADES'
+  'NOVEDADES',
+  '0000',
+  '000',
+  '00000',
+  'RECEPTOR'
 ])
 
 /**
  * Validador de Cuentas Reales de Abonados.
- * Elimina 100% registros basura de metadatos o filas donde la "cuenta" sea un timestamp (ej: 6:10:25).
+ * Elimina 100% registros basura de metadatos o filas donde la "cuenta" sea 0000 o un timestamp.
  */
-function isRealAccount(cuentaRaw?: string, eventoRaw?: string): boolean {
+function isRealAccount(cuentaRaw?: string, eventoRaw?: string, nombreRaw?: string): boolean {
   if (!cuentaRaw) return false
   const c = cuentaRaw.trim().toUpperCase()
+  const n = (nombreRaw || '').trim().toUpperCase()
+  if (c === '0000' || c === '000' || c === '00000' || c.startsWith('0000') || n.includes('RECEPTOR') || c === 'RECEPTOR') return false
   if (!c || c.length < 3 || c.length > 6) return false
   if (c.includes(':') || c.includes('-') || c.includes('/') || c.includes(' ')) return false
-  if (SYSTEM_ACCOUNTS.has(c) || c.startsWith('__') || c.startsWith('DAHUA') || c.startsWith('CAMARA') || c.startsWith('SNAPSHOT') || c.startsWith('CONFIG')) return false
+  if (SYSTEM_ACCOUNTS.has(c) || c.startsWith('__') || c.startsWith('DAHUA') || c.startsWith('CAMARA') || c.startsWith('SNAPSHOT') || c.startsWith('CONFIG') || c.startsWith('ORDEN') || c.startsWith('AUDITORIA')) return false
   
   // Si la cuenta contiene formato de hora HH:MM:SS -> Descartar automáticamente
   if (/\d+:\d+:\d+/.test(c)) return false
@@ -199,7 +205,7 @@ export default function TodosLosEventosModal({ onClose }: Props) {
 
       // Filtrar y asociar en JavaScript
       let eventosFiltrados = (data || [])
-        .filter(e => isRealAccount(e.cuenta, e.evento))
+        .filter(e => isRealAccount(e.cuenta, e.evento, e.nombre_abonado))
         .map(e => {
           const parsed = parseEventDate(e.fecha_hora)
           return {
@@ -221,7 +227,7 @@ export default function TodosLosEventosModal({ onClose }: Props) {
 
         if (dateData && dateData.length > 0) {
           eventosFiltrados = dateData
-            .filter(e => isRealAccount(e.cuenta, e.evento))
+            .filter(e => isRealAccount(e.cuenta, e.evento, e.nombre_abonado))
             .map(e => {
               const parsed = parseEventDate(e.fecha_hora)
               return {

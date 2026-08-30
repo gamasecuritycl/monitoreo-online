@@ -536,11 +536,16 @@ export default function ScorpionDashboard() {
 
   // Fetch inicial ordenado por ID (para evitar problemas de desfase de hora de red)
   // Cargar lista de eventos iniciales ignorando filas internas de configuración y fotogramas
-  const esCuentaInternaOFrame = (cuentaRaw: string = '', eventoRaw: string = '') => {
+  const esCuentaInternaOFrame = (cuentaRaw: string = '', eventoRaw: string = '', nombreRaw: string = '') => {
     const c = (cuentaRaw || '').toUpperCase().trim()
     const e = (eventoRaw || '').toUpperCase().trim()
+    const n = (nombreRaw || '').toUpperCase().trim()
+
+    // Ignorar cuenta 0000 / test del receptor
+    if (c === '0000' || c === '000' || c === '00000' || c.startsWith('0000') || n.includes('RECEPTOR') || c === 'RECEPTOR') return true
+
     if (c.startsWith('CAMARAS_DAHUA_') || c.startsWith('DAHUA_FRAME_') || c.startsWith('DAHUA_STREAM_REQ_') || c.startsWith('SNAPSHOT_') || c.startsWith('CLIP_') || c.startsWith('CONFIG_WHATSAPP_') || c.startsWith('CONFIG_APERTURAS_') || c.startsWith('CONFIG_') || c.startsWith('__')) return true
-    if (c.startsWith('ORDEN_') || c.startsWith('AUDITORIA_') || ['CLIENTES', 'CODIGOS', 'ZONAS', '__SINCRONIZADOR__', 'EMPRESAS_CONGLOMERADO', 'COTIZACIONES_DOLIBARR', 'ORDENES_TRABAJO', 'CONFIG_OPERADORES', 'CLIENTES_MAESTROS_CRM', 'CONFIG_APERTURAS_CIERRES_LISTA', 'ORDEN_EDITOR_REMOTO', 'AUDITORIA_EDITOR_REMOTO'].includes(c)) return true
+    if (c.startsWith('ORDEN_') || c.startsWith('AUDITORIA_') || ['CLIENTES', 'CODIGOS', 'ZONAS', '__SINCRONIZADOR__', 'EMPRESAS_CONGLOMERADO', 'COTIZACIONES_DOLIBARR', 'ORDENES_TRABAJO', 'CONFIG_OPERADORES', 'CLIENTES_MAESTROS_CRM', 'CONFIG_APERTURAS_CIERRES_LISTA', 'ORDEN_EDITOR_REMOTO', 'AUDITORIA_EDITOR_REMOTO', '0000'].includes(c)) return true
     if (['PREMIUM', 'ELIMINACION_DAHUA_CRUD', 'GENERACION_NVR_MULTICANAL', 'FRAME_SYNC', 'NVR_DVR_FRAME_SYNC', 'CAMERA_FRAME_SYNC', 'STREAM_REQ', 'SNAPSHOT_OPERADOR', 'CLIP_VIDEO_OPERADOR', 'CONFIG_UPDATE_APERTURAS_CIERRES'].includes(e) || e.startsWith('CONFIG_UPDATE_') || e.startsWith('EDITAR_GENERAL') || e.startsWith('EDITOR REMOTO') || e.includes('EDITOR_REMOTO') || e.includes('EDITAR_GENERAL') || e.startsWith('REGISTRO_CAMBIO')) return true
     return false
   }
@@ -563,7 +568,7 @@ export default function ScorpionDashboard() {
       let query = supabase
         .from('eventos_monitoreo')
         .select('*')
-        .not('cuenta', 'in', '(CLIENTES,CODIGOS,ZONAS,__SINCRONIZADOR__,CONFIG_OPERADORES,CLIENTES_MAESTROS_CRM,EMPRESAS_CONGLOMERADO,COTIZACIONES_DOLIBARR,ORDENES_TRABAJO,ORDEN_EDITOR_REMOTO,AUDITORIA_EDITOR_REMOTO)')
+        .not('cuenta', 'in', '(CLIENTES,CODIGOS,ZONAS,__SINCRONIZADOR__,CONFIG_OPERADORES,CLIENTES_MAESTROS_CRM,EMPRESAS_CONGLOMERADO,COTIZACIONES_DOLIBARR,ORDENES_TRABAJO,ORDEN_EDITOR_REMOTO,AUDITORIA_EDITOR_REMOTO,0000,000)')
         .not('cuenta', 'like', 'CAMARAS_DAHUA_%')
         .not('cuenta', 'like', 'DAHUA_FRAME_%')
         .not('cuenta', 'like', 'DAHUA_STREAM_REQ_%')
@@ -571,6 +576,7 @@ export default function ScorpionDashboard() {
         .not('cuenta', 'like', 'CONFIG_WHATSAPP_%')
         .not('cuenta', 'like', 'ORDEN_%')
         .not('cuenta', 'like', 'AUDITORIA_%')
+        .not('cuenta', 'eq', '0000')
         .order('id', { ascending: false })
         .limit(200)
 
@@ -581,7 +587,7 @@ export default function ScorpionDashboard() {
       const { data, error } = await query
       if (error) throw error
       if (data) {
-        const limpios = data.filter(ev => !esCuentaInternaOFrame(ev.cuenta, ev.evento))
+        const limpios = data.filter(ev => !esCuentaInternaOFrame(ev.cuenta, ev.evento, ev.nombre_abonado))
         // Orden cronológico ascendente: el más reciente SIEMPRE abajo
         const ordenados = deduplicarEventos(limpios
           .slice(0, 100)
@@ -618,7 +624,7 @@ export default function ScorpionDashboard() {
         const { data, error } = await supabase
           .from('eventos_monitoreo')
           .select('*')
-          .not('cuenta', 'in', '(CLIENTES,CODIGOS,ZONAS,__SINCRONIZADOR__,CONFIG_OPERADORES,CLIENTES_MAESTROS_CRM,EMPRESAS_CONGLOMERADO,COTIZACIONES_DOLIBARR,ORDENES_TRABAJO,ORDEN_EDITOR_REMOTO,AUDITORIA_EDITOR_REMOTO)')
+          .not('cuenta', 'in', '(CLIENTES,CODIGOS,ZONAS,__SINCRONIZADOR__,CONFIG_OPERADORES,CLIENTES_MAESTROS_CRM,EMPRESAS_CONGLOMERADO,COTIZACIONES_DOLIBARR,ORDENES_TRABAJO,ORDEN_EDITOR_REMOTO,AUDITORIA_EDITOR_REMOTO,0000,000)')
           .not('cuenta', 'like', 'CAMARAS_DAHUA_%')
           .not('cuenta', 'like', 'DAHUA_FRAME_%')
           .not('cuenta', 'like', 'DAHUA_STREAM_REQ_%')
@@ -626,6 +632,7 @@ export default function ScorpionDashboard() {
           .not('cuenta', 'like', 'CONFIG_WHATSAPP_%')
           .not('cuenta', 'like', 'ORDEN_%')
           .not('cuenta', 'like', 'AUDITORIA_%')
+          .not('cuenta', 'eq', '0000')
           .order('id', { ascending: false })
           .limit(200)
 
@@ -642,7 +649,7 @@ export default function ScorpionDashboard() {
             )
           : data
 
-        const limpios = filtered.filter(ev => !esCuentaInternaOFrame(ev.cuenta, ev.evento))
+        const limpios = filtered.filter(ev => !esCuentaInternaOFrame(ev.cuenta, ev.evento, ev.nombre_abonado))
         const ordenados = deduplicarEventos([...limpios]
           .slice(0, 100)
           .sort((a, b) => new Date(a.fecha_hora).getTime() - new Date(b.fecha_hora).getTime()))
@@ -680,8 +687,8 @@ export default function ScorpionDashboard() {
         .channel('eventos-live')
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'eventos_monitoreo' }, async (payload) => {
         const newEvent = payload.new as EventoMonitoreo
-        // Ignorar filas especiales de sincronización y configuración de cámaras
-        if (esCuentaInternaOFrame(newEvent.cuenta, newEvent.evento)) return
+        // Ignorar filas especiales de sincronización y test de receptora (cuenta 0000)
+        if (esCuentaInternaOFrame(newEvent.cuenta, newEvent.evento, newEvent.nombre_abonado)) return
         
         setEventos((prev) => {
           const eventKey = `${newEvent.cuenta}_${newEvent.evento}_${newEvent.zona}_${newEvent.usuario}_${newEvent.fecha_hora}`
