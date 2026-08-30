@@ -1,15 +1,9 @@
 """
-GAMA SECURITY - WORKER EDITOR REMOTO (GENERAL.MDB) v1.2 - BLINDADO
-===================================================================
+GAMA SECURITY - WORKER EDITOR REMOTO (GENERAL.MDB) v2.7 - COMPATIBILIDAD NULL/VACIO
+====================================================================================
 Worker independiente que corre en segundo plano en PC Scorpion.
-Escucha órdenes de edición encoladas desde el Command Center web y ejecuta
-actualizaciones directas en la tabla USUARIOS de C:\\SCORPION\\BASES DE DATOS\\GENERAL.MDB.
-
-REGLAS DE SEGURIDAD OPERATIVA (PROTECCIÓN TOTAL SCORPION):
-- Modo compartido estricto (Mode=Share Deny None; ExtendedAnsiSQL=1)
-- try...finally absoluto para liberación instantánea de handles COM y ODBC
-- Cero bloqueos ni retención de archivos (.ldb) para Scorpion Desktop
-- Polling no intrusivo (solo toca GENERAL.MDB si hay orden PENDIENTE real)
+Maneja campos con restricción AllowZeroLength=False pasando NULL (None)
+en lugar de cadenas vacías (""), permitiendo edición completa de expedientes.
 """
 
 import time
@@ -20,7 +14,6 @@ import logging
 import gc
 from datetime import datetime
 
-# Configuración de Logs (Rotación automática a 2 MB)
 LOG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "_editor_remoto_log.txt")
 if os.path.exists(LOG_PATH) and os.path.getsize(LOG_PATH) > 2_000_000:
     try:
@@ -38,7 +31,6 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S"
 )
 
-# Conexión Supabase (Clave activa anon)
 SUPABASE_URL = "https://onxwyrwmpjxtwlmjrosr.supabase.co"
 SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9ueHd5cndtcGp4dHdsbWpyb3NyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI4NTUxNDQsImV4cCI6MjA5ODQzMTE0NH0.8kJRf8hm3rHK8sygMcyBT0R83tyK8hIQCmnAQxannJs"
 
@@ -49,205 +41,259 @@ except Exception as e:
     logging.critical(f"No se pudo inicializar cliente Supabase: {e}")
     sys.exit(1)
 
-MDB_PATH = r"C:\SCORPION\BASES DE DATOS\GENERAL.MDB"
 MDB_PWD = "SCORPION7"
+
+CANDIDATAS_RUTAS_MDB = [
+    r"C:\SCORPION\BASES DE DATOS\GENERAL.MDB",
+    r"C:\SCORPION\BASE DE DATOS\GENERAL.MDB",
+    r"C:\SCORPION\GENERAL.MDB",
+]
+
+
+def obtener_rutas_activas():
+    rutas_norm = set()
+    rutas_reales = []
+    for r in CANDIDATAS_RUTAS_MDB:
+        if os.path.exists(r):
+            norm = os.path.normcase(os.path.abspath(r))
+            if norm not in rutas_norm:
+                rutas_norm.add(norm)
+                rutas_reales.append(r)
+                
+    if not rutas_reales and os.path.exists(r"C:\SCORPION"):
+        for root, _, files in os.walk(r"C:\SCORPION"):
+            for f in files:
+                if f.upper() == "GENERAL.MDB":
+                    p = os.path.join(root, f)
+                    norm = os.path.normcase(os.path.abspath(p))
+                    if norm not in rutas_norm:
+                        rutas_norm.add(norm)
+                        rutas_reales.append(p)
+    return rutas_reales
+
+
+def get_field_safe(rs, col_name):
+    """Lectura segura de un campo ADODB con triple fallback"""
+    try:
+        v = rs.Fields(col_name).Value
+        return "" if v is None else str(v)
+    except Exception:
+        pass
+    try:
+        v = rs.Fields.Item(col_name).Value
+        return "" if v is None else str(v)
+    except Exception:
+        pass
+    try:
+        v = rs.Fields[col_name].Value
+        return "" if v is None else str(v)
+    except Exception:
+        pass
+    return ""
+
+
+def set_field_safe(rs, col_name, val):
+    """
+    Escritura segura en ADODB.
+    En Access, si un campo tiene AllowZeroLength=False, asignar "" causa error.
+    Asignar None (DBNull) soluciona 100% de los casos de campos vacíos.
+    """
+    val_to_set = val
+    if val is not None and str(val).strip() == "":
+        val_to_set = None
+
+    try:
+        rs.Fields(col_name).Value = val_to_set
+        return True
+    except Exception:
+        pass
+    try:
+        rs.Fields.Item(col_name).Value = val_to_set
+        return True
+    except Exception:
+        pass
+    try:
+        rs.Fields[col_name].Value = val_to_set
+        return True
+    except Exception:
+        pass
+
+    # Si falló con None (por ejemplo si el campo es NOT NULL), intentar con ""
+    if val_to_set is None:
+        try:
+            rs.Fields(col_name).Value = ""
+            return True
+        except Exception:
+            pass
+        try:
+            rs.Fields.Item(col_name).Value = ""
+            return True
+        except Exception:
+            pass
+
+    return False
+
+
+def actualizar_mdb_recordset(mdb_path, tipo_op, cuenta_clean, datos_nuevos):
+    import win32com.client
+    conn = None
+    rs = None
+    
+    num_solo = cuenta_clean.replace("C", "").strip()
+    candidatos_cta = {cuenta_clean, num_solo, num_solo.zfill(4)}
+    if not cuenta_clean.startswith("C"):
+        candidatos_cta.add(f"C{cuenta_clean}")
+
+    try:
+        conn = win32com.client.Dispatch('ADODB.Connection')
+        conn_str = f"Provider=Microsoft.ACE.OLEDB.12.0;Data Source={mdb_path};Jet OLEDB:Database Password={MDB_PWD};Mode=Share Deny None;"
+        try:
+            conn.Open(conn_str)
+        except Exception:
+            conn_str = f"Provider=Microsoft.Jet.OLEDB.4.0;Data Source={mdb_path};Jet OLEDB:Database Password={MDB_PWD};Mode=Share Deny None;"
+            conn.Open(conn_str)
+
+        tabla_usada = "USUARIOS"
+
+        rs = win32com.client.Dispatch('ADODB.Recordset')
+        # adOpenDynamic=2, adLockOptimistic=3
+        rs.Open(f"SELECT * FROM [{tabla_usada}]", conn, 2, 3)
+
+        # Mapa de columnas disponibles
+        cols_map = {}
+        try:
+            count = int(rs.Fields.Count)
+            for i in range(count):
+                fn = ""
+                try: fn = str(rs.Fields(i).Name)
+                except Exception:
+                    try: fn = str(rs.Fields.Item(i).Name)
+                    except Exception: pass
+                if fn:
+                    cols_map[fn] = fn
+                    cols_map[fn.upper()] = fn
+                    cols_map[fn.upper().strip()] = fn
+                    cols_map[fn.upper().replace(" ", "")] = fn
+        except Exception as e_c:
+            logging.warning(f"Error mapeando columnas: {e_c}")
+
+        encontrado = False
+        valores_previos = {}
+        valores_guardados = {}
+        cuenta_exacta_en_disco = ""
+
+        if tipo_op == "ELIMINAR_ABONADO":
+            while not rs.EOF:
+                cta_disco = get_field_safe(rs, "CUENTA").strip().upper()
+                if cta_disco in candidatos_cta:
+                    rs.Delete()
+                    encontrado = True
+                    break
+                rs.MoveNext()
+            rs.Close()
+            rs = None
+            conn.Close()
+            conn = None
+            return True, {"operacion": "DELETE", "encontrado": encontrado, "mdb": mdb_path}
+
+        while not rs.EOF:
+            cta_disco = get_field_safe(rs, "CUENTA").strip().upper()
+            if cta_disco in candidatos_cta:
+                encontrado = True
+                cuenta_exacta_en_disco = cta_disco
+                
+                for k, v in datos_nuevos.items():
+                    k_str = str(k)
+                    # Omitir metadatos internos que no son columnas
+                    if k_str.startswith("_"):
+                        continue
+
+                    k_clean = k_str.upper().replace(" ", "").strip()
+                    col_real = cols_map.get(k_clean) or cols_map.get(k_str.upper()) or cols_map.get(k_str)
+                    
+                    if col_real and col_real.upper() != "CUENTA":
+                        val_ant = get_field_safe(rs, col_real)
+                        valores_previos[k_str] = val_ant
+                        
+                        v_val = str(v).strip() if v is not None else ""
+                        if set_field_safe(rs, col_real, v_val):
+                            valores_guardados[k_str] = v_val
+
+                # Volcar fisicamente a disco
+                rs.Update()
+                break
+            rs.MoveNext()
+
+        if not encontrado and tipo_op == "NUEVO_ABONADO":
+            rs.AddNew()
+            set_field_safe(rs, "CUENTA", cuenta_clean)
+            for k, v in datos_nuevos.items():
+                k_str = str(k)
+                if k_str.startswith("_"):
+                    continue
+                k_clean = k_str.upper().replace(" ", "").strip()
+                col_real = cols_map.get(k_clean) or cols_map.get(k_str.upper()) or cols_map.get(k_str)
+                if col_real and col_real.upper() != "CUENTA":
+                    v_val = str(v).strip() if v is not None else ""
+                    if set_field_safe(rs, col_real, v_val):
+                        valores_guardados[k_str] = v_val
+            rs.Update()
+            encontrado = True
+            cuenta_exacta_en_disco = cuenta_clean
+
+        rs.Close()
+        rs = None
+        conn.Close()
+        conn = None
+
+        return True, {
+            "mdb": mdb_path,
+            "encontrado_en_disco": encontrado,
+            "cuenta_en_disco": cuenta_exacta_en_disco,
+            "valores_anteriores": valores_previos,
+            "valores_nuevos_grabados": valores_guardados
+        }
+
+    except Exception as ex:
+        logging.error(f"Error actualizando {mdb_path}: {ex}")
+        return False, {"mdb": mdb_path, "error": str(ex)}
+    finally:
+        if rs:
+            try: rs.Close()
+            except Exception: pass
+        if conn:
+            try: conn.Close()
+            except Exception: pass
+        gc.collect()
 
 
 def ejecutar_edicion_local(tipo_op, cuenta, datos_nuevos):
-    """
-    Ejecuta UPDATE/INSERT/DELETE en la tabla USUARIOS de GENERAL.MDB
-    garantizando liberación total e inmediata de conexiones en bloque finally.
-    """
-    if not os.path.exists(MDB_PATH):
-        raise FileNotFoundError(f"No se encontró base de datos en {MDB_PATH}")
-
     cuenta_clean = str(cuenta).strip().upper()
-    cuentas_candidatas = [cuenta_clean]
-    if cuenta_clean.startswith("C"):
-        cuentas_candidatas.append(cuenta_clean[1:])
-        cuentas_candidatas.append(cuenta_clean[1:].zfill(4))
-    else:
-        cuentas_candidatas.append(f"C{cuenta_clean}")
+    rutas = obtener_rutas_activas()
+    if not rutas:
+        raise FileNotFoundError("No se encontró ningún archivo GENERAL.MDB en C:\\SCORPION")
 
     t_inicio = time.time()
-    tablas_candidatas = ["USUARIOS", "CLIENTES"]
-    error_adodb = None
-
-    # 1. INTENTO 1: ADODB (OLEDB) con cierre estricto en FINALLY
-    conn_ado = None
-    rs_cols = None
-    rs_check = None
-    try:
-        import win32com.client
-        conn_ado = win32com.client.Dispatch('ADODB.Connection')
-        conn_str = f"Provider=Microsoft.ACE.OLEDB.12.0;Data Source={MDB_PATH};Jet OLEDB:Database Password={MDB_PWD};Mode=Share Deny None;"
+    resultados = []
+    for r in rutas:
         try:
-            conn_ado.Open(conn_str)
-        except Exception:
-            # Fallback OLEDB 4.0
-            conn_str = f"Provider=Microsoft.Jet.OLEDB.4.0;Data Source={MDB_PATH};Jet OLEDB:Database Password={MDB_PWD};Mode=Share Deny None;"
-            conn_ado.Open(conn_str)
+            ok, det = actualizar_mdb_recordset(r, tipo_op, cuenta_clean, datos_nuevos)
+            resultados.append({"ruta": r, "ok": ok, "detalle": det})
+        except Exception as e:
+            resultados.append({"ruta": r, "ok": False, "detalle": str(e)})
 
-        # Detectar columnas existentes en tabla
-        rs_cols = conn_ado.OpenSchema(4)
-        cols_existentes = set()
-        tabla_usada = "USUARIOS"
-        while not rs_cols.EOF:
-            t_name = str(rs_cols.Fields('TABLE_NAME').Value).upper()
-            if t_name in tablas_candidatas:
-                tabla_usada = t_name
-                cols_existentes.add(str(rs_cols.Fields('COLUMN_NAME').Value).upper())
-            rs_cols.MoveNext()
-        rs_cols.Close()
-        rs_cols = None
-
-        # Operación ELIMINAR
-        if tipo_op == "ELIMINAR_ABONADO":
-            for cta in cuentas_candidatas:
-                sql = f"DELETE FROM [{tabla_usada}] WHERE UCASE(TRIM([CUENTA])) = '{cta}'"
-                conn_ado.Execute(sql)
-            ms = int((time.time() - t_inicio) * 1000)
-            logging.info(f"[{cuenta_clean}] ADODB: DELETE ejecutado en {ms} ms.")
-            return ms
-
-        # Preparar UPDATE
-        set_parts = []
-        for k, v in (datos_nuevos or {}).items():
-            if k.startswith("_") or k.upper() == "CUENTA":
-                continue
-            k_upper = k.upper()
-            if k_upper in cols_existentes or not cols_existentes:
-                v_clean = str(v).replace("'", "''").strip() if v is not None else ""
-                col_sql = f"[{k}]" if " " in k else k
-                set_parts.append(f"{col_sql} = '{v_clean}'")
-
-        if set_parts:
-            # Probar UPDATE para cada variante de cuenta
-            for cta in cuentas_candidatas:
-                sql_update = f"UPDATE [{tabla_usada}] SET {', '.join(set_parts)} WHERE UCASE(TRIM([CUENTA])) = '{cta}'"
-                conn_ado.Execute(sql_update)
-
-            # Si es NUEVO_ABONADO, verificar si existe o insertar
-            if tipo_op == "NUEVO_ABONADO":
-                rs_check = win32com.client.Dispatch('ADODB.Recordset')
-                rs_check.Open(f"SELECT [CUENTA] FROM [{tabla_usada}] WHERE UCASE(TRIM([CUENTA])) = '{cuenta_clean}'", conn_ado)
-                if rs_check.EOF:
-                    cols_list = ["[CUENTA]"]
-                    vals_list = [f"'{cuenta_clean}'"]
-                    for k, v in (datos_nuevos or {}).items():
-                        if k.startswith("_") or k.upper() == "CUENTA": continue
-                        v_clean = str(v).replace("'", "''").strip() if v is not None else ""
-                        cols_list.append(f"[{k}]" if " " in k else k)
-                        vals_list.append(f"'{v_clean}'")
-                    sql_insert = f"INSERT INTO [{tabla_usada}] ({', '.join(cols_list)}) VALUES ({', '.join(vals_list)})"
-                    conn_ado.Execute(sql_insert)
-                rs_check.Close()
-                rs_check = None
-
-        ms = int((time.time() - t_inicio) * 1000)
-        logging.info(f"[{cuenta_clean}] ADODB OLEDB: UPDATE exitoso en tabla {tabla_usada} ({ms} ms).")
-        return ms
-
-    except Exception as err:
-        error_adodb = err
-        logging.warning(f"[{cuenta_clean}] ADODB falló ({err}), probando pyodbc...")
-    finally:
-        # CIERRE Y LIBERACIÓN TOTAL COM
-        if rs_cols:
-            try: rs_cols.Close()
-            except Exception: pass
-            rs_cols = None
-        if rs_check:
-            try: rs_check.Close()
-            except Exception: pass
-            rs_check = None
-        if conn_ado:
-            try: conn_ado.Close()
-            except Exception: pass
-            conn_ado = None
-        gc.collect()
-
-    # 2. INTENTO 2: Fallback con pyodbc (con cierre estricto en FINALLY)
-    conn_odbc = None
-    cursor_odbc = None
-    try:
-        import pyodbc
-        conn_str = (
-            r"DRIVER={Microsoft Access Driver (*.mdb, *.accdb)};"
-            rf"DBQ={MDB_PATH};"
-            rf"PWD={MDB_PWD};"
-            r"ExtendedAnsiSQL=1;"
-            r"Mode=Share Deny None;"
-        )
-        conn_odbc = pyodbc.connect(conn_str, autocommit=True)
-        cursor_odbc = conn_odbc.cursor()
-
-        # Determinar tabla
-        tablas_mdb = [row.table_name.upper() for row in cursor_odbc.tables(tableType='TABLE')]
-        tabla_usada = "USUARIOS" if "USUARIOS" in tablas_mdb else ("CLIENTES" if "CLIENTES" in tablas_mdb else "USUARIOS")
-
-        # Operación ELIMINAR
-        if tipo_op == "ELIMINAR_ABONADO":
-            for cta in cuentas_candidatas:
-                cursor_odbc.execute(f"DELETE FROM [{tabla_usada}] WHERE UCASE(TRIM([CUENTA])) = ?", [cta])
-            ms = int((time.time() - t_inicio) * 1000)
-            logging.info(f"[{cuenta_clean}] PYODBC: DELETE ejecutado en {ms} ms.")
-            return ms
-
-        # Preparar UPDATE
-        cols = []
-        vals = []
-        set_clauses = []
-        for k, v in (datos_nuevos or {}).items():
-            if k.startswith("_") or k.upper() == "CUENTA":
-                continue
-            col_name = f"[{k}]" if " " in k else k
-            cols.append(col_name)
-            vals.append(str(v).strip() if v is not None else "")
-            set_clauses.append(f"{col_name} = ?")
-
-        if set_clauses:
-            for cta in cuentas_candidatas:
-                sql_update = f"UPDATE [{tabla_usada}] SET {', '.join(set_clauses)} WHERE UCASE(TRIM([CUENTA])) = ?"
-                cursor_odbc.execute(sql_update, vals + [cta])
-
-            if tipo_op == "NUEVO_ABONADO":
-                cursor_odbc.execute(f"SELECT [CUENTA] FROM [{tabla_usada}] WHERE UCASE(TRIM([CUENTA])) = ?", [cuenta_clean])
-                if not cursor_odbc.fetchone():
-                    all_cols = ["[CUENTA]"] + cols
-                    placeholders = ["?"] * len(all_cols)
-                    all_vals = [cuenta_clean] + vals
-                    sql_insert = f"INSERT INTO [{tabla_usada}] ({', '.join(all_cols)}) VALUES ({', '.join(placeholders)})"
-                    cursor_odbc.execute(sql_insert, all_vals)
-
-        ms = int((time.time() - t_inicio) * 1000)
-        logging.info(f"[{cuenta_clean}] PYODBC: UPDATE exitoso en tabla {tabla_usada} ({ms} ms).")
-        return ms
-
-    except Exception as err_pyodbc:
-        logging.error(f"[{cuenta_clean}] PYODBC también falló: {err_pyodbc}")
-        raise err_pyodbc from error_adodb
-    finally:
-        # CIERRE Y LIBERACIÓN TOTAL ODBC
-        if cursor_odbc:
-            try: cursor_odbc.close()
-            except Exception: pass
-            cursor_odbc = None
-        if conn_odbc:
-            try: conn_odbc.close()
-            except Exception: pass
-            conn_odbc = None
-        gc.collect()
+    ms = int((time.time() - t_inicio) * 1000)
+    return ms, resultados
 
 
 def procesar_ordenes_pendientes():
-    """Consulta órdenes pendientes en eventos_monitoreo y las ejecuta"""
     try:
+        # Consulta descendente para tomar las órdenes más recientes
         res = supabase.table("eventos_monitoreo") \
             .select("*") \
             .eq("cuenta", "ORDEN_EDITOR_REMOTO") \
-            .order("id", desc=False) \
-            .limit(10) \
+            .order("id", desc=True) \
+            .limit(20) \
             .execute()
 
         eventos = res.data or []
@@ -268,23 +314,24 @@ def procesar_ordenes_pendientes():
                 continue
 
             cuenta = payload.get("cuenta")
-            datos_nuevos = payload.get("datos_nuevos") or {}
-            orden_id = payload.get("ordenId") or f"ORD-{evt_id}"
+            datos_nuevos = payload.get("datos_nuevos") or payload.get("datosNuevos") or {}
+            orden_id = payload.get("ordenId") or payload.get("orden_id") or f"ORD-{evt_id}"
 
-            logging.info(f">> Procesando orden {orden_id} ({tipo_op}) para cuenta {cuenta}...")
+            logging.info(f">> Procesando orden {orden_id} ({tipo_op}) para cuenta {cuenta} con {len(datos_nuevos)} campos...")
 
             try:
-                ms = ejecutar_edicion_local(tipo_op, cuenta, datos_nuevos)
+                ms, detalles = ejecutar_edicion_local(tipo_op, cuenta, datos_nuevos)
                 payload["estado"] = "APLICADO_LOCAL"
                 payload["aplicado_el"] = datetime.now().isoformat()
-                payload["resultado"] = f"OK - Modificado en GENERAL.MDB [USUARIOS] ({ms} ms)"
+                payload["resultado"] = f"OK - Grabado en disco ({ms} ms)"
+                payload["detalles"] = detalles
 
                 supabase.table("eventos_monitoreo").update({
                     "nombre_abonado": json.dumps(payload),
                     "evento": f"{tipo_op}_APLICADO"
                 }).eq("id", evt_id).execute()
 
-                logging.info(f"✓ Orden {orden_id} aplicada exitosamente en PC Scorpion.")
+                logging.info(f"✓ Orden {orden_id} grabada en disco exitosamente en PC Scorpion.")
 
             except Exception as ex:
                 logging.error(f"✗ Falló orden {orden_id}: {ex}")
@@ -303,8 +350,9 @@ def procesar_ordenes_pendientes():
 
 def main():
     logging.info("=" * 60)
-    logging.info("  INICIANDO GAMA SECURITY - WORKER EDITOR REMOTO v1.2 (BLINDADO)")
-    logging.info(f"  Base de Datos: {MDB_PATH} (Tabla USUARIOS)")
+    logging.info("  INICIANDO GAMA SECURITY - WORKER EDITOR REMOTO v2.7 (PRODUCCION TOTAL)")
+    rutas = obtener_rutas_activas()
+    logging.info(f"  Rutas detectadas ({len(rutas)}): {', '.join(rutas)}")
     logging.info("=" * 60)
 
     while True:
@@ -312,9 +360,7 @@ def main():
             procesar_ordenes_pendientes()
         except Exception as e:
             logging.error(f"Error en loop de polling: {e}")
-
-        # Polling no invasivo cada 5 segundos
-        time.sleep(5)
+        time.sleep(3)
 
 
 if __name__ == "__main__":

@@ -184,6 +184,22 @@ Sub StartBridge()
     On Error Goto 0
 End Sub
 
+Sub StartEditorRemoto()
+    On Error Resume Next
+    Dim editFile
+    editFile = "C:\SCORPION\BASES DE DATOS\editor_remoto.py"
+    If Not FSO.FileExists(editFile) Then editFile = ScriptDir & "\editor_remoto.py"
+    If Not FSO.FileExists(editFile) Then Exit Sub
+    If ProcessExists("pythonw.exe", "editor_remoto") Or ProcessExists("python.exe", "editor_remoto") Then
+        LogMsg("Editor Remoto ya esta en ejecucion (omitido intento duplicado)")
+        Exit Sub
+    End If
+    LogMsg("Iniciando Editor Remoto en segundo plano...")
+    WshShell.Run """" & PythonPath & """ """ & editFile & """", 0, False
+    If Err.Number <> 0 Then LogMsg("ERROR Editor Remoto: " & Err.Description)
+    On Error Goto 0
+End Sub
+
 Sub KillProcess(procName, cmdFilter)
     On Error Resume Next
     Dim col, it
@@ -202,6 +218,7 @@ End Sub
 Call StartSincronizador()
 ' Call StartWhatsApp()  ' NUBE 24/7 (Railway) — NO ejecutar localmente
 Call StartBridge()
+Call StartEditorRemoto()
 
 ' === VARIABLES DE CONTROL ===
 Dim sincLastRestart, sincRestartCount
@@ -231,6 +248,14 @@ Do While True
         Call StartSincronizador()
         sincRestartCount = sincRestartCount + 1
         sincLastRestart = Now
+    End If
+
+    ' ── EDITOR REMOTO: verificar proceso (si existe el archivo) ──
+    If FSO.FileExists("C:\SCORPION\BASES DE DATOS\editor_remoto.py") Or FSO.FileExists(ScriptDir & "\editor_remoto.py") Then
+        If Not (ProcessExists("pythonw.exe", "editor_remoto") Or ProcessExists("python.exe", "editor_remoto")) Then
+            Call LogMsg("EDITOR REMOTO: Proceso MUERTO. Reiniciando...")
+            Call StartEditorRemoto()
+        End If
     End If
 
     ' ── WHATSAPP: Servidor en la Nube 24/7 (NO se ejecuta en PC Scorpion) ──
