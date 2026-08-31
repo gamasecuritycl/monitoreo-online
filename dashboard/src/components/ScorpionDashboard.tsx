@@ -577,7 +577,8 @@ export default function ScorpionDashboard() {
         .not('cuenta', 'like', 'ORDEN_%')
         .not('cuenta', 'like', 'AUDITORIA_%')
         .not('cuenta', 'eq', '0000')
-        .order('id', { ascending: false })
+        .gte('fecha_hora', new Date(Date.now() - 4 * 86400000).toISOString())
+        .order('fecha_hora', { ascending: false })
         .limit(200)
 
       if (busqueda.trim()) {
@@ -633,7 +634,8 @@ export default function ScorpionDashboard() {
           .not('cuenta', 'like', 'ORDEN_%')
           .not('cuenta', 'like', 'AUDITORIA_%')
           .not('cuenta', 'eq', '0000')
-          .order('id', { ascending: false })
+          .gte('fecha_hora', new Date(Date.now() - 4 * 86400000).toISOString())
+          .order('fecha_hora', { ascending: false })
           .limit(200)
 
         if (error) throw error
