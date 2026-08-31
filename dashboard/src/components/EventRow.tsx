@@ -193,45 +193,45 @@ export default function EventRow({ evento, onClick, isNew, isLatest, codigosMap 
       style={{ backgroundColor: style.bg, color: style.text }}
     >
       {/* FECHA/HORA */}
-      <td className="px-1 py-0.5 text-[10px] md:text-[11px] whitespace-nowrap border border-black leading-none font-bold align-middle h-6">
+      <td className="px-1 py-0 text-[10px] md:text-[11px] whitespace-nowrap border border-black leading-tight font-bold align-middle">
         {renderFecha(evento.fecha_hora)}
       </td>
 
       {/* ABONADO */}
-      <td className="px-1 py-0.5 text-[10px] md:text-[11px] font-bold border border-black leading-none align-middle">
+      <td className="px-1 py-0 text-[10px] md:text-[11px] font-bold border border-black leading-tight align-middle">
         {evento.cuenta}
       </td>
 
       {/* NOMBRE */}
-      <td className="px-1 py-0.5 text-[10px] md:text-[11px] truncate max-w-[170px] md:max-w-[300px] border border-black leading-none font-bold align-middle">
+      <td className="px-1 py-0 text-[10px] md:text-[11px] truncate max-w-[170px] md:max-w-[300px] border border-black leading-tight font-bold align-middle">
         {evento.nombre_abonado}
       </td>
 
       {/* SEÑAL (Traducida automáticamente de Contact ID a español si viene como código) */}
       <td
-        className="px-1 py-0.5 text-[10px] md:text-[11px] font-bold border border-black leading-none align-middle truncate max-w-[120px] md:max-w-none"
+        className="px-1 py-0 text-[10px] md:text-[11px] font-bold border border-black leading-tight align-middle truncate max-w-[120px] md:max-w-none"
         title={tieneTraduccion ? `Código original transmitido: ${evento.evento}` : undefined}
       >
         {senalLegible}
       </td>
 
       {/* ZN */}
-      <td className="px-1 py-0.5 text-[10px] md:text-[11px] font-bold text-center border border-black leading-none align-middle">
+      <td className="px-1 py-0 text-[10px] md:text-[11px] font-bold text-center border border-black leading-tight align-middle">
         {evento.zona && evento.zona !== 'None' ? evento.zona.padStart(2, '0') : '00'}
       </td>
 
       {/* PAR */}
-      <td className="px-1.5 py-0.5 text-[11px] font-bold text-center border border-black leading-none align-middle hidden md:table-cell">
+      <td className="px-1 py-0 text-[11px] font-bold text-center border border-black leading-tight align-middle hidden md:table-cell">
         {evento.zona && evento.zona !== 'None' ? '01' : '--'}
       </td>
 
       {/* US */}
-      <td className="px-1.5 py-0.5 text-[11px] font-bold text-center border border-black leading-none align-middle hidden md:table-cell">
+      <td className="px-1 py-0 text-[11px] font-bold text-center border border-black leading-tight align-middle hidden md:table-cell">
         {evento.usuario && evento.usuario !== 'None' ? evento.usuario.padStart(2, '0') : '00'}
       </td>
 
       {/* UN */}
-      <td className="px-1.5 py-0.5 text-[11px] font-bold text-center border border-black leading-none align-middle hidden md:table-cell">
+      <td className="px-1 py-0 text-[11px] font-bold text-center border border-black leading-tight align-middle hidden md:table-cell">
         01
       </td>
     </tr>
