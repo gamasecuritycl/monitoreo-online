@@ -25,18 +25,25 @@ TEMP_DIR = os.path.join(os.environ.get("TEMP", r"C:\Windows\Temp"), "gama_sincro
 try: os.makedirs(TEMP_DIR, exist_ok=True)
 except Exception: pass
 
-# Purga automática de residuos temporales obsoletos (_MEI*) en %TEMP%
+# Purga automática de residuos temporales obsoletos (_MEI*, _TEMP_*.MDB) en %TEMP%
 try:
     _temp_parent = os.environ.get("TEMP", r"C:\Windows\Temp")
     for _item in os.listdir(_temp_parent):
         if _item.startswith("_MEI") or _item.startswith("pip-install-"):
             _item_path = os.path.join(_temp_parent, _item)
             try:
-                if os.path.isdir(_item_path):
-                    shutil.rmtree(_item_path, ignore_errors=True)
-                else:
-                    os.remove(_item_path)
+                if os.path.isdir(_item_path): shutil.rmtree(_item_path, ignore_errors=True)
+                else: os.remove(_item_path)
             except Exception: pass
+except Exception: pass
+
+# Limpiar temporales MDB anteriores en TEMP_DIR
+try:
+    if os.path.exists(TEMP_DIR):
+        for _f in os.listdir(TEMP_DIR):
+            if _f.upper().startswith("_TEMP_") and _f.upper().endswith(".MDB"):
+                try: os.remove(os.path.join(TEMP_DIR, _f))
+                except Exception: pass
 except Exception: pass
 
 GLOBAL_LOCK_FILE = os.path.join(TEMP_DIR, "_sincronizador_global.lock")
@@ -50,7 +57,6 @@ def lock_single_instance():
         return fp
     except Exception:
         try:
-            # Si el lock quedó de un proceso anterior muerto, ignorarlo para no detener el servicio
             return open(GLOBAL_LOCK_FILE, "a+")
         except Exception:
             return None
@@ -58,8 +64,8 @@ def lock_single_instance():
 lock_fp = lock_single_instance()
 
 # ============================================================
-#  GAMA COMMAND CENTER - Sincronizador Indestructible v4.0
-#  Auto-recuperación ante bloqueos, lectura directa ReadOnly y cero caídas
+#  GAMA COMMAND CENTER - Sincronizador Indestructible v5.2
+#  Barrido completo de 145+ MDBs, buffers aislados y telemetría real
 # ============================================================
 
 SUPABASE_URL = "https://onxwyrwmpjxtwlmjrosr.supabase.co"
@@ -72,18 +78,18 @@ else:
     root_dir = script_dir
 
 candidatos_rutas = [
+    r'C:\SCORPION\BASES DE DATOS\EVENTOS',
+    r'C:\SCORPION\BASE DE DATOS\EVENTOS',
     r'C:\SCORPION\BASES DE DATOS\OPERACION',
     r'C:\SCORPION\BASE DE DATOS\OPERACION',
     r'C:\SCORPION\OPERACION',
-    r'C:\SCORPION\BASES DE DATOS\EVENTOS',
-    r'C:\SCORPION\BASE DE DATOS\EVENTOS',
     r'C:\SCORPION\BASES DE DATOS',
     r'C:\SCORPION\BASE DE DATOS',
     r'C:\SCORPION',
-    os.path.join(root_dir, 'BASES DE DATOS', 'OPERACION'),
-    os.path.join(root_dir, 'OPERACION'),
     os.path.join(root_dir, 'BASES DE DATOS', 'EVENTOS'),
     os.path.join(root_dir, 'EVENTOS'),
+    os.path.join(root_dir, 'BASES DE DATOS', 'OPERACION'),
+    os.path.join(root_dir, 'OPERACION'),
     root_dir,
     r'E:\MONITOREO ONLINE\BASES DE DATOS\EVENTOS',
 ]
@@ -94,9 +100,7 @@ for p in candidatos_rutas:
     if p_norm.lower() not in [r.lower() for r in rutas_unicas]:
         rutas_unicas.append(p_norm)
 
-RUTA_COPIA_TEMP = os.path.join(TEMP_DIR, '_EVENTOS_TEMP.MDB')
-RUTA_CACHE      = os.path.join(TEMP_DIR, '_sincronizador_cache.json')
-
+RUTA_CACHE = os.path.join(TEMP_DIR, '_sincronizador_cache.json')
 DB_PASSWORD  = 'Administ'
 INTERVALO_SEG = 3
 
@@ -239,6 +243,7 @@ def verificar_auto_actualizacion_github():
         pass
 
 def get_archivos_mdb_activos():
+    """ Escanea todos los MDBs de cuentas activas sin cuellos de botella """
     archivos = []
     rutas_procesadas = set()
 
@@ -260,24 +265,27 @@ def get_archivos_mdb_activos():
             except Exception: pass
 
     archivos.sort(key=lambda x: x[0], reverse=True)
-    return [item[1] for item in archivos[:20]]
+    # Escanear hasta 250 bases de datos en orden de actividad
+    return [item[1] for item in archivos[:250]]
 
 LAST_HEARTBEAT_TIME = 0
 
-def enviar_heartbeat():
+def enviar_heartbeat(archivos_escaneados=0, nuevos_eventos=0):
+    """ Envía latido con telemetría real del barrido completado """
     global LAST_HEARTBEAT_TIME
     now = time.time()
-    if now - LAST_HEARTBEAT_TIME < 10:
+    if now - LAST_HEARTBEAT_TIME < 10 and nuevos_eventos == 0:
         return
     LAST_HEARTBEAT_TIME = now
     try:
         now_iso = datetime.now(timezone.utc).isoformat()
+        info_str = f"PC SCORPION CENTRAL (v5.2) | {archivos_escaneados} MDBs | +{nuevos_eventos}"
         supabase.table("eventos_monitoreo").upsert({
             "cuenta": "__SINCRONIZADOR__",
-            "nombre_abonado": "PC SCORPION CENTRAL (v4.0)",
+            "nombre_abonado": info_str,
             "evento": "HEARTBEAT",
             "fecha_hora": now_iso,
-            "zona": "000",
+            "zona": str(archivos_escaneados),
             "usuario": "SYSTEM"
         }).execute()
 
@@ -289,8 +297,14 @@ def enviar_heartbeat():
 
 PASSWORDS_PROBAR = ['Administ', 'SCORPION29', '', 'scorpion', 'SCORPION', 'SCORPION2026', 'admin', 'ADMIN']
 
-def copiar_mdb_con_retry(ruta_original, ruta_temp, max_intentos=3):
-    """ Copia el MDB usando shutil o PowerShell con FileShare.ReadWrite para sobrepasar bloqueos de Access """
+def get_ruta_temp_individual(ruta_original):
+    """ Genera una ruta temporal aislada por archivo para evitar colisiones entre cuentas """
+    safe_base = os.path.splitext(os.path.basename(ruta_original))[0]
+    safe_base = re.sub(r'[^A-Za-z0-9_]', '_', safe_base)
+    return os.path.join(TEMP_DIR, f"_TEMP_{safe_base}.MDB")
+
+def copiar_mdb_con_retry(ruta_original, ruta_temp, max_intentos=2):
+    """ Copia el MDB usando PowerShell FileShare.ReadWrite o Shutil con buffer individual """
     for intento in range(max_intentos):
         try:
             if os.path.exists(ruta_temp):
@@ -317,22 +331,13 @@ def copiar_mdb_con_retry(ruta_original, ruta_temp, max_intentos=3):
                 ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_script],
                 creationflags=creationflags,
                 stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL
-            )
-            if os.path.exists(ruta_temp) and os.path.getsize(ruta_temp) > 0:
-                return True
-
-            subprocess.run(
-                f'cmd /c copy /y "{ruta_original}" "{ruta_temp}"',
-                shell=True,
-                creationflags=creationflags,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL
+                stderr=subprocess.DEVNULL,
+                timeout=4
             )
             if os.path.exists(ruta_temp) and os.path.getsize(ruta_temp) > 0:
                 return True
         except Exception: pass
-        time.sleep(0.2)
+        time.sleep(0.1)
     return False
 
 def abrir_conexion_mdb(ruta_mdb):
@@ -343,36 +348,34 @@ def abrir_conexion_mdb(ruta_mdb):
                 f'DRIVER={{Microsoft Access Driver (*.mdb, *.accdb)}};'
                 f'DBQ={ruta_mdb};PWD={pwd};ReadOnly=1;'
             )
-            return pyodbc.connect(conn_str)
+            return pyodbc.connect(conn_str, timeout=3)
         except Exception as e:
             err_ultimo = e
             continue
     raise err_ultimo if err_ultimo else Exception("No se pudo abrir MDB")
 
 def sincronizar(cache):
-    enviar_heartbeat()
     verificar_auto_actualizacion_github()
     
     archivos_mdb = get_archivos_mdb_activos()
     if not archivos_mdb:
+        enviar_heartbeat(0, 0)
         return cache
 
     chile_tz = get_chile_offset()
     nuevos_totales = 0
 
     for ruta_original in archivos_mdb:
-        nombre_base = os.path.basename(ruta_original)
+        ruta_temp_cuenta = get_ruta_temp_individual(ruta_original)
+        ruta_lectura = ruta_temp_cuenta
 
-        # Usar copia temporal o conectar DIRECTAMENTE en ReadOnly si la copia se complica
-        ruta_lectura = RUTA_COPIA_TEMP
-        if not copiar_mdb_con_retry(ruta_original, RUTA_COPIA_TEMP):
+        if not copiar_mdb_con_retry(ruta_original, ruta_temp_cuenta):
             ruta_lectura = ruta_original
 
         try:
             conn = abrir_conexion_mdb(ruta_lectura)
             cursor = conn.cursor()
             
-            # Buscar tabla EVENTOS u OPERACION
             rows = []
             columns = []
             try:
@@ -435,16 +438,15 @@ def sincronizar(cache):
                         supabase.table("eventos_monitoreo").insert(batch_data).execute()
                         for k in batch_keys: cache.add(k)
                         save_cache(cache)
-                        enviar_heartbeat()
                         nuevos_totales += len(batch_data)
                     except Exception:
                         for d, k in zip(batch_data, batch_keys):
                             try:
                                 supabase.table("eventos_monitoreo").insert(d).execute()
                                 cache.add(k)
+                                nuevos_totales += 1
                             except Exception: pass
                         save_cache(cache)
-                        enviar_heartbeat()
                     batch_data = []
                     batch_keys = []
 
@@ -453,29 +455,30 @@ def sincronizar(cache):
                     supabase.table("eventos_monitoreo").insert(batch_data).execute()
                     for k in batch_keys: cache.add(k)
                     save_cache(cache)
-                    enviar_heartbeat()
                     nuevos_totales += len(batch_data)
                 except Exception:
                     for d, k in zip(batch_data, batch_keys):
                         try:
                             supabase.table("eventos_monitoreo").insert(d).execute()
                             cache.add(k)
+                            nuevos_totales += 1
                         except Exception: pass
                     save_cache(cache)
-                    enviar_heartbeat()
 
         except Exception: pass
         finally:
-            if os.path.exists(RUTA_COPIA_TEMP):
-                try: os.remove(RUTA_COPIA_TEMP)
+            if os.path.exists(ruta_temp_cuenta):
+                try: os.remove(ruta_temp_cuenta)
                 except Exception: pass
 
+    # Heartbeat emitido al culminar el barrido con telemetría real
+    enviar_heartbeat(len(archivos_mdb), nuevos_totales)
     return cache
 
 
 if __name__ == "__main__":
     print("=" * 60)
-    print("  GAMA COMMAND CENTER - Sincronizador Indestructible v4.0")
+    print("  GAMA COMMAND CENTER - Sincronizador Indestructible v5.2")
     print(f"  Timezone: Chile ({get_chile_offset()})")
     print("=" * 60)
     

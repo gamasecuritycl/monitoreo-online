@@ -1,8 +1,8 @@
 @echo off
-title GAMA SECURITY - INICIO DIRECTO SINCRONIZADOR v5.1
+title GAMA SECURITY - INICIO DIRECTO SINCRONIZADOR v5.2 (BARRIDO TOTAL)
 color 0A
 echo ═══════════════════════════════════════════════════════
-echo   GAMA SEGURIDAD — INICIO DIRECTO SINCRONIZADOR v5.1
+echo   GAMA SEGURIDAD — INICIO DIRECTO SINCRONIZADOR v5.2
 echo ═══════════════════════════════════════════════════════
 echo.
 
