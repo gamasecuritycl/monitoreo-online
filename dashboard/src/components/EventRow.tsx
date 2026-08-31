@@ -25,16 +25,18 @@ interface EventRowProps {
 
 // Mapeo de nombres de colores de Access a valores CSS hexadecimales
 const COLOR_ACCESS_TO_CSS: Record<string, { bg: string; text: string }> = {
-  'AMARILLO': { bg: '#FFFF00', text: '#000000' },
-  'ROJO':     { bg: '#FF0000', text: '#FFFFFF' },
-  'VERDE':    { bg: '#00FF00', text: '#000000' },
-  'BLANCO':   { bg: '#FFFFFF', text: '#000000' },
-  'GRIS':     { bg: '#C0C0C0', text: '#000000' },
-  'VIOLETA':  { bg: '#EE82EE', text: '#000000' },
-  'AZUL':     { bg: '#0000FF', text: '#FFFFFF' },
-  'CELESTE':  { bg: '#00FFFF', text: '#000000' },
-  'ROSADO':   { bg: '#FFC0CB', text: '#000000' },
-  'COMPROBAR':{ bg: '#FFA500', text: '#000000' }, // Naranja para señales a verificar
+  'AMARILLO':   { bg: '#FFFF00', text: '#000000' },
+  'ROJO':       { bg: '#FF0000', text: '#FFFFFF' },
+  'VERDE':      { bg: '#00FF00', text: '#000000' },
+  'BLANCO':     { bg: '#FFFFFF', text: '#000000' },
+  'GRIS':       { bg: '#C0C0C0', text: '#000000' },
+  'VIOLETA':    { bg: '#EE82EE', text: '#000000' },
+  'LILA_PASTEL':{ bg: '#E8D5F5', text: '#000000' }, // Color pastel suave no emergente
+  'LAVANDA':    { bg: '#E8D5F5', text: '#000000' },
+  'AZUL':       { bg: '#0000FF', text: '#FFFFFF' },
+  'CELESTE':    { bg: '#00FFFF', text: '#000000' },
+  'ROSADO':     { bg: '#FFC0CB', text: '#000000' },
+  'COMPROBAR':  { bg: '#FFA500', text: '#000000' }, // Naranja para señales a verificar
 }
 
 /**
@@ -83,19 +85,23 @@ function getScorpionStyleFallback(evento: string): { bg: string; text: string } 
   if (upper.includes('ROBO') || upper.includes('ALARMA') || upper.includes('INTRUSION') || upper.includes('SABOTAJE') || upper.includes('TAMPER')) {
     return { bg: '#FFC0CB', text: '#000000' }
   }
-  // 5. Anulaciones, Bypass y Falla de Cobertura Inalámbrica -> Violeta (#EE82EE)
-  if (upper.includes('BYPASS') || upper.includes('ANULA') || upper.includes('INHIBI') || upper.includes('SWINGER') || upper.includes('COBERTURA') || upper.includes('E530') || upper.includes('E570')) {
+  // 5. Falla de Cobertura Inalámbrica -> Color Pastel Lavanda/Lila Suave (#E8D5F5) - Sin alarma ni emergencia
+  if (upper.includes('COBERTURA') || upper.includes('ELEM. INALAM') || upper.includes('E530')) {
+    return { bg: '#E8D5F5', text: '#000000' }
+  }
+  // 6. Anulaciones y Bypass -> Violeta (#EE82EE)
+  if (upper.includes('BYPASS') || upper.includes('ANULA') || upper.includes('INHIBI') || upper.includes('SWINGER') || upper.includes('E570')) {
     return { bg: '#EE82EE', text: '#000000' }
   }
-  // 6. Aperturas -> Celeste / Cyan (#00FFFF) igual a PC Scorpion
+  // 7. Aperturas -> Celeste / Cyan (#00FFFF) igual a PC Scorpion
   if (upper.includes('APERTURA')) {
     return { bg: '#00FFFF', text: '#000000' }
   }
-  // 7. Autotests -> Gris / Plateado (#E0E0E0) igual a PC Scorpion
+  // 8. Autotests -> Gris / Plateado (#E0E0E0) igual a PC Scorpion
   if (upper.includes('AUTOTEST')) {
     return { bg: '#E0E0E0', text: '#000000' }
   }
-  // 8. Cierres -> Blanco (#FFFFFF)
+  // 9. Cierres -> Blanco (#FFFFFF)
   if (upper.includes('CIERRE')) {
     return { bg: '#FFFFFF', text: '#000000' }
   }
@@ -116,13 +122,14 @@ function getEventoStyle(
   const upperLegible = (senalLegible || '').toUpperCase().trim()
 
   // 1. Reglas prioritarias nativas de Scorpion
+  if (upperLegible.includes('COBERTURA') || upperLegible.includes('ELEM. INALAM') || upperRaw.includes('E530') || upperRaw === '530') return { bg: '#E8D5F5', text: '#000000' } // Lila pastel suave
   if (upperLegible.includes('APERTURA')) return { bg: '#00FFFF', text: '#000000' } // Celeste
   if (upperLegible.includes('AUTOTEST')) return { bg: '#E0E0E0', text: '#000000' } // Gris
   if (upperLegible.includes('CIERRE'))   return { bg: '#FFFFFF', text: '#000000' } // Blanco
   if (upperLegible.includes('RESTABLEC') || upperLegible.includes('RESTAURACION')) return { bg: '#FFFF00', text: '#000000' } // Amarillo
   if (upperLegible.includes('FALLA AC') || upperLegible.includes('FALLA DE ENERGIA') || upperLegible.includes('CORTE DE LUZ')) return { bg: '#00FF00', text: '#000000' } // Verde
   if (upperLegible.includes('ROBO') || upperLegible.includes('INTRUSION') || upperLegible.includes('SABOTAJE') || upperLegible.includes('TAMPER')) return { bg: '#FFC0CB', text: '#000000' } // Rosado
-  if (upperLegible.includes('BYPASS') || upperLegible.includes('SWINGER') || upperLegible.includes('ANULA') || upperLegible.includes('COBERTURA') || upperLegible.includes('ELEM. INALAM')) return { bg: '#EE82EE', text: '#000000' } // Violeta
+  if (upperLegible.includes('BYPASS') || upperLegible.includes('SWINGER') || upperLegible.includes('ANULA')) return { bg: '#EE82EE', text: '#000000' } // Violeta
 
   // 2. Buscar en CODIGOS.MDB de Scorpion
   if (codigosMap) {
