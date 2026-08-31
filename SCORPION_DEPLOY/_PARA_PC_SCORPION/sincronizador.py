@@ -58,7 +58,7 @@ def lock_single_instance():
 lock_fp = lock_single_instance()
 
 # ============================================================
-#  GAMA COMMAND CENTER - Sincronizador Indestructible v5.1
+#  GAMA COMMAND CENTER - Sincronizador Indestructible v5.2
 #  Auto-recuperación ante bloqueos, lectura directa ReadOnly y cero caídas
 # ============================================================
 
@@ -274,7 +274,7 @@ def enviar_heartbeat():
         now_iso = datetime.now(timezone.utc).isoformat()
         supabase.table("eventos_monitoreo").upsert({
             "cuenta": "__SINCRONIZADOR__",
-            "nombre_abonado": "PC SCORPION CENTRAL (v5.1)",
+            "nombre_abonado": "PC SCORPION CENTRAL (v5.2)",
             "evento": "HEARTBEAT",
             "fecha_hora": now_iso,
             "zona": "000",
@@ -486,7 +486,7 @@ def sincronizar(cache):
 
 if __name__ == "__main__":
     print("=" * 60)
-    print("  GAMA COMMAND CENTER - Sincronizador Indestructible v5.1")
+    print("  GAMA COMMAND CENTER - Sincronizador Indestructible v5.2")
     print(f"  Timezone: Chile ({get_chile_offset()})")
     print("=" * 60)
     
