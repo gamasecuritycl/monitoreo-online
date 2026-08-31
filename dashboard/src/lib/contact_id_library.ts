@@ -185,7 +185,7 @@ const CONTACT_ID_MAP: Record<string, CidInfo> = {
   '527': { descripcion: 'BYPASS SWINGER', categoria: 'BYPASS', color: 'VIOLETA' },
   '528': { descripcion: 'SUPRESION ANTICIPADA', categoria: 'BYPASS', color: 'VIOLETA' },
   '529': { descripcion: 'CAMBIO NIVEL DE AMENAZA', categoria: 'BYPASS', color: 'VIOLETA' },
-  '530': { descripcion: 'LIMITE DE BYPASS EXCEDIDO', categoria: 'BYPASS', color: 'VIOLETA' },
+  '530': { descripcion: 'FALLA COBERTURA ELEM. INALAM.', categoria: 'TECNICA', color: 'VIOLETA' },
   '531': { descripcion: 'ADVERTENCIA LIMITE BYPASS', categoria: 'BYPASS', color: 'VIOLETA' },
   '532': { descripcion: 'ADVERTENCIA LIMITE BYPASS GRUPO', categoria: 'BYPASS', color: 'VIOLETA' },
   '533': { descripcion: 'FALLA AC SECUNDARIA', categoria: 'BYPASS', color: 'VIOLETA' },

@@ -83,8 +83,8 @@ function getScorpionStyleFallback(evento: string): { bg: string; text: string } 
   if (upper.includes('ROBO') || upper.includes('ALARMA') || upper.includes('INTRUSION') || upper.includes('SABOTAJE') || upper.includes('TAMPER')) {
     return { bg: '#FFC0CB', text: '#000000' }
   }
-  // 5. Anulaciones y Bypass -> Violeta (#EE82EE)
-  if (upper.includes('BYPASS') || upper.includes('ANULA') || upper.includes('INHIBI') || upper.includes('SWINGER') || upper.includes('E530') || upper.includes('E570')) {
+  // 5. Anulaciones, Bypass y Falla de Cobertura Inalámbrica -> Violeta (#EE82EE)
+  if (upper.includes('BYPASS') || upper.includes('ANULA') || upper.includes('INHIBI') || upper.includes('SWINGER') || upper.includes('COBERTURA') || upper.includes('E530') || upper.includes('E570')) {
     return { bg: '#EE82EE', text: '#000000' }
   }
   // 6. Aperturas -> Celeste / Cyan (#00FFFF) igual a PC Scorpion
@@ -122,7 +122,7 @@ function getEventoStyle(
   if (upperLegible.includes('RESTABLEC') || upperLegible.includes('RESTAURACION')) return { bg: '#FFFF00', text: '#000000' } // Amarillo
   if (upperLegible.includes('FALLA AC') || upperLegible.includes('FALLA DE ENERGIA') || upperLegible.includes('CORTE DE LUZ')) return { bg: '#00FF00', text: '#000000' } // Verde
   if (upperLegible.includes('ROBO') || upperLegible.includes('INTRUSION') || upperLegible.includes('SABOTAJE') || upperLegible.includes('TAMPER')) return { bg: '#FFC0CB', text: '#000000' } // Rosado
-  if (upperLegible.includes('BYPASS') || upperLegible.includes('SWINGER') || upperLegible.includes('ANULA')) return { bg: '#EE82EE', text: '#000000' } // Violeta
+  if (upperLegible.includes('BYPASS') || upperLegible.includes('SWINGER') || upperLegible.includes('ANULA') || upperLegible.includes('COBERTURA') || upperLegible.includes('ELEM. INALAM')) return { bg: '#EE82EE', text: '#000000' } // Violeta
 
   // 2. Buscar en CODIGOS.MDB de Scorpion
   if (codigosMap) {
