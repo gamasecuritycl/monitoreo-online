@@ -1056,11 +1056,7 @@ export default function ScorpionDashboard() {
       try {
         // 1. Cargar desde PERSONAS AUTORIZADAS.MDB (Prioridad máxima: directorio completo con claves verbales)
         const cKeyUpper = cuentaKey.trim().toUpperCase()
-        const perAutList = personasAutorizadasFallback[cKeyUpper] 
-          || (cKeyUpper.startsWith('C') ? personasAutorizadasFallback[cKeyUpper.slice(1)] : null)
-          || (!cKeyUpper.startsWith('C') ? personasAutorizadasFallback[`C${cKeyUpper}`] : null)
-          || personasAutorizadasFallback[cKeyUpper.replace(/^C/, '').padStart(4, '0')]
-          || personasAutorizadasFallback[`C${cKeyUpper.replace(/^C/, '').padStart(4, '0')}`]
+        const perAutList = personasAutorizadasFallback[cKeyUpper] || null
 
         if (perAutList && Array.isArray(perAutList) && perAutList.length > 0) {
           const mappedAut: ContactoAutorizado[] = perAutList.map((p, idx) => ({

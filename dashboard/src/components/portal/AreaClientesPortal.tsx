@@ -1157,11 +1157,7 @@ Anotación REAL de Bitácora Operador: "${item.notaReal}"`
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                   {(() => {
                     const cClean = cuentaActiva.trim().toUpperCase()
-                    const list = personasAutorizadasMap[cClean]
-                      || (cClean.startsWith('C') ? personasAutorizadasMap[cClean.slice(1)] : null)
-                      || (!cClean.startsWith('C') ? personasAutorizadasMap[`C${cClean}`] : null)
-                      || personasAutorizadasMap[cClean.replace(/^C/, '').padStart(4, '0')]
-                      || personasAutorizadasMap[`C${cClean.replace(/^C/, '').padStart(4, '0')}`]
+                    const list = personasAutorizadasMap[cClean] || null
 
                     const items = (list && Array.isArray(list) && list.length > 0)
                       ? list.map((p, idx) => ({
