@@ -773,60 +773,45 @@ export default function ReportesModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-2 sm:p-4 animate-in fade-in duration-200">
-      <div className="bg-[#0e1726] border-2 border-slate-700 rounded-xl shadow-2xl w-full max-w-6xl max-h-[92vh] flex flex-col overflow-hidden text-slate-200 font-sans">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 font-sans p-2 select-none overflow-y-auto animate-in fade-in duration-200">
+      <div className="w-full max-w-6xl max-h-[92vh] bg-[#d4d0c8] text-black border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 p-1 shadow-[4px_4px_12px_rgba(0,0,0,0.6)] flex flex-col justify-between overflow-hidden">
         
-        {/* ── HEADER SUPERIOR MODAL (ESTILO SCORPION / COMMAND CENTER) ── */}
-        <div className="bg-gradient-to-r from-[#002b49] via-[#0a3866] to-[#002b49] px-4 py-2.5 border-b border-cyan-800/60 flex items-center justify-between shrink-0 select-none">
-          <div className="flex items-center gap-3">
-            <div className="bg-cyan-500/20 border border-cyan-400/40 px-2.5 py-1 rounded text-cyan-300 font-black text-xs tracking-wider uppercase flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
-              SCORPION • REPORTES
-            </div>
-            <h2 className="text-sm font-black text-white tracking-wide uppercase">
-              REPORTE DE EVENTOS Y SEÑALES POR ABONADO
-            </h2>
+        {/* ── HEADER SUPERIOR MODAL (ESTILO SCORPION WINDOWS 95) ── */}
+        <div className="bg-[#000080] text-white font-bold px-2 py-1 flex justify-between items-center select-none shrink-0 h-6">
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs">📑</span>
+            <span className="text-[11px] tracking-wide uppercase font-mono font-bold">
+              Scorpion - Reporte de Eventos y Señales por Abonado
+            </span>
           </div>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-white hover:bg-white/10 rounded-lg p-1 transition-colors"
+            className="w-4 h-4 bg-[#d4d0c8] border border-t-white border-l-white border-b-black border-r-black text-black font-bold flex items-center justify-center text-[10px] pb-0.5 cursor-pointer hover:bg-red-600 hover:text-white"
             title="Cerrar ventana"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
+            ✕
           </button>
         </div>
 
         {/* ── CUERPO PRINCIPAL: PANEL DE CONTROL SUPERIOR + VISTA DE RESULTADOS ── */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[#0a101d]">
+        <div className="flex-1 overflow-y-auto p-2.5 space-y-2.5 bg-[#d4d0c8]">
           
           {/* Fila 1: Layout Dual estilo Scorpion (Izquierda: Reporte Params, Derecha: Buscar Usuario) */}
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-2">
             
             {/* 1.1 CUADRO DE PARÁMETROS DE REPORTE (7 cols) */}
-            <div className="md:col-span-7 bg-[#111c2e] border border-slate-700/80 rounded-lg p-3.5 flex flex-col justify-between shadow-md">
-              <div className="space-y-3">
-                <div className="flex items-center justify-between border-b border-slate-700 pb-1.5">
-                  <span className="text-[11px] font-bold text-cyan-400 uppercase tracking-wider flex items-center gap-1.5">
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    PARÁMETROS DEL REPORTE
-                  </span>
-                  {cuentaActiva && (
-                    <span className="text-[11px] font-mono font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-700/60 px-2 py-0.5 rounded">
-                      CTA: {cuentaActiva}
-                    </span>
-                  )}
-                </div>
+            <div className="md:col-span-7 bg-[#d4d0c8] border border-gray-400 p-2.5 relative flex flex-col justify-between">
+              <div className="absolute -top-2 left-2 bg-[#d4d0c8] px-1 text-[9px] font-bold text-gray-700 uppercase">
+                PARÁMETROS DEL REPORTE
+              </div>
 
+              <div className="space-y-2 mt-1">
                 {/* Input de Cuenta manual */}
                 <div className="grid grid-cols-12 gap-2 items-center">
-                  <label className="col-span-3 text-[11px] font-bold text-slate-300 uppercase">
+                  <span className="col-span-3 text-[10px] font-bold text-gray-800 uppercase">
                     CUENTA:
-                  </label>
-                  <div className="col-span-9 flex gap-2">
+                  </span>
+                  <div className="col-span-9 flex gap-1.5">
                     <input
                       type="text"
                       value={cuentaInput}
@@ -837,8 +822,8 @@ export default function ReportesModal({
                           consultarSenales(cuentaInput.toUpperCase().trim())
                         }
                       }}
-                      placeholder="Ej: C7CA, 0014, C760"
-                      className="flex-1 bg-[#090e17] border border-slate-600 rounded px-2.5 py-1 text-xs text-white font-mono font-bold focus:border-cyan-400 focus:outline-none uppercase"
+                      placeholder="Ej: C703, C740, 0014"
+                      className="flex-1 bg-white border border-t-gray-700 border-l-gray-700 border-b-white border-r-white px-2 py-0.5 text-xs text-blue-900 font-mono font-bold uppercase focus:outline-blue-700"
                     />
                     <button
                       onClick={() => {
@@ -849,7 +834,7 @@ export default function ReportesModal({
                           consultarSenales(c)
                         }
                       }}
-                      className="bg-slate-700 hover:bg-slate-600 text-white text-[11px] font-bold px-3 py-1 rounded transition-colors"
+                      className="bg-[#d4d0c8] border border-t-white border-l-white border-b-gray-700 border-r-gray-700 text-black text-[10px] font-bold px-2.5 py-0.5 hover:bg-white active:border-t-gray-700 cursor-pointer"
                     >
                       Fijar
                     </button>
@@ -857,53 +842,53 @@ export default function ReportesModal({
                 </div>
 
                 {/* Rango de Fechas: DESDE y HASTA */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-0.5">
                   {/* Desde */}
-                  <div className="bg-[#090e17] border border-slate-700/80 rounded p-2 space-y-1">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase block">
+                  <div className="bg-[#e0e0e0] border border-gray-400 p-1.5 space-y-0.5">
+                    <span className="text-[9px] font-bold text-gray-700 uppercase block">
                       DESDE (FECHA / HORA):
-                    </label>
-                    <div className="flex gap-1.5">
+                    </span>
+                    <div className="flex gap-1">
                       <input
                         type="date"
                         value={fechaDesde}
                         onChange={(e) => setFechaDesde(e.target.value)}
-                        className="flex-1 bg-[#152136] border border-slate-600 rounded px-2 py-0.5 text-xs text-white focus:border-cyan-400 focus:outline-none"
+                        className="flex-1 bg-white border border-t-gray-700 border-l-gray-700 border-b-white border-r-white px-1.5 py-0.5 text-xs text-black font-bold focus:outline-none"
                       />
                       <input
                         type="time"
                         value={horaDesde}
                         onChange={(e) => setHoraDesde(e.target.value)}
-                        className="w-20 bg-[#152136] border border-slate-600 rounded px-1.5 py-0.5 text-xs text-white focus:border-cyan-400 focus:outline-none"
+                        className="w-18 bg-white border border-t-gray-700 border-l-gray-700 border-b-white border-r-white px-1 py-0.5 text-xs text-black font-bold focus:outline-none"
                       />
                     </div>
                   </div>
 
                   {/* Hasta */}
-                  <div className="bg-[#090e17] border border-slate-700/80 rounded p-2 space-y-1">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase block">
+                  <div className="bg-[#e0e0e0] border border-gray-400 p-1.5 space-y-0.5">
+                    <span className="text-[9px] font-bold text-gray-700 uppercase block">
                       HASTA (FECHA / HORA):
-                    </label>
-                    <div className="flex gap-1.5">
+                    </span>
+                    <div className="flex gap-1">
                       <input
                         type="date"
                         value={fechaHasta}
                         onChange={(e) => setFechaHasta(e.target.value)}
-                        className="flex-1 bg-[#152136] border border-slate-600 rounded px-2 py-0.5 text-xs text-white focus:border-cyan-400 focus:outline-none"
+                        className="flex-1 bg-white border border-t-gray-700 border-l-gray-700 border-b-white border-r-white px-1.5 py-0.5 text-xs text-black font-bold focus:outline-none"
                       />
                       <input
                         type="time"
                         value={horaHasta}
                         onChange={(e) => setHoraHasta(e.target.value)}
-                        className="w-20 bg-[#152136] border border-slate-600 rounded px-1.5 py-0.5 text-xs text-white focus:border-cyan-400 focus:outline-none"
+                        className="w-18 bg-white border border-t-gray-700 border-l-gray-700 border-b-white border-r-white px-1 py-0.5 text-xs text-black font-bold focus:outline-none"
                       />
                     </div>
                   </div>
                 </div>
 
                 {/* Presets Rápidos */}
-                <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-                  <span className="text-[10px] text-slate-400 font-bold uppercase mr-1">Rápido:</span>
+                <div className="flex flex-wrap items-center gap-1 pt-0.5">
+                  <span className="text-[9px] text-gray-700 font-bold uppercase mr-1">Rápido:</span>
                   {[
                     { id: 'hoy', label: 'Hoy' },
                     { id: 'ayer', label: 'Ayer' },
@@ -914,7 +899,7 @@ export default function ReportesModal({
                     <button
                       key={p.id}
                       onClick={() => aplicarPreset(p.id as any)}
-                      className="bg-slate-800 hover:bg-slate-700 active:bg-cyan-900 border border-slate-600 px-2 py-0.5 rounded text-[10px] text-slate-300 font-medium transition-colors"
+                      className="bg-[#d4d0c8] border border-t-white border-l-white border-b-gray-700 border-r-gray-700 px-2 py-0.5 text-[10px] font-bold text-black hover:bg-white active:border-t-gray-700 cursor-pointer"
                     >
                       {p.label}
                     </button>
@@ -923,11 +908,11 @@ export default function ReportesModal({
               </div>
 
               {/* Botón Acción Principal: GENERAR REPORTE */}
-              <div className="pt-3 mt-2 border-t border-slate-700/80 flex items-center gap-2">
+              <div className="pt-2 mt-2 border-t border-gray-400">
                 <button
                   onClick={() => consultarSenales()}
                   disabled={cargando}
-                  className="flex-1 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 active:scale-[0.99] text-white font-black text-xs py-2 px-4 rounded shadow-lg flex items-center justify-center gap-2 tracking-wider uppercase transition-all disabled:opacity-50 cursor-pointer"
+                  className="w-full bg-[#000080] text-white border-2 border-t-blue-400 border-l-blue-400 border-b-black border-r-black font-black text-xs py-1.5 px-4 shadow flex items-center justify-center gap-2 tracking-wider uppercase hover:bg-blue-900 active:translate-y-0.5 disabled:opacity-50 cursor-pointer"
                 >
                   {cargando ? (
                     <>
@@ -936,10 +921,8 @@ export default function ReportesModal({
                     </>
                   ) : (
                     <>
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                      </svg>
-                      GENERAR REPORTE
+                      <span>⚡</span>
+                      <span>GENERAR REPORTE</span>
                     </>
                   )}
                 </button>
@@ -947,35 +930,39 @@ export default function ReportesModal({
             </div>
 
             {/* 1.2 CUADRO DE BÚSQUEDA DE USUARIOS (5 cols) */}
-            <div className="md:col-span-5 bg-[#111c2e] border border-slate-700/80 rounded-lg p-3.5 flex flex-col shadow-md">
-              <div className="border-b border-slate-700 pb-1.5 mb-2">
-                <span className="text-[11px] font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                  BUSCAR USUARIO / ABONADO
-                </span>
+            <div className="md:col-span-5 bg-[#d4d0c8] border border-gray-400 p-2.5 relative flex flex-col justify-between">
+              <div className="absolute -top-2 left-2 bg-[#d4d0c8] px-1 text-[9px] font-bold text-gray-700 uppercase">
+                BUSCAR USUARIO / ABONADO
               </div>
 
               {/* Filtro por nombre */}
-              <div className="space-y-2 flex-1 flex flex-col">
+              <div className="space-y-1.5 flex-1 flex flex-col mt-1">
                 <div>
-                  <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">
+                  <span className="text-[9px] font-bold text-gray-700 uppercase block mb-0.5">
                     NOMBRE / ABONADO:
-                  </label>
+                  </span>
                   <input
                     type="text"
                     value={nombreBusqueda}
                     onChange={(e) => setNombreBusqueda(e.target.value)}
-                    placeholder="Filtrar por nombre o cuenta..."
-                    className="w-full bg-[#090e17] border border-slate-600 rounded px-2.5 py-1 text-xs text-white placeholder-slate-500 focus:border-amber-400 focus:outline-none"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault()
+                        if (usuariosFiltrados.length > 0) {
+                          const [cta, datos] = usuariosFiltrados[0]
+                          seleccionarCliente(cta, datos)
+                        }
+                      }
+                    }}
+                    placeholder="Escriba cuenta o nombre (ENTER para fijar)..."
+                    className="w-full bg-white border border-t-gray-700 border-l-gray-700 border-b-white border-r-white px-2 py-0.5 text-xs text-black font-bold focus:outline-blue-700"
                   />
                 </div>
 
-                {/* Listado estilo Scorpion clásico (Caja azul/oscura con scroll) */}
-                <div className="flex-1 min-h-[120px] max-h-[145px] bg-[#000080]/90 border border-blue-900 rounded p-1 overflow-y-auto space-y-0.5 shadow-inner">
+                {/* Listado estilo Scorpion clásico (Caja azul marina con scroll) */}
+                <div className="flex-1 min-h-[110px] max-h-[135px] bg-[#000080] text-white border border-t-gray-700 border-l-gray-700 border-b-white border-r-white p-0.5 overflow-y-auto space-y-0.5 font-mono text-[10px]">
                   {usuariosFiltrados.length === 0 ? (
-                    <div className="text-blue-300/60 text-[10px] p-2 text-center italic">
+                    <div className="text-white/60 text-[10px] p-2 text-center italic">
                       No se encontraron abonados con ese nombre.
                     </div>
                   ) : (
@@ -986,14 +973,14 @@ export default function ReportesModal({
                         <div
                           key={cta}
                           onClick={() => seleccionarCliente(cta, datos)}
-                          className={`px-2 py-1 rounded text-[11px] font-bold cursor-pointer transition-colors flex items-center justify-between ${
+                          className={`px-1.5 py-0.5 cursor-pointer select-none font-bold flex items-center justify-between ${
                             esSeleccionado
-                              ? 'bg-amber-400 text-black shadow font-black'
-                              : 'text-white hover:bg-blue-700/80'
+                              ? 'bg-yellow-400 text-black font-black'
+                              : 'text-white hover:bg-blue-900'
                           }`}
                         >
                           <span className="truncate pr-2 uppercase">{nom}</span>
-                          <span className="font-mono text-[10px] opacity-80 shrink-0">[{cta}]</span>
+                          <span className="opacity-80 shrink-0">[{cta}]</span>
                         </div>
                       )
                     })
@@ -1006,15 +993,15 @@ export default function ReportesModal({
 
           {/* Fila 2: Barra de Acciones de Exportación y Filtros de Señales */}
           {reporteGenerado && (
-            <div className="bg-[#111c2e] border border-slate-700 rounded-lg p-3 flex flex-wrap items-center justify-between gap-3 shadow-md">
+            <div className="bg-[#e0e0e0] border border-gray-400 p-2 flex flex-wrap items-center justify-between gap-2">
               
               {/* Filtros de la tabla */}
               <div className="flex flex-wrap items-center gap-2">
-                <span className="text-[11px] font-bold text-slate-400 uppercase">Filtrar Señales:</span>
+                <span className="text-[10px] font-bold text-gray-800 uppercase">Filtrar Señales:</span>
                 <select
                   value={filtroTipo}
                   onChange={(e) => setFiltroTipo(e.target.value)}
-                  className="bg-[#090e17] border border-slate-600 rounded px-2.5 py-1 text-xs text-white focus:border-cyan-400 focus:outline-none"
+                  className="bg-white border border-gray-600 px-2 py-0.5 text-xs text-black font-bold focus:outline-none"
                 >
                   <option value="TODAS">TODAS LAS SEÑALES ({eventos.length})</option>
                   <option value="ALARMAS">🚨 ALARMAS / PÁNICO ({stats.alarmas})</option>
@@ -1029,32 +1016,28 @@ export default function ReportesModal({
                   value={filtroTexto}
                   onChange={(e) => setFiltroTexto(e.target.value)}
                   placeholder="Buscar en evento, zona o usuario..."
-                  className="bg-[#090e17] border border-slate-600 rounded px-2.5 py-1 text-xs text-white placeholder-slate-500 focus:border-cyan-400 focus:outline-none w-48"
+                  className="bg-white border border-gray-600 px-2 py-0.5 text-xs text-black font-bold placeholder-gray-500 focus:outline-none w-48"
                 />
               </div>
 
               {/* Botones de Exportación Oficial */}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5">
                 {/* Exportar Excel */}
                 <button
                   onClick={exportarAExcel}
-                  className="bg-emerald-700 hover:bg-emerald-600 active:bg-emerald-800 text-white font-bold text-xs px-3.5 py-1.5 rounded shadow flex items-center gap-1.5 transition-colors cursor-pointer"
+                  className="bg-emerald-800 text-white border border-t-emerald-400 border-l-emerald-400 border-b-black border-r-black font-bold text-xs px-3 py-1 hover:bg-emerald-700 active:translate-y-0.5 flex items-center gap-1 cursor-pointer"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                  Exportar Excel (.xlsx)
+                  <span>📊</span>
+                  <span>Exportar Excel (.xlsx)</span>
                 </button>
 
                 {/* Imprimir / Guardar PDF Tamaño Carta */}
                 <button
                   onClick={imprimirReporteCarta}
-                  className="bg-blue-700 hover:bg-blue-600 active:bg-blue-800 text-white font-bold text-xs px-3.5 py-1.5 rounded shadow flex items-center gap-1.5 transition-colors cursor-pointer"
+                  className="bg-blue-900 text-white border border-t-blue-400 border-l-blue-400 border-b-black border-r-black font-bold text-xs px-3 py-1 hover:bg-blue-800 active:translate-y-0.5 flex items-center gap-1 cursor-pointer"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-                  </svg>
-                  Imprimir / PDF Carta
+                  <span>🖨️</span>
+                  <span>Imprimir / PDF Carta</span>
                 </button>
               </div>
 
@@ -1063,90 +1046,88 @@ export default function ReportesModal({
 
           {/* Mensaje de Error si aplica */}
           {errorMsg && (
-            <div className="bg-amber-950/60 border border-amber-600/60 text-amber-200 px-4 py-2 rounded-lg text-xs flex items-center gap-2">
-              <svg className="w-4 h-4 shrink-0 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-              </svg>
+            <div className="bg-red-100 border border-red-400 text-red-900 px-3 py-1.5 text-xs font-bold flex items-center gap-2">
+              <span>⚠️</span>
               <span>{errorMsg}</span>
             </div>
           )}
 
           {/* ── Fila 3: VISTA PREVIA DEL REPORTE (HOJA MEMBRETADA) ── */}
           {reporteGenerado && (
-            <div className="bg-[#111c2e] border border-slate-700 rounded-lg p-4 shadow-xl space-y-4">
+            <div className="bg-white border border-gray-400 p-3 shadow space-y-3">
               
               {/* Encabezado del Documento */}
-              <div className="bg-[#0b1320] border border-slate-700/80 rounded-lg p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="bg-[#002b49] text-white font-black text-2xl px-3.5 py-1.5 rounded-lg border border-cyan-500/40 tracking-wider shadow">
+              <div className="bg-[#f4f4f4] border border-gray-300 p-2.5 flex flex-col md:flex-row items-start md:items-center justify-between gap-2">
+                <div className="flex items-center gap-2.5">
+                  <div className="bg-[#002b49] text-white font-black text-xl px-2.5 py-1 tracking-wider border border-black shadow-xs">
                     GAMA
                   </div>
                   <div>
-                    <h3 className="text-base font-black text-white uppercase tracking-wide">
+                    <h3 className="text-sm font-black text-gray-900 uppercase">
                       {nombreClienteDisplay}
                     </h3>
-                    <p className="text-xs text-slate-400 flex items-center gap-2">
-                      <span className="font-mono text-cyan-400 font-bold">ABONADO: {cuentaActiva}</span>
+                    <p className="text-[11px] text-gray-600 font-bold flex items-center gap-2">
+                      <span className="font-mono text-blue-900">ABONADO: {cuentaActiva}</span>
                       <span>•</span>
                       <span>{direccionClienteDisplay}</span>
                     </p>
                   </div>
                 </div>
 
-                <div className="text-right text-xs text-slate-400">
-                  <div className="text-slate-300 font-bold">Período del Reporte</div>
-                  <div className="font-mono text-cyan-300 text-[11px]">{fechaDesde} {horaDesde} → {fechaHasta} {horaHasta}</div>
-                  <div className="text-[10px] text-slate-500 mt-0.5">Emisión: {fechaEmision} • Op: {operadorNombre}</div>
+                <div className="text-right text-[11px] text-gray-700">
+                  <div className="font-bold text-gray-900">Período del Reporte</div>
+                  <div className="font-mono text-blue-900 font-bold">{fechaDesde} {horaDesde} → {fechaHasta} {horaHasta}</div>
+                  <div className="text-[10px] text-gray-500">Emisión: {fechaEmision} • Op: {operadorNombre}</div>
                 </div>
               </div>
 
               {/* Tarjetas KPI de Resumen */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
-                <div className="bg-[#090e17] border border-slate-800 rounded p-2 text-center">
-                  <div className="text-lg font-black text-white">{stats.total}</div>
-                  <div className="text-[9px] font-bold text-slate-400 uppercase">Total Señales</div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-1.5">
+                <div className="bg-[#f0f0f0] border border-gray-300 p-1.5 text-center">
+                  <div className="text-base font-black text-gray-900">{stats.total}</div>
+                  <div className="text-[8px] font-bold text-gray-600 uppercase">Total Señales</div>
                 </div>
-                <div className="bg-red-950/40 border border-red-800/60 rounded p-2 text-center">
-                  <div className="text-lg font-black text-red-400">{stats.alarmas}</div>
-                  <div className="text-[9px] font-bold text-red-300 uppercase">Alarmas / Pánico</div>
+                <div className="bg-red-50 border border-red-300 p-1.5 text-center">
+                  <div className="text-base font-black text-red-700">{stats.alarmas}</div>
+                  <div className="text-[8px] font-bold text-red-700 uppercase">Alarmas / Pánico</div>
                 </div>
-                <div className="bg-sky-950/40 border border-sky-800/60 rounded p-2 text-center">
-                  <div className="text-lg font-black text-sky-400">{stats.aperturas}</div>
-                  <div className="text-[9px] font-bold text-sky-300 uppercase">Aperturas</div>
+                <div className="bg-sky-50 border border-sky-300 p-1.5 text-center">
+                  <div className="text-base font-black text-sky-800">{stats.aperturas}</div>
+                  <div className="text-[8px] font-bold text-sky-800 uppercase">Aperturas</div>
                 </div>
-                <div className="bg-emerald-950/40 border border-emerald-800/60 rounded p-2 text-center">
-                  <div className="text-lg font-black text-emerald-400">{stats.cierres}</div>
-                  <div className="text-[9px] font-bold text-emerald-300 uppercase">Cierres</div>
+                <div className="bg-emerald-50 border border-emerald-300 p-1.5 text-center">
+                  <div className="text-base font-black text-emerald-800">{stats.cierres}</div>
+                  <div className="text-[8px] font-bold text-emerald-800 uppercase">Cierres</div>
                 </div>
-                <div className="bg-amber-950/40 border border-amber-800/60 rounded p-2 text-center">
-                  <div className="text-lg font-black text-amber-400">{stats.fallas}</div>
-                  <div className="text-[9px] font-bold text-amber-300 uppercase">Fallas Técnicas</div>
+                <div className="bg-amber-50 border border-amber-300 p-1.5 text-center">
+                  <div className="text-base font-black text-amber-800">{stats.fallas}</div>
+                  <div className="text-[8px] font-bold text-amber-800 uppercase">Fallas Técnicas</div>
                 </div>
-                <div className="bg-slate-900 border border-slate-700 rounded p-2 text-center">
-                  <div className="text-lg font-black text-slate-300">{stats.tests}</div>
-                  <div className="text-[9px] font-bold text-slate-400 uppercase">Test Periódicos</div>
+                <div className="bg-gray-100 border border-gray-300 p-1.5 text-center">
+                  <div className="text-base font-black text-gray-700">{stats.tests}</div>
+                  <div className="text-[8px] font-bold text-gray-600 uppercase">Test Periódicos</div>
                 </div>
               </div>
 
               {/* Tabla de Señales Recibidas */}
-              <div className="border border-slate-700/80 rounded-lg overflow-hidden">
+              <div className="border border-gray-400 overflow-hidden">
                 <div className="max-h-[380px] overflow-y-auto">
-                  <table className="w-full text-left text-xs border-collapse">
-                    <thead className="sticky top-0 bg-[#002b49] text-slate-200 uppercase text-[10px] font-bold tracking-wider z-10 border-b border-cyan-800">
+                  <table className="w-full text-left text-xs border-collapse font-mono">
+                    <thead className="sticky top-0 bg-[#c0c0c0] text-gray-900 uppercase text-[10px] font-bold tracking-wider z-10 border-b-2 border-gray-400">
                       <tr>
-                        <th className="py-2 px-3 text-center w-12">#</th>
-                        <th className="py-2 px-3 text-center w-24">Fecha</th>
-                        <th className="py-2 px-3 text-center w-20">Hora</th>
-                        <th className="py-2 px-3">Evento / Señal de Monitoreo</th>
-                        <th className="py-2 px-3">Zona / Dispositivo</th>
-                        <th className="py-2 px-3 text-center w-20">Usuario</th>
-                        <th className="py-2 px-3 text-center w-14">Par</th>
+                        <th className="py-1 px-2 text-center w-10 border-r border-gray-400">#</th>
+                        <th className="py-1 px-2 text-center w-24 border-r border-gray-400">Fecha</th>
+                        <th className="py-1 px-2 text-center w-20 border-r border-gray-400">Hora</th>
+                        <th className="py-1 px-2 border-r border-gray-400">Evento / Señal de Monitoreo</th>
+                        <th className="py-1 px-2 border-r border-gray-400">Zona / Dispositivo</th>
+                        <th className="py-1 px-2 text-center w-16 border-r border-gray-400">Usuario</th>
+                        <th className="py-1 px-2 text-center w-12">Par</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-800 font-sans">
+                    <tbody className="divide-y divide-gray-200">
                       {eventosFiltrados.length === 0 ? (
                         <tr>
-                          <td colSpan={7} className="py-8 text-center text-slate-400 italic">
+                          <td colSpan={7} className="py-8 text-center text-gray-500 italic">
                             No hay señales que coincidan con los filtros seleccionados.
                           </td>
                         </tr>
@@ -1156,37 +1137,37 @@ export default function ReportesModal({
                           const descZona = obtenerNombreZona(e.cuenta, e.zona)
                           const evUpper = (e.evento || '').toUpperCase()
 
-                          let badgeStyle = 'bg-slate-800 text-slate-300 border-slate-700'
+                          let badgeStyle = 'bg-gray-100 text-gray-800 border-gray-300'
                           if (evUpper.includes('ALARMA') || evUpper.includes('ROBO') || evUpper.includes('PANICO') || evUpper.includes('INCENDIO')) {
-                            badgeStyle = 'bg-red-950/80 text-red-300 border-red-700 font-bold'
+                            badgeStyle = 'bg-red-600 text-white font-bold'
                           } else if (evUpper.includes('RESTABLECIMIENTO') || evUpper.includes('NORMAL')) {
-                            badgeStyle = 'bg-amber-950/80 text-amber-300 border-amber-700'
+                            badgeStyle = 'bg-amber-100 text-amber-900 border-amber-300'
                           } else if (evUpper.includes('APERTURA') || evUpper.includes('DESARMADO')) {
-                            badgeStyle = 'bg-sky-950/80 text-sky-300 border-sky-700'
+                            badgeStyle = 'bg-sky-100 text-sky-900 border-sky-300'
                           } else if (evUpper.includes('CIERRE') || evUpper.includes('ARMADO')) {
-                            badgeStyle = 'bg-emerald-950/80 text-emerald-300 border-emerald-700'
+                            badgeStyle = 'bg-emerald-100 text-emerald-900 border-emerald-300'
                           } else if (evUpper.includes('FALLA') || evUpper.includes('BATER') || evUpper.includes('CORTE')) {
-                            badgeStyle = 'bg-orange-950/80 text-orange-300 border-orange-700 font-bold'
+                            badgeStyle = 'bg-orange-600 text-white font-bold'
                           }
 
                           return (
-                            <tr key={e.id || idx} className="hover:bg-[#152136] transition-colors">
-                              <td className="py-1.5 px-3 text-center text-slate-500 font-mono text-[11px]">{idx + 1}</td>
-                              <td className="py-1.5 px-3 text-center font-mono font-semibold text-slate-300">{fecha}</td>
-                              <td className="py-1.5 px-3 text-center font-mono text-cyan-300">{hora}</td>
-                              <td className="py-1.5 px-3">
-                                <span className={`inline-block px-2 py-0.5 rounded text-[10px] border ${badgeStyle}`}>
+                            <tr key={e.id || idx} className="hover:bg-blue-50">
+                              <td className="py-1 px-2 text-center text-gray-500 text-[10px] border-r border-gray-200">{idx + 1}</td>
+                              <td className="py-1 px-2 text-center font-bold text-gray-800 border-r border-gray-200">{fecha}</td>
+                              <td className="py-1 px-2 text-center font-bold text-blue-900 border-r border-gray-200">{hora}</td>
+                              <td className="py-1 px-2 border-r border-gray-200 font-bold">
+                                <span className={`inline-block px-1.5 py-0.5 rounded-xs text-[10px] ${badgeStyle}`}>
                                   {e.evento || 'SEÑAL'}
                                 </span>
                               </td>
-                              <td className="py-1.5 px-3">
-                                <span className="font-bold text-white font-mono">{e.zona && e.zona !== '000' ? `ZN ${e.zona}` : '---'}</span>
-                                {descZona && <span className="text-slate-400 text-[11px] ml-1.5">• {descZona}</span>}
+                              <td className="py-1 px-2 border-r border-gray-200">
+                                <span className="font-bold text-amber-800">{e.zona && e.zona !== '000' ? `ZN ${e.zona}` : '---'}</span>
+                                {descZona && <span className="text-gray-600 font-sans text-[11px] ml-1.5">• {descZona}</span>}
                               </td>
-                              <td className="py-1.5 px-3 text-center font-mono text-slate-300">
+                              <td className="py-1 px-2 text-center font-bold text-emerald-800 border-r border-gray-200">
                                 {e.usuario && e.usuario !== '000' && e.usuario !== '---' ? `US ${e.usuario}` : '---'}
                               </td>
-                              <td className="py-1.5 px-3 text-center font-mono text-slate-500">01</td>
+                              <td className="py-1 px-2 text-center text-gray-600">01</td>
                             </tr>
                           )
                         })
@@ -1202,23 +1183,23 @@ export default function ReportesModal({
         </div>
 
         {/* ── FOOTER MODAL ── */}
-        <div className="bg-[#0b1320] px-4 py-2.5 border-t border-slate-800 flex items-center justify-between shrink-0">
-          <div className="text-[11px] text-slate-400 flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-green-400" />
+        <div className="bg-[#d4d0c8] px-3 py-1.5 border-t border-gray-400 flex items-center justify-between shrink-0">
+          <div className="text-[10px] text-gray-700 font-bold flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-green-600" />
             <span>Base de datos en tiempo real (Supabase Monitoreo 24/7)</span>
           </div>
 
           <div className="flex items-center gap-2">
             {reporteGenerado && (
-              <span className="text-xs text-slate-400 mr-2">
+              <span className="text-[11px] text-gray-700 font-bold mr-2">
                 Mostrando <strong>{eventosFiltrados.length}</strong> de <strong>{eventos.length}</strong> señales
               </span>
             )}
             <button
               onClick={onClose}
-              className="bg-slate-700 hover:bg-slate-600 active:bg-slate-800 text-white font-bold text-xs px-4 py-1.5 rounded transition-colors cursor-pointer"
+              className="bg-[#d4d0c8] border border-t-white border-l-white border-b-gray-800 border-r-gray-800 text-black font-bold text-xs px-4 py-1 hover:bg-white active:border-t-gray-800 cursor-pointer"
             >
-              Cerrar
+              CERRAR
             </button>
           </div>
         </div>

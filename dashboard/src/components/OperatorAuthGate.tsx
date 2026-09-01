@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from 'react'
 import Image from 'next/image'
+import { supabase } from '@/lib/supabase'
+import operadoresFallback from '@/lib/operadores.json'
 import {
   Operator,
   UserRole,
@@ -35,28 +37,71 @@ export default function OperatorAuthGate({ children }: OperatorAuthGateProps) {
   const [editandoCod, setEditandoCod] = useState<string | null>(null)
   const [formCodigo, setFormCodigo] = useState('')
   const [formNombre, setFormNombre] = useState('')
-  const [formRol, setFormRol] = useState<UserRole>('Operador')
+  const [formRol, setFormRol] = useState<UserRole>('Operadora')
   const [formClave, setFormClave] = useState('')
-  const [formAtributos, setFormAtributos] = useState<UserAttributes>(DEFAULT_ATTRIBUTES_BY_ROLE.Operador)
+  const [formAtributos, setFormAtributos] = useState<UserAttributes>(DEFAULT_ATTRIBUTES_BY_ROLE.Operadora)
   const [gestionError, setGestionError] = useState('')
   const [gestionExito, setGestionExito] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
 
-  // Cargar lista de operadores e inicio de sesión guardado
+  // Cargar lista de operadores desde Supabase, localStorage o archivo local
   useEffect(() => {
-    try {
-      const savedList = localStorage.getItem('gama_operadores_list')
-      if (savedList) {
-        const parsed = JSON.parse(savedList)
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          const san = parsed.map((op: any) => ({
-            ...op,
-            atributos: ensureUserAttributes(op),
-          }))
-          setOperatorList(san)
+    async function cargarOperadores() {
+      try {
+        // 1. Intentar cargar desde Supabase fila 'OPERADORES'
+        const { data } = await supabase
+          .from('eventos_monitoreo')
+          .select('nombre_abonado')
+          .eq('cuenta', 'OPERADORES')
+          .order('id', { ascending: false })
+          .limit(1)
+
+        if (data && data.length > 0 && data[0].nombre_abonado) {
+          try {
+            const parsed = JSON.parse(data[0].nombre_abonado)
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              const san = parsed.map((op: any) => ({
+                ...op,
+                atributos: ensureUserAttributes(op),
+              }))
+              setOperatorList(san)
+              localStorage.setItem('gama_operadores_list', JSON.stringify(san))
+              setChecking(false)
+              return
+            }
+          } catch {}
         }
+      } catch (err) {
+        console.warn('Fallo de red Supabase operadores, usando local.')
       }
 
+      // 2. Fallback a localStorage
+      try {
+        const savedList = localStorage.getItem('gama_operadores_list')
+        if (savedList) {
+          const parsed = JSON.parse(savedList)
+          if (Array.isArray(parsed) && parsed.length > 0 && parsed.some((p: any) => p.nombre === 'Nancy Delgadillo' || p.nombre === 'admin')) {
+            const san = parsed.map((op: any) => ({
+              ...op,
+              atributos: ensureUserAttributes(op),
+            }))
+            setOperatorList(san)
+            setChecking(false)
+            return
+          }
+        }
+      } catch {}
+
+      // 3. Fallback a archivo operadores.json / OPERADORES_PREDETERMINADOS
+      setOperatorList(OPERADORES_PREDETERMINADOS)
+      localStorage.setItem('gama_operadores_list', JSON.stringify(OPERADORES_PREDETERMINADOS))
+      setChecking(false)
+    }
+
+    cargarOperadores()
+
+    // Recuperar sesión activa
+    try {
       const savedAuth = sessionStorage.getItem('gama_operator_auth') || localStorage.getItem('gama_operator_auth')
       if (savedAuth) {
         const parsedAuth = JSON.parse(savedAuth)
@@ -67,14 +112,26 @@ export default function OperatorAuthGate({ children }: OperatorAuthGateProps) {
           })
         }
       }
-    } catch (e) {}
-    setChecking(false)
+    } catch {}
   }, [])
 
-  // Guardar lista en localStorage
-  const guardarLista = (nuevaLista: Operator[]) => {
+  // Guardar lista en localStorage y Supabase
+  const guardarLista = async (nuevaLista: Operator[]) => {
     setOperatorList(nuevaLista)
     localStorage.setItem('gama_operadores_list', JSON.stringify(nuevaLista))
+
+    try {
+      await supabase.from('eventos_monitoreo').insert({
+        cuenta: 'OPERADORES',
+        evento: 'CONFIGURACION_OPERADORES',
+        nombre_abonado: JSON.stringify(nuevaLista),
+        fecha_hora: new Date().toISOString(),
+        zona: 'SYS',
+        usuario: operator?.codigo || '01'
+      })
+    } catch (e) {
+      console.error('Error sincronizando operadores en Supabase:', e)
+    }
 
     // Si editamos el operador activo actualmente, actualizar sesión activa
     if (operator) {
@@ -98,12 +155,11 @@ export default function OperatorAuthGate({ children }: OperatorAuthGateProps) {
       return
     }
 
-    const claveLimpia = claveInput.trim().toLowerCase()
-    const claveEsperada = op.clave.toLowerCase()
-    const pinEsperado = claveEsperada.replace('gama', '')
+    const claveIngresada = claveInput.trim()
+    const claveEsperada = op.clave.trim()
 
-    if (claveLimpia !== claveEsperada && claveLimpia !== pinEsperado) {
-      setErrorMsg('Clave de seguridad o PIN de acceso incorrecto.')
+    if (claveIngresada !== claveEsperada) {
+      setErrorMsg('Contraseña de seguridad incorrecta. Verifique mayúsculas, minúsculas y caracteres.')
       return
     }
 
@@ -154,12 +210,14 @@ export default function OperatorAuthGate({ children }: OperatorAuthGateProps) {
       return
     }
 
+    const existenteIdx = operatorList.findIndex(o => o.codigo === codClean)
+
     if (editandoCod) {
-      // Actualizar existente
-      const nuevaLista = operatorList.map(op => {
-        if (op.codigo === editandoCod) {
+      // Modo Edición
+      const nuevaLista = operatorList.map(o => {
+        if (o.codigo === editandoCod) {
           return {
-            ...op,
+            ...o,
             codigo: codClean,
             nombre: nomClean,
             rol: formRol,
@@ -167,29 +225,31 @@ export default function OperatorAuthGate({ children }: OperatorAuthGateProps) {
             atributos: formAtributos,
           }
         }
-        return op
+        return o
       })
       guardarLista(nuevaLista)
-      setGestionExito(`Usuario ${codClean} (${nomClean}) actualizado con sus permisos asignados.`)
+      setGestionExito(`Operador ${codClean} (${nomClean}) actualizado correctamente.`)
+      limpiarFormularioGestion()
     } else {
-      // Crear nuevo
-      if (operatorList.some(op => op.codigo === codClean)) {
-        setGestionError(`El código de usuario ${codClean} ya existe.`)
+      // Modo Creación
+      if (existenteIdx >= 0) {
+        setGestionError(`Ya existe un operador con el código ${codClean}.`)
         return
       }
-      const nuevo: Operator = {
+
+      const nuevoOp: Operator = {
         codigo: codClean,
         nombre: nomClean,
         rol: formRol,
         clave: claClean,
         atributos: formAtributos,
       }
-      const nuevaLista = [...operatorList, nuevo]
-      guardarLista(nuevaLista)
-      setGestionExito(`Nuevo usuario ${codClean} - ${nomClean} (${formRol}) registrado con éxito.`)
-    }
 
-    limpiarFormularioGestion()
+      const nuevaLista = [...operatorList, nuevoOp]
+      guardarLista(nuevaLista)
+      setGestionExito(`Operador ${codClean} (${nomClean}) creado correctamente.`)
+      limpiarFormularioGestion()
+    }
   }
 
   const handleEditarClick = (op: Operator) => {
@@ -238,10 +298,10 @@ export default function OperatorAuthGate({ children }: OperatorAuthGateProps) {
 
   if (checking) {
     return (
-      <div className="min-h-screen bg-[#050d1a] flex items-center justify-center text-white font-sans">
-        <div className="flex items-center gap-3">
-          <span className="w-5 h-5 border-2 border-[#2997ff] border-t-transparent rounded-full animate-spin" />
-          <span className="text-sm font-medium">Verificando credenciales y permisos de usuario...</span>
+      <div className="min-h-screen bg-[#004080] flex items-center justify-center text-white font-sans">
+        <div className="bg-[#d4d0c8] text-black border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 p-4 shadow-2xl flex items-center gap-3">
+          <span className="w-4 h-4 border-2 border-blue-900 border-t-transparent rounded-full animate-spin" />
+          <span className="text-xs font-bold font-mono">Verificando credenciales y permisos de usuario...</span>
         </div>
       </div>
     )
@@ -249,105 +309,127 @@ export default function OperatorAuthGate({ children }: OperatorAuthGateProps) {
 
   if (!operator) {
     return (
-      <div className="min-h-screen bg-[#050d1a] text-white flex items-center justify-center p-4 relative overflow-hidden font-sans">
+      <div className="min-h-screen bg-[#004e92] bg-gradient-to-br from-[#003366] via-[#004080] to-[#001f3f] text-black flex items-center justify-center p-3 font-sans select-none">
         
-        {/* Glow de Fondo */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-[#0066cc]/15 blur-[140px] rounded-full pointer-events-none" />
-
-        <div className="relative z-10 w-full max-w-md bg-[#0a1628]/90 backdrop-blur-xl border border-[#1e3a5f] rounded-3xl p-8 shadow-[0_20px_50px_rgba(0,0,0,0.6)]">
+        {/* Ventana de Login Estilo Clásico Scorpion Windows 95 */}
+        <div className="w-full max-w-md bg-[#d4d0c8] text-black border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 p-1 shadow-[8px_8px_24px_rgba(0,0,0,0.7)] flex flex-col overflow-hidden">
           
-          {/* Logo & Encabezado */}
-          <div className="text-center mb-8 space-y-3">
-            <div className="w-20 h-20 flex items-center justify-center mx-auto mb-1">
-              <Image
-                src="/logo-gama.png"
-                alt="GAMA Security Logo"
-                width={72}
-                height={72}
-                className="object-contain filter drop-shadow-[0_4px_12px_rgba(0,102,204,0.5)]"
-              />
-            </div>
-            <div>
-              <span className="inline-block px-3 py-1 rounded-full bg-[#0066cc]/20 border border-[#0066cc]/40 text-[10px] font-bold text-[#2997ff] uppercase tracking-widest mb-2">
-                🔒 ACCESO RESTRINGIDO POR ROLES & ATRIBUTOS
+          {/* Barra de Título */}
+          <div className="bg-[#000080] text-white font-bold px-2 py-1 flex items-center justify-between h-6 select-none shrink-0">
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs">🔒</span>
+              <span className="text-[11px] tracking-wide font-mono uppercase font-bold">
+                Scorpion - Control de Acceso y Operadores
               </span>
-              <h1 className="text-2xl font-bold text-white tracking-tight">
-                Central Operativa GAMA
-              </h1>
-              <p className="text-xs text-slate-400 mt-1">
-                Administradores • Operadores • Técnicos • Supervisores
-              </p>
+            </div>
+            <div className="w-4 h-4 bg-[#d4d0c8] border border-t-white border-l-white border-b-black border-r-black text-black font-bold flex items-center justify-center text-[10px] pb-0.5">
+              ✕
             </div>
           </div>
 
-          {/* Formulario */}
-          <form onSubmit={handleLogin} className="space-y-5">
+          {/* Cuerpo */}
+          <div className="p-4 space-y-4 bg-[#d4d0c8]">
             
-            {/* Selección de Usuario */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5 uppercase tracking-wider">
-                Seleccionar Usuario Autorizado:
-              </label>
-              <select
-                value={selectedCod}
-                onChange={(e) => setSelectedCod(e.target.value)}
-                className="w-full bg-[#050d1a] border border-[#1e3a5f] rounded-xl px-4 py-3 text-white text-sm font-medium focus:outline-none focus:border-[#2997ff] transition-colors"
-              >
-                {operatorList.map(op => (
-                  <option key={op.codigo} value={op.codigo}>
-                    {op.codigo} — {op.nombre} ({op.rol})
-                  </option>
-                ))}
-              </select>
+            {/* Cabecera / Banner */}
+            <div className="bg-[#e0e0e0] border border-gray-400 p-3 flex items-center gap-3 shadow-inner">
+              <div className="w-12 h-12 bg-[#000080] text-white font-black text-xl flex items-center justify-center rounded border border-gray-600 shrink-0 shadow">
+                G
+              </div>
+              <div>
+                <h1 className="text-xs font-black text-[#000080] tracking-wide uppercase">
+                  CENTRAL OPERATIVA GAMA SECURITY
+                </h1>
+                <p className="text-[10px] text-gray-700 font-bold mt-0.5">
+                  Autenticación de Operadores • Monitoreo 24/7
+                </p>
+              </div>
             </div>
 
-            {/* Input Clave */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5 uppercase tracking-wider">
-                Clave de Seguridad / PIN:
-              </label>
-              <div className="relative">
-                <input
-                  type={showPass ? 'text' : 'password'}
-                  value={claveInput}
-                  onChange={(e) => setClaveInput(e.target.value)}
-                  placeholder="Introduce clave o PIN..."
-                  required
-                  autoFocus
-                  className="w-full bg-[#050d1a] border border-[#1e3a5f] rounded-xl px-4 py-3 text-white text-sm placeholder-slate-500 focus:outline-none focus:border-[#2997ff] transition-colors font-mono"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPass(!showPass)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs font-semibold px-2 py-1"
+            {/* Formulario */}
+            <form onSubmit={handleLogin} className="space-y-3">
+              
+              {/* Selección de Usuario */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-gray-800 uppercase block">
+                  Seleccionar Operador / Responsable:
+                </label>
+                <select
+                  value={selectedCod}
+                  onChange={(e) => setSelectedCod(e.target.value)}
+                  className="w-full bg-white border border-t-gray-700 border-l-gray-700 border-b-white border-r-white px-2 py-1.5 text-xs text-black font-bold focus:outline-blue-700"
                 >
-                  {showPass ? 'OCULTAR' : 'VER'}
+                  {operatorList.map(op => (
+                    <option key={op.codigo} value={op.codigo}>
+                      [{op.codigo}] — {op.nombre} ({op.rol})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Input Contraseña */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-gray-800 uppercase block">
+                  Contraseña de Seguridad:
+                </label>
+                <div className="relative flex items-center">
+                  <input
+                    type={showPass ? 'text' : 'password'}
+                    value={claveInput}
+                    onChange={(e) => setClaveInput(e.target.value)}
+                    placeholder="Ingrese su contraseña..."
+                    required
+                    autoFocus
+                    className="w-full bg-white border border-t-gray-700 border-l-gray-700 border-b-white border-r-white px-2 py-1.5 text-xs text-black font-bold focus:outline-blue-700 font-mono tracking-wider"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPass(!showPass)}
+                    className="absolute right-1 px-2 py-0.5 bg-[#d4d0c8] border border-t-white border-l-white border-b-gray-700 border-r-gray-700 text-[9px] font-bold text-gray-800 hover:bg-white active:border-t-gray-700 cursor-pointer"
+                  >
+                    {showPass ? 'OCULTAR' : 'VER'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Mensaje de Error */}
+              {errorMsg && (
+                <div className="p-2 bg-red-100 border border-red-500 text-red-900 text-[11px] font-bold flex items-center gap-1.5">
+                  <span>⚠️</span>
+                  <span>{errorMsg}</span>
+                </div>
+              )}
+
+              {/* Botón Ingreso */}
+              <div className="pt-2">
+                <button
+                  type="submit"
+                  className="w-full bg-[#000080] text-white border-2 border-t-blue-400 border-l-blue-400 border-b-black border-r-black font-black text-xs py-2 uppercase hover:bg-blue-900 active:translate-y-0.5 shadow flex items-center justify-center gap-2 cursor-pointer tracking-wider"
+                >
+                  <span>🔑</span>
+                  <span>INGRESAR AL SISTEMA</span>
                 </button>
               </div>
+            </form>
+
+            {/* Footer */}
+            <div className="border-t border-gray-400 pt-2 text-center text-[9px] font-bold text-gray-600">
+              Acceso restringido y auditado. Cada acción queda firmada en la Bitácora Central.
             </div>
 
-            {errorMsg && (
-              <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-semibold text-center">
-                ⚠️ {errorMsg}
-              </div>
-            )}
-
-            <button
-              type="submit"
-              className="w-full btn-apple-primary justify-center text-sm font-semibold py-3 px-6 shadow-lg shadow-[#0066cc]/30"
-            >
-              Ingresar al Sistema →
-            </button>
-          </form>
-
-          {/* Footer Warning */}
-          <div className="mt-8 pt-6 border-t border-[#1e3a5f]/60 text-center text-[10px] text-slate-500 leading-relaxed">
-            Acceso controlado por permisos de perfil. Monitoreado en tiempo real por GAMA Security.
           </div>
-
         </div>
       </div>
     )
+  }
+
+  const handleResetClave = (op: Operator) => {
+    const nuevaClave = prompt(`Ingrese la nueva contraseña de seguridad para ${op.nombre} [Código ${op.codigo}]:`, '')
+    if (nuevaClave && nuevaClave.trim().length >= 4) {
+      const claClean = nuevaClave.trim()
+      const nuevaLista = operatorList.map(o => o.codigo === op.codigo ? { ...o, clave: claClean } : o)
+      guardarLista(nuevaLista)
+      setGestionExito(`Contraseña de ${op.nombre} actualizada correctamente.`)
+    }
   }
 
   const activeAttrs = ensureUserAttributes(operator)
@@ -357,26 +439,16 @@ export default function OperatorAuthGate({ children }: OperatorAuthGateProps) {
     <div className="relative">
       
       {/* Barra Superior con Estado del Usuario e Indicador de Rol */}
-      <div className="bg-[#050d1a] border-b border-[#1e3a5f] px-4 py-2 flex items-center justify-between text-xs text-slate-300 font-sans sticky top-0 z-50">
+      <div className="bg-[#000080] text-white border-b-2 border-gray-800 px-3 py-1.5 flex items-center justify-between text-xs font-sans select-none sticky top-0 z-50 shadow-md">
         <div className="flex items-center gap-3">
-          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-          <span className="font-semibold text-white">CENTRAL OPERATIVA CONECTADA</span>
-          <span className="text-slate-500 hidden sm:inline">|</span>
+          <span className="w-2.5 h-2.5 rounded-full bg-green-400 animate-pulse" />
+          <span className="font-black tracking-wide text-xs">CENTRAL OPERATIVA GAMA</span>
+          <span className="text-blue-300 opacity-60">|</span>
           <div className="flex items-center gap-2">
-            <span className="text-slate-300 font-medium">
-              Usuario: <strong>{operator.nombre}</strong>
+            <span className="text-slate-100 font-bold">
+              Operador: <strong>{operator.nombre}</strong>
             </span>
-            <span
-              className={`px-2 py-0.5 rounded-full text-[10px] font-bold border uppercase tracking-wider ${
-                operator.rol === 'Administrador'
-                  ? 'bg-purple-500/20 text-purple-300 border-purple-500/40'
-                  : operator.rol === 'Supervisor'
-                  ? 'bg-blue-500/20 text-blue-300 border-blue-500/40'
-                  : operator.rol === 'Técnico'
-                  ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
-                  : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-              }`}
-            >
+            <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-white/20 text-yellow-300 border border-white/30">
               {operator.rol}
             </span>
           </div>
@@ -387,59 +459,57 @@ export default function OperatorAuthGate({ children }: OperatorAuthGateProps) {
           {canManageUsers && (
             <button
               onClick={() => setMostrarModalGestion(true)}
-              className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[#0066cc]/20 hover:bg-[#0066cc]/30 border border-[#0066cc]/40 text-[#2997ff] text-xs font-semibold transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-1 bg-[#d4d0c8] border border-t-white border-l-white border-b-gray-800 border-r-gray-800 text-black text-xs font-bold hover:bg-white active:border-t-gray-800 cursor-pointer shadow-xs"
             >
-              ⚙️ Área de Configuración & Permisos
+              ⚙️ Gestión de Operadores & Claves
             </button>
           )}
 
           <button
             onClick={handleLogout}
-            className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 text-xs font-semibold transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-1 bg-[#d4d0c8] border border-t-white border-l-white border-b-gray-800 border-r-gray-800 text-red-900 text-xs font-bold hover:bg-red-700 hover:text-white active:border-t-gray-800 cursor-pointer shadow-xs"
           >
             🔒 Cerrar Sesión
           </button>
         </div>
       </div>
 
-      {/* Modal de Gestión de Usuarios y Selección Granular de Módulos */}
+      {/* Modal de Gestión de Usuarios y Claves (Scorpion Windows 95 Clásico) */}
       {mostrarModalGestion && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 font-sans text-white">
-          <div className="bg-[#0a1628] border border-[#1e3a5f] rounded-3xl w-full max-w-4xl overflow-hidden shadow-2xl flex flex-col max-h-[92vh]">
+        <div className="fixed inset-0 z-50 bg-black/60 font-sans p-2 select-none overflow-y-auto flex items-center justify-center animate-in fade-in duration-200">
+          <div className="w-full max-w-4xl bg-[#d4d0c8] text-black border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 p-1 shadow-[4px_4px_12px_rgba(0,0,0,0.6)] flex flex-col justify-between max-h-[92vh]">
             
-            {/* Encabezado del Modal */}
-            <div className="bg-[#050d1a] px-6 py-4 border-b border-[#1e3a5f] flex justify-between items-center shrink-0">
-              <div>
-                <h3 className="text-base font-bold text-white flex items-center gap-2">
-                  <span>⚙️</span> Área de Configuración: CRUD de Usuarios & Módulos Visibles
-                </h3>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  Asigna qué módulos de la Central Operativa puede ver y utilizar cada perfil (Administrador, Operador, Técnico, Supervisor).
-                </p>
+            {/* Barra de Título */}
+            <div className="bg-[#000080] text-white font-bold px-2 py-1 flex justify-between items-center select-none shrink-0 h-6">
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs">⚙️</span>
+                <span className="text-[11px] tracking-wide font-mono uppercase font-bold">
+                  Scorpion - Gestión de Operadores, Permisos y Claves de Seguridad
+                </span>
               </div>
               <button
                 onClick={() => setMostrarModalGestion(false)}
-                className="w-8 h-8 rounded-full bg-[#162a4a] hover:bg-red-500/20 text-slate-400 hover:text-red-400 flex items-center justify-center font-bold text-sm transition-colors cursor-pointer"
+                className="w-4 h-4 bg-[#d4d0c8] border border-t-white border-l-white border-b-black border-r-black text-black font-bold flex items-center justify-center text-[10px] pb-0.5 cursor-pointer hover:bg-red-600 hover:text-white"
               >
                 ✕
               </button>
             </div>
 
             {/* Cuerpo del Modal */}
-            <div className="p-6 overflow-y-auto space-y-6 flex-1 text-left">
+            <div className="p-3 overflow-y-auto space-y-3 flex-1 text-left bg-[#d4d0c8]">
               
               {/* Formulario Crear / Editar */}
-              <form onSubmit={handleGuardarOperador} className="bg-[#050d1a] border border-[#1e3a5f] rounded-2xl p-5 space-y-5">
-                <div className="flex items-center justify-between border-b border-[#1e3a5f]/60 pb-3">
-                  <h4 className="text-xs font-bold text-[#2997ff] uppercase tracking-wider flex items-center gap-2">
+              <form onSubmit={handleGuardarOperador} className="bg-[#d4d0c8] border border-gray-400 p-3 space-y-3 relative shadow-xs">
+                <div className="flex items-center justify-between border-b border-gray-400 pb-1.5">
+                  <h4 className="text-[11px] font-bold text-[#000080] uppercase tracking-wider flex items-center gap-1.5">
                     <span>{editandoCod ? '✏️' : '➕'}</span>
-                    {editandoCod ? `Editar Configuración del Usuario [Código ${editandoCod}]` : 'Registrar Nuevo Usuario en el Sistema'}
+                    <span>{editandoCod ? `Editar Configuración del Operador [Código ${editandoCod}]` : 'Registrar Nuevo Operador en el Sistema'}</span>
                   </h4>
                   {editandoCod && (
                     <button
                       type="button"
                       onClick={limpiarFormularioGestion}
-                      className="text-xs text-slate-400 hover:text-white underline cursor-pointer"
+                      className="text-xs text-blue-900 font-bold hover:underline cursor-pointer"
                     >
                       Cancelar Edición
                     </button>
@@ -447,45 +517,46 @@ export default function OperatorAuthGate({ children }: OperatorAuthGateProps) {
                 </div>
 
                 {/* Campos Principales */}
-                <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-2.5">
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-300 uppercase tracking-wider mb-1">
-                      Código ID
+                    <label className="block text-[10px] font-bold text-gray-800 uppercase mb-0.5">
+                      Código ID:
                     </label>
                     <input
                       type="text"
-                      placeholder="05"
+                      placeholder="07"
                       value={formCodigo}
                       onChange={(e) => setFormCodigo(e.target.value)}
                       disabled={!!editandoCod}
                       required
-                      className="w-full bg-[#0a1628] border border-[#1e3a5f] rounded-xl px-3.5 py-2 text-xs text-white font-mono focus:outline-none focus:border-[#2997ff]"
+                      className="w-full bg-white border border-t-gray-700 border-l-gray-700 border-b-white border-r-white px-2 py-1 text-xs text-black font-mono font-bold focus:outline-blue-700"
                     />
                   </div>
 
                   <div className="sm:col-span-2">
-                    <label className="block text-[10px] font-bold text-slate-300 uppercase tracking-wider mb-1">
-                      Nombre Completo del Usuario
+                    <label className="block text-[10px] font-bold text-gray-800 uppercase mb-0.5">
+                      Nombre Completo del Operador:
                     </label>
                     <input
                       type="text"
-                      placeholder="Ej: Carlos Mendoza (Técnico de Terreno)"
+                      placeholder="Ej: Claudia Soto"
                       value={formNombre}
                       onChange={(e) => setFormNombre(e.target.value)}
                       required
-                      className="w-full bg-[#0a1628] border border-[#1e3a5f] rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-[#2997ff]"
+                      className="w-full bg-white border border-t-gray-700 border-l-gray-700 border-b-white border-r-white px-2 py-1 text-xs text-black font-bold focus:outline-blue-700"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-300 uppercase tracking-wider mb-1">
-                      Perfil / Rol
+                    <label className="block text-[10px] font-bold text-gray-800 uppercase mb-0.5">
+                      Perfil / Rol:
                     </label>
                     <select
                       value={formRol}
                       onChange={(e: any) => handleRolChange(e.target.value)}
-                      className="w-full bg-[#0a1628] border border-[#1e3a5f] rounded-xl px-3.5 py-2 text-xs text-white font-semibold focus:outline-none focus:border-[#2997ff]"
+                      className="w-full bg-white border border-t-gray-700 border-l-gray-700 border-b-white border-r-white px-2 py-1 text-xs text-black font-bold focus:outline-blue-700"
                     >
+                      <option value="Operadora">🟢 Operadora</option>
                       <option value="Operador">🟢 Operador</option>
                       <option value="Técnico">🟡 Técnico</option>
                       <option value="Supervisor">🔵 Supervisor</option>
@@ -494,30 +565,32 @@ export default function OperatorAuthGate({ children }: OperatorAuthGateProps) {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-300 uppercase tracking-wider mb-1">
-                      Clave de Acceso / PIN Secreto
+                    <label className="block text-[10px] font-bold text-gray-800 uppercase mb-0.5">
+                      Contraseña de Seguridad:
                     </label>
                     <input
                       type="text"
-                      placeholder="Ej: gama7788"
+                      placeholder="Ej: ClaudiaGama2026*"
                       value={formClave}
                       onChange={(e) => setFormClave(e.target.value)}
                       required
-                      className="w-full bg-[#0a1628] border border-[#1e3a5f] rounded-xl px-3.5 py-2 text-xs text-white font-mono focus:outline-none focus:border-[#2997ff]"
+                      className="w-full bg-white border border-t-gray-700 border-l-gray-700 border-b-white border-r-white px-2 py-1 text-xs text-black font-mono font-bold focus:outline-blue-700"
                     />
                   </div>
 
-                  <div className="flex items-end gap-2">
-                    <span className="text-[10px] text-slate-400">Presets rápidos de permisos:</span>
-                    {(['Operador', 'Técnico', 'Supervisor', 'Administrador'] as UserRole[]).map(rolBtn => (
+                  <div className="flex items-end gap-1.5 pb-0.5">
+                    <span className="text-[10px] text-gray-700 font-bold mr-1">Presets:</span>
+                    {(['Operadora', 'Técnico', 'Supervisor', 'Administrador'] as UserRole[]).map(rolBtn => (
                       <button
                         key={rolBtn}
                         type="button"
                         onClick={() => handleRolChange(rolBtn)}
-                        className={`text-[9px] px-2 py-1 rounded-lg font-bold border transition-colors cursor-pointer ${
-                          formRol === rolBtn ? 'bg-[#2997ff]/20 text-[#2997ff] border-[#2997ff]' : 'bg-[#0a1628] text-slate-400 border-[#1e3a5f] hover:text-white'
+                        className={`text-[10px] px-2 py-0.5 font-bold border transition-colors cursor-pointer ${
+                          formRol === rolBtn
+                            ? 'bg-[#000080] text-white border-black shadow'
+                            : 'bg-[#d4d0c8] text-black border-t-white border-l-white border-b-gray-700 border-r-gray-700 hover:bg-white'
                         }`}
                       >
                         {rolBtn}
@@ -527,17 +600,14 @@ export default function OperatorAuthGate({ children }: OperatorAuthGateProps) {
                 </div>
 
                 {/* Seleccionador de Módulos Visibles (Atributos Granulares) */}
-                <div className="border-t border-[#1e3a5f]/60 pt-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <label className="block text-xs font-bold text-[#2997ff] uppercase tracking-wider">
-                      🎯 Módulos & Atributos Visibles para este Usuario:
-                    </label>
-                    <span className="text-[10px] text-slate-400">
-                      Marca o desmarca los módulos que este usuario tendrá autorizados en su menú.
+                <div className="border-t border-gray-400 pt-2.5">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[10px] font-black text-gray-900 uppercase">
+                      🎯 Módulos y Permisos Asignados al Perfil:
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1.5">
                     {(Object.keys(ATRIBUTOS_DESCRIPCION) as (keyof UserAttributes)[]).map(key => {
                       const info = ATRIBUTOS_DESCRIPCION[key]
                       const activo = formAtributos[key]
@@ -545,27 +615,22 @@ export default function OperatorAuthGate({ children }: OperatorAuthGateProps) {
                         <div
                           key={key}
                           onClick={() => toggleAtributo(key)}
-                          className={`p-3 rounded-xl border transition-all cursor-pointer select-none flex flex-col justify-between ${
+                          className={`p-1.5 border rounded-xs transition-all cursor-pointer select-none flex items-center justify-between ${
                             activo
-                              ? 'bg-[#0066cc]/15 border-[#2997ff] text-white shadow-[0_0_15px_rgba(41,151,255,0.15)]'
-                              : 'bg-[#0a1628] border-[#1e3a5f]/80 text-slate-400 hover:border-slate-500'
+                              ? 'bg-blue-100 border-blue-800 text-black font-bold'
+                              : 'bg-white/80 border-gray-300 text-gray-600'
                           }`}
                         >
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="flex items-center gap-2">
-                              <span className="text-base">{info.icon}</span>
-                              <span className="text-xs font-bold text-white">{info.label}</span>
-                            </div>
-                            <input
-                              type="checkbox"
-                              checked={activo}
-                              onChange={() => {}} // Manejado por onClick contenedor
-                              className="rounded border-[#1e3a5f] text-[#2997ff] focus:ring-0 cursor-pointer mt-0.5"
-                            />
+                          <div className="flex items-center gap-1.5">
+                            <span>{info.icon}</span>
+                            <span className="text-[10px]">{info.label}</span>
                           </div>
-                          <p className="text-[10px] text-slate-400 leading-tight mt-2">
-                            {info.desc}
-                          </p>
+                          <input
+                            type="checkbox"
+                            checked={activo}
+                            onChange={() => {}}
+                            className="rounded border-gray-500 text-blue-900 focus:ring-0 cursor-pointer"
+                          />
                         </div>
                       )
                     })}
@@ -573,112 +638,100 @@ export default function OperatorAuthGate({ children }: OperatorAuthGateProps) {
                 </div>
 
                 {gestionError && (
-                  <div className="text-red-400 text-xs font-semibold p-3 rounded-xl bg-red-500/10 border border-red-500/20">
+                  <div className="text-red-900 text-xs font-bold p-2 bg-red-100 border border-red-500">
                     ⚠️ {gestionError}
                   </div>
                 )}
                 {gestionExito && (
-                  <div className="text-emerald-400 text-xs font-semibold p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+                  <div className="text-emerald-900 text-xs font-bold p-2 bg-emerald-100 border border-emerald-500">
                     ✓ {gestionExito}
                   </div>
                 )}
 
-                <div className="flex justify-end gap-3 pt-2">
+                <div className="flex justify-end gap-2 pt-1">
                   {editandoCod && (
                     <button
                       type="button"
                       onClick={limpiarFormularioGestion}
-                      className="btn-apple-secondary-dark text-xs py-2.5 px-5"
+                      className="px-3 py-1 bg-[#d4d0c8] border border-t-white border-l-white border-b-gray-800 border-r-gray-800 text-black font-bold text-xs hover:bg-white cursor-pointer"
                     >
                       Cancelar
                     </button>
                   )}
                   <button
                     type="submit"
-                    className="btn-apple-primary text-xs py-2.5 px-6 shadow-md shadow-[#0066cc]/30"
+                    className="px-4 py-1 bg-[#000080] text-white border-2 border-t-blue-400 border-l-blue-400 border-b-black border-r-black font-black text-xs uppercase hover:bg-blue-900 active:translate-y-0.5 cursor-pointer shadow"
                   >
-                    {editandoCod ? 'Guardar Cambios de Módulos' : 'Guardar y Registrar Usuario'}
+                    {editandoCod ? 'Guardar Cambios' : 'Guardar y Registrar Operador'}
                   </button>
                 </div>
               </form>
 
               {/* Tabla de Usuarios Registrados */}
-              <div>
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
-                  <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-                    <span>👥</span> Usuarios Registrados en el Sistema ({filteredOperators.length})
-                  </h4>
+              <div className="space-y-1.5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <span className="text-[10px] font-black text-gray-800 uppercase">
+                    👥 Operadores Registrados en el Sistema ({filteredOperators.length}):
+                  </span>
 
                   {/* Buscar */}
                   <input
                     type="text"
-                    placeholder="🔍 Buscar por nombre, código o rol..."
+                    placeholder="🔍 Buscar por nombre o rol..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="bg-[#050d1a] border border-[#1e3a5f] rounded-xl px-3.5 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#2997ff] w-full sm:w-64"
+                    className="bg-white border border-t-gray-700 border-l-gray-700 border-b-white border-r-white px-2 py-0.5 text-xs text-black font-bold focus:outline-blue-700 w-full sm:w-64"
                   />
                 </div>
 
-                <div className="bg-[#050d1a] border border-[#1e3a5f] rounded-2xl overflow-hidden shadow-inner">
-                  <div className="overflow-x-auto max-h-[300px]">
-                    <table className="w-full text-xs text-left">
-                      <thead className="bg-[#0a1628] border-b border-[#1e3a5f] text-slate-400 font-mono uppercase text-[10px] sticky top-0 z-10">
+                <div className="border border-gray-400 overflow-hidden bg-white">
+                  <div className="overflow-x-auto max-h-[220px]">
+                    <table className="w-full text-xs text-left font-mono">
+                      <thead className="bg-[#c0c0c0] text-gray-900 uppercase text-[10px] font-bold tracking-wider sticky top-0 z-10 border-b-2 border-gray-400">
                         <tr>
-                          <th className="px-4 py-3">Código</th>
-                          <th className="px-4 py-3">Usuario / Funcionario</th>
-                          <th className="px-4 py-3">Rol</th>
-                          <th className="px-4 py-3">Clave PIN</th>
-                          <th className="px-4 py-3">Módulos Visibles Asignados</th>
-                          <th className="px-4 py-3 text-right">Acciones</th>
+                          <th className="px-2 py-1 border-r border-gray-400">Código</th>
+                          <th className="px-2 py-1 border-r border-gray-400">Operador / Funcionario</th>
+                          <th className="px-2 py-1 border-r border-gray-400">Rol</th>
+                          <th className="px-2 py-1 border-r border-gray-400">Contraseña</th>
+                          <th className="px-2 py-1 text-right">Acciones</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-[#1e3a5f]/40">
+                      <tbody className="divide-y divide-gray-200">
                         {filteredOperators.map(op => {
-                          const attrs = ensureUserAttributes(op)
                           return (
-                            <tr key={op.codigo} className="hover:bg-[#0f2240]/40 transition-colors">
-                              <td className="px-4 py-3 font-mono font-bold text-[#2997ff]">{op.codigo}</td>
-                              <td className="px-4 py-3 font-semibold text-white">{op.nombre}</td>
-                              <td className="px-4 py-3">
-                                <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
-                                  op.rol === 'Administrador' ? 'bg-purple-500/20 text-purple-300 border-purple-500/40' :
-                                  op.rol === 'Supervisor' ? 'bg-blue-500/20 text-blue-300 border-blue-500/40' :
-                                  op.rol === 'Técnico' ? 'bg-amber-500/20 text-amber-300 border-amber-500/40' :
-                                  'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                            <tr key={op.codigo} className="hover:bg-blue-50 font-bold">
+                              <td className="px-2 py-1 border-r border-gray-200 text-blue-900">{op.codigo}</td>
+                              <td className="px-2 py-1 border-r border-gray-200 text-black font-sans">{op.nombre}</td>
+                              <td className="px-2 py-1 border-r border-gray-200 font-sans">
+                                <span className={`px-1.5 py-0.5 rounded-xs text-[10px] font-bold ${
+                                  op.rol === 'Administrador' ? 'bg-purple-100 text-purple-900' :
+                                  op.rol === 'Supervisor' ? 'bg-blue-100 text-blue-900' :
+                                  op.rol === 'Técnico' ? 'bg-amber-100 text-amber-900' :
+                                  'bg-emerald-100 text-emerald-900'
                                 }`}>
                                   {op.rol}
                                 </span>
                               </td>
-                              <td className="px-4 py-3 font-mono text-slate-300">{op.clave}</td>
-                              <td className="px-4 py-3">
-                                <div className="flex flex-wrap gap-1">
-                                  {(Object.keys(ATRIBUTOS_DESCRIPCION) as (keyof UserAttributes)[]).map(key => {
-                                    if (!attrs[key]) return null
-                                    const info = ATRIBUTOS_DESCRIPCION[key]
-                                    return (
-                                      <span
-                                        key={key}
-                                        title={`${info.label}: ${info.desc}`}
-                                        className="px-1.5 py-0.5 rounded bg-[#162a4a] border border-[#1e3a5f] text-[9px] font-mono text-slate-200"
-                                      >
-                                        {info.icon} {info.label.split(' ')[0]}
-                                      </span>
-                                    )
-                                  })}
-                                </div>
-                              </td>
-                              <td className="px-4 py-3 text-right space-x-2 shrink-0">
+                              <td className="px-2 py-1 border-r border-gray-200 text-gray-700">{op.clave}</td>
+                              <td className="px-2 py-1 text-right space-x-1.5 shrink-0">
+                                <button
+                                  onClick={() => handleResetClave(op)}
+                                  className="px-2 py-0.5 bg-[#d4d0c8] border border-t-white border-l-white border-b-gray-700 border-r-gray-700 text-blue-900 text-[10px] font-bold hover:bg-white cursor-pointer"
+                                  title="Resetear o cambiar contraseña"
+                                >
+                                  🔑 Reset Clave
+                                </button>
                                 <button
                                   onClick={() => handleEditarClick(op)}
-                                  className="px-2.5 py-1 rounded-lg bg-[#1e3a5f] hover:bg-[#2997ff] text-white text-[10px] font-semibold transition-colors cursor-pointer"
+                                  className="px-2 py-0.5 bg-[#d4d0c8] border border-t-white border-l-white border-b-gray-700 border-r-gray-700 text-black text-[10px] font-bold hover:bg-white cursor-pointer"
                                 >
-                                  ✏️ Configurar
+                                  ✏️ Editar
                                 </button>
                                 <button
                                   onClick={() => handleEliminarClick(op.codigo)}
-                                  className="px-2.5 py-1 rounded-lg bg-red-500/20 hover:bg-red-500 text-red-300 hover:text-white text-[10px] font-semibold transition-colors cursor-pointer"
+                                  className="px-2 py-0.5 bg-red-100 border border-red-400 text-red-900 text-[10px] font-bold hover:bg-red-600 hover:text-white cursor-pointer"
                                 >
-                                  🗑️ Eliminar
+                                  🗑️ Baja
                                 </button>
                               </td>
                             </tr>
@@ -693,12 +746,12 @@ export default function OperatorAuthGate({ children }: OperatorAuthGateProps) {
             </div>
 
             {/* Footer del Modal */}
-            <div className="bg-[#050d1a] px-6 py-4 border-t border-[#1e3a5f] flex justify-end shrink-0">
+            <div className="bg-[#d4d0c8] px-3 py-1.5 border-t border-gray-400 flex justify-end shrink-0">
               <button
                 onClick={() => setMostrarModalGestion(false)}
-                className="btn-apple-secondary-dark text-xs py-2 px-6"
+                className="px-4 py-1 bg-[#d4d0c8] border border-t-white border-l-white border-b-gray-800 border-r-gray-800 text-black font-bold text-xs hover:bg-white cursor-pointer"
               >
-                Cerrar Ventana
+                CERRAR
               </button>
             </div>
 

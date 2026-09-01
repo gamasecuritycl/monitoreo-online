@@ -105,6 +105,36 @@ export default function AreaClientesPortal() {
   // Eventos de Supabase en tiempo real
   const [eventosSupabase, setEventosSupabase] = useState<EventoMonitoreo[]>([])
 
+  // Estado de clientes en vivo (Supabase + fallback)
+  const [clientesLiveMap, setClientesLiveMap] = useState<Record<string, any>>(clientesMap)
+  const [modalEditarContactos, setModalEditarContactos] = useState<boolean>(false)
+  const [contactosForm, setContactosForm] = useState<Array<{ nombre: string; cargo: string; fono: string }>>([])
+  const [declaracionAceptada, setDeclaracionAceptada] = useState<boolean>(false)
+  const [guardandoContactos, setGuardandoContactos] = useState<boolean>(false)
+  const [mensajeExitoContactos, setMensajeExitoContactos] = useState<string>('')
+
+  // Cargar mapa fresco de clientes desde Supabase
+  useEffect(() => {
+    async function fetchClientesSupabase() {
+      try {
+        const { data } = await supabase
+          .from('eventos_monitoreo')
+          .select('nombre_abonado')
+          .eq('cuenta', 'CLIENTES')
+          .order('id', { ascending: false })
+          .limit(1)
+
+        if (data && data.length > 0 && data[0].nombre_abonado) {
+          const map = JSON.parse(data[0].nombre_abonado)
+          setClientesLiveMap(map)
+        }
+      } catch (e) {
+        console.warn('Usando fallback local de clientes')
+      }
+    }
+    fetchClientesSupabase()
+  }, [autenticado])
+
   // Cargar sesión guardada al iniciar
   useEffect(() => {
     try {
@@ -228,8 +258,8 @@ export default function AreaClientesPortal() {
     }
   }, [autenticado, cuentaActiva])
 
-  // Obtener información del cliente desde la base de datos de clientes
-  const clienteRaw = clientesMap[cuentaActiva] || {}
+  // Obtener información del cliente desde la base de datos de clientes en vivo
+  const clienteRaw = clientesLiveMap[cuentaActiva] || clientesMap[cuentaActiva] || {}
   const clienteInfo = {
     NOMBRE: clienteRaw.nombre || (cuentaActiva === 'C701' ? 'MIRNA REBOLLEDO NUÑEZ' : `ABONADO ${cuentaActiva}`),
     DIRECCION: clienteRaw.direccion || 'BORRIQUEROS PARCELA 15 ACCESO POR PEÑABLANCA — LIMACHE',
@@ -237,6 +267,94 @@ export default function AreaClientesPortal() {
     ESTADO: 'PROTEGIDO 24/7',
     TELEFONO: clienteRaw.t1 || clienteRaw.telefono1 || '+56 9 1234 5678',
     PLAN: clienteRaw.plan || 'PREMIUM VIP',
+  }
+
+  // Abrir modal de edición directa de contactos autorizados
+  const abrirModalEditarContactos = () => {
+    const cClean = cuentaActiva.trim().toUpperCase()
+    const cl = clientesLiveMap[cClean] || clientesMap[cClean] || {}
+    const perList = personasAutorizadasMap[cClean] || []
+
+    const formInit: Array<{ nombre: string; cargo: string; fono: string }> = []
+    for (let i = 1; i <= 7; i++) {
+      const p = perList[i - 1]
+      const nom = cl[`nombre${i}`] || (i === 1 && cl.nombre ? cl.nombre : '') || p?.nombre || ''
+      const carg = cl[`carg${i}`] || (i === 1 ? 'TITULAR / ENCARGADO' : '') || p?.cargo || ''
+      const tel = cl[`t${i}`] || cl[`telefono${i}`] || (i === 1 && cl.telefono1 ? cl.telefono1 : '') || p?.telefono || ''
+      formInit.push({ nombre: nom, cargo: carg, fono: tel })
+    }
+    setContactosForm(formInit)
+    setDeclaracionAceptada(false)
+    setMensajeExitoContactos('')
+    setModalEditarContactos(true)
+  }
+
+  // Guardar contactos modificados desde el portal hacia el Editor Remoto y Supabase
+  const guardarContactosCliente = async () => {
+    if (!declaracionAceptada) return
+    setGuardandoContactos(true)
+    try {
+      const cClean = cuentaActiva.trim().toUpperCase()
+      const datosNuevos: Record<string, string> = {}
+
+      contactosForm.forEach((c, idx) => {
+        const num = idx + 1
+        datosNuevos[`nombre${num}`] = c.nombre.toUpperCase().trim()
+        datosNuevos[`carg${num}`] = c.cargo.toUpperCase().trim()
+        datosNuevos[`t${num}`] = c.fono.trim()
+        if (num === 1 && c.fono) {
+          datosNuevos[`telefono1`] = c.fono.trim()
+        }
+      })
+
+      const res = await fetch('/api/editor-remoto', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          cuenta: cClean,
+          tipoOperacion: 'EDITAR_GENERAL',
+          datosNuevos,
+          operador: {
+            nombre: `CLIENTE (PORTAL WEB #${cClean})`,
+            codigo: 'WEB',
+            rol: 'Abonado'
+          }
+        })
+      })
+
+      if (res.ok) {
+        // Registrar en Bitácora para conocimiento de los operadores de la central
+        try {
+          await supabase.from('eventos_monitoreo').insert({
+            cuenta: cClean,
+            evento: 'ACTUALIZACIÓN CONTACTOS POR CLIENTE (PORTAL)',
+            nombre_abonado: `El cliente actualizó su lista de 7 contactos de emergencia desde el Área de Clientes.`,
+            fecha_hora: new Date().toISOString(),
+            zona: 'WEB',
+            usuario: 'CLI'
+          })
+        } catch {}
+
+        // Actualizar el estado local en caliente
+        setClientesLiveMap((prev) => ({
+          ...prev,
+          [cClean]: {
+            ...(prev[cClean] || {}),
+            ...datosNuevos
+          }
+        }))
+
+        setMensajeExitoContactos('¡Contactos actualizados y sincronizados con éxito en la Central de Monitoreo!')
+        setTimeout(() => {
+          setModalEditarContactos(false)
+          setMensajeExitoContactos('')
+        }, 1800)
+      }
+    } catch (err) {
+      console.error('Error guardando contactos desde portal:', err)
+    } finally {
+      setGuardandoContactos(false)
+    }
   }
 
   // Mensaje pre-configurado para actualizar contactos vía WhatsApp (+56948855190)
@@ -1147,46 +1265,66 @@ Anotación REAL de Bitácora Operador: "${item.notaReal}"`
             {/* ════════════════════════════════════════════════════════════════════
                PESTAÑA 4: CONTACTOS AUTORIZADOS (CON BOTÓN EN FOOTER DE SECCIÓN)
                ════════════════════════════════════════════════════════════════════ */}
+            {/* ════════════════════════════════════════════════════════════════════
+               PESTAÑA 4: CONTACTOS AUTORIZADOS (GESTIÓN DIRECTA + RESPONSABILIDAD)
+               ════════════════════════════════════════════════════════════════════ */}
             {activeTab === 'contactos' && (
-              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-10">
-                <div>
-                  <h3 className="text-xl font-bold text-white">Directorio de Contactos de Emergencia</h3>
-                  <p className="text-xs text-slate-400">Personas autorizadas para llamadas de verificación de la Central</p>
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                    <h3 className="text-xl font-bold text-white">Directorio de Contactos de Emergencia</h3>
+                    <p className="text-xs text-slate-400">Personas autorizadas para llamadas de verificación de la Central 24/7</p>
+                  </div>
+
+                  <button
+                    onClick={abrirModalEditarContactos}
+                    className="px-4 py-2.5 bg-gradient-to-r from-blue-600 to-[#2997ff] hover:from-blue-500 hover:to-blue-400 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl flex items-center gap-2 shadow-lg shadow-blue-950/60 transition cursor-pointer"
+                  >
+                    <span>✍️</span>
+                    <span>Modificar Contactos</span>
+                  </button>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                   {(() => {
                     const cClean = cuentaActiva.trim().toUpperCase()
+                    const cl = clientesLiveMap[cClean] || clientesMap[cClean] || {}
                     const list = personasAutorizadasMap[cClean] || null
 
-                    const items = (list && Array.isArray(list) && list.length > 0)
-                      ? list.map((p, idx) => ({
-                          orden: `${p.prioridad || idx + 1}º Prioridad`,
-                          nombre: p.nombre.toUpperCase(),
-                          cargo: p.cargo || 'Persona Autorizada',
-                          fono: p.telefono || 'Sin teléfono registrado',
-                        }))
-                      : [
-                          { orden: '1º Prioridad', nombre: clienteRaw.nombre1 || 'TITULAR / ENCARGADO', cargo: clienteRaw.carg1 || 'Encargado Principal', fono: clienteRaw.t1 || 'Sin tel.' },
-                          { orden: '2º Prioridad', nombre: clienteRaw.nombre2 || 'CONTACTO SECUNDARIO', cargo: clienteRaw.carg2 || 'Contacto', fono: clienteRaw.t2 || 'Sin tel.' },
-                          { orden: '3º Prioridad', nombre: clienteRaw.nombre3 || 'CONSERJERÍA / SEGURIDAD', cargo: clienteRaw.carg3 || 'Seguridad', fono: clienteRaw.t3 || 'Sin tel.' },
-                        ]
+                    const items: Array<{ orden: string; nombre: string; cargo: string; fono: string }> = []
+                    for (let i = 1; i <= 7; i++) {
+                      const p = list && list[i - 1] ? list[i - 1] : null
+                      const nom = cl[`nombre${i}`] || (i === 1 && cl.nombre ? cl.nombre : '') || p?.nombre || ''
+                      const carg = cl[`carg${i}`] || (i === 1 ? 'TITULAR / ENCARGADO' : '') || p?.cargo || `Contacto ${i}`
+                      const tel = cl[`t${i}`] || cl[`telefono${i}`] || (i === 1 && cl.telefono1 ? cl.telefono1 : '') || p?.telefono || ''
+
+                      if (nom || tel || i <= 3) {
+                        items.push({
+                          orden: `${i}º Prioridad`,
+                          nombre: nom ? nom.toUpperCase() : `SIN REGISTRAR (CONTACTO ${i})`,
+                          cargo: carg || 'Contacto Autorizado',
+                          fono: tel || 'Sin teléfono registrado',
+                        })
+                      }
+                    }
 
                     return items.map((c, idx) => (
-                      <div key={idx} className="bg-[#081220] border border-[#1a3356]/60 rounded-2xl p-5 relative overflow-hidden flex flex-col justify-between">
+                      <div key={idx} className={`bg-[#081220] border rounded-2xl p-5 relative overflow-hidden flex flex-col justify-between ${
+                        c.nombre.includes('SIN REGISTRAR') ? 'border-dashed border-slate-800 opacity-60' : 'border-[#1a3356]/60 shadow-xl'
+                      }`}>
                         <div>
                           <span className="text-[10px] bg-[#2997ff]/20 text-[#2997ff] border border-[#2997ff]/30 px-2.5 py-0.5 rounded-full font-mono font-bold">
                             {c.orden}
                           </span>
-                          <h4 className="text-white font-bold text-base mt-3">{c.nombre}</h4>
+                          <h4 className="text-white font-bold text-base mt-3 truncate">{c.nombre}</h4>
                           <p className="text-xs text-slate-400 mt-0.5">{c.cargo}</p>
                         </div>
                         <div className="mt-4 pt-3 border-t border-slate-800/60 flex items-center justify-between">
                           <p className="text-xs font-mono text-[#2997ff] font-bold">{c.fono}</p>
-                          {c.fono && c.fono !== 'Sin tel.' && (
+                          {c.fono && c.fono !== 'Sin teléfono registrado' && (
                             <a 
                               href={`tel:${c.fono.replace(/[^0-9+]/g, '')}`}
-                              className="text-[11px] text-slate-400 hover:text-white flex items-center gap-1 bg-slate-800/80 px-2 py-1 rounded-lg border border-slate-700"
+                              className="text-[11px] text-slate-400 hover:text-white flex items-center gap-1 bg-slate-800/80 px-2.5 py-1 rounded-lg border border-slate-700 hover:border-blue-500 transition"
                             >
                               📞 Llamar
                             </a>
@@ -1198,21 +1336,30 @@ Anotación REAL de Bitácora Operador: "${item.notaReal}"`
                 </div>
 
                 {/* PIE DE SECCIÓN CÓMODO Y SEPARADO EN EL FOOTER */}
-                <div className="pt-16 pb-8 border-t border-[#1a2e4a]/60 flex flex-col items-center justify-center text-center">
-                  <p className="text-xs text-slate-400 mb-3 font-medium">
+                <div className="pt-10 pb-6 border-t border-[#1a2e4a]/60 flex flex-col items-center justify-center text-center space-y-4">
+                  <p className="text-xs text-slate-400 max-w-md font-medium">
                     ¿Deseas agregar, modificar o actualizar las personas autorizadas de tu cuenta?
                   </p>
-                  <a
-                    href={linkWhatsAppContactos}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full sm:w-auto px-8 py-4 bg-[#25D366] hover:bg-[#20bd5a] text-white font-extrabold text-xs sm:text-sm uppercase tracking-wider rounded-2xl flex items-center justify-center gap-3 shadow-2xl shadow-emerald-950/80 hover:scale-105 transition-all duration-200 border border-emerald-400/40"
-                  >
-                    <svg className="w-5 h-5 fill-current text-white shrink-0" viewBox="0 0 24 24">
-                      <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.705 1.754zm6.097-4.437l.438.26c1.536.912 3.303 1.393 5.109 1.394 5.309 0 9.63-4.32 9.632-9.631.001-2.572-1.001-4.99-2.822-6.812-1.822-1.821-4.24-2.823-6.81-2.823-5.31 0-9.631 4.32-9.633 9.631-.001 1.93.559 3.807 1.624 5.438l.286.438-1.077 3.933 4.025-1.054zm12.39-6.304c-.08-.135-.295-.215-.618-.377-.323-.162-1.916-.945-2.212-1.053-.296-.108-.511-.162-.726.162-.215.323-.834 1.053-1.022 1.269-.189.215-.377.243-.7.081-.323-.162-1.365-.503-2.601-1.606-.962-.858-1.611-1.917-1.8-2.24-.189-.323-.02-.498.141-.659.146-.145.323-.377.485-.566.162-.189.215-.323.323-.539.108-.215.054-.404-.027-.566-.081-.162-.726-1.751-.995-2.397-.262-.63-.529-.545-.726-.554l-.618-.01c-.215 0-.565.081-.861.404-.296.323-1.13 1.104-1.13 2.693 0 1.588 1.157 3.123 1.318 3.339.162.215 2.278 3.479 5.519 4.877.771.333 1.373.532 1.842.681.774.246 1.479.211 2.036.128.623-.093 1.916-.782 2.185-1.536.269-.754.269-1.4.189-1.536z"/>
-                    </svg>
-                    <span>ACTUALIZAR INFORMACIÓN EN CENTRAL</span>
-                  </a>
+                  <div className="flex flex-wrap items-center justify-center gap-3">
+                    <button
+                      onClick={abrirModalEditarContactos}
+                      className="px-6 py-3.5 bg-gradient-to-r from-blue-600 to-[#2997ff] hover:from-blue-500 hover:to-blue-400 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl flex items-center gap-2.5 shadow-xl shadow-blue-950/60 transition cursor-pointer"
+                    >
+                      <span>✍️</span>
+                      <span>Modificar Contactos en Línea</span>
+                    </button>
+                    <a
+                      href={linkWhatsAppContactos}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-6 py-3.5 bg-[#25D366] hover:bg-[#20bd5a] text-white font-extrabold text-xs uppercase tracking-wider rounded-xl flex items-center gap-2.5 shadow-xl shadow-emerald-950/60 transition border border-emerald-400/40"
+                    >
+                      <svg className="w-4 h-4 fill-current text-white shrink-0" viewBox="0 0 24 24">
+                        <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.705 1.754zm6.097-4.437l.438.26c1.536.912 3.303 1.393 5.109 1.394 5.309 0 9.63-4.32 9.632-9.631.001-2.572-1.001-4.99-2.822-6.812-1.822-1.821-4.24-2.823-6.81-2.823-5.31 0-9.631 4.32-9.633 9.631-.001 1.93.559 3.807 1.624 5.438l.286.438-1.077 3.933 4.025-1.054zm12.39-6.304c-.08-.135-.295-.215-.618-.377-.323-.162-1.916-.945-2.212-1.053-.296-.108-.511-.162-.726.162-.215.323-.834 1.053-1.022 1.269-.189.215-.377.243-.7.081-.323-.162-1.365-.503-2.601-1.606-.962-.858-1.611-1.917-1.8-2.24-.189-.323-.02-.498.141-.659.146-.145.323-.377.485-.566.162-.189.215-.323.323-.539.108-.215.054-.404-.027-.566-.081-.162-.726-1.751-.995-2.397-.262-.63-.529-.545-.726-.554l-.618-.01c-.215 0-.565.081-.861.404-.296.323-1.13 1.104-1.13 2.693 0 1.588 1.157 3.123 1.318 3.339.162.215 2.278 3.479 5.519 4.877.771.333 1.373.532 1.842.681.774.246 1.479.211 2.036.128.623-.093 1.916-.782 2.185-1.536.269-.754.269-1.4.189-1.536z"/>
+                      </svg>
+                      <span>Asistencia por WhatsApp</span>
+                    </a>
+                  </div>
                 </div>
               </motion.div>
             )}
@@ -1443,6 +1590,195 @@ Anotación REAL de Bitácora Operador: "${item.notaReal}"`
                   Entendido
                 </button>
               </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ════════════════════════════════════════════════════════════════════
+         MODAL DE EDICIÓN DIRECTA DE CONTACTOS AUTORIZADOS + ADVERTENCIA
+         ════════════════════════════════════════════════════════════════════ */}
+      <AnimatePresence>
+        {modalEditarContactos && (
+          <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 15 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 15 }}
+              className="bg-[#091526] border border-[#2997ff]/40 rounded-3xl max-w-3xl w-full p-5 sm:p-7 relative overflow-hidden shadow-2xl text-left my-auto max-h-[92vh] flex flex-col"
+            >
+              <div className="absolute top-0 right-0 w-72 h-72 bg-[#2997ff]/10 rounded-full blur-[90px] pointer-events-none" />
+
+              {/* Header Modal */}
+              <div className="flex items-center justify-between pb-4 border-b border-[#1a3356] shrink-0">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-[#2997ff]">
+                    <Users className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base sm:text-lg font-bold text-white">
+                      Modificar Directorio de Contactos de Emergencia
+                    </h3>
+                    <p className="text-xs text-slate-400">
+                      Abonado #{cuentaActiva} • Prioridad de Llamadas de Central 1 al 7
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setModalEditarContactos(false)}
+                  className="p-2 rounded-xl bg-slate-800/80 text-slate-300 hover:text-white transition"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Contenido con Scroll */}
+              <div className="flex-1 overflow-y-auto py-4 space-y-5 pr-1">
+                
+                {/* ⚠️ ADVERTENCIA LEGAL Y DE RESPONSABILIDAD CLARA Y DIRECTA */}
+                <div className="p-4 sm:p-5 rounded-2xl bg-amber-950/40 border-2 border-amber-500/60 text-amber-200 space-y-2.5 shadow-xl">
+                  <div className="flex items-center gap-2 text-amber-400 font-black text-xs sm:text-sm uppercase tracking-wide">
+                    <span className="text-lg">⚠️</span>
+                    <span>ADVERTENCIA Y DECLARACIÓN DE RESPONSABILIDAD</span>
+                  </div>
+                  <p className="text-xs text-slate-200 leading-relaxed font-medium">
+                    Al ingresar o modificar estos datos, usted declara que los números registrados corresponden a <strong>personas reales, autorizadas y habilitadas</strong> para recibir llamadas o coordinar acciones ante una activación de alarma o emergencia real en su propiedad.
+                  </p>
+                  <p className="text-[11px] text-amber-300 font-mono">
+                    • La Central de Monitoreo Gama llamará en estricto orden correlativo (1º a 7º) a los números aquí provistos.
+                  </p>
+                  <label className="flex items-start sm:items-center gap-3 pt-2 cursor-pointer select-none bg-black/30 p-2.5 rounded-xl border border-amber-500/30">
+                    <input
+                      type="checkbox"
+                      checked={declaracionAceptada}
+                      onChange={(e) => setDeclaracionAceptada(e.target.checked)}
+                      className="w-4 h-4 mt-0.5 sm:mt-0 rounded text-blue-600 bg-slate-900 border-slate-700 focus:ring-blue-500 shrink-0 cursor-pointer"
+                    />
+                    <span className="text-xs font-extrabold text-white">
+                      Entiendo y asumo la exclusiva responsabilidad sobre la veracidad y vigencia de los contactos registrados.
+                    </span>
+                  </label>
+                </div>
+
+                {/* Formulario de los 7 Contactos */}
+                <div className="space-y-3">
+                  <div className="text-xs font-bold text-slate-300 uppercase tracking-wide">
+                    Lista de Prioridad de Llamadas (1º al 7º Contacto):
+                  </div>
+
+                  {contactosForm.map((c, idx) => (
+                    <div
+                      key={idx}
+                      className="p-3.5 rounded-2xl bg-[#081220] border border-[#162d4e] space-y-2.5 hover:border-blue-500/50 transition"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-mono font-bold bg-[#2997ff]/20 text-[#2997ff] px-2.5 py-0.5 rounded-full border border-[#2997ff]/30">
+                          {idx + 1}º Prioridad de Llamada {idx === 0 ? '• (TITULAR / PRINCIPAL)' : ''}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5">
+                        <div className="sm:col-span-5 space-y-1">
+                          <label className="text-[10px] font-bold text-slate-400 uppercase">Nombre Completo:</label>
+                          <input
+                            type="text"
+                            value={c.nombre}
+                            onChange={(e) => {
+                              const val = e.target.value
+                              setContactosForm((prev) => {
+                                const copia = [...prev]
+                                copia[idx] = { ...copia[idx], nombre: val }
+                                return copia
+                              })
+                            }}
+                            placeholder={idx === 0 ? 'Nombre del Titular' : `Nombre Contacto ${idx + 1}`}
+                            className="w-full bg-[#0d1c33] border border-[#1e3a5f] rounded-xl px-3 py-1.5 text-xs text-white placeholder-slate-500 font-bold focus:border-blue-400 focus:outline-none"
+                          />
+                        </div>
+
+                        <div className="sm:col-span-3 space-y-1">
+                          <label className="text-[10px] font-bold text-slate-400 uppercase">Cargo / Parentesco:</label>
+                          <input
+                            type="text"
+                            value={c.cargo}
+                            onChange={(e) => {
+                              const val = e.target.value
+                              setContactosForm((prev) => {
+                                const copia = [...prev]
+                                copia[idx] = { ...copia[idx], cargo: val }
+                                return copia
+                              })
+                            }}
+                            placeholder="Ej: Cónyuge, Encargado"
+                            className="w-full bg-[#0d1c33] border border-[#1e3a5f] rounded-xl px-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:border-blue-400 focus:outline-none"
+                          />
+                        </div>
+
+                        <div className="sm:col-span-4 space-y-1">
+                          <label className="text-[10px] font-bold text-slate-400 uppercase">Teléfono de Contacto:</label>
+                          <input
+                            type="text"
+                            value={c.fono}
+                            onChange={(e) => {
+                              const val = e.target.value
+                              setContactosForm((prev) => {
+                                const copia = [...prev]
+                                copia[idx] = { ...copia[idx], fono: val }
+                                return copia
+                              })
+                            }}
+                            placeholder="+56 9 XXXX XXXX"
+                            className="w-full bg-[#0d1c33] border border-[#1e3a5f] rounded-xl px-3 py-1.5 text-xs text-[#2997ff] font-mono font-bold placeholder-slate-500 focus:border-blue-400 focus:outline-none"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Mensaje de Éxito */}
+                {mensajeExitoContactos && (
+                  <div className="p-4 rounded-2xl bg-emerald-950/60 border border-emerald-500 text-emerald-200 text-xs font-bold flex items-center gap-2.5 animate-in fade-in">
+                    <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+                    <span>{mensajeExitoContactos}</span>
+                  </div>
+                )}
+
+              </div>
+
+              {/* Footer Acciones */}
+              <div className="pt-4 border-t border-[#1a3356] flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
+                <p className="text-[11px] text-slate-400 text-center sm:text-left">
+                  Los cambios impactarán en tiempo real la base de datos de la Central Gama.
+                </p>
+
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                  <button
+                    onClick={() => setModalEditarContactos(false)}
+                    className="flex-1 sm:flex-none px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-xl transition cursor-pointer"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={guardarContactosCliente}
+                    disabled={!declaracionAceptada || guardandoContactos}
+                    className="flex-1 sm:flex-none px-6 py-2.5 bg-gradient-to-r from-blue-600 to-[#2997ff] hover:from-blue-500 hover:to-blue-400 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-blue-950/60 transition disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-2"
+                  >
+                    {guardandoContactos ? (
+                      <>
+                        <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <span>Sincronizando...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Check className="w-4 h-4" />
+                        <span>Guardar y Sincronizar</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+
             </motion.div>
           </div>
         )}

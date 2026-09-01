@@ -1,0 +1,45 @@
+[
+  {
+    "codigo": "01",
+    "nombre": "admin",
+    "rol": "Administrador",
+    "clave": "GamaAdmin2026!",
+    "activo": true,
+    "email": "central@gamasecurity.cl"
+  },
+  {
+    "codigo": "02",
+    "nombre": "Nancy Delgadillo",
+    "rol": "Operadora",
+    "clave": "NancyGama2026*",
+    "activo": true
+  },
+  {
+    "codigo": "03",
+    "nombre": "Ximena Cortez",
+    "rol": "Operadora",
+    "clave": "XimenaGama2026*",
+    "activo": true
+  },
+  {
+    "codigo": "04",
+    "nombre": "Andres Alzamora",
+    "rol": "Operador",
+    "clave": "AndresGama2026*",
+    "activo": true
+  },
+  {
+    "codigo": "05",
+    "nombre": "Angelina Toro",
+    "rol": "Operadora",
+    "clave": "AngelinaGama2026*",
+    "activo": true
+  },
+  {
+    "codigo": "06",
+    "nombre": "Tamara Zamora",
+    "rol": "Operadora",
+    "clave": "TamaraGama2026*",
+    "activo": true
+  }
+]

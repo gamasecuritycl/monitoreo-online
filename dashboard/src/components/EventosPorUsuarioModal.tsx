@@ -149,8 +149,12 @@ export default function EventosPorUsuarioModal({ onClose, eventoInicial }: Event
     return () => window.removeEventListener('keydown', handleEsc)
   }, [onClose])
 
+  const buscarInputRef = useRef<HTMLInputElement>(null)
+
   useEffect(() => {
-    modalRef.current?.focus()
+    setTimeout(() => {
+      buscarInputRef.current?.focus()
+    }, 100)
   }, [])
 
   // Buscar cliente activo en la base de datos
@@ -318,11 +322,21 @@ export default function EventosPorUsuarioModal({ onClose, eventoInicial }: Event
               <div className="grid grid-cols-4 gap-1 items-center mt-1">
                 <span className="font-bold text-gray-700 text-[10px]">NOMBRE:</span>
                 <input
+                  ref={buscarInputRef}
                   type="text"
                   value={buscarNombreInput}
                   onChange={(e) => setBuscarNombreInput(e.target.value)}
-                  className="col-span-3 bg-white border border-t-gray-700 border-l-gray-700 border-b-white border-r-white font-bold px-1.5 py-0.5 text-black text-[11px]"
-                  placeholder="Buscar..."
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      if (listaClientesFiltrada.length > 0) {
+                        setCuentaActiva(listaClientesFiltrada[0].cuenta.toUpperCase().trim())
+                        setBuscarNombreInput('')
+                      }
+                    }
+                  }}
+                  className="col-span-3 bg-white border border-t-gray-700 border-l-gray-700 border-b-white border-r-white font-bold px-1.5 py-0.5 text-black text-[11px] focus:outline-blue-700"
+                  placeholder="Cuenta o nombre (ENTER para cargar)..."
                 />
               </div>
 

@@ -589,22 +589,16 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
               <div className="flex items-center gap-2">
                 <div className="flex items-center gap-1 flex-1">
                   <span className="font-bold text-[11px]">Ciudad</span>
-                  <select
-                    value={clienteForm.ciudad || 'LIMACHE'}
-                    disabled={!modoEdicion}
+                  <input
+                    type="text"
+                    value={clienteForm.ciudad || ''}
+                    readOnly={!modoEdicion}
                     onChange={(e) => updateField('ciudad', e.target.value.toUpperCase())}
-                    className="w-full bg-[#ffffd0] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white font-bold px-1 py-0.5 text-blue-900 text-[11px] focus:outline-none disabled:opacity-90"
-                  >
-                    <option value="LIMACHE">LIMACHE</option>
-                    <option value="VIÑA DEL MAR">VIÑA DEL MAR</option>
-                    <option value="VALPARAISO">VALPARAISO</option>
-                    <option value="QUILPUE">QUILPUE</option>
-                    <option value="VILLA ALEMANA">VILLA ALEMANA</option>
-                    <option value="CON CON">CON CON</option>
-                    <option value="QUILLOTA">QUILLOTA</option>
-                    <option value="SANTIAGO">SANTIAGO</option>
-                    <option value="QUILICURA">QUILICURA</option>
-                  </select>
+                    className={`w-full border border-t-gray-700 border-l-gray-700 border-b-white border-r-white font-bold px-1.5 py-0.5 text-blue-900 text-[11px] focus:outline-none ${
+                      modoEdicion ? 'bg-white' : 'bg-[#ffffd0]'
+                    }`}
+                    placeholder="Ciudad o Comuna..."
+                  />
                 </div>
                 <div className="flex items-center gap-1 w-36">
                   <span className="font-bold text-[11px]">Plan</span>
@@ -713,12 +707,14 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
               
               <div 
                 onClick={() => {
-                  if (modoEdicion || !cuentaActiva) {
+                  if (modoEdicion) {
                     fileInputRef.current?.click()
                   }
                 }}
-                className={`h-[105px] bg-[#ffffd0] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white my-1 flex items-center justify-center overflow-hidden relative group cursor-pointer`}
-                title="Haga clic para subir o cambiar fotografía"
+                className={`h-[105px] bg-[#ffffd0] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white my-1 flex items-center justify-center overflow-hidden relative ${
+                  modoEdicion ? 'cursor-pointer group hover:opacity-95' : 'cursor-default'
+                }`}
+                title={modoEdicion ? 'Haga clic para subir o cambiar fotografía' : 'Modo sólo lectura. Presione EDITAR para modificar.'}
               >
                 {clienteForm.foto || clienteForm.fotografia || clienteForm.foto_url ? (
                   <img
@@ -745,11 +741,14 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
 
               <button
                 type="button"
+                disabled={!modoEdicion}
                 onClick={() => {
-                  if (!modoEdicion) setModoEdicion(true)
-                  fileInputRef.current?.click()
+                  if (modoEdicion) fileInputRef.current?.click()
                 }}
-                className="w-full bg-[#d4d0c8] border border-t-white border-l-white border-b-gray-700 border-r-gray-700 text-[9px] py-1 font-bold uppercase tracking-wider text-gray-800 hover:bg-[#e0e0e0] active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white cursor-pointer flex items-center justify-center gap-1 shadow-xs"
+                className={`w-full bg-[#d4d0c8] border border-t-white border-l-white border-b-gray-700 border-r-gray-700 text-[9px] py-1 font-bold uppercase tracking-wider text-gray-800 flex items-center justify-center gap-1 shadow-xs ${
+                  modoEdicion ? 'hover:bg-[#e0e0e0] active:border-t-gray-700 cursor-pointer' : 'opacity-60 cursor-not-allowed'
+                }`}
+                title={modoEdicion ? 'Subir o cambiar fotografía' : 'Presione EDITAR para subir o cambiar fotografía'}
               >
                 <span>📸</span>
                 <span>{clienteForm.foto ? 'CAMBIAR FOTO (MÓVIL / PC)' : 'SUBIR FOTO (MÓVIL / PC)'}</span>
