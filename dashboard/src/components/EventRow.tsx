@@ -153,7 +153,24 @@ function getEventoStyle(
 
 function renderFecha(iso: string) {
   try {
-    const d = new Date(iso)
+    let d: Date
+    const s = (iso || '').trim()
+    const matchDDMM = s.match(/^(\d{2})[-/](\d{2})[-/](\d{4})(?:\s+(\d{2}):(\d{2}):(\d{2}))?/)
+    if (matchDDMM) {
+      const [, dia, mes, anio, hh = '00', mm = '00', ss = '00'] = matchDDMM
+      d = new Date(Number(anio), Number(mes) - 1, Number(dia), Number(hh), Number(mm), Number(ss))
+    } else {
+      d = new Date(s)
+    }
+
+    if (isNaN(d.getTime())) return <span>{iso}</span>
+
+    // Si el reloj del panel transmisor venía adelantado respecto a la hora real, ajustar al límite actual
+    const now = Date.now()
+    if (d.getTime() > now + 30000) {
+      d = new Date(now)
+    }
+
     const dia = d.getDate().toString().padStart(2, '0')
     const mes = (d.getMonth() + 1).toString().padStart(2, '0')
     const anio = d.getFullYear()
