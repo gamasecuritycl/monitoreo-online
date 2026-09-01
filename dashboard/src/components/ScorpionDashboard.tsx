@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { supabase, type EventoMonitoreo } from '@/lib/supabase'
 import EventGrid from './EventGrid'
+import { getSenalLegible } from './EventRow'
 import FooterActions from './FooterActions'
 import ToolModal from './ToolModal'
 import ExpedienteModal from './ExpedienteModal'
@@ -1529,48 +1530,106 @@ export default function ScorpionDashboard() {
         {/* Lado Derecho: Réplica Panel Scorpion (Oculto en móvil, visible en PC) */}
         <div className="hidden md:flex flex-1 flex-col bg-[#c0c0c0] text-black overflow-y-auto border-l border-white p-1 gap-1 select-text text-[11px]">
           
-          {/* 1. INFORMACION BASICA (EN EL TOPE SUPERIOR) */}
+          {/* 1. INFORMACION BASICA & ESTADO VIVO DEL ABONADO */}
           <div className="bg-[#e0e0e0] border border-t-white border-l-white border-b-gray-600 border-r-gray-600 flex flex-col shrink-0 shadow-xs">
-            <div className="bg-[#000080] text-white text-[10px] font-bold px-2 py-0.5 tracking-wider uppercase flex items-center justify-between">
-              <span>Informacion Basica</span>
-              <span className="font-mono text-cyan-300 text-[9px]">GENERAL.MDB</span>
+            <div className="bg-[#000080] text-white text-xs font-black px-2.5 py-1 tracking-wider uppercase flex items-center justify-between">
+              <span>Información Básica del Abonado</span>
+              <span className="font-mono text-cyan-300 text-[10px]">GENERAL.MDB</span>
             </div>
-            <div className="p-1 space-y-0.5 text-[11px]">
-              <div className="grid grid-cols-4 gap-1">
-                <span className="font-bold text-gray-700">Abonado:</span>
-                <span className="col-span-3 bg-white px-1 border border-gray-400 font-mono font-bold text-blue-900">{activeEvent?.cuenta || '---'}</span>
-              </div>
-              <div className="grid grid-cols-4 gap-1">
-                <span className="font-bold text-gray-700">Nombre:</span>
-                <span className="col-span-3 bg-white px-1 border border-gray-400 truncate font-bold text-gray-900">{activeEvent?.nombre_abonado || clientData?.nombre || '---'}</span>
-              </div>
-              <div className="grid grid-cols-4 gap-1">
-                <span className="font-bold text-gray-700">Dirección:</span>
-                <span className="col-span-3 bg-white px-1 border border-gray-400 truncate text-gray-800">{clientData?.direccion || '---'}</span>
-              </div>
-              <div className="grid grid-cols-4 gap-1">
-                <span className="font-bold text-gray-700">Comuna:</span>
-                <span className="col-span-3 bg-white px-1 border border-gray-400 truncate text-gray-800">{clientData?.comuna || '---'}</span>
-              </div>
-            </div>
-          </div>
+            <div className="p-2 space-y-1 text-xs">
+              <div className="flex gap-2">
+                <div className="flex-1 space-y-1">
+                  <div className="grid grid-cols-4 gap-1 items-center">
+                    <span className="font-black text-gray-800">Abonado:</span>
+                    <span className="col-span-3 bg-white px-1.5 py-0.5 border border-gray-400 font-mono font-black text-blue-900 text-xs">
+                      {activeEvent?.cuenta || '---'}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-4 gap-1 items-center">
+                    <span className="font-black text-gray-800">Nombre:</span>
+                    <span className="col-span-3 bg-white px-1.5 py-0.5 border border-gray-400 truncate font-extrabold text-gray-900 text-xs">
+                      {activeEvent?.nombre_abonado || clientData?.nombre || '---'}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-4 gap-1 items-center">
+                    <span className="font-black text-gray-800">Dirección:</span>
+                    <div className="col-span-3 flex items-center gap-1">
+                      <span className="flex-1 bg-white px-1.5 py-0.5 border border-gray-400 truncate font-bold text-gray-800 text-xs">
+                        {clientData?.direccion || '---'}
+                      </span>
+                      {clientData?.direccion && clientData.direccion !== '---' && (
+                        <a
+                          href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${clientData.direccion}, ${clientData.comuna || 'Chile'}`)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title="Ver en Google Maps"
+                          className="px-1.5 py-0.5 bg-[#d4d0c8] border border-t-white border-l-white border-b-gray-700 border-r-gray-700 text-[10px] font-bold text-blue-900 hover:bg-white shrink-0"
+                        >
+                          📍
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-4 gap-1 items-center">
+                    <span className="font-black text-gray-800">Comuna:</span>
+                    <span className="col-span-3 bg-white px-1.5 py-0.5 border border-gray-400 truncate font-bold text-gray-800 text-xs">
+                      {clientData?.comuna || '---'}
+                    </span>
+                  </div>
+                  {/* Teléfono Central / Directo si existe */}
+                  {(clienteDb?.telefono1 || clienteDb?.t1 || clienteDb?.telefono) && (
+                    <div className="grid grid-cols-4 gap-1 items-center">
+                      <span className="font-black text-gray-800">Teléfono:</span>
+                      <div className="col-span-3 flex items-center gap-1">
+                        <span className="flex-1 bg-white px-1.5 py-0.5 border border-gray-400 font-mono font-bold text-blue-950 text-xs truncate">
+                          {clienteDb?.telefono1 || clienteDb?.t1 || clienteDb?.telefono}
+                        </span>
+                        <a
+                          href={`tel:${(clienteDb?.telefono1 || clienteDb?.t1 || clienteDb?.telefono || '').replace(/[^0-9+]/g, '')}`}
+                          title="Llamar"
+                          className="px-1 py-0.5 bg-[#d4d0c8] border border-t-white border-l-white border-b-gray-700 border-r-gray-700 text-[9px] hover:bg-white"
+                        >
+                          📞
+                        </a>
+                        <a
+                          href={`https://wa.me/${(clienteDb?.telefono1 || clienteDb?.t1 || clienteDb?.telefono || '').replace(/[^0-9]/g, '')}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title="WhatsApp"
+                          className="px-1 py-0.5 bg-[#d4d0c8] border border-t-white border-l-white border-b-gray-700 border-r-gray-700 text-[9px] text-green-700 font-bold hover:bg-white"
+                        >
+                          💬
+                        </a>
+                      </div>
+                    </div>
+                  )}
+                  {/* Señal Activa en Tiempo Real */}
+                  {activeEvent && (
+                    <div className="grid grid-cols-4 gap-1 items-center pt-0.5">
+                      <span className="font-black text-gray-800">Última Señal:</span>
+                      <div className="col-span-3 bg-blue-950 text-yellow-300 px-1.5 py-0.5 border border-black font-mono font-bold text-xs truncate flex items-center justify-between">
+                        <span className="truncate">{getSenalLegible(activeEvent.evento, codigosMap) || activeEvent.evento}</span>
+                        {(activeEvent.zona || activeEvent.usuario) && (
+                          <span className="text-[10px] text-cyan-300 shrink-0 ml-1">
+                            ZN:{activeEvent.zona || '--'} US:{activeEvent.usuario || '--'}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
 
-          {/* 2. Visor de Señal Activa (Negro) */}
-          <div className="bg-black border border-t-gray-600 border-l-gray-600 border-b-white border-r-white p-1.5 font-mono text-green-400 text-[10px] shrink-0 space-y-0.5">
-            <div className="flex justify-between font-bold text-xs border-b border-green-900 pb-0.5">
-              <span>CTA: {activeEvent?.cuenta || '-----'}</span>
-              <span>GRP: 01</span>
-              <span>ZN: {activeEvent?.zona || '--'}</span>
-              <span>US: {activeEvent?.usuario || '---'}</span>
-            </div>
-            {/* Barra de progreso de señal verde */}
-            <div className="w-full bg-green-950 h-2 rounded-sm overflow-hidden my-0.5 flex gap-0.5">
-              {Array.from({ length: 15 }).map((_, i) => (
-                <div key={i} className="flex-1 bg-green-400 animate-pulse" style={{ animationDelay: `${i * 50}ms` }} />
-              ))}
-            </div>
-            <div className="text-[9px] text-green-500/80 truncate text-center">
-              RAW: 5051 18{activeEvent?.cuenta || 'C000'}E{activeEvent?.zona || '000'}01{activeEvent?.usuario || '000'}
+                {/* Fotografía de Fachada / Abonado si existe */}
+                {(clienteDb?.foto || clienteDb?.fotografia || clienteDb?.foto_url) && (
+                  <div className="w-20 h-24 border-2 border-gray-600 bg-white shrink-0 overflow-hidden shadow-xs flex flex-col" title="Fotografía Abonado">
+                    <img 
+                      src={clienteDb?.foto || clienteDb?.fotografia || clienteDb?.foto_url} 
+                      alt="Fachada" 
+                      className="w-full h-full object-cover" 
+                    />
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
@@ -1683,7 +1742,7 @@ export default function ScorpionDashboard() {
           </div>
 
           {/* Box 3: CONTACTOS / PERSONAS AUTORIZADAS */}
-          <div className="bg-[#e0e0e0] border border-t-white border-l-white border-b-gray-600 border-r-gray-600 flex flex-col flex-1 min-h-[140px] max-h-[240px] overflow-hidden">
+          <div className="bg-[#e0e0e0] border border-t-white border-l-white border-b-gray-600 border-r-gray-600 flex flex-col flex-1 min-h-[160px] max-h-[280px] overflow-hidden shadow-xs">
             <div className="bg-[#000080] text-white text-xs font-black px-2.5 py-1 tracking-wider uppercase flex items-center justify-between">
               <span>Personas Autorizadas</span>
               <div className="flex items-center gap-2">
@@ -1766,7 +1825,7 @@ export default function ScorpionDashboard() {
           </div>
 
           {/* Box 4: ZONIFICACION */}
-          <div className="bg-[#e0e0e0] border border-t-white border-l-white border-b-gray-600 border-r-gray-600 flex flex-col flex-1 min-h-[130px] max-h-[220px] overflow-hidden">
+          <div className="bg-[#e0e0e0] border border-t-white border-l-white border-b-gray-600 border-r-gray-600 flex flex-col flex-1 min-h-[150px] max-h-[260px] overflow-hidden shadow-xs">
             <div className="bg-[#000080] text-white text-xs font-black px-2.5 py-1 tracking-wider uppercase flex items-center justify-between">
               <span>Zonificación</span>
               <span className="text-[10px] text-yellow-300 font-mono font-normal">

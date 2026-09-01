@@ -59,6 +59,43 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
   const [tabInstalacion, setTabInstalacion] = useState<'instalacion' | 'ucontrol' | 'tiempos' | 'teclados' | 'sirenas'>('instalacion')
 
   const [ordenesCuenta, setOrdenesCuenta] = useState<any[]>([])
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      const img = new Image()
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        let width = img.width
+        let height = img.height
+        const maxDim = 800
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width)
+            width = maxDim
+          } else {
+            width = Math.round((width * maxDim) / height)
+            height = maxDim
+          }
+        }
+        canvas.width = width
+        canvas.height = height
+        const ctx = canvas.getContext('2d')
+        ctx?.drawImage(img, 0, 0, width, height)
+        const compressedBase64 = canvas.toDataURL('image/jpeg', 0.75)
+        setModoEdicion(true)
+        setClienteForm(prev => ({ ...prev, foto: compressedBase64 }))
+        setStatusMsg({ tipo: 'ok', texto: '📷 Fotografía cargada. Presione GUARDAR para sincronizar.' })
+        setTimeout(() => setStatusMsg(null), 3000)
+      }
+      img.src = event.target?.result as string
+    }
+    reader.readAsDataURL(file)
+  }
 
   // Foco automático en la casilla de búsqueda de NOMBRE al abrir el modal
   useEffect(() => {
@@ -595,7 +632,7 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
                 </div>
               </div>
 
-              {/* Fila 3: Dirección y Sector */}
+              {/* Fila 3: Dirección, Botón Mapa y Sector */}
               <div className="flex items-center gap-2">
                 <div className="flex-1 flex items-center gap-1">
                   <span className="font-bold text-[11px]">Dirección:</span>
@@ -604,10 +641,22 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
                     value={clienteForm.direccion || ''}
                     readOnly={!modoEdicion}
                     onChange={(e) => updateField('direccion', e.target.value.toUpperCase())}
-                    className={`w-full border border-t-gray-700 border-l-gray-700 border-b-white border-r-white font-bold px-1.5 py-0.5 text-blue-900 text-[11px] truncate focus:outline-none ${
+                    className={`flex-1 border border-t-gray-700 border-l-gray-700 border-b-white border-r-white font-bold px-1.5 py-0.5 text-blue-900 text-[11px] truncate focus:outline-none ${
                       modoEdicion ? 'bg-white' : 'bg-[#ffffd0]'
                     }`}
                   />
+                  {clienteForm.direccion && (
+                    <a
+                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${clienteForm.direccion}, ${clienteForm.ciudad || clienteForm.sector || 'Chile'}`)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title="Ver ubicación en Google Maps / Street View"
+                      className="bg-[#d4d0c8] border border-t-white border-l-white border-b-gray-700 border-r-gray-700 px-1.5 py-0.5 text-[10px] font-bold text-blue-900 hover:bg-white active:border-t-gray-700 shrink-0 flex items-center gap-0.5"
+                    >
+                      <span>📍</span>
+                      <span className="hidden sm:inline">Mapa</span>
+                    </a>
+                  )}
                 </div>
                 <div className="flex items-center gap-1 w-44">
                   <span className="font-bold text-[11px]">Sector:</span>
@@ -647,19 +696,63 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
 
             </div>
 
-            {/* Caja FOTOGRAFIA */}
+            {/* Caja FOTOGRAFIA (Móvil / PC) */}
             <div className="w-full md:w-[280px] border border-gray-400 p-1 flex flex-col justify-between bg-[#d4d0c8] shrink-0">
-              <div className="text-center font-bold text-[10px] text-gray-800 tracking-wider">
-                FOTOGRAFIA
+              <div className="flex items-center justify-between px-1">
+                <span className="font-bold text-[10px] text-gray-800 tracking-wider">FOTOGRAFIA / FACHADA</span>
+                {clienteForm.foto && modoEdicion && (
+                  <button
+                    type="button"
+                    onClick={() => setClienteForm(prev => ({ ...prev, foto: '' }))}
+                    className="text-red-700 font-bold text-[9px] hover:underline cursor-pointer"
+                  >
+                    ✕ Quitar
+                  </button>
+                )}
               </div>
-              <div className="h-[105px] bg-[#ffffd0] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white my-1 flex items-center justify-center overflow-hidden">
-                <span className="text-gray-400 text-3xl">👤</span>
+              
+              <div 
+                onClick={() => {
+                  if (modoEdicion || !cuentaActiva) {
+                    fileInputRef.current?.click()
+                  }
+                }}
+                className={`h-[105px] bg-[#ffffd0] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white my-1 flex items-center justify-center overflow-hidden relative group cursor-pointer`}
+                title="Haga clic para subir o cambiar fotografía"
+              >
+                {clienteForm.foto || clienteForm.fotografia || clienteForm.foto_url ? (
+                  <img
+                    src={clienteForm.foto || clienteForm.fotografia || clienteForm.foto_url}
+                    alt="Fotografía Abonado"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="flex flex-col items-center justify-center text-gray-400">
+                    <span className="text-2xl">📷</span>
+                    <span className="text-[9px] text-gray-500 font-bold mt-1">Sin fotografía</span>
+                  </div>
+                )}
               </div>
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={handleImageUpload}
+                className="hidden"
+              />
+
               <button
                 type="button"
-                className="w-full bg-[#d4d0c8] border border-t-white border-l-white border-b-gray-700 border-r-gray-700 text-[9px] py-1 font-bold uppercase tracking-wider text-gray-800 hover:bg-[#e0e0e0] active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white cursor-pointer"
+                onClick={() => {
+                  if (!modoEdicion) setModoEdicion(true)
+                  fileInputRef.current?.click()
+                }}
+                className="w-full bg-[#d4d0c8] border border-t-white border-l-white border-b-gray-700 border-r-gray-700 text-[9px] py-1 font-bold uppercase tracking-wider text-gray-800 hover:bg-[#e0e0e0] active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white cursor-pointer flex items-center justify-center gap-1 shadow-xs"
               >
-                INSERTAR / CAMBIAR FOTOGRAFIA
+                <span>📸</span>
+                <span>{clienteForm.foto ? 'CAMBIAR FOTO (MÓVIL / PC)' : 'SUBIR FOTO (MÓVIL / PC)'}</span>
               </button>
             </div>
 
@@ -765,15 +858,50 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
                                   />
                                 </td>
                                 <td className="p-0.5">
-                                  <input
-                                    type="text"
-                                    value={clienteForm[`t${num}`] || ''}
-                                    readOnly={!modoEdicion}
-                                    onChange={(e) => updateField(`t${num}`, e.target.value)}
-                                    className={`w-full border border-t-gray-700 border-l-gray-700 border-b-white border-r-white px-1 py-0.5 font-bold text-blue-900 text-[10px] focus:outline-none ${
-                                      modoEdicion ? 'bg-white' : 'bg-[#ffffd0]'
-                                    }`}
-                                  />
+                                  <div className="flex items-center gap-0.5">
+                                    <input
+                                      type="text"
+                                      value={clienteForm[`t${num}`] || ''}
+                                      readOnly={!modoEdicion}
+                                      onChange={(e) => updateField(`t${num}`, e.target.value)}
+                                      className={`flex-1 min-w-0 border border-t-gray-700 border-l-gray-700 border-b-white border-r-white px-1 py-0.5 font-bold text-blue-900 text-[10px] focus:outline-none ${
+                                        modoEdicion ? 'bg-white' : 'bg-[#ffffd0]'
+                                      }`}
+                                    />
+                                    {clienteForm[`t${num}`] && (
+                                      <div className="flex items-center gap-0.5 shrink-0">
+                                        <a
+                                          href={`tel:${(clienteForm[`t${num}`] || '').replace(/[^0-9+]/g, '')}`}
+                                          title="Llamar teléfono"
+                                          className="px-1 py-0.5 bg-[#d4d0c8] border border-t-white border-l-white border-b-gray-700 border-r-gray-700 text-[9px] hover:bg-white active:border-t-gray-700 cursor-pointer"
+                                        >
+                                          📞
+                                        </a>
+                                        <a
+                                          href={`https://wa.me/${(clienteForm[`t${num}`] || '').replace(/[^0-9]/g, '')}`}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          title="Abrir chat de WhatsApp"
+                                          className="px-1 py-0.5 bg-[#d4d0c8] border border-t-white border-l-white border-b-gray-700 border-r-gray-700 text-[9px] hover:bg-white active:border-t-gray-700 cursor-pointer text-green-700 font-bold"
+                                        >
+                                          💬
+                                        </a>
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            const tLimpio = (clienteForm[`t${num}`] || '').trim()
+                                            navigator.clipboard.writeText(tLimpio)
+                                            setStatusMsg({ tipo: 'ok', texto: `📋 Teléfono copiado: ${tLimpio}` })
+                                            setTimeout(() => setStatusMsg(null), 2000)
+                                          }}
+                                          title="Copiar teléfono al portapapeles"
+                                          className="px-1 py-0.5 bg-[#d4d0c8] border border-t-white border-l-white border-b-gray-700 border-r-gray-700 text-[9px] hover:bg-white active:border-t-gray-700 cursor-pointer"
+                                        >
+                                          📋
+                                        </button>
+                                      </div>
+                                    )}
+                                  </div>
                                 </td>
                               </tr>
                             )
@@ -1059,8 +1187,25 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
                     type="text"
                     value={buscarCuentaInput}
                     onChange={(e) => setBuscarCuentaInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault()
+                        if (listaFiltrada.length > 0) {
+                          if (modoEdicion) {
+                            if (!confirm('Tiene cambios sin guardar. ¿Desea cambiar de cuenta y descartarlos?')) return
+                          }
+                          const cTarget = listaFiltrada[0].cuenta.toUpperCase().trim()
+                          setCuentaActiva(cTarget)
+                          const target = clientesMap[cTarget] || clientesGeneralFallback[cTarget] || { cuenta: cTarget }
+                          setClienteForm(target)
+                          setBuscarCuentaInput('')
+                          setModoEdicion(false)
+                          setEsNuevo(false)
+                        }
+                      }
+                    }}
                     className="flex-1 bg-white border border-t-gray-700 border-l-gray-700 border-b-white border-r-white font-bold px-1.5 py-0.5 text-black text-[10px] focus:outline-blue-700"
-                    placeholder="Ingrese el nombre o parte del nombre del usuario"
+                    placeholder="Ingrese cuenta o nombre y presione ENTER para cargar"
                   />
                 </div>
               </div>
@@ -1074,7 +1219,10 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
                       if (modoEdicion) {
                         if (!confirm('Tiene cambios sin guardar. ¿Desea cambiar de cuenta y descartarlos?')) return
                       }
-                      setCuentaActiva(item.cuenta.toUpperCase().trim())
+                      const cTarget = item.cuenta.toUpperCase().trim()
+                      setCuentaActiva(cTarget)
+                      const target = clientesMap[cTarget] || clientesGeneralFallback[cTarget] || { cuenta: cTarget }
+                      setClienteForm(target)
                       setBuscarCuentaInput('')
                       setModoEdicion(false)
                       setEsNuevo(false)
