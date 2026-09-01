@@ -1494,8 +1494,8 @@ export default function ScorpionDashboard() {
       {/* Contenedor Principal: Izquierda (Tabla), Derecha (Widgets de Scorpion) */}
       <div className="flex-1 min-h-0 flex overflow-hidden">
         
-        {/* Lado Izquierdo: Tabla de Eventos (Ocupa 100% en móvil y 845px fijos en PC) */}
-        <div className="w-full md:w-[845px] md:shrink-0 border-r border-[#1e293b] flex flex-col h-full bg-[#070b13] overflow-hidden">
+        {/* Lado Izquierdo: Tabla de Eventos (Ocupa 100% en móvil y 866px fijos en PC) */}
+        <div className="w-full md:w-[866px] md:shrink-0 border-r border-[#1e293b] flex flex-col h-full bg-[#070b13] overflow-hidden">
           <EventGrid
             eventos={eventos}
             onEventClick={(e) => setEventoSeleccionado(e)}
