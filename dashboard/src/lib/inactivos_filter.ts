@@ -41,7 +41,7 @@ export const CUENTAS_INACTIVAS_SET = new Set<string>([
   '0887', '0888', '0889', '0890', '0891', '0892', '0893', '0894', '0895', '0896',
   '0897', '0898', '0899', '0902', '0910', '0912', '0913', '0915', '0916', '0917',
   '0918', '0919', '0920', '0921', '0922', '0923', '0924', '0925', '0926', '0927',
-  '0928', 'C702', 'C703', 'C706', 'C709', 'C724', 'C731', 'C748', 'C749', 'C758',
+  '0928', 'C702', 'C706', 'C709', 'C724', 'C731', 'C748', 'C749', 'C758',
   'C762', 'C776', 'C789', 'C797', 'C7A6', 'C7A7', 'C7AF'
 ])
 
@@ -52,12 +52,20 @@ export function esAbonadoInactivo(cuenta: any, texto: string = ''): boolean {
   // EXCEPCIÓN SOLICITADA EXPRESAMENTE POR EL USUARIO: C717 NUNCA SE ELIMINA
   if (norm === 'C717') return false
 
-  if (CUENTAS_INACTIVAS_SET.has(norm)) return true
+  const lower = (texto || '').toLowerCase().trim()
 
-  const lower = (texto || '').toLowerCase()
+  // 1. Si el texto explícitamente tiene palabras de inactividad (renunciado, retiro, etc.), siempre es inactivo
   for (const kw of KEYWORDS_INACTIVOS_BROAD) {
     if (lower.includes(kw)) return true
   }
+
+  // 2. Si tiene un nombre activo registrado que no contiene palabras de baja, es un abonado activo
+  if (lower.length > 0) {
+    return false
+  }
+
+  // 3. Fallback si no tiene nombre o está vacío
+  if (CUENTAS_INACTIVAS_SET.has(norm)) return true
 
   return false
 }

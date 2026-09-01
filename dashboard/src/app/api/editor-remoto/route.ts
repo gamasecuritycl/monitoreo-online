@@ -75,8 +75,16 @@ export async function POST(req: NextRequest) {
       if (tipoOperacion === 'ELIMINAR_ABONADO') {
         // Eliminar del mapa
         delete clientesMap[cuentaNormalizada]
+      } else if (tipoOperacion === 'NUEVO_ABONADO') {
+        // Sobrescritura completa desde cero (sin arrastrar teléfonos o campos del cliente antiguo)
+        clientesMap[cuentaNormalizada] = {
+          ...datosNuevos,
+          cuenta: cuentaNormalizada,
+          _actualizadoRemotoEl: nowIso,
+          _actualizadoPor: operador.nombre
+        }
       } else {
-        // Fusionar o crear abonado
+        // Fusionar o actualizar campos editados
         clientesMap[cuentaNormalizada] = {
           ...(clientesMap[cuentaNormalizada] || {}),
           ...datosNuevos,

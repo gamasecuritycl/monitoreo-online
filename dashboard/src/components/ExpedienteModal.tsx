@@ -286,15 +286,32 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
 
   // BOTÓN 3: NUEVO ABONADO
   const handleNuevo = () => {
-    const nuevaCuenta = prompt('Ingrese el código para el nuevo abonado (ej: C702, C800):', '')
+    const nuevaCuenta = prompt('Ingrese el código para el nuevo abonado (ej: C703, C800):', '')
     if (!nuevaCuenta) return
     const cClean = nuevaCuenta.toUpperCase().trim()
 
-    if (clientesMap[cClean]) {
-      alert(`La cuenta ${cClean} ya existe. Se cargará para su edición.`)
-      setCuentaActiva(cClean)
-      setModoEdicion(true)
-      return
+    const existente = clientesMap[cClean] || clientesGeneralFallback[cClean]
+
+    if (existente) {
+      const nombreExistente = (existente.nombre || 'ABONADO').trim()
+      const esInactivo = esAbonadoInactivo(cClean, nombreExistente)
+      const msg = esInactivo
+        ? `La cuenta [${cClean}] correspondía a un abonado inactivo/renunciado:\n"${nombreExistente}".\n\n¿Desea SOBREESCRIBIR esta cuenta y registrar un NUEVO ABONADO desde cero con este código?`
+        : `La cuenta [${cClean}] ya existe actualmente para:\n"${nombreExistente}".\n\n¿Desea SOBREESCRIBIR esta cuenta y registrar un NUEVO ABONADO desde cero?\n\n(Presione "Cancelar" si solo desea modificar sus datos actuales con el botón EDITAR).`
+
+      const deseaSobreescribir = confirm(msg)
+      if (!deseaSobreescribir) {
+        // Cargar para edición normal si no desea sobreescribir desde cero
+        setCuentaActiva(cClean)
+        setClienteForm(existente)
+        setModoEdicion(true)
+        setEsNuevo(false)
+        setStatusMsg({
+          tipo: 'info',
+          texto: `✏️ Cargada cuenta existente [${cClean}] para edición.`
+        })
+        return
+      }
     }
 
     const nuevoRegistro: Record<string, string> = {
@@ -328,7 +345,7 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
     setModoEdicion(true)
     setStatusMsg({
       tipo: 'warn',
-      texto: `🆕 CREANDO NUEVO ABONADO [${cClean}]: Complete los datos y presione GUARDAR para crearlo en Scorpion.`
+      texto: `🆕 CREANDO/SOBREESCRIBIENDO ABONADO [${cClean}]: Complete los datos y presione GUARDAR para sincronizar en Scorpion.`
     })
   }
 
