@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useMemo } from 'react'
 import type { EventoMonitoreo } from '@/lib/supabase'
 import { supabase, supabaseIA } from '@/lib/supabase'
 import VideoVerificacionModal from './VideoVerificacionModal'
@@ -67,7 +67,7 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
     }, 150)
   }, [])
 
-  // Cargar clientes desde Supabase en segundo plano y sincronizar con caché
+  // Cargar clientes desde Supabase en segundo plano y sincronizar con caché en Tiempo Real
   useEffect(() => {
     const fetchClientesSupabase = async () => {
       try {
@@ -95,6 +95,28 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
       }
     }
     fetchClientesSupabase()
+
+    // Realtime: suscripción instantánea cuando se modifique CLIENTES en Supabase
+    let channel: any
+    try {
+      channel = supabase
+        .channel('clientes-live-expediente')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'eventos_monitoreo', filter: 'cuenta=eq.CLIENTES' }, (payload: any) => {
+          if (payload.new && payload.new.nombre_abonado) {
+            try {
+              const remoteMap = JSON.parse(payload.new.nombre_abonado)
+              if (remoteMap && typeof remoteMap === 'object') {
+                setClientesMap(prev => ({ ...prev, ...remoteMap }))
+              }
+            } catch (e) {}
+          }
+        })
+        .subscribe()
+    } catch (e) {}
+
+    return () => {
+      if (channel) supabase.removeChannel(channel)
+    }
   }, [])
 
   // Sincronizar el formulario al cambiar cuentaActiva o clientesMap
@@ -423,20 +445,25 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
     setTimeout(() => setStatusMsg(null), 2500)
   }
 
-  // Lista de todos los abonados para el buscador inferior
-  const listaAbonados = Object.values(clientesMap)
-    .filter(c => !esAbonadoInactivo(c.cuenta || '', c.nombre || ''))
-    .map(c => ({
-      cuenta: (c.cuenta || '').toUpperCase().trim(),
-      nombre: (c.nombre || '').toUpperCase().trim()
-    })).sort((a, b) => a.cuenta.localeCompare(b.cuenta))
+  // Lista de todos los abonados para el buscador inferior (incluye todas las cuentas para que los operadores siempre puedan buscarlas y editarlas)
+  const listaAbonados = useMemo(() => {
+    return Object.values(clientesMap)
+      .map(c => ({
+        cuenta: (c.cuenta || '').toUpperCase().trim(),
+        nombre: (c.nombre || '').toUpperCase().trim()
+      }))
+      .filter(a => a.cuenta)
+      .sort((a, b) => a.cuenta.localeCompare(b.cuenta))
+  }, [clientesMap])
 
-  const listaFiltrada = buscarCuentaInput.trim()
-    ? listaAbonados.filter(a => 
-        a.cuenta.toLowerCase().includes(buscarCuentaInput.toLowerCase()) ||
-        a.nombre.toLowerCase().includes(buscarCuentaInput.toLowerCase())
-      )
-    : listaAbonados
+  const listaFiltrada = useMemo(() => {
+    const q = buscarCuentaInput.trim().toLowerCase()
+    if (!q) return listaAbonados
+    return listaAbonados.filter(a => 
+      a.cuenta.toLowerCase().includes(q) ||
+      a.nombre.toLowerCase().includes(q)
+    )
+  }, [listaAbonados, buscarCuentaInput])
 
   const updateField = (key: string, val: string) => {
     if (!modoEdicion) return

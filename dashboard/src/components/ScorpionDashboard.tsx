@@ -421,6 +421,29 @@ export default function ScorpionDashboard() {
       }
     }
     fetchClientes()
+
+    // Realtime: sincronizar clientes en caliente cuando se modifique CLIENTES en Supabase
+    let channel: any
+    try {
+      channel = supabase
+        .channel('clientes-live-dashboard')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'eventos_monitoreo', filter: 'cuenta=eq.CLIENTES' }, (payload: any) => {
+          if (payload.new && payload.new.nombre_abonado) {
+            try {
+              const remoteMap = JSON.parse(payload.new.nombre_abonado)
+              if (remoteMap && typeof remoteMap === 'object') {
+                setClientesMap(remoteMap)
+                console.log(`[SUPABASE DASHBOARD REALTIME] ${Object.keys(remoteMap).length} clientes actualizados.`)
+              }
+            } catch (e) {}
+          }
+        })
+        .subscribe()
+    } catch (e) {}
+
+    return () => {
+      if (channel) supabase.removeChannel(channel)
+    }
   }, [])
 
   // Cargar mapa de códigos de color de CODIGOS.MDB
