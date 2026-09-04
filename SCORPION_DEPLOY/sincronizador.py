@@ -267,19 +267,26 @@ LAST_HEARTBEAT_TIME = 0
 def enviar_heartbeat():
     global LAST_HEARTBEAT_TIME
     now = time.time()
-    if now - LAST_HEARTBEAT_TIME < 10:
+    if now - LAST_HEARTBEAT_TIME < 15:
         return
     LAST_HEARTBEAT_TIME = now
     try:
         now_iso = datetime.now(timezone.utc).isoformat()
-        supabase.table("eventos_monitoreo").upsert({
-            "cuenta": "__SINCRONIZADOR__",
-            "nombre_abonado": "PC SCORPION CENTRAL (v5.2)",
-            "evento": "HEARTBEAT",
+        res = supabase.table("eventos_monitoreo").update({
             "fecha_hora": now_iso,
-            "zona": "000",
-            "usuario": "SYSTEM"
-        }).execute()
+            "nombre_abonado": "PC SCORPION CENTRAL (v5.2)",
+            "evento": "HEARTBEAT"
+        }).eq("cuenta", "__SINCRONIZADOR__").execute()
+        
+        if not res.data:
+            supabase.table("eventos_monitoreo").insert({
+                "cuenta": "__SINCRONIZADOR__",
+                "nombre_abonado": "PC SCORPION CENTRAL (v5.2)",
+                "evento": "HEARTBEAT",
+                "fecha_hora": now_iso,
+                "zona": "000",
+                "usuario": "SYSTEM"
+            }).execute()
 
         hb_path = os.path.join(script_dir, "_sincronizador_heartbeat.txt")
         with open(hb_path, "w", encoding="utf-8") as f:
