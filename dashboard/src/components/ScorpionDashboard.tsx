@@ -574,6 +574,33 @@ export default function ScorpionDashboard() {
     return false
   }
 
+  const parseEventoTimestamp = (rawStr?: string): number => {
+    if (!rawStr) return 0
+    const s = String(rawStr).trim()
+    const matchDDMM = s.match(/^(\d{2})[-/](\d{2})[-/](\d{4})(?:\s+(\d{2}):(\d{2}):(\d{2}))?/)
+    if (matchDDMM) {
+      const [, dia, mes, anio, hh = '00', mm = '00', ss = '00'] = matchDDMM
+      return new Date(Number(anio), Number(mes) - 1, Number(dia), Number(hh), Number(mm), Number(ss)).getTime()
+    }
+    const matchYYYYMM = s.match(/^(\d{4})[-/](\d{2})[-/](\d{2})(?:[T\s]+(\d{2}):(\d{2}):(\d{2}))?/)
+    if (matchYYYYMM) {
+      const [, anio, mes, dia, hh = '00', mm = '00', ss = '00'] = matchYYYYMM
+      return new Date(Number(anio), Number(mes) - 1, Number(dia), Number(hh), Number(mm), Number(ss)).getTime()
+    }
+    const d = new Date(s)
+    const t = d.getTime()
+    return isNaN(t) ? 0 : t
+  }
+
+  const compararEventosCronologico = (a: EventoMonitoreo, b: EventoMonitoreo): number => {
+    const tsA = parseEventoTimestamp(a.fecha_hora)
+    const tsB = parseEventoTimestamp(b.fecha_hora)
+    if (tsA !== tsB && tsA > 0 && tsB > 0) {
+      return tsA - tsB
+    }
+    return (Number(a.id) || 0) - (Number(b.id) || 0)
+  }
+
   const deduplicarEventos = (lista: EventoMonitoreo[]) => {
     const vistos = new Set<string>()
     const unicos: EventoMonitoreo[] = []
@@ -615,7 +642,7 @@ export default function ScorpionDashboard() {
         // Orden cronológico ascendente: el más reciente SIEMPRE abajo
         const ordenados = deduplicarEventos(limpios
           .slice(0, 100)
-          .sort((a, b) => (Number(a.id) || 0) - (Number(b.id) || 0)))
+          .sort(compararEventosCronologico))
         setEventos(ordenados)
         if (ordenados.length > 0 && !eventoSeleccionado) {
           setEventoSeleccionado(ordenados[ordenados.length - 1])
@@ -628,7 +655,7 @@ export default function ScorpionDashboard() {
         const json = await r.json()
         if (json.data && json.data.length > 0) {
           // API devuelve oldest-first (ascendente)
-          const deduplicados = deduplicarEventos(json.data.sort((a: any, b: any) => (Number(a.id) || 0) - (Number(b.id) || 0)))
+          const deduplicados = deduplicarEventos(json.data.sort(compararEventosCronologico))
           setEventos(deduplicados)
           if (deduplicados.length > 0 && !eventoSeleccionado) setEventoSeleccionado(deduplicados[deduplicados.length - 1])
         }
@@ -676,7 +703,7 @@ export default function ScorpionDashboard() {
         const limpios = filtered.filter(ev => !esCuentaInternaOFrame(ev.cuenta, ev.evento, ev.nombre_abonado))
         const ordenados = deduplicarEventos([...limpios]
           .slice(0, 100)
-          .sort((a, b) => (Number(a.id) || 0) - (Number(b.id) || 0)))
+          .sort(compararEventosCronologico))
         setEventos(ordenados)
         
         if (ordenados.length > 0) {
@@ -691,7 +718,7 @@ export default function ScorpionDashboard() {
             const maxId = json.data[json.data.length - 1].id  // último = más reciente
             if (maxId <= latestId) return
             latestId = maxId
-            const deduplicados = deduplicarEventos(json.data.sort((a: any, b: any) => (Number(a.id) || 0) - (Number(b.id) || 0)))
+            const deduplicados = deduplicarEventos(json.data.sort(compararEventosCronologico))
             setEventos(deduplicados)  // oldest-first
             if (deduplicados.length > 0) setEventoSeleccionado(deduplicados[deduplicados.length - 1])
           }
@@ -718,13 +745,13 @@ export default function ScorpionDashboard() {
           const eventKey = `${newEvent.cuenta}_${newEvent.evento}_${newEvent.zona}_${newEvent.usuario}_${newEvent.fecha_hora}`
           if (prev.some(e => e.id === newEvent.id || `${e.cuenta}_${e.evento}_${e.zona}_${e.usuario}_${e.fecha_hora}` === eventKey)) return prev
           const next = [...prev, newEvent]
-          next.sort((a, b) => (Number(a.id) || 0) - (Number(b.id) || 0))
+          next.sort(compararEventosCronologico)
           if (next.length > 50) next.shift()
           return deduplicarEventos(next)
         })
         
         // Seleccionar automáticamente solo si es un evento reciente de los últimos 10 minutos
-        const eventTs = new Date(newEvent.fecha_hora).getTime()
+        const eventTs = parseEventoTimestamp(newEvent.fecha_hora)
         const tenMinsAgo = Date.now() - 600_000
         if (eventTs >= tenMinsAgo) {
           setEventoSeleccionado(newEvent)
