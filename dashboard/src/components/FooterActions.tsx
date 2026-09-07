@@ -13,6 +13,7 @@ interface FooterActionsProps {
   operadorNombre?: string
   operadorRol?: string
   horaLocal?: string
+  autoOperadorActivo?: boolean
 }
 
 interface BotonRetro {
@@ -199,9 +200,14 @@ export default function FooterActions({
   unreadWhatsAppCount,
   operadorNombre,
   operadorRol,
-  horaLocal
+  horaLocal,
+  autoOperadorActivo
 }: FooterActionsProps) {
   const [isOpen, setIsOpen] = useState(false)
+  const esAdmin = Boolean(
+    operadorRol?.toLowerCase().includes('admin') ||
+    operadorNombre?.toLowerCase() === 'admin'
+  )
 
   return (
     <>
@@ -224,6 +230,32 @@ export default function FooterActions({
 
         {/* VERSIÓN DE ESCRITORIO (PC): Fila de botones centrada */}
         <div className="hidden md:flex items-center justify-center gap-1.5 mx-auto">
+          {/* Botón AUTO-OPERADOR IA (Solo visible para Administrador) */}
+          {esAdmin && (
+            <button
+              onClick={() => onModalOpen('operador-automatico')}
+              title={`Control Maestro de Operador Automático (Solo Administrador) - Actualmente ${autoOperadorActivo ? 'EN SERVICIO' : 'MANUAL'}`}
+              className={`h-10 px-2.5 flex items-center justify-center gap-1.5 cursor-pointer select-none border-2 shadow-sm transition-all ${
+                autoOperadorActivo
+                  ? 'bg-[#002244] border-t-[#0055aa] border-l-[#0055aa] border-b-black border-r-black text-cyan-300 hover:bg-[#002f5e]'
+                  : 'bg-[#d4d0c8] border-t-white border-l-white border-b-gray-700 border-r-gray-700 text-gray-700 hover:bg-gray-200'
+              } active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white`}
+            >
+              <span className="text-sm leading-none">🤖</span>
+              <div className="flex flex-col items-start leading-tight">
+                <span className={`text-[10px] font-black tracking-wider uppercase ${autoOperadorActivo ? 'text-cyan-200' : 'text-gray-900'}`}>
+                  AUTO-OPERADOR
+                </span>
+                <span className="text-[9px] font-mono font-bold flex items-center gap-1">
+                  <span className={`w-1.5 h-1.5 rounded-full ${autoOperadorActivo ? 'bg-emerald-400 animate-pulse shadow-[0_0_6px_#34d399]' : 'bg-gray-500'}`} />
+                  <span className={autoOperadorActivo ? 'text-emerald-300' : 'text-gray-600'}>
+                    {autoOperadorActivo ? 'ACTIVO 24/7' : 'MANUAL'}
+                  </span>
+                </span>
+              </div>
+            </button>
+          )}
+
           {/* Botón BITÁCORA */}
           <button
             onClick={() => onModalOpen('bitacora')}
@@ -330,7 +362,32 @@ export default function FooterActions({
 
             {/* Listado de Botones en Vertical */}
             <div className="flex-1 p-2 overflow-y-auto flex flex-col gap-1.5 bg-[#d4d0c8]">
-              {/* BITÁCORA primero */}
+              {/* AUTO-OPERADOR primero (Solo Admin) */}
+              {esAdmin && (
+                <div
+                  onClick={() => { onModalOpen('operador-automatico'); setIsOpen(false) }}
+                  className={`flex items-center gap-3 p-2 border cursor-pointer rounded-sm select-none transition-all ${
+                    autoOperadorActivo
+                      ? 'bg-[#002244] hover:bg-[#003366] border-cyan-400 text-cyan-200'
+                      : 'bg-[#d4d0c8] hover:bg-white border-gray-400 text-gray-900'
+                  }`}
+                >
+                  <div className="w-10 h-10 shrink-0 bg-[#d4d0c8] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 flex items-center justify-center text-lg">
+                    🤖
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="font-bold text-[11px] flex items-center gap-1.5">
+                      <span>OPERADOR AUTOMÁTICO</span>
+                      <span className={`w-2 h-2 rounded-full ${autoOperadorActivo ? 'bg-emerald-500 animate-pulse' : 'bg-gray-400'}`} />
+                    </span>
+                    <span className="text-[9px] font-mono font-bold">
+                      {autoOperadorActivo ? 'ESTADO: ACTIVO 24/7' : 'ESTADO: MODO MANUAL'} (Solo Admin)
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* BITÁCORA */}
               <div
                 onClick={() => { onModalOpen('bitacora'); setIsOpen(false) }}
                 className="flex items-center gap-3 p-2 bg-[#000080] hover:bg-[#0000a0] border border-[#4444cc] cursor-pointer rounded-sm select-none transition-all"

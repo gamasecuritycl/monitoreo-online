@@ -31,6 +31,7 @@ import AperturasCierresModal from './AperturasCierresModal'
 import BuscadorUniversalModal from './BuscadorUniversalModal'
 import PersonasAutorizadasModal from './PersonasAutorizadasModal'
 import RegistroCambiosModal from './RegistroCambiosModal'
+import OperadorAutomaticoModal from './OperadorAutomaticoModal'
 import { lookupContactId } from '@/lib/contact_id_library'
 import { sendMessage, generarMensajeAlerta, generarMensajeEnergia, detectarPatronEvento, type EventInfo } from '@/lib/whatsapp'
 import { Operator, ensureUserAttributes, OPERADORES_PREDETERMINADOS } from '@/types/operator'
@@ -246,6 +247,17 @@ export default function ScorpionDashboard() {
     return OPERADORES_PREDETERMINADOS[0]
   })
   const [sesionIniciada, setSesionIniciada] = useState(true)
+
+  // Estado del Operador Automático (persistente)
+  const [autoOperadorActivo, setAutoOperadorActivo] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('gama_auto_operador_activo')
+        return saved === 'true'
+      } catch {}
+    }
+    return false
+  })
 
   // Sincronizar usuario activo con OperatorAuthGate
   useEffect(() => {
@@ -2189,12 +2201,23 @@ export default function ScorpionDashboard() {
         />
       )}
 
+      {/* Operador Automático Modal (Solo Administrador) */}
+      {modalActivo === 'operador-automatico' && (
+        <OperadorAutomaticoModal
+          onClose={() => setModalActivo(null)}
+          activo={autoOperadorActivo}
+          onToggleActivo={(nuevoEstado) => setAutoOperadorActivo(nuevoEstado)}
+          operadorNombre={usuarioActivo.nombre}
+        />
+      )}
+
       {/* Footer */}
       <FooterActions
         unreadWhatsAppCount={unreadWhatsAppCount}
         operadorNombre={usuarioActivo.nombre}
         operadorRol={usuarioActivo.rol}
         horaLocal={horaLocal}
+        autoOperadorActivo={autoOperadorActivo}
         onModalOpen={(id) => {
           if (id === 'notificaciones-whatsapp') {
             setUnreadWhatsAppCount(0)
