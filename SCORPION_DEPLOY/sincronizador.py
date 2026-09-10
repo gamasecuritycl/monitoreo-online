@@ -262,31 +262,30 @@ def get_archivos_mdb_activos():
     archivos.sort(key=lambda x: x[0], reverse=True)
     return [item[1] for item in archivos[:20]]
 
-LAST_HEARTBEAT_TIME = 0
+HEARTBEAT_ROW_ID = 1492786
 
 def enviar_heartbeat():
-    global LAST_HEARTBEAT_TIME
+    global LAST_HEARTBEAT_TIME, HEARTBEAT_ROW_ID
     now = time.time()
     if now - LAST_HEARTBEAT_TIME < 15:
         return
     LAST_HEARTBEAT_TIME = now
     try:
         now_iso = datetime.now(timezone.utc).isoformat()
-        res = supabase.table("eventos_monitoreo").update({
-            "fecha_hora": now_iso,
-            "nombre_abonado": "PC SCORPION CENTRAL (v5.2)",
-            "evento": "HEARTBEAT"
-        }).eq("cuenta", "__SINCRONIZADOR__").execute()
-        
-        if not res.data:
-            supabase.table("eventos_monitoreo").insert({
-                "cuenta": "__SINCRONIZADOR__",
-                "nombre_abonado": "PC SCORPION CENTRAL (v5.2)",
-                "evento": "HEARTBEAT",
+        if HEARTBEAT_ROW_ID:
+            supabase.table("eventos_monitoreo").update({
                 "fecha_hora": now_iso,
-                "zona": "000",
-                "usuario": "SYSTEM"
-            }).execute()
+                "nombre_abonado": "PC SCORPION CENTRAL (v5.2)",
+                "evento": "HEARTBEAT"
+            }).eq("id", HEARTBEAT_ROW_ID).execute()
+        else:
+            res = supabase.table("eventos_monitoreo").update({
+                "fecha_hora": now_iso,
+                "nombre_abonado": "PC SCORPION CENTRAL (v5.2)",
+                "evento": "HEARTBEAT"
+            }).eq("cuenta", "__SINCRONIZADOR__").execute()
+            if res.data:
+                HEARTBEAT_ROW_ID = res.data[0].get("id")
 
         hb_path = os.path.join(script_dir, "_sincronizador_heartbeat.txt")
         with open(hb_path, "w", encoding="utf-8") as f:
