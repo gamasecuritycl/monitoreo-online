@@ -501,6 +501,7 @@ if __name__ == "__main__":
     while True:
         try:
             cache = sincronizar(cache)
+            enviar_heartbeat()
         except Exception as e:
             print(f"[LOOP AUTO-RECOVERY]: {e}")
         time.sleep(INTERVALO_SEG)
