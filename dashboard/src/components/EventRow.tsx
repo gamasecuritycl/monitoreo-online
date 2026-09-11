@@ -21,6 +21,7 @@ interface EventRowProps {
   isNew?: boolean
   isLatest?: boolean
   codigosMap?: Record<string, CodigoInfo>
+  clientesMap?: Record<string, Record<string, string>>
 }
 
 // Mapeo de nombres de colores de Access a valores CSS hexadecimales
@@ -190,7 +191,7 @@ function renderFecha(iso: string) {
   }
 }
 
-export default function EventRow({ evento, onClick, isNew, isLatest, codigosMap }: EventRowProps) {
+export default function EventRow({ evento, onClick, isNew, isLatest, codigosMap, clientesMap }: EventRowProps) {
   const senalLegible = getSenalLegible(evento.evento, codigosMap)
   const style = getEventoStyle(senalLegible, evento.evento, codigosMap)
   const isCritical = ['#FF0000'].includes(style.bg)
@@ -202,6 +203,18 @@ export default function EventRow({ evento, onClick, isNew, isLatest, codigosMap 
   ].join(' ')
 
   const tieneTraduccion = evento.evento && evento.evento.trim().toUpperCase() !== senalLegible.trim().toUpperCase()
+
+  // Resolver nombre dinámico del cliente desde GENERAL.MDB (clientesMap)
+  const cuentaTrim = (evento.cuenta || '').trim()
+  const cuentaUpper = cuentaTrim.toUpperCase()
+  const nombreDinamico = clientesMap
+    ? (clientesMap[cuentaUpper]?.nombre ||
+       clientesMap[cuentaTrim]?.nombre ||
+       clientesMap[cuentaUpper.replace(/^C/, '')]?.nombre ||
+       clientesMap[cuentaUpper.replace(/^0+/, '')]?.nombre)
+    : undefined
+
+  const nombreFinal = (nombreDinamico && nombreDinamico.trim()) || evento.nombre_abonado
 
   return (
     <tr
@@ -220,8 +233,8 @@ export default function EventRow({ evento, onClick, isNew, isLatest, codigosMap 
       </td>
 
       {/* NOMBRE */}
-      <td className="px-1.5 py-0.5 text-xs md:text-[13px] truncate max-w-[160px] md:max-w-[275px] border border-black leading-snug font-bold align-middle">
-        {evento.nombre_abonado}
+      <td className="px-1.5 py-0.5 text-xs md:text-[13px] truncate max-w-[160px] md:max-w-[275px] border border-black leading-snug font-bold align-middle" title={nombreFinal}>
+        {nombreFinal}
       </td>
 
       {/* SEÑAL (Traducida automáticamente de Contact ID a español si viene como código) */}

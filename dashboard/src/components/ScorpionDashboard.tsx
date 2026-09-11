@@ -1563,6 +1563,7 @@ export default function ScorpionDashboard() {
             eventos={eventos}
             onEventClick={(e) => setEventoSeleccionado(e)}
             codigosMap={codigosMap}
+            clientesMap={clientesMap}
           />
         </div>
 
@@ -1587,7 +1588,7 @@ export default function ScorpionDashboard() {
                   <div className="grid grid-cols-4 gap-1 items-center">
                     <span className="font-black text-gray-800">Nombre:</span>
                     <span className="col-span-3 bg-white px-1.5 py-0.5 border border-gray-400 truncate font-extrabold text-gray-900 text-xs">
-                      {activeEvent?.nombre_abonado || clientData?.nombre || '---'}
+                      {clientData?.nombre || activeEvent?.nombre_abonado || '---'}
                     </span>
                   </div>
                   <div className="grid grid-cols-4 gap-1 items-center">

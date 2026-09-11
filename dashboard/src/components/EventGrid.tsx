@@ -31,9 +31,10 @@ interface EventGridProps {
   eventos: EventoMonitoreo[]
   onEventClick: (evento: EventoMonitoreo) => void
   codigosMap?: Record<string, { descripcion: string; zn_us: string; color: string }>
+  clientesMap?: Record<string, Record<string, string>>
 }
 
-export default function EventGrid({ eventos, onEventClick, codigosMap }: EventGridProps) {
+export default function EventGrid({ eventos, onEventClick, codigosMap, clientesMap }: EventGridProps) {
   const containerRef = useRef<HTMLDivElement>(null)
 
   // Rastrear IDs nuevos para activar animación de entrada
@@ -94,6 +95,7 @@ export default function EventGrid({ eventos, onEventClick, codigosMap }: EventGr
                 isNew={newIds.has(evento.id as number)}
                 isLatest={evento.id === latestId}
                 codigosMap={codigosMap}
+                clientesMap={clientesMap}
               />
             ))
           )}

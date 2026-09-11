@@ -57,38 +57,33 @@ def upload_to_supabase(clientes_json):
         "usuario": "SYSTEM"
     }
 
+    CLIENTES_ROW_ID = 1016426
     # 1. Try using the supabase library first
     if SUPABASE_CLIENT:
         try:
-            print("[SUPABASE] Deleting existing CLIENTES row...")
-            SUPABASE_CLIENT.table("eventos_monitoreo").delete().eq("cuenta", "CLIENTES").execute()
-            print("[SUPABASE] Inserting new CLIENTES data...")
-            SUPABASE_CLIENT.table("eventos_monitoreo").insert(data).execute()
-            print("[SUPABASE SUCCESS] Uploaded successfully via supabase client.")
-            return True
+            print(f"[SUPABASE] Updating CLIENTES row id={CLIENTES_ROW_ID}...")
+            res = SUPABASE_CLIENT.table("eventos_monitoreo").update(data).eq("id", CLIENTES_ROW_ID).execute()
+            if res.data:
+                print("[SUPABASE SUCCESS] Uploaded successfully via supabase client.")
+                return True
         except Exception as e:
-            print(f"[SUPABASE ERROR] Failed via supabase client: {e}. Trying HTTP fallback...")
+            print(f"[SUPABASE ERROR] Update by ID failed: {e}. Trying HTTP fallback...")
 
     # 2. Fallback using REST API requests
     try:
         headers = {
             "apikey": SUPABASE_KEY,
             "Authorization": f"Bearer {SUPABASE_KEY}",
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
+            "Prefer": "return=representation"
         }
-        # First delete
-        del_url = f"{SUPABASE_URL}/rest/v1/eventos_monitoreo?cuenta=eq.CLIENTES"
-        r_del = requests.delete(del_url, headers=headers, timeout=15)
-        print(f"[HTTP] Delete status: {r_del.status_code}")
-        
-        # Then insert
-        ins_url = f"{SUPABASE_URL}/rest/v1/eventos_monitoreo"
-        r_ins = requests.post(ins_url, headers=headers, json=data, timeout=15)
-        if r_ins.status_code in [200, 201]:
+        patch_url = f"{SUPABASE_URL}/rest/v1/eventos_monitoreo?id=eq.{CLIENTES_ROW_ID}"
+        r_patch = requests.patch(patch_url, headers=headers, json=data, timeout=15)
+        if r_patch.status_code in [200, 204]:
             print("[HTTP SUCCESS] Uploaded successfully via REST API.")
             return True
         else:
-            print(f"[HTTP ERROR] Insert failed: {r_ins.status_code} - {r_ins.text}")
+            print(f"[HTTP ERROR] Patch failed: {r_patch.status_code} - {r_patch.text}")
     except Exception as e:
         print(f"[HTTP FALLBACK ERROR] Exception during REST query: {e}")
         
