@@ -7,7 +7,9 @@ interface OperadorAutomaticoConfig {
   autoCerrarTests: boolean
   autoCerrarAperturas: boolean
   autoNotificarWhatsApp: boolean
-  autoVerificarClave: boolean
+  autoVerificarClave?: boolean
+  autoLlamarTitular: boolean
+  autoLlamarSoloNumeroZona: boolean
   tiempoEsperaSegundos: number
   notificarEscalacion: boolean
 }
@@ -17,7 +19,9 @@ const DEFAULT_CONFIG: OperadorAutomaticoConfig = {
   autoCerrarTests: true,
   autoCerrarAperturas: true,
   autoNotificarWhatsApp: true,
-  autoVerificarClave: true,
+  autoVerificarClave: false,
+  autoLlamarTitular: true,
+  autoLlamarSoloNumeroZona: true,
   tiempoEsperaSegundos: 120,
   notificarEscalacion: true,
 }
@@ -188,17 +192,34 @@ export default function OperadorAutomaticoModal({
                 </div>
               </label>
 
-              {/* Checkbox 4: Verificación Clave */}
-              <label className="flex items-start gap-2 cursor-pointer p-1.5 hover:bg-white/50 rounded">
+              {/* Checkbox 4: Llamadas Salientes Automáticas (Asterisk AudioSocket + AVR) */}
+              <label className="flex items-start gap-2 cursor-pointer p-1.5 hover:bg-white/50 rounded bg-blue-50/50 border border-blue-200">
                 <input
                   type="checkbox"
-                  checked={config.autoVerificarClave}
-                  onChange={e => setConfig(prev => ({ ...prev, autoVerificarClave: e.target.checked }))}
+                  checked={config.autoLlamarTitular}
+                  onChange={e => setConfig(prev => ({ ...prev, autoLlamarTitular: e.target.checked }))}
                   className="mt-0.5"
                 />
                 <div>
-                  <span className="font-bold text-gray-900">Auto-Cierre con Confirmación 'OK' / Clave</span>
-                  <p className="text-[10px] text-gray-600">Si el cliente responde OK o clave válida, resuelve el evento en verde.</p>
+                  <span className="font-bold text-blue-950 flex items-center gap-1">
+                    <span>📞 Llamada Saliente Inmediata (Operador Virtual IA)</span>
+                    <span className="px-1 py-0.2 bg-blue-600 text-white rounded text-[9px]">NUEVO</span>
+                  </span>
+                  <p className="text-[10px] text-gray-600">Disca al teléfono titular vía Asterisk AudioSocket con voz Piper ultrarrápida.</p>
+                </div>
+              </label>
+
+              {/* Checkbox 5: Zonificación Flexible (Número de zona si no hay descripción) */}
+              <label className="flex items-start gap-2 cursor-pointer p-1.5 hover:bg-white/50 rounded">
+                <input
+                  type="checkbox"
+                  checked={config.autoLlamarSoloNumeroZona}
+                  onChange={e => setConfig(prev => ({ ...prev, autoLlamarSoloNumeroZona: e.target.checked }))}
+                  className="mt-0.5"
+                />
+                <div>
+                  <span className="font-bold text-gray-900">Diálogo Ágil (Sin Clave + Zona Flexible)</span>
+                  <p className="text-[10px] text-gray-600">No exige clave verbal. Si la zona no tiene nombre, reporta solo su número limpio.</p>
                 </div>
               </label>
             </div>
@@ -227,18 +248,22 @@ export default function OperadorAutomaticoModal({
           </fieldset>
 
           {/* Telemetría y Estado de Canales */}
-          <div className="bg-[#b0b0b0] border-2 border-t-gray-700 border-l-gray-700 border-b-white border-r-white p-2.5 font-mono text-[11px] grid grid-cols-3 gap-2">
+          <div className="bg-[#b0b0b0] border-2 border-t-gray-700 border-l-gray-700 border-b-white border-r-white p-2.5 font-mono text-[11px] grid grid-cols-4 gap-2">
             <div className="flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-emerald-500" />
-              <span>WHATSAPP CLOUD: <strong className="text-emerald-900">EN LÍNEA</strong></span>
+              <span>WHATSAPP: <strong className="text-emerald-900">EN LÍNEA</strong></span>
             </div>
             <div className="flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-emerald-500" />
-              <span>SUPABASE SYNC: <strong className="text-emerald-900">ACTIVO</strong></span>
+              <span>ASTERISK PJSIP: <strong className="text-emerald-900">CONECTADO</strong></span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-500" />
+              <span>AUDIOSOCKET: <strong className="text-emerald-900">LISTO (0ms)</strong></span>
             </div>
             <div className="flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-cyan-600" />
-              <span>MOTOR IA: <strong className="text-cyan-950">STANDBY</strong></span>
+              <span>MOTOR IA: <strong className="text-cyan-950">PIPER/VOSK</strong></span>
             </div>
           </div>
 
