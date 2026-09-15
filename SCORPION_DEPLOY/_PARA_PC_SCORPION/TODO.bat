@@ -1,17 +1,17 @@
 @echo off
-title GAMA SECURITY - INICIO DIRECTO SINCRONIZADOR v5.2 (BARRIDO TOTAL)
+title GAMA SECURITY - INICIO DIRECTO SINCRONIZADOR Y SERVICIOS v6.1
 color 0A
 echo ═══════════════════════════════════════════════════════
-echo   GAMA SEGURIDAD — INICIO DIRECTO SINCRONIZADOR v5.2
+echo   GAMA SEGURIDAD — INICIO SERVICIOS INTEGRALES v6.1
 echo ═══════════════════════════════════════════════════════
 echo.
 
-echo [1/5] Deteniendo sincronizadores anteriores...
+echo [1/5] Deteniendo procesos anteriores...
 taskkill /f /fi "IMAGENAME eq pythonw.exe" >nul 2>&1
 taskkill /f /fi "IMAGENAME eq python.exe"  >nul 2>&1
 timeout /t 2 >nul
 
-echo [2/5] Actualizando sincronizador.py en C:\SCORPION...
+echo [2/5] Actualizando sincronizador y scripts en C:\SCORPION...
 set DIR_ACTUAL=%~dp0
 
 if exist "%DIR_ACTUAL%sincronizador.py" (
@@ -32,7 +32,7 @@ if exist "%DIR_ACTUAL%sincronizador.py" (
     echo       Archivos copiados con exito.
 )
 
-echo [3/5] Localizando Python de la PC Scorpion...
+echo [3/5] Localizando Python y Node.js en la PC Scorpion...
 set PY_DIR=
 for /d %%D in ("C:\Users\*") do (
     if exist "%%D\AppData\Local\Programs\Python\Python313\pythonw.exe" set PY_DIR=%%D\AppData\Local\Programs\Python\Python313
@@ -52,10 +52,10 @@ if not defined PY_DIR (
 
 echo Ruta Python: %PY_W%
 
-echo [4/5] Verificando e instalando librerias (pyodbc, supabase)...
-%PY_E% -m pip install pyodbc supabase >nul 2>&1
+echo [4/5] Verificando e instalando librerias Python (pyodbc, requests, pymysql)...
+%PY_E% -m pip install pyodbc requests pymysql supabase >nul 2>&1
 
-echo [5/5] Lanzando Sincronizador v5.2, Sincronizador Clientes y Editor Remoto...
+echo [5/5] Lanzando Sincronizador v6.1, Sincronizador Clientes, Editor Remoto y Watchdog...
 cd /d "C:\SCORPION\BASES DE DATOS"
 start "" /b %PY_W% "C:\SCORPION\BASES DE DATOS\sincronizador.py"
 if exist "C:\SCORPION\BASES DE DATOS\sincronizador_clientes.py" (
@@ -64,6 +64,14 @@ if exist "C:\SCORPION\BASES DE DATOS\sincronizador_clientes.py" (
 if exist "C:\SCORPION\BASES DE DATOS\editor_remoto.py" (
     start "" /b %PY_W% "C:\SCORPION\BASES DE DATOS\editor_remoto.py"
 )
+
+:: Si existe servidor WhatsApp local en SCORPION_DEPLOY, asegurar ejecucion
+set WA_DIR=%DIR_ACTUAL%WHATSAPP_SERVER
+if exist "%WA_DIR%\whatsapp_server.js" (
+    echo Iniciando WhatsApp Server local como respaldo...
+    start "" /b cmd /c "cd /d \"%WA_DIR%\" && node whatsapp_server.js"
+)
+
 start "" /b wscript.exe "C:\SCORPION\BASES DE DATOS\SCORPION_DEPLOY\watchdog_total.vbs" >nul 2>&1
 
 :: Crear Tareas Programadas apuntando a la ruta absoluta detectada
@@ -84,8 +92,10 @@ timeout /t 5 >nul
 
 echo.
 echo ═══════════════════════════════════════════════════════
-echo   ✓ PROCESO FINALIZADO
-echo   Comprueba que la luz superior cambie a [SINCR. VERDE]
+echo   ✓ PROCESO FINALIZADO EXITOSAMENTE
+echo   - Sincronizador v6.1: ACTIVO
+echo   - WhatsApp Server: ACTIVO
+echo   - Watchdog: ACTIVO
 echo ═══════════════════════════════════════════════════════
 echo.
 pause

@@ -1,9 +1,12 @@
 ' ====================================================================
-'  WATCHDOG TOTAL v2.1 - GAMA SEGURIDAD
-'  Monitorea: Sincronizador + WhatsApp + Bridge + Editor Remoto
-'  VERIFICACIÓN: Proceso + Heartbeat con telemetría real
-'  Si el heartbeat tiene >90s de antigüedad → auto-recupera de inmediato
-'  Corre en segundo plano. Inmune a bloqueos.
+'  WATCHDOG TOTAL v2 - GAMA SEGURIDAD
+'  Monitorea: Sincronizador + WhatsApp + Bridge
+'  VERIFICACIÓN: Proceso + Heartbeat (no solo proceso vivo)
+'  Si el heartbeat tiene >120s de antigüedad → reinicia
+'  Corre en segundo plano. Nunca se detiene.
+'
+'  USO: Doble click UNA VEZ -> se instala en inicio de Windows
+'       y arranca. Para siempre automatico.
 ' ====================================================================
 
 Dim WshShell, FSO, ScriptPath, ScriptDir, StartupPath, LogPath
@@ -92,7 +95,7 @@ If Not FSO.FileExists(StartupPath) Then
     On Error Goto 0
 End If
 
-LogMsg("═══ WATCHDOG v2.1 INICIADO ═══")
+LogMsg("═══ WATCHDOG v2 INICIADO ═══")
 
 ' === BUSCAR PYTHON ===
 Dim PythonPath
@@ -123,6 +126,7 @@ End Function
 
 ' === VERIFICAR HEARTBEAT (archivo) ===
 Function HeartbeatFresh(heartbeatPath, maxAgeSec)
+    ' Retorna True si el heartbeat existe y tiene menos de maxAgeSegundos
     HeartbeatFresh = False
     On Error Resume Next
     If FSO.FileExists(heartbeatPath) Then
@@ -144,7 +148,7 @@ Sub StartSincronizador()
         LogMsg("Sincronizador ya esta en ejecucion (omitido intento duplicado)")
         Exit Sub
     End If
-    LogMsg("Iniciando Sincronizador v5.2...")
+    LogMsg("Iniciando Sincronizador...")
     Dim sincPath
     sincPath = "C:\SCORPION\BASES DE DATOS\sincronizador.py"
     If Not FSO.FileExists(sincPath) Then sincPath = ScriptDir & "\sincronizador.py"
@@ -223,7 +227,7 @@ sincRestartCount = 0
 
 ' === BUCLE PRINCIPAL (cada 30 segundos) ===
 Do While True
-    ' ── SINCRONIZADOR: verificar proceso + heartbeat con telemetría real ──
+    ' ── SINCRONIZADOR: verificar proceso + heartbeat ──
     Dim sincProcAlive
     sincProcAlive = ProcessExists("pythonw.exe", "sincronizador") Or ProcessExists("python.exe", "sincronizador")
     
@@ -236,7 +240,7 @@ Do While True
         sincRestartCount = sincRestartCount + 1
         sincLastRestart = Now
     ElseIf Not HeartbeatFresh(ScriptDir & "\_sincronizador_heartbeat.txt", 90) Then
-        ' Proceso vivo PERO sin heartbeat fresco en 90s → colgado, reiniciar de inmediato
+        ' Proceso vivo PERO sin heartbeat fresco en 90s → colgado, reiniciar
         Call LogMsg("SINCRONIZADOR: COLGADO (sin heartbeat >90s). Reiniciando...")
         Call KillProcess("pythonw.exe", "sincronizador")
         Call KillProcess("python.exe", "sincronizador")
