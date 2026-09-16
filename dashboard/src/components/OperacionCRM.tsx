@@ -204,9 +204,9 @@ export interface OrdenDeTrabajo {
 const EMPRESAS_INICIALES: EmpresaConglomerado[] = [
   {
     id: 'EMP-1',
-    razon_social: 'Gama Seguridad SpA',
+    razon_social: 'Inversiones Gama SpA',
     rut: '76.319.399-3',
-    giro: 'Servicios de Seguridad Electrónica & Alarmas',
+    giro: 'Servicios de Inversiones, Seguridad Electrónica & Alarmas',
     direccion: 'Av. Valparaíso 1183 Of. 03, Viña del Mar, Chile',
     telefono: '+56 32 3276011',
     email_cobranza: 'cobranza@gamasecurity.cl',
@@ -218,6 +218,20 @@ const EMPRESAS_INICIALES: EmpresaConglomerado[] = [
   },
   {
     id: 'EMP-2',
+    razon_social: 'Gama Seguridad SpA',
+    rut: '76.319.399-3',
+    giro: 'Servicios de Seguridad Electrónica & Monitoreo 24/7',
+    direccion: 'Av. Valparaíso 1183 Of. 03, Viña del Mar, Chile',
+    telefono: '+56 32 3276011',
+    email_cobranza: 'cobranza@gamasecurity.cl',
+    email_contacto: 'contacto@gamasecurity.cl',
+    web: 'www.gamasecurity.cl',
+    banco_nombre: 'Banco de Chile / Edwards',
+    banco_tipo_cuenta: 'Cuenta Corriente',
+    banco_numero_cuenta: '00-123-45678-9'
+  },
+  {
+    id: 'EMP-3',
     razon_social: 'Gama Servicios Limitada',
     rut: '76.123.456-K',
     giro: 'Servicios Integrales de Monitoreo 24/7',
@@ -231,7 +245,7 @@ const EMPRESAS_INICIALES: EmpresaConglomerado[] = [
     banco_numero_cuenta: '00-987-65432-1'
   },
   {
-    id: 'EMP-3',
+    id: 'EMP-4',
     razon_social: 'Gama Tecnología & Telecom SpA',
     rut: '77.890.123-4',
     giro: 'Venta e Instalación de CCTV & Sistemas de Control de Acceso',
@@ -245,7 +259,7 @@ const EMPRESAS_INICIALES: EmpresaConglomerado[] = [
     banco_numero_cuenta: '11-223-34455-6'
   },
   {
-    id: 'EMP-4',
+    id: 'EMP-5',
     razon_social: 'Gama Monitoreo 24/7 SpA',
     rut: '76.999.888-1',
     giro: 'Central de Operaciones & Verificación por Video IA',
@@ -618,7 +632,14 @@ export default function OperacionCRM() {
   useEffect(() => {
     try {
       const localEmp = localStorage.getItem('gama_empresas')
-      if (localEmp) setEmpresasConglomerado(JSON.parse(localEmp))
+      if (localEmp) {
+        const parsed = JSON.parse(localEmp)
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const IDs = new Set(parsed.map((p: any) => p.id || p.razon_social))
+          const missing = EMPRESAS_INICIALES.filter(e => !IDs.has(e.id) && !IDs.has(e.razon_social))
+          setEmpresasConglomerado([...missing, ...parsed])
+        }
+      }
 
       const localCot = localStorage.getItem('gama_cotizaciones')
       if (localCot) setCotizaciones(JSON.parse(localCot))
@@ -643,8 +664,11 @@ export default function OperacionCRM() {
           try {
             const parsed = JSON.parse(dEmp[0].nombre_abonado)
             if (Array.isArray(parsed) && parsed.length > 0) {
-              setEmpresasConglomerado(parsed)
-              localStorage.setItem('gama_empresas', JSON.stringify(parsed))
+              const IDs = new Set(parsed.map((p: any) => p.id || p.razon_social))
+              const missing = EMPRESAS_INICIALES.filter(e => !IDs.has(e.id) && !IDs.has(e.razon_social))
+              const finalEmps = [...missing, ...parsed]
+              setEmpresasConglomerado(finalEmps)
+              localStorage.setItem('gama_empresas', JSON.stringify(finalEmps))
             }
           } catch (e) {}
         }
