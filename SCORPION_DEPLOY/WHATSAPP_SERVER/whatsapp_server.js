@@ -828,7 +828,7 @@ function suscribirSupabaseRealtime() {
       })
       .subscribe(status => log(`Supabase Realtime (commands): ${status}`))
 
-    // Canal 3: Mensajes pendientes (reemplaza polling de 3s)
+    // Canal 3: Mensajes pendientes vía Realtime
     supabase.channel('whatsapp_pending_dispatches')
       .on('postgres_changes', {
         event: 'INSERT', schema: 'public',
@@ -836,7 +836,7 @@ function suscribirSupabaseRealtime() {
       }, async payload => {
         const row = payload.new
         if (!row?.numero || !row?.mensaje_enviado) return
-        log(`📡 Pendiente: +${row.numero} (ID: ${row.id})`)
+        log(`📡 Pendiente (Realtime): +${row.numero} (ID: ${row.id})`)
         try {
           await enviarMensaje(row.numero, row.mensaje_enviado)
           await supabase.from('conversaciones_whatsapp').update({ estado: 'enviado' }).eq('id', row.id)
@@ -845,6 +845,36 @@ function suscribirSupabaseRealtime() {
         }
       })
       .subscribe(status => log(`Supabase Realtime (pending): ${status}`))
+
+    // Respaldo indestructible: Polling cada 4 segundos por si Realtime WebSocket cae
+    setInterval(async () => {
+      if (!isReady || !sock) return
+      try {
+        const { data: rows } = await supabase
+          .from('conversaciones_whatsapp')
+          .select('*')
+          .eq('estado', 'pendiente')
+          .order('id', { ascending: true })
+          .limit(10)
+
+        if (rows && rows.length > 0) {
+          for (const row of rows) {
+            log(`📬 Procesando mensaje pendiente (Polling): +${row.numero} (ID: ${row.id})`)
+            try {
+              // Marcar inmediatamente en proceso para no duplicar
+              await supabase.from('conversaciones_whatsapp').update({ estado: 'procesando' }).eq('id', row.id)
+              await enviarMensaje(row.numero, row.mensaje_enviado)
+              await supabase.from('conversaciones_whatsapp').update({ estado: 'enviado' }).eq('id', row.id)
+            } catch (e) {
+              log(`❌ Error enviando pendiente ${row.id}: ${e.message}`, 'WARN')
+              await supabase.from('conversaciones_whatsapp').update({ estado: 'error' }).eq('id', row.id)
+            }
+          }
+        }
+      } catch (errPoll) {
+        // Silencioso para evitar saturación de logs
+      }
+    }, 4000)
 
   } catch (err) {
     log(`Supabase Realtime error: ${err.message}`, 'WARN')

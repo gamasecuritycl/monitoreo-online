@@ -4,9 +4,9 @@ import requests
 import pymysql
 
 # ════════════════════════════════════════════════════════════════
-#  GAMA COMMAND CENTER - SINCRONIZADOR HÍBRIDO INDESTRUCTIBLE v6.0
-#  - Fuente 1: MySQL Central IPRS (Retransmisión en Vivo)
-#  - Fuente 2: Bases de Datos Access (.MDB) locales/Scorpion
+#  GAMA COMMAND CENTER - SINCRONIZADOR HÍBRIDO INDESTRUCTIBLE v6.1
+#  - Fuente 1: MySQL Central IPRS (Retransmisión en Vivo IP 1C7...)
+#  - Fuente 2: Bases de Datos Access (.MDB) locales Scorpion en PC Central
 #  - Auto-Actualización GitHub + Resiliencia Zero-Crash
 # ════════════════════════════════════════════════════════════════
 
@@ -61,7 +61,7 @@ HEADERS_SUPABASE = {
     "Prefer": "return=minimal"
 }
 
-# ── MYSQL CENTRAL CONFIG (param.config) ───────────────────────────
+# ── MYSQL CENTRAL CONFIG (IPRS) ───────────────────────────────────
 MYSQL_HOST = "186.4.239.44"
 MYSQL_PORT = 3306
 MYSQL_USER = "user1"
@@ -74,8 +74,31 @@ if os.path.basename(script_dir).upper() == "SCORPION_DEPLOY":
 else:
     root_dir = script_dir
 
-RUTA_COPIA_TEMP = os.path.join(TEMP_DIR, '_EVENTOS_TEMP.MDB')
-RUTA_CACHE      = os.path.join(TEMP_DIR, '_sincronizador_cache.json')
+candidatos_rutas_mdb = [
+    r'C:\SCORPION\BASES DE DATOS\OPERACION',
+    r'C:\SCORPION\BASE DE DATOS\OPERACION',
+    r'C:\SCORPION\OPERACION',
+    r'C:\SCORPION\BASES DE DATOS\EVENTOS',
+    r'C:\SCORPION\BASE DE DATOS\EVENTOS',
+    r'C:\SCORPION\BASES DE DATOS',
+    r'C:\SCORPION\BASE DE DATOS',
+    r'C:\SCORPION',
+    os.path.join(root_dir, 'BASES DE DATOS', 'OPERACION'),
+    os.path.join(root_dir, 'OPERACION'),
+    os.path.join(root_dir, 'BASES DE DATOS', 'EVENTOS'),
+    os.path.join(root_dir, 'EVENTOS'),
+    root_dir,
+    r'E:\MONITOREO ONLINE\BASES DE DATOS\EVENTOS',
+]
+
+rutas_unicas_mdb = []
+for p in candidatos_rutas_mdb:
+    p_norm = os.path.normpath(p)
+    if p_norm.lower() not in [r.lower() for r in rutas_unicas_mdb]:
+        rutas_unicas_mdb.append(p_norm)
+
+RUTA_COPIA_TEMP   = os.path.join(TEMP_DIR, '_EVENTOS_TEMP.MDB')
+RUTA_CACHE        = os.path.join(TEMP_DIR, '_sincronizador_cache.json')
 RUTA_CURSOR_MYSQL = os.path.join(TEMP_DIR, '_sincronizador_mysql_cursor.txt')
 
 INTERVALO_SEG = 3
@@ -84,6 +107,7 @@ HEARTBEAT_ROW_ID = 1492786
 LAST_UPDATE_CHECK = 0
 CLIENTES_LOCAL_MAP = {}
 CODIGOS_LOCAL_MAP = {}
+PASSWORDS_PROBAR_MDB = ['Administ', 'SCORPION29', 'SCORPION7', '', 'scorpion', 'SCORPION', 'SCORPION2026', 'admin', 'ADMIN']
 
 def get_chile_offset() -> str:
     if time.daylight and time.localtime().tm_isdst:
@@ -149,7 +173,6 @@ def parse_fecha_hora(dia_str, hora_str, chile_tz):
 def load_maestros():
     """ Carga mapa de clientes y códigos para resolver nombres en vivo """
     global CLIENTES_LOCAL_MAP, CODIGOS_LOCAL_MAP
-    # 1. Fallback clientes desde archivo local JSON si existe
     candidate_json = [
         os.path.join(root_dir, "dashboard", "src", "lib", "clientes_general.json"),
         os.path.join(script_dir, "clientes_general.json")
@@ -162,7 +185,6 @@ def load_maestros():
                 break
             except Exception: pass
 
-    # 2. Cargar/actualizar desde Supabase
     try:
         r_cl = requests.get(f"{SUPABASE_URL}/rest/v1/eventos_monitoreo?cuenta=eq.CLIENTES&limit=1", headers=HEADERS_SUPABASE, timeout=5)
         if r_cl.status_code == 200 and r_cl.json():
@@ -180,11 +202,7 @@ def load_maestros():
     except Exception: pass
 
 def parse_trama_alarma(trama):
-    """
-    Decodifica tramas estándar Contact ID y SIA
-    Ejemplos CID: '5051 18C722R40001000', '5021 18C761E60200000'
-    Ejemplos SIA: 'S01001[#C7AD|Nri1/OP00]', 'S01001[#C782|Nri1/BA05/BH05]'
-    """
+    """ Decodifica tramas estándar Contact ID y SIA """
     if not trama: return None
     trama_clean = str(trama).strip().rstrip('\x14').rstrip('\r').rstrip('\n')
     
@@ -194,11 +212,9 @@ def parse_trama_alarma(trama):
         cuenta = m_cid.group(1).upper()
         tipo = m_cid.group(2).upper()
         code = m_cid.group(3)
-        part = m_cid.group(4)
         zn_us = m_cid.group(5)
         num = int(zn_us) if zn_us.isdigit() else 0
         
-        # Mapear zonas y usuarios segun convencion estándar Contact ID
         is_user_code = code in ['400', '401', '402', '403', '404', '405', '406', '407', '408', '409']
         if is_user_code:
             zona = ''
@@ -212,7 +228,6 @@ def parse_trama_alarma(trama):
                 usuario = ''
 
         cid_key = f"{tipo}{code}"
-        # Resolver descripción según CODIGOS.MDB o contact_id estándar
         desc = ""
         if cid_key in CODIGOS_LOCAL_MAP:
             desc = CODIGOS_LOCAL_MAP[cid_key].get('descripcion', '')
@@ -353,7 +368,7 @@ def enviar_heartbeat():
         now_iso = datetime.now(timezone.utc).isoformat()
         patch_data = {
             "fecha_hora": now_iso,
-            "nombre_abonado": "PC CENTRAL EN LINEA (v6.0 Híbrido IPRS+MDB)",
+            "nombre_abonado": "PC CENTRAL EN LINEA (v6.1 Híbrido MDB+IPRS)",
             "evento": "HEARTBEAT",
             "zona": "000",
             "usuario": "SYSTEM"
@@ -372,14 +387,19 @@ def enviar_heartbeat():
                 timeout=5
             )
 
-        hb_path = os.path.join(script_dir, "_sincronizador_heartbeat.txt")
-        with open(hb_path, "w", encoding="utf-8") as f:
-            f.write(now_iso)
+        # Archivo local de heartbeat para el watchdog_total.vbs
+        for d in [script_dir, r"C:\SCORPION\BASES DE DATOS", r"C:\SCORPION\BASES DE DATOS\SCORPION_DEPLOY"]:
+            if os.path.exists(d):
+                hb_path = os.path.join(d, "_sincronizador_heartbeat.txt")
+                try:
+                    with open(hb_path, "w", encoding="utf-8") as f:
+                        f.write(now_iso)
+                except Exception: pass
     except Exception:
         pass
 
+# ── FUENTE 1: MySQL Central IPRS ───────────────────────────────────
 def sincronizar_desde_mysql(cache):
-    """ Extrae señales en vivo desde la base de datos retransmisión de IPRS """
     chile_tz = get_chile_offset()
     cursor_id = 0
     if os.path.exists(RUTA_CURSOR_MYSQL):
@@ -400,7 +420,6 @@ def sincronizar_desde_mysql(cache):
         )
         cur = conn.cursor()
         
-        # Si es primera ejecucion, tomar los ultimos 200 eventos
         if cursor_id == 0:
             cur.execute("SELECT id, Fecha_Hora, Trama_evento FROM eventos_encriptados WHERE IP_Publica LIKE %s ORDER BY id DESC LIMIT 200", ('%1C7%',))
         else:
@@ -412,7 +431,6 @@ def sincronizar_desde_mysql(cache):
         if not rows:
             return cache
 
-        # Si consultó orden descendente para carga inicial, invertir a ascendente
         if cursor_id == 0:
             rows = list(reversed(rows))
 
@@ -436,13 +454,11 @@ def sincronizar_desde_mysql(cache):
             zona   = parsed['zona']
             usuario = parsed['usuario']
 
-            # Formatear fecha a ISO con timezone de Chile
             f_tokens = str(fecha_str).strip().split()
             d_part = f_tokens[0] if len(f_tokens) > 0 else ""
             h_part = f_tokens[1] if len(f_tokens) > 1 else ""
             fecha_hora = parse_fecha_hora(d_part, h_part, chile_tz)
 
-            # Nombre de abonado desde el mapa en memoria
             nombre_abonado = CLIENTES_LOCAL_MAP.get(cuenta, {}).get('nombre', '') if isinstance(CLIENTES_LOCAL_MAP.get(cuenta), dict) else str(CLIENTES_LOCAL_MAP.get(cuenta) or '')
             if not nombre_abonado:
                 nombre_abonado = f"ABONADO {cuenta}"
@@ -495,9 +511,193 @@ def sincronizar_desde_mysql(cache):
             with open(RUTA_CURSOR_MYSQL, 'w', encoding='utf-8') as f:
                 f.write(str(max_seen_id))
 
-    except Exception as e:
-        # Error temporal en conexion MySQL
+    except Exception:
         pass
+
+    return cache
+
+# ── FUENTE 2: Archivos MDB locales de Scorpion ─────────────────────
+def get_archivos_mdb_activos():
+    archivos = []
+    rutas_procesadas = set()
+
+    for ruta in rutas_unicas_mdb:
+        if os.path.exists(ruta):
+            try:
+                for root, dirs, files in os.walk(ruta):
+                    if 'ZONIFICACION' in root.upper():
+                        continue
+                    for f in files:
+                        if f.upper().endswith('.MDB') and not f.startswith('_'):
+                            full_path = os.path.normpath(os.path.join(root, f))
+                            if full_path.lower() not in rutas_procesadas:
+                                rutas_procesadas.add(full_path.lower())
+                                try:
+                                    mtime = os.path.getmtime(full_path)
+                                    archivos.append((mtime, full_path))
+                                except Exception: pass
+            except Exception: pass
+
+    archivos.sort(key=lambda x: x[0], reverse=True)
+    return [item[1] for item in archivos[:20]]
+
+def copiar_mdb_con_retry(ruta_original, ruta_temp, max_intentos=2):
+    for intento in range(max_intentos):
+        try:
+            if os.path.exists(ruta_temp):
+                try: os.remove(ruta_temp)
+                except Exception: pass
+
+            shutil.copy2(ruta_original, ruta_temp)
+            if os.path.exists(ruta_temp) and os.path.getsize(ruta_temp) > 0:
+                return True
+        except Exception: pass
+        time.sleep(0.1)
+    return False
+
+def abrir_conexion_mdb(ruta_mdb):
+    err_ultimo = None
+    for pwd in PASSWORDS_PROBAR_MDB:
+        try:
+            conn_str = (
+                f'DRIVER={{Microsoft Access Driver (*.mdb, *.accdb)}};'
+                f'DBQ={ruta_mdb};PWD={pwd};ReadOnly=1;'
+            )
+            return pyodbc.connect(conn_str)
+        except Exception as e:
+            err_ultimo = e
+            continue
+    raise err_ultimo if err_ultimo else Exception("No se pudo abrir MDB")
+
+def sincronizar_desde_mdb(cache):
+    archivos_mdb = get_archivos_mdb_activos()
+    if not archivos_mdb:
+        return cache
+
+    chile_tz = get_chile_offset()
+
+    for ruta_original in archivos_mdb:
+        ruta_lectura = RUTA_COPIA_TEMP
+        if not copiar_mdb_con_retry(ruta_original, RUTA_COPIA_TEMP):
+            ruta_lectura = ruta_original
+
+        try:
+            conn = abrir_conexion_mdb(ruta_lectura)
+            cursor = conn.cursor()
+            
+            rows = []
+            columns = []
+            try:
+                cursor.execute("SELECT * FROM EVENTOS")
+                rows = cursor.fetchall()
+                columns = [col[0].upper() for col in cursor.description]
+            except Exception:
+                try:
+                    cursor.execute("SELECT * FROM OPERACION")
+                    rows = cursor.fetchall()
+                    columns = [col[0].upper() for col in cursor.description]
+                except Exception: pass
+
+            conn.close()
+
+            if not rows:
+                continue
+
+            def get_val(r, col_names, default_idx):
+                for name in col_names:
+                    if name in columns:
+                        idx = columns.index(name)
+                        return str(r[idx]).strip() if r[idx] is not None else ""
+                if default_idx < len(r):
+                    return str(r[default_idx]).strip() if r[default_idx] is not None else ""
+                return ""
+
+            batch_data = []
+            batch_keys = []
+
+            for row in rows:
+                dia     = get_val(row, ['DIA'], 0)
+                hora    = get_val(row, ['HORA'], 1)
+                cuenta  = get_val(row, ['CUENTA'], 2)
+                nombre  = get_val(row, ['NOMBRE', 'ABONADO', 'NOMBRE_ABONADO'], 3)
+                evento  = get_val(row, ['EVENTO'], 4)
+                zona    = get_val(row, ['ZONA'], 6)
+                usuario = get_val(row, ['USUARIO'], 7)
+
+                if not cuenta or not evento:
+                    continue
+
+                fecha_hora = parse_fecha_hora(dia, hora, chile_tz)
+
+                # Ignorar eventos con más de 7 días de antigüedad
+                try:
+                    ev_clean = fecha_hora.split('T')[0]
+                    ev_parts = [int(p) for p in ev_clean.split('-')]
+                    ev_date = datetime(ev_parts[0], ev_parts[1], ev_parts[2])
+                    if (datetime.now() - ev_date).days > 7:
+                        continue
+                except Exception: pass
+
+                # Nombre resuelto si viene vacío
+                if not nombre:
+                    nombre = CLIENTES_LOCAL_MAP.get(cuenta, {}).get('nombre', '') if isinstance(CLIENTES_LOCAL_MAP.get(cuenta), dict) else str(CLIENTES_LOCAL_MAP.get(cuenta) or '')
+                    if not nombre:
+                        nombre = f"ABONADO {cuenta}"
+
+                event_key = f"{fecha_hora}_{cuenta}_{evento}_{zona}_{usuario}"
+                if event_key in cache or event_key in batch_keys:
+                    continue
+
+                batch_data.append({
+                    "fecha_hora":     fecha_hora,
+                    "cuenta":         cuenta,
+                    "nombre_abonado": nombre,
+                    "evento":         evento,
+                    "zona":           zona,
+                    "usuario":        usuario,
+                })
+                batch_keys.append(event_key)
+
+                if len(batch_data) >= 50:
+                    try:
+                        r_ins = requests.post(f"{SUPABASE_URL}/rest/v1/eventos_monitoreo", headers=HEADERS_SUPABASE, json=batch_data, timeout=8)
+                        if r_ins.status_code in [200, 201]:
+                            for k in batch_keys: cache.add(k)
+                            save_cache(cache)
+                            enviar_heartbeat()
+                    except Exception:
+                        for d, k in zip(batch_data, batch_keys):
+                            try:
+                                requests.post(f"{SUPABASE_URL}/rest/v1/eventos_monitoreo", headers=HEADERS_SUPABASE, json=[d], timeout=4)
+                                cache.add(k)
+                            except Exception: pass
+                        save_cache(cache)
+                        enviar_heartbeat()
+                    batch_data = []
+                    batch_keys = []
+
+            if batch_data:
+                try:
+                    r_ins = requests.post(f"{SUPABASE_URL}/rest/v1/eventos_monitoreo", headers=HEADERS_SUPABASE, json=batch_data, timeout=8)
+                    if r_ins.status_code in [200, 201]:
+                        for k in batch_keys: cache.add(k)
+                        save_cache(cache)
+                        enviar_heartbeat()
+                except Exception:
+                    for d, k in zip(batch_data, batch_keys):
+                        try:
+                            requests.post(f"{SUPABASE_URL}/rest/v1/eventos_monitoreo", headers=HEADERS_SUPABASE, json=[d], timeout=4)
+                            cache.add(k)
+                        except Exception: pass
+                    save_cache(cache)
+                    enviar_heartbeat()
+
+        except Exception:
+            pass
+        finally:
+            if os.path.exists(RUTA_COPIA_TEMP):
+                try: os.remove(RUTA_COPIA_TEMP)
+                except Exception: pass
 
     return cache
 
@@ -505,17 +705,27 @@ def sincronizar_ciclo_completo(cache):
     enviar_heartbeat()
     verificar_auto_actualizacion_github()
     
-    # 1. Prioridad: Señales Live de IPRS Cloud
-    cache = sincronizar_desde_mysql(cache)
+    # 1. Ingesta desde MDBs locales de Scorpion (Servidor físico)
+    try:
+        cache = sincronizar_desde_mdb(cache)
+    except Exception as e_mdb:
+        print(f"[MDB LOOP WARN]: {e_mdb}")
+    enviar_heartbeat()
+
+    # 2. Ingesta desde IPRS Cloud MySQL (Retransmisión IP)
+    try:
+        cache = sincronizar_desde_mysql(cache)
+    except Exception as e_mysql:
+        print(f"[MYSQL LOOP WARN]: {e_mysql}")
     enviar_heartbeat()
 
     return cache
 
 if __name__ == "__main__":
     print("=" * 60)
-    print("  GAMA COMMAND CENTER - Sincronizador Indestructible v6.0")
+    print("  GAMA COMMAND CENTER - Sincronizador Indestructible v6.1")
     print(f"  Timezone: Chile ({get_chile_offset()})")
-    print("  Ingesta Dual: IPRS Cloud MySQL + GENERAL.MDB")
+    print("  Ingesta Híbrida: MDBs Scorpion Locales + IPRS Cloud")
     print("=" * 60)
     
     load_maestros()

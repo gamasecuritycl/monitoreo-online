@@ -65,11 +65,20 @@ if exist "C:\SCORPION\BASES DE DATOS\editor_remoto.py" (
     start "" /b %PY_W% "C:\SCORPION\BASES DE DATOS\editor_remoto.py"
 )
 
-:: Si existe servidor WhatsApp local en SCORPION_DEPLOY, asegurar ejecucion
-set WA_DIR=%DIR_ACTUAL%WHATSAPP_SERVER
-if exist "%WA_DIR%\whatsapp_server.js" (
-    echo Iniciando WhatsApp Server local como respaldo...
-    start "" /b cmd /c "cd /d \"%WA_DIR%\" && node whatsapp_server.js"
+:: Iniciar servidor WhatsApp (en subcarpeta o en carpeta actual)
+set WA_EJECUTADO=0
+if exist "%DIR_ACTUAL%WHATSAPP_SERVER\whatsapp_server.js" (
+    echo Iniciando WhatsApp Server (subcarpeta)...
+    start "" /b cmd /c "cd /d \"%DIR_ACTUAL%WHATSAPP_SERVER\" && node whatsapp_server.js"
+    set WA_EJECUTADO=1
+)
+if exist "%DIR_ACTUAL%whatsapp_server.js" (
+    copy /y "%DIR_ACTUAL%whatsapp_server.js" "C:\SCORPION\BASES DE DATOS\whatsapp_server.js" >nul 2>&1
+    copy /y "%DIR_ACTUAL%whatsapp_server.js" "C:\SCORPION\BASES DE DATOS\SCORPION_DEPLOY\whatsapp_server.js" >nul 2>&1
+    if "%WA_EJECUTADO%"=="0" (
+        echo Iniciando WhatsApp Server...
+        start "" /b cmd /c "cd /d \"%DIR_ACTUAL%\" && node whatsapp_server.js"
+    )
 )
 
 start "" /b wscript.exe "C:\SCORPION\BASES DE DATOS\SCORPION_DEPLOY\watchdog_total.vbs" >nul 2>&1

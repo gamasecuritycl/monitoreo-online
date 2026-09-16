@@ -44,33 +44,43 @@ export async function POST(req: Request) {
       tipoMedia = 'video'
     }
 
-    // 1. Enviar directamente a la nube (respuesta instantánea < 500ms)
+    // 1. Intentar enviar directamente a la nube (Railway) si estuviera disponible
     try {
       await fetch('https://gama-whatsapp-cloud-production.up.railway.app/api/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone: telLimpio, text: payload }),
-        signal: AbortSignal.timeout(6000),
+        signal: AbortSignal.timeout(2000),
       }).catch(() => {})
     } catch {}
 
-    // 2. Guardar en Supabase con estado enviado para visualización inmediata
-    const { error } = await supabase.from('conversaciones_whatsapp').insert({
+    // 2. Guardar en Supabase con estado 'pendiente' para que el servidor WhatsApp Baileys lo procese de inmediato
+    const { data: insertData, error } = await supabase.from('conversaciones_whatsapp').insert({
       cuenta: cuentaFinal,
       numero: telLimpio,
       mensaje_enviado: payload,
       tipo_evento: tipoMedia ? `media_${tipoMedia}` : 'mensaje_enviado',
-      estado: 'enviado',
+      estado: 'pendiente',
       created_at: new Date().toISOString()
-    })
+    }).select()
 
     if (error) {
       console.error('[SUPABASE INSERT ERROR]:', error.message)
       return NextResponse.json({ ok: false, error: error.message }, { status: 500 })
     }
 
-    console.log(`[WHATSAPP SEND-DIRECT] Mensaje enviado a ${telLimpio} (cuenta: ${cuentaFinal}, media: ${tipoMedia || 'texto'})`)
-    return NextResponse.json({ ok: true, proveedor: 'whatsapp_cloud_direct', numero: telLimpio, cuenta: cuentaFinal, tipo_media: tipoMedia })
+    // 3. Emitir por Broadcast Realtime a 'whatsapp_outbound' para entrega instantánea sin latencia
+    try {
+      const channel = supabase.channel('whatsapp_outbound')
+      await channel.send({
+        type: 'broadcast',
+        event: 'send_whatsapp',
+        payload: { phone: telLimpio, text: payload, id: insertData?.[0]?.id }
+      })
+    } catch {}
+
+    console.log(`[WHATSAPP SEND-DIRECT] Mensaje encolado (pendiente) a ${telLimpio} (cuenta: ${cuentaFinal}, media: ${tipoMedia || 'texto'})`)
+    return NextResponse.json({ ok: true, proveedor: 'whatsapp_queue_direct', numero: telLimpio, cuenta: cuentaFinal, tipo_media: tipoMedia })
   } catch (err: any) {
     console.error('[SEND-DIRECT API ERROR]:', err.message)
     return NextResponse.json({ ok: false, error: err.message }, { status: 500 })

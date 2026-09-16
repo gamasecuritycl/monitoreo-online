@@ -164,7 +164,16 @@ Sub StartWhatsApp()
         Exit Sub
     End If
     LogMsg("Iniciando WhatsApp Server...")
-    WshShell.Run "cmd /c """ & ScriptDir & "\WHATSAPP_SERVER\INICIAR_WHATSAPP_LOOP.bat""", 0, False
+    Dim waBat
+    If FSO.FileExists(ScriptDir & "\WHATSAPP_SERVER\INICIAR_WHATSAPP_LOOP.bat") Then
+        waBat = ScriptDir & "\WHATSAPP_SERVER\INICIAR_WHATSAPP_LOOP.bat"
+    ElseIf FSO.FileExists(ScriptDir & "\INICIAR_WHATSAPP.bat") Then
+        waBat = ScriptDir & "\INICIAR_WHATSAPP.bat"
+    ElseIf FSO.FileExists(ScriptDir & "\whatsapp_server.js") Then
+        WshShell.Run "cmd /c ""cd /d """ & ScriptDir & """ && node whatsapp_server.js""", 0, False
+        Exit Sub
+    End If
+    If waBat <> "" Then WshShell.Run "cmd /c """ & waBat & """", 0, False
     If Err.Number <> 0 Then LogMsg("ERROR WhatsApp: " & Err.Description)
     On Error Goto 0
 End Sub
@@ -216,7 +225,7 @@ End Sub
 
 ' === ARRANQUE INICIAL ===
 Call StartSincronizador()
-' Call StartWhatsApp()  ' NUBE 24/7 (Railway) — NO ejecutar localmente
+Call StartWhatsApp()
 Call StartBridge()
 Call StartEditorRemoto()
 
@@ -258,8 +267,13 @@ Do While True
         End If
     End If
 
-    ' ── WHATSAPP: Servidor en la Nube 24/7 (NO se ejecuta en PC Scorpion) ──
-
+    ' ── WHATSAPP: Servidor local de respaldo (si existe el archivo) ──
+    If FSO.FileExists(ScriptDir & "\whatsapp_server.js") Or FSO.FileExists(ScriptDir & "\WHATSAPP_SERVER\whatsapp_server.js") Then
+        If Not ProcessExists("node.exe", "") Then
+            Call LogMsg("WHATSAPP SERVER: Proceso detenido. Reiniciando...")
+            Call StartWhatsApp()
+        End If
+    End If
     ' ── BRIDGE: verificar proceso (solo si existe el archivo) ──
     If FSO.FileExists(ScriptDir & "\dahua_p2p_bridge.py") Then
         If Not (ProcessExists("pythonw.exe", "dahua_p2p_bridge") Or ProcessExists("python.exe", "dahua_p2p_bridge")) Then
