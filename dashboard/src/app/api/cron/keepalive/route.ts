@@ -17,10 +17,10 @@ export async function GET() {
     const duration = Date.now() - start
 
     if (error) {
-      console.warn('[KEEPALIVE CRON] Error al consultar Supabase:', error.message)
+      console.warn('[KEEPALIVE CRON] Supabase no disponible o pausado:', error.message)
       return NextResponse.json(
-        { ok: false, error: error.message, duration_ms: duration },
-        { status: 500 }
+        { ok: false, warning: 'Supabase pausado o no disponible', error: error.message, duration_ms: duration },
+        { status: 200 }
       )
     }
 
@@ -35,7 +35,7 @@ export async function GET() {
     console.error('[KEEPALIVE CRON] Excepcion:', err)
     return NextResponse.json(
       { ok: false, error: err?.message || 'Error inesperado' },
-      { status: 500 }
+      { status: 200 }
     )
   }
 }
