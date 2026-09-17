@@ -4208,3 +4208,4 @@
 2026-09-17 15:00:58 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 503 Service Unavailable"
 2026-09-17 15:01:05 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 503 Service Unavailable"
 2026-09-17 15:03:07 [ERROR] Error consultando eventos_monitoreo: The read operation timed out
+2026-09-17 15:04:36 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 503 Service Unavailable"

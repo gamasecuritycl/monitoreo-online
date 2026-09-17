@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { supabase } from '@/lib/supabase'
 import operadoresFallback from '@/lib/operadores.json'
+import { Shield, ShieldCheck, Lock, Sparkles, Activity, CheckCircle2, Server, KeyRound, User, Cpu, Radio } from 'lucide-react'
 import {
   Operator,
   UserRole,
@@ -25,6 +26,8 @@ export default function OperatorAuthGate({ children }: OperatorAuthGateProps) {
   const [operatorList, setOperatorList] = useState<Operator[]>(OPERADORES_PREDETERMINADOS)
   const [operator, setOperator] = useState<Operator | null>(null)
   const [checking, setChecking] = useState(true)
+  const [loadingProgress, setLoadingProgress] = useState(18)
+  const [loadingStepText, setLoadingStepText] = useState('Iniciando núcleo de seguridad 24/7...')
 
   // Formulario de Inicio de Sesión
   const [selectedCod, setSelectedCod] = useState('01')
@@ -46,17 +49,69 @@ export default function OperatorAuthGate({ children }: OperatorAuthGateProps) {
 
   // Cargar lista de operadores desde Supabase, localStorage o archivo local
   useEffect(() => {
+    let active = true
+
+    // Animación de progreso y pasos
+    const steps = [
+      { p: 38, text: 'Verificando credenciales y firmas de seguridad...' },
+      { p: 68, text: 'Sincronizando estaciones y protocolos de monitoreo...' },
+      { p: 90, text: 'Enlazando con Central Operativa Scorpion...' },
+      { p: 100, text: 'Acceso validado. Cargando interfaz...' },
+    ]
+
+    let stepIndex = 0
+    const progressInterval = setInterval(() => {
+      if (stepIndex < steps.length) {
+        setLoadingProgress(steps[stepIndex].p)
+        setLoadingStepText(steps[stepIndex].text)
+        stepIndex++
+      }
+    }, 280)
+
     async function cargarOperadores() {
+      // 1. Recuperar sesión activa INMEDIATAMENTE de forma síncrona
       try {
-        // 1. Intentar cargar desde Supabase fila 'OPERADORES'
-        const { data } = await supabase
+        const savedAuth = sessionStorage.getItem('gama_operator_auth') || localStorage.getItem('gama_operator_auth')
+        if (savedAuth) {
+          const parsedAuth = JSON.parse(savedAuth)
+          if (parsedAuth && parsedAuth.codigo) {
+            setOperator({
+              ...parsedAuth,
+              atributos: ensureUserAttributes(parsedAuth),
+            })
+          }
+        }
+
+        // 2. Cargar operadores desde caché local si existen
+        const savedList = localStorage.getItem('gama_operadores_list')
+        if (savedList) {
+          const parsed = JSON.parse(savedList)
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            const san = parsed.map((op: any) => ({
+              ...op,
+              atributos: ensureUserAttributes(op),
+            }))
+            setOperatorList(san)
+          }
+        }
+      } catch {}
+
+      // 3. Consultar Supabase con timeout de 2.2 segundos para que nunca se congele
+      try {
+        const fetchPromise = supabase
           .from('eventos_monitoreo')
           .select('nombre_abonado')
           .eq('cuenta', 'OPERADORES')
           .order('id', { ascending: false })
           .limit(1)
 
-        if (data && data.length > 0 && data[0].nombre_abonado) {
+        const timeoutPromise = new Promise<{ data: null }>((resolve) =>
+          setTimeout(() => resolve({ data: null }), 2200)
+        )
+
+        const { data }: any = await Promise.race([fetchPromise, timeoutPromise])
+
+        if (active && data && data.length > 0 && data[0].nombre_abonado) {
           try {
             const parsed = JSON.parse(data[0].nombre_abonado)
             if (Array.isArray(parsed) && parsed.length > 0) {
@@ -66,53 +121,29 @@ export default function OperatorAuthGate({ children }: OperatorAuthGateProps) {
               }))
               setOperatorList(san)
               localStorage.setItem('gama_operadores_list', JSON.stringify(san))
-              setChecking(false)
-              return
             }
           } catch {}
         }
       } catch (err) {
-        console.warn('Fallo de red Supabase operadores, usando local.')
+        console.warn('Fallo o timeout de Supabase operadores, usando caché local.')
       }
 
-      // 2. Fallback a localStorage
-      try {
-        const savedList = localStorage.getItem('gama_operadores_list')
-        if (savedList) {
-          const parsed = JSON.parse(savedList)
-          if (Array.isArray(parsed) && parsed.length > 0 && parsed.some((p: any) => p.nombre === 'Nancy Delgadillo' || p.nombre === 'admin')) {
-            const san = parsed.map((op: any) => ({
-              ...op,
-              atributos: ensureUserAttributes(op),
-            }))
-            setOperatorList(san)
-            setChecking(false)
-            return
-          }
-        }
-      } catch {}
-
-      // 3. Fallback a archivo operadores.json / OPERADORES_PREDETERMINADOS
-      setOperatorList(OPERADORES_PREDETERMINADOS)
-      localStorage.setItem('gama_operadores_list', JSON.stringify(OPERADORES_PREDETERMINADOS))
-      setChecking(false)
+      // Asegurar que la barra llegue a 100% y finalice suavemente
+      if (active) {
+        setLoadingProgress(100)
+        setLoadingStepText('Acceso validado. Bienvenido.')
+        setTimeout(() => {
+          if (active) setChecking(false)
+        }, 400)
+      }
     }
 
     cargarOperadores()
 
-    // Recuperar sesión activa
-    try {
-      const savedAuth = sessionStorage.getItem('gama_operator_auth') || localStorage.getItem('gama_operator_auth')
-      if (savedAuth) {
-        const parsedAuth = JSON.parse(savedAuth)
-        if (parsedAuth && parsedAuth.codigo) {
-          setOperator({
-            ...parsedAuth,
-            atributos: ensureUserAttributes(parsedAuth),
-          })
-        }
-      }
-    } catch {}
+    return () => {
+      active = false
+      clearInterval(progressInterval)
+    }
   }, [])
 
   // Guardar lista en localStorage y Supabase
@@ -298,10 +329,92 @@ export default function OperatorAuthGate({ children }: OperatorAuthGateProps) {
 
   if (checking) {
     return (
-      <div className="min-h-screen bg-[#004080] flex items-center justify-center text-white font-sans">
-        <div className="bg-[#d4d0c8] text-black border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 p-4 shadow-2xl flex items-center gap-3">
-          <span className="w-4 h-4 border-2 border-blue-900 border-t-transparent rounded-full animate-spin" />
-          <span className="text-xs font-bold font-mono">Verificando credenciales y permisos de usuario...</span>
+      <div className="min-h-screen bg-[#030712] text-white flex flex-col items-center justify-center p-4 relative overflow-hidden font-sans select-none">
+        {/* Glows ambientales y efectos de fondo */}
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[550px] h-[550px] bg-gradient-to-b from-[#0066cc]/25 via-[#004080]/10 to-transparent rounded-full blur-3xl pointer-events-none animate-pulse" />
+        <div className="absolute bottom-10 right-10 w-96 h-96 bg-[#00e5ff]/5 rounded-full blur-3xl pointer-events-none" />
+
+        {/* Tarjeta Glassmorphic Central */}
+        <div className="relative z-10 w-full max-w-md bg-[#0a1628]/85 backdrop-blur-2xl border border-[#1e3a5f]/70 p-7 sm:p-9 rounded-3xl shadow-[0_20px_60px_rgba(0,0,0,0.8)] flex flex-col items-center text-center">
+          
+          {/* Logo Escudo Animado con Anillo de Radar */}
+          <div className="relative mb-6 flex items-center justify-center">
+            {/* Anillos pulsantes */}
+            <div className="absolute -inset-4 rounded-full border border-[#2997ff]/20 animate-ping" style={{ animationDuration: '3s' }} />
+            <div className="absolute -inset-2 rounded-full border border-[#00e5ff]/30 animate-pulse" />
+            
+            {/* Contenedor del Escudo */}
+            <div className="w-20 h-20 rounded-2xl bg-gradient-to-b from-[#0f2a4a] to-[#050f1e] border-2 border-[#2997ff]/60 flex items-center justify-center shadow-[0_0_30px_rgba(0,102,204,0.5)]">
+              <ShieldCheck className="w-10 h-10 text-[#2997ff] drop-shadow-[0_0_12px_#2997ff]" />
+            </div>
+
+            {/* Punto de estado activo */}
+            <span className="absolute bottom-0 right-0 w-4 h-4 bg-emerald-500 border-2 border-[#0a1628] rounded-full shadow-[0_0_8px_#10b981] animate-pulse" />
+          </div>
+
+          {/* Título & Marca */}
+          <div className="space-y-1 mb-6">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#0066cc]/15 border border-[#2997ff]/30 text-[#2997ff] text-[10px] font-mono font-bold uppercase tracking-wider mb-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#2997ff] animate-ping" />
+              <span>CENTRAL OPERATIVA 24/7</span>
+            </div>
+            <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white flex items-center justify-center gap-2">
+              GAMA SECURITY
+              <span className="text-[#2997ff]">CRM 360°</span>
+            </h1>
+            <p className="text-xs text-slate-400 font-medium">
+              Autenticación y Plataforma de Monitoreo
+            </p>
+          </div>
+
+          {/* Barra de Progreso con Gradiente y Shimmer */}
+          <div className="w-full space-y-2 mb-6">
+            <div className="flex justify-between items-center text-xs font-mono">
+              <span className="text-slate-400 font-medium truncate max-w-[260px] text-left">
+                {loadingStepText}
+              </span>
+              <span className="text-[#2997ff] font-bold">
+                {loadingProgress}%
+              </span>
+            </div>
+
+            <div className="w-full h-2 bg-[#050d1a] border border-[#1e3a5f] rounded-full overflow-hidden p-0.5 relative shadow-inner">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-[#0066cc] via-[#2997ff] to-[#00e5ff] shadow-[0_0_12px_#2997ff] transition-all duration-300 relative overflow-hidden"
+                style={{ width: `${loadingProgress}%` }}
+              >
+                {/* Efecto Shimmer dinámico */}
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-pulse" />
+              </div>
+            </div>
+          </div>
+
+          {/* Badges y Telemetría del Sistema */}
+          <div className="w-full grid grid-cols-3 gap-2 pt-4 border-t border-[#1e3a5f]/50 text-[10px] font-mono text-slate-400">
+            <div className="bg-[#050d1a]/80 p-2 rounded-xl border border-[#1e3a5f]/40 flex flex-col items-center gap-1">
+              <Radio className="w-3.5 h-3.5 text-[#2997ff]" />
+              <span className="text-[9px] text-slate-500">ENLACE</span>
+              <span className="text-emerald-400 font-bold">ONLINE</span>
+            </div>
+            <div className="bg-[#050d1a]/80 p-2 rounded-xl border border-[#1e3a5f]/40 flex flex-col items-center gap-1">
+              <Lock className="w-3.5 h-3.5 text-[#2997ff]" />
+              <span className="text-[9px] text-slate-500">SEGURIDAD</span>
+              <span className="text-slate-200 font-bold">AES-256</span>
+            </div>
+            <div className="bg-[#050d1a]/80 p-2 rounded-xl border border-[#1e3a5f]/40 flex flex-col items-center gap-1">
+              <Server className="w-3.5 h-3.5 text-[#2997ff]" />
+              <span className="text-[9px] text-slate-500">SISTEMA</span>
+              <span className="text-[#2997ff] font-bold">SCORPION</span>
+            </div>
+          </div>
+
+        </div>
+
+        {/* Footer discreto */}
+        <div className="mt-8 text-[11px] font-mono text-slate-500 flex items-center gap-2">
+          <span>Gama Seguridad SpA</span>
+          <span>•</span>
+          <span>Central de Monitoreo & Operaciones 24/7</span>
         </div>
       </div>
     )
