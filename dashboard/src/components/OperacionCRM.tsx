@@ -2723,28 +2723,28 @@ export default function OperacionCRM() {
                               }
                               setBusquedaClienteInput('')
                             }}
-                            className="p-4 bg-[#E0E5EC] shadow-[4px_4px_10px_#bec8d2,-4px_-4px_10px_#ffffff] hover:shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] rounded-xl cursor-pointer flex justify-between items-center transition-all border border-white/50"
+                            className="p-4 bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 rounded-2xl cursor-pointer flex justify-between items-center transition-all group"
                           >
                             <div className="space-y-1">
-                              <div className="font-bold text-xs text-slate-900 flex items-center gap-2 flex-wrap">
+                              <div className="font-bold text-xs text-white flex items-center gap-2 flex-wrap">
                                 {item.tipo === 'abonado' && (
-                                  <span className="bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white font-mono text-[10px] px-2.5 py-0.5 rounded-md font-bold shadow-xs">
+                                  <span className="bg-gradient-to-r from-[#0066cc] to-[#2997ff] text-white font-mono text-[10px] px-2.5 py-0.5 rounded-lg font-bold shadow-xs">
                                     Abonado #{item.cuenta}
                                   </span>
                                 )}
-                                <span className="text-slate-900 font-extrabold">{item.alias || item.razon_social}</span>
+                                <span className="text-white font-extrabold">{item.alias || item.razon_social}</span>
                                 {item.rut && !item.rut.startsWith('CTA-') && !item.rut.startsWith('RUT-') && (
-                                  <span className="font-mono text-slate-700 text-[10px] bg-[#E0E5EC] shadow-[inset_2px_2px_4px_#bec8d2,inset_-2px_-2px_4px_#ffffff] px-2 py-0.5 rounded-md font-bold">
+                                  <span className="font-mono text-slate-300 text-[10px] bg-white/10 border border-white/10 px-2 py-0.5 rounded-lg font-bold">
                                     RUT: {item.rut}
                                   </span>
                                 )}
                               </div>
                             </div>
-                            <ChevronRight className="h-5 w-5 text-[#005bea]" />
+                            <ChevronRight className="h-5 w-5 text-[#2997ff] group-hover:translate-x-1 transition-transform" />
                           </div>
                         ))
                       ) : (
-                        <div className="p-6 text-center text-slate-500 font-bold text-xs">
+                        <div className="p-6 text-center text-slate-400 font-bold text-xs">
                           No se encontraron coincidencias para &quot;{busquedaClienteInput}&quot;.
                         </div>
                       )}
@@ -2756,53 +2756,53 @@ export default function OperacionCRM() {
 
               {/* EXPEDIENTE COMPLETO DOSSIER FICHA 360° */}
               {clienteActivo || abonadoActivo ? (
-                <div className="bg-[#E0E5EC] rounded-2xl p-6 sm:p-8 flex flex-col gap-6 shadow-[6px_6px_14px_#bec8d2,-6px_-6px_14px_#ffffff] border border-white/60 overflow-y-auto">
+                <div className="flex-1 bg-[#0c182b]/85 backdrop-blur-2xl rounded-3xl p-6 sm:p-8 flex flex-col gap-6 border border-white/10 shadow-2xl overflow-y-auto">
                   
                   {/* CABECERA EXPEDIENTE VISTA 360° BENTO HERO */}
-                  <div className="bg-[#E0E5EC] shadow-[inset_4px_4px_8px_#bec8d2,inset_-4px_-4px_8px_#ffffff] p-6 sm:p-7 rounded-2xl flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 border border-slate-300/40">
+                  <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 p-6 sm:p-7 rounded-3xl flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 shadow-xl">
                     <div className="space-y-3">
                       <div className="flex items-center gap-2.5 flex-wrap">
                         {abonadoActivo && (
-                          <span className="bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white font-mono text-xs font-bold px-3.5 py-1 rounded-xl shadow-sm">
+                          <span className="bg-gradient-to-r from-[#0066cc] to-[#2997ff] text-white font-mono text-xs font-bold px-3.5 py-1 rounded-xl shadow-xs">
                             CUENTA ABONADO #{abonadoActivo.cuenta}
                           </span>
                         )}
                         {clienteActivo && clienteActivo.rut && !clienteActivo.rut.startsWith('CTA-') && !clienteActivo.rut.startsWith('RUT-') && (
-                          <span className="bg-slate-900 text-white font-mono text-xs font-bold px-3.5 py-1 rounded-xl shadow-sm">
+                          <span className="bg-white/10 border border-white/10 text-white font-mono text-xs font-bold px-3.5 py-1 rounded-xl shadow-xs">
                             RUT: {clienteActivo.rut}
                           </span>
                         )}
-                        <span className="bg-emerald-500/15 text-emerald-800 border border-emerald-300/60 font-black px-3 py-1 rounded-xl text-xs uppercase tracking-wider">
+                        <span className="bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-black px-3 py-1 rounded-xl text-xs uppercase tracking-wider">
                           🟢 {clienteActivo?.estado_pago || 'Al Día'}
                         </span>
                       </div>
 
-                      <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
+                      <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
                         {abonadoActivo ? abonadoActivo.alias_centro_costo : clienteActivo?.razon_social}
                       </h2>
 
-                      <p className="text-xs text-slate-600 font-semibold flex items-center gap-4 flex-wrap">
-                        <span className="flex items-center gap-1.5"><MapPin className="h-4 w-4 text-[#005bea]" /> {abonadoActivo ? abonadoActivo.direccion : clienteActivo?.direccion_comercial} ({clienteActivo?.ciudad || 'Santiago'})</span>
+                      <p className="text-xs text-slate-400 font-semibold flex items-center gap-4 flex-wrap">
+                        <span className="flex items-center gap-1.5"><MapPin className="h-4 w-4 text-[#2997ff]" /> {abonadoActivo ? abonadoActivo.direccion : clienteActivo?.direccion_comercial} ({clienteActivo?.ciudad || 'Santiago'})</span>
                         <span>•</span>
-                        <span className="flex items-center gap-1.5"><Mail className="h-4 w-4 text-[#005bea]" /> {clienteActivo?.email_cobranza}</span>
+                        <span className="flex items-center gap-1.5"><Mail className="h-4 w-4 text-[#2997ff]" /> {clienteActivo?.email_cobranza}</span>
                         <span>•</span>
-                        <span className="flex items-center gap-1.5"><Phone className="h-4 w-4 text-[#005bea]" /> {clienteActivo?.telefono}</span>
+                        <span className="flex items-center gap-1.5"><Phone className="h-4 w-4 text-[#2997ff]" /> {clienteActivo?.telefono}</span>
                       </p>
                     </div>
 
-                    <div className="flex items-center gap-4 bg-[#E0E5EC] shadow-[4px_4px_10px_#bec8d2,-4px_-4px_10px_#ffffff] p-5 rounded-2xl border border-white/60">
+                    <div className="flex items-center gap-4 bg-white/[0.04] border border-white/10 p-5 rounded-2xl shadow-lg">
                       <div>
                         <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">TARIFA MONITOREO</span>
-                        <div className="text-xl font-black font-mono text-[#005bea]">
+                        <div className="text-xl font-black font-mono text-[#2997ff]">
                           {clienteActivo?.moneda === 'UF' ? `${clienteActivo.tarifa_mensual} UF` : `$${(clienteActivo?.tarifa_mensual || 29900).toLocaleString('es-CL')} CLP`}
                         </div>
-                        <span className="text-[10px] text-slate-500 font-bold block mt-0.5">Plan: {clienteActivo?.plan_monitoreo || 'Estándar 24/7'}</span>
+                        <span className="text-[10px] text-slate-400 font-bold block mt-0.5">Plan: {clienteActivo?.plan_monitoreo || 'Estándar 24/7'}</span>
                       </div>
                     </div>
                   </div>
 
                   {/* NAVEGACIÓN PESTAÑAS FICHA 360° BENTO */}
-                  <div className="flex items-center gap-2 bg-[#E0E5EC] p-2 rounded-2xl shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] flex-wrap">
+                  <div className="flex items-center gap-2 bg-black/30 p-2 rounded-2xl border border-white/10 flex-wrap">
                     {[
                       { id: 'datos', label: 'Datos Comerciales', icon: Building2 },
                       { id: 'abonados', label: `Centros de Costo (${clienteActivo?.cuentas_abonados.length || 1})`, icon: Layers },
@@ -2816,7 +2816,7 @@ export default function OperacionCRM() {
                         <button
                           key={tab.id}
                           onClick={() => setTabFicha360(tab.id as any)}
-                          className={`px-4 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-2 ${esActivo ? 'bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white shadow-md' : 'text-slate-700 hover:bg-[#d5dbe3]'}`}
+                          className={`px-4 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-2 ${esActivo ? 'bg-gradient-to-r from-[#0066cc] to-[#2997ff] text-white shadow-lg shadow-[#0066cc]/30' : 'text-slate-400 hover:text-white hover:bg-white/[0.06]'}`}
                         >
                           <TabIcon className="h-4 w-4" />
                           <span>{tab.label}</span>
@@ -2828,37 +2828,37 @@ export default function OperacionCRM() {
                   {/* SUB-SECCIÓN 1: DATOS COMERCIALES EN BENTO GRID MODULAR */}
                   {tabFicha360 === 'datos' && (
                     <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                      <div className="bg-[#E0E5EC] shadow-[6px_6px_14px_#bec8d2,-6px_-6px_14px_#ffffff] p-6 rounded-2xl border border-white/60 space-y-4 text-xs">
-                        <div className="flex items-center gap-2.5 border-b border-slate-300/70 pb-3">
-                          <div className="p-2 bg-blue-500/10 text-[#005bea] rounded-xl">
+                      <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 p-6 rounded-3xl space-y-4 text-xs shadow-xl">
+                        <div className="flex items-center gap-2.5 border-b border-white/10 pb-3">
+                          <div className="p-2 bg-blue-500/15 text-[#2997ff] rounded-xl border border-blue-500/20">
                             <MapPin className="h-4 w-4" />
                           </div>
-                          <span className="font-extrabold text-xs uppercase tracking-wider text-slate-700">📍 DATOS DE CONTACTO & UBICACIÓN</span>
+                          <span className="font-extrabold text-xs uppercase tracking-wider text-slate-300">📍 DATOS DE CONTACTO & UBICACIÓN</span>
                         </div>
                         <div className="space-y-2.5">
-                          <div className="flex justify-between items-center"><strong className="text-slate-500">Razón Social:</strong> <span className="text-slate-900 font-bold bg-[#E0E5EC] shadow-[inset_2px_2px_4px_#bec8d2,inset_-2px_-2px_4px_#ffffff] px-3 py-1 rounded-lg">{clienteActivo?.razon_social}</span></div>
-                          <div className="flex justify-between items-center"><strong className="text-slate-500">RUT Tributario:</strong> <span className="text-slate-900 font-mono font-bold bg-[#E0E5EC] shadow-[inset_2px_2px_4px_#bec8d2,inset_-2px_-2px_4px_#ffffff] px-3 py-1 rounded-lg">{clienteActivo?.rut}</span></div>
-                          <div className="flex justify-between items-center"><strong className="text-slate-500">Dirección Comercial:</strong> <span className="text-slate-900 font-medium">{clienteActivo?.direccion_comercial}</span></div>
-                          <div className="flex justify-between items-center"><strong className="text-slate-500">Ciudad / Comuna:</strong> <span className="text-slate-900 font-bold">{clienteActivo?.ciudad || 'Santiago'}</span></div>
-                          <div className="flex justify-between items-center"><strong className="text-slate-500">Teléfono Principal:</strong> <span className="text-slate-900 font-mono font-bold">{clienteActivo?.telefono}</span></div>
-                          <div className="flex justify-between items-center"><strong className="text-slate-500">Email Facturación:</strong> <span className="text-slate-900 font-medium">{clienteActivo?.email_cobranza}</span></div>
+                          <div className="flex justify-between items-center"><strong className="text-slate-400">Razón Social:</strong> <span className="text-white font-bold bg-white/5 border border-white/10 px-3 py-1 rounded-xl">{clienteActivo?.razon_social}</span></div>
+                          <div className="flex justify-between items-center"><strong className="text-slate-400">RUT Tributario:</strong> <span className="text-white font-mono font-bold bg-white/5 border border-white/10 px-3 py-1 rounded-xl">{clienteActivo?.rut}</span></div>
+                          <div className="flex justify-between items-center"><strong className="text-slate-400">Dirección Comercial:</strong> <span className="text-slate-200 font-medium">{clienteActivo?.direccion_comercial}</span></div>
+                          <div className="flex justify-between items-center"><strong className="text-slate-400">Ciudad / Comuna:</strong> <span className="text-white font-bold">{clienteActivo?.ciudad || 'Santiago'}</span></div>
+                          <div className="flex justify-between items-center"><strong className="text-slate-400">Teléfono Principal:</strong> <span className="text-white font-mono font-bold">{clienteActivo?.telefono}</span></div>
+                          <div className="flex justify-between items-center"><strong className="text-slate-400">Email Facturación:</strong> <span className="text-slate-200 font-medium">{clienteActivo?.email_cobranza}</span></div>
                         </div>
                       </div>
 
-                      <div className="bg-[#E0E5EC] shadow-[6px_6px_14px_#bec8d2,-6px_-6px_14px_#ffffff] p-6 rounded-2xl border border-white/60 space-y-4 text-xs">
-                        <div className="flex items-center gap-2.5 border-b border-slate-300/70 pb-3">
-                          <div className="p-2 bg-emerald-500/10 text-emerald-700 rounded-xl">
+                      <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 p-6 rounded-3xl space-y-4 text-xs shadow-xl">
+                        <div className="flex items-center gap-2.5 border-b border-white/10 pb-3">
+                          <div className="p-2 bg-emerald-500/15 text-emerald-400 rounded-xl border border-emerald-500/20">
                             <Receipt className="h-4 w-4" />
                           </div>
-                          <span className="font-extrabold text-xs uppercase tracking-wider text-slate-700">💳 CONDICIONES DE FACTURACIÓN & PLAN</span>
+                          <span className="font-extrabold text-xs uppercase tracking-wider text-slate-300">💳 CONDICIONES DE FACTURACIÓN & PLAN</span>
                         </div>
                         <div className="space-y-2.5">
-                          <div className="flex justify-between items-center"><strong className="text-slate-500">Razón Social Emisora:</strong> <span className="text-[#005bea] font-extrabold bg-[#E0E5EC] shadow-[inset_2px_2px_4px_#bec8d2,inset_-2px_-2px_4px_#ffffff] px-3 py-1 rounded-lg">Gama Seguridad SpA (EMP-1)</span></div>
-                          <div className="flex justify-between items-center"><strong className="text-slate-500">Moneda Pactada:</strong> <span className="text-slate-900 font-bold">{clienteActivo?.moneda}</span></div>
-                          <div className="flex justify-between items-center"><strong className="text-slate-500">Tarifa Mensual:</strong> <span className="text-emerald-800 font-mono font-bold">{clienteActivo?.moneda === 'UF' ? `${clienteActivo.tarifa_mensual} UF` : `$${(clienteActivo?.tarifa_mensual || 29900).toLocaleString('es-CL')} CLP`}</span></div>
-                          <div className="flex justify-between items-center"><strong className="text-slate-500">Día Vencimiento:</strong> <span className="text-slate-900 font-bold">Día {clienteActivo?.dia_vencimiento || 5} de cada mes</span></div>
-                          <div className="flex justify-between items-center"><strong className="text-slate-500">Plan de Monitoreo:</strong> <span className="text-slate-900 font-bold">{clienteActivo?.plan_monitoreo}</span></div>
-                          <div className="flex justify-between items-center"><strong className="text-slate-500">Estado de Cobranza:</strong> <span className="text-emerald-700 font-bold">🟢 {clienteActivo?.estado_pago}</span></div>
+                          <div className="flex justify-between items-center"><strong className="text-slate-400">Razón Social Emisora:</strong> <span className="text-[#2997ff] font-extrabold bg-white/5 border border-white/10 px-3 py-1 rounded-xl">Gama Seguridad SpA (EMP-1)</span></div>
+                          <div className="flex justify-between items-center"><strong className="text-slate-400">Moneda Pactada:</strong> <span className="text-white font-bold">{clienteActivo?.moneda}</span></div>
+                          <div className="flex justify-between items-center"><strong className="text-slate-400">Tarifa Mensual:</strong> <span className="text-emerald-400 font-mono font-bold">{clienteActivo?.moneda === 'UF' ? `${clienteActivo.tarifa_mensual} UF` : `$${(clienteActivo?.tarifa_mensual || 29900).toLocaleString('es-CL')} CLP`}</span></div>
+                          <div className="flex justify-between items-center"><strong className="text-slate-400">Día Vencimiento:</strong> <span className="text-white font-bold">Día {clienteActivo?.dia_vencimiento || 5} de cada mes</span></div>
+                          <div className="flex justify-between items-center"><strong className="text-slate-400">Plan de Monitoreo:</strong> <span className="text-white font-bold">{clienteActivo?.plan_monitoreo}</span></div>
+                          <div className="flex justify-between items-center"><strong className="text-slate-400">Estado de Cobranza:</strong> <span className="text-emerald-400 font-bold">🟢 {clienteActivo?.estado_pago}</span></div>
                         </div>
                       </div>
                     </div>
@@ -2866,26 +2866,26 @@ export default function OperacionCRM() {
 
                   {/* SUB-SECCIÓN 2: CENTROS DE COSTO (BENTO CARDS) */}
                   {tabFicha360 === 'abonados' && (
-                    <div className="bg-[#E0E5EC] shadow-[6px_6px_14px_#bec8d2,-6px_-6px_14px_#ffffff] p-6 rounded-2xl border border-white/60 space-y-5 text-xs">
-                      <div className="flex items-center gap-2.5 border-b border-slate-300/70 pb-3">
-                        <div className="p-2 bg-blue-500/10 text-[#005bea] rounded-xl">
+                    <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 p-6 rounded-3xl space-y-5 text-xs shadow-xl">
+                      <div className="flex items-center gap-2.5 border-b border-white/10 pb-3">
+                        <div className="p-2 bg-blue-500/15 text-[#2997ff] rounded-xl border border-blue-500/20">
                           <Layers className="h-4 w-4" />
                         </div>
-                        <span className="font-extrabold text-xs uppercase tracking-wider text-slate-700">🏢 CENTROS DE COSTO & CUENTAS DE ABONADO ASOCIADAS</span>
+                        <span className="font-extrabold text-xs uppercase tracking-wider text-slate-300">🏢 CENTROS DE COSTO & CUENTAS DE ABONADO ASOCIADAS</span>
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {(clienteActivo?.cuentas_abonados || []).map(cta => {
                           const cc = abonadosCentrosCosto[cta]
                           return (
-                            <div key={cta} className="bg-[#E0E5EC] shadow-[4px_4px_10px_#bec8d2,-4px_-4px_10px_#ffffff] p-5 rounded-2xl space-y-2 border border-white/50">
+                            <div key={cta} className="bg-white/[0.04] hover:bg-white/[0.07] border border-white/10 p-5 rounded-2xl space-y-3 transition-all">
                               <div className="flex justify-between items-center">
-                                <span className="bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white font-mono font-black text-xs px-3 py-1 rounded-xl shadow-xs">
+                                <span className="bg-gradient-to-r from-[#0066cc] to-[#2997ff] text-white font-mono font-black text-xs px-3 py-1 rounded-xl shadow-xs">
                                   Abonado #{cta}
                                 </span>
-                                <span className="text-[10px] text-emerald-700 font-extrabold bg-emerald-500/10 border border-emerald-300/50 px-2.5 py-0.5 rounded-lg">🟢 Monitoreo Activo 24/7</span>
+                                <span className="text-[10px] text-emerald-400 font-extrabold bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-0.5 rounded-lg">🟢 Monitoreo Activo 24/7</span>
                               </div>
-                              <h4 className="font-extrabold text-slate-900 text-sm">{cc?.alias_centro_costo || `Abonado ${cta}`}</h4>
-                              <p className="text-slate-600 text-xs flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5 text-[#005bea]" /> {cc?.direccion || 'Dirección Instalación'} ({cc?.ciudad || 'Santiago'})</p>
+                              <h4 className="font-extrabold text-white text-sm">{cc?.alias_centro_costo || `Abonado ${cta}`}</h4>
+                              <p className="text-slate-400 text-xs flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5 text-[#2997ff]" /> {cc?.direccion || 'Dirección Instalación'} ({cc?.ciudad || 'Santiago'})</p>
                             </div>
                           )
                         })}
@@ -2895,26 +2895,26 @@ export default function OperacionCRM() {
 
                   {/* SUB-SECCIÓN 3: FACTURAS (BENTO CARD) */}
                   {tabFicha360 === 'facturas' && (
-                    <div className="bg-[#E0E5EC] shadow-[6px_6px_14px_#bec8d2,-6px_-6px_14px_#ffffff] p-6 rounded-2xl border border-white/60 space-y-5 text-xs">
-                      <div className="flex justify-between items-center flex-wrap gap-3 border-b border-slate-300/70 pb-3">
+                    <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 p-6 rounded-3xl space-y-5 text-xs shadow-xl">
+                      <div className="flex justify-between items-center flex-wrap gap-3 border-b border-white/10 pb-3">
                         <div className="flex items-center gap-2.5">
-                          <div className="p-2 bg-emerald-500/10 text-emerald-700 rounded-xl">
+                          <div className="p-2 bg-emerald-500/15 text-emerald-400 rounded-xl border border-emerald-500/20">
                             <Receipt className="h-4 w-4" />
                           </div>
-                          <span className="font-extrabold text-xs uppercase tracking-wider text-slate-700">🧾 FACTURACIÓN & RECAUDACIÓN DE ESTE CLIENTE</span>
+                          <span className="font-extrabold text-xs uppercase tracking-wider text-slate-300">🧾 FACTURACIÓN & RECAUDACIÓN DE ESTE CLIENTE</span>
                         </div>
                         <button
                           onClick={() => setModuloActivo('facturacion')}
-                          className="px-4 py-2 bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white font-bold rounded-xl text-xs shadow-md hover:shadow-lg hover:brightness-105 active:scale-95 cursor-pointer flex items-center gap-2"
+                          className="px-4 py-2.5 bg-gradient-to-r from-[#0066cc] to-[#2997ff] text-white font-bold rounded-xl text-xs shadow-lg shadow-[#0066cc]/20 hover:brightness-110 active:scale-95 cursor-pointer flex items-center gap-2"
                         >
                           <DollarSign className="h-4 w-4" />
                           <span>💰 Ir a Gestor Global de Cobranzas (34 Facturas Real)</span>
                         </button>
                       </div>
-                      <div className="overflow-x-auto rounded-xl shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] p-2 bg-[#E0E5EC]">
+                      <div className="overflow-x-auto rounded-2xl border border-white/10 bg-black/20 p-2">
                         <table className="w-full text-left border-collapse text-xs sm:text-sm">
                           <thead>
-                            <tr className="border-b-2 border-slate-300 font-black uppercase text-[11px] text-slate-600 tracking-wider">
+                            <tr className="border-b border-white/10 font-black uppercase text-[11px] text-slate-400 tracking-wider">
                               <th className="py-4 px-4">N° FACTURA</th>
                               <th className="py-4 px-4">FECHA EMISIÓN</th>
                               <th className="py-4 px-4 text-right">TOTAL</th>
@@ -2923,16 +2923,16 @@ export default function OperacionCRM() {
                               <th className="py-4 px-4 text-center">ESTADO</th>
                             </tr>
                           </thead>
-                          <tbody className="divide-y divide-slate-300/70 font-medium">
+                          <tbody className="divide-y divide-white/5 font-medium">
                             {facturas.filter(f => f.rut_cliente === clienteActivo?.rut || f.cuenta_asociada === cuentaSeleccionada).map(f => (
-                              <tr key={f.id} className="hover:bg-slate-200/80 transition-colors">
-                                <td className="py-4 px-4 font-mono font-black text-[#005bea]">{f.numero_factura}</td>
-                                <td className="py-4 px-4 font-semibold text-slate-700">{f.fecha}</td>
-                                <td className="py-4 px-4 text-right font-mono font-bold text-slate-900">${f.monto_total.toLocaleString('es-CL')}</td>
-                                <td className="py-4 px-4 text-right font-mono text-emerald-700 font-bold">${(f.monto_abonado || 0).toLocaleString('es-CL')}</td>
-                                <td className="py-4 px-4 text-right font-mono text-red-700 font-bold">${(f.saldo_pendiente || 0).toLocaleString('es-CL')}</td>
+                              <tr key={f.id} className="hover:bg-white/[0.04] transition-colors">
+                                <td className="py-4 px-4 font-mono font-black text-[#2997ff]">{f.numero_factura}</td>
+                                <td className="py-4 px-4 font-semibold text-slate-300">{f.fecha}</td>
+                                <td className="py-4 px-4 text-right font-mono font-bold text-white">${f.monto_total.toLocaleString('es-CL')}</td>
+                                <td className="py-4 px-4 text-right font-mono text-emerald-400 font-bold">${(f.monto_abonado || 0).toLocaleString('es-CL')}</td>
+                                <td className="py-4 px-4 text-right font-mono text-rose-400 font-bold">${(f.saldo_pendiente || 0).toLocaleString('es-CL')}</td>
                                 <td className="py-4 px-4 text-center font-bold">
-                                  <span className="bg-emerald-500/15 text-emerald-800 border border-emerald-300 px-3 py-1 rounded-xl text-xs uppercase font-extrabold">{f.estado}</span>
+                                  <span className="bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-3 py-1 rounded-xl text-xs uppercase font-extrabold">{f.estado}</span>
                                 </td>
                               </tr>
                             ))}
@@ -2944,23 +2944,23 @@ export default function OperacionCRM() {
 
                   {/* SUB-SECCIÓN 4: COTIZACIONES (BENTO CARD) */}
                   {tabFicha360 === 'cotizaciones' && (
-                    <div className="bg-[#E0E5EC] shadow-[6px_6px_14px_#bec8d2,-6px_-6px_14px_#ffffff] p-6 rounded-2xl border border-white/60 space-y-5 text-xs">
-                      <div className="flex justify-between items-center border-b border-slate-300/70 pb-3">
+                    <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 p-6 rounded-3xl space-y-5 text-xs shadow-xl">
+                      <div className="flex justify-between items-center border-b border-white/10 pb-3">
                         <div className="flex items-center gap-2.5">
-                          <div className="p-2 bg-indigo-500/10 text-indigo-700 rounded-xl">
+                          <div className="p-2 bg-indigo-500/15 text-indigo-400 rounded-xl border border-indigo-500/20">
                             <FileText className="h-4 w-4" />
                           </div>
-                          <span className="font-extrabold text-xs uppercase tracking-wider text-slate-700">📋 PRESUPUESTOS & COTIZACIONES EMITIDAS</span>
+                          <span className="font-extrabold text-xs uppercase tracking-wider text-slate-300">📋 PRESUPUESTOS & COTIZACIONES EMITIDAS</span>
                         </div>
-                        <button onClick={abrirModalNuevaCotizacion} className="px-4 py-2 bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-md hover:brightness-105 active:scale-95 cursor-pointer">
+                        <button onClick={abrirModalNuevaCotizacion} className="px-4 py-2.5 bg-gradient-to-r from-[#0066cc] to-[#2997ff] text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-lg shadow-[#0066cc]/20 hover:brightness-110 active:scale-95 cursor-pointer">
                           <Plus className="h-4 w-4" />
                           <span>Nueva Cotización</span>
                         </button>
                       </div>
-                      <div className="overflow-x-auto rounded-xl shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] p-2 bg-[#E0E5EC]">
+                      <div className="overflow-x-auto rounded-2xl border border-white/10 bg-black/20 p-2">
                         <table className="w-full text-left border-collapse text-xs sm:text-sm">
                           <thead>
-                            <tr className="border-b-2 border-slate-300 font-black uppercase text-[11px] text-slate-600 tracking-wider">
+                            <tr className="border-b border-white/10 font-black uppercase text-[11px] text-slate-400 tracking-wider">
                               <th className="py-4 px-4">FOLIO</th>
                               <th className="py-4 px-4">FECHA</th>
                               <th className="py-4 px-4 text-right">TOTAL IVA INCL.</th>
@@ -2968,17 +2968,17 @@ export default function OperacionCRM() {
                               <th className="py-4 px-4 text-center">ACCIONES</th>
                             </tr>
                           </thead>
-                          <tbody className="divide-y divide-slate-300/70 font-medium">
+                          <tbody className="divide-y divide-white/5 font-medium">
                             {cotizaciones.filter(c => c.rut_cliente === clienteActivo?.rut || c.cuenta === cuentaSeleccionada).map(c => (
-                              <tr key={c.id} className="hover:bg-slate-200/80 transition-colors">
-                                <td className="py-4 px-4 font-mono font-black text-[#005bea]">{c.codigo_cotizacion}</td>
-                                <td className="py-4 px-4 font-semibold text-slate-700">{c.fecha}</td>
-                                <td className="py-4 px-4 text-right font-mono font-black text-emerald-800">${Math.round(c.monto_total_iva_incluido || 0).toLocaleString('es-CL')}</td>
+                              <tr key={c.id} className="hover:bg-white/[0.04] transition-colors">
+                                <td className="py-4 px-4 font-mono font-black text-[#2997ff]">{c.codigo_cotizacion}</td>
+                                <td className="py-4 px-4 font-semibold text-slate-300">{c.fecha}</td>
+                                <td className="py-4 px-4 text-right font-mono font-black text-emerald-400">${Math.round(c.monto_total_iva_incluido || 0).toLocaleString('es-CL')}</td>
                                 <td className="py-4 px-4 text-center font-bold">
-                                  <span className="bg-[#E0E5EC] shadow-[inset_2px_2px_4px_#bec8d2,inset_-2px_-2px_4px_#ffffff] text-slate-800 px-3 py-1 rounded-xl text-xs font-bold">{c.etapa_pipeline || 'Cotización'}</span>
+                                  <span className="bg-white/5 border border-white/10 text-slate-200 px-3 py-1 rounded-xl text-xs font-bold">{c.etapa_pipeline || 'Cotización'}</span>
                                 </td>
                                 <td className="py-4 px-4 text-center">
-                                  <button onClick={() => setCotSeleccionada(c)} className="px-3.5 py-1.5 bg-slate-900 text-white font-extrabold rounded-xl text-xs hover:bg-slate-800 cursor-pointer shadow-md active:scale-95 transition-transform">
+                                  <button onClick={() => setCotSeleccionada(c)} className="px-3.5 py-1.5 bg-white/10 hover:bg-white/20 border border-white/10 text-white font-extrabold rounded-xl text-xs cursor-pointer shadow-md active:scale-95 transition-all">
                                     Ver DTE
                                   </button>
                                 </td>
@@ -2992,17 +2992,17 @@ export default function OperacionCRM() {
 
                   {/* SUB-SECCIÓN 5: ORDENES TÉCNICAS (BENTO CARD) */}
                   {tabFicha360 === 'ots' && (
-                    <div className="bg-[#E0E5EC] shadow-[6px_6px_14px_#bec8d2,-6px_-6px_14px_#ffffff] p-6 rounded-2xl border border-white/60 space-y-5 text-xs">
-                      <div className="flex items-center gap-2.5 border-b border-slate-300/70 pb-3">
-                        <div className="p-2 bg-amber-500/10 text-amber-700 rounded-xl">
+                    <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 p-6 rounded-3xl space-y-5 text-xs shadow-xl">
+                      <div className="flex items-center gap-2.5 border-b border-white/10 pb-3">
+                        <div className="p-2 bg-amber-500/15 text-amber-400 rounded-xl border border-amber-500/20">
                           <Wrench className="h-4 w-4" />
                         </div>
-                        <span className="font-extrabold text-xs uppercase tracking-wider text-slate-700">🛠️ ÓRDENES TÉCNICAS (SLA FIELD SERVICE)</span>
+                        <span className="font-extrabold text-xs uppercase tracking-wider text-slate-300">🛠️ ÓRDENES TÉCNICAS (SLA FIELD SERVICE)</span>
                       </div>
-                      <div className="overflow-x-auto rounded-xl shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] p-2 bg-[#E0E5EC]">
+                      <div className="overflow-x-auto rounded-2xl border border-white/10 bg-black/20 p-2">
                         <table className="w-full text-left border-collapse text-xs sm:text-sm">
                           <thead>
-                            <tr className="border-b-2 border-slate-300 font-black uppercase text-[11px] text-slate-600 tracking-wider">
+                            <tr className="border-b border-white/10 font-black uppercase text-[11px] text-slate-400 tracking-wider">
                               <th className="py-4 px-4">CÓDIGO OT</th>
                               <th className="py-4 px-4">SERVICIO</th>
                               <th className="py-4 px-4">SLA</th>
@@ -3010,15 +3010,15 @@ export default function OperacionCRM() {
                               <th className="py-4 px-4 text-center">ESTADO</th>
                             </tr>
                           </thead>
-                          <tbody className="divide-y divide-slate-300/70 font-medium">
+                          <tbody className="divide-y divide-white/5 font-medium">
                           {ordenesTrabajo.filter(ot => ot.cuenta === cuentaSeleccionada || ot.cliente_nombre.includes(clienteActivo?.razon_social || '')).map(ot => (
-                              <tr key={ot.id} className="hover:bg-slate-200/80 transition-colors">
-                                <td className="py-4 px-4 font-mono font-black text-[#005bea]">{ot.codigo_ot}</td>
-                                <td className="py-4 px-4 font-extrabold text-slate-900">{ot.tipo_servicio}</td>
-                                <td className="py-4 px-4 font-bold text-amber-800">{ot.prioridad_sla}</td>
-                                <td className="py-4 px-4 font-semibold text-slate-700">{ot.tecnico_asignado}</td>
+                              <tr key={ot.id} className="hover:bg-white/[0.04] transition-colors">
+                                <td className="py-4 px-4 font-mono font-black text-[#2997ff]">{ot.codigo_ot}</td>
+                                <td className="py-4 px-4 font-extrabold text-white">{ot.tipo_servicio}</td>
+                                <td className="py-4 px-4 font-bold text-amber-400">{ot.prioridad_sla}</td>
+                                <td className="py-4 px-4 font-semibold text-slate-300">{ot.tecnico_asignado}</td>
                                 <td className="py-4 px-4 text-center font-bold">
-                                  <span className="bg-blue-500/15 text-blue-900 border border-blue-300 px-3 py-1 rounded-xl text-xs font-black">{ot.estado}</span>
+                                  <span className="bg-blue-500/20 text-blue-400 border border-blue-500/30 px-3 py-1 rounded-xl text-xs font-black">{ot.estado}</span>
                                 </td>
                               </tr>
                             ))}
@@ -3029,49 +3029,49 @@ export default function OperacionCRM() {
                   )}
 
                   {/* ── BENTO CARD: ÚLTIMAS 10 SEÑALES DE ALARMA RECEPTOR ── */}
-                  <div className="bg-[#E0E5EC] shadow-[6px_6px_14px_#bec8d2,-6px_-6px_14px_#ffffff] p-6 rounded-2xl border border-white/60 space-y-4 text-xs transition-all">
-                    <div className="flex justify-between items-center border-b border-slate-300/70 pb-3">
+                  <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 p-6 rounded-3xl space-y-4 text-xs transition-all shadow-xl">
+                    <div className="flex justify-between items-center border-b border-white/10 pb-3">
                       <div className="flex items-center gap-2.5">
-                        <div className="p-2 bg-blue-500/10 text-[#005bea] rounded-xl">
+                        <div className="p-2 bg-blue-500/15 text-[#2997ff] rounded-xl border border-blue-500/20">
                           <Activity className="h-4 w-4" />
                         </div>
-                        <span className="font-extrabold text-xs uppercase tracking-wider text-slate-700">
+                        <span className="font-extrabold text-xs uppercase tracking-wider text-slate-300">
                           ÚLTIMAS 10 SEÑALES DE SU ALARMA (#{(abonadoActivo?.cuenta || cuentaSeleccionada || 'ACTIVA').toUpperCase()})
                         </span>
                       </div>
-                      <span className="bg-emerald-500/15 text-emerald-800 border border-emerald-300/60 text-[10px] font-black px-3 py-1 rounded-xl flex items-center gap-1.5 uppercase tracking-wider">
-                        <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                      <span className="bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[10px] font-black px-3 py-1 rounded-xl flex items-center gap-1.5 uppercase tracking-wider">
+                        <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
                         <span>Receptor en Línea</span>
                       </span>
                     </div>
 
-                    <div className="overflow-x-auto rounded-xl shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] p-2 bg-[#E0E5EC]">
+                    <div className="overflow-x-auto rounded-2xl border border-white/10 bg-black/20 p-2">
                       <table className="w-full text-left border-collapse text-xs">
                         <thead>
-                          <tr className="border-b border-slate-300 font-extrabold uppercase text-[11px] text-slate-600">
+                          <tr className="border-b border-white/10 font-extrabold uppercase text-[11px] text-slate-400">
                             <th className="p-3">FECHA Y HORA</th>
                             <th className="p-3">DESCRIPCIÓN RECEPTOR</th>
                             <th className="p-3">ZONA / USUARIO</th>
                             <th className="p-3 text-center">PRIORIDAD</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-300/60 font-medium">
+                        <tbody className="divide-y divide-white/5 font-medium">
                           {cargandoSenales ? (
                             <tr>
-                              <td colSpan={4} className="p-6 text-center text-slate-500 font-bold">
-                                <Loader2 className="h-4 w-4 animate-spin inline mr-2 text-[#005bea]" />
+                              <td colSpan={4} className="p-6 text-center text-slate-400 font-bold">
+                                <Loader2 className="h-4 w-4 animate-spin inline mr-2 text-[#2997ff]" />
                                 Cargando señales del abonado...
                               </td>
                             </tr>
                           ) : senalesRealtime.length === 0 ? (
                             <tr>
                               <td colSpan={4} className="p-6 text-center">
-                                <div className="bg-[#E0E5EC] p-5 rounded-2xl shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] space-y-1 inline-block max-w-xl border border-slate-300/50">
-                                  <div className="flex items-center justify-center gap-2 text-amber-800 font-extrabold text-xs">
-                                    <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600" />
+                                <div className="bg-white/[0.02] p-5 rounded-2xl border border-white/10 space-y-1 inline-block max-w-xl">
+                                  <div className="flex items-center justify-center gap-2 text-amber-400 font-extrabold text-xs">
+                                    <AlertTriangle className="h-4 w-4 shrink-0 text-amber-400" />
                                     <span>Sin transmisiones recientes de señales de alarma</span>
                                   </div>
-                                  <p className="text-[11px] text-slate-500 font-semibold">
+                                  <p className="text-[11px] text-slate-400 font-semibold">
                                     No se registran transmisiones de señales emitidas por el panel a la central para la cuenta #{(abonadoActivo?.cuenta || cuentaSeleccionada || '').toUpperCase()}.
                                   </p>
                                 </div>
@@ -3079,10 +3079,10 @@ export default function OperacionCRM() {
                             </tr>
                           ) : (
                             senalesRealtime.map(s => (
-                              <tr key={s.id} className="hover:bg-slate-200/60 transition-all">
-                                <td className="p-3 font-mono text-slate-700 text-[11px] font-bold">{s.fecha}</td>
-                                <td className="p-3 font-bold text-slate-900">{s.desc}</td>
-                                <td className="p-3 text-slate-700 font-semibold">{s.zona}</td>
+                              <tr key={s.id} className="hover:bg-white/[0.04] transition-all">
+                                <td className="p-3 font-mono text-slate-300 text-[11px] font-bold">{s.fecha}</td>
+                                <td className="p-3 font-bold text-white">{s.desc}</td>
+                                <td className="p-3 text-slate-300 font-semibold">{s.zona}</td>
                                 <td className="p-3 text-center">
                                   <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider ${s.color}`}>
                                     {s.prioridad}
@@ -3097,68 +3097,68 @@ export default function OperacionCRM() {
                   </div>
 
                   {/* ── BENTO CARD: ÚLTIMAS 5 NOVEDADES REGISTRADAS EN BITÁCORA DEL COMMAND CENTER ── */}
-                  <div className="bg-[#E0E5EC] shadow-[6px_6px_14px_#bec8d2,-6px_-6px_14px_#ffffff] p-6 rounded-2xl border border-white/60 space-y-4 text-xs transition-all">
-                    <div className="flex justify-between items-center border-b border-slate-300/70 pb-3">
+                  <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 p-6 rounded-3xl space-y-4 text-xs transition-all shadow-xl">
+                    <div className="flex justify-between items-center border-b border-white/10 pb-3">
                       <div className="flex items-center gap-2.5">
-                        <div className="p-2 bg-blue-500/10 text-[#005bea] rounded-xl">
+                        <div className="p-2 bg-blue-500/15 text-[#2997ff] rounded-xl border border-blue-500/20">
                           <ClipboardList className="h-4 w-4" />
                         </div>
-                        <span className="font-extrabold text-xs uppercase tracking-wider text-slate-700">
+                        <span className="font-extrabold text-xs uppercase tracking-wider text-slate-300">
                           ÚLTIMAS NOVEDADES REGISTRADAS EN BITÁCORA COMMAND CENTER (#{(abonadoActivo?.cuenta || cuentaSeleccionada || 'ACTIVA').toUpperCase()})
                         </span>
                       </div>
-                      <span className="text-[10px] font-extrabold text-slate-600 bg-[#E0E5EC] shadow-[2px_2px_4px_#bec8d2,-2px_-2px_4px_#ffffff] px-3 py-1 rounded-xl">
+                      <span className="text-[10px] font-extrabold text-slate-300 bg-white/10 border border-white/10 px-3 py-1 rounded-xl">
                         Central 24/7 API
                       </span>
                     </div>
 
-                    <div className="relative pl-3 md:pl-6 border-l-2 border-slate-300/80 space-y-4 my-2">
+                    <div className="relative pl-3 md:pl-6 border-l-2 border-white/10 space-y-4 my-2">
                       {cargandoBitacoraCC ? (
-                        <div className="text-center p-6 text-slate-500 font-bold text-xs">
-                          <Loader2 className="h-4 w-4 animate-spin inline mr-2" />
+                        <div className="text-center p-6 text-slate-400 font-bold text-xs">
+                          <Loader2 className="h-4 w-4 animate-spin inline mr-2 text-[#2997ff]" />
                           Cargando novedades de la bitácora del Command Center...
                         </div>
                       ) : bitacoraCommandCenterAbonado.length === 0 ? (
-                        <div className="bg-[#E0E5EC] p-5 rounded-2xl shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] text-center space-y-1">
-                          <p className="font-bold text-slate-700 text-xs flex items-center justify-center gap-2">
-                            <ClipboardList className="h-4 w-4 text-slate-500" />
+                        <div className="bg-white/[0.02] border border-white/10 p-5 rounded-2xl text-center space-y-1">
+                          <p className="font-bold text-slate-300 text-xs flex items-center justify-center gap-2">
+                            <ClipboardList className="h-4 w-4 text-slate-400" />
                             <span>Sin novedades registradas en la bitácora para la cuenta #{(abonadoActivo?.cuenta || cuentaSeleccionada || '').toUpperCase()}.</span>
                           </p>
-                          <p className="text-[11px] text-slate-500 font-medium">No existen registros ni novedades asociadas a este abonado en la bitácora del Command Center.</p>
+                          <p className="text-[11px] text-slate-400 font-medium">No existen registros ni novedades asociadas a este abonado en la bitácora del Command Center.</p>
                         </div>
                       ) : (
                         bitacoraCommandCenterAbonado.map(b => (
                           <div key={b.id} className="relative group">
                             {/* PUNTAL DE LÍNEA DE TIEMPO */}
                             <span 
-                              className="absolute -left-[19px] md:-left-[31px] top-4 h-3.5 w-3.5 rounded-full border-2 border-[#E0E5EC] shadow-xs" 
-                              style={{ backgroundColor: b.color || '#005bea' }}
+                              className="absolute -left-[19px] md:-left-[31px] top-4 h-3.5 w-3.5 rounded-full border-2 border-[#0c182b] shadow-xs" 
+                              style={{ backgroundColor: b.color || '#2997ff' }}
                             />
 
-                            {/* TARJETA NEUMÓRFICA DE NOVEDAD */}
-                            <div className="bg-[#E0E5EC] shadow-[5px_5px_10px_#bec8d2,-5px_-5px_10px_#ffffff] p-4 md:p-5 rounded-2xl space-y-3 hover:shadow-[7px_7px_14px_#bec8d2,-7px_-7px_14px_#ffffff] transition-all border-l-4" style={{ borderLeftColor: b.color || '#005bea' }}>
+                            {/* TARJETA DE NOVEDAD */}
+                            <div className="bg-white/[0.04] border border-white/10 p-4 md:p-5 rounded-2xl space-y-3 hover:border-white/20 transition-all border-l-4" style={{ borderLeftColor: b.color || '#2997ff' }}>
                               
                               {/* CABECERA ESTRUCTURADA */}
-                              <div className="flex flex-wrap justify-between items-center gap-2 border-b border-slate-300/60 pb-2.5">
+                              <div className="flex flex-wrap justify-between items-center gap-2 border-b border-white/10 pb-2.5">
                                 <div className="flex items-center gap-2 flex-wrap">
                                   {/* BADGE DE TIPO DE NOVEDAD */}
                                   <span 
-                                    className="px-3 py-1 rounded-xl text-[11px] font-black uppercase tracking-wider bg-[#E0E5EC] shadow-[inset_2px_2px_4px_#bec8d2,inset_-2px_-2px_4px_#ffffff] flex items-center gap-1.5"
-                                    style={{ color: b.color || '#005bea' }}
+                                    className="px-3 py-1 rounded-xl text-[11px] font-black uppercase tracking-wider bg-white/10 border border-white/10 flex items-center gap-1.5"
+                                    style={{ color: b.color || '#2997ff' }}
                                   >
                                     <MessageSquare className="h-3 w-3 stroke-[2.5]" />
                                     <span>{b.tipo}</span>
                                   </span>
 
                                   {/* OPERADOR RESPONSABLE */}
-                                  <span className="bg-[#E0E5EC] shadow-[inset_2px_2px_4px_#bec8d2,inset_-2px_-2px_4px_#ffffff] text-slate-700 font-bold px-3 py-1 rounded-xl text-[11px] flex items-center gap-1.5">
-                                    <User className="h-3 w-3 text-slate-500 stroke-[2.5]" />
+                                  <span className="bg-white/5 border border-white/10 text-slate-300 font-bold px-3 py-1 rounded-xl text-[11px] flex items-center gap-1.5">
+                                    <User className="h-3 w-3 text-slate-400 stroke-[2.5]" />
                                     <span>{b.autor}</span>
                                   </span>
                                 </div>
 
                                 {/* FECHA Y HORA FORMATO MONO */}
-                                <span className="bg-[#E0E5EC] shadow-[2px_2px_4px_#bec8d2,-2px_-2px_4px_#ffffff] text-slate-600 font-mono text-[11px] font-bold px-3 py-1 rounded-xl flex items-center gap-1.5">
+                                <span className="bg-white/5 border border-white/10 text-slate-400 font-mono text-[11px] font-bold px-3 py-1 rounded-xl flex items-center gap-1.5">
                                   <Clock className="h-3 w-3 text-slate-400" />
                                   <span>{b.fecha}</span>
                                 </span>
@@ -3167,9 +3167,9 @@ export default function OperacionCRM() {
                               {/* CUERPO DEL COMENTARIO ESTRUCTURADO EN BLOQUES */}
                               <div className="space-y-1.5 pt-1">
                                 {b.nota.split(/\r?\n/).filter(Boolean).map((line: string, idx: number) => (
-                                  <div key={idx} className="flex items-start gap-2.5 text-xs text-slate-800 font-medium leading-relaxed">
-                                    <span className="text-[#005bea] font-black text-xs shrink-0 mt-0.5">•</span>
-                                    <span className="bg-[#E0E5EC] shadow-[inset_2px_2px_5px_#bec8d2,inset_-2px_-2px_5px_#ffffff] px-3 py-2 rounded-xl w-full text-slate-800 font-medium leading-relaxed">
+                                  <div key={idx} className="flex items-start gap-2.5 text-xs text-slate-200 font-medium leading-relaxed">
+                                    <span className="text-[#2997ff] font-black text-xs shrink-0 mt-0.5">•</span>
+                                    <span className="bg-white/[0.03] border border-white/5 px-3 py-2 rounded-xl w-full text-slate-200 font-medium leading-relaxed">
                                       {line.trim()}
                                     </span>
                                   </div>
@@ -3185,12 +3185,12 @@ export default function OperacionCRM() {
 
                 </div>
               ) : (
-                <div className="bg-[#E0E5EC] rounded-2xl p-16 text-center shadow-[6px_6px_12px_#bec8d2,-6px_-6px_12px_#ffffff] flex flex-col items-center justify-center gap-4">
-                  <div className="p-5 bg-[#E0E5EC] shadow-[inset_6px_6px_12px_#bec8d2,inset_-6px_-6px_12px_#ffffff] rounded-2xl text-[#005bea]">
+                <div className="flex-1 bg-[#0c182b]/85 backdrop-blur-2xl rounded-3xl p-16 text-center border border-white/10 shadow-2xl flex flex-col items-center justify-center gap-4">
+                  <div className="p-5 bg-white/[0.04] border border-white/10 rounded-2xl text-[#2997ff] shadow-xl">
                     <User className="h-12 w-12 stroke-[1.75]" />
                   </div>
-                  <h3 className="text-base font-black text-slate-900">Búsqueda de Abonado / Cliente 360°</h3>
-                  <p className="text-xs text-slate-500 max-w-md font-semibold leading-relaxed">
+                  <h3 className="text-lg font-black text-white">Búsqueda de Abonado / Cliente 360°</h3>
+                  <p className="text-xs text-slate-400 max-w-md font-semibold leading-relaxed">
                     Escriba un código de Abonado (ej: 0999, C774), Razón Social o RUT en el buscador superior y presione Enter o Buscar.
                   </p>
                 </div>
@@ -3201,38 +3201,38 @@ export default function OperacionCRM() {
 
           {/* ── MÓDULO 2: AGENTES AUTÓNOMOS (AUTO-COMPANY) ── */}
           {moduloActivo === 'autonomia' && (
-            <div className="flex-1 bg-[#E0E5EC] rounded-2xl p-6 md:p-8 flex flex-col gap-6 shadow-[6px_6px_12px_#bec8d2,-6px_-6px_12px_#ffffff] overflow-y-auto">
-              <div className="bg-[#E0E5EC] shadow-[inset_5px_5px_10px_#bec8d2,inset_-5px_-5px_10px_#ffffff] p-5 rounded-xl flex justify-between items-center">
+            <div className="flex-1 bg-[#0c182b]/85 backdrop-blur-2xl rounded-3xl p-6 md:p-8 flex flex-col gap-6 border border-white/10 shadow-2xl overflow-y-auto">
+              <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 p-5 rounded-2xl flex justify-between items-center shadow-xl">
                 <div className="flex items-center gap-3">
-                  <div className="p-2.5 bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white rounded-xl shadow-xs">
+                  <div className="p-2.5 bg-gradient-to-r from-[#0066cc] to-[#2997ff] text-white rounded-xl shadow-lg shadow-[#0066cc]/20">
                     <Bot className="h-5 w-5 stroke-[2]" />
                   </div>
                   <div>
-                    <h2 className="text-base font-black text-slate-900 tracking-tight">
+                    <h2 className="text-base font-black text-white tracking-tight">
                       Central de Agentes Virtuales Autónomos (Auto-Company Engine)
                     </h2>
-                    <p className="text-xs text-slate-500 font-semibold">Bucle continuo de verificación 24/7 y consenso operativo</p>
+                    <p className="text-xs text-slate-400 font-semibold">Bucle continuo de verificación 24/7 y consenso operativo</p>
                   </div>
                 </div>
 
                 <button
                   disabled={ejecutandoCiclo}
                   onClick={handleEjecutarCicloConsenso}
-                  className="px-5 py-2.5 bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white font-bold rounded-xl text-xs shadow-[4px_4px_8px_#bec8d2,-4px_-4px_8px_#ffffff] active:scale-95 cursor-pointer flex items-center gap-2"
+                  className="px-5 py-2.5 bg-gradient-to-r from-[#0066cc] to-[#2997ff] text-white font-bold rounded-xl text-xs shadow-lg shadow-[#0066cc]/20 hover:brightness-110 active:scale-95 cursor-pointer flex items-center gap-2"
                 >
                   <RefreshCw className={`h-4 w-4 ${ejecutandoCiclo ? 'animate-spin' : ''}`} />
                   <span>{ejecutandoCiclo ? 'Ejecutando...' : 'Ejecutar Consenso'}</span>
                 </button>
               </div>
 
-              <div className="bg-slate-950 rounded-2xl p-6 border border-slate-800 text-slate-200 font-mono text-xs shadow-2xl flex flex-col gap-3">
+              <div className="bg-black/40 rounded-2xl p-6 border border-white/10 text-slate-200 font-mono text-xs shadow-2xl flex flex-col gap-3">
                 <div className="font-bold text-emerald-400 flex items-center gap-2">
                   <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
                   <span>MEMORIA DE CONSENSO EN VIVO (consensus.md)</span>
                 </div>
                 <div className="space-y-2 max-h-80 overflow-y-auto">
                   {logsConsenso.map((log, i) => (
-                    <div key={i} className="p-2 hover:bg-slate-900/60 rounded-lg">{log}</div>
+                    <div key={i} className="p-2 hover:bg-white/[0.05] rounded-lg">{log}</div>
                   ))}
                 </div>
               </div>
@@ -3241,115 +3241,127 @@ export default function OperacionCRM() {
 
           {/* ── MÓDULO 3: PRESUPUESTOS & PIPELINE CRM (ESPO-CRM INSPIRED) ── */}
           {moduloActivo === 'presupuestos' && (
-            <div className="flex-1 bg-[#E0E5EC] rounded-2xl p-6 md:p-8 flex flex-col gap-6 shadow-[6px_6px_12px_#bec8d2,-6px_-6px_12px_#ffffff] min-h-0 overflow-hidden">
+            <div className="flex-1 bg-[#0a1628]/60 backdrop-blur-2xl rounded-3xl p-4 sm:p-6 lg:p-8 flex flex-col gap-6 border border-white/10 shadow-2xl min-h-0 overflow-hidden">
               
-              {/* ENCABEZADO Y ALTERNADOR DE VISTA TABLA / KANBAN */}
-              <div className="bg-[#E0E5EC] shadow-[inset_5px_5px_10px_#bec8d2,inset_-5px_-5px_10px_#ffffff] p-5 rounded-xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              {/* ENCABEZADO Y ALTERNADOR DE VISTA TABLA / KANBAN (APPLE HOMEKIT STYLE) */}
+              <div className="bg-[#0c182b]/80 backdrop-blur-2xl border border-white/10 p-6 rounded-3xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-2xl">
                 <div>
-                  <h2 className="text-base font-black text-slate-900 uppercase tracking-wide flex items-center gap-3">
-                    <FileText className="h-5 w-5 text-[#005bea]" />
-                    <span>Presupuestos & Pipeline CRM (DTE Chile)</span>
-                    <span className="bg-[#E0E5EC] shadow-[inset_2px_2px_4px_#bec8d2,inset_-2px_-2px_4px_#ffffff] text-slate-800 text-xs px-3 py-1 rounded-full font-mono font-bold">
+                  <div className="flex items-center gap-2.5 text-xs font-mono text-[#2997ff] uppercase tracking-wider mb-1">
+                    <span className="w-2 h-2 rounded-full bg-[#2997ff] animate-pulse" />
+                    <span>MÓDULO COMERCIAL & DTE CHILE</span>
+                  </div>
+                  <h2 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight flex items-center gap-3">
+                    <FileText className="h-6 w-6 text-[#2997ff]" />
+                    <span>Presupuestos & Pipeline CRM</span>
+                    <span className="bg-[#2997ff]/20 text-[#2997ff] border border-[#2997ff]/30 text-xs px-3 py-1 rounded-full font-mono font-bold">
                       {siguienteCorrelativoCode}
                     </span>
                   </h2>
-                  <p className="text-xs text-slate-500 font-semibold mt-0.5">
-                    Pipeline comercial de oportunidades, notificaciones WhatsApp y desglose tributario DTE Chile (19% IVA)
+                  <p className="text-xs text-slate-400 mt-1">
+                    Gestión comercial, cotizaciones PDF DTE Chile (19% IVA) y despacho multicanal (WhatsApp & Email).
                   </p>
                 </div>
 
                 <div className="flex items-center gap-3 flex-wrap">
-                  <div className="flex items-center gap-1 bg-[#E0E5EC] p-1 rounded-xl shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff]">
+                  <div className="flex items-center gap-1 bg-black/40 border border-white/10 p-1.5 rounded-2xl backdrop-blur-md">
                     <button
                       onClick={() => setVistaCotizaciones('tabla')}
-                      className={`px-3.5 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${vistaCotizaciones === 'tabla' ? 'bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white shadow-xs' : 'text-slate-700 hover:bg-[#d5dbe3]'}`}
+                      className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
+                        vistaCotizaciones === 'tabla'
+                          ? 'bg-gradient-to-r from-[#0066cc] to-[#2997ff] text-white shadow-lg shadow-[#0066cc]/30'
+                          : 'text-slate-400 hover:text-white'
+                      }`}
                     >
-                      <TableIcon className="h-3.5 w-3.5" />
+                      <TableIcon className="h-4 w-4" />
                       <span>Tabla DTE</span>
                     </button>
                     <button
                       onClick={() => setVistaCotizaciones('kanban')}
-                      className={`px-3.5 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${vistaCotizaciones === 'kanban' ? 'bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white shadow-xs' : 'text-slate-700 hover:bg-[#d5dbe3]'}`}
+                      className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
+                        vistaCotizaciones === 'kanban'
+                          ? 'bg-gradient-to-r from-[#0066cc] to-[#2997ff] text-white shadow-lg shadow-[#0066cc]/30'
+                          : 'text-slate-400 hover:text-white'
+                      }`}
                     >
-                      <LayoutGrid className="h-3.5 w-3.5" />
+                      <LayoutGrid className="h-4 w-4" />
                       <span>Pipeline Kanban</span>
                     </button>
                   </div>
 
                   <button
                     onClick={abrirModalNuevaCotizacion}
-                    className="px-5 py-2.5 bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white font-bold rounded-xl text-xs shadow-[4px_4px_8px_#bec8d2,-4px_-4px_8px_#ffffff] active:scale-95 cursor-pointer transition-all flex items-center gap-2"
+                    className="px-5 py-3 bg-gradient-to-r from-[#0066cc] to-[#2997ff] hover:from-[#0055b3] hover:to-[#1a85f2] text-white font-bold rounded-2xl text-xs sm:text-sm shadow-xl shadow-[#0066cc]/30 active:scale-95 cursor-pointer transition-all flex items-center gap-2"
                   >
-                    <Plus className="h-4 w-4" />
+                    <Plus className="h-4 w-4 stroke-[2.5]" />
                     <span>Crear Presupuesto</span>
                   </button>
                 </div>
               </div>
 
-              {/* ── CARDS DE FILTRO RÁPIDO POR CATEGORÍA Y ESTADO (POR CLICK) ── */}
+              {/* ── BENTO TILES DE FILTRO RÁPIDO POR CATEGORÍA Y ESTADO ── */}
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
                 {[
-                  { id: 'todas', label: 'Todos los Presupuestos', count: resumenCotizacionesKPI.total, sub: `$${Math.round(resumenCotizacionesKPI.montoTotal).toLocaleString('es-CL')} CLP`, color: 'text-[#005bea]' },
-                  { id: 'enviado', label: 'Enviados / En Gestión', count: resumenCotizacionesKPI.enviados, sub: 'Cotizaciones activas', color: 'text-blue-600' },
-                  { id: 'aprobado', label: 'Aprobados / Ganados', count: resumenCotizacionesKPI.aprobados, sub: `$${Math.round(resumenCotizacionesKPI.montoAprobados).toLocaleString('es-CL')} CLP`, color: 'text-emerald-600' },
-                  { id: 'rechazado', label: 'Rechazados / Perdidos', count: resumenCotizacionesKPI.rechazados, sub: 'Descartados', color: 'text-red-600' },
-                  { id: 'borrador', label: 'Borradores', count: resumenCotizacionesKPI.borradores, sub: 'En edición', color: 'text-amber-600' },
+                  { id: 'todas', label: 'Todos los Presupuestos', count: resumenCotizacionesKPI.total, sub: `$${Math.round(resumenCotizacionesKPI.montoTotal).toLocaleString('es-CL')} CLP`, color: 'text-[#2997ff]' },
+                  { id: 'enviado', label: 'Enviados / En Gestión', count: resumenCotizacionesKPI.enviados, sub: 'Cotizaciones activas', color: 'text-blue-400' },
+                  { id: 'aprobado', label: 'Aprobados / Ganados', count: resumenCotizacionesKPI.aprobados, sub: `$${Math.round(resumenCotizacionesKPI.montoAprobados).toLocaleString('es-CL')} CLP`, color: 'text-emerald-400' },
+                  { id: 'rechazado', label: 'Rechazados / Perdidos', count: resumenCotizacionesKPI.rechazados, sub: 'Descartados', color: 'text-red-400' },
+                  { id: 'borrador', label: 'Borradores', count: resumenCotizacionesKPI.borradores, sub: 'En edición', color: 'text-amber-400' },
                 ].map(cat => {
                   const esSel = filtroCotCategoria === cat.id
                   return (
                     <button
                       key={cat.id}
                       onClick={() => setFiltroCotCategoria(cat.id as any)}
-                      className={`p-3.5 rounded-2xl text-left transition-all cursor-pointer flex flex-col justify-between ${
+                      className={`p-4 rounded-3xl text-left transition-all duration-200 cursor-pointer flex flex-col justify-between backdrop-blur-xl ${
                         esSel
-                          ? 'bg-[#E0E5EC] shadow-[inset_4px_4px_8px_#bec8d2,inset_-4px_-4px_8px_#ffffff] border-l-4 border-l-[#005bea]'
-                          : 'bg-[#E0E5EC] shadow-[4px_4px_8px_#bec8d2,-4px_-4px_8px_#ffffff] hover:brightness-95 active:scale-98'
+                          ? 'bg-[#0f2847] border-2 border-[#2997ff] shadow-xl shadow-[#0066cc]/20 scale-[1.02]'
+                          : 'bg-[#0c182b]/80 border border-white/10 hover:border-white/20 hover:bg-[#0e2038]'
                       }`}
                     >
-                      <div className="text-[10px] font-black uppercase tracking-wider text-slate-500">{cat.label}</div>
-                      <div className="flex justify-between items-baseline mt-2">
-                        <span className={`text-xl font-black font-mono ${cat.color}`}>{cat.count}</span>
-                        <span className="text-[10px] font-bold text-slate-500">{cat.sub}</span>
+                      <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{cat.label}</div>
+                      <div className="flex justify-between items-baseline mt-3">
+                        <span className={`text-2xl font-black font-mono tracking-tight ${cat.color}`}>{cat.count}</span>
+                        <span className="text-[10px] font-bold text-slate-400">{cat.sub}</span>
                       </div>
                     </button>
                   )
                 })}
               </div>
 
-              {/* ── BARRA SUPERIOR DE FILTRO COMPLETO (MULTICRITERIO MULTI-FECHA Y BÚSQUEDA) ── */}
-              <div className="bg-[#E0E5EC] p-4 rounded-xl shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] flex flex-wrap items-center gap-3 text-xs">
+              {/* ── BARRA SUPERIOR DE FILTROS DARK FROSTED ── */}
+              <div className="bg-[#0c182b]/80 backdrop-blur-xl border border-white/10 p-4 rounded-3xl flex flex-wrap items-center gap-3 text-xs shadow-xl">
                 {/* Buscador de Texto (Cliente, RUT, Folio) */}
                 <div className="relative flex-1 min-w-[220px]">
-                  <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-400" />
+                  <Search className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-400" />
                   <input
                     type="text"
                     value={filtroCotBusqueda}
                     onChange={e => setFiltroCotBusqueda(e.target.value)}
                     placeholder="Buscar por Cliente, RUT, Folio (#PR2607), Comuna..."
-                    className="w-full bg-[#E0E5EC] shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] rounded-lg pl-9 pr-3 py-2 text-xs font-mono text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-[#005bea]"
+                    className="w-full min-h-[44px] bg-[#060c18] border border-white/10 rounded-2xl pl-10 pr-4 py-2 text-xs font-mono text-white placeholder-slate-500 focus:outline-none focus:border-[#2997ff] focus:ring-1 focus:ring-[#2997ff]"
                   />
                 </div>
 
                 {/* Fecha Desde */}
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <Calendar className="h-3.5 w-3.5 text-slate-500 shrink-0" />
-                  <span className="text-[10px] font-bold text-slate-600">Desde:</span>
+                <div className="flex items-center gap-2 shrink-0">
+                  <Calendar className="h-4 w-4 text-[#2997ff] shrink-0" />
+                  <span className="text-[11px] font-semibold text-slate-400">Desde:</span>
                   <input
                     type="date"
                     value={filtroCotDesde}
                     onChange={e => setFiltroCotDesde(e.target.value)}
-                    className="bg-[#E0E5EC] shadow-[inset_2px_2px_4px_#bec8d2,inset_-2px_-2px_4px_#ffffff] px-2.5 py-1.5 rounded-lg text-xs font-mono text-slate-800 focus:outline-none"
+                    className="min-h-[44px] bg-[#060c18] border border-white/10 px-3 py-2 rounded-2xl text-xs font-mono text-white focus:outline-none focus:border-[#2997ff]"
                   />
                 </div>
 
                 {/* Fecha Hasta */}
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <span className="text-[10px] font-bold text-slate-600">Hasta:</span>
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="text-[11px] font-semibold text-slate-400">Hasta:</span>
                   <input
                     type="date"
                     value={filtroCotHasta}
                     onChange={e => setFiltroCotHasta(e.target.value)}
-                    className="bg-[#E0E5EC] shadow-[inset_2px_2px_4px_#bec8d2,inset_-2px_-2px_4px_#ffffff] px-2.5 py-1.5 rounded-lg text-xs font-mono text-slate-800 focus:outline-none"
+                    className="min-h-[44px] bg-[#060c18] border border-white/10 px-3 py-2 rounded-2xl text-xs font-mono text-white focus:outline-none focus:border-[#2997ff]"
                   />
                 </div>
 
@@ -3357,7 +3369,7 @@ export default function OperacionCRM() {
                 <select
                   value={filtroCotEmpresa}
                   onChange={e => setFiltroCotEmpresa(e.target.value)}
-                  className="bg-[#E0E5EC] shadow-[2px_2px_4px_#bec8d2,-2px_-2px_4px_#ffffff] px-3 py-2 rounded-lg text-xs font-bold text-slate-800 focus:outline-none"
+                  className="min-h-[44px] bg-[#060c18] border border-white/10 px-4 py-2 rounded-2xl text-xs font-bold text-white focus:outline-none focus:border-[#2997ff]"
                 >
                   <option value="todas">Todas las Emisoras</option>
                   {empresasConglomerado.map(emp => (
@@ -3369,7 +3381,7 @@ export default function OperacionCRM() {
                 <select
                   value={filtroCotOrden}
                   onChange={e => setFiltroCotOrden(e.target.value as any)}
-                  className="bg-[#E0E5EC] shadow-[2px_2px_4px_#bec8d2,-2px_-2px_4px_#ffffff] px-3 py-2 rounded-lg text-xs font-bold text-slate-800 focus:outline-none"
+                  className="min-h-[44px] bg-[#060c18] border border-white/10 px-4 py-2 rounded-2xl text-xs font-bold text-white focus:outline-none focus:border-[#2997ff]"
                 >
                   <option value="recientes">Más Recientes</option>
                   <option value="antiguos">Más Antiguos</option>
@@ -3389,179 +3401,264 @@ export default function OperacionCRM() {
                       setFiltroCotEmpresa('todas')
                       setFiltroCotOrden('recientes')
                     }}
-                    className="px-3 py-2 text-xs font-bold text-red-600 hover:underline cursor-pointer flex items-center gap-1 bg-[#E0E5EC] shadow-[2px_2px_4px_#bec8d2,-2px_-2px_4px_#ffffff] rounded-lg"
+                    className="min-h-[44px] px-4 py-2 text-xs font-bold text-red-400 hover:text-red-300 cursor-pointer flex items-center gap-1.5 bg-red-950/40 border border-red-500/30 rounded-2xl transition"
                   >
-                    <X className="h-3.5 w-3.5" />
+                    <X className="h-4 w-4" />
                     <span>Limpiar Filtros</span>
                   </button>
                 )}
               </div>
 
-              {/* VISTA 1: TABLA GENERAL DTE */}
+              {/* VISTA 1: TABLA GENERAL DTE (APPLE HOMEKIT HIGH-ROW STYLE) */}
               {vistaCotizaciones === 'tabla' && (
-                <div className="flex-1 overflow-auto bg-[#E0E5EC] shadow-[inset_5px_5px_10px_#bec8d2,inset_-5px_-5px_10px_#ffffff] rounded-2xl p-4">
-                  <table className="w-full text-left border-collapse text-xs sm:text-sm font-medium">
-                    <thead>
-                      <tr className="bg-[#E0E5EC] text-slate-700 border-b-2 border-slate-300 font-black uppercase text-[11px] tracking-wider">
-                        <th className="py-4 px-4 border-r border-slate-300">FOLIO / FECHA</th>
-                        <th className="py-4 px-4 border-r border-slate-300">EMPRESA EMISORA</th>
-                        <th className="py-4 px-4 border-r border-slate-300">RECEPTOR (CLIENTE / PROSPECTO)</th>
-                        <th className="py-4 px-4 border-r border-slate-300">CIUDAD / COMUNA</th>
-                        <th className="py-4 px-4 border-r border-slate-300 text-right">NETO AFECTO</th>
-                        <th className="py-4 px-4 border-r border-slate-300 text-right">TOTAL IVA INCL.</th>
-                        <th className="py-4 px-4 border-r border-slate-300 text-center uppercase">ETAPA PIPELINE</th>
-                        <th className="py-4 px-4 text-center min-w-[300px]">ACCIONES (WHATSAPP • EMAIL • DTE)</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-300/80">
-                      {cotizacionesFiltradas.length === 0 ? (
-                        <tr>
-                          <td colSpan={8} className="py-12 px-6 text-center text-slate-500 font-bold text-sm">
-                            No se encontraron presupuestos que coincidan con los criterios de búsqueda o filtros seleccionados.
-                          </td>
-                        </tr>
-                      ) : (
-                        cotizacionesFiltradas.map(c => {
+                <div className="bg-[#0c182b]/85 backdrop-blur-2xl border border-white/10 rounded-3xl p-5 sm:p-6 shadow-2xl">
+                  
+                  {/* Tarjetas Móviles (< md) */}
+                  <div className="md:hidden space-y-4">
+                    {cotizacionesFiltradas.length === 0 ? (
+                      <div className="py-12 text-center text-slate-400 font-semibold text-xs">
+                        No se encontraron presupuestos.
+                      </div>
+                    ) : (
+                      cotizacionesFiltradas.map(c => {
                         const empEmisora = empresasConglomerado.find(e => e.id === c.empresa_facturadora_id) || empresasConglomerado[0]
                         return (
-                          <tr key={c.id} className="hover:bg-[#d5dbe3] transition-colors">
-                            <td className="py-4.5 px-4 font-mono font-black text-sm text-[#005bea] border-r border-slate-300/80">
-                              <div className="tracking-tight">{c.codigo_cotizacion}</div>
-                              <div className="text-[11px] text-slate-500 font-sans font-semibold mt-0.5">{c.fecha}</div>
-                            </td>
-                            <td className="py-4.5 px-4 border-r border-slate-300/80 font-bold text-emerald-800 text-xs sm:text-sm">{empEmisora.razon_social}</td>
-                            <td className="py-4.5 px-4 border-r border-slate-300/80 font-extrabold text-slate-900">
-                              <div className="text-xs sm:text-sm leading-snug">{c.nombre_cliente}</div>
-                              <div className="text-[11px] text-slate-500 font-mono font-bold mt-0.5">RUT: {c.rut_cliente}</div>
-                            </td>
-                            <td className="py-4.5 px-4 border-r border-slate-300/80 font-bold text-slate-700 text-xs sm:text-sm">{c.ciudad_cliente || 'Santiago'}</td>
-                            <td className="py-4.5 px-4 text-right font-mono font-bold border-r border-slate-300/80 text-slate-700 text-xs sm:text-sm">${Math.round(c.neto_con_descuento || 0).toLocaleString('es-CL')}</td>
-                            <td className="py-4.5 px-4 text-right font-mono font-black text-emerald-800 border-r border-slate-300/80 text-sm sm:text-base">${Math.round(c.monto_total_iva_incluido || 0).toLocaleString('es-CL')}</td>
-                            <td className="py-4.5 px-4 text-center border-r border-slate-300/80 font-bold">
-                              <span className="px-3 py-1.5 bg-[#E0E5EC] shadow-[inset_2px_2px_4px_#bec8d2,inset_-2px_-2px_4px_#ffffff] text-[#005bea] rounded-xl text-xs font-black inline-block">
+                          <div key={c.id} className="bg-[#060c18] border border-white/10 rounded-2xl p-4.5 space-y-3 shadow-lg">
+                            <div className="flex items-center justify-between">
+                              <span className="font-mono font-extrabold text-[#2997ff] text-sm">
+                                {c.codigo_cotizacion}
+                              </span>
+                              <span className="text-[10px] font-mono text-slate-400">{c.fecha}</span>
+                            </div>
+
+                            <div>
+                              <h4 className="font-bold text-white text-sm">{c.nombre_cliente}</h4>
+                              <p className="text-xs font-mono text-slate-400">RUT: {c.rut_cliente}</p>
+                              <p className="text-[11px] text-emerald-400 font-medium mt-0.5">{empEmisora.razon_social}</p>
+                            </div>
+
+                            <div className="flex items-center justify-between pt-2 border-t border-white/5">
+                              <div>
+                                <span className="text-[10px] text-slate-400 uppercase">Total IVA Incl.</span>
+                                <p className="text-base font-black font-mono text-emerald-400">
+                                  ${Math.round(c.monto_total_iva_incluido || 0).toLocaleString('es-CL')}
+                                </p>
+                              </div>
+                              <span className="px-3 py-1 bg-[#2997ff]/10 text-[#2997ff] border border-[#2997ff]/30 rounded-xl text-xs font-bold">
                                 {c.etapa_pipeline || 'Cotización'}
                               </span>
-                            </td>
-                            <td className="py-4.5 px-4 text-center">
-                              <div className="flex items-center justify-center gap-2.5">
-                                <button
-                                  onClick={() => handleEnviarWhatsAppCotizacion(c)}
-                                  title="Enviar por WhatsApp"
-                                  className="p-2.5 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white rounded-xl font-bold cursor-pointer transition-all shadow-md hover:scale-105"
-                                >
-                                  <MessageSquare className="h-5 w-5 stroke-[2]" />
-                                </button>
-                                <button
-                                  onClick={() => handleEnviarEmailCotizacion(c)}
-                                  disabled={enviandoEmailId === c.id}
-                                  title="Enviar Presupuesto por Email (Empresas Gama Seguridad)"
-                                  className="p-2.5 bg-[#005bea] hover:bg-blue-600 active:scale-95 text-white rounded-xl font-bold cursor-pointer transition-all shadow-md hover:scale-105"
-                                >
-                                  {enviandoEmailId === c.id ? <Loader2 className="h-5 w-5 animate-spin" /> : <Mail className="h-5 w-5 stroke-[2]" />}
-                                </button>
-                                <button
-                                  onClick={() => setCotSeleccionada(c)}
-                                  title="Ver e Imprimir DTE"
-                                  className="p-2.5 bg-slate-900 hover:bg-slate-800 active:scale-95 text-white rounded-xl font-bold cursor-pointer transition-all shadow-md hover:scale-105"
-                                >
-                                  <FileText className="h-5 w-5 stroke-[2]" />
-                                </button>
-                                <button
-                                  onClick={() => handleEditarCotizacion(c)}
-                                  title="Editar Cotización"
-                                  className="p-2.5 bg-amber-600 hover:bg-amber-500 active:scale-95 text-white rounded-xl font-bold cursor-pointer transition-all shadow-md hover:scale-105"
-                                >
-                                  <Pencil className="h-5 w-5 stroke-[2]" />
-                                </button>
-                                <button
-                                  onClick={() => handleDuplicarCotizacion(c)}
-                                  title="Copiar Cotización"
-                                  className="p-2.5 bg-slate-700 hover:bg-slate-600 active:scale-95 text-white rounded-xl font-bold cursor-pointer transition-all shadow-md hover:scale-105"
-                                >
-                                  <Copy className="h-5 w-5 stroke-[2]" />
-                                </button>
-                                <button
-                                  onClick={() => handleEliminarCotizacion(c.id, c.codigo_cotizacion)}
-                                  title="Eliminar Cotización"
-                                  className="p-2.5 bg-red-700 hover:bg-red-600 active:scale-95 text-white rounded-xl font-bold cursor-pointer transition-all shadow-md hover:scale-105"
-                                >
-                                  <Trash2 className="h-5 w-5 stroke-[2]" />
-                                </button>
-                              </div>
+                            </div>
+
+                            {/* Botones Acciones Móviles Cómodos */}
+                            <div className="grid grid-cols-5 gap-2 pt-2 border-t border-white/5">
+                              <button
+                                onClick={() => handleEnviarWhatsAppCotizacion(c)}
+                                className="p-3 bg-emerald-600/20 hover:bg-emerald-600 text-emerald-400 hover:text-white border border-emerald-500/30 rounded-xl flex items-center justify-center transition"
+                                title="Enviar por WhatsApp"
+                              >
+                                <MessageSquare className="h-4 w-4" />
+                              </button>
+                              <button
+                                onClick={() => handleEnviarEmailCotizacion(c)}
+                                disabled={enviandoEmailId === c.id}
+                                className="p-3 bg-[#0066cc]/20 hover:bg-[#0066cc] text-[#2997ff] hover:text-white border border-[#2997ff]/30 rounded-xl flex items-center justify-center transition"
+                                title="Enviar por Email"
+                              >
+                                {enviandoEmailId === c.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+                              </button>
+                              <button
+                                onClick={() => setCotSeleccionada(c)}
+                                className="p-3 bg-white/10 hover:bg-white/20 text-white rounded-xl flex items-center justify-center transition"
+                                title="Ver DTE"
+                              >
+                                <FileText className="h-4 w-4" />
+                              </button>
+                              <button
+                                onClick={() => handleEditarCotizacion(c)}
+                                className="p-3 bg-amber-500/20 hover:bg-amber-500 text-amber-300 hover:text-white border border-amber-500/30 rounded-xl flex items-center justify-center transition"
+                                title="Editar"
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDuplicarCotizacion(c)}
+                                className="p-3 bg-white/5 hover:bg-white/15 text-slate-300 rounded-xl flex items-center justify-center transition"
+                                title="Copiar"
+                              >
+                                <Copy className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </div>
+                        )
+                      })
+                    )}
+                  </div>
+
+                  {/* Tabla Desktop (>= md) */}
+                  <div className="hidden md:block overflow-x-auto">
+                    <table className="w-full text-left border-collapse text-xs sm:text-sm font-medium">
+                      <thead>
+                        <tr className="bg-[#0f2442]/80 text-slate-300 border-b border-white/10 font-bold uppercase text-[11px] tracking-wider">
+                          <th className="py-4.5 px-4">FOLIO / FECHA</th>
+                          <th className="py-4.5 px-4">EMPRESA EMISORA</th>
+                          <th className="py-4.5 px-4">RECEPTOR (CLIENTE / PROSPECTO)</th>
+                          <th className="py-4.5 px-4">CIUDAD / COMUNA</th>
+                          <th className="py-4.5 px-4 text-right">NETO AFECTO</th>
+                          <th className="py-4.5 px-4 text-right">TOTAL IVA INCL.</th>
+                          <th className="py-4.5 px-4 text-center">ETAPA PIPELINE</th>
+                          <th className="py-4.5 px-4 text-center min-w-[280px]">ACCIONES</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-white/5">
+                        {cotizacionesFiltradas.length === 0 ? (
+                          <tr>
+                            <td colSpan={8} className="py-14 px-6 text-center text-slate-400 font-semibold text-sm">
+                              No se encontraron presupuestos que coincidan con los criterios de búsqueda o filtros seleccionados.
                             </td>
                           </tr>
-                        )
-                      }))}
-                    </tbody>
-                  </table>
+                        ) : (
+                          cotizacionesFiltradas.map(c => {
+                          const empEmisora = empresasConglomerado.find(e => e.id === c.empresa_facturadora_id) || empresasConglomerado[0]
+                          return (
+                            <tr key={c.id} className="hover:bg-white/5 transition-colors group">
+                              <td className="py-5 px-4 font-mono font-black text-sm text-[#2997ff]">
+                                <div className="tracking-tight">{c.codigo_cotizacion}</div>
+                                <div className="text-[11px] text-slate-400 font-sans font-medium mt-0.5">{c.fecha}</div>
+                              </td>
+                              <td className="py-5 px-4 font-bold text-emerald-400 text-xs sm:text-sm">{empEmisora.razon_social}</td>
+                              <td className="py-5 px-4 font-bold text-white">
+                                <div className="text-xs sm:text-sm leading-snug">{c.nombre_cliente}</div>
+                                <div className="text-[11px] text-slate-400 font-mono font-medium mt-0.5">RUT: {c.rut_cliente}</div>
+                              </td>
+                              <td className="py-5 px-4 font-semibold text-slate-300 text-xs sm:text-sm">{c.ciudad_cliente || 'Santiago'}</td>
+                              <td className="py-5 px-4 text-right font-mono font-bold text-slate-300 text-xs sm:text-sm">${Math.round(c.neto_con_descuento || 0).toLocaleString('es-CL')}</td>
+                              <td className="py-5 px-4 text-right font-mono font-black text-emerald-400 text-sm sm:text-base">${Math.round(c.monto_total_iva_incluido || 0).toLocaleString('es-CL')}</td>
+                              <td className="py-5 px-4 text-center font-bold">
+                                <span className="px-3.5 py-1.5 bg-[#2997ff]/10 text-[#2997ff] border border-[#2997ff]/30 rounded-full text-xs font-bold inline-block">
+                                  {c.etapa_pipeline || 'Cotización'}
+                                </span>
+                              </td>
+                              <td className="py-5 px-4 text-center">
+                                <div className="flex items-center justify-center gap-2">
+                                  <button
+                                    onClick={() => handleEnviarWhatsAppCotizacion(c)}
+                                    title="Enviar por WhatsApp"
+                                    className="p-2.5 bg-emerald-500/20 hover:bg-emerald-600 text-emerald-400 hover:text-white border border-emerald-500/30 rounded-xl font-bold cursor-pointer transition-all hover:scale-105"
+                                  >
+                                    <MessageSquare className="h-4 w-4 stroke-[2]" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleEnviarEmailCotizacion(c)}
+                                    disabled={enviandoEmailId === c.id}
+                                    title="Enviar Presupuesto por Email (Empresas Gama Seguridad)"
+                                    className="p-2.5 bg-[#0066cc]/20 hover:bg-[#0066cc] text-[#2997ff] hover:text-white border border-[#2997ff]/30 rounded-xl font-bold cursor-pointer transition-all hover:scale-105"
+                                  >
+                                    {enviandoEmailId === c.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4 stroke-[2]" />}
+                                  </button>
+                                  <button
+                                    onClick={() => setCotSeleccionada(c)}
+                                    title="Ver e Imprimir DTE"
+                                    className="p-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl font-bold cursor-pointer transition-all hover:scale-105"
+                                  >
+                                    <FileText className="h-4 w-4 stroke-[2]" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleEditarCotizacion(c)}
+                                    title="Editar Cotización"
+                                    className="p-2.5 bg-amber-500/20 hover:bg-amber-500 text-amber-300 hover:text-white border border-amber-500/30 rounded-xl font-bold cursor-pointer transition-all hover:scale-105"
+                                  >
+                                    <Pencil className="h-4 w-4 stroke-[2]" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleDuplicarCotizacion(c)}
+                                    title="Copiar Cotización"
+                                    className="p-2.5 bg-white/5 hover:bg-white/15 text-slate-300 rounded-xl font-bold cursor-pointer transition-all hover:scale-105"
+                                  >
+                                    <Copy className="h-4 w-4 stroke-[2]" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleEliminarCotizacion(c.id, c.codigo_cotizacion)}
+                                    title="Eliminar Cotización"
+                                    className="p-2.5 bg-red-500/20 hover:bg-red-600 text-red-400 hover:text-white border border-red-500/30 rounded-xl font-bold cursor-pointer transition-all hover:scale-105"
+                                  >
+                                    <Trash2 className="h-4 w-4 stroke-[2]" />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          )
+                        }))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               )}
 
-              {/* VISTA 2: TABLERO KANBAN DE PIPELINE (ESPO-CRM INSPIRED) */}
+              {/* VISTA 2: TABLERO KANBAN DE PIPELINE (APPLE HOMEKIT BENTO STYLE) */}
               {vistaCotizaciones === 'kanban' && (
-                <div className="flex-1 overflow-x-auto bg-[#E0E5EC] shadow-[inset_5px_5px_10px_#bec8d2,inset_-5px_-5px_10px_#ffffff] rounded-2xl p-4">
+                <div className="bg-[#0c182b]/85 backdrop-blur-2xl border border-white/10 rounded-3xl p-5 sm:p-6 shadow-2xl overflow-x-auto">
                   <div className="flex gap-4 min-w-[1200px] h-full items-stretch">
                     
                     {[
-                      { key: 'Lead', label: 'Prospecto / Lead', border: 'border-[#005bea]' },
-                      { key: 'Visita', label: 'Visita Técnica', border: 'border-amber-500' },
-                      { key: 'Cotizacion', label: 'Cotización Enviada', border: 'border-blue-600' },
-                      { key: 'Negociacion', label: 'En Negociación', border: 'border-purple-600' },
-                      { key: 'Ganada', label: 'Aprobada / Ganada', border: 'border-emerald-600' }
+                      { key: 'Lead', label: 'Prospecto / Lead', border: 'border-[#2997ff]' },
+                      { key: 'Visita', label: 'Visita Técnica', border: 'border-amber-400' },
+                      { key: 'Cotizacion', label: 'Cotización Enviada', border: 'border-blue-500' },
+                      { key: 'Negociacion', label: 'En Negociación', border: 'border-purple-400' },
+                      { key: 'Ganada', label: 'Aprobada / Ganada', border: 'border-emerald-400' }
                     ].map(col => {
                       const cotsEnCol = cotizacionesFiltradas.filter(c => (c.etapa_pipeline || 'Cotizacion') === col.key)
                       const totalMontoCol = cotsEnCol.reduce((acc, curr) => acc + (curr.monto_total_iva_incluido || 0), 0)
 
                       return (
-                        <div key={col.key} className={`w-1/5 bg-[#E0E5EC] border-t-4 ${col.border} shadow-[6px_6px_12px_#bec8d2,-6px_-6px_12px_#ffffff] rounded-2xl p-4 flex flex-col gap-3`}>
-                          <div className="flex justify-between items-center pb-2 border-b border-slate-300">
-                            <span className="font-black text-xs text-slate-900 uppercase tracking-tight">{col.label}</span>
-                            <span className="bg-[#E0E5EC] shadow-[inset_2px_2px_4px_#bec8d2,inset_-2px_-2px_4px_#ffffff] text-slate-800 text-[10px] font-bold px-2 py-0.5 rounded-full font-mono">
+                        <div key={col.key} className={`w-1/5 bg-[#060c18] border-t-4 ${col.border} border-x border-b border-white/10 rounded-2xl p-4 flex flex-col gap-3 shadow-xl`}>
+                          <div className="flex justify-between items-center pb-2 border-b border-white/10">
+                            <span className="font-bold text-xs text-white uppercase tracking-tight">{col.label}</span>
+                            <span className="bg-white/10 text-white text-[10px] font-bold px-2 py-0.5 rounded-full font-mono">
                               {cotsEnCol.length}
                             </span>
                           </div>
                           
-                          <div className="text-[11px] font-mono font-bold text-slate-700 bg-[#E0E5EC] shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] p-2 rounded-lg text-center">
-                            Monto: ${Math.round(totalMontoCol).toLocaleString('es-CL')} CLP
+                          <div className="text-[11px] font-mono font-bold text-emerald-400 bg-white/5 border border-white/10 p-2 rounded-xl text-center">
+                            Total: ${Math.round(totalMontoCol).toLocaleString('es-CL')} CLP
                           </div>
 
-                          <div className="flex-1 overflow-y-auto space-y-3 pt-1">
+                          <div className="flex-1 overflow-y-auto space-y-3 pt-1 max-h-[600px]">
                             {cotsEnCol.map(cot => (
-                              <div key={cot.id} className="bg-[#E0E5EC] shadow-[4px_4px_8px_#bec8d2,-4px_-4px_8px_#ffffff] hover:shadow-[6px_6px_12px_#bec8d2,-6px_-6px_12px_#ffffff] p-4 rounded-xl space-y-3 transition-all">
+                              <div key={cot.id} className="bg-[#0c182b] border border-white/10 hover:border-[#2997ff]/50 p-4 rounded-2xl space-y-3 transition-all duration-200 shadow-lg">
                                 <div className="flex justify-between items-start">
-                                  <span className="font-mono font-bold text-xs text-[#005bea]">{cot.codigo_cotizacion}</span>
-                                  <span className="text-[10px] text-slate-500 font-medium">{cot.fecha}</span>
+                                  <span className="font-mono font-extrabold text-xs text-[#2997ff]">{cot.codigo_cotizacion}</span>
+                                  <span className="text-[10px] text-slate-400 font-mono font-medium">{cot.fecha}</span>
                                 </div>
 
                                 <div className="space-y-1">
-                                  <h4 className="font-black text-xs text-slate-900 uppercase leading-snug">{cot.nombre_cliente}</h4>
-                                  <span className="text-[10px] text-slate-500 block font-mono">RUT: {cot.rut_cliente}</span>
-                                  <span className="text-[10px] text-slate-700 font-bold block">📍 {cot.ciudad_cliente || 'Santiago'}</span>
+                                  <h4 className="font-bold text-xs text-white uppercase leading-snug">{cot.nombre_cliente}</h4>
+                                  <span className="text-[10px] text-slate-400 block font-mono">RUT: {cot.rut_cliente}</span>
+                                  <span className="text-[10px] text-slate-300 font-medium block">📍 {cot.ciudad_cliente || 'Santiago'}</span>
                                 </div>
 
-                                <div className="bg-[#E0E5EC] shadow-[inset_2px_2px_4px_#bec8d2,inset_-2px_-2px_4px_#ffffff] p-2 rounded-lg flex justify-between items-center font-mono text-xs">
-                                  <span className="text-[10px] text-slate-500 font-sans">Total IVA Incl.</span>
-                                  <span className="font-bold text-emerald-800">${Math.round(cot.monto_total_iva_incluido || 0).toLocaleString('es-CL')}</span>
+                                <div className="bg-white/5 border border-white/5 p-2.5 rounded-xl flex justify-between items-center font-mono text-xs">
+                                  <span className="text-[10px] text-slate-400 font-sans">Total IVA Incl.</span>
+                                  <span className="font-bold text-emerald-400">${Math.round(cot.monto_total_iva_incluido || 0).toLocaleString('es-CL')}</span>
                                 </div>
 
                                 {/* ACCIONES DE PIPELINE Y WHATSAPP & EMAIL */}
-                                <div className="flex items-center justify-between pt-2 border-t border-slate-300">
-                                  <div className="flex gap-2">
-                                    <button onClick={() => handleEnviarWhatsAppCotizacion(cot)} title="Notificar por WhatsApp" className="p-2 bg-emerald-600 text-white rounded-xl text-xs cursor-pointer shadow-xs">
-                                      <MessageSquare className="h-4.5 w-4.5" />
+                                <div className="flex items-center justify-between pt-2 border-t border-white/10">
+                                  <div className="flex gap-1.5">
+                                    <button onClick={() => handleEnviarWhatsAppCotizacion(cot)} title="Notificar por WhatsApp" className="p-2 bg-emerald-600/20 hover:bg-emerald-600 text-emerald-400 hover:text-white border border-emerald-500/30 rounded-xl text-xs cursor-pointer transition">
+                                      <MessageSquare className="h-4 w-4" />
                                     </button>
-                                    <button onClick={() => handleEnviarEmailCotizacion(cot)} disabled={enviandoEmailId === cot.id} title="Enviar por Email (contacto@gamasecurity.cl)" className="p-2 bg-[#005bea] text-white rounded-xl text-xs cursor-pointer shadow-xs">
-                                      {enviandoEmailId === cot.id ? <Loader2 className="h-4.5 w-4.5 animate-spin" /> : <Mail className="h-4.5 w-4.5" />}
+                                    <button onClick={() => handleEnviarEmailCotizacion(cot)} disabled={enviandoEmailId === cot.id} title="Enviar por Email" className="p-2 bg-[#0066cc]/20 hover:bg-[#0066cc] text-[#2997ff] hover:text-white border border-[#2997ff]/30 rounded-xl text-xs cursor-pointer transition">
+                                      {enviandoEmailId === cot.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
                                     </button>
-                                    <button onClick={() => setCotSeleccionada(cot)} title="Ver DTE PDF" className="p-2 bg-slate-900 text-white rounded-xl text-xs cursor-pointer shadow-xs">
-                                      <FileText className="h-4.5 w-4.5" />
+                                    <button onClick={() => setCotSeleccionada(cot)} title="Ver DTE PDF" className="p-2 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs cursor-pointer transition">
+                                      <FileText className="h-4 w-4" />
                                     </button>
                                   </div>
 
                                   <select
                                     value={cot.etapa_pipeline || 'Cotizacion'}
                                     onChange={(e) => handleCambiarEtapaPipeline(cot.id, e.target.value as any)}
-                                    className="bg-[#E0E5EC] shadow-[inset_2px_2px_4px_#bec8d2,inset_-2px_-2px_4px_#ffffff] rounded-lg text-[10px] font-bold p-1.5 text-slate-800 border-none"
+                                    className="bg-[#060c18] border border-white/10 rounded-xl text-[10px] font-bold p-2 text-slate-200 focus:outline-none focus:border-[#2997ff]"
                                   >
                                     <option value="Lead">Lead</option>
                                     <option value="Visita">Visita</option>
@@ -3586,29 +3683,29 @@ export default function OperacionCRM() {
 
           {/* ── MÓDULO 4: FACTURACIÓN & ABONOS PARCIALES CON CONCILIADOR AUTOMÁTICO ── */}
           {moduloActivo === 'facturacion' && (
-            <div className="flex-1 bg-[#E0E5EC] rounded-2xl p-6 sm:p-8 flex flex-col gap-6 shadow-[6px_6px_14px_#bec8d2,-6px_-6px_14px_#ffffff] border border-white/60 overflow-y-auto">
+            <div className="flex-1 bg-[#0c182b]/85 backdrop-blur-2xl rounded-3xl p-6 sm:p-8 flex flex-col gap-6 border border-white/10 shadow-2xl overflow-y-auto">
               
               {/* ENCABEZADO Y BOTONES DE CARGA EXCEL / CSV */}
-              <div className="bg-[#E0E5EC] shadow-[inset_4px_4px_8px_#bec8d2,inset_-4px_-4px_8px_#ffffff] p-6 rounded-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border border-slate-300/40">
+              <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 p-6 rounded-3xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shadow-xl">
                 <div className="flex items-center gap-3.5">
-                  <div className="p-3 bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white rounded-xl shadow-md">
+                  <div className="p-3 bg-gradient-to-r from-[#0066cc] to-[#2997ff] text-white rounded-2xl shadow-lg shadow-[#0066cc]/20">
                     <DollarSign className="h-6 w-6 stroke-[2.5]" />
                   </div>
                   <div>
-                    <h2 className="text-base sm:text-lg font-black text-slate-900 uppercase tracking-wide flex items-center gap-2.5 flex-wrap">
+                    <h2 className="text-base sm:text-lg font-black text-white uppercase tracking-wide flex items-center gap-2.5 flex-wrap">
                       <span>Gestor de Facturación & Conciliador de Cobranza (Julio 2026)</span>
-                      <span className="bg-[#005bea] text-white text-[10px] font-black px-3 py-0.5 rounded-full font-mono shadow-xs">
+                      <span className="bg-[#2997ff]/20 text-[#2997ff] border border-[#2997ff]/30 text-[10px] font-black px-3 py-0.5 rounded-full font-mono">
                         {facturas.length} Facturas Reales
                       </span>
                     </h2>
-                    <p className="text-xs text-slate-500 font-semibold mt-0.5">
+                    <p className="text-xs text-slate-400 font-semibold mt-0.5">
                       Asociación automática por Inteligencia Artificial y concordancia inteligente de abonados perimetrales
                     </p>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-3 flex-wrap">
-                  <label className="px-5 py-3 bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white font-black rounded-xl text-xs shadow-md hover:shadow-lg hover:brightness-105 active:scale-95 cursor-pointer transition-all flex items-center gap-2 uppercase tracking-wider">
+                  <label className="px-5 py-3 bg-gradient-to-r from-[#0066cc] to-[#2997ff] text-white font-black rounded-2xl text-xs shadow-lg shadow-[#0066cc]/20 hover:brightness-110 active:scale-95 cursor-pointer transition-all flex items-center gap-2 uppercase tracking-wider">
                     <FileSpreadsheet className="h-4 w-4 stroke-[2.5]" />
                     <span>📁 Subir Planilla Cobranza (Excel / CSV)</span>
                     <input
@@ -3623,161 +3720,233 @@ export default function OperacionCRM() {
 
               {/* ── CARDS DE RESUMEN FINANCIERO DE COBRANZA EN TIEMPO REAL BENTO ── */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                <div className="bg-[#E0E5EC] shadow-[6px_6px_14px_#bec8d2,-6px_-6px_14px_#ffffff] p-6 rounded-2xl border border-white/60 space-y-2 transition-all hover:shadow-[8px_8px_16px_#bec8d2,-8px_-8px_16px_#ffffff]">
-                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest block">TOTAL FACTURADO JULIO</span>
-                  <div className="text-2xl font-black font-mono text-slate-900">
+                <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 p-6 rounded-3xl space-y-2 transition-all hover:border-white/20 shadow-xl">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">TOTAL FACTURADO JULIO</span>
+                  <div className="text-2xl font-black font-mono text-white">
                     ${facturas.reduce((acc, curr) => acc + curr.monto_total, 0).toLocaleString('es-CL')} CLP
                   </div>
-                  <span className="text-xs text-slate-600 font-bold bg-slate-300/40 px-2.5 py-0.5 rounded-lg inline-block">34 Facturas procesadas</span>
+                  <span className="text-xs text-slate-300 font-bold bg-white/5 border border-white/10 px-2.5 py-0.5 rounded-lg inline-block">34 Facturas procesadas</span>
                 </div>
 
-                <div className="bg-[#E0E5EC] shadow-[6px_6px_14px_#bec8d2,-6px_-6px_14px_#ffffff] p-6 rounded-2xl border border-white/60 space-y-2 transition-all hover:shadow-[8px_8px_16px_#bec8d2,-8px_-8px_16px_#ffffff]">
-                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest block">TOTAL RECAUDADO / ABONADO</span>
-                  <div className="text-2xl font-black font-mono text-emerald-700">
+                <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 p-6 rounded-3xl space-y-2 transition-all hover:border-white/20 shadow-xl">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">TOTAL RECAUDADO / ABONADO</span>
+                  <div className="text-2xl font-black font-mono text-emerald-400">
                     ${facturas.reduce((acc, curr) => acc + (curr.monto_abonado || 0), 0).toLocaleString('es-CL')} CLP
                   </div>
-                  <span className="text-xs text-emerald-800 font-extrabold bg-emerald-500/15 border border-emerald-300/60 px-2.5 py-0.5 rounded-lg inline-block">Abonos al día</span>
+                  <span className="text-xs text-emerald-400 font-extrabold bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-0.5 rounded-lg inline-block">Abonos al día</span>
                 </div>
 
-                <div className="bg-[#E0E5EC] shadow-[6px_6px_14px_#bec8d2,-6px_-6px_14px_#ffffff] p-6 rounded-2xl border border-white/60 space-y-2 transition-all hover:shadow-[8px_8px_16px_#bec8d2,-8px_-8px_16px_#ffffff]">
-                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest block">SALDO PENDIENTE POR COBRAR</span>
-                  <div className="text-2xl font-black font-mono text-red-700">
+                <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 p-6 rounded-3xl space-y-2 transition-all hover:border-white/20 shadow-xl">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">SALDO PENDIENTE POR COBRAR</span>
+                  <div className="text-2xl font-black font-mono text-rose-400">
                     ${facturas.reduce((acc, curr) => acc + (curr.saldo_pendiente || 0), 0).toLocaleString('es-CL')} CLP
                   </div>
-                  <span className="text-xs text-red-800 font-extrabold bg-red-500/15 border border-red-300/60 px-2.5 py-0.5 rounded-lg inline-block">Por conciliar</span>
+                  <span className="text-xs text-rose-400 font-extrabold bg-rose-500/15 border border-rose-500/30 px-2.5 py-0.5 rounded-lg inline-block">Por conciliar</span>
                 </div>
               </div>
 
-              <div className="bg-[#E0E5EC] shadow-[inset_4px_4px_8px_#bec8d2,inset_-4px_-4px_8px_#ffffff] rounded-2xl p-3 overflow-x-auto border border-slate-300/40">
-                <table className="w-full text-left border-collapse text-xs font-medium">
-                  <thead>
-                    <tr className="bg-[#E0E5EC] text-slate-700 border-b border-slate-300 font-bold uppercase text-[11px]">
-                      <th className="p-3.5 border-r border-slate-300">FOLIO / FECHA</th>
-                      <th className="p-3.5 border-r border-slate-300">EMPRESA EMISORA</th>
-                      <th className="p-3.5 border-r border-slate-300">CLIENTE / ABONADO</th>
-                      <th className="p-3.5 border-r border-slate-300 text-right">TOTAL FACTURA</th>
-                      <th className="p-3.5 border-r border-slate-300 text-right">TOTAL ABONADO</th>
-                      <th className="p-3.5 border-r border-slate-300 text-right">SALDO PENDIENTE</th>
-                      <th className="p-3.5 border-r border-slate-300 text-center">ESTADO</th>
-                      <th className="p-3.5 text-center w-36">ACCIONES</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-300">
-                    {facturas.map(f => {
-                      const empEmisora = empresasConglomerado.find(e => e.id === f.empresa_facturadora_id) || empresasConglomerado[0]
-                      return (
-                        <tr key={f.id} className="hover:bg-[#d5dbe3] transition-colors">
-                          <td className="p-3.5 font-mono font-bold text-[#005bea] border-r border-slate-300">
-                            <div>{f.numero_factura}</div>
-                            <div className="text-slate-500 text-[10px] font-sans">{f.fecha}</div>
-                          </td>
-                          <td className="p-3.5 border-r border-slate-300 font-bold text-emerald-800 text-xs">{empEmisora.razon_social}</td>
-                          <td className="p-3.5 border-r border-slate-300">
-                            <div className="font-bold text-slate-900">{f.razon_social}</div>
-                            <div className="text-[10px] text-slate-500 font-mono">Abonado #{f.cuenta_asociada || 'N/A'}</div>
-                          </td>
-                          <td className="p-3.5 text-right font-mono text-slate-900 font-bold border-r border-slate-300">
-                            ${f.monto_total.toLocaleString('es-CL')} CLP
-                          </td>
-                          <td className="p-3.5 text-right font-mono text-emerald-700 font-bold border-r border-slate-300">
-                            ${(f.monto_abonado || 0).toLocaleString('es-CL')} CLP
-                          </td>
-                          <td className="p-3.5 text-right font-mono font-black text-red-700 border-r border-slate-300">
-                            ${(f.saldo_pendiente || 0).toLocaleString('es-CL')} CLP
-                          </td>
-                          <td className="p-3.5 text-center border-r border-slate-300 font-bold">
-                            <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold ${
-                              f.estado === 'Pagada' ? 'bg-emerald-100 text-emerald-800' :
-                              f.estado === 'Abonada' ? 'bg-blue-100 text-blue-800' :
-                              'bg-red-100 text-red-800'
-                            }`}>
-                              {f.estado.toUpperCase()}
-                            </span>
-                          </td>
-                          <td className="p-3.5 text-center">
-                            <div className="flex items-center justify-center gap-1.5 flex-wrap">
-                              <button
-                                onClick={() => {
-                                  setFacturaAbonando(f)
-                                  setMontoAbonoInput((f.saldo_pendiente || 0).toString())
-                                  setMostrarModalAbono(true)
-                                }}
-                                title="Registrar Abono / Pago"
-                                className="px-2.5 py-1.5 bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white rounded-lg text-xs font-bold cursor-pointer transition-all shadow-xs flex items-center gap-1 active:scale-95"
-                              >
-                                <DollarSign className="h-3.5 w-3.5" />
-                                <span>Abono</span>
-                              </button>
-                              
-                              <button
-                                onClick={() => setFacturaSeleccionadaCobranza(f)}
-                                title="Bitácora Acumulativa de Gestión de Cobranza"
-                                className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-xs font-bold cursor-pointer transition-all shadow-xs flex items-center gap-1 active:scale-95"
-                              >
-                                <ClipboardList className="h-3.5 w-3.5 text-amber-400" />
-                                <span>Bitácora</span>
-                              </button>
+              {/* ── LISTADO ADAPTATIVO: TABLA EN DESKTOP / CARDS TOUCH EN MOBILE ── */}
+              <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-3xl p-3 sm:p-5 overflow-hidden shadow-xl">
+                
+                {/* VISTA MOBILE CARDS */}
+                <div className="md:hidden space-y-3.5">
+                  {facturas.map(f => {
+                    const empEmisora = empresasConglomerado.find(e => e.id === f.empresa_facturadora_id) || empresasConglomerado[0]
+                    return (
+                      <div key={f.id} className="bg-white/[0.03] border border-white/10 rounded-2xl p-4 space-y-3">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <span className="font-mono font-bold text-[#2997ff] text-sm">{f.numero_factura}</span>
+                            <span className="text-slate-400 text-[11px] block">{f.fecha}</span>
+                          </div>
+                          <span className={`px-2.5 py-1 rounded-xl text-[10px] font-bold ${
+                            f.estado === 'Pagada' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' :
+                            f.estado === 'Abonada' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' :
+                            'bg-rose-500/20 text-rose-400 border border-rose-500/30'
+                          }`}>
+                            {f.estado.toUpperCase()}
+                          </span>
+                        </div>
 
-                              <button
-                                onClick={() => {
-                                  const cli = clientesMaestros[f.rut_cliente] || { rut: f.rut_cliente, razon_social: f.razon_social, email_cobranza: '', email_contacto: '', telefono: '' }
-                                  setClienteEditingEmail({
-                                    rut: f.rut_cliente,
-                                    razon_social: f.razon_social,
-                                    email_cobranza: cli.email_cobranza || '',
-                                    email_contacto: (cli as any).email_contacto || '',
-                                    telefono: cli.telefono || ''
-                                  })
-                                }}
-                                title="Editar Correo de Cobranza (Guardar para la posteridad)"
-                                className="px-2 py-1.5 bg-emerald-700 hover:bg-emerald-600 text-white rounded-lg text-xs font-bold cursor-pointer transition-all shadow-xs flex items-center gap-1 active:scale-95"
-                              >
-                                <Mail className="h-3.5 w-3.5" />
-                                <span>Correo</span>
-                              </button>
+                        <div>
+                          <div className="font-bold text-white text-sm">{f.razon_social}</div>
+                          <div className="text-[11px] text-slate-400 font-mono">Abonado #{f.cuenta_asociada || 'N/A'} • {empEmisora.razon_social}</div>
+                        </div>
 
-                              <button
-                                onClick={() => handleAbrirPortalCliente(f.cuenta_asociada || 'C701')}
-                                title="Abrir Portal de Cliente Gama (/portal)"
-                                className="px-2 py-1.5 bg-purple-700 hover:bg-purple-600 text-white rounded-lg text-xs font-bold cursor-pointer transition-all shadow-xs flex items-center gap-1 active:scale-95"
-                              >
-                                <ExternalLink className="h-3.5 w-3.5" />
-                                <span>Portal</span>
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      )
-                    })}
-                  </tbody>
-                </table>
+                        <div className="grid grid-cols-3 gap-2 bg-black/20 p-2.5 rounded-xl border border-white/5 text-center">
+                          <div>
+                            <span className="text-[9px] text-slate-400 uppercase block">Total</span>
+                            <span className="font-mono text-xs font-bold text-white">${f.monto_total.toLocaleString('es-CL')}</span>
+                          </div>
+                          <div>
+                            <span className="text-[9px] text-slate-400 uppercase block">Abonado</span>
+                            <span className="font-mono text-xs font-bold text-emerald-400">${(f.monto_abonado || 0).toLocaleString('es-CL')}</span>
+                          </div>
+                          <div>
+                            <span className="text-[9px] text-slate-400 uppercase block">Saldo</span>
+                            <span className="font-mono text-xs font-bold text-rose-400">${(f.saldo_pendiente || 0).toLocaleString('es-CL')}</span>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2 pt-1">
+                          <button
+                            onClick={() => {
+                              setFacturaAbonando(f)
+                              setMontoAbonoInput((f.saldo_pendiente || 0).toString())
+                              setMostrarModalAbono(true)
+                            }}
+                            className="min-h-[42px] px-3 py-2 bg-gradient-to-r from-[#0066cc] to-[#2997ff] text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 active:scale-95 transition-all shadow-md"
+                          >
+                            <DollarSign className="h-4 w-4" />
+                            <span>Abonar</span>
+                          </button>
+                          
+                          <button
+                            onClick={() => setFacturaSeleccionadaCobranza(f)}
+                            className="min-h-[42px] px-3 py-2 bg-white/10 hover:bg-white/15 border border-white/10 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 active:scale-95 transition-all"
+                          >
+                            <ClipboardList className="h-4 w-4 text-amber-400" />
+                            <span>Bitácora</span>
+                          </button>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+
+                {/* VISTA DESKTOP TABLA */}
+                <div className="hidden md:block overflow-x-auto">
+                  <table className="w-full text-left border-collapse text-xs font-medium">
+                    <thead>
+                      <tr className="bg-white/[0.04] text-slate-400 border-b border-white/10 font-bold uppercase text-[11px] tracking-wider">
+                        <th className="py-4 px-4 border-r border-white/10">FOLIO / FECHA</th>
+                        <th className="py-4 px-4 border-r border-white/10">EMPRESA EMISORA</th>
+                        <th className="py-4 px-4 border-r border-white/10">CLIENTE / ABONADO</th>
+                        <th className="py-4 px-4 border-r border-white/10 text-right">TOTAL FACTURA</th>
+                        <th className="py-4 px-4 border-r border-white/10 text-right">TOTAL ABONADO</th>
+                        <th className="py-4 px-4 border-r border-white/10 text-right">SALDO PENDIENTE</th>
+                        <th className="py-4 px-4 border-r border-white/10 text-center">ESTADO</th>
+                        <th className="py-4 px-4 text-center w-36">ACCIONES</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/5">
+                      {facturas.map(f => {
+                        const empEmisora = empresasConglomerado.find(e => e.id === f.empresa_facturadora_id) || empresasConglomerado[0]
+                        return (
+                          <tr key={f.id} className="hover:bg-white/[0.04] transition-colors">
+                            <td className="py-4.5 px-4 font-mono font-bold text-[#2997ff] border-r border-white/10">
+                              <div>{f.numero_factura}</div>
+                              <div className="text-slate-400 text-[10px] font-sans">{f.fecha}</div>
+                            </td>
+                            <td className="py-4.5 px-4 border-r border-white/10 font-bold text-emerald-400 text-xs">{empEmisora.razon_social}</td>
+                            <td className="py-4.5 px-4 border-r border-white/10">
+                              <div className="font-bold text-white">{f.razon_social}</div>
+                              <div className="text-[10px] text-slate-400 font-mono">Abonado #{f.cuenta_asociada || 'N/A'}</div>
+                            </td>
+                            <td className="py-4.5 px-4 text-right font-mono text-white font-bold border-r border-white/10">
+                              ${f.monto_total.toLocaleString('es-CL')} CLP
+                            </td>
+                            <td className="py-4.5 px-4 text-right font-mono text-emerald-400 font-bold border-r border-white/10">
+                              ${(f.monto_abonado || 0).toLocaleString('es-CL')} CLP
+                            </td>
+                            <td className="py-4.5 px-4 text-right font-mono font-black text-rose-400 border-r border-white/10">
+                              ${(f.saldo_pendiente || 0).toLocaleString('es-CL')} CLP
+                            </td>
+                            <td className="py-4.5 px-4 text-center border-r border-white/10 font-bold">
+                              <span className={`px-2.5 py-1 rounded-xl text-[10px] font-bold ${
+                                f.estado === 'Pagada' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' :
+                                f.estado === 'Abonada' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' :
+                                'bg-rose-500/20 text-rose-400 border border-rose-500/30'
+                              }`}>
+                                {f.estado.toUpperCase()}
+                              </span>
+                            </td>
+                            <td className="py-4.5 px-4 text-center">
+                              <div className="flex items-center justify-center gap-1.5 flex-wrap">
+                                <button
+                                  onClick={() => {
+                                    setFacturaAbonando(f)
+                                    setMontoAbonoInput((f.saldo_pendiente || 0).toString())
+                                    setMostrarModalAbono(true)
+                                  }}
+                                  title="Registrar Abono / Pago"
+                                  className="px-2.5 py-1.5 bg-gradient-to-r from-[#0066cc] to-[#2997ff] text-white rounded-xl text-xs font-bold cursor-pointer transition-all shadow-md flex items-center gap-1 active:scale-95"
+                                >
+                                  <DollarSign className="h-3.5 w-3.5" />
+                                  <span>Abono</span>
+                                </button>
+                                
+                                <button
+                                  onClick={() => setFacturaSeleccionadaCobranza(f)}
+                                  title="Bitácora Acumulativa de Gestión de Cobranza"
+                                  className="px-2.5 py-1.5 bg-white/10 hover:bg-white/20 border border-white/10 text-white rounded-xl text-xs font-bold cursor-pointer transition-all shadow-xs flex items-center gap-1 active:scale-95"
+                                >
+                                  <ClipboardList className="h-3.5 w-3.5 text-amber-400" />
+                                  <span>Bitácora</span>
+                                </button>
+
+                                <button
+                                  onClick={() => {
+                                    const cli = clientesMaestros[f.rut_cliente] || { rut: f.rut_cliente, razon_social: f.razon_social, email_cobranza: '', email_contacto: '', telefono: '' }
+                                    setClienteEditingEmail({
+                                      rut: f.rut_cliente,
+                                      razon_social: f.razon_social,
+                                      email_cobranza: cli.email_cobranza || '',
+                                      email_contacto: (cli as any).email_contacto || '',
+                                      telefono: cli.telefono || ''
+                                    })
+                                  }}
+                                  title="Editar Correo de Cobranza (Guardar para la posteridad)"
+                                  className="px-2 py-1.5 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/30 text-emerald-400 rounded-xl text-xs font-bold cursor-pointer transition-all shadow-xs flex items-center gap-1 active:scale-95"
+                                >
+                                  <Mail className="h-3.5 w-3.5" />
+                                  <span>Correo</span>
+                                </button>
+
+                                <button
+                                  onClick={() => handleAbrirPortalCliente(f.cuenta_asociada || 'C701')}
+                                  title="Abrir Portal de Cliente Gama (/portal)"
+                                  className="px-2 py-1.5 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/30 text-purple-300 rounded-xl text-xs font-bold cursor-pointer transition-all shadow-xs flex items-center gap-1 active:scale-95"
+                                >
+                                  <ExternalLink className="h-3.5 w-3.5" />
+                                  <span>Portal</span>
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
               </div>
             </div>
           )}
 
           {/* ── MÓDULO 5: SERVICIO TÉCNICO & SLAs (COMMAND CENTER 24/7 INTEGRATED) ── */}
           {moduloActivo === 'serv_tecnico' && (
-            <div className="flex-1 bg-[#E0E5EC] rounded-2xl p-6 md:p-8 flex flex-col gap-6 shadow-[6px_6px_12px_#bec8d2,-6px_-6px_12px_#ffffff] overflow-y-auto">
+            <div className="flex-1 bg-[#0c182b]/85 backdrop-blur-2xl rounded-3xl p-6 md:p-8 flex flex-col gap-6 border border-white/10 shadow-2xl overflow-y-auto">
               
               {/* ENCABEZADO MÓDULO */}
-              <div className="bg-[#E0E5EC] shadow-[inset_5px_5px_10px_#bec8d2,inset_-5px_-5px_10px_#ffffff] p-5 rounded-xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 p-5 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-xl">
                 <div className="flex items-center gap-3">
-                  <div className="p-2.5 bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white rounded-xl shadow-xs">
+                  <div className="p-2.5 bg-gradient-to-r from-[#0066cc] to-[#2997ff] text-white rounded-xl shadow-lg shadow-[#0066cc]/20">
                     <Wrench className="h-5 w-5 stroke-[2]" />
                   </div>
                   <div>
-                    <h2 className="text-base font-black text-slate-900 uppercase tracking-wide">
+                    <h2 className="text-base font-black text-white uppercase tracking-wide">
                       Servicios Técnicos & Órdenes de Trabajo (Command Center 24/7)
                     </h2>
-                    <p className="text-xs text-slate-500 font-semibold">
+                    <p className="text-xs text-slate-400 font-semibold">
                       Sincronización en tiempo real con bitácora central, asignación técnica y gestión de SLAs (2h / 6h / 24h)
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 flex-wrap">
                   <button
                     onClick={() => setMostrarModalPWATerreno(true)}
-                    className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-xs shadow-[4px_4px_8px_#bec8d2,-4px_-4px_8px_#ffffff] active:scale-95 cursor-pointer flex items-center gap-2"
+                    className="px-4 py-2.5 bg-white/10 hover:bg-white/15 border border-white/10 text-white font-bold rounded-xl text-xs active:scale-95 cursor-pointer flex items-center gap-2 transition-all shadow-md"
                   >
                     <Smartphone className="h-4 w-4 text-emerald-400" />
                     <span>📱 App PWA Técnico en Terreno</span>
@@ -3790,7 +3959,7 @@ export default function OperacionCRM() {
                       setOtFormObservaciones('')
                       setMostrarModalOT(true)
                     }}
-                    className="px-5 py-2.5 bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white font-bold rounded-xl text-xs shadow-[4px_4px_8px_#bec8d2,-4px_-4px_8px_#ffffff] active:scale-95 cursor-pointer flex items-center gap-2"
+                    className="px-5 py-2.5 bg-gradient-to-r from-[#0066cc] to-[#2997ff] text-white font-bold rounded-xl text-xs shadow-lg shadow-[#0066cc]/20 hover:brightness-110 active:scale-95 cursor-pointer flex items-center gap-2 transition-all"
                   >
                     <Plus className="h-4 w-4" />
                     <span>Nueva Orden Técnica (OT)</span>
@@ -3799,44 +3968,44 @@ export default function OperacionCRM() {
               </div>
 
               {/* ── ALERTA DE NOVEDADES TÉCNICAS EN VIVO DESDE CENTRAL DE MONITOREO ── */}
-              <div className="bg-[#E0E5EC] shadow-[inset_4px_4px_8px_#bec8d2,inset_-4px_-4px_8px_#ffffff] p-5 rounded-2xl space-y-3">
-                <div className="flex justify-between items-center border-b border-slate-300 pb-2">
-                  <h3 className="font-black text-slate-900 uppercase tracking-wider text-xs flex items-center gap-2">
-                    <AlertTriangle className="h-4 w-4 text-amber-600 animate-pulse" />
+              <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 p-5 rounded-3xl space-y-3 shadow-xl">
+                <div className="flex justify-between items-center border-b border-white/10 pb-2">
+                  <h3 className="font-black text-white uppercase tracking-wider text-xs flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4 text-amber-400 animate-pulse" />
                     <span>NOVEDADES & ALERTAS TÉCNICAS RECIENTES DEL COMMAND CENTER (24/7 API)</span>
                   </h3>
-                  <span className="text-[10px] font-bold text-slate-500 bg-[#E0E5EC] shadow-[2px_2px_4px_#bec8d2,-2px_-2px_4px_#ffffff] px-2.5 py-1 rounded-md">
+                  <span className="text-[10px] font-bold text-slate-300 bg-white/10 border border-white/10 px-2.5 py-1 rounded-xl">
                     Central Operativa
                   </span>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
                   {alertasTecnicasCommandCenter.length === 0 ? (
-                    <div className="col-span-full p-4 text-center text-slate-500 text-xs font-bold bg-[#E0E5EC] shadow-[inset_2px_2px_4px_#bec8d2,inset_-2px_-2px_4px_#ffffff] rounded-xl">
+                    <div className="col-span-full p-6 text-center text-slate-400 text-xs font-bold bg-white/[0.02] border border-white/5 rounded-2xl">
                       No se registran alertas técnicas pendientes en la bitácora central.
                     </div>
                   ) : (
                     alertasTecnicasCommandCenter.map(item => (
-                      <div key={item.id} className="bg-[#E0E5EC] shadow-[4px_4px_8px_#bec8d2,-4px_-4px_8px_#ffffff] p-4 rounded-xl flex flex-col justify-between space-y-3 border-l-4" style={{ borderLeftColor: item.tipo_color ? `#${item.tipo_color}` : '#005bea' }}>
+                      <div key={item.id} className="bg-white/[0.04] border border-white/10 p-4 rounded-2xl flex flex-col justify-between space-y-3 border-l-4" style={{ borderLeftColor: item.tipo_color ? `#${item.tipo_color}` : '#2997ff' }}>
                         <div className="space-y-1.5">
                           <div className="flex justify-between items-center text-[10px]">
-                            <span className="font-mono font-bold text-[#005bea] bg-[#E0E5EC] shadow-[inset_2px_2px_4px_#bec8d2,inset_-2px_-2px_4px_#ffffff] px-2 py-0.5 rounded">
+                            <span className="font-mono font-bold text-[#2997ff] bg-white/10 border border-white/10 px-2 py-0.5 rounded-lg">
                               #{item.abonado_cod || 'N/A'}
                             </span>
-                            <span className="font-mono text-slate-500 font-bold">{item.created_at}</span>
+                            <span className="font-mono text-slate-400 font-bold">{item.created_at}</span>
                           </div>
-                          <h4 className="font-black text-xs text-slate-900 leading-snug">{item.abonado_nombre}</h4>
-                          <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase" style={{ color: `#${item.tipo_color || '005bea'}` }}>
+                          <h4 className="font-black text-xs text-white leading-snug">{item.abonado_nombre}</h4>
+                          <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase" style={{ color: `#${item.tipo_color || '2997ff'}` }}>
                             {item.tipo_nombre} • {item.responsable_nombre}
                           </span>
-                          <p className="text-[11px] text-slate-700 font-medium line-clamp-3 bg-[#E0E5EC] shadow-[inset_2px_2px_4px_#bec8d2,inset_-2px_-2px_4px_#ffffff] p-2 rounded-lg">
+                          <p className="text-[11px] text-slate-300 font-medium line-clamp-3 bg-black/20 border border-white/5 p-2 rounded-xl">
                             {item.comentario}
                           </p>
                         </div>
 
                         <button
                           onClick={() => handleCrearOTDesdeCentral(item)}
-                          className="w-full py-2 bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white text-xs font-bold rounded-lg shadow-[2px_2px_4px_#bec8d2,-2px_-2px_4px_#ffffff] hover:brightness-105 active:scale-98 cursor-pointer flex items-center justify-center gap-1.5"
+                          className="w-full py-2 bg-gradient-to-r from-[#0066cc] to-[#2997ff] text-white text-xs font-bold rounded-xl shadow-md hover:brightness-110 active:scale-98 cursor-pointer flex items-center justify-center gap-1.5 transition-all"
                         >
                           <Plus className="h-3.5 w-3.5" />
                           <span>Generar OT desde Alerta</span>
@@ -3850,26 +4019,26 @@ export default function OperacionCRM() {
               {/* ── CARDS DE FILTRO RÁPIDO DE ESTADO OT ── */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
                 {[
-                  { id: 'todas', label: 'Todas las OTs', count: ordenesTrabajo.length, sub: 'Registradas', color: 'text-[#005bea]' },
-                  { id: 'pendiente', label: 'Pendientes por Atender', count: ordenesTrabajo.filter(o => o.estado === 'Pendiente').length, sub: 'Por asignar', color: 'text-amber-600' },
-                  { id: 'proceso', label: 'En Proceso en Terreno', count: ordenesTrabajo.filter(o => o.estado === 'En Proceso').length, sub: 'Técnico en ruta', color: 'text-blue-600' },
-                  { id: 'finalizada', label: 'Finalizadas & Resueltas', count: ordenesTrabajo.filter(o => o.estado === 'Finalizada').length, sub: 'Conformidad cliente', color: 'text-emerald-600' },
+                  { id: 'todas', label: 'Todas las OTs', count: ordenesTrabajo.length, sub: 'Registradas', color: 'text-[#2997ff]' },
+                  { id: 'pendiente', label: 'Pendientes por Atender', count: ordenesTrabajo.filter(o => o.estado === 'Pendiente').length, sub: 'Por asignar', color: 'text-amber-400' },
+                  { id: 'proceso', label: 'En Proceso en Terreno', count: ordenesTrabajo.filter(o => o.estado === 'En Proceso').length, sub: 'Técnico en ruta', color: 'text-blue-400' },
+                  { id: 'finalizada', label: 'Finalizadas & Resueltas', count: ordenesTrabajo.filter(o => o.estado === 'Finalizada').length, sub: 'Conformidad cliente', color: 'text-emerald-400' },
                 ].map(cat => {
                   const esSel = filtroOTCategoria === cat.id
                   return (
                     <button
                       key={cat.id}
                       onClick={() => setFiltroOTCategoria(cat.id as any)}
-                      className={`p-3.5 rounded-2xl text-left transition-all cursor-pointer flex flex-col justify-between ${
+                      className={`p-4 rounded-2xl text-left transition-all cursor-pointer flex flex-col justify-between ${
                         esSel
-                          ? 'bg-[#E0E5EC] shadow-[inset_4px_4px_8px_#bec8d2,inset_-4px_-4px_8px_#ffffff] border-l-4 border-l-[#005bea]'
-                          : 'bg-[#E0E5EC] shadow-[4px_4px_8px_#bec8d2,-4px_-4px_8px_#ffffff] hover:brightness-95 active:scale-98'
+                          ? 'bg-gradient-to-r from-[#0066cc]/20 to-[#2997ff]/20 border border-[#2997ff]/40 shadow-lg shadow-[#0066cc]/10'
+                          : 'bg-white/[0.03] border border-white/10 hover:bg-white/[0.06] hover:border-white/20'
                       }`}
                     >
-                      <div className="text-[10px] font-black uppercase tracking-wider text-slate-500">{cat.label}</div>
+                      <div className="text-[10px] font-black uppercase tracking-wider text-slate-400">{cat.label}</div>
                       <div className="flex justify-between items-baseline mt-2">
-                        <span className={`text-xl font-black font-mono ${cat.color}`}>{cat.count}</span>
-                        <span className="text-[10px] font-bold text-slate-500">{cat.sub}</span>
+                        <span className={`text-2xl font-black font-mono ${cat.color}`}>{cat.count}</span>
+                        <span className="text-[10px] font-bold text-slate-400">{cat.sub}</span>
                       </div>
                     </button>
                   )
@@ -3877,142 +4046,212 @@ export default function OperacionCRM() {
               </div>
 
               {/* BARRA BÚSQUEDA OT */}
-              <div className="bg-[#E0E5EC] p-4 rounded-xl shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] flex items-center gap-3">
+              <div className="bg-white/[0.03] border border-white/10 p-4 rounded-2xl flex items-center gap-3 shadow-md">
                 <Search className="h-4 w-4 text-slate-400 shrink-0" />
                 <input
                   type="text"
                   value={filtroOTBusqueda}
                   onChange={e => setFiltroOTBusqueda(e.target.value)}
                   placeholder="Buscar OT por código (#OT-2026-081), Abonado (#0999), Cliente, Técnico..."
-                  className="w-full bg-transparent text-xs font-mono text-slate-800 placeholder-slate-400 focus:outline-none"
+                  className="w-full bg-transparent text-xs font-mono text-white placeholder-slate-500 focus:outline-none"
                 />
                 {filtroOTBusqueda && (
-                  <button onClick={() => setFiltroOTBusqueda('')} className="text-slate-400 hover:text-slate-700 text-xs font-bold">✕</button>
+                  <button onClick={() => setFiltroOTBusqueda('')} className="text-slate-400 hover:text-white text-xs font-bold">✕</button>
                 )}
               </div>
 
               {/* TABLA DE ÓRDENES DE TRABAJO */}
-              <div className="bg-[#E0E5EC] shadow-[inset_5px_5px_10px_#bec8d2,inset_-5px_-5px_10px_#ffffff] rounded-xl p-2 overflow-x-auto">
-                <table className="w-full text-left border-collapse text-xs font-medium">
-                  <thead>
-                    <tr className="bg-[#E0E5EC] text-slate-700 border-b border-slate-300 font-bold uppercase text-[11px]">
-                      <th className="p-3.5 border-r border-slate-300">CÓDIGO OT / FECHA</th>
-                      <th className="p-3.5 border-r border-slate-300">CUENTA ABONADO</th>
-                      <th className="p-3.5 border-r border-slate-300">CLIENTE / CENTRO COSTO</th>
-                      <th className="p-3.5 border-r border-slate-300">TIPO DE SERVICIO</th>
-                      <th className="p-3.5 border-r border-slate-300">SLA DE RESPUESTA</th>
-                      <th className="p-3.5 border-r border-slate-300">TÉCNICO ASIGNADO</th>
-                      <th className="p-3.5 border-r border-slate-300 text-center">ESTADO</th>
-                      <th className="p-3.5 text-center min-w-[200px]">ACCIONES (WHATSAPP • FIRMA)</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-300">
-                    {ordenesTrabajoFiltradas.length === 0 ? (
-                      <tr>
-                        <td colSpan={8} className="p-8 text-center text-slate-500 font-bold">
-                          No se encontraron órdenes de trabajo registradas con esos criterios.
-                        </td>
-                      </tr>
-                    ) : (
-                      ordenesTrabajoFiltradas.map(ot => (
-                        <tr key={ot.id} className="hover:bg-[#d5dbe3] transition-colors">
-                          <td className="p-3.5 font-mono font-bold text-[#005bea] border-r border-slate-300">
-                            <div>{ot.codigo_ot}</div>
-                            <div className="text-slate-500 text-[10px] font-sans">{ot.fecha_programada}</div>
-                          </td>
-                          <td className="p-3.5 border-r border-slate-300 font-mono font-bold text-slate-900">#{ot.cuenta}</td>
-                          <td className="p-3.5 border-r border-slate-300 font-bold text-slate-900">{ot.cliente_nombre}</td>
-                          <td className="p-3.5 border-r border-slate-300 text-slate-700 font-semibold">{ot.tipo_servicio}</td>
-                          <td className="p-3.5 border-r border-slate-300 font-bold">
-                            <span className={`px-2.5 py-1 rounded-md text-[10px] font-mono ${
-                              ot.prioridad_sla?.includes('2h') ? 'bg-red-100 text-red-800 border border-red-200' :
-                              ot.prioridad_sla?.includes('6h') ? 'bg-amber-100 text-amber-800 border border-amber-200' :
-                              'bg-blue-100 text-blue-800 border border-blue-200'
-                            }`}>
-                              {ot.prioridad_sla || 'Normal (24h)'}
-                            </span>
-                          </td>
-                          <td className="p-3.5 border-r border-slate-300 text-slate-800 font-bold">{ot.tecnico_asignado}</td>
-                          <td className="p-3.5 text-center font-bold border-r border-slate-300">
-                            <select
-                              value={ot.estado}
-                              onChange={(e) => {
-                                const nuevoEst = e.target.value as any
-                                setOrdenesTrabajo(ordenesTrabajo.map(o => o.id === ot.id ? { ...o, estado: nuevoEst } : o))
-                              }}
-                              className="bg-[#E0E5EC] shadow-[inset_2px_2px_4px_#bec8d2,inset_-2px_-2px_4px_#ffffff] text-slate-800 px-2 py-1 rounded-md text-[10px] font-bold border-none cursor-pointer"
+              <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-3xl p-3 sm:p-5 overflow-hidden shadow-xl">
+                
+                {/* VISTA MOBILE CARDS */}
+                <div className="md:hidden space-y-3.5">
+                  {ordenesTrabajoFiltradas.length === 0 ? (
+                    <div className="p-8 text-center text-slate-400 font-bold text-xs">
+                      No se encontraron órdenes de trabajo registradas con esos criterios.
+                    </div>
+                  ) : (
+                    ordenesTrabajoFiltradas.map(ot => (
+                      <div key={ot.id} className="bg-white/[0.03] border border-white/10 rounded-2xl p-4 space-y-3">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <span className="font-mono font-bold text-[#2997ff] text-sm">{ot.codigo_ot}</span>
+                            <span className="text-slate-400 text-[11px] block">{ot.fecha_programada}</span>
+                          </div>
+                          <span className={`px-2.5 py-1 rounded-xl text-[10px] font-bold ${
+                            ot.prioridad_sla?.includes('2h') ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' :
+                            ot.prioridad_sla?.includes('6h') ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' :
+                            'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                          }`}>
+                            {ot.prioridad_sla || 'Normal (24h)'}
+                          </span>
+                        </div>
+
+                        <div>
+                          <div className="font-bold text-white text-sm">{ot.cliente_nombre}</div>
+                          <div className="text-[11px] text-slate-400 font-mono">#{ot.cuenta} • {ot.tipo_servicio}</div>
+                          <div className="text-[11px] text-slate-400 mt-0.5">Técnico: <strong className="text-slate-200">{ot.tecnico_asignado}</strong></div>
+                        </div>
+
+                        <div className="flex items-center justify-between gap-2 pt-2 border-t border-white/10">
+                          <select
+                            value={ot.estado}
+                            onChange={(e) => {
+                              const nuevoEst = e.target.value as any
+                              setOrdenesTrabajo(ordenesTrabajo.map(o => o.id === ot.id ? { ...o, estado: nuevoEst } : o))
+                            }}
+                            className="bg-black/30 border border-white/10 text-white px-3 py-2 rounded-xl text-xs font-bold cursor-pointer"
+                          >
+                            <option value="Pendiente" className="bg-slate-900 text-white">Pendiente</option>
+                            <option value="En Proceso" className="bg-slate-900 text-white">En Proceso</option>
+                            <option value="Finalizada" className="bg-slate-900 text-white">Finalizada</option>
+                          </select>
+
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => handleNotificarWhatsAppOT(ot)}
+                              title="Notificar Orden Técnica al Cliente por WhatsApp"
+                              className="p-2.5 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/30 text-emerald-400 rounded-xl font-bold cursor-pointer transition-all active:scale-95"
                             >
-                              <option value="Pendiente">Pendiente</option>
-                              <option value="En Proceso">En Proceso</option>
-                              <option value="Finalizada">Finalizada</option>
-                            </select>
-                          </td>
-                          <td className="p-3.5 text-center">
-                            <div className="flex items-center justify-center gap-2">
-                              <button
-                                onClick={() => handleNotificarWhatsAppOT(ot)}
-                                title="Notificar Orden Técnica al Cliente por WhatsApp"
-                                className="p-2 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white rounded-xl font-bold cursor-pointer transition-all shadow-xs"
-                              >
-                                <MessageSquare className="h-4 w-4 stroke-[2]" />
-                              </button>
-                              <button
-                                onClick={() => setMostrarModalFirmaOT(ot)}
-                                title="Ver Pauta Técnica & Firma Digital"
-                                className="p-2 bg-[#005bea] hover:bg-blue-600 active:scale-95 text-white rounded-xl font-bold cursor-pointer transition-all shadow-xs"
-                              >
-                                <FileText className="h-4 w-4 stroke-[2]" />
-                              </button>
-                            </div>
+                              <MessageSquare className="h-4 w-4 stroke-[2]" />
+                            </button>
+                            <button
+                              onClick={() => setMostrarModalFirmaOT(ot)}
+                              title="Ver Pauta Técnica & Firma Digital"
+                              className="p-2.5 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/30 text-[#2997ff] rounded-xl font-bold cursor-pointer transition-all active:scale-95"
+                            >
+                              <FileText className="h-4 w-4 stroke-[2]" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                {/* VISTA DESKTOP TABLA */}
+                <div className="hidden md:block overflow-x-auto">
+                  <table className="w-full text-left border-collapse text-xs font-medium">
+                    <thead>
+                      <tr className="bg-white/[0.04] text-slate-400 border-b border-white/10 font-bold uppercase text-[11px] tracking-wider">
+                        <th className="py-4 px-4 border-r border-white/10">CÓDIGO OT / FECHA</th>
+                        <th className="py-4 px-4 border-r border-white/10">CUENTA ABONADO</th>
+                        <th className="py-4 px-4 border-r border-white/10">CLIENTE / CENTRO COSTO</th>
+                        <th className="py-4 px-4 border-r border-white/10">TIPO DE SERVICIO</th>
+                        <th className="py-4 px-4 border-r border-white/10">SLA DE RESPUESTA</th>
+                        <th className="py-4 px-4 border-r border-white/10">TÉCNICO ASIGNADO</th>
+                        <th className="py-4 px-4 border-r border-white/10 text-center">ESTADO</th>
+                        <th className="py-4 px-4 text-center min-w-[180px]">ACCIONES (WHATSAPP • FIRMA)</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/5">
+                      {ordenesTrabajoFiltradas.length === 0 ? (
+                        <tr>
+                          <td colSpan={8} className="p-8 text-center text-slate-400 font-bold">
+                            No se encontraron órdenes de trabajo registradas con esos criterios.
                           </td>
                         </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
+                      ) : (
+                        ordenesTrabajoFiltradas.map(ot => (
+                          <tr key={ot.id} className="hover:bg-white/[0.04] transition-colors">
+                            <td className="py-4.5 px-4 font-mono font-bold text-[#2997ff] border-r border-white/10">
+                              <div>{ot.codigo_ot}</div>
+                              <div className="text-slate-400 text-[10px] font-sans">{ot.fecha_programada}</div>
+                            </td>
+                            <td className="py-4.5 px-4 border-r border-white/10 font-mono font-bold text-white">#{ot.cuenta}</td>
+                            <td className="py-4.5 px-4 border-r border-white/10 font-bold text-white">{ot.cliente_nombre}</td>
+                            <td className="py-4.5 px-4 border-r border-white/10 text-slate-300 font-semibold">{ot.tipo_servicio}</td>
+                            <td className="py-4.5 px-4 border-r border-white/10 font-bold">
+                              <span className={`px-2.5 py-1 rounded-xl text-[10px] font-mono ${
+                                ot.prioridad_sla?.includes('2h') ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' :
+                                ot.prioridad_sla?.includes('6h') ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' :
+                                'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                              }`}>
+                                {ot.prioridad_sla || 'Normal (24h)'}
+                              </span>
+                            </td>
+                            <td className="py-4.5 px-4 border-r border-white/10 text-slate-200 font-bold">{ot.tecnico_asignado}</td>
+                            <td className="py-4.5 px-4 text-center font-bold border-r border-white/10">
+                              <select
+                                value={ot.estado}
+                                onChange={(e) => {
+                                  const nuevoEst = e.target.value as any
+                                  setOrdenesTrabajo(ordenesTrabajo.map(o => o.id === ot.id ? { ...o, estado: nuevoEst } : o))
+                                }}
+                                className="bg-black/30 border border-white/10 text-white px-2.5 py-1.5 rounded-xl text-[11px] font-bold cursor-pointer"
+                              >
+                                <option value="Pendiente" className="bg-slate-900 text-white">Pendiente</option>
+                                <option value="En Proceso" className="bg-slate-900 text-white">En Proceso</option>
+                                <option value="Finalizada" className="bg-slate-900 text-white">Finalizada</option>
+                              </select>
+                            </td>
+                            <td className="py-4.5 px-4 text-center">
+                              <div className="flex items-center justify-center gap-2">
+                                <button
+                                  onClick={() => handleNotificarWhatsAppOT(ot)}
+                                  title="Notificar Orden Técnica al Cliente por WhatsApp"
+                                  className="p-2 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/30 text-emerald-400 rounded-xl font-bold cursor-pointer transition-all active:scale-95 shadow-xs"
+                                >
+                                  <MessageSquare className="h-4 w-4 stroke-[2]" />
+                                </button>
+                                <button
+                                  onClick={() => setMostrarModalFirmaOT(ot)}
+                                  title="Ver Pauta Técnica & Firma Digital"
+                                  className="p-2 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/30 text-[#2997ff] rounded-xl font-bold cursor-pointer transition-all active:scale-95 shadow-xs"
+                                >
+                                  <FileText className="h-4 w-4 stroke-[2]" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
               </div>
             </div>
           )}
 
           {/* ── MÓDULO 6: KPIS EJECUTIVOS ── */}
           {moduloActivo === 'kpis' && (
-            <div className="flex-1 bg-[#E0E5EC] rounded-2xl p-6 md:p-8 flex flex-col gap-6 shadow-[6px_6px_12px_#bec8d2,-6px_-6px_12px_#ffffff] overflow-y-auto">
-              <div className="bg-[#E0E5EC] shadow-[inset_5px_5px_10px_#bec8d2,inset_-5px_-5px_10px_#ffffff] p-5 rounded-xl flex items-center gap-3">
-                <div className="p-2.5 bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white rounded-xl shadow-xs">
+            <div className="flex-1 bg-[#0c182b]/85 backdrop-blur-2xl rounded-3xl p-6 md:p-8 flex flex-col gap-6 border border-white/10 shadow-2xl overflow-y-auto">
+              <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 p-5 rounded-2xl flex items-center gap-3 shadow-xl">
+                <div className="p-2.5 bg-gradient-to-r from-[#0066cc] to-[#2997ff] text-white rounded-xl shadow-lg shadow-[#0066cc]/20">
                   <BarChart3 className="h-5 w-5 stroke-[2]" />
                 </div>
                 <div>
-                  <h2 className="text-base font-black text-slate-900 tracking-tight">
+                  <h2 className="text-base font-black text-white tracking-tight">
                     Tablero de KPIs Ejecutivos & Recaudación por Razón Social
                   </h2>
-                  <p className="text-xs text-slate-500 font-semibold">
+                  <p className="text-xs text-slate-400 font-semibold">
                     Distribución de facturación mensual y participación financiera de las 4 Empresas del Conglomerado
                   </p>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-[#E0E5EC] shadow-[6px_6px_12px_#bec8d2,-6px_-6px_12px_#ffffff] p-6 rounded-2xl space-y-2">
-                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest block">FAC. MENSUAL PROYECTADA TOTAL</span>
-                  <div className="text-xl font-bold font-mono text-emerald-800">
+                <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 p-6 rounded-3xl space-y-2 shadow-xl hover:border-white/20 transition-all">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">FAC. MENSUAL PROYECTADA TOTAL</span>
+                  <div className="text-2xl font-bold font-mono text-emerald-400">
                     ${kpisFinancieros.totalTarifasCLP.toLocaleString('es-CL')} CLP
                   </div>
-                  <span className="text-xs text-slate-500 font-semibold">Calculado sobre {kpisFinancieros.totalClientes} Clientes</span>
+                  <span className="text-xs text-slate-400 font-semibold">Calculado sobre {kpisFinancieros.totalClientes} Clientes</span>
                 </div>
 
-                <div className="bg-[#E0E5EC] shadow-[6px_6px_12px_#bec8d2,-6px_-6px_12px_#ffffff] p-6 rounded-2xl space-y-2">
-                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest block">EFECTIVIDAD DE COBRANZA</span>
-                  <div className="text-xl font-bold font-mono text-[#005bea]">96.4%</div>
-                  <span className="text-xs text-emerald-700 font-bold flex items-center gap-1">
+                <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 p-6 rounded-3xl space-y-2 shadow-xl hover:border-white/20 transition-all">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">EFECTIVIDAD DE COBRANZA</span>
+                  <div className="text-2xl font-bold font-mono text-[#2997ff]">96.4%</div>
+                  <span className="text-xs text-emerald-400 font-bold flex items-center gap-1">
                     <CheckCircle2 className="h-3.5 w-3.5" />
                     <span>Meta Cumplida</span>
                   </span>
                 </div>
 
-                <div className="bg-[#E0E5EC] shadow-[6px_6px_12px_#bec8d2,-6px_-6px_12px_#ffffff] p-6 rounded-2xl space-y-2">
-                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest block">UF REFERENCIA</span>
-                  <div className="text-xl font-bold font-mono text-slate-900">${valorUF.toLocaleString('es-CL')} CLP</div>
-                  <span className="text-xs text-slate-500 font-semibold">Oficial hoy</span>
+                <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 p-6 rounded-3xl space-y-2 shadow-xl hover:border-white/20 transition-all">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">UF REFERENCIA</span>
+                  <div className="text-2xl font-bold font-mono text-white">${valorUF.toLocaleString('es-CL')} CLP</div>
+                  <span className="text-xs text-slate-400 font-semibold">Oficial hoy</span>
                 </div>
               </div>
             </div>
@@ -4020,24 +4259,24 @@ export default function OperacionCRM() {
 
           {/* ── MÓDULO 7: CRUD EMPRESAS & CONFIGURACIÓN GLOBAL MULTI-PESTAÑA ── */}
           {moduloActivo === 'config' && (
-            <div className="flex-1 bg-[#E0E5EC] rounded-2xl p-6 md:p-8 flex flex-col gap-6 shadow-[6px_6px_12px_#bec8d2,-6px_-6px_12px_#ffffff] overflow-y-auto">
+            <div className="flex-1 bg-[#0c182b]/85 backdrop-blur-2xl rounded-3xl p-6 md:p-8 flex flex-col gap-6 border border-white/10 shadow-2xl overflow-y-auto">
               
-              <div className="bg-[#E0E5EC] shadow-[inset_5px_5px_10px_#bec8d2,inset_-5px_-5px_10px_#ffffff] p-5 rounded-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+              <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 p-5 rounded-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shadow-xl">
                 <div className="flex items-center gap-3">
-                  <div className="p-2.5 bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white rounded-xl shadow-xs">
+                  <div className="p-2.5 bg-gradient-to-r from-[#0066cc] to-[#2997ff] text-white rounded-xl shadow-lg shadow-[#0066cc]/20">
                     <Settings className="h-5 w-5 stroke-[2]" />
                   </div>
                   <div>
-                    <h2 className="text-base font-black text-slate-900 uppercase tracking-wide">
+                    <h2 className="text-base font-black text-white uppercase tracking-wide">
                       Centro de Configuración Global & CRUD del Conglomerado
                     </h2>
-                    <p className="text-xs text-slate-500 font-semibold">
+                    <p className="text-xs text-slate-400 font-semibold">
                       Gestión de Empresas Emisoras DTE, Parámetros Financieros UF/IVA y Servidor WhatsApp
                     </p>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-1.5 bg-[#E0E5EC] p-1 rounded-xl shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] flex-wrap">
+                <div className="flex items-center gap-1.5 bg-black/30 p-1.5 rounded-2xl border border-white/10 flex-wrap">
                   {[
                     { id: 'empresas', label: 'Razones Sociales', icon: Building2 },
                     { id: 'financiero', label: 'UF & Impuestos', icon: DollarSign },
@@ -4051,7 +4290,7 @@ export default function OperacionCRM() {
                       <button
                         key={tab.id}
                         onClick={() => setSubTabConfig(tab.id as any)}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${esActivo ? 'bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white shadow-xs' : 'text-slate-700 hover:bg-[#d5dbe3]'}`}
+                        className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${esActivo ? 'bg-gradient-to-r from-[#0066cc] to-[#2997ff] text-white shadow-lg shadow-[#0066cc]/20' : 'text-slate-400 hover:text-white hover:bg-white/[0.06]'}`}
                       >
                         <TabIcon className="h-3.5 w-3.5" />
                         <span>{tab.label}</span>
@@ -4065,51 +4304,51 @@ export default function OperacionCRM() {
               {subTabConfig === 'empresas' && (
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
-                    <h3 className="font-black text-xs text-slate-900 uppercase tracking-wider">
+                    <h3 className="font-black text-xs text-white uppercase tracking-wider">
                       Empresas Emisoras del Conglomerado ({empresasConglomerado.length})
                     </h3>
                     <button
                       onClick={() => abrirModalEditarEmpresa()}
-                      className="px-5 py-2.5 bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white font-bold rounded-xl text-xs shadow-[4px_4px_8px_#bec8d2,-4px_-4px_8px_#ffffff] active:scale-95 cursor-pointer flex items-center gap-2 transition-colors"
+                      className="px-5 py-2.5 bg-gradient-to-r from-[#0066cc] to-[#2997ff] text-white font-bold rounded-xl text-xs shadow-lg shadow-[#0066cc]/20 hover:brightness-110 active:scale-95 cursor-pointer flex items-center gap-2 transition-all"
                     >
                       <Plus className="h-4 w-4" />
                       <span>Agregar Razón Social</span>
                     </button>
                   </div>
 
-                  <div className="bg-[#E0E5EC] shadow-[inset_5px_5px_10px_#bec8d2,inset_-5px_-5px_10px_#ffffff] rounded-xl p-2 overflow-x-auto">
+                  <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-2xl p-2 overflow-x-auto shadow-xl">
                     <table className="w-full text-left border-collapse text-xs font-medium">
                       <thead>
-                        <tr className="bg-[#E0E5EC] text-slate-700 border-b border-slate-300 font-bold uppercase text-[11px]">
-                          <th className="p-3.5 border-r border-slate-300">ID / RUT</th>
-                          <th className="p-3.5 border-r border-slate-300">RAZÓN SOCIAL EMISORA</th>
-                          <th className="p-3.5 border-r border-slate-300">GIRO COMERCIAL</th>
-                          <th className="p-3.5 border-r border-slate-300">DATOS BANCARIOS</th>
+                        <tr className="bg-white/[0.04] text-slate-400 border-b border-white/10 font-bold uppercase text-[11px] tracking-wider">
+                          <th className="p-3.5 border-r border-white/10">ID / RUT</th>
+                          <th className="p-3.5 border-r border-white/10">RAZÓN SOCIAL EMISORA</th>
+                          <th className="p-3.5 border-r border-white/10">GIRO COMERCIAL</th>
+                          <th className="p-3.5 border-r border-white/10">DATOS BANCARIOS</th>
                           <th className="p-3.5 text-center w-36">ACCIONES</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-300">
+                      <tbody className="divide-y divide-white/5">
                         {empresasConglomerado.map(emp => (
-                          <tr key={emp.id} className="hover:bg-[#d5dbe3] transition-colors">
-                            <td className="p-3.5 font-mono font-bold text-[#005bea] border-r border-slate-300">
+                          <tr key={emp.id} className="hover:bg-white/[0.04] transition-colors">
+                            <td className="p-3.5 font-mono font-bold text-[#2997ff] border-r border-white/10">
                               <div>{emp.id}</div>
-                              <div className="text-slate-500 font-bold">RUT: {emp.rut}</div>
+                              <div className="text-slate-400 font-bold">RUT: {emp.rut}</div>
                             </td>
-                            <td className="p-3.5 border-r border-slate-300 font-bold text-slate-900">
+                            <td className="p-3.5 border-r border-white/10 font-bold text-white">
                               <div>{emp.razon_social}</div>
-                              <div className="text-[10px] text-slate-500 font-normal">📍 {emp.direccion}</div>
+                              <div className="text-[10px] text-slate-400 font-normal">📍 {emp.direccion}</div>
                             </td>
-                            <td className="p-3.5 border-r border-slate-300 text-slate-700">{emp.giro}</td>
-                            <td className="p-3.5 border-r border-slate-300 font-mono text-[11px] text-slate-700">
-                              <div><strong>{emp.banco_nombre}</strong> ({emp.banco_tipo_cuenta})</div>
-                              <div className="text-slate-500">N° {emp.banco_numero_cuenta}</div>
+                            <td className="p-3.5 border-r border-white/10 text-slate-300">{emp.giro}</td>
+                            <td className="p-3.5 border-r border-white/10 font-mono text-[11px] text-slate-300">
+                              <div><strong className="text-white">{emp.banco_nombre}</strong> ({emp.banco_tipo_cuenta})</div>
+                              <div className="text-slate-400">N° {emp.banco_numero_cuenta}</div>
                             </td>
                             <td className="p-3.5 text-center flex items-center justify-center gap-2">
-                              <button onClick={() => abrirModalEditarEmpresa(emp)} title="Editar Empresa" className="px-3 py-1.5 bg-[#005bea] text-white rounded-lg font-bold cursor-pointer text-xs flex items-center gap-1 shadow-xs">
+                              <button onClick={() => abrirModalEditarEmpresa(emp)} title="Editar Empresa" className="px-3 py-1.5 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/30 text-[#2997ff] rounded-xl font-bold cursor-pointer text-xs flex items-center gap-1 active:scale-95 transition-all">
                                 <Pencil className="h-3.5 w-3.5" />
                                 <span>Editar</span>
                               </button>
-                              <button onClick={() => handleEliminarEmpresaEmisora(emp.id)} title="Eliminar Empresa" className="px-2.5 py-1.5 bg-red-700 hover:bg-red-600 text-white rounded-lg font-bold cursor-pointer text-xs shadow-xs">
+                              <button onClick={() => handleEliminarEmpresaEmisora(emp.id)} title="Eliminar Empresa" className="px-2.5 py-1.5 bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/30 text-rose-400 rounded-xl font-bold cursor-pointer text-xs active:scale-95 transition-all">
                                 <Trash2 className="h-3.5 w-3.5" />
                               </button>
                             </td>
@@ -4123,33 +4362,33 @@ export default function OperacionCRM() {
 
               {/* PESTAÑA 2: UF, IVA & IMPUESTOS */}
               {subTabConfig === 'financiero' && (
-                <div className="bg-[#E0E5EC] shadow-[6px_6px_12px_#bec8d2,-6px_-6px_12px_#ffffff] p-6 rounded-2xl space-y-6 max-w-3xl">
-                  <h3 className="font-black text-xs text-slate-900 uppercase tracking-wider">💰 Configuración UF, IVA & Presupuestos</h3>
+                <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 p-6 rounded-3xl space-y-6 max-w-3xl shadow-xl">
+                  <h3 className="font-black text-xs text-white uppercase tracking-wider">💰 Configuración UF, IVA & Presupuestos</h3>
                   
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="font-bold text-slate-700 block mb-1">Valor UF Oficial ($ CLP):</label>
+                      <label className="font-bold text-slate-300 block mb-1 text-xs">Valor UF Oficial ($ CLP):</label>
                       <input
                         type="number"
                         value={valorUF}
                         onChange={(e) => setValorUF(Number(e.target.value) || 38500)}
-                        className="w-full bg-[#E0E5EC] shadow-[inset_4px_4px_8px_#bec8d2,inset_-4px_-4px_8px_#ffffff] border-none p-3 rounded-xl font-mono font-bold text-sm text-emerald-800 focus:ring-2 focus:ring-[#005bea]"
+                        className="w-full bg-black/30 border border-white/10 p-3 rounded-xl font-mono font-bold text-sm text-emerald-400 focus:outline-none focus:border-[#2997ff]"
                       />
                     </div>
 
                     <div>
-                      <label className="font-bold text-slate-700 block mb-1">Tasa IVA (Ley 825 Chile):</label>
+                      <label className="font-bold text-slate-300 block mb-1 text-xs">Tasa IVA (Ley 825 Chile):</label>
                       <input
                         type="text"
                         disabled
                         value="19% IVA Incluido"
-                        className="w-full bg-[#E0E5EC] shadow-[inset_2px_2px_4px_#bec8d2,inset_-2px_-2px_4px_#ffffff] border-none p-3 rounded-xl font-bold text-xs text-slate-600"
+                        className="w-full bg-black/20 border border-white/5 p-3 rounded-xl font-bold text-xs text-slate-500"
                       />
                     </div>
                   </div>
 
                   <div className="pt-2 flex justify-end">
-                    <button onClick={() => alert('Parámetros financieros actualizados correctamente.')} className="px-6 py-2.5 bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white font-bold rounded-xl text-xs shadow-[4px_4px_8px_#bec8d2,-4px_-4px_8px_#ffffff] cursor-pointer">
+                    <button onClick={() => alert('Parámetros financieros actualizados correctamente.')} className="px-6 py-2.5 bg-gradient-to-r from-[#0066cc] to-[#2997ff] text-white font-bold rounded-xl text-xs shadow-lg shadow-[#0066cc]/20 hover:brightness-110 active:scale-95 cursor-pointer transition-all">
                       Guardar Parámetros Financieros
                     </button>
                   </div>
@@ -4158,16 +4397,16 @@ export default function OperacionCRM() {
 
               {/* PESTAÑA 3: VINCULACIÓN TRIBUTARIA ADMINISTRATIVA (ABONADOS ➔ RUT) */}
               {subTabConfig === 'vinculacion' && (
-                <div className="bg-[#E0E5EC] shadow-[6px_6px_12px_#bec8d2,-6px_-6px_12px_#ffffff] p-6 rounded-2xl space-y-6 max-w-4xl">
+                <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 p-6 rounded-3xl space-y-6 max-w-4xl shadow-xl">
                   
                   {/* CABECERA CON STATS DE TOTALES */}
-                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-[#E0E5EC] shadow-[inset_4px_4px_8px_#bec8d2,inset_-4px_-4px_8px_#ffffff] p-5 rounded-xl">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white/[0.02] border border-white/10 p-5 rounded-2xl">
                     <div>
-                      <h3 className="font-black text-sm text-slate-900 uppercase tracking-wider flex items-center gap-2">
-                        <Building2 className="h-5 w-5 text-[#005bea]" />
+                      <h3 className="font-black text-sm text-white uppercase tracking-wider flex items-center gap-2">
+                        <Building2 className="h-5 w-5 text-[#2997ff]" />
                         <span>GESTIÓN TRIBUTARIA: ASOCIACIÓN DE ABONADOS A RUT ({Object.keys(abonadosCentrosCosto).length} ABONADOS TOTALES)</span>
                       </h3>
-                      <p className="text-xs text-slate-500 font-semibold mt-1">
+                      <p className="text-xs text-slate-400 font-semibold mt-1">
                         Consolidación de abonados individuales (ej: #C735, #C736) bajo Razones Sociales Tributarias para facturación SII.
                       </p>
                     </div>
@@ -4180,22 +4419,22 @@ export default function OperacionCRM() {
                   </div>
 
                   {/* NAVEGACIÓN SECUNDARIA DE VINCULACIÓN */}
-                  <div className="flex items-center gap-2 bg-[#E0E5EC] p-1.5 rounded-xl shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] overflow-x-auto">
+                  <div className="flex items-center gap-2 bg-black/30 p-1.5 rounded-2xl border border-white/10 overflow-x-auto">
                     <button
                       onClick={() => setVincSubTab('pendientes')}
-                      className={`px-4 py-2 rounded-lg text-xs font-extrabold transition-all cursor-pointer flex items-center gap-2 ${vincSubTab === 'pendientes' ? 'bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white shadow-xs' : 'text-slate-700 hover:bg-[#d5dbe3]'}`}
+                      className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-2 ${vincSubTab === 'pendientes' ? 'bg-gradient-to-r from-[#0066cc] to-[#2997ff] text-white shadow-md' : 'text-slate-400 hover:text-white hover:bg-white/[0.06]'}`}
                     >
                       <span>📌 1. Pendientes por Vincular ({Object.values(abonadosCentrosCosto).filter(cc => !cuentasYaAsignadas.has(normalizeCuentaCode(cc.cuenta))).length})</span>
                     </button>
                     <button
                       onClick={() => setVincSubTab('consolidado')}
-                      className={`px-4 py-2 rounded-lg text-xs font-extrabold transition-all cursor-pointer flex items-center gap-2 ${vincSubTab === 'consolidado' ? 'bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white shadow-xs' : 'text-slate-700 hover:bg-[#d5dbe3]'}`}
+                      className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-2 ${vincSubTab === 'consolidado' ? 'bg-gradient-to-r from-[#0066cc] to-[#2997ff] text-white shadow-md' : 'text-slate-400 hover:text-white hover:bg-white/[0.06]'}`}
                     >
                       <span>✅ 2. Consolidado Tributario ({Object.keys(clientesMaestros).length} Empresas)</span>
                     </button>
                     <button
                       onClick={() => setVincSubTab('papelera')}
-                      className={`px-4 py-2 rounded-lg text-xs font-extrabold transition-all cursor-pointer flex items-center gap-2 ${vincSubTab === 'papelera' ? 'bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white shadow-xs' : 'text-slate-700 hover:bg-[#d5dbe3]'}`}
+                      className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-2 ${vincSubTab === 'papelera' ? 'bg-gradient-to-r from-[#0066cc] to-[#2997ff] text-white shadow-md' : 'text-slate-400 hover:text-white hover:bg-white/[0.06]'}`}
                     >
                       <span>🗑️ 3. Papelera / Historial ({desvinculadosHistorial.length})</span>
                     </button>
@@ -4205,14 +4444,14 @@ export default function OperacionCRM() {
                   {vincSubTab === 'pendientes' && (
                     <div className="space-y-5">
                       {/* PASO 1: SELECCIONAR O CREAR RUT */}
-                      <div className="bg-[#E0E5EC] shadow-[inset_4px_4px_8px_#bec8d2,inset_-4px_-4px_8px_#ffffff] p-5 rounded-xl space-y-4">
-                        <h4 className="font-black text-xs text-slate-900 uppercase tracking-wider">
+                      <div className="bg-white/[0.02] border border-white/10 p-5 rounded-2xl space-y-4">
+                        <h4 className="font-black text-xs text-white uppercase tracking-wider">
                           PASO 1: SELECCIONAR O REGISTRAR RAZÓN SOCIAL RECEPTORA:
                         </h4>
                         
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div>
-                            <label className="text-[10px] font-bold text-slate-500 block mb-1">RAZÓN SOCIAL REGISTRADA:</label>
+                            <label className="text-[10px] font-bold text-slate-400 block mb-1">RAZÓN SOCIAL REGISTRADA:</label>
                             <select
                               value={vincRutSeleccionado}
                               onChange={(e) => {
@@ -4222,11 +4461,11 @@ export default function OperacionCRM() {
                                   setVincAbonadosSeleccionados(clientesMaestros[val].cuentas_abonados || [])
                                 }
                               }}
-                              className="w-full bg-[#E0E5EC] shadow-[inset_2px_2px_4px_#bec8d2,inset_-2px_-2px_4px_#ffffff] border-none p-3 rounded-xl font-bold text-xs text-slate-900"
+                              className="w-full bg-black/30 border border-white/10 p-3 rounded-xl font-bold text-xs text-white"
                             >
-                              <option value="">-- Seleccionar Razón Social --</option>
+                              <option value="" className="bg-slate-900 text-white">-- Seleccionar Razón Social --</option>
                               {Object.values(clientesMaestros).map(c => (
-                                <option key={c.rut} value={c.rut}>
+                                <option key={c.rut} value={c.rut} className="bg-slate-900 text-white">
                                   {c.razon_social} (RUT: {c.rut}) - [{c.cuentas_abonados?.length || 0} abonados]
                                 </option>
                               ))}
@@ -4235,21 +4474,21 @@ export default function OperacionCRM() {
 
                           {!vincRutSeleccionado && (
                             <div className="space-y-2">
-                              <label className="text-[10px] font-bold text-slate-500 block">O CREAR NUEVA RAZÓN SOCIAL RÁPIDA:</label>
+                              <label className="text-[10px] font-bold text-slate-400 block">O CREAR NUEVA RAZÓN SOCIAL RÁPIDA:</label>
                               <div className="flex gap-2">
                                 <input
                                   type="text"
                                   value={vincNuevoRut}
                                   onChange={(e) => setVincNuevoRut(e.target.value)}
                                   placeholder="RUT: 65.155.616-3"
-                                  className="w-1/3 bg-[#E0E5EC] shadow-[inset_2px_2px_4px_#bec8d2,inset_-2px_-2px_4px_#ffffff] border-none p-2.5 rounded-xl font-mono font-bold text-xs text-slate-900"
+                                  className="w-1/3 bg-black/30 border border-white/10 p-2.5 rounded-xl font-mono font-bold text-xs text-white"
                                 />
                                 <input
                                   type="text"
                                   value={vincNuevaRazonSocial}
                                   onChange={(e) => setVincNuevaRazonSocial(e.target.value)}
                                   placeholder="ej: FUNDACION PRIMITIVA ECHEVERRIA"
-                                  className="w-2/3 bg-[#E0E5EC] shadow-[inset_2px_2px_4px_#bec8d2,inset_-2px_-2px_4px_#ffffff] border-none p-2.5 rounded-xl font-bold text-xs text-slate-900"
+                                  className="w-2/3 bg-black/30 border border-white/10 p-2.5 rounded-xl font-bold text-xs text-white"
                                 />
                                 <button
                                   onClick={handleCrearNuevaRazonSocialRapida}
@@ -4264,21 +4503,21 @@ export default function OperacionCRM() {
                       </div>
 
                       {/* PASO 2: MARCAR CUENTAS */}
-                      <div className="bg-[#E0E5EC] shadow-[inset_4px_4px_8px_#bec8d2,inset_-4px_-4px_8px_#ffffff] p-5 rounded-xl space-y-4">
-                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-300 pb-3">
+                      <div className="bg-white/[0.02] border border-white/10 p-5 rounded-2xl space-y-4">
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-white/10 pb-3">
                           <div>
-                            <h4 className="font-black text-xs text-slate-900 uppercase">
+                            <h4 className="font-black text-xs text-white uppercase">
                               PASO 2: SELECCIONAR CUENTAS PARA ASOCIAR ({vincAbonadosSeleccionados.length} SELECCIONADOS):
                             </h4>
                           </div>
 
                           <div className="flex items-center gap-4 flex-wrap">
-                            <label className="flex items-center gap-2 cursor-pointer select-none text-xs font-bold text-slate-700 bg-[#E0E5EC] shadow-[2px_2px_4px_#bec8d2,-2px_-2px_4px_#ffffff] px-3 py-1.5 rounded-xl">
+                            <label className="flex items-center gap-2 cursor-pointer select-none text-xs font-bold text-slate-300 bg-white/5 border border-white/10 px-3 py-1.5 rounded-xl">
                               <input
                                 type="checkbox"
                                 checked={vincMostrarTodos}
                                 onChange={(e) => setVincMostrarTodos(e.target.checked)}
-                                className="h-4 w-4 text-[#005bea] rounded"
+                                className="h-4 w-4 text-[#2997ff] rounded"
                               />
                               <span>Mostrar abonados ya asociados</span>
                             </label>
@@ -4288,14 +4527,14 @@ export default function OperacionCRM() {
                               value={vincBusquedaAbonado}
                               onChange={(e) => setVincBusquedaAbonado(e.target.value)}
                               placeholder="Buscar abonado #..."
-                              className="bg-[#E0E5EC] shadow-[inset_2px_2px_4px_#bec8d2,inset_-2px_-2px_4px_#ffffff] border-none px-3 py-1.5 rounded-lg text-xs font-mono w-full sm:w-auto"
+                              className="bg-black/30 border border-white/10 px-3 py-1.5 rounded-xl text-xs font-mono text-white placeholder-slate-500 w-full sm:w-auto"
                             />
                           </div>
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 max-h-72 overflow-y-auto p-1">
                           {abonadosParaVincular.length === 0 ? (
-                            <div className="col-span-full p-6 text-center text-slate-500 text-xs font-bold bg-[#E0E5EC] shadow-[inset_2px_2px_4px_#bec8d2,inset_-2px_-2px_4px_#ffffff] rounded-xl">
+                            <div className="col-span-full p-6 text-center text-slate-400 text-xs font-bold bg-white/[0.02] border border-white/5 rounded-xl">
                               Todos los abonados registrados ya han sido asociados a una Razón Social.
                             </div>
                           ) : (
@@ -4317,27 +4556,27 @@ export default function OperacionCRM() {
                                       setVincAbonadosSeleccionados([...vincAbonadosSeleccionados, cta])
                                     }
                                   }}
-                                  className={`p-3 rounded-xl border text-xs cursor-pointer flex flex-col justify-between transition-all select-none gap-2 ${
+                                  className={`p-3 rounded-2xl border text-xs cursor-pointer flex flex-col justify-between transition-all select-none gap-2 ${
                                     estaMarcado
-                                      ? 'bg-blue-50 border-[#005bea] shadow-xs'
-                                      : 'bg-[#E0E5EC] shadow-[3px_3px_6px_#bec8d2,-3px_-3px_6px_#ffffff] border-transparent hover:brightness-95'
+                                      ? 'bg-blue-500/20 border-[#2997ff] shadow-md'
+                                      : 'bg-white/[0.03] border-white/10 hover:bg-white/[0.06]'
                                   }`}
                                 >
                                   <div className="flex justify-between items-start">
                                     <div className="space-y-0.5">
-                                      <span className="font-mono font-black text-[#005bea] block">#{cta}</span>
-                                      <span className="font-bold text-slate-800 text-[11px] block truncate max-w-[150px]">{cc.alias_centro_costo}</span>
+                                      <span className="font-mono font-black text-[#2997ff] block">#{cta}</span>
+                                      <span className="font-bold text-white text-[11px] block truncate max-w-[150px]">{cc.alias_centro_costo}</span>
                                     </div>
                                     <input
                                       type="checkbox"
                                       readOnly
                                       checked={estaMarcado}
-                                      className="h-4 w-4 text-[#005bea] rounded focus:ring-[#005bea] pointer-events-none mt-1"
+                                      className="h-4 w-4 text-[#2997ff] rounded pointer-events-none mt-1"
                                     />
                                   </div>
 
                                   {esYaAsociado && empresaActual && (
-                                    <div className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-md truncate">
+                                    <div className="text-[10px] font-bold text-emerald-400 bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 rounded-lg truncate">
                                       🏢 {empresaActual.razon_social}
                                     </div>
                                   )}
@@ -4351,7 +4590,7 @@ export default function OperacionCRM() {
                       <div className="pt-1 flex justify-end">
                         <button
                           onClick={handleGuardarVinculacionTributaria}
-                          className="px-7 py-3.5 bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white font-black rounded-xl text-xs shadow-[4px_4px_10px_#bec8d2,-4px_-4px_10px_#ffffff] active:scale-95 cursor-pointer flex items-center gap-2"
+                          className="px-7 py-3.5 bg-gradient-to-r from-[#0066cc] to-[#2997ff] text-white font-black rounded-2xl text-xs shadow-lg shadow-[#0066cc]/20 active:scale-95 cursor-pointer flex items-center gap-2 transition-all hover:brightness-110"
                         >
                           <Building2 className="h-4 w-4" />
                           <span>💾 GUARDAR & CONSOLIDAR VINCULACIÓN TRIBUTARIA</span>
@@ -4362,34 +4601,34 @@ export default function OperacionCRM() {
 
                   {/* ── SECCIÓN HISTORIAL DE DESVINCULADOS (RESTAURACIÓN RÁPIDA POR ERROR) ── */}
                   {desvinculadosHistorial.length > 0 && (
-                    <div className="space-y-3 pt-4 border-t border-slate-300">
-                      <h4 className="font-black text-xs text-red-700 uppercase tracking-wider flex items-center gap-2">
-                        <Trash2 className="h-4 w-4 text-red-600" />
+                    <div className="space-y-3 pt-4 border-t border-white/10">
+                      <h4 className="font-black text-xs text-rose-400 uppercase tracking-wider flex items-center gap-2">
+                        <Trash2 className="h-4 w-4 text-rose-400" />
                         <span>🗑️ HISTORIAL DE ABONADOS DESVINCULADOS (SECCIÓN DE SEGURIDAD EN CASO DE ERROR)</span>
                       </h4>
 
-                      <div className="bg-[#E0E5EC] shadow-[inset_4px_4px_8px_#bec8d2,inset_-4px_-4px_8px_#ffffff] rounded-xl p-2 overflow-hidden">
+                      <div className="bg-white/[0.02] border border-white/10 rounded-2xl p-2 overflow-hidden">
                         <table className="w-full text-left border-collapse text-xs font-medium">
                           <thead>
-                            <tr className="bg-[#E0E5EC] text-slate-700 border-b border-slate-300 font-bold uppercase text-[10px]">
-                              <th className="p-2.5 border-r border-slate-300">HORA DESVINCULACIÓN</th>
-                              <th className="p-2.5 border-r border-slate-300">ABONADO</th>
-                              <th className="p-2.5 border-r border-slate-300">EMPRESA ANTERIOR</th>
+                            <tr className="bg-white/[0.04] text-slate-400 border-b border-white/10 font-bold uppercase text-[10px]">
+                              <th className="p-2.5 border-r border-white/10">HORA DESVINCULACIÓN</th>
+                              <th className="p-2.5 border-r border-white/10">ABONADO</th>
+                              <th className="p-2.5 border-r border-white/10">EMPRESA ANTERIOR</th>
                               <th className="p-2.5 text-center w-36">RESTAURAR</th>
                             </tr>
                           </thead>
-                          <tbody className="divide-y divide-slate-300">
+                          <tbody className="divide-y divide-white/5">
                             {desvinculadosHistorial.map((item, idx) => (
-                              <tr key={`${item.cuenta}-${idx}`} className="hover:bg-[#d5dbe3] transition-colors">
-                                <td className="p-2.5 font-mono text-slate-500 text-[10px] border-r border-slate-300">{item.fecha}</td>
-                                <td className="p-2.5 font-mono font-bold text-[#005bea] border-r border-slate-300">#{item.cuenta}</td>
-                                <td className="p-2.5 border-r border-slate-300 font-bold text-slate-800">
+                              <tr key={`${item.cuenta}-${idx}`} className="hover:bg-white/[0.04] transition-colors">
+                                <td className="p-2.5 font-mono text-slate-400 text-[10px] border-r border-white/10">{item.fecha}</td>
+                                <td className="p-2.5 font-mono font-bold text-[#2997ff] border-r border-white/10">#{item.cuenta}</td>
+                                <td className="p-2.5 border-r border-white/10 font-bold text-white">
                                   {item.razonSocialAnterior} <span className="text-slate-400 font-normal">({item.rutAnterior})</span>
                                 </td>
                                 <td className="p-2.5 text-center">
                                   <button
                                     onClick={() => handleRestaurarDesvinculacion(item)}
-                                    className="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-bold text-[10px] cursor-pointer shadow-xs"
+                                    className="px-3 py-1 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/30 text-emerald-400 rounded-xl font-bold text-[10px] cursor-pointer shadow-xs active:scale-95 transition-all"
                                   >
                                     ↩️ Restaurar
                                   </button>
@@ -4404,22 +4643,22 @@ export default function OperacionCRM() {
                 </div>
               )}
               {subTabConfig === 'whatsapp' && (
-                <div className="bg-[#E0E5EC] shadow-[6px_6px_12px_#bec8d2,-6px_-6px_12px_#ffffff] p-6 rounded-2xl space-y-6 max-w-3xl">
-                  <h3 className="font-black text-xs text-slate-900 uppercase tracking-wider">📲 Configuración Servidor WhatsApp Scorpion</h3>
+                <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 p-6 rounded-3xl space-y-6 max-w-3xl shadow-xl">
+                  <h3 className="font-black text-xs text-white uppercase tracking-wider">📲 Configuración Servidor WhatsApp Scorpion</h3>
                   
                   <div className="space-y-3">
                     <div>
-                      <label className="font-bold text-slate-700 block mb-1">Endpoint API Servidor WhatsApp:</label>
+                      <label className="font-bold text-slate-300 block mb-1 text-xs">Endpoint API Servidor WhatsApp:</label>
                       <input
                         type="text"
                         defaultValue="/api/whatsapp/send-direct"
-                        className="w-full bg-[#E0E5EC] shadow-[inset_4px_4px_8px_#bec8d2,inset_-4px_-4px_8px_#ffffff] border-none p-3 rounded-xl font-mono font-bold text-xs text-[#005bea]"
+                        className="w-full bg-black/30 border border-white/10 p-3 rounded-xl font-mono font-bold text-xs text-[#2997ff] focus:outline-none focus:border-[#2997ff]"
                       />
                     </div>
                     <div>
-                      <label className="font-bold text-slate-700 block mb-1 font-mono">Estado de Conexión Scorpion Server:</label>
-                      <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-[#E0E5EC] shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] text-emerald-800 font-bold rounded-lg text-xs">
-                        <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                      <label className="font-bold text-slate-300 block mb-1 font-mono text-xs">Estado de Conexión Scorpion Server:</label>
+                      <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 font-bold rounded-xl text-xs">
+                        <span className="h-2.5 w-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
                         <span>En Línea & Operativo (24/7)</span>
                       </span>
                     </div>
@@ -4429,20 +4668,20 @@ export default function OperacionCRM() {
 
               {/* PESTAÑA 4: MOTOR DE AGENTES IA */}
               {subTabConfig === 'agentes' && (
-                <div className="bg-[#E0E5EC] shadow-[6px_6px_12px_#bec8d2,-6px_-6px_12px_#ffffff] p-6 rounded-2xl space-y-6 max-w-3xl">
-                  <h3 className="font-black text-xs text-slate-900 uppercase tracking-wider">🤖 Motor de Agentes Virtuales Autónomos</h3>
+                <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 p-6 rounded-3xl space-y-6 max-w-3xl shadow-xl">
+                  <h3 className="font-black text-xs text-white uppercase tracking-wider">🤖 Motor de Agentes Virtuales Autónomos</h3>
                   <div className="space-y-3 text-xs">
-                    <div className="p-3.5 bg-[#E0E5EC] shadow-[4px_4px_8px_#bec8d2,-4px_-4px_8px_#ffffff] rounded-xl flex justify-between items-center font-bold">
-                      <div><strong>SRE Guardian Agent:</strong> Monitoreo de latencia Supabase & Vercel.</div>
-                      <span className="text-emerald-700 font-bold">🟢 Activo</span>
+                    <div className="p-4 bg-white/[0.04] border border-white/10 rounded-2xl flex justify-between items-center font-bold text-slate-200">
+                      <div><strong className="text-white">SRE Guardian Agent:</strong> Monitoreo de latencia Supabase & Vercel.</div>
+                      <span className="text-emerald-400 font-bold">🟢 Activo</span>
                     </div>
-                    <div className="p-3.5 bg-[#E0E5EC] shadow-[4px_4px_8px_#bec8d2,-4px_-4px_8px_#ffffff] rounded-xl flex justify-between items-center font-bold">
-                      <div><strong>Finance Agent:</strong> Escaneo de cobro y morosidad de abonados.</div>
-                      <span className="text-emerald-700 font-bold">🟢 Activo</span>
+                    <div className="p-4 bg-white/[0.04] border border-white/10 rounded-2xl flex justify-between items-center font-bold text-slate-200">
+                      <div><strong className="text-white">Finance Agent:</strong> Escaneo de cobro y morosidad de abonados.</div>
+                      <span className="text-emerald-400 font-bold">🟢 Activo</span>
                     </div>
-                    <div className="p-3.5 bg-[#E0E5EC] shadow-[4px_4px_8px_#bec8d2,-4px_-4px_8px_#ffffff] rounded-xl flex justify-between items-center font-bold">
-                      <div><strong>Vision AI Guard:</strong> Verificación de analíticas de video 24/7.</div>
-                      <span className="text-emerald-700 font-bold">🟢 Activo</span>
+                    <div className="p-4 bg-white/[0.04] border border-white/10 rounded-2xl flex justify-between items-center font-bold text-slate-200">
+                      <div><strong className="text-white">Vision AI Guard:</strong> Verificación de analíticas de video 24/7.</div>
+                      <span className="text-emerald-400 font-bold">🟢 Activo</span>
                     </div>
                   </div>
                 </div>
@@ -4451,54 +4690,54 @@ export default function OperacionCRM() {
             </div>
           )}
 
-          {/* ── MÓDULO 8: MARKETING Y VENTAS: CAPTACIÓN DE LEADS Y COLD EMAIL OUTREACH VÍA RESEND ── */}
+          {/* ── MÓDULO 8: MARKETING Y VENTAS: CAPTACIÓN DE LEADS Y COLD EMAIL OUTREACH VÍA RESEND (APPLE BENTO DARK) ── */}
           {moduloActivo === 'marketing' && (
-            <div className="flex-1 bg-[#E0E5EC] rounded-2xl p-6 md:p-8 flex flex-col gap-6 shadow-[6px_6px_12px_#bec8d2,-6px_-6px_12px_#ffffff] min-h-0 overflow-y-auto">
+            <div className="flex-1 bg-[#0c182b]/85 border border-white/10 rounded-2xl p-4 md:p-6 flex flex-col gap-6 shadow-2xl backdrop-blur-xl min-h-0 overflow-y-auto">
               
-              {/* ENCABEZADO NEUMÓRFICO Y CAMBIO DE PESTAÑAS */}
-              <div className="bg-[#E0E5EC] shadow-[inset_5px_5px_10px_#bec8d2,inset_-5px_-5px_10px_#ffffff] p-5 rounded-xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              {/* ENCABEZADO APPLE BENTO Y CAMBIO DE PESTAÑAS */}
+              <div className="bg-white/[0.03] border border-white/10 p-4 md:p-5 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-lg">
                 <div className="flex items-center gap-3">
-                  <div className="p-2.5 bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white rounded-xl shadow-xs">
+                  <div className="p-2.5 bg-gradient-to-r from-[#0066cc] to-[#2997ff] text-white rounded-xl shadow-md">
                     <Megaphone className="h-5 w-5 stroke-[2]" />
                   </div>
                   <div>
-                    <h2 className="text-base font-black text-slate-900 uppercase tracking-wide flex items-center gap-3">
+                    <h2 className="text-base font-bold text-white uppercase tracking-wider flex items-center gap-3">
                       <span>Marketing & Prospección B2B V Región Valparaíso</span>
                     </h2>
-                    <p className="text-xs text-slate-500 font-semibold mt-0.5">
+                    <p className="text-xs text-slate-400 font-medium mt-0.5">
                       Buscador de empresas por comuna, tratamiento individual de prospectos, diseñador de publicidad y envío masivo vía Resend
                     </p>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3 flex-wrap">
-                  <div className="flex items-center gap-1 bg-[#E0E5EC] p-1 rounded-xl shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff]">
+                <div className="flex items-center gap-3 flex-wrap w-full sm:w-auto justify-between sm:justify-end">
+                  <div className="flex items-center gap-1 bg-black/40 border border-white/10 p-1 rounded-xl">
                     <button
                       onClick={() => setSubTabMarketing('leads')}
-                      className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${subTabMarketing === 'leads' ? 'bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white shadow-xs' : 'text-slate-700 hover:bg-[#d5dbe3]'}`}
+                      className={`px-3 sm:px-4 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-2 ${subTabMarketing === 'leads' ? 'bg-gradient-to-r from-[#0066cc] to-[#2997ff] text-white shadow-md' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
                     >
                       <User className="h-4 w-4" />
-                      <span>Prospectos V Región ({leadsList.length})</span>
+                      <span>Prospectos ({leadsList.length})</span>
                     </button>
                     <button
                       onClick={() => setSubTabMarketing('campanas')}
-                      className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${subTabMarketing === 'campanas' ? 'bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white shadow-xs' : 'text-slate-700 hover:bg-[#d5dbe3]'}`}
+                      className={`px-3 sm:px-4 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-2 ${subTabMarketing === 'campanas' ? 'bg-gradient-to-r from-[#0066cc] to-[#2997ff] text-white shadow-md' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
                     >
                       <Send className="h-4 w-4" />
-                      <span>Campañas Outreach</span>
+                      <span>Campañas</span>
                     </button>
                     <button
                       onClick={() => setSubTabMarketing('publicidad')}
-                      className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${subTabMarketing === 'publicidad' ? 'bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white shadow-xs' : 'text-slate-700 hover:bg-[#d5dbe3]'}`}
+                      className={`px-3 sm:px-4 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-2 ${subTabMarketing === 'publicidad' ? 'bg-gradient-to-r from-[#0066cc] to-[#2997ff] text-white shadow-md' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
                     >
                       <Sparkles className="h-4 w-4" />
-                      <span>Diseñador Publicidad B2B</span>
+                      <span>Diseñador B2B</span>
                     </button>
                   </div>
 
                   <button
                     onClick={() => abrirModalNuevoLead()}
-                    className="px-5 py-2.5 bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white font-bold rounded-xl text-xs shadow-[4px_4px_8px_#bec8d2,-4px_-4px_8px_#ffffff] active:scale-95 cursor-pointer transition-all flex items-center gap-2"
+                    className="px-4 py-2.5 bg-gradient-to-r from-[#0066cc] to-[#2997ff] hover:brightness-110 text-white font-semibold rounded-xl text-xs shadow-lg hover:shadow-cyan-500/20 active:scale-95 cursor-pointer transition-all flex items-center gap-2 shrink-0"
                   >
                     <UserPlus className="h-4 w-4" />
                     <span>Añadir Lead Manual</span>
@@ -4511,58 +4750,58 @@ export default function OperacionCRM() {
                 <div className="space-y-5">
                   
                   {/* BARRA DE FILTRADO POR COMUNA DE LA V REGIÓN Y AUTO-DESCUBRIMIENTO */}
-                  <div className="bg-[#E0E5EC] p-4 rounded-xl shadow-[inset_4px_4px_8px_#bec8d2,inset_-4px_-4px_8px_#ffffff] flex flex-col md:flex-row justify-between items-center gap-4">
+                  <div className="bg-white/[0.03] border border-white/10 p-4 rounded-2xl flex flex-col md:flex-row justify-between items-center gap-4 shadow-lg">
                     
                     <div className="flex items-center gap-3 w-full md:w-auto">
-                      <MapPin className="h-5 w-5 text-[#005bea] shrink-0" />
+                      <MapPin className="h-5 w-5 text-[#2997ff] shrink-0" />
                       <div className="w-full md:w-64">
-                        <label className="text-[10px] font-bold text-slate-500 block mb-1">COMUNA V REGIÓN VALPARAÍSO:</label>
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">COMUNA V REGIÓN:</label>
                         <select
                           value={filtroComunaVRegion}
                           onChange={(e) => setFiltroComunaVRegion(e.target.value)}
-                          className="w-full bg-[#E0E5EC] shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] border-none p-2.5 rounded-xl font-bold text-xs text-slate-900"
+                          className="w-full bg-black/40 border border-white/10 rounded-xl p-2.5 font-semibold text-xs text-white focus:ring-2 focus:ring-[#0066cc] focus:outline-none"
                         >
-                          <option value="Todas">Todas las Comunas (V Región)</option>
-                          <option value="Viña del Mar">Viña del Mar</option>
-                          <option value="Valparaíso">Valparaíso</option>
-                          <option value="Concón">Concón</option>
-                          <option value="Quilpué">Quilpué</option>
-                          <option value="Villa Alemana">Villa Alemana</option>
-                          <option value="San Antonio">San Antonio</option>
-                          <option value="Los Andes">Los Andes</option>
-                          <option value="Quillota">Quillota</option>
-                          <option value="Limache">Limache</option>
+                          <option value="Todas" className="bg-[#0c182b] text-white">Todas las Comunas (V Región)</option>
+                          <option value="Viña del Mar" className="bg-[#0c182b] text-white">Viña del Mar</option>
+                          <option value="Valparaíso" className="bg-[#0c182b] text-white">Valparaíso</option>
+                          <option value="Concón" className="bg-[#0c182b] text-white">Concón</option>
+                          <option value="Quilpué" className="bg-[#0c182b] text-white">Quilpué</option>
+                          <option value="Villa Alemana" className="bg-[#0c182b] text-white">Villa Alemana</option>
+                          <option value="San Antonio" className="bg-[#0c182b] text-white">San Antonio</option>
+                          <option value="Los Andes" className="bg-[#0c182b] text-white">Los Andes</option>
+                          <option value="Quillota" className="bg-[#0c182b] text-white">Quillota</option>
+                          <option value="Limache" className="bg-[#0c182b] text-white">Limache</option>
                         </select>
                       </div>
 
                       <button
                         disabled={cargandoScraperVRegion}
                         onClick={handleAutoDescubrirVRegion}
-                        className="px-5 py-2.5 bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white font-bold rounded-xl text-xs shadow-[4px_4px_8px_#bec8d2,-4px_-4px_8px_#ffffff] active:scale-95 cursor-pointer transition-all flex items-center gap-2 shrink-0 disabled:opacity-50 mt-5 md:mt-4"
+                        className="px-4 py-2.5 bg-gradient-to-r from-[#0066cc] to-[#2997ff] hover:brightness-110 text-white font-semibold rounded-xl text-xs shadow-md active:scale-95 cursor-pointer transition-all flex items-center gap-2 shrink-0 disabled:opacity-50 mt-5 md:mt-4"
                       >
                         {cargandoScraperVRegion ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-                        <span>🔍 Auto-Descubrir Prospectos V Región</span>
+                        <span>Auto-Descubrir Prospectos</span>
                       </button>
                     </div>
 
                     <div className="relative flex-1 w-full flex items-center mt-2 md:mt-0">
-                      <Search className="absolute left-4 h-4 w-4 text-slate-400 pointer-events-none" />
+                      <Search className="absolute left-3.5 h-4 w-4 text-slate-400 pointer-events-none" />
                       <input
                         type="text"
                         value={busquedaLead}
                         onChange={(e) => setBusquedaLead(e.target.value)}
                         placeholder="Buscar por Nombre Empresa, RUT, Email, Dirección o Contacto..."
-                        className="w-full bg-[#E0E5EC] shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] border-none rounded-xl pl-11 pr-4 py-2.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#005bea]"
+                        className="w-full bg-black/40 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0066cc]"
                       />
                     </div>
 
-                    <div className="flex items-center gap-1.5 overflow-x-auto shrink-0">
-                      <span className="text-[11px] font-bold text-slate-500 uppercase">Estado:</span>
+                    <div className="flex items-center gap-1.5 overflow-x-auto shrink-0 w-full md:w-auto pb-1 md:pb-0">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Estado:</span>
                       {['Todos', 'Nuevo', 'Contactado', 'Interesado', 'Cliente'].map(st => (
                         <button
                           key={st}
                           onClick={() => setFiltroEstadoLead(st)}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-all ${filtroEstadoLead === st ? 'bg-[#005bea] text-white shadow-xs' : 'bg-[#E0E5EC] shadow-[3px_3px_6px_#bec8d2,-3px_-3px_6px_#ffffff] text-slate-700 hover:brightness-95'}`}
+                          className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition-all ${filtroEstadoLead === st ? 'bg-gradient-to-r from-[#0066cc] to-[#2997ff] text-white shadow-md' : 'bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10'}`}
                         >
                           {st}
                         </button>
@@ -4570,132 +4809,236 @@ export default function OperacionCRM() {
                     </div>
                   </div>
 
-                  {/* TABLA DE LEADS V REGIÓN CON TRATAMIENTO Y BITÁCORA */}
-                  <div className="bg-[#E0E5EC] shadow-[inset_5px_5px_10px_#bec8d2,inset_-5px_-5px_10px_#ffffff] rounded-2xl p-2 overflow-hidden">
-                    <table className="w-full text-left border-collapse text-xs font-medium">
-                      <thead>
-                        <tr className="bg-[#E0E5EC] text-slate-700 border-b border-slate-300 font-bold uppercase text-[11px]">
-                          <th className="p-3.5 border-r border-slate-300">EMPRESA / RUT</th>
-                          <th className="p-3.5 border-r border-slate-300">COMUNA & DIRECCIÓN (V REGIÓN)</th>
-                          <th className="p-3.5 border-r border-slate-300">CORREO & VALIDACIÓN</th>
-                          <th className="p-3.5 border-r border-slate-300">CONTACTO & TELÉFONO</th>
-                          <th className="p-3.5 border-r border-slate-300 text-center">INTERÉS</th>
-                          <th className="p-3.5 border-r border-slate-300 text-center">ESTADO LEAD</th>
-                          <th className="p-3.5 text-center min-w-[220px]">TRATAMIENTO & ACCIONES</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-300">
-                        {leadsList
-                          .filter(l => {
-                            const q = busquedaLead.toLowerCase()
-                            const matchQ = l.empresa.toLowerCase().includes(q) || l.email.toLowerCase().includes(q) || l.contacto.toLowerCase().includes(q) || (l.comuna && l.comuna.toLowerCase().includes(q))
-                            const matchF = filtroEstadoLead === 'Todos' || l.estado === filtroEstadoLead
-                            const matchComuna = filtroComunaVRegion === 'Todas' || (l.comuna && l.comuna.toLowerCase() === filtroComunaVRegion.toLowerCase())
-                            return matchQ && matchF && matchComuna
-                          })
-                          .map(lead => {
-                            const esEmailValido = lead.email && lead.email.includes('@') && lead.email.includes('.')
-                            const score = lead.score_interes || 4
-                            return (
-                              <tr key={lead.id} className="hover:bg-[#d5dbe3] transition-colors">
-                                <td className="p-3.5 border-r border-slate-300 font-bold text-slate-900">
-                                  <div className="text-sm">{lead.empresa}</div>
-                                  <div className="text-[10px] text-slate-500 font-mono">RUT: {lead.rut || 'S/RUT'}</div>
-                                </td>
-                                <td className="p-3.5 border-r border-slate-300 text-slate-800">
-                                  <div className="font-bold flex items-center gap-1 text-[#005bea]">
-                                    <MapPin className="h-3.5 w-3.5 shrink-0" />
-                                    <span>{lead.comuna || 'V Región'}</span>
-                                  </div>
-                                  <div className="text-[10px] text-slate-500 truncate max-w-[180px]">{lead.direccion || 'Chile'}</div>
-                                </td>
-                                <td className="p-3.5 border-r border-slate-300 font-mono">
-                                  <div className="text-slate-900 font-bold">{lead.email}</div>
-                                  <div className="pt-0.5">
-                                    {esEmailValido ? (
-                                      <span className="inline-flex items-center gap-1 text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-md font-bold">
-                                        <CheckCircle2 className="h-3 w-3" />
-                                        <span>Válido</span>
-                                      </span>
-                                    ) : (
-                                      <span className="inline-flex items-center gap-1 text-[10px] bg-red-100 text-red-800 px-2 py-0.5 rounded-md font-bold">
-                                        <AlertTriangle className="h-3 w-3" />
-                                        <span>Email Error</span>
-                                      </span>
-                                    )}
-                                  </div>
-                                </td>
-                                <td className="p-3.5 border-r border-slate-300">
-                                  <div className="font-bold text-slate-800">{lead.contacto}</div>
-                                  <div className="text-[11px] text-slate-600 font-mono">{lead.telefono}</div>
-                                </td>
-                                <td className="p-3.5 border-r border-slate-300 text-center font-bold">
-                                  <div className="text-amber-500 text-sm tracking-widest">
-                                    {'★'.repeat(score)}{'☆'.repeat(5 - score)}
-                                  </div>
-                                </td>
-                                <td className="p-3.5 border-r border-slate-300 text-center font-bold">
-                                  <span className={`px-3 py-1 rounded-full text-[11px] font-bold ${
-                                    lead.estado === 'Nuevo' ? 'bg-blue-100 text-blue-900 border border-blue-200' :
-                                    lead.estado === 'Contactado' ? 'bg-amber-100 text-amber-900 border border-amber-200' :
-                                    lead.estado === 'Interesado' ? 'bg-purple-100 text-purple-900 border border-purple-200' :
-                                    'bg-emerald-100 text-emerald-900 border border-emerald-200'
-                                  }`}>
-                                    {lead.estado}
-                                  </span>
-                                </td>
-                                <td className="p-3.5 text-center">
-                                  <div className="flex items-center justify-center gap-2">
-                                    <button
-                                      onClick={() => setProspectoTratamiento(lead)}
-                                      title="Tratamiento Comercial & Bitácora"
-                                      className="px-2.5 py-1.5 bg-[#005bea] text-white rounded-xl font-bold text-[11px] cursor-pointer transition-all shadow-xs flex items-center gap-1 hover:brightness-110"
-                                    >
-                                      <ClipboardList className="h-3.5 w-3.5" />
-                                      <span>Tratamiento</span>
-                                    </button>
-                                    <button
-                                      onClick={async () => {
-                                        const res = await fetch('/api/marketing/outreach', {
-                                          method: 'POST',
-                                          headers: { 'Content-Type': 'application/json' },
-                                          body: JSON.stringify({
-                                            leads: [lead],
-                                            asunto: `Propuesta de Monitoreo & Seguridad Electrónica para ${lead.empresa}`,
-                                            cuerpoHtml: campanaContenido,
-                                            remitente: campanaRemitente
+                  {/* CONTENEDOR DE LEADS V REGIÓN CON TABLA DESKTOP Y TARJETAS MÓVILES */}
+                  <div className="bg-white/[0.03] border border-white/10 rounded-2xl overflow-hidden shadow-xl">
+                    {/* VISTA DESKTOP: TABLA RESPONSIVA CON PY-4.5 */}
+                    <div className="hidden md:block overflow-x-auto">
+                      <table className="w-full text-left border-collapse text-xs font-medium">
+                        <thead>
+                          <tr className="bg-white/[0.05] text-slate-300 border-b border-white/10 font-bold uppercase text-[11px] tracking-wider">
+                            <th className="p-4 border-r border-white/5">EMPRESA / RUT</th>
+                            <th className="p-4 border-r border-white/5">COMUNA & DIRECCIÓN (V REGIÓN)</th>
+                            <th className="p-4 border-r border-white/5">CORREO & VALIDACIÓN</th>
+                            <th className="p-4 border-r border-white/5">CONTACTO & TELÉFONO</th>
+                            <th className="p-4 border-r border-white/5 text-center">INTERÉS</th>
+                            <th className="p-4 border-r border-white/5 text-center">ESTADO</th>
+                            <th className="p-4 text-center min-w-[200px]">ACCIONES</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-white/5">
+                          {leadsList
+                            .filter(l => {
+                              const q = busquedaLead.toLowerCase()
+                              const matchQ = l.empresa.toLowerCase().includes(q) || l.email.toLowerCase().includes(q) || l.contacto.toLowerCase().includes(q) || (l.comuna && l.comuna.toLowerCase().includes(q))
+                              const matchF = filtroEstadoLead === 'Todos' || l.estado === filtroEstadoLead
+                              const matchComuna = filtroComunaVRegion === 'Todas' || (l.comuna && l.comuna.toLowerCase() === filtroComunaVRegion.toLowerCase())
+                              return matchQ && matchF && matchComuna
+                            })
+                            .map(lead => {
+                              const esEmailValido = lead.email && lead.email.includes('@') && lead.email.includes('.')
+                              const score = lead.score_interes || 4
+                              return (
+                                <tr key={lead.id} className="hover:bg-white/[0.04] transition-colors">
+                                  <td className="p-4 border-r border-white/5 font-bold text-white">
+                                    <div className="text-sm font-semibold text-white">{lead.empresa}</div>
+                                    <div className="text-[10px] text-slate-400 font-mono">RUT: {lead.rut || 'S/RUT'}</div>
+                                  </td>
+                                  <td className="p-4 border-r border-white/5 text-slate-300">
+                                    <div className="font-semibold flex items-center gap-1.5 text-[#2997ff]">
+                                      <MapPin className="h-3.5 w-3.5 shrink-0" />
+                                      <span>{lead.comuna || 'V Región'}</span>
+                                    </div>
+                                    <div className="text-[10px] text-slate-400 truncate max-w-[180px]">{lead.direccion || 'Chile'}</div>
+                                  </td>
+                                  <td className="p-4 border-r border-white/5 font-mono">
+                                    <div className="text-white font-medium">{lead.email}</div>
+                                    <div className="pt-0.5">
+                                      {esEmailValido ? (
+                                        <span className="inline-flex items-center gap-1 text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-md font-semibold">
+                                          <CheckCircle2 className="h-3 w-3" />
+                                          <span>Válido</span>
+                                        </span>
+                                      ) : (
+                                        <span className="inline-flex items-center gap-1 text-[10px] bg-red-500/20 text-red-300 border border-red-500/30 px-2 py-0.5 rounded-md font-semibold">
+                                          <AlertTriangle className="h-3 w-3" />
+                                          <span>Email Error</span>
+                                        </span>
+                                      )}
+                                    </div>
+                                  </td>
+                                  <td className="p-4 border-r border-white/5">
+                                    <div className="font-semibold text-slate-200">{lead.contacto}</div>
+                                    <div className="text-[11px] text-slate-400 font-mono">{lead.telefono}</div>
+                                  </td>
+                                  <td className="p-4 border-r border-white/5 text-center font-bold">
+                                    <div className="text-amber-400 text-sm tracking-widest">
+                                      {'★'.repeat(score)}{'☆'.repeat(5 - score)}
+                                    </div>
+                                  </td>
+                                  <td className="p-4 border-r border-white/5 text-center font-semibold">
+                                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold border ${
+                                      lead.estado === 'Nuevo' ? 'bg-blue-500/20 text-blue-300 border-blue-500/30' :
+                                      lead.estado === 'Contactado' ? 'bg-amber-500/20 text-amber-300 border-amber-500/30' :
+                                      lead.estado === 'Interesado' ? 'bg-purple-500/20 text-purple-300 border-purple-500/30' :
+                                      'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                                    }`}>
+                                      {lead.estado}
+                                    </span>
+                                  </td>
+                                  <td className="p-4 text-center">
+                                    <div className="flex items-center justify-center gap-2">
+                                      <button
+                                        onClick={() => setProspectoTratamiento(lead)}
+                                        title="Tratamiento Comercial & Bitácora"
+                                        className="px-2.5 py-1.5 bg-[#0066cc] hover:bg-[#2997ff] text-white rounded-xl font-semibold text-[11px] cursor-pointer transition-all shadow-md flex items-center gap-1"
+                                      >
+                                        <ClipboardList className="h-3.5 w-3.5" />
+                                        <span>Tratar</span>
+                                      </button>
+                                      <button
+                                        onClick={async () => {
+                                          const res = await fetch('/api/marketing/outreach', {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({
+                                              leads: [lead],
+                                              asunto: `Propuesta de Monitoreo & Seguridad Electrónica para ${lead.empresa}`,
+                                              cuerpoHtml: campanaContenido,
+                                              remitente: campanaRemitente
+                                            })
                                           })
-                                        })
-                                        const d = await res.json()
-                                        if (d.success) alert(`Correo de prospección enviado con éxito a ${lead.email} vía Resend!`)
-                                        else alert(`Error: ${d.error}`)
-                                      }}
-                                      title="Enviar Correo Directo vía Resend"
-                                      className="p-2 bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white rounded-xl font-bold cursor-pointer transition-all shadow-xs active:scale-95"
-                                    >
-                                      <Mail className="h-4 w-4" />
-                                    </button>
-                                    <button
-                                      onClick={() => abrirModalNuevoLead(lead)}
-                                      title="Editar Lead"
-                                      className="p-2 bg-amber-600 hover:bg-amber-500 text-white rounded-xl font-bold cursor-pointer transition-all shadow-xs"
-                                    >
-                                      <Pencil className="h-4 w-4" />
-                                    </button>
-                                    <button
-                                      onClick={() => handleEliminarLead(lead.id, lead.empresa)}
-                                      title="Eliminar Lead"
-                                      className="p-2 bg-red-700 hover:bg-red-600 text-white rounded-xl font-bold cursor-pointer transition-all shadow-xs"
-                                    >
-                                      <Trash2 className="h-4 w-4" />
-                                    </button>
-                                  </div>
-                                </td>
-                              </tr>
-                            )
-                          })}
-                      </tbody>
-                    </table>
+                                          const d = await res.json()
+                                          if (d.success) alert(`Correo de prospección enviado con éxito a ${lead.email} vía Resend!`)
+                                          else alert(`Error: ${d.error}`)
+                                        }}
+                                        title="Enviar Correo Directo vía Resend"
+                                        className="p-2 bg-gradient-to-r from-[#0066cc] to-[#2997ff] text-white rounded-xl font-bold cursor-pointer transition-all shadow-md active:scale-95"
+                                      >
+                                        <Mail className="h-4 w-4" />
+                                      </button>
+                                      <button
+                                        onClick={() => abrirModalNuevoLead(lead)}
+                                        title="Editar Lead"
+                                        className="p-2 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 rounded-xl font-bold cursor-pointer transition-all"
+                                      >
+                                        <Pencil className="h-4 w-4" />
+                                      </button>
+                                      <button
+                                        onClick={() => handleEliminarLead(lead.id, lead.empresa)}
+                                        title="Eliminar Lead"
+                                        className="p-2 bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/30 rounded-xl font-bold cursor-pointer transition-all"
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              )
+                            })}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* VISTA MÓVIL: TARJETAS BENTO PARA PANTALLAS PEQUEÑAS */}
+                    <div className="md:hidden divide-y divide-white/5 p-2 space-y-3">
+                      {leadsList
+                        .filter(l => {
+                          const q = busquedaLead.toLowerCase()
+                          const matchQ = l.empresa.toLowerCase().includes(q) || l.email.toLowerCase().includes(q) || l.contacto.toLowerCase().includes(q) || (l.comuna && l.comuna.toLowerCase().includes(q))
+                          const matchF = filtroEstadoLead === 'Todos' || l.estado === filtroEstadoLead
+                          const matchComuna = filtroComunaVRegion === 'Todas' || (l.comuna && l.comuna.toLowerCase() === filtroComunaVRegion.toLowerCase())
+                          return matchQ && matchF && matchComuna
+                        })
+                        .map(lead => {
+                          const esEmailValido = lead.email && lead.email.includes('@') && lead.email.includes('.')
+                          const score = lead.score_interes || 4
+                          return (
+                            <div key={lead.id} className="bg-white/[0.04] border border-white/10 rounded-2xl p-4 space-y-3 shadow-md">
+                              <div className="flex justify-between items-start">
+                                <div>
+                                  <h4 className="font-bold text-white text-sm">{lead.empresa}</h4>
+                                  <span className="text-[10px] text-slate-400 font-mono">RUT: {lead.rut || 'S/RUT'}</span>
+                                </div>
+                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                                  lead.estado === 'Nuevo' ? 'bg-blue-500/20 text-blue-300 border-blue-500/30' :
+                                  lead.estado === 'Contactado' ? 'bg-amber-500/20 text-amber-300 border-amber-500/30' :
+                                  lead.estado === 'Interesado' ? 'bg-purple-500/20 text-purple-300 border-purple-500/30' :
+                                  'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                                }`}>
+                                  {lead.estado}
+                                </span>
+                              </div>
+
+                              <div className="grid grid-cols-2 gap-2 text-[11px] pt-1 border-t border-white/5">
+                                <div>
+                                  <span className="text-slate-400 text-[10px] block">Comuna:</span>
+                                  <span className="text-[#2997ff] font-semibold flex items-center gap-1">
+                                    <MapPin className="h-3 w-3" />
+                                    {lead.comuna || 'V Región'}
+                                  </span>
+                                </div>
+                                <div>
+                                  <span className="text-slate-400 text-[10px] block">Interés:</span>
+                                  <span className="text-amber-400">{'★'.repeat(score)}{'☆'.repeat(5 - score)}</span>
+                                </div>
+                              </div>
+
+                              <div className="text-[11px] space-y-0.5 bg-black/20 p-2.5 rounded-xl border border-white/5">
+                                <div className="text-slate-300 flex items-center justify-between">
+                                  <span className="text-slate-400">Email:</span>
+                                  <span className="font-mono text-white text-[10px] truncate max-w-[180px]">{lead.email}</span>
+                                </div>
+                                <div className="text-slate-300 flex items-center justify-between">
+                                  <span className="text-slate-400">Contacto:</span>
+                                  <span className="font-semibold text-white">{lead.contacto} ({lead.telefono})</span>
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-2 pt-2 border-t border-white/5">
+                                <button
+                                  onClick={() => setProspectoTratamiento(lead)}
+                                  className="flex-1 py-2 bg-[#0066cc] hover:bg-[#2997ff] text-white rounded-xl font-semibold text-xs transition-all flex items-center justify-center gap-1 shadow-md"
+                                >
+                                  <ClipboardList className="h-3.5 w-3.5" />
+                                  <span>Tratar</span>
+                                </button>
+                                <button
+                                  onClick={async () => {
+                                    const res = await fetch('/api/marketing/outreach', {
+                                      method: 'POST',
+                                      headers: { 'Content-Type': 'application/json' },
+                                      body: JSON.stringify({
+                                        leads: [lead],
+                                        asunto: `Propuesta de Monitoreo & Seguridad Electrónica para ${lead.empresa}`,
+                                        cuerpoHtml: campanaContenido,
+                                        remitente: campanaRemitente
+                                      })
+                                    })
+                                    const d = await res.json()
+                                    if (d.success) alert(`Correo de prospección enviado con éxito a ${lead.email}!`)
+                                    else alert(`Error: ${d.error}`)
+                                  }}
+                                  className="p-2 bg-gradient-to-r from-[#0066cc] to-[#2997ff] text-white rounded-xl font-bold shadow-md"
+                                >
+                                  <Mail className="h-4 w-4" />
+                                </button>
+                                <button
+                                  onClick={() => abrirModalNuevoLead(lead)}
+                                  className="p-2 bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded-xl"
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </button>
+                                <button
+                                  onClick={() => handleEliminarLead(lead.id, lead.empresa)}
+                                  className="p-2 bg-red-500/20 text-red-300 border border-red-500/30 rounded-xl"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                              </div>
+                            </div>
+                          )
+                        })}
+                    </div>
                   </div>
                 </div>
               )}
@@ -4704,56 +5047,56 @@ export default function OperacionCRM() {
               {subTabMarketing === 'campanas' && (
                 <div className="space-y-6">
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div className="bg-[#E0E5EC] p-6 rounded-2xl shadow-[6px_6px_12px_#bec8d2,-6px_-6px_12px_#ffffff] space-y-5">
-                      <div className="flex items-center gap-2 border-b border-slate-300 pb-3">
-                        <Target className="h-5 w-5 text-[#005bea]" />
-                        <h3 className="font-black text-xs text-slate-900 uppercase tracking-wider">1. CONFIGURACIÓN DE CAMPAÑA</h3>
+                    <div className="bg-white/[0.03] border border-white/10 p-5 md:p-6 rounded-2xl shadow-xl space-y-5">
+                      <div className="flex items-center gap-2 border-b border-white/10 pb-3">
+                        <Target className="h-5 w-5 text-[#2997ff]" />
+                        <h3 className="font-bold text-xs text-white uppercase tracking-wider">1. CONFIGURACIÓN DE CAMPAÑA</h3>
                       </div>
 
                       <div className="space-y-4 text-xs">
                         <div>
-                          <label className="font-bold text-slate-700 block mb-1">SEGMENTO DE DESTINATARIOS:</label>
+                          <label className="font-semibold text-slate-300 block mb-1">SEGMENTO DE DESTINATARIOS:</label>
                           <select
                             value={campanaSegmento}
                             onChange={(e) => setCampanaSegmento(e.target.value)}
-                            className="w-full bg-[#E0E5EC] shadow-[inset_4px_4px_8px_#bec8d2,inset_-4px_-4px_8px_#ffffff] border-none p-3 rounded-xl font-bold text-slate-900"
+                            className="w-full bg-black/40 border border-white/10 rounded-xl p-3 font-semibold text-white focus:ring-2 focus:ring-[#0066cc] focus:outline-none"
                           >
-                            <option value="Todos">Todos los Leads ({leadsList.length})</option>
-                            <option value="Nuevo">Leads Nuevos Sin Contactar ({leadsList.filter(l => l.estado === 'Nuevo').length})</option>
-                            <option value="Contactado">Leads Contactados ({leadsList.filter(l => l.estado === 'Contactado').length})</option>
-                            <option value="Interesado">Leads Interesados ({leadsList.filter(l => l.estado === 'Interesado').length})</option>
-                            <option value="Comercial B2B">Segmento Comercial B2B ({leadsList.filter(l => l.segmento === 'Comercial B2B').length})</option>
-                            <option value="Industrial">Segmento Industrial ({leadsList.filter(l => l.segmento === 'Industrial').length})</option>
+                            <option value="Todos" className="bg-[#0c182b] text-white">Todos los Leads ({leadsList.length})</option>
+                            <option value="Nuevo" className="bg-[#0c182b] text-white">Leads Nuevos Sin Contactar ({leadsList.filter(l => l.estado === 'Nuevo').length})</option>
+                            <option value="Contactado" className="bg-[#0c182b] text-white">Leads Contactados ({leadsList.filter(l => l.estado === 'Contactado').length})</option>
+                            <option value="Interesado" className="bg-[#0c182b] text-white">Leads Interesados ({leadsList.filter(l => l.estado === 'Interesado').length})</option>
+                            <option value="Comercial B2B" className="bg-[#0c182b] text-white">Segmento Comercial B2B ({leadsList.filter(l => l.segmento === 'Comercial B2B').length})</option>
+                            <option value="Industrial" className="bg-[#0c182b] text-white">Segmento Industrial ({leadsList.filter(l => l.segmento === 'Industrial').length})</option>
                           </select>
                         </div>
 
                         <div>
-                          <label className="font-bold text-slate-700 block mb-1">REMITENTE VERIFICADO (RESEND):</label>
+                          <label className="font-semibold text-slate-300 block mb-1">REMITENTE VERIFICADO (RESEND):</label>
                           <select
                             value={campanaRemitente}
                             onChange={(e) => setCampanaRemitente(e.target.value)}
-                            className="w-full bg-[#E0E5EC] shadow-[inset_4px_4px_8px_#bec8d2,inset_-4px_-4px_8px_#ffffff] border-none p-3 rounded-xl font-bold text-slate-900 font-mono"
+                            className="w-full bg-black/40 border border-white/10 rounded-xl p-3 font-semibold text-white font-mono focus:ring-2 focus:ring-[#0066cc] focus:outline-none"
                           >
-                            <option value="Gama Seguridad <contacto@gamasecurity.cl>">Gama Seguridad &lt;contacto@gamasecurity.cl&gt;</option>
-                            <option value="Gama Comercial <comercial@gamasecurity.cl>">Gama Comercial &lt;comercial@gamasecurity.cl&gt;</option>
-                            <option value="Resend Onboarding <onboarding@resend.dev>">Resend Onboarding &lt;onboarding@resend.dev&gt;</option>
+                            <option value="Gama Seguridad <contacto@gamasecurity.cl>" className="bg-[#0c182b] text-white">Gama Seguridad &lt;contacto@gamasecurity.cl&gt;</option>
+                            <option value="Gama Comercial <comercial@gamasecurity.cl>" className="bg-[#0c182b] text-white">Gama Comercial &lt;comercial@gamasecurity.cl&gt;</option>
+                            <option value="Resend Onboarding <onboarding@resend.dev>" className="bg-[#0c182b] text-white">Resend Onboarding &lt;onboarding@resend.dev&gt;</option>
                           </select>
                         </div>
 
                         <div>
-                          <label className="font-bold text-slate-700 block mb-1">ASUNTO DEL CORREO (DINÁMICO):</label>
+                          <label className="font-semibold text-slate-300 block mb-1">ASUNTO DEL CORREO (DINÁMICO):</label>
                           <input
                             type="text"
                             value={campanaAsunto}
                             onChange={(e) => setCampanaAsunto(e.target.value)}
                             placeholder="ej: Propuesta Monitoreo para {{nombre_empresa}}"
-                            className="w-full bg-[#E0E5EC] shadow-[inset_4px_4px_8px_#bec8d2,inset_-4px_-4px_8px_#ffffff] border-none p-3 rounded-xl font-bold text-slate-900 focus:ring-2 focus:ring-[#005bea]"
+                            className="w-full bg-black/40 border border-white/10 rounded-xl p-3 font-semibold text-white focus:ring-2 focus:ring-[#0066cc] focus:outline-none"
                           />
-                          <span className="text-[10px] text-slate-500 mt-1 block font-semibold">Variables: <code className="text-[#005bea] font-bold font-mono">{"{{nombre_empresa}}"}</code>, <code className="text-[#005bea] font-bold font-mono">{"{{contacto}}"}</code></span>
+                          <span className="text-[10px] text-slate-400 mt-1 block font-medium">Variables: <code className="text-[#2997ff] font-bold font-mono">{"{{nombre_empresa}}"}</code>, <code className="text-[#2997ff] font-bold font-mono">{"{{contacto}}"}</code></span>
                         </div>
 
                         <div className="pt-2">
-                          <label className="font-bold text-slate-700 block mb-2">PLANTILLAS PRECONFIGURADAS B2B:</label>
+                          <label className="font-semibold text-slate-300 block mb-2">PLANTILLAS PRECONFIGURADAS B2B:</label>
                           <div className="space-y-2">
                             <button
                               type="button"
@@ -4761,7 +5104,7 @@ export default function OperacionCRM() {
                                 setCampanaAsunto('Propuesta de Monitoreo 24/7 & Seguridad Electrónica para {{nombre_empresa}}')
                                 setCampanaContenido(`<p>Estimados <strong>{{nombre_empresa}}</strong>,</p><p>Junto con saludarle de <strong>Gama Seguridad Chile</strong>, nos ponemos en contacto con el(la) Sr(a). <strong>{{contacto}}</strong> para presentarles nuestro servicio integral de <strong>Monitoreo de Alarma 24/7 y Verificación por Video IA</strong>.</p><p>Protegemos sus instalaciones comerciales e industriales con respuesta inmediata en la Región de Valparaíso y Metropolitana.</p><p>Quedamos atentos para coordinar una reunión breve.</p><p>Atentamente,<br><strong>Equipo Comercial Gama Seguridad</strong></p>`)
                               }}
-                              className="w-full p-2.5 bg-[#E0E5EC] shadow-[3px_3px_6px_#bec8d2,-3px_-3px_6px_#ffffff] hover:shadow-[inset_2px_2px_4px_#bec8d2,inset_-2px_-2px_4px_#ffffff] rounded-xl text-left font-bold text-[11px] text-slate-800 transition-all cursor-pointer"
+                              className="w-full p-3 bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 rounded-xl text-left font-semibold text-xs text-slate-200 transition-all cursor-pointer"
                             >
                               📌 1. Monitoreo 24/7 & Video IA
                             </button>
@@ -4772,7 +5115,7 @@ export default function OperacionCRM() {
                                 setCampanaAsunto('Auditoría Perimetral y Evaluación de Seguridad Gratuita — {{nombre_empresa}}')
                                 setCampanaContenido(`<p>Estimado(a) <strong>{{contacto}}</strong> en <strong>{{nombre_empresa}}</strong>,</p><p>Le escribimos de <strong>Gama Seguridad SpA</strong> para ofrecerle una <strong>Auditoría Técnica Perimetral Gratuita</strong> para verificar vulnerabilidades de intrusión en sus instalaciones.</p><p>Nuestros ingenieros especialistas revisarán puntos ciegos, cercos y centrales de alarma sin ningún costo.</p><p>Atentamente,<br><strong>Gama Seguridad Chile</strong></p>`)
                               }}
-                              className="w-full p-2.5 bg-[#E0E5EC] shadow-[3px_3px_6px_#bec8d2,-3px_-3px_6px_#ffffff] hover:shadow-[inset_2px_2px_4px_#bec8d2,inset_-2px_-2px_4px_#ffffff] rounded-xl text-left font-bold text-[11px] text-slate-800 transition-all cursor-pointer"
+                              className="w-full p-3 bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 rounded-xl text-left font-semibold text-xs text-slate-200 transition-all cursor-pointer"
                             >
                               🔍 2. Auditoría Perimetral Gratuita
                             </button>
@@ -4781,35 +5124,35 @@ export default function OperacionCRM() {
                       </div>
                     </div>
 
-                    <div className="lg:col-span-2 bg-[#E0E5EC] p-6 md:p-8 rounded-2xl shadow-[6px_6px_12px_#bec8d2,-6px_-6px_12px_#ffffff] space-y-6 flex flex-col justify-between">
+                    <div className="lg:col-span-2 bg-white/[0.03] border border-white/10 p-5 md:p-6 rounded-2xl shadow-xl space-y-5 flex flex-col justify-between">
                       <div className="space-y-4">
-                        <div className="flex justify-between items-center border-b border-slate-300 pb-3">
-                          <h3 className="font-black text-xs text-slate-900 uppercase tracking-wider flex items-center gap-2">
-                            <FileText className="h-5 w-5 text-[#005bea]" />
-                            <span>2. EDITOR DE CONTENIDO & VISTA PREVIA EN TIEMPO REAL</span>
+                        <div className="flex justify-between items-center border-b border-white/10 pb-3">
+                          <h3 className="font-bold text-xs text-white uppercase tracking-wider flex items-center gap-2">
+                            <FileText className="h-5 w-5 text-[#2997ff]" />
+                            <span>2. EDITOR DE CONTENIDO & VISTA PREVIA</span>
                           </h3>
-                          <span className="text-[11px] font-bold text-slate-500 bg-[#E0E5EC] shadow-[inset_2px_2px_4px_#bec8d2,inset_-2px_-2px_4px_#ffffff] px-3 py-1 rounded-full">
+                          <span className="text-[11px] font-semibold text-slate-300 bg-white/10 border border-white/10 px-3 py-1 rounded-full">
                             Destinatarios Target: {leadsList.filter(l => campanaSegmento === 'Todos' || l.estado === campanaSegmento || l.segmento === campanaSegmento).length} Leads
                           </span>
                         </div>
 
                         <div>
-                          <label className="font-bold text-slate-700 block mb-1 text-xs">CONTENIDO HTML DE LA CAMPAÑA:</label>
+                          <label className="font-semibold text-slate-300 block mb-1 text-xs">CONTENIDO HTML DE LA CAMPAÑA:</label>
                           <textarea
                             rows={8}
                             value={campanaContenido}
                             onChange={(e) => setCampanaContenido(e.target.value)}
-                            className="w-full bg-[#E0E5EC] shadow-[inset_4px_4px_8px_#bec8d2,inset_-4px_-4px_8px_#ffffff] border-none p-4 rounded-xl font-mono text-xs text-slate-900 focus:ring-2 focus:ring-[#005bea]"
+                            className="w-full bg-black/40 border border-white/10 rounded-xl p-4 font-mono text-xs text-slate-200 focus:ring-2 focus:ring-[#0066cc] focus:outline-none"
                           />
                         </div>
 
-                        <div className="bg-white rounded-xl border border-slate-300 p-5 space-y-3 text-xs shadow-inner">
-                          <span className="text-[10px] font-black text-[#005bea] uppercase tracking-wider block">👁️ VISTA PREVIA DEL CORREO PARA EL PRIMER LEAD DE LA LISTA:</span>
-                          <div className="font-bold text-slate-900 text-sm border-b border-slate-200 pb-2">
+                        <div className="bg-[#08111e] rounded-xl border border-white/10 p-5 space-y-3 text-xs shadow-inner">
+                          <span className="text-[10px] font-bold text-[#2997ff] uppercase tracking-wider block">👁️ VISTA PREVIA DEL CORREO PARA EL PRIMER LEAD DE LA LISTA:</span>
+                          <div className="font-bold text-white text-sm border-b border-white/10 pb-2">
                             Asunto: {campanaAsunto.replace(/\{\{nombre_empresa\}\}/g, leadsList[0]?.empresa || 'Empresa Target')}
                           </div>
                           <div
-                            className="text-slate-800 text-xs space-y-2 leading-relaxed"
+                            className="text-slate-300 text-xs space-y-2 leading-relaxed"
                             dangerouslySetInnerHTML={{
                               __html: campanaContenido.replace(/\{\{nombre_empresa\}\}/g, leadsList[0]?.empresa || 'Empresa Target')
                                                        .replace(/\{\{contacto\}\}/g, leadsList[0]?.contacto || 'Contacto Principal')
@@ -4820,8 +5163,8 @@ export default function OperacionCRM() {
 
                       <div className="space-y-3 pt-2">
                         {isSubmittingCampana && (
-                          <div className="bg-blue-50 border border-blue-200 p-4 rounded-xl flex items-center gap-3 text-blue-900 font-bold text-xs">
-                            <Loader2 className="h-5 w-5 animate-spin text-[#005bea]" />
+                          <div className="bg-blue-500/20 border border-blue-500/30 p-4 rounded-xl flex items-center gap-3 text-blue-200 font-semibold text-xs">
+                            <Loader2 className="h-5 w-5 animate-spin text-[#2997ff]" />
                             <span>{progresoEnvioText || 'Procesando envío de correos vía Resend API...'}</span>
                           </div>
                         )}
@@ -4830,7 +5173,7 @@ export default function OperacionCRM() {
                           type="button"
                           disabled={isSubmittingCampana}
                           onClick={handleLanzarCampanaResend}
-                          className="w-full bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white font-bold p-4 rounded-xl shadow-lg hover:opacity-95 transition-all text-sm cursor-pointer flex items-center justify-center gap-3 border-none disabled:opacity-50"
+                          className="w-full bg-gradient-to-r from-[#0066cc] to-[#2997ff] hover:brightness-110 text-white font-bold p-4 rounded-xl shadow-lg hover:shadow-cyan-500/20 transition-all text-sm cursor-pointer flex items-center justify-center gap-3 border-none disabled:opacity-50"
                         >
                           {isSubmittingCampana ? (
                             <Loader2 className="h-5 w-5 animate-spin" />
@@ -4846,92 +5189,92 @@ export default function OperacionCRM() {
                 </div>
               )}
 
-              {/* SECCIÓN 3: DISEÑADOR DE PUBLICIDAD & BANNERS B2B (¡NUEVO!) */}
+              {/* SECCIÓN 3: DISEÑADOR DE PUBLICIDAD & BANNERS B2B */}
               {subTabMarketing === 'publicidad' && (
                 <div className="space-y-6">
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     
                     {/* PANEL IZQUIERDO: CONFIGURACIÓN Y EDITOR DE LA PIEZA PUBLICITARIA */}
-                    <div className="bg-[#E0E5EC] p-6 rounded-2xl shadow-[6px_6px_12px_#bec8d2,-6px_-6px_12px_#ffffff] space-y-5">
-                      <div className="flex items-center gap-2 border-b border-slate-300 pb-3">
-                        <Sparkles className="h-5 w-5 text-[#005bea]" />
-                        <h3 className="font-black text-xs text-slate-900 uppercase tracking-wider">🎨 EDITOR DE PIEZA PUBLICITARIA B2B</h3>
+                    <div className="bg-white/[0.03] border border-white/10 p-5 md:p-6 rounded-2xl shadow-xl space-y-5">
+                      <div className="flex items-center gap-2 border-b border-white/10 pb-3">
+                        <Sparkles className="h-5 w-5 text-[#2997ff]" />
+                        <h3 className="font-bold text-xs text-white uppercase tracking-wider">🎨 EDITOR DE PIEZA PUBLICITARIA B2B</h3>
                       </div>
 
                       <div className="space-y-4 text-xs">
                         <div>
-                          <label className="font-bold text-slate-700 block mb-1">TITULAR PRINCIPAL DEL BANNER / CORREO:</label>
+                          <label className="font-semibold text-slate-300 block mb-1">TITULAR PRINCIPAL DEL BANNER / CORREO:</label>
                           <input
                             type="text"
                             value={pubTitulo}
                             onChange={(e) => setPubTitulo(e.target.value)}
                             placeholder="ej: ¡Protege tu Empresa en {{comuna}}!"
-                            className="w-full bg-[#E0E5EC] shadow-[inset_4px_4px_8px_#bec8d2,inset_-4px_-4px_8px_#ffffff] border-none p-3 rounded-xl font-bold text-slate-900 focus:ring-2 focus:ring-[#005bea]"
+                            className="w-full bg-black/40 border border-white/10 rounded-xl p-3 font-semibold text-white focus:ring-2 focus:ring-[#0066cc] focus:outline-none"
                           />
                         </div>
 
                         <div>
-                          <label className="font-bold text-slate-700 block mb-1">SUBTÍTULO / DESCRIPCIÓN DE LA OFERTA:</label>
+                          <label className="font-semibold text-slate-300 block mb-1">SUBTÍTULO / DESCRIPCIÓN DE LA OFERTA:</label>
                           <textarea
                             rows={3}
                             value={pubSubtitulo}
                             onChange={(e) => setPubSubtitulo(e.target.value)}
                             placeholder="ej: Cámaras DarkFighter 4K sin costo de instalación..."
-                            className="w-full bg-[#E0E5EC] shadow-[inset_4px_4px_8px_#bec8d2,inset_-4px_-4px_8px_#ffffff] border-none p-3 rounded-xl font-bold text-slate-900 focus:ring-2 focus:ring-[#005bea]"
+                            className="w-full bg-black/40 border border-white/10 rounded-xl p-3 font-semibold text-white focus:ring-2 focus:ring-[#0066cc] focus:outline-none"
                           />
                         </div>
 
                         <div className="grid grid-cols-2 gap-3">
                           <div>
-                            <label className="font-bold text-slate-700 block mb-1">CATEGORÍA DE SEGURIDAD:</label>
+                            <label className="font-semibold text-slate-300 block mb-1">CATEGORÍA DE SEGURIDAD:</label>
                             <select
                               value={pubCategoria}
                               onChange={(e: any) => setPubCategoria(e.target.value)}
-                              className="w-full bg-[#E0E5EC] shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] border-none p-2.5 rounded-xl font-bold text-slate-900"
+                              className="w-full bg-black/40 border border-white/10 rounded-xl p-2.5 font-semibold text-white focus:ring-2 focus:ring-[#0066cc] focus:outline-none"
                             >
-                              <option value="Monitoreo 24/7">Monitoreo 24/7</option>
-                              <option value="CCTVs & Video IA">CCTVs & Video IA</option>
-                              <option value="Cerco Eléctrico">Cerco Eléctrico</option>
-                              <option value="Control Acceso">Control Acceso</option>
+                              <option value="Monitoreo 24/7" className="bg-[#0c182b] text-white">Monitoreo 24/7</option>
+                              <option value="CCTVs & Video IA" className="bg-[#0c182b] text-white">CCTVs & Video IA</option>
+                              <option value="Cerco Eléctrico" className="bg-[#0c182b] text-white">Cerco Eléctrico</option>
+                              <option value="Control Acceso" className="bg-[#0c182b] text-white">Control Acceso</option>
                             </select>
                           </div>
 
                           <div>
-                            <label className="font-bold text-slate-700 block mb-1">COMUNA TARGET ENVÍO:</label>
+                            <label className="font-semibold text-slate-300 block mb-1">COMUNA TARGET ENVÍO:</label>
                             <select
                               value={pubComunaTarget}
                               onChange={(e) => setPubComunaTarget(e.target.value)}
-                              className="w-full bg-[#E0E5EC] shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] border-none p-2.5 rounded-xl font-bold text-slate-900"
+                              className="w-full bg-black/40 border border-white/10 rounded-xl p-2.5 font-semibold text-white focus:ring-2 focus:ring-[#0066cc] focus:outline-none"
                             >
-                              <option value="Todas">Todas las Comunas (V Región)</option>
-                              <option value="Viña del Mar">Viña del Mar</option>
-                              <option value="Valparaíso">Valparaíso</option>
-                              <option value="Concón">Concón</option>
-                              <option value="Quilpué">Quilpué</option>
-                              <option value="Villa Alemana">Villa Alemana</option>
-                              <option value="San Antonio">San Antonio</option>
+                              <option value="Todas" className="bg-[#0c182b] text-white">Todas las Comunas (V Región)</option>
+                              <option value="Viña del Mar" className="bg-[#0c182b] text-white">Viña del Mar</option>
+                              <option value="Valparaíso" className="bg-[#0c182b] text-white">Valparaíso</option>
+                              <option value="Concón" className="bg-[#0c182b] text-white">Concón</option>
+                              <option value="Quilpué" className="bg-[#0c182b] text-white">Quilpué</option>
+                              <option value="Villa Alemana" className="bg-[#0c182b] text-white">Villa Alemana</option>
+                              <option value="San Antonio" className="bg-[#0c182b] text-white">San Antonio</option>
                             </select>
                           </div>
                         </div>
 
                         <div className="grid grid-cols-2 gap-3">
                           <div>
-                            <label className="font-bold text-slate-700 block mb-1">CUPÓN DE DESCUENTO:</label>
+                            <label className="font-semibold text-slate-300 block mb-1">CUPÓN DE DESCUENTO:</label>
                             <input
                               type="text"
                               value={pubCupon}
                               onChange={(e) => setPubCupon(e.target.value)}
-                              className="w-full bg-[#E0E5EC] shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] border-none p-2.5 rounded-xl font-mono font-bold text-[#005bea]"
+                              className="w-full bg-black/40 border border-white/10 rounded-xl p-2.5 font-mono font-bold text-[#2997ff] focus:ring-2 focus:ring-[#0066cc] focus:outline-none"
                             />
                           </div>
 
                           <div>
-                            <label className="font-bold text-slate-700 block mb-1">ENLACE DE LLAMADA (CTA):</label>
+                            <label className="font-semibold text-slate-300 block mb-1">ENLACE DE LLAMADA (CTA):</label>
                             <input
                               type="text"
                               value={pubEnlaceCta}
                               onChange={(e) => setPubEnlaceCta(e.target.value)}
-                              className="w-full bg-[#E0E5EC] shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] border-none p-2.5 rounded-xl font-mono text-[11px] text-slate-900"
+                              className="w-full bg-black/40 border border-white/10 rounded-xl p-2.5 font-mono text-[11px] text-white focus:ring-2 focus:ring-[#0066cc] focus:outline-none"
                             />
                           </div>
                         </div>
@@ -4939,21 +5282,21 @@ export default function OperacionCRM() {
                     </div>
 
                     {/* PANEL DERECHO: VISTA PREVIA INTERACTIVA DE LA PUBLICIDAD */}
-                    <div className="bg-[#E0E5EC] p-6 rounded-2xl shadow-[6px_6px_12px_#bec8d2,-6px_-6px_12px_#ffffff] space-y-5 flex flex-col justify-between">
+                    <div className="bg-white/[0.03] border border-white/10 p-5 md:p-6 rounded-2xl shadow-xl space-y-5 flex flex-col justify-between">
                       <div className="space-y-4">
-                        <div className="flex justify-between items-center border-b border-slate-300 pb-3">
-                          <h3 className="font-black text-xs text-slate-900 uppercase tracking-wider flex items-center gap-2">
-                            <Sparkles className="h-5 w-5 text-[#005bea]" />
+                        <div className="flex justify-between items-center border-b border-white/10 pb-3">
+                          <h3 className="font-bold text-xs text-white uppercase tracking-wider flex items-center gap-2">
+                            <Sparkles className="h-5 w-5 text-[#2997ff]" />
                             <span>VISTA PREVIA DE LA PIEZA PUBLICITARIA</span>
                           </h3>
-                          <span className="text-[11px] font-bold text-white bg-[#005bea] px-3 py-1 rounded-full">
+                          <span className="text-[11px] font-semibold text-white bg-[#0066cc] px-3 py-1 rounded-full">
                             Target: {leadsList.filter(l => pubComunaTarget === 'Todas' || l.comuna === pubComunaTarget).length} Empresas ({pubComunaTarget})
                           </span>
                         </div>
 
                         {/* FLYER / BANNER PREVIEW EN AZUL FRANCIA DEGRADADO */}
-                        <div className="bg-white rounded-2xl border border-slate-300 overflow-hidden shadow-lg">
-                          <div className="bg-gradient-to-r from-[#005bea] to-[#00c6fb] p-6 text-center text-white space-y-2">
+                        <div className="bg-[#0c182b] rounded-2xl border border-white/15 overflow-hidden shadow-2xl">
+                          <div className="bg-gradient-to-r from-[#0066cc] to-[#2997ff] p-6 text-center text-white space-y-2">
                             <span className="bg-white/20 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">OFERTA EXCLUSIVA V REGIÓN</span>
                             <h2 className="text-xl font-black leading-tight pt-1">
                               {pubTitulo.replace(/\{\{comuna\}\}/g, pubComunaTarget)}
@@ -4961,9 +5304,9 @@ export default function OperacionCRM() {
                             <p className="text-xs opacity-90">{pubSubtitulo}</p>
                           </div>
 
-                          <div className="p-6 text-center bg-slate-50 space-y-4">
-                            <p className="text-xs text-slate-600 font-bold">Use su cupón de bonificación empresarial al solicitar su factibilidad técnica:</p>
-                            <div className="inline-block bg-[#005bea] text-white px-6 py-2.5 rounded-xl font-mono text-base font-bold shadow-md tracking-wider">
+                          <div className="p-6 text-center bg-black/40 space-y-4">
+                            <p className="text-xs text-slate-300 font-medium">Use su cupón de bonificación empresarial al solicitar su factibilidad técnica:</p>
+                            <div className="inline-block bg-[#0066cc] text-white px-6 py-2.5 rounded-xl font-mono text-base font-bold shadow-lg tracking-wider">
                               CUPÓN: {pubCupon}
                             </div>
                             <div>
@@ -4971,7 +5314,7 @@ export default function OperacionCRM() {
                                 href={pubEnlaceCta}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="inline-block bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white font-bold px-6 py-3 rounded-xl text-xs shadow-md hover:opacity-95 transition-all cursor-pointer"
+                                className="inline-block bg-gradient-to-r from-[#0066cc] to-[#2997ff] hover:brightness-110 text-white font-bold px-6 py-3 rounded-xl text-xs shadow-lg hover:shadow-cyan-500/20 transition-all cursor-pointer"
                               >
                                 SOLICITAR EVALUACIÓN EN TERRENO →
                               </a>
@@ -4984,7 +5327,7 @@ export default function OperacionCRM() {
                         type="button"
                         disabled={isDistribuyendoPublicidad}
                         onClick={handleDistribuirPublicidad}
-                        className="w-full bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white font-bold p-4 rounded-xl shadow-lg hover:opacity-95 transition-all text-sm cursor-pointer flex items-center justify-center gap-3 border-none disabled:opacity-50 mt-4"
+                        className="w-full bg-gradient-to-r from-[#0066cc] to-[#2997ff] hover:brightness-110 text-white font-bold p-4 rounded-xl shadow-lg hover:shadow-cyan-500/20 transition-all text-sm cursor-pointer flex items-center justify-center gap-3 border-none disabled:opacity-50 mt-4"
                       >
                         {isDistribuyendoPublicidad ? (
                           <Loader2 className="h-5 w-5 animate-spin" />
@@ -5005,176 +5348,176 @@ export default function OperacionCRM() {
         </main>
       </div>
 
-      {/* ── MODAL EDITAR / CREAR EMPRESA CONGLOMERADO NEUMÓRFICO ── */}
+      {/* ── MODAL EDITAR / CREAR EMPRESA CONGLOMERADO (APPLE BENTO DARK) ── */}
       {mostrarModalEmpresa && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm p-4 md:p-6 flex justify-center items-center overflow-y-auto no-imprimir">
-          <div className="bg-[#E0E5EC] border border-slate-300 w-full max-w-2xl rounded-2xl shadow-[12px_12px_24px_#bec8d2,-12px_-12px_24px_#ffffff] p-6 md:p-8 flex flex-col gap-6 text-xs text-slate-900 font-sans my-auto">
-            <div className="flex justify-between items-center pb-4 border-b border-slate-300">
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md p-4 md:p-6 flex justify-center items-center overflow-y-auto no-imprimir">
+          <div className="bg-[#0c182b]/95 border border-white/10 w-full max-w-2xl rounded-3xl shadow-2xl p-6 md:p-8 flex flex-col gap-6 text-xs text-white font-sans my-auto">
+            <div className="flex justify-between items-center pb-4 border-b border-white/10">
               <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white rounded-xl shadow-xs">
+                <div className="p-2.5 bg-gradient-to-r from-[#0066cc] to-[#2997ff] text-white rounded-xl shadow-md">
                   <Building2 className="h-5 w-5 stroke-[2]" />
                 </div>
                 <div>
-                  <h3 className="font-black text-base text-slate-900 uppercase tracking-wider">
+                  <h3 className="font-bold text-base text-white uppercase tracking-wider">
                     {empresaEditando ? 'EDITAR EMISOR CONGLOMERADO' : 'CREAR NUEVA RAZÓN SOCIAL EMISORA'}
                   </h3>
-                  <p className="text-[11px] text-slate-500 font-semibold">Configuración de datos fiscales, comerciales y bancarios para documentos DTE</p>
+                  <p className="text-[11px] text-slate-400 font-medium">Configuración de datos fiscales, comerciales y bancarios para documentos DTE</p>
                 </div>
               </div>
-              <button onClick={() => setMostrarModalEmpresa(false)} className="text-slate-400 hover:text-slate-700 font-bold text-lg cursor-pointer">✕</button>
+              <button onClick={() => setMostrarModalEmpresa(false)} className="text-slate-400 hover:text-white font-bold text-lg cursor-pointer">✕</button>
             </div>
 
             <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
-              <div className="bg-[#E0E5EC] p-4 rounded-xl shadow-[inset_4px_4px_8px_#bec8d2,inset_-4px_-4px_8px_#ffffff] space-y-3">
-                <span className="font-black text-slate-900 text-xs uppercase tracking-wider block">1. IDENTIFICACIÓN TRIBUTARIA CHILENA:</span>
-                <div className="grid grid-cols-2 gap-3">
+              <div className="bg-white/[0.03] border border-white/10 p-4 md:p-5 rounded-2xl space-y-3">
+                <span className="font-bold text-white text-xs uppercase tracking-wider block">1. IDENTIFICACIÓN TRIBUTARIA CHILENA:</span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="text-[10px] font-bold text-slate-500 block mb-1">RAZÓN SOCIAL:</label>
-                    <input type="text" value={empFormRazonSocial} onChange={(e) => setEmpFormRazonSocial(e.target.value)} placeholder="ej: Gama Seguridad SpA" className="w-full bg-[#E0E5EC] shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] border-none p-2.5 rounded-lg font-bold text-xs" />
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">RAZÓN SOCIAL:</label>
+                    <input type="text" value={empFormRazonSocial} onChange={(e) => setEmpFormRazonSocial(e.target.value)} placeholder="ej: Gama Seguridad SpA" className="w-full bg-black/40 border border-white/10 p-2.5 rounded-xl font-bold text-xs text-white focus:ring-2 focus:ring-[#0066cc] focus:outline-none" />
                   </div>
                   <div>
-                    <label className="text-[10px] font-bold text-slate-500 block mb-1">R.U.T. EMISOR:</label>
-                    <input type="text" value={empFormRut} onChange={(e) => setEmpFormRut(e.target.value)} placeholder="ej: 76.319.399-3" className="w-full bg-[#E0E5EC] shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] border-none p-2.5 rounded-lg font-mono font-bold text-xs text-[#005bea]" />
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">R.U.T. EMISOR:</label>
+                    <input type="text" value={empFormRut} onChange={(e) => setEmpFormRut(e.target.value)} placeholder="ej: 76.319.399-3" className="w-full bg-black/40 border border-white/10 p-2.5 rounded-xl font-mono font-bold text-xs text-[#2997ff] focus:ring-2 focus:ring-[#0066cc] focus:outline-none" />
                   </div>
                 </div>
 
                 <div>
-                  <label className="text-[10px] font-bold text-slate-500 block mb-1">GIRO COMERCIAL SII:</label>
-                  <input type="text" value={empFormGiro} onChange={(e) => setEmpFormGiro(e.target.value)} placeholder="ej: Servicios de Monitoreo & Seguridad Electrónica" className="w-full bg-[#E0E5EC] shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] border-none p-2.5 rounded-lg text-xs" />
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">GIRO COMERCIAL SII:</label>
+                  <input type="text" value={empFormGiro} onChange={(e) => setEmpFormGiro(e.target.value)} placeholder="ej: Servicios de Monitoreo & Seguridad Electrónica" className="w-full bg-black/40 border border-white/10 p-2.5 rounded-xl text-xs text-white focus:ring-2 focus:ring-[#0066cc] focus:outline-none" />
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="text-[10px] font-bold text-slate-500 block mb-1">DIRECCIÓN FISCAL:</label>
-                    <input type="text" value={empFormDireccion} onChange={(e) => setEmpFormDireccion(e.target.value)} placeholder="ej: Av. Valparaíso 1183, Viña del Mar" className="w-full bg-[#E0E5EC] shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] border-none p-2.5 rounded-lg text-xs" />
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">DIRECCIÓN FISCAL:</label>
+                    <input type="text" value={empFormDireccion} onChange={(e) => setEmpFormDireccion(e.target.value)} placeholder="ej: Av. Valparaíso 1183, Viña del Mar" className="w-full bg-black/40 border border-white/10 p-2.5 rounded-xl text-xs text-white focus:ring-2 focus:ring-[#0066cc] focus:outline-none" />
                   </div>
                   <div>
-                    <label className="text-[10px] font-bold text-slate-500 block mb-1">SITIO WEB OFICIAL:</label>
-                    <input type="text" value={empFormWeb} onChange={(e) => setEmpFormWeb(e.target.value)} placeholder="www.gamasecurity.cl" className="w-full bg-[#E0E5EC] shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] border-none p-2.5 rounded-lg text-xs font-mono" />
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">SITIO WEB OFICIAL:</label>
+                    <input type="text" value={empFormWeb} onChange={(e) => setEmpFormWeb(e.target.value)} placeholder="www.gamasecurity.cl" className="w-full bg-black/40 border border-white/10 p-2.5 rounded-xl text-xs font-mono text-white focus:ring-2 focus:ring-[#0066cc] focus:outline-none" />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="text-[10px] font-bold text-slate-500 block mb-1">TELÉFONO CONTACTO:</label>
-                    <input type="text" value={empFormTelefono} onChange={(e) => setEmpFormTelefono(e.target.value)} placeholder="+56 32 3276011" className="w-full bg-[#E0E5EC] shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] border-none p-2.5 rounded-lg text-xs font-mono" />
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">TELÉFONO CONTACTO:</label>
+                    <input type="text" value={empFormTelefono} onChange={(e) => setEmpFormTelefono(e.target.value)} placeholder="+56 32 3276011" className="w-full bg-black/40 border border-white/10 p-2.5 rounded-xl text-xs font-mono text-white focus:ring-2 focus:ring-[#0066cc] focus:outline-none" />
                   </div>
                   <div>
-                    <label className="text-[10px] font-bold text-slate-500 block mb-1">EMAIL COBRANZA / FACTURACIÓN:</label>
-                    <input type="text" value={empFormEmailCobranza} onChange={(e) => setEmpFormEmailCobranza(e.target.value)} placeholder="cobranza@gamasecurity.cl" className="w-full bg-[#E0E5EC] shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] border-none p-2.5 rounded-lg text-xs" />
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">EMAIL COBRANZA / FACTURACIÓN:</label>
+                    <input type="text" value={empFormEmailCobranza} onChange={(e) => setEmpFormEmailCobranza(e.target.value)} placeholder="cobranza@gamasecurity.cl" className="w-full bg-black/40 border border-white/10 p-2.5 rounded-xl text-xs text-white focus:ring-2 focus:ring-[#0066cc] focus:outline-none" />
                   </div>
                 </div>
               </div>
 
-              <div className="bg-[#E0E5EC] p-4 rounded-xl shadow-[inset_4px_4px_8px_#bec8d2,inset_-4px_-4px_8px_#ffffff] space-y-3">
-                <span className="font-black text-slate-900 text-xs uppercase tracking-wider block">2. DATOS BANCARIOS PARA TRANSFERENCIAS:</span>
-                <div className="grid grid-cols-3 gap-3">
+              <div className="bg-white/[0.03] border border-white/10 p-4 md:p-5 rounded-2xl space-y-3">
+                <span className="font-bold text-white text-xs uppercase tracking-wider block">2. DATOS BANCARIOS PARA TRANSFERENCIAS:</span>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
-                    <label className="text-[10px] font-bold text-slate-500 block mb-1">BANCO:</label>
-                    <input type="text" value={empFormBancoNombre} onChange={(e) => setEmpFormBancoNombre(e.target.value)} placeholder="Banco de Chile" className="w-full bg-[#E0E5EC] shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] border-none p-2.5 rounded-lg font-bold text-xs" />
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">BANCO:</label>
+                    <input type="text" value={empFormBancoNombre} onChange={(e) => setEmpFormBancoNombre(e.target.value)} placeholder="Banco de Chile" className="w-full bg-black/40 border border-white/10 p-2.5 rounded-xl font-bold text-xs text-white focus:ring-2 focus:ring-[#0066cc] focus:outline-none" />
                   </div>
                   <div>
-                    <label className="text-[10px] font-bold text-slate-500 block mb-1">TIPO CUENTA:</label>
-                    <input type="text" value={empFormBancoTipoCuenta} onChange={(e) => setEmpFormBancoTipoCuenta(e.target.value)} placeholder="Cuenta Corriente" className="w-full bg-[#E0E5EC] shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] border-none p-2.5 rounded-lg font-bold text-xs" />
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">TIPO CUENTA:</label>
+                    <input type="text" value={empFormBancoTipoCuenta} onChange={(e) => setEmpFormBancoTipoCuenta(e.target.value)} placeholder="Cuenta Corriente" className="w-full bg-black/40 border border-white/10 p-2.5 rounded-xl font-bold text-xs text-white focus:ring-2 focus:ring-[#0066cc] focus:outline-none" />
                   </div>
                   <div>
-                    <label className="text-[10px] font-bold text-slate-500 block mb-1">N° DE CUENTA:</label>
-                    <input type="text" value={empFormBancoNumeroCuenta} onChange={(e) => setEmpFormBancoNumeroCuenta(e.target.value)} placeholder="00-123-45678-9" className="w-full bg-[#E0E5EC] shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] border-none p-2.5 rounded-lg font-mono font-bold text-xs text-emerald-800" />
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">N° DE CUENTA:</label>
+                    <input type="text" value={empFormBancoNumeroCuenta} onChange={(e) => setEmpFormBancoNumeroCuenta(e.target.value)} placeholder="00-123-45678-9" className="w-full bg-black/40 border border-white/10 p-2.5 rounded-xl font-mono font-bold text-xs text-emerald-400 focus:ring-2 focus:ring-[#0066cc] focus:outline-none" />
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="pt-3 flex justify-end gap-3 border-t border-slate-300">
-              <button onClick={() => setMostrarModalEmpresa(false)} className="px-5 py-2.5 bg-[#E0E5EC] shadow-[4px_4px_8px_#bec8d2,-4px_-4px_8px_#ffffff] active:shadow-[inset_2px_2px_4px_#bec8d2,inset_-2px_-2px_4px_#ffffff] text-slate-800 font-bold rounded-xl text-xs cursor-pointer">Cancelar</button>
-              <button onClick={handleGuardarEmpresaEmisora} className="px-7 py-2.5 bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white font-bold rounded-xl text-xs shadow-[4px_4px_10px_#bec8d2,-4px_-4px_10px_#ffffff] active:scale-95 cursor-pointer">Guardar Empresa</button>
+            <div className="pt-3 flex justify-end gap-3 border-t border-white/10">
+              <button onClick={() => setMostrarModalEmpresa(false)} className="px-5 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 font-semibold rounded-xl text-xs cursor-pointer transition-all">Cancelar</button>
+              <button onClick={handleGuardarEmpresaEmisora} className="px-6 py-2.5 bg-gradient-to-r from-[#0066cc] to-[#2997ff] hover:brightness-110 text-white font-bold rounded-xl text-xs shadow-lg hover:shadow-cyan-500/20 active:scale-95 cursor-pointer transition-all">Guardar Empresa</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ── MODAL DE REGISTRO DE ABONOS A FACTURAS NEUMÓRFICO ── */}
+      {/* ── MODAL DE REGISTRO DE ABONOS A FACTURAS (APPLE BENTO DARK) ── */}
       {mostrarModalAbono && facturaAbonando && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm p-4 flex justify-center items-center no-imprimir">
-          <div className="bg-[#E0E5EC] border border-slate-300 w-full max-w-lg rounded-2xl shadow-[12px_12px_24px_#bec8d2,-12px_-12px_24px_#ffffff] p-6 flex flex-col gap-5 text-xs text-slate-900 font-sans">
-            <div className="flex justify-between items-center pb-3 border-b border-slate-300">
-              <h3 className="font-black text-sm text-slate-900 uppercase tracking-wider flex items-center gap-2">
-                <DollarSign className="h-4 w-4 text-[#005bea]" />
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md p-4 flex justify-center items-center no-imprimir">
+          <div className="bg-[#0c182b]/95 border border-white/10 w-full max-w-lg rounded-3xl shadow-2xl p-6 md:p-7 flex flex-col gap-5 text-xs text-white font-sans">
+            <div className="flex justify-between items-center pb-3 border-b border-white/10">
+              <h3 className="font-bold text-sm text-white uppercase tracking-wider flex items-center gap-2">
+                <DollarSign className="h-4 w-4 text-[#2997ff]" />
                 <span>Registrar Abono / Pago de Factura</span>
-                <span className="bg-[#E0E5EC] shadow-[inset_2px_2px_4px_#bec8d2,inset_-2px_-2px_4px_#ffffff] text-slate-800 px-2 py-0.5 rounded-md font-mono font-bold text-xs">
+                <span className="bg-white/10 border border-white/10 text-slate-200 px-2.5 py-0.5 rounded-md font-mono font-bold text-xs">
                   {facturaAbonando.numero_factura}
                 </span>
               </h3>
-              <button onClick={() => setMostrarModalAbono(false)} className="text-slate-400 hover:text-slate-700 font-bold text-lg cursor-pointer">✕</button>
+              <button onClick={() => setMostrarModalAbono(false)} className="text-slate-400 hover:text-white font-bold text-lg cursor-pointer">✕</button>
             </div>
 
-            <div className="bg-[#E0E5EC] shadow-[inset_4px_4px_8px_#bec8d2,inset_-4px_-4px_8px_#ffffff] p-4 rounded-xl space-y-2">
+            <div className="bg-white/[0.03] border border-white/10 p-4 rounded-2xl space-y-2">
               <div className="flex justify-between">
-                <span className="text-slate-500 font-semibold">Cliente:</span>
-                <strong className="text-slate-900">{facturaAbonando.razon_social}</strong>
+                <span className="text-slate-400 font-medium">Cliente:</span>
+                <strong className="text-white">{facturaAbonando.razon_social}</strong>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500 font-semibold">Monto Total Factura:</span>
-                <strong className="font-mono">${facturaAbonando.monto_total.toLocaleString('es-CL')} CLP</strong>
+                <span className="text-slate-400 font-medium">Monto Total Factura:</span>
+                <strong className="font-mono text-white">${facturaAbonando.monto_total.toLocaleString('es-CL')} CLP</strong>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500 font-semibold">Abonado a la Fecha:</span>
-                <strong className="font-mono text-emerald-800">${(facturaAbonando.monto_abonado || 0).toLocaleString('es-CL')} CLP</strong>
+                <span className="text-slate-400 font-medium">Abonado a la Fecha:</span>
+                <strong className="font-mono text-emerald-400">${(facturaAbonando.monto_abonado || 0).toLocaleString('es-CL')} CLP</strong>
               </div>
-              <div className="flex justify-between pt-2 border-t border-slate-300 font-bold text-sm">
-                <span className="text-red-700">Saldo Pendiente Actual:</span>
-                <span className="font-mono text-red-700">${(facturaAbonando.saldo_pendiente || 0).toLocaleString('es-CL')} CLP</span>
+              <div className="flex justify-between pt-2 border-t border-white/10 font-bold text-sm">
+                <span className="text-red-400">Saldo Pendiente Actual:</span>
+                <span className="font-mono text-red-400">${(facturaAbonando.saldo_pendiente || 0).toLocaleString('es-CL')} CLP</span>
               </div>
             </div>
 
             <div className="space-y-3">
               <div>
-                <label className="font-bold text-slate-700 block mb-1">Monto del Nuevo Abono ($ CLP):</label>
+                <label className="font-semibold text-slate-300 block mb-1">Monto del Nuevo Abono ($ CLP):</label>
                 <input
                   type="number"
                   value={montoAbonoInput}
                   onChange={(e) => setMontoAbonoInput(e.target.value)}
                   placeholder="Ingrese el monto del abono..."
-                  className="w-full bg-[#E0E5EC] shadow-[inset_4px_4px_8px_#bec8d2,inset_-4px_-4px_8px_#ffffff] border-none p-3 rounded-xl font-mono font-bold text-sm text-slate-900 focus:ring-2 focus:ring-[#005bea]"
+                  className="w-full bg-black/40 border border-white/10 p-3 rounded-xl font-mono font-bold text-sm text-white focus:ring-2 focus:ring-[#0066cc] focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="font-bold text-slate-700 block mb-1">Método de Pago:</label>
+                <label className="font-semibold text-slate-300 block mb-1">Método de Pago:</label>
                 <select
                   value={metodoPagoInput}
                   onChange={(e) => setMetodoPagoInput(e.target.value)}
-                  className="w-full bg-[#E0E5EC] shadow-[inset_4px_4px_8px_#bec8d2,inset_-4px_-4px_8px_#ffffff] border-none p-3 rounded-xl font-bold text-xs text-slate-900"
+                  className="w-full bg-black/40 border border-white/10 p-3 rounded-xl font-semibold text-xs text-white focus:ring-2 focus:ring-[#0066cc] focus:outline-none"
                 >
-                  <option value="Transferencia Bancaria">Transferencia Bancaria (Banco Chile / Santander)</option>
-                  <option value="Cheque a Fecha">Cheque a Fecha / Al Día</option>
-                  <option value="WebPay / Tarjeta">WebPay / Tarjeta Débito-Crédito</option>
-                  <option value="Efectivo / Caja">Efectivo en Caja</option>
+                  <option value="Transferencia Bancaria" className="bg-[#0c182b] text-white">Transferencia Bancaria (Banco Chile / Santander)</option>
+                  <option value="Cheque a Fecha" className="bg-[#0c182b] text-white">Cheque a Fecha / Al Día</option>
+                  <option value="WebPay / Tarjeta" className="bg-[#0c182b] text-white">WebPay / Tarjeta Débito-Crédito</option>
+                  <option value="Efectivo / Caja" className="bg-[#0c182b] text-white">Efectivo en Caja</option>
                 </select>
               </div>
 
               <div>
-                <label className="font-bold text-slate-700 block mb-1">Observación / N° Comprobante:</label>
+                <label className="font-semibold text-slate-300 block mb-1">Observación / N° Comprobante:</label>
                 <input
                   type="text"
                   value={notaAbonoInput}
                   onChange={(e) => setNotaAbonoInput(e.target.value)}
                   placeholder="ej: N° Transferencia 889210..."
-                  className="w-full bg-[#E0E5EC] shadow-[inset_4px_4px_8px_#bec8d2,inset_-4px_-4px_8px_#ffffff] border-none p-3 rounded-xl text-xs text-slate-900"
+                  className="w-full bg-black/40 border border-white/10 p-3 rounded-xl text-xs text-white focus:ring-2 focus:ring-[#0066cc] focus:outline-none"
                 />
               </div>
             </div>
 
-            <div className="pt-3 flex justify-end gap-3 border-t border-slate-300">
+            <div className="pt-3 flex justify-end gap-3 border-t border-white/10">
               <button
                 onClick={() => setMostrarModalAbono(false)}
-                className="px-5 py-2.5 bg-[#E0E5EC] shadow-[4px_4px_8px_#bec8d2,-4px_-4px_8px_#ffffff] active:shadow-[inset_2px_2px_4px_#bec8d2,inset_-2px_-2px_4px_#ffffff] text-slate-800 font-bold rounded-xl text-xs cursor-pointer"
+                className="px-5 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 font-semibold rounded-xl text-xs cursor-pointer transition-all"
               >
                 Cancelar
               </button>
               <button
                 onClick={handleRegistrarAbono}
-                className="px-6 py-2.5 bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white font-bold rounded-xl text-xs shadow-[4px_4px_10px_#bec8d2,-4px_-4px_10px_#ffffff] active:scale-95 cursor-pointer"
+                className="px-6 py-2.5 bg-gradient-to-r from-[#0066cc] to-[#2997ff] hover:brightness-110 text-white font-bold rounded-xl text-xs shadow-lg hover:shadow-cyan-500/20 active:scale-95 cursor-pointer transition-all"
               >
                 Guardar Abono
               </button>
@@ -5710,43 +6053,43 @@ export default function OperacionCRM() {
         </div>
       )}
 
-      {/* ── MODAL DRAWER DE TRATAMIENTO INDIVIDUAL Y BITÁCORA DEL PROSPECTO ── */}
+      {/* ── MODAL DRAWER DE TRATAMIENTO INDIVIDUAL Y BITÁCORA DEL PROSPECTO (APPLE BENTO DARK) ── */}
       {prospectoTratamiento && (
-        <div className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm p-4 md:p-6 flex justify-end items-stretch no-imprimir overflow-y-auto">
-          <div className="bg-[#E0E5EC] border-l border-slate-300 w-full max-w-2xl rounded-2xl shadow-2xl p-6 md:p-8 flex flex-col gap-5 text-xs text-slate-900 font-sans my-auto min-h-[85vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md p-4 md:p-6 flex justify-end items-stretch no-imprimir overflow-y-auto">
+          <div className="bg-[#0c182b]/95 border-l border-white/10 w-full max-w-2xl rounded-3xl shadow-2xl p-6 md:p-8 flex flex-col gap-5 text-xs text-white font-sans my-auto min-h-[85vh] overflow-y-auto">
             
-            <div className="flex justify-between items-start pb-4 border-b border-slate-300">
+            <div className="flex justify-between items-start pb-4 border-b border-white/10">
               <div className="flex items-center gap-3">
-                <div className="p-3 bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white rounded-xl shadow-xs">
+                <div className="p-3 bg-gradient-to-r from-[#0066cc] to-[#2997ff] text-white rounded-xl shadow-md">
                   <ClipboardList className="h-6 w-6 stroke-[2]" />
                 </div>
                 <div>
-                  <h3 className="font-black text-lg text-slate-900 uppercase tracking-wider">
+                  <h3 className="font-bold text-lg text-white uppercase tracking-wider">
                     {prospectoTratamiento.empresa}
                   </h3>
-                  <p className="text-xs text-[#005bea] font-bold flex items-center gap-2 mt-0.5">
+                  <p className="text-xs text-[#2997ff] font-semibold flex items-center gap-2 mt-0.5">
                     <MapPin className="h-3.5 w-3.5" />
                     <span>{prospectoTratamiento.comuna || 'V Región'} • RUT: {prospectoTratamiento.rut || 'S/RUT'}</span>
                   </p>
                 </div>
               </div>
-              <button onClick={() => setProspectoTratamiento(null)} className="text-slate-400 hover:text-slate-700 font-bold text-xl cursor-pointer">✕</button>
+              <button onClick={() => setProspectoTratamiento(null)} className="text-slate-400 hover:text-white font-bold text-xl cursor-pointer">✕</button>
             </div>
 
             {/* RESUMEN DEL PROSPECTO Y SCORE */}
-            <div className="grid grid-cols-3 gap-3 bg-[#E0E5EC] p-4 rounded-xl shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff]">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-white/[0.03] border border-white/10 p-4 rounded-2xl">
               <div>
-                <span className="text-[10px] font-bold text-slate-500 block">CONTACTO PRINCIPAL:</span>
-                <span className="font-bold text-slate-900 text-xs">{prospectoTratamiento.contacto}</span>
-                <span className="text-[10px] text-slate-500 block font-mono">{prospectoTratamiento.telefono}</span>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">CONTACTO PRINCIPAL:</span>
+                <span className="font-semibold text-white text-xs block mt-0.5">{prospectoTratamiento.contacto}</span>
+                <span className="text-[10px] text-slate-400 block font-mono mt-0.5">{prospectoTratamiento.telefono}</span>
               </div>
               <div>
-                <span className="text-[10px] font-bold text-slate-500 block">CORREO ELECTRÓNICO:</span>
-                <span className="font-bold font-mono text-slate-900 text-xs truncate block">{prospectoTratamiento.email}</span>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">CORREO ELECTRÓNICO:</span>
+                <span className="font-semibold font-mono text-white text-xs truncate block mt-0.5">{prospectoTratamiento.email}</span>
               </div>
               <div>
-                <span className="text-[10px] font-bold text-slate-500 block">NIVEL DE INTERÉS:</span>
-                <div className="text-amber-500 text-sm font-bold tracking-widest">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">NIVEL DE INTERÉS:</span>
+                <div className="text-amber-400 text-sm font-bold tracking-widest mt-0.5">
                   {'★'.repeat(prospectoTratamiento.score_interes || 4)}{'☆'.repeat(5 - (prospectoTratamiento.score_interes || 4))}
                 </div>
               </div>
@@ -5755,28 +6098,28 @@ export default function OperacionCRM() {
             {/* BITÁCORA DE INTERACCIONES Y REGISTRO DE TRATAMIENTO */}
             <div className="space-y-4 flex-1 flex flex-col justify-between">
               <div className="space-y-3">
-                <h4 className="font-black text-xs text-slate-900 uppercase tracking-wider flex items-center gap-2 border-b border-slate-300 pb-2">
-                  <MessageSquare className="h-4 w-4 text-[#005bea]" />
+                <h4 className="font-bold text-xs text-white uppercase tracking-wider flex items-center gap-2 border-b border-white/10 pb-2">
+                  <MessageSquare className="h-4 w-4 text-[#2997ff]" />
                   <span>REGISTRAR NUEVA INTERACCIÓN / NOTA COMERCIAL</span>
                 </h4>
 
-                <div className="space-y-3 bg-[#E0E5EC] p-4 rounded-xl shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff]">
-                  <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-3 bg-white/[0.03] border border-white/10 p-4 rounded-2xl">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label className="text-[10px] font-bold text-slate-500 block mb-1">TIPO DE CONTACTO:</label>
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">TIPO DE CONTACTO:</label>
                       <select
                         value={tipoNotaBitacora}
                         onChange={(e: any) => setTipoNotaBitacora(e.target.value)}
-                        className="w-full bg-[#E0E5EC] shadow-[inset_2px_2px_4px_#bec8d2,inset_-2px_-2px_4px_#ffffff] border-none p-2 rounded-lg font-bold text-xs text-slate-900"
+                        className="w-full bg-black/40 border border-white/10 p-2.5 rounded-xl font-semibold text-xs text-white focus:ring-2 focus:ring-[#0066cc] focus:outline-none"
                       >
-                        <option value="Llamada">📞 Llamada Telefónica</option>
-                        <option value="Correo">📧 Correo Comercial</option>
-                        <option value="Visita">🏢 Visita en Terreno</option>
-                        <option value="WhatsApp">💬 Mensaje WhatsApp</option>
+                        <option value="Llamada" className="bg-[#0c182b] text-white">📞 Llamada Telefónica</option>
+                        <option value="Correo" className="bg-[#0c182b] text-white">📧 Correo Comercial</option>
+                        <option value="Visita" className="bg-[#0c182b] text-white">🏢 Visita en Terreno</option>
+                        <option value="WhatsApp" className="bg-[#0c182b] text-white">💬 Mensaje WhatsApp</option>
                       </select>
                     </div>
                     <div>
-                      <label className="text-[10px] font-bold text-slate-500 block mb-1">CAMBIAR ESTADO DEL PROSPECTO:</label>
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">CAMBIAR ESTADO DEL PROSPECTO:</label>
                       <select
                         value={prospectoTratamiento.estado}
                         onChange={(e: any) => {
@@ -5785,31 +6128,31 @@ export default function OperacionCRM() {
                           setProspectoTratamiento(act)
                           setLeadsList(leadsList.map(l => l.id === act.id ? act : l))
                         }}
-                        className="w-full bg-[#E0E5EC] shadow-[inset_2px_2px_4px_#bec8d2,inset_-2px_-2px_4px_#ffffff] border-none p-2 rounded-lg font-bold text-xs text-slate-900"
+                        className="w-full bg-black/40 border border-white/10 p-2.5 rounded-xl font-semibold text-xs text-white focus:ring-2 focus:ring-[#0066cc] focus:outline-none"
                       >
-                        <option value="Nuevo">Nuevo</option>
-                        <option value="Contactado">Contactado</option>
-                        <option value="Interesado">Interesado</option>
-                        <option value="Cliente">Cliente</option>
+                        <option value="Nuevo" className="bg-[#0c182b] text-white">Nuevo</option>
+                        <option value="Contactado" className="bg-[#0c182b] text-white">Contactado</option>
+                        <option value="Interesado" className="bg-[#0c182b] text-white">Interesado</option>
+                        <option value="Cliente" className="bg-[#0c182b] text-white">Cliente</option>
                       </select>
                     </div>
                   </div>
 
                   <div>
-                    <label className="text-[10px] font-bold text-slate-500 block mb-1">DETALLE DE LA REUNIÓN / OBSERVACIÓN:</label>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">DETALLE DE LA REUNIÓN / OBSERVACIÓN:</label>
                     <textarea
                       rows={3}
                       value={nuevaNotaBitacora}
                       onChange={(e) => setNuevaNotaBitacora(e.target.value)}
                       placeholder="Escriba los acuerdos alcanzados o requerimientos de seguridad..."
-                      className="w-full bg-[#E0E5EC] shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] border-none p-3 rounded-xl text-xs text-slate-900 font-medium"
+                      className="w-full bg-black/40 border border-white/10 p-3 rounded-xl text-xs text-white font-medium focus:ring-2 focus:ring-[#0066cc] focus:outline-none"
                     />
                   </div>
 
                   <div className="flex justify-end">
                     <button
                       onClick={handleAgregarNotaBitacora}
-                      className="px-5 py-2 bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white font-bold rounded-xl text-xs shadow-md active:scale-95 cursor-pointer"
+                      className="px-5 py-2.5 bg-gradient-to-r from-[#0066cc] to-[#2997ff] hover:brightness-110 text-white font-bold rounded-xl text-xs shadow-lg hover:shadow-cyan-500/20 active:scale-95 cursor-pointer transition-all"
                     >
                       Guardar en Bitácora
                     </button>
@@ -5819,7 +6162,7 @@ export default function OperacionCRM() {
 
               {/* CRONOLOGÍA DE INTERACCIONES DE LA BITÁCORA */}
               <div className="space-y-3 pt-2">
-                <h4 className="font-black text-xs text-slate-900 uppercase tracking-wider border-b border-slate-300 pb-2">
+                <h4 className="font-bold text-xs text-white uppercase tracking-wider border-b border-white/10 pb-2">
                   HISTORIAL DE INTERACCIONES ({prospectoTratamiento.bitacora?.length || 0})
                 </h4>
 
@@ -5828,12 +6171,12 @@ export default function OperacionCRM() {
                     <p className="text-[11px] text-slate-400 italic">No hay notas registradas aún en la bitácora de este prospecto.</p>
                   ) : (
                     prospectoTratamiento.bitacora.map(b => (
-                      <div key={b.id} className="bg-[#E0E5EC] p-3 rounded-xl shadow-[3px_3px_6px_#bec8d2,-3px_-3px_6px_#ffffff] text-xs space-y-1">
-                        <div className="flex justify-between items-center text-[10px] font-bold text-[#005bea]">
+                      <div key={b.id} className="bg-white/[0.03] border border-white/10 p-3 rounded-xl text-xs space-y-1">
+                        <div className="flex justify-between items-center text-[10px] font-bold text-[#2997ff]">
                           <span>{b.tipo} • {b.autor}</span>
-                          <span className="font-mono text-slate-500">{b.fecha}</span>
+                          <span className="font-mono text-slate-400">{b.fecha}</span>
                         </div>
-                        <p className="text-slate-800 font-medium">{b.nota}</p>
+                        <p className="text-slate-200 font-medium">{b.nota}</p>
                       </div>
                     ))
                   )}
@@ -5841,10 +6184,10 @@ export default function OperacionCRM() {
               </div>
             </div>
 
-            <div className="pt-3 flex justify-end gap-3 border-t border-slate-300">
+            <div className="pt-3 flex justify-end gap-3 border-t border-white/10">
               <button
                 onClick={() => setProspectoTratamiento(null)}
-                className="px-6 py-2.5 bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white font-bold rounded-xl text-xs shadow-md cursor-pointer"
+                className="px-6 py-2.5 bg-gradient-to-r from-[#0066cc] to-[#2997ff] hover:brightness-110 text-white font-bold rounded-xl text-xs shadow-lg hover:shadow-cyan-500/20 cursor-pointer transition-all"
               >
                 Cerrar Tratamiento
               </button>
@@ -5854,170 +6197,170 @@ export default function OperacionCRM() {
         </div>
       )}
 
-      {/* ── MODAL AÑADIR / EDITAR NUEVO LEAD NEUMÓRFICO ── */}
+      {/* ── MODAL AÑADIR / EDITAR NUEVO LEAD (APPLE BENTO DARK) ── */}
       {mostrarModalNuevoLead && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm p-4 md:p-6 flex justify-center items-center overflow-y-auto no-imprimir">
-          <div className="bg-[#E0E5EC] border border-slate-300 w-full max-w-xl rounded-2xl shadow-[12px_12px_24px_#bec8d2,-12px_-12px_24px_#ffffff] p-6 md:p-8 flex flex-col gap-5 text-xs text-slate-900 font-sans my-auto">
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md p-4 md:p-6 flex justify-center items-center overflow-y-auto no-imprimir">
+          <div className="bg-[#0c182b]/95 border border-white/10 w-full max-w-xl rounded-3xl shadow-2xl p-6 md:p-8 flex flex-col gap-5 text-xs text-white font-sans my-auto">
             
-            <div className="flex justify-between items-center pb-3 border-b border-slate-300">
+            <div className="flex justify-between items-center pb-3 border-b border-white/10">
               <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white rounded-xl shadow-xs">
+                <div className="p-2.5 bg-gradient-to-r from-[#0066cc] to-[#2997ff] text-white rounded-xl shadow-md">
                   <UserPlus className="h-5 w-5 stroke-[2]" />
                 </div>
                 <div>
-                  <h3 className="font-black text-base text-slate-900 uppercase tracking-wider">
+                  <h3 className="font-bold text-base text-white uppercase tracking-wider">
                     {leadEditandoId ? 'EDITAR LEAD DE PROSPECCIÓN' : 'AÑADIR NUEVO LEAD COMERCIAL'}
                   </h3>
-                  <p className="text-[11px] text-slate-500 font-semibold">Registro de prospecto para campañas masivas Resend</p>
+                  <p className="text-[11px] text-slate-400 font-medium">Registro de prospecto para campañas masivas Resend</p>
                 </div>
               </div>
-              <button onClick={() => setMostrarModalNuevoLead(false)} className="text-slate-400 hover:text-slate-700 font-bold text-lg cursor-pointer">✕</button>
+              <button onClick={() => setMostrarModalNuevoLead(false)} className="text-slate-400 hover:text-white font-bold text-lg cursor-pointer">✕</button>
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className="text-[10px] font-bold text-slate-500 block mb-1">NOMBRE DE LA EMPRESA / CLIENTE (*):</label>
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">NOMBRE DE LA EMPRESA / CLIENTE (*):</label>
                 <input
                   type="text"
                   value={formLeadEmpresa}
                   onChange={(e) => setFormLeadEmpresa(e.target.value)}
                   placeholder="ej: Transportes & Logística Norte SpA"
-                  className="w-full bg-[#E0E5EC] shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] border-none p-3 rounded-xl font-bold text-xs text-slate-900 focus:ring-2 focus:ring-[#005bea]"
+                  className="w-full bg-black/40 border border-white/10 p-3 rounded-xl font-bold text-xs text-white focus:ring-2 focus:ring-[#0066cc] focus:outline-none"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[10px] font-bold text-slate-500 block mb-1">COMUNA (V REGIÓN):</label>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">COMUNA (V REGIÓN):</label>
                   <select
                     value={formLeadComuna}
                     onChange={(e) => setFormLeadComuna(e.target.value)}
-                    className="w-full bg-[#E0E5EC] shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] border-none p-3 rounded-xl font-bold text-xs text-slate-900"
+                    className="w-full bg-black/40 border border-white/10 p-3 rounded-xl font-semibold text-xs text-white focus:ring-2 focus:ring-[#0066cc] focus:outline-none"
                   >
-                    <option value="Viña del Mar">Viña del Mar</option>
-                    <option value="Valparaíso">Valparaíso</option>
-                    <option value="Concón">Concón</option>
-                    <option value="Quilpué">Quilpué</option>
-                    <option value="Villa Alemana">Villa Alemana</option>
-                    <option value="San Antonio">San Antonio</option>
-                    <option value="Los Andes">Los Andes</option>
-                    <option value="Quillota">Quillota</option>
-                    <option value="Limache">Limache</option>
+                    <option value="Viña del Mar" className="bg-[#0c182b] text-white">Viña del Mar</option>
+                    <option value="Valparaíso" className="bg-[#0c182b] text-white">Valparaíso</option>
+                    <option value="Concón" className="bg-[#0c182b] text-white">Concón</option>
+                    <option value="Quilpué" className="bg-[#0c182b] text-white">Quilpué</option>
+                    <option value="Villa Alemana" className="bg-[#0c182b] text-white">Villa Alemana</option>
+                    <option value="San Antonio" className="bg-[#0c182b] text-white">San Antonio</option>
+                    <option value="Los Andes" className="bg-[#0c182b] text-white">Los Andes</option>
+                    <option value="Quillota" className="bg-[#0c182b] text-white">Quillota</option>
+                    <option value="Limache" className="bg-[#0c182b] text-white">Limache</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="text-[10px] font-bold text-slate-500 block mb-1">DIRECCIÓN COMERCIAL:</label>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">DIRECCIÓN COMERCIAL:</label>
                   <input
                     type="text"
                     value={formLeadDireccion}
                     onChange={(e) => setFormLeadDireccion(e.target.value)}
                     placeholder="ej: Av. Libertad 940, Of. 601"
-                    className="w-full bg-[#E0E5EC] shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] border-none p-3 rounded-xl font-bold text-xs text-slate-900"
+                    className="w-full bg-black/40 border border-white/10 p-3 rounded-xl font-semibold text-xs text-white focus:ring-2 focus:ring-[#0066cc] focus:outline-none"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[10px] font-bold text-slate-500 block mb-1">RUT COMERCIAL:</label>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">RUT COMERCIAL:</label>
                   <input
                     type="text"
                     value={formLeadRut}
                     onChange={(e) => setFormLeadRut(e.target.value)}
                     placeholder="ej: 76.123.456-7"
-                    className="w-full bg-[#E0E5EC] shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] border-none p-3 rounded-xl font-mono text-xs text-[#005bea] font-bold"
+                    className="w-full bg-black/40 border border-white/10 p-3 rounded-xl font-mono text-xs text-[#2997ff] font-bold focus:ring-2 focus:ring-[#0066cc] focus:outline-none"
                   />
                 </div>
 
                 <div>
-                  <label className="text-[10px] font-bold text-slate-500 block mb-1">CORREO ELECTRÓNICO (*):</label>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">CORREO ELECTRÓNICO (*):</label>
                   <input
                     type="email"
                     value={formLeadEmail}
                     onChange={(e) => setFormLeadEmail(e.target.value)}
                     placeholder="contacto@empresa.cl"
-                    className="w-full bg-[#E0E5EC] shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] border-none p-3 rounded-xl font-bold text-xs text-slate-900 focus:ring-2 focus:ring-[#005bea]"
+                    className="w-full bg-black/40 border border-white/10 p-3 rounded-xl font-semibold text-xs text-white focus:ring-2 focus:ring-[#0066cc] focus:outline-none"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[10px] font-bold text-slate-500 block mb-1">PERSONA DE CONTACTO:</label>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">PERSONA DE CONTACTO:</label>
                   <input
                     type="text"
                     value={formLeadContacto}
                     onChange={(e) => setFormLeadContacto(e.target.value)}
                     placeholder="ej: Don Carlos Fuentealba"
-                    className="w-full bg-[#E0E5EC] shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] border-none p-3 rounded-xl font-bold text-xs text-slate-900"
+                    className="w-full bg-black/40 border border-white/10 p-3 rounded-xl font-semibold text-xs text-white focus:ring-2 focus:ring-[#0066cc] focus:outline-none"
                   />
                 </div>
 
                 <div>
-                  <label className="text-[10px] font-bold text-slate-500 block mb-1">TELÉFONO DE CONTACTO:</label>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">TELÉFONO DE CONTACTO:</label>
                   <input
                     type="text"
                     value={formLeadTelefono}
                     onChange={(e) => setFormLeadTelefono(e.target.value)}
                     placeholder="+56 9 9123 4567"
-                    className="w-full bg-[#E0E5EC] shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] border-none p-3 rounded-xl font-mono text-xs text-slate-900 font-bold"
+                    className="w-full bg-black/40 border border-white/10 p-3 rounded-xl font-mono text-xs text-white font-semibold focus:ring-2 focus:ring-[#0066cc] focus:outline-none"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[10px] font-bold text-slate-500 block mb-1">SEGMENTO COMERCIAL:</label>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">SEGMENTO COMERCIAL:</label>
                   <select
                     value={formLeadSegmento}
                     onChange={(e: any) => setFormLeadSegmento(e.target.value)}
-                    className="w-full bg-[#E0E5EC] shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] border-none p-3 rounded-xl font-bold text-xs text-slate-900"
+                    className="w-full bg-black/40 border border-white/10 p-3 rounded-xl font-semibold text-xs text-white focus:ring-2 focus:ring-[#0066cc] focus:outline-none"
                   >
-                    <option value="Comercial B2B">Comercial B2B</option>
-                    <option value="Industrial">Industrial</option>
-                    <option value="Condominios">Condominios</option>
-                    <option value="Particular">Particular</option>
+                    <option value="Comercial B2B" className="bg-[#0c182b] text-white">Comercial B2B</option>
+                    <option value="Industrial" className="bg-[#0c182b] text-white">Industrial</option>
+                    <option value="Condominios" className="bg-[#0c182b] text-white">Condominios</option>
+                    <option value="Particular" className="bg-[#0c182b] text-white">Particular</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="text-[10px] font-bold text-slate-500 block mb-1">ESTADO DEL LEAD:</label>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">ESTADO DEL LEAD:</label>
                   <select
                     value={formLeadEstado}
                     onChange={(e: any) => setFormLeadEstado(e.target.value)}
-                    className="w-full bg-[#E0E5EC] shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] border-none p-3 rounded-xl font-bold text-xs text-slate-900"
+                    className="w-full bg-black/40 border border-white/10 p-3 rounded-xl font-semibold text-xs text-white focus:ring-2 focus:ring-[#0066cc] focus:outline-none"
                   >
-                    <option value="Nuevo">Nuevo</option>
-                    <option value="Contactado">Contactado</option>
-                    <option value="Interesado">Interesado</option>
-                    <option value="Cliente">Cliente</option>
+                    <option value="Nuevo" className="bg-[#0c182b] text-white">Nuevo</option>
+                    <option value="Contactado" className="bg-[#0c182b] text-white">Contactado</option>
+                    <option value="Interesado" className="bg-[#0c182b] text-white">Interesado</option>
+                    <option value="Cliente" className="bg-[#0c182b] text-white">Cliente</option>
                   </select>
                 </div>
               </div>
 
               <div>
-                <label className="text-[10px] font-bold text-slate-500 block mb-1">NOTAS / REQUERIMIENTO:</label>
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">NOTAS / REQUERIMIENTO:</label>
                 <textarea
                   rows={2}
                   value={formLeadNotas}
                   onChange={(e) => setFormLeadNotas(e.target.value)}
                   placeholder="ej: Interesados en monitoreo de bodegas y cámaras IP..."
-                  className="w-full bg-[#E0E5EC] shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] border-none p-3 rounded-xl text-xs text-slate-900 font-medium"
+                  className="w-full bg-black/40 border border-white/10 p-3 rounded-xl text-xs text-white font-medium focus:ring-2 focus:ring-[#0066cc] focus:outline-none"
                 />
               </div>
             </div>
 
-            <div className="pt-3 flex justify-end gap-3 border-t border-slate-300">
+            <div className="pt-3 flex justify-end gap-3 border-t border-white/10">
               <button
                 onClick={() => setMostrarModalNuevoLead(false)}
-                className="px-5 py-2.5 bg-[#E0E5EC] shadow-[4px_4px_8px_#bec8d2,-4px_-4px_8px_#ffffff] active:shadow-[inset_2px_2px_4px_#bec8d2,inset_-2px_-2px_4px_#ffffff] text-slate-800 font-bold rounded-xl text-xs cursor-pointer"
+                className="px-5 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 font-semibold rounded-xl text-xs cursor-pointer transition-all"
               >
                 Cancelar
               </button>
               <button
                 onClick={handleGuardarLead}
-                className="px-6 py-2.5 bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white font-bold rounded-xl text-xs shadow-[4px_4px_10px_#bec8d2,-4px_-4px_10px_#ffffff] active:scale-95 cursor-pointer"
+                className="px-6 py-2.5 bg-gradient-to-r from-[#0066cc] to-[#2997ff] hover:brightness-110 text-white font-bold rounded-xl text-xs shadow-lg hover:shadow-cyan-500/20 active:scale-95 cursor-pointer transition-all"
               >
                 Guardar Lead
               </button>
@@ -6026,126 +6369,126 @@ export default function OperacionCRM() {
         </div>
       )}
 
-      {/* ── MODAL NUEVA ORDEN TÉCNICA (OT) CONECTADA CON COMMAND CENTER ── */}
+      {/* ── MODAL NUEVA ORDEN TÉCNICA (OT) (APPLE BENTO DARK) ── */}
       {mostrarModalOT && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm p-4 md:p-6 flex justify-center items-center overflow-y-auto no-imprimir">
-          <div className="bg-[#E0E5EC] border border-slate-300 w-full max-w-lg rounded-2xl shadow-[12px_12px_24px_#bec8d2,-12px_-12px_24px_#ffffff] p-6 md:p-8 flex flex-col gap-5 text-xs text-slate-900 font-sans my-auto">
-            <div className="flex justify-between items-center pb-3 border-b border-slate-300">
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md p-4 md:p-6 flex justify-center items-center overflow-y-auto no-imprimir">
+          <div className="bg-[#0c182b]/95 border border-white/10 w-full max-w-lg rounded-3xl shadow-2xl p-6 md:p-8 flex flex-col gap-5 text-xs text-white font-sans my-auto">
+            <div className="flex justify-between items-center pb-3 border-b border-white/10">
               <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white rounded-xl shadow-xs">
+                <div className="p-2.5 bg-gradient-to-r from-[#0066cc] to-[#2997ff] text-white rounded-xl shadow-md">
                   <Wrench className="h-5 w-5 stroke-[2]" />
                 </div>
                 <div>
-                  <h3 className="font-black text-base text-slate-900 uppercase tracking-wider">
+                  <h3 className="font-bold text-base text-white uppercase tracking-wider">
                     NUEVA ORDEN TÉCNICA DE TERRENO (OT)
                   </h3>
-                  <p className="text-[11px] text-slate-500 font-semibold">Integración de alertas de Central de Monitoreo & SLA</p>
+                  <p className="text-[11px] text-slate-400 font-medium">Integración de alertas de Central de Monitoreo & SLA</p>
                 </div>
               </div>
-              <button onClick={() => setMostrarModalOT(false)} className="text-slate-400 hover:text-slate-700 font-bold text-lg cursor-pointer">✕</button>
+              <button onClick={() => setMostrarModalOT(false)} className="text-slate-400 hover:text-white font-bold text-lg cursor-pointer">✕</button>
             </div>
 
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[10px] font-bold text-slate-500 block mb-1">CUENTA ABONADO (*):</label>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">CUENTA ABONADO (*):</label>
                   <input
                     type="text"
                     value={otFormCuenta}
                     onChange={(e) => setOtFormCuenta(e.target.value.toUpperCase())}
                     placeholder="ej: #0999, #C725"
-                    className="w-full bg-[#E0E5EC] shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] border-none p-3 rounded-xl font-mono font-bold text-xs text-slate-900"
+                    className="w-full bg-black/40 border border-white/10 p-3 rounded-xl font-mono font-bold text-xs text-white focus:ring-2 focus:ring-[#0066cc] focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] font-bold text-slate-500 block mb-1">CLIENTE / RAZÓN SOCIAL (*):</label>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">CLIENTE / RAZÓN SOCIAL (*):</label>
                   <input
                     type="text"
                     value={otFormClienteNombre}
                     onChange={(e) => setOtFormClienteNombre(e.target.value)}
                     placeholder="ej: GAMA SEGURIDAD SPA"
-                    className="w-full bg-[#E0E5EC] shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] border-none p-3 rounded-xl font-bold text-xs text-slate-900"
+                    className="w-full bg-black/40 border border-white/10 p-3 rounded-xl font-bold text-xs text-white focus:ring-2 focus:ring-[#0066cc] focus:outline-none"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[10px] font-bold text-slate-500 block mb-1">TIPO DE SERVICIO (*):</label>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">TIPO DE SERVICIO (*):</label>
                   <select
                     value={otFormTipoServicio}
                     onChange={(e) => setOtFormTipoServicio(e.target.value)}
-                    className="w-full bg-[#E0E5EC] shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] border-none p-3 rounded-xl font-bold text-xs text-slate-900"
+                    className="w-full bg-black/40 border border-white/10 p-3 rounded-xl font-semibold text-xs text-white focus:ring-2 focus:ring-[#0066cc] focus:outline-none"
                   >
-                    <option value="Mantención Perimetral Alarma">Mantención Perimetral Alarma</option>
-                    <option value="Cambio de Batería de Respaldo">Cambio de Batería de Respaldo</option>
-                    <option value="Revisión de Fuente & Energía">Revisión de Fuente & Energía</option>
-                    <option value="Revisión Técnica de Alarma / Zonas">Revisión Técnica de Alarma / Zonas</option>
-                    <option value="Instalación Cámara IP DarkFighter">Instalación Cámara IP DarkFighter</option>
+                    <option value="Mantención Perimetral Alarma" className="bg-[#0c182b] text-white">Mantención Perimetral Alarma</option>
+                    <option value="Cambio de Batería de Respaldo" className="bg-[#0c182b] text-white">Cambio de Batería de Respaldo</option>
+                    <option value="Revisión de Fuente & Energía" className="bg-[#0c182b] text-white">Revisión de Fuente & Energía</option>
+                    <option value="Revisión Técnica de Alarma / Zonas" className="bg-[#0c182b] text-white">Revisión Técnica de Alarma / Zonas</option>
+                    <option value="Instalación Cámara IP DarkFighter" className="bg-[#0c182b] text-white">Instalación Cámara IP DarkFighter</option>
                   </select>
                 </div>
                 <div>
-                  <label className="text-[10px] font-bold text-slate-500 block mb-1">SLA DE RESPUESTA (*):</label>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">SLA DE RESPUESTA (*):</label>
                   <select
                     value={otFormSLA}
                     onChange={(e) => setOtFormSLA(e.target.value)}
-                    className="w-full bg-[#E0E5EC] shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] border-none p-3 rounded-xl font-bold text-xs text-slate-900"
+                    className="w-full bg-black/40 border border-white/10 p-3 rounded-xl font-semibold text-xs text-white focus:ring-2 focus:ring-[#0066cc] focus:outline-none"
                   >
-                    <option value="Crítica (2h)">⚡ Crítica (2 Horas)</option>
-                    <option value="Alta (6h)">🟠 Alta (6 Horas)</option>
-                    <option value="Normal (24h)">🔵 Normal (24 Horas)</option>
-                    <option value="Programada (48h)">🟢 Programada (48 Horas)</option>
+                    <option value="Crítica (2h)" className="bg-[#0c182b] text-white">⚡ Crítica (2 Horas)</option>
+                    <option value="Alta (6h)" className="bg-[#0c182b] text-white">🟠 Alta (6 Horas)</option>
+                    <option value="Normal (24h)" className="bg-[#0c182b] text-white">🔵 Normal (24 Horas)</option>
+                    <option value="Programada (48h)" className="bg-[#0c182b] text-white">🟢 Programada (48 Horas)</option>
                   </select>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[10px] font-bold text-slate-500 block mb-1">TÉCNICO ASIGNADO:</label>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">TÉCNICO ASIGNADO:</label>
                   <select
                     value={otFormTecnico}
                     onChange={(e) => setOtFormTecnico(e.target.value)}
-                    className="w-full bg-[#E0E5EC] shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] border-none p-3 rounded-xl font-bold text-xs text-slate-900"
+                    className="w-full bg-black/40 border border-white/10 p-3 rounded-xl font-semibold text-xs text-white focus:ring-2 focus:ring-[#0066cc] focus:outline-none"
                   >
-                    <option value="Técnico Juan Pérez">Técnico Juan Pérez</option>
-                    <option value="Técnico Carlos Rojas">Técnico Carlos Rojas</option>
-                    <option value="Técnico Esteban Soto">Técnico Esteban Soto</option>
-                    <option value="Técnico Matías Campos">Técnico Matías Campos</option>
+                    <option value="Técnico Juan Pérez" className="bg-[#0c182b] text-white">Técnico Juan Pérez</option>
+                    <option value="Técnico Carlos Rojas" className="bg-[#0c182b] text-white">Técnico Carlos Rojas</option>
+                    <option value="Técnico Esteban Soto" className="bg-[#0c182b] text-white">Técnico Esteban Soto</option>
+                    <option value="Técnico Matías Campos" className="bg-[#0c182b] text-white">Técnico Matías Campos</option>
                   </select>
                 </div>
                 <div>
-                  <label className="text-[10px] font-bold text-slate-500 block mb-1">FECHA PROGRAMADA:</label>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">FECHA PROGRAMADA:</label>
                   <input
                     type="date"
                     value={otFormFecha}
                     onChange={(e) => setOtFormFecha(e.target.value)}
-                    className="w-full bg-[#E0E5EC] shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] border-none p-3 rounded-xl font-mono text-xs text-slate-900"
+                    className="w-full bg-black/40 border border-white/10 p-3 rounded-xl font-mono text-xs text-white focus:ring-2 focus:ring-[#0066cc] focus:outline-none"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="text-[10px] font-bold text-slate-500 block mb-1">OBSERVACIONES / REPORTE COMMAND CENTER:</label>
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">OBSERVACIONES / REPORTE COMMAND CENTER:</label>
                 <textarea
                   rows={3}
                   value={otFormObservaciones}
                   onChange={(e) => setOtFormObservaciones(e.target.value)}
                   placeholder="Detalle técnico ingresado por el operador o cliente..."
-                  className="w-full bg-[#E0E5EC] shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] border-none p-3 rounded-xl text-xs text-slate-900 font-medium"
+                  className="w-full bg-black/40 border border-white/10 p-3 rounded-xl text-xs text-white font-medium focus:ring-2 focus:ring-[#0066cc] focus:outline-none"
                 />
               </div>
             </div>
 
-            <div className="pt-3 flex justify-end gap-3 border-t border-slate-300">
+            <div className="pt-3 flex justify-end gap-3 border-t border-white/10">
               <button
                 onClick={() => setMostrarModalOT(false)}
-                className="px-5 py-2.5 bg-[#E0E5EC] shadow-[4px_4px_8px_#bec8d2,-4px_-4px_8px_#ffffff] text-slate-800 font-bold rounded-xl text-xs cursor-pointer"
+                className="px-5 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 font-semibold rounded-xl text-xs cursor-pointer transition-all"
               >
                 Cancelar
               </button>
               <button
                 onClick={handleGuardarNuevaOT}
-                className="px-6 py-2.5 bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white font-bold rounded-xl text-xs shadow-[4px_4px_10px_#bec8d2,-4px_-4px_10px_#ffffff] active:scale-95 cursor-pointer"
+                className="px-6 py-2.5 bg-gradient-to-r from-[#0066cc] to-[#2997ff] hover:brightness-110 text-white font-bold rounded-xl text-xs shadow-lg hover:shadow-cyan-500/20 active:scale-95 cursor-pointer transition-all"
               >
                 Crear & Asignar OT
               </button>
@@ -6154,45 +6497,45 @@ export default function OperacionCRM() {
         </div>
       )}
 
-      {/* ── MODAL PAUTA TÉCNICA Y FIRMA DIGITAL ── */}
+      {/* ── MODAL PAUTA TÉCNICA Y FIRMA DIGITAL (APPLE BENTO DARK) ── */}
       {mostrarModalFirmaOT && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm p-4 md:p-6 flex justify-center items-center overflow-y-auto no-imprimir">
-          <div className="bg-[#E0E5EC] border border-slate-300 w-full max-w-xl rounded-2xl shadow-[12px_12px_24px_#bec8d2,-12px_-12px_24px_#ffffff] p-6 md:p-8 flex flex-col gap-5 text-xs text-slate-900 font-sans my-auto">
-            <div className="flex justify-between items-center pb-3 border-b border-slate-300">
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md p-4 md:p-6 flex justify-center items-center overflow-y-auto no-imprimir">
+          <div className="bg-[#0c182b]/95 border border-white/10 w-full max-w-xl rounded-3xl shadow-2xl p-6 md:p-8 flex flex-col gap-5 text-xs text-white font-sans my-auto">
+            <div className="flex justify-between items-center pb-3 border-b border-white/10">
               <div>
-                <h3 className="font-black text-base text-slate-900 uppercase tracking-wider flex items-center gap-2">
-                  <FileText className="h-5 w-5 text-[#005bea]" />
+                <h3 className="font-bold text-base text-white uppercase tracking-wider flex items-center gap-2">
+                  <FileText className="h-5 w-5 text-[#2997ff]" />
                   <span>PAUTA DE TERRENO Y FIRMA DIGITAL ({mostrarModalFirmaOT.codigo_ot})</span>
                 </h3>
-                <p className="text-[11px] text-slate-500 font-semibold">Recepción conforme del cliente para la cuenta #{mostrarModalFirmaOT.cuenta}</p>
+                <p className="text-[11px] text-slate-400 font-medium">Recepción conforme del cliente para la cuenta #{mostrarModalFirmaOT.cuenta}</p>
               </div>
-              <button onClick={() => setMostrarModalFirmaOT(null)} className="text-slate-400 hover:text-slate-700 font-bold text-lg cursor-pointer">✕</button>
+              <button onClick={() => setMostrarModalFirmaOT(null)} className="text-slate-400 hover:text-white font-bold text-lg cursor-pointer">✕</button>
             </div>
 
             <div className="space-y-4">
-              <div className="bg-[#E0E5EC] p-4 rounded-xl shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] space-y-2">
-                <h4 className="font-black text-xs text-slate-900 uppercase">PAUTA DE CHEQUEO EN TERRENO:</h4>
-                <div className="grid grid-cols-2 gap-2 text-[11px] font-bold text-slate-700">
-                  <div className="flex items-center gap-2">✔ Voltaje Panel & Batería OK</div>
-                  <div className="flex items-center gap-2">✔ Prueba de Sirena 105dB OK</div>
-                  <div className="flex items-center gap-2">✔ Sensores Infrarrojos Limpios</div>
-                  <div className="flex items-center gap-2">✔ Señal GPRS/3G Transmitida</div>
+              <div className="bg-white/[0.03] border border-white/10 p-4 rounded-2xl space-y-2">
+                <h4 className="font-bold text-xs text-white uppercase tracking-wider">PAUTA DE CHEQUEO EN TERRENO:</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] font-semibold text-slate-300">
+                  <div className="flex items-center gap-2 text-emerald-400">✔ Voltaje Panel & Batería OK</div>
+                  <div className="flex items-center gap-2 text-emerald-400">✔ Prueba de Sirena 105dB OK</div>
+                  <div className="flex items-center gap-2 text-emerald-400">✔ Sensores Infrarrojos Limpios</div>
+                  <div className="flex items-center gap-2 text-emerald-400">✔ Señal GPRS/3G Transmitida</div>
                 </div>
               </div>
 
               <div>
-                <label className="text-[10px] font-bold text-slate-500 block mb-1">FIRMA DIGITAL DE CONFORMIDAD DEL CLIENTE / ENCARGADO:</label>
-                <div className="bg-white rounded-xl border border-slate-300 p-4 text-center h-32 flex flex-col justify-center items-center shadow-inner relative">
-                  <div className="border-b-2 border-dashed border-slate-400 w-3/4 mb-2"></div>
-                  <span className="text-[11px] text-slate-400 font-bold uppercase tracking-wider">Firma Digital Registrada en Tablet</span>
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">FIRMA DIGITAL DE CONFORMIDAD DEL CLIENTE / ENCARGADO:</label>
+                <div className="bg-black/40 rounded-2xl border border-white/10 p-4 text-center h-32 flex flex-col justify-center items-center shadow-inner relative">
+                  <div className="border-b-2 border-dashed border-white/20 w-3/4 mb-2"></div>
+                  <span className="text-[11px] text-slate-400 font-semibold uppercase tracking-wider">Firma Digital Registrada en Tablet</span>
                 </div>
               </div>
             </div>
 
-            <div className="pt-3 flex justify-end gap-3 border-t border-slate-300">
+            <div className="pt-3 flex justify-end gap-3 border-t border-white/10">
               <button
                 onClick={() => setMostrarModalFirmaOT(null)}
-                className="px-5 py-2.5 bg-[#E0E5EC] shadow-[4px_4px_8px_#bec8d2,-4px_-4px_8px_#ffffff] text-slate-800 font-bold rounded-xl text-xs cursor-pointer"
+                className="px-5 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 font-semibold rounded-xl text-xs cursor-pointer transition-all"
               >
                 Cerrar
               </button>
@@ -6202,7 +6545,7 @@ export default function OperacionCRM() {
                   setMostrarModalFirmaOT(null)
                   setToastNotificacion({ tipo: 'exito', texto: `¡Orden de Trabajo ${mostrarModalFirmaOT.codigo_ot} finalizada con conformidad digital!` })
                 }}
-                className="px-6 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold rounded-xl text-xs shadow-[4px_4px_10px_#bec8d2,-4px_-4px_10px_#ffffff] active:scale-95 cursor-pointer"
+                className="px-6 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:brightness-110 text-white font-bold rounded-xl text-xs shadow-lg active:scale-95 cursor-pointer transition-all"
               >
                 Finalizar OT & Registrar Conformidad
               </button>
@@ -6232,50 +6575,50 @@ export default function OperacionCRM() {
         abonadosCentrosCosto={abonadosCentrosCosto}
       />
 
-      {/* ── MODAL BITÁCORA ACUMULATIVA DE COBRANZA ── */}
+      {/* ── MODAL BITÁCORA ACUMULATIVA DE COBRANZA (APPLE BENTO DARK) ── */}
       {facturaSeleccionadaCobranza && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm p-4 md:p-6 flex justify-center items-center overflow-y-auto no-imprimir font-sans">
-          <div className="bg-[#E0E5EC] border border-slate-300 w-full max-w-2xl rounded-2xl shadow-[12px_12px_24px_#bec8d2,-12px_-12px_24px_#ffffff] p-6 md:p-8 flex flex-col gap-5 text-xs text-slate-900 my-auto">
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md p-4 md:p-6 flex justify-center items-center overflow-y-auto no-imprimir font-sans">
+          <div className="bg-[#0c182b]/95 border border-white/10 w-full max-w-2xl rounded-3xl shadow-2xl p-6 md:p-8 flex flex-col gap-5 text-xs text-white my-auto">
             
-            <div className="flex justify-between items-start pb-3 border-b border-slate-300">
+            <div className="flex justify-between items-start pb-3 border-b border-white/10">
               <div>
-                <h3 className="font-black text-base text-slate-900 uppercase tracking-wider flex items-center gap-2">
-                  <ClipboardList className="h-5 w-5 text-[#005bea]" />
+                <h3 className="font-bold text-base text-white uppercase tracking-wider flex items-center gap-2">
+                  <ClipboardList className="h-5 w-5 text-[#2997ff]" />
                   <span>Bitácora de Gestión de Cobranza ({facturaSeleccionadaCobranza.numero_factura})</span>
                 </h3>
-                <p className="text-xs text-slate-600 font-bold">
-                  Cliente: <span className="text-slate-900">{facturaSeleccionadaCobranza.razon_social}</span> | RUT: {facturaSeleccionadaCobranza.rut_cliente}
+                <p className="text-xs text-slate-300 font-semibold mt-0.5">
+                  Cliente: <span className="text-white">{facturaSeleccionadaCobranza.razon_social}</span> | RUT: {facturaSeleccionadaCobranza.rut_cliente}
                 </p>
-                <div className="flex items-center gap-3 text-[11px] font-mono mt-1 font-bold">
-                  <span className="text-slate-700">Monto: ${facturaSeleccionadaCobranza.monto_total.toLocaleString('es-CL')}</span>
-                  <span className="text-red-700">Saldo Pendiente: ${(facturaSeleccionadaCobranza.saldo_pendiente || 0).toLocaleString('es-CL')}</span>
+                <div className="flex items-center gap-3 text-[11px] font-mono mt-1 font-semibold">
+                  <span className="text-slate-300">Monto: ${facturaSeleccionadaCobranza.monto_total.toLocaleString('es-CL')}</span>
+                  <span className="text-red-400">Saldo Pendiente: ${(facturaSeleccionadaCobranza.saldo_pendiente || 0).toLocaleString('es-CL')}</span>
                 </div>
               </div>
               <button
                 onClick={() => setFacturaSeleccionadaCobranza(null)}
-                className="text-slate-400 hover:text-slate-700 font-bold text-lg cursor-pointer p-1"
+                className="text-slate-400 hover:text-white font-bold text-lg cursor-pointer p-1"
               >
                 ✕
               </button>
             </div>
 
             {/* FORMULARIO AGREGAR NUEVA NOTA */}
-            <div className="bg-[#E0E5EC] p-4 rounded-xl shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] space-y-3">
-              <span className="font-black text-xs text-slate-900 uppercase tracking-wider block">
+            <div className="bg-white/[0.03] border border-white/10 p-4 md:p-5 rounded-2xl space-y-3">
+              <span className="font-bold text-xs text-white uppercase tracking-wider block">
                 + AGREGAR NUEVA GESTIÓN DE COBRO:
               </span>
               <div className="flex flex-col sm:flex-row gap-2">
                 <select
                   value={nuevaNotaTipo}
                   onChange={(e: any) => setNuevaNotaTipo(e.target.value)}
-                  className="bg-[#E0E5EC] shadow-[2px_2px_4px_#bec8d2,-2px_-2px_4px_#ffffff] px-3 py-2 rounded-lg font-bold text-xs text-slate-900"
+                  className="bg-black/40 border border-white/10 px-3 py-2 rounded-xl font-semibold text-xs text-white focus:ring-2 focus:ring-[#0066cc] focus:outline-none"
                 >
-                  <option value="Llamada">📞 Llamada Telefónica</option>
-                  <option value="WhatsApp">💬 WhatsApp Enviado</option>
-                  <option value="Correo">✉️ Correo Electrónico</option>
-                  <option value="Promesa de Pago">🤝 Promesa de Pago</option>
-                  <option value="Abono">💰 Abono / Pago Parcial</option>
-                  <option value="Nota">📝 Observación General</option>
+                  <option value="Llamada" className="bg-[#0c182b] text-white">📞 Llamada Telefónica</option>
+                  <option value="WhatsApp" className="bg-[#0c182b] text-white">💬 WhatsApp Enviado</option>
+                  <option value="Correo" className="bg-[#0c182b] text-white">✉️ Correo Electrónico</option>
+                  <option value="Promesa de Pago" className="bg-[#0c182b] text-white">🤝 Promesa de Pago</option>
+                  <option value="Abono" className="bg-[#0c182b] text-white">💰 Abono / Pago Parcial</option>
+                  <option value="Nota" className="bg-[#0c182b] text-white">📝 Observación General</option>
                 </select>
                 <input
                   type="text"
@@ -6283,11 +6626,11 @@ export default function OperacionCRM() {
                   onChange={(e) => setNuevaNotaTexto(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter') handleAgregarNotaCobranza(facturaSeleccionadaCobranza) }}
                   placeholder="Detalle de la gestión (ej: Cliente promete transferir el viernes 28/08...)"
-                  className="flex-1 bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs font-bold text-slate-900 focus:outline-none"
+                  className="flex-1 bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-xs font-semibold text-white placeholder-slate-500 focus:ring-2 focus:ring-[#0066cc] focus:outline-none"
                 />
                 <button
                   onClick={() => handleAgregarNotaCobranza(facturaSeleccionadaCobranza)}
-                  className="px-4 py-2 bg-[#005bea] text-white font-bold rounded-lg text-xs shadow-md hover:bg-blue-600 cursor-pointer whitespace-nowrap active:scale-95"
+                  className="px-4 py-2 bg-[#0066cc] hover:bg-[#2997ff] text-white font-bold rounded-xl text-xs shadow-md cursor-pointer whitespace-nowrap active:scale-95 transition-all"
                 >
                   Guardar Nota
                 </button>
@@ -6296,34 +6639,34 @@ export default function OperacionCRM() {
 
             {/* TIMELINE HISTÓRICO DE NOTAS DE COBRANZA */}
             <div className="space-y-2">
-              <span className="font-black text-xs text-slate-900 uppercase tracking-wider block">
+              <span className="font-bold text-xs text-white uppercase tracking-wider block">
                 HISTORIAL DE GESTIONES ACUMULADAS ({ (bitacoraCobranzaFacturas[facturaSeleccionadaCobranza.id] || []).length } Registros):
               </span>
-              <div className="max-h-64 overflow-y-auto space-y-2 bg-[#E0E5EC] shadow-[inset_3px_3px_6px_#bec8d2,inset_-3px_-3px_6px_#ffffff] p-3 rounded-xl">
+              <div className="max-h-64 overflow-y-auto space-y-2 bg-black/30 border border-white/10 p-3 rounded-2xl">
                 {(!bitacoraCobranzaFacturas[facturaSeleccionadaCobranza.id] || bitacoraCobranzaFacturas[facturaSeleccionadaCobranza.id].length === 0) ? (
-                  <div className="p-4 text-center text-slate-500 font-bold text-xs italic">
+                  <div className="p-4 text-center text-slate-400 font-semibold text-xs italic">
                     Sin gestiones de cobranza registradas aún. Ingrese una arriba.
                   </div>
                 ) : (
                   bitacoraCobranzaFacturas[facturaSeleccionadaCobranza.id].map((item) => (
-                    <div key={item.id} className="bg-white p-3 rounded-xl border border-slate-300 shadow-xs space-y-1">
+                    <div key={item.id} className="bg-white/[0.04] p-3 rounded-xl border border-white/5 space-y-1">
                       <div className="flex justify-between items-center text-[10px]">
-                        <span className="font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-900 uppercase">
+                        <span className="font-bold px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30 uppercase">
                           {item.tipo}
                         </span>
-                        <span className="font-mono text-slate-500">{item.fecha} — {item.autor}</span>
+                        <span className="font-mono text-slate-400">{item.fecha} — {item.autor}</span>
                       </div>
-                      <p className="text-xs text-slate-900 font-semibold">{item.nota}</p>
+                      <p className="text-xs text-slate-200 font-medium">{item.nota}</p>
                     </div>
                   ))
                 )}
               </div>
             </div>
 
-            <div className="pt-3 flex justify-end border-t border-slate-300">
+            <div className="pt-3 flex justify-end border-t border-white/10">
               <button
                 onClick={() => setFacturaSeleccionadaCobranza(null)}
-                className="px-5 py-2.5 bg-[#E0E5EC] shadow-[4px_4px_8px_#bec8d2,-4px_-4px_8px_#ffffff] text-slate-800 font-bold rounded-xl text-xs cursor-pointer"
+                className="px-5 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 font-semibold rounded-xl text-xs cursor-pointer transition-all"
               >
                 Cerrar
               </button>
@@ -6333,70 +6676,70 @@ export default function OperacionCRM() {
         </div>
       )}
 
-      {/* ── MODAL EDICIÓN DE CORREO DEL CLIENTE PARA LA POSTERIDAD ── */}
+      {/* ── MODAL EDICIÓN DE CORREO DEL CLIENTE (APPLE BENTO DARK) ── */}
       {clienteEditingEmail && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm p-4 md:p-6 flex justify-center items-center overflow-y-auto no-imprimir font-sans">
-          <div className="bg-[#E0E5EC] border border-slate-300 w-full max-w-lg rounded-2xl shadow-[12px_12px_24px_#bec8d2,-12px_-12px_24px_#ffffff] p-6 md:p-8 flex flex-col gap-5 text-xs text-slate-900 my-auto">
-            <div className="flex justify-between items-center pb-3 border-b border-slate-300">
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md p-4 md:p-6 flex justify-center items-center overflow-y-auto no-imprimir font-sans">
+          <div className="bg-[#0c182b]/95 border border-white/10 w-full max-w-lg rounded-3xl shadow-2xl p-6 md:p-8 flex flex-col gap-5 text-xs text-white my-auto">
+            <div className="flex justify-between items-center pb-3 border-b border-white/10">
               <div>
-                <h3 className="font-black text-base text-slate-900 uppercase tracking-wider flex items-center gap-2">
-                  <Mail className="h-5 w-5 text-[#005bea]" />
+                <h3 className="font-bold text-base text-white uppercase tracking-wider flex items-center gap-2">
+                  <Mail className="h-5 w-5 text-[#2997ff]" />
                   <span>REGISTRO PERMANENTE DE CORREOS & CONTACTO</span>
                 </h3>
-                <p className="text-xs text-slate-600 font-bold">{clienteEditingEmail.razon_social} (RUT: {clienteEditingEmail.rut})</p>
+                <p className="text-xs text-slate-300 font-semibold mt-0.5">{clienteEditingEmail.razon_social} (RUT: {clienteEditingEmail.rut})</p>
               </div>
-              <button onClick={() => setClienteEditingEmail(null)} className="text-slate-400 hover:text-slate-700 font-bold text-lg cursor-pointer">✕</button>
+              <button onClick={() => setClienteEditingEmail(null)} className="text-slate-400 hover:text-white font-bold text-lg cursor-pointer">✕</button>
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className="font-bold text-slate-700 block mb-1">CORREO ELECTRÓNICO DE COBRANZA:</label>
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">CORREO ELECTRÓNICO DE COBRANZA:</label>
                 <input
                   type="email"
                   value={clienteEditingEmail.email_cobranza}
                   onChange={(e) => setClienteEditingEmail({ ...clienteEditingEmail, email_cobranza: e.target.value })}
                   placeholder="ejemplo: cobranza@empresa.cl"
-                  className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-900 focus:outline-none"
+                  className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2.5 text-xs font-semibold text-white focus:ring-2 focus:ring-[#0066cc] focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="font-bold text-slate-700 block mb-1">CORREO ELECTRÓNICO DE CONTACTO PRINCIPAL:</label>
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">CORREO ELECTRÓNICO DE CONTACTO PRINCIPAL:</label>
                 <input
                   type="email"
                   value={clienteEditingEmail.email_contacto}
                   onChange={(e) => setClienteEditingEmail({ ...clienteEditingEmail, email_contacto: e.target.value })}
                   placeholder="ejemplo: gerencia@empresa.cl"
-                  className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-900 focus:outline-none"
+                  className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2.5 text-xs font-semibold text-white focus:ring-2 focus:ring-[#0066cc] focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="font-bold text-slate-700 block mb-1">TELÉFONO DE CONTACTO:</label>
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">TELÉFONO DE CONTACTO:</label>
                 <input
                   type="text"
                   value={clienteEditingEmail.telefono}
                   onChange={(e) => setClienteEditingEmail({ ...clienteEditingEmail, telefono: e.target.value })}
                   placeholder="ejemplo: +56991234567"
-                  className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-900 focus:outline-none"
+                  className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2.5 text-xs font-semibold text-white focus:ring-2 focus:ring-[#0066cc] focus:outline-none"
                 />
               </div>
 
-              <div className="bg-blue-50 border border-blue-200 p-3 rounded-xl text-[11px] text-blue-900 font-semibold">
+              <div className="bg-blue-500/10 border border-blue-500/20 p-3.5 rounded-2xl text-[11px] text-blue-200 font-medium leading-relaxed">
                 ℹ️ Estos datos se guardarán de forma permanente en la base de datos central de Gama Seguridad y alimentarán automáticamente el <strong>Portal de Cliente Gama (/portal)</strong>.
               </div>
             </div>
 
-            <div className="pt-3 flex justify-end gap-3 border-t border-slate-300">
+            <div className="pt-3 flex justify-end gap-3 border-t border-white/10">
               <button
                 onClick={() => setClienteEditingEmail(null)}
-                className="px-5 py-2.5 bg-[#E0E5EC] shadow-[4px_4px_8px_#bec8d2,-4px_-4px_8px_#ffffff] text-slate-800 font-bold rounded-xl text-xs cursor-pointer"
+                className="px-5 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 font-semibold rounded-xl text-xs cursor-pointer transition-all"
               >
                 Cancelar
               </button>
               <button
                 onClick={handleGuardarEmailCliente}
-                className="px-6 py-2.5 bg-gradient-to-r from-[#005bea] to-[#00c6fb] text-white font-bold rounded-xl text-xs shadow-md hover:brightness-110 cursor-pointer active:scale-95"
+                className="px-6 py-2.5 bg-gradient-to-r from-[#0066cc] to-[#2997ff] hover:brightness-110 text-white font-bold rounded-xl text-xs shadow-lg hover:shadow-cyan-500/20 cursor-pointer active:scale-95 transition-all"
               >
                 💾 Guardar Correos para la Posteridad
               </button>

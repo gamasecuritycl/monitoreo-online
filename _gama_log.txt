@@ -1,0 +1,5 @@
+============================================================
+  GAMA COMMAND CENTER - Sincronizador Indestructible v6.1
+  Timezone: Chile (-03:00)
+  Ingesta Híbrida: MDBs Scorpion Locales + IPRS Cloud
+============================================================

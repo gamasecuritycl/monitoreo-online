@@ -59,21 +59,21 @@ export default function OperacionSidebar({
     <>
       {/* Backdrop para movil */}
       <div
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden transition-opacity"
+        className="fixed inset-0 bg-black/70 backdrop-blur-md z-40 lg:hidden transition-opacity"
         onClick={() => setSidebarAbierto(false)}
       />
 
-      <aside className="fixed inset-y-0 left-0 z-50 lg:relative lg:inset-auto lg:z-auto w-72 sm:w-80 bg-[#0a1628]/95 backdrop-blur-xl border border-[#1e3a5f]/60 p-5 sm:p-6 rounded-r-3xl lg:rounded-3xl flex flex-col gap-6 shrink-0 shadow-2xl transition-all overflow-y-auto max-h-screen lg:max-h-none font-sans">
+      <aside className="fixed inset-y-0 left-0 z-50 lg:relative lg:inset-auto lg:z-auto w-72 sm:w-80 bg-[#0a1628]/95 lg:bg-[#0c182b]/85 backdrop-blur-2xl border-r lg:border border-white/10 lg:border-[#1e3a5f]/60 p-5 sm:p-6 rounded-r-3xl lg:rounded-3xl flex flex-col gap-6 shrink-0 shadow-2xl transition-all overflow-y-auto max-h-screen lg:max-h-none font-sans">
         
         {/* Header Mobile Toggle */}
         <div className="text-[11px] font-bold text-slate-300 uppercase tracking-wider px-2 mb-1 flex justify-between items-center">
-          <span className="flex items-center gap-2 text-slate-200 font-semibold">
-            <ShieldCheck className="h-4 w-4 text-[#2997ff]" />
-            MENÚ DE MONITOREO
+          <span className="flex items-center gap-2 text-slate-100 font-semibold text-xs">
+            <span className="w-2 h-2 rounded-full bg-[#2997ff] animate-pulse" />
+            CENTRAL OPERATIVA GAMA
           </span>
           <button
             onClick={() => setSidebarAbierto(false)}
-            className="text-slate-400 hover:text-white font-bold text-sm cursor-pointer p-1.5 rounded-lg hover:bg-[#162a4a] lg:hidden transition-colors"
+            className="text-slate-400 hover:text-white font-bold text-sm cursor-pointer p-2 rounded-xl bg-white/5 hover:bg-white/10 lg:hidden transition-colors"
           >
             <X className="h-5 w-5" />
           </button>
@@ -83,7 +83,7 @@ export default function OperacionSidebar({
         <div className="space-y-6 sm:space-y-7">
           {grupos.map((grp) => (
             <div key={grp.titulo} className="space-y-2.5">
-              <div className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider px-2 font-mono">
+              <div className="text-[10px] sm:text-[11px] font-bold text-[#2997ff]/80 uppercase tracking-widest px-2.5 font-mono">
                 {grp.titulo}
               </div>
               <div className="space-y-2">
@@ -99,14 +99,17 @@ export default function OperacionSidebar({
                           setSidebarAbierto(false)
                         }
                       }}
-                      className={`w-full text-left py-3.5 px-4 sm:py-4 sm:px-4.5 rounded-2xl font-semibold text-xs sm:text-sm transition-all flex items-center gap-3.5 cursor-pointer ${
+                      className={`w-full min-h-[52px] text-left py-3.5 px-4.5 rounded-2xl font-semibold text-xs sm:text-sm transition-all duration-200 flex items-center gap-3.5 cursor-pointer relative group ${
                         esActivo
-                          ? 'bg-[#0066cc] text-white shadow-lg shadow-[#0066cc]/30 border border-[#2997ff]/50 scale-[1.01]'
-                          : 'bg-[#0f2240]/40 text-slate-200 hover:bg-[#162a4a] hover:text-white border border-[#1e3a5f]/50 hover:border-[#2997ff]/30'
+                          ? 'bg-gradient-to-r from-[#0066cc] to-[#0077ed] text-white shadow-xl shadow-[#0066cc]/30 border border-[#2997ff]/60 scale-[1.01]'
+                          : 'bg-[#0f2240]/40 text-slate-300 hover:bg-[#162a4a]/80 hover:text-white border border-[#1e3a5f]/40 hover:border-[#2997ff]/40 hover:scale-[1.005]'
                       }`}
                     >
-                      <IconComp className={`h-5 w-5 stroke-[1.75] shrink-0 ${esActivo ? 'text-white' : 'text-[#2997ff]'}`} />
-                      <span className="truncate">{m.label}</span>
+                      <IconComp className={`h-5 w-5 stroke-[1.8] shrink-0 transition-transform duration-200 group-hover:scale-110 ${esActivo ? 'text-white' : 'text-[#2997ff]'}`} />
+                      <span className="truncate tracking-tight flex-1">{m.label}</span>
+                      {esActivo && (
+                        <span className="w-1.5 h-4 rounded-full bg-white/80 shrink-0" />
+                      )}
                     </button>
                   )
                 })}
@@ -116,12 +119,17 @@ export default function OperacionSidebar({
         </div>
 
         {/* Data Architecture Widget */}
-        <div className="mt-auto bg-[#050d1a] border border-[#1e3a5f] p-4.5 rounded-2xl text-xs space-y-2.5 text-slate-400">
-          <div className="font-semibold text-white text-[10px] uppercase tracking-wider mb-1 flex items-center gap-1.5">
-            <Layers className="h-4 w-4 text-[#2997ff] stroke-[1.5]" />
-            <span>ESTRUCTURA DE DATOS</span>
+        <div className="mt-auto bg-[#050d1a]/80 border border-white/10 p-5 rounded-2xl text-xs space-y-3 text-slate-400 backdrop-blur-md">
+          <div className="font-semibold text-white text-[10px] uppercase tracking-widest mb-1 flex items-center justify-between">
+            <span className="flex items-center gap-1.5 text-[#2997ff]">
+              <Layers className="h-4 w-4 stroke-[1.5]" />
+              ESTRUCTURA DE DATOS
+            </span>
+            <span className="text-[9px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-1.5 py-0.5 rounded-full font-mono font-bold">
+              PRO
+            </span>
           </div>
-          <div className="flex justify-between items-center text-xs">
+          <div className="flex justify-between items-center text-xs pt-1 border-t border-white/5">
             <span>Empresas Emisoras:</span>
             <strong className="text-white font-mono font-semibold text-xs sm:text-sm">{cantEmpresas}</strong>
           </div>
