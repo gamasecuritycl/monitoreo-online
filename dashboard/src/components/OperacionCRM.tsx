@@ -834,11 +834,15 @@ export default function OperacionCRM() {
         setClientesMaestros(mapaMaestroCombinado)
         setAbonadosCentrosCosto(mapaCentrosCombinado)
 
-        const { data: dCot } = await supabase
+        const { data: dCot, error: dCotError } = await supabase
           .from('eventos_monitoreo')
           .select('nombre_abonado')
           .eq('cuenta', 'COTIZACIONES_DOLIBARR')
           .order('id', { ascending: true })
+
+        if (dCotError) {
+          console.error('[Supabase Cotizaciones Error]: Base de datos no disponible o pausada:', dCotError.message)
+        }
 
         const cotizacionesMap = new Map<string, CotizacionDolibarr>()
 
