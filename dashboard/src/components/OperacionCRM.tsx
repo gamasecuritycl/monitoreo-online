@@ -838,16 +838,46 @@ export default function OperacionCRM() {
           .from('eventos_monitoreo')
           .select('nombre_abonado')
           .eq('cuenta', 'COTIZACIONES_DOLIBARR')
-          .order('id', { ascending: false })
-          .limit(1)
-        if (dCot && dCot.length > 0 && dCot[0].nombre_abonado) {
-          try {
-            const parsed = JSON.parse(dCot[0].nombre_abonado)
-            if (Array.isArray(parsed) && parsed.length > 0) {
-              setCotizaciones(parsed)
-              localStorage.setItem('gama_cotizaciones', JSON.stringify(parsed))
+          .order('id', { ascending: true })
+
+        const cotizacionesMap = new Map<string, CotizacionDolibarr>()
+
+        // 1. Cargar presupuestos locales previos (incluyendo los hechos hoy)
+        try {
+          const localCot = localStorage.getItem('gama_cotizaciones')
+          if (localCot) {
+            const parsedLoc = JSON.parse(localCot)
+            if (Array.isArray(parsedLoc)) {
+              parsedLoc.forEach((c: CotizacionDolibarr) => {
+                const key = c.codigo_cotizacion || String(c.id)
+                if (key) cotizacionesMap.set(key, c)
+              })
             }
-          } catch (e) {}
+          }
+        } catch (e) {}
+
+        // 2. Consolidar todas las filas históricas en Supabase (de más antiguas a más recientes)
+        if (dCot && dCot.length > 0) {
+          dCot.forEach(row => {
+            if (row.nombre_abonado) {
+              try {
+                const parsedRow = JSON.parse(row.nombre_abonado)
+                if (Array.isArray(parsedRow)) {
+                  parsedRow.forEach((c: CotizacionDolibarr) => {
+                    const key = c.codigo_cotizacion || String(c.id)
+                    if (key) cotizacionesMap.set(key, c)
+                  })
+                }
+              } catch (e) {}
+            }
+          })
+        }
+
+        const cotizacionesConsolidadas = Array.from(cotizacionesMap.values())
+        if (cotizacionesConsolidadas.length > 0) {
+          cotizacionesConsolidadas.sort((a, b) => (b.id || 0) - (a.id || 0))
+          setCotizaciones(cotizacionesConsolidadas)
+          localStorage.setItem('gama_cotizaciones', JSON.stringify(cotizacionesConsolidadas))
         }
 
         const { data: dOT } = await supabase
@@ -1416,7 +1446,7 @@ export default function OperacionCRM() {
     const emailDest = cot.email_cliente || 'contacto@gamasecurity.cl'
     const emp = empresasConglomerado.find(e => e.id === cot.empresa_facturadora_id) || empresasConglomerado[0]
 
-    const emailPrompt = prompt(`Enviar Presupuesto DTE ${cot.codigo_cotizacion} por Email con PDF Adjunto (Resend desde contacto@gamasecurity.cl) a:`, emailDest)
+    const emailPrompt = prompt(`Enviar Presupuesto DTE ${cot.codigo_cotizacion} por Email con PDF Adjunto (remitente: Empresas Gama Seguridad) a:`, emailDest)
     if (!emailPrompt || !emailPrompt.trim()) return
 
     setEnviandoEmailId(cot.id)
@@ -1442,9 +1472,9 @@ export default function OperacionCRM() {
       })
       const data = await res.json()
       if (data.success) {
-        alert(`📧 Presupuesto ${cot.codigo_cotizacion} (con PDF adjunto 📄) enviado exitosamente por Email desde contacto@gamasecurity.cl a ${emailPrompt.trim()} via Resend.`)
+        alert(`📧 Presupuesto ${cot.codigo_cotizacion} (con PDF adjunto 📄) enviado exitosamente desde Empresas Gama Seguridad a ${emailPrompt.trim()}.`)
       } else {
-        alert(`Error al enviar Email: ${data.error || 'Verifique la configuración Resend'}`)
+        alert(`Error al enviar Email: ${data.error || 'Verifique la configuración de correo'}`)
       }
     } catch (e: any) {
       alert(`Error enviando correo: ${e?.message || e}`)

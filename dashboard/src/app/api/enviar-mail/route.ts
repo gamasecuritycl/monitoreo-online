@@ -111,15 +111,26 @@ export async function POST(req: Request) {
         </div>
       `
 
-      const data = await getResend().emails.send({
-        from: 'Gama Security <contacto@gamasecurity.cl>',
+      let response = await getResend().emails.send({
+        from: 'Empresas Gama Seguridad <contacto@gamasecurity.cl>',
         to: toList,
         subject: `Presupuesto DTE N° ${cot.codigo_cotizacion || 'PR2607'} — ${emp.razon_social}`,
         html: htmlContent,
         attachments: attachments
       })
 
-      return NextResponse.json({ success: true, data })
+      if (response.error) {
+        console.warn('Fallback a onboarding@resend.dev por dominio no verificado:', response.error)
+        response = await getResend().emails.send({
+          from: 'Empresas Gama Seguridad <onboarding@resend.dev>',
+          to: toList,
+          subject: `Presupuesto DTE N° ${cot.codigo_cotizacion || 'PR2607'} — ${emp.razon_social}`,
+          html: htmlContent,
+          attachments: attachments
+        })
+      }
+
+      return NextResponse.json({ success: !response.error, data: response.data, error: response.error?.message })
     }
 
     // FALLBACK: GENERAL NOTIFICATION EMAIL
@@ -160,7 +171,7 @@ export async function POST(req: Request) {
           <p>O escríbanos a <a href="mailto:contacto@gamasecurity.cl">contacto@gamasecurity.cl</a>.</p>
         </div>
         <div style="background-color: #f5f5f5; padding: 15px; text-align: center; font-size: 12px; color: #666;">
-          <p style="margin: 0;"><strong>GAMA SERVICIOS LIMITADA</strong></p>
+          <p style="margin: 0;"><strong>EMPRESAS GAMA SEGURIDAD</strong></p>
           <p style="margin: 5px 0;"><a href="https://www.gamasecurity.cl" style="color: #000080;">www.gamasecurity.cl</a> | Síguenos en Instagram: <a href="https://instagram.com/gama.servicios" style="color: #000080;">@gama.servicios</a></p>
         </div>
       </div>
@@ -173,15 +184,25 @@ export async function POST(req: Request) {
       }
     ] : []
 
-    const data = await getResend().emails.send({
-      from: 'Gama Security <contacto@gamasecurity.cl>',
+    let response = await getResend().emails.send({
+      from: 'Empresas Gama Seguridad <contacto@gamasecurity.cl>',
       to: toList,
       subject: `Notificación de ${(tipo_evento || 'Evento').toUpperCase()}`,
       html: htmlContent,
       attachments
     })
 
-    return NextResponse.json({ success: true, data })
+    if (response.error) {
+      response = await getResend().emails.send({
+        from: 'Empresas Gama Seguridad <onboarding@resend.dev>',
+        to: toList,
+        subject: `Notificación de ${(tipo_evento || 'Evento').toUpperCase()}`,
+        html: htmlContent,
+        attachments
+      })
+    }
+
+    return NextResponse.json({ success: !response.error, data: response.data, error: response.error?.message })
   } catch (error: any) {
     console.error('Error sending email:', error)
     return NextResponse.json({ error: error?.message || 'Internal Server Error' }, { status: 500 })
