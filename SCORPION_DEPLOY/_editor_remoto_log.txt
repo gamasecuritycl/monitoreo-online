@@ -2041,3 +2041,10 @@
 2026-09-17 11:11:34 [ERROR] Error consultando eventos_monitoreo: The read operation timed out
 2026-09-17 11:12:19 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 503 Service Unavailable"
 2026-09-17 11:14:20 [ERROR] Error consultando eventos_monitoreo: The read operation timed out
+2026-09-17 11:16:24 [ERROR] Error consultando eventos_monitoreo: The read operation timed out
+2026-09-17 11:18:27 [ERROR] Error consultando eventos_monitoreo: The read operation timed out
+2026-09-17 11:20:30 [ERROR] Error consultando eventos_monitoreo: The read operation timed out
+2026-09-17 11:22:33 [ERROR] Error consultando eventos_monitoreo: The read operation timed out
+2026-09-17 11:24:36 [ERROR] Error consultando eventos_monitoreo: The read operation timed out
+2026-09-17 11:26:39 [ERROR] Error consultando eventos_monitoreo: The read operation timed out
+2026-09-17 11:28:42 [ERROR] Error consultando eventos_monitoreo: The read operation timed out
