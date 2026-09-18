@@ -236,8 +236,10 @@ Quienes han convenido suscribir el presente Contrato de Prestación de Servicios
 
   if (contrato.firma_base64) {
     try {
-      doc.addImage(contrato.firma_base64, 'PNG', margenIzq + 102, yFirma + 11, 62, 13)
-    } catch {}
+      doc.addImage(contrato.firma_base64, 'PNG', margenIzq + 98, yFirma + 10, 70, 14)
+    } catch (err) {
+      console.error('Error insertando firma en PDF:', err)
+    }
   }
 
   doc.setDrawColor(148, 163, 184)
