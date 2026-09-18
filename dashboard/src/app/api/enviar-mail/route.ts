@@ -141,7 +141,7 @@ export async function POST(req: Request) {
       const periodoTexto = `${rep.fechaDesde || 'Inicio'} al ${rep.fechaHasta || 'Fin'}`
 
       const eventosRowsHtml = eventosList.slice(0, 40).map((ev: any, idx: number) => {
-        const fechaHora = ev.fecha_hora || ev.fecha || ''
+        const fechaHora = String(ev.fecha_hora || ev.fecha || '').replace('T', ' ').substring(0, 19)
         const evNombre = (ev.evento || 'SEÑAL').toUpperCase()
         const esAlarma = evNombre.includes('ALARMA') || evNombre.includes('ROBO') || evNombre.includes('PANICO') || evNombre.includes('INCENDIO')
         const bgRow = idx % 2 === 0 ? '#f8fafc' : '#ffffff'

@@ -236,7 +236,7 @@ export default function NotificacionesMailModal({ onClose, clientesMap }: Notifi
         y += 6
         doc.setFont('helvetica', 'normal')
       }
-      const fechaHora = String(ev.fecha_hora || ev.fecha || '').substring(0, 19)
+      const fechaHora = String(ev.fecha_hora || ev.fecha || '').replace('T', ' ').substring(0, 19)
       const evento = String(ev.evento || 'SEÑAL').substring(0, 42)
       const zonaUsr = String(ev.zona || ev.usuario || '-').substring(0, 25)
 
@@ -259,7 +259,7 @@ export default function NotificacionesMailModal({ onClose, clientesMap }: Notifi
   const generarExcelBase64 = (cuenta: string, nombre: string, eventos: any[]): string => {
     const rows = eventos.map((ev, idx) => ({
       '#': idx + 1,
-      'Fecha y Hora': ev.fecha_hora || ev.fecha || '',
+      'Fecha y Hora': String(ev.fecha_hora || ev.fecha || '').replace('T', ' ').substring(0, 19),
       'Cuenta': cuenta,
       'Abonado': nombre,
       'Evento': ev.evento || 'SEÑAL',

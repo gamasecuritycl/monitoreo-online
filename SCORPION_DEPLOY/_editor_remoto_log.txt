@@ -20411,3 +20411,1141 @@
 2026-09-18 20:06:32 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
 2026-09-18 20:06:35 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
 2026-09-18 20:06:38 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:06:41 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:06:44 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:06:48 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:06:51 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:06:54 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:06:57 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:07:00 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:07:03 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:07:06 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:07:09 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:07:12 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:07:15 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:07:19 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:07:22 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:07:25 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:07:28 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:07:31 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:07:34 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:07:37 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:07:40 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:07:43 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:07:47 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:07:50 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:07:53 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:07:56 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:07:59 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:08:02 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:08:05 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:08:08 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:08:08 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:08:11 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:08:11 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:08:14 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:08:14 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:08:15 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:08:15 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:08:18 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:08:18 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:08:19 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:08:19 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:08:22 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:08:22 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:08:22 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:08:22 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:08:25 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:08:25 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:08:26 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:08:26 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:08:26 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:08:26 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:08:26 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:08:30 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:08:30 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:08:30 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:08:30 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:08:30 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:08:31 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:08:31 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:08:34 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:08:34 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:08:34 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:08:34 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:08:34 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:08:35 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:08:35 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:08:38 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:08:38 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:08:39 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:08:39 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:08:39 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:08:39 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:08:39 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:08:42 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:08:42 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:08:43 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:08:43 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:08:43 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:08:44 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:08:44 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:08:47 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:08:47 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:08:47 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:08:47 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:08:47 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:08:48 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:08:48 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:08:51 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:08:51 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:08:51 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:08:51 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:08:51 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:08:52 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:08:52 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:08:52 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:08:52 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:08:52 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:08:56 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:08:56 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:08:56 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:08:56 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:08:56 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:08:57 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:08:57 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:08:57 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:08:57 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:08:57 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:09:00 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:09:00 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:09:01 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:09:01 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:09:01 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:09:02 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:09:02 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:09:02 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:09:02 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:09:02 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:09:05 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:09:05 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:09:06 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:09:06 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:09:06 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:09:06 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:09:06 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:09:06 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:09:07 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:09:07 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:09:10 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:09:10 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:09:10 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:09:10 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:09:10 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:09:11 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:09:11 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:09:11 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:09:12 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:09:12 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:09:15 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:09:15 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:09:16 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:09:16 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:09:16 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:09:17 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:09:17 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:09:17 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:09:18 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:09:18 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:09:21 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:09:21 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:09:21 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:09:21 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:09:21 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:09:22 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:09:22 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:09:22 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:09:23 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:09:23 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:09:26 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:09:26 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:09:26 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:09:26 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:09:26 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:09:27 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:09:27 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:09:27 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:09:28 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:09:28 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:09:31 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:09:31 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:09:31 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:09:31 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:09:31 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:09:32 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:09:32 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:09:32 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:09:33 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:09:33 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:09:36 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:09:36 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:09:36 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:09:36 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:09:36 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:09:37 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:09:37 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:09:37 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:09:38 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:09:38 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:09:41 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:09:41 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:09:41 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:09:41 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:09:41 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:09:42 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:09:42 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:09:42 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:09:43 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:09:43 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:09:46 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:09:46 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:09:46 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:09:46 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:09:46 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:09:47 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:09:47 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:09:47 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:09:48 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:09:48 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:09:51 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:09:51 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:09:51 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:09:51 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:09:51 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:09:52 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:09:52 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:09:52 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:09:53 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:09:53 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:09:56 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:09:56 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:09:56 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:09:56 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:09:56 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:09:57 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:09:57 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:09:57 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:09:58 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:09:58 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:10:01 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:10:01 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:10:02 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:10:02 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:10:02 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:10:03 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:10:03 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:10:03 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:10:03 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:10:03 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:10:06 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:10:06 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:10:07 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:10:07 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:10:07 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:10:07 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:10:07 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:10:07 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:10:08 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:10:08 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:10:11 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:10:11 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:10:11 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:10:11 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:10:11 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:10:12 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:10:12 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:10:12 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:10:12 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:10:12 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:10:15 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:10:15 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:10:16 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:10:16 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:10:16 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:10:16 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:10:16 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:10:16 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:10:17 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:10:17 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:10:20 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:10:20 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:10:20 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:10:20 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:10:20 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:10:21 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:10:21 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:10:21 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:10:21 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:10:21 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:10:24 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:10:24 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:10:25 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:10:25 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:10:25 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:10:25 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:10:25 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:10:25 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:10:26 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:10:26 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:10:29 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:10:29 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:10:30 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:10:30 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:10:30 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:10:30 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:10:30 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:10:30 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:10:31 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:10:31 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:10:34 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:10:34 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:10:34 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:10:34 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:10:34 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:10:35 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:10:35 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:10:35 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:10:35 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:10:35 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:10:39 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:10:39 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:10:39 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:10:39 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:10:39 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:10:40 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:10:40 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:10:40 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:10:40 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:10:40 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:10:43 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:10:43 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:10:44 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:10:44 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:10:44 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:10:44 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:10:44 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:10:44 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:10:45 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:10:45 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:10:48 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:10:48 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:10:48 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:10:48 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:10:48 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:10:49 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:10:49 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:10:49 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:10:49 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:10:49 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:10:52 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:10:52 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:10:53 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:10:53 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:10:53 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:10:53 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:10:53 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:10:53 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:10:54 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:10:54 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:10:57 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:10:57 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:10:57 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:10:57 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:10:57 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:10:58 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:10:58 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:10:58 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:10:59 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:10:59 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:11:02 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:11:02 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:11:02 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:11:02 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:11:02 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:11:03 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:11:03 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:11:03 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:11:03 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:11:03 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:11:06 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:11:06 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:11:07 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:11:07 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:11:07 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:11:07 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:11:07 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:11:07 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:11:08 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:11:08 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:11:11 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:11:11 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:11:11 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:11:11 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:11:11 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:11:12 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:11:12 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:11:12 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:11:12 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:11:12 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:11:15 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:11:15 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:11:16 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:11:16 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:11:16 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:11:16 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:11:16 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:11:16 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:11:17 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:11:17 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:11:20 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:11:20 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:11:21 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:11:21 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:11:21 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:11:21 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:11:21 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:11:21 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:11:22 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:11:22 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:11:25 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:11:25 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:11:25 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:11:25 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:11:25 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:11:26 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:11:26 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:11:26 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:11:26 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:11:26 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:11:29 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:11:29 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:11:30 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:11:30 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:11:30 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:11:30 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:11:30 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:11:30 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:11:31 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:11:31 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:11:34 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:11:34 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:11:34 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:11:34 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:11:34 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:11:35 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:11:35 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:11:35 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:11:35 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:11:35 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:11:38 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:11:39 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:11:39 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:11:39 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:11:39 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:11:40 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:11:40 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:11:40 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:11:40 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:11:40 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:11:43 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:11:43 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:11:44 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:11:44 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:11:44 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:11:44 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:11:44 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:11:44 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:11:45 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:11:45 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:11:48 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:11:48 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:11:48 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:11:48 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:11:48 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:11:49 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:11:49 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:11:49 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:11:49 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:11:49 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:11:52 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:11:52 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:11:53 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:11:53 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:11:53 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:11:53 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:11:53 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:11:53 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:11:54 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:11:54 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:11:57 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:11:57 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:11:57 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:11:57 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:11:57 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:11:58 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:11:58 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:11:58 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:11:58 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:11:58 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:12:01 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:12:01 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:12:02 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:12:02 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:12:02 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:12:03 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:12:03 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:12:03 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:12:03 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:12:03 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:12:06 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:12:06 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:12:08 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:12:08 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:12:08 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:12:08 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:12:08 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:12:08 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:12:09 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:12:09 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:12:12 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:12:12 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:12:14 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:12:14 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:12:14 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:12:15 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:12:15 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:12:15 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:12:15 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:12:15 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:12:18 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:12:18 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:12:20 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:12:20 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:12:20 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:12:20 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:12:20 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:12:20 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:12:21 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:12:21 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:12:24 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:12:24 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:12:25 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:12:25 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:12:25 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:12:25 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:12:25 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:12:25 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:12:26 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:12:26 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:12:29 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:12:29 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:12:29 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:12:29 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:12:29 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:12:30 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:12:30 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:12:30 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:12:30 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:12:30 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:12:34 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:12:34 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:12:34 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:12:34 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:12:34 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:12:35 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:12:35 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:12:35 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:12:35 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:12:35 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:12:38 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:12:38 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:12:39 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:12:39 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:12:39 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:12:39 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:12:39 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:12:39 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:12:40 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:12:40 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:12:43 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:12:43 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:12:43 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:12:43 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:12:43 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:12:44 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:12:44 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:12:44 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:12:44 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:12:44 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:12:47 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:12:47 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:12:48 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:12:48 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:12:48 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:12:48 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:12:48 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:12:48 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:12:49 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:12:49 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:12:52 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:12:52 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:13:07 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:13:07 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:13:07 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:13:08 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:13:08 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:13:08 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:13:08 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:13:08 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:13:11 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:13:11 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:13:12 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:13:12 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:13:12 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:13:13 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:13:13 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:13:13 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:13:13 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:13:13 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:13:16 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:13:16 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:13:17 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:13:17 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:13:17 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:13:17 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:13:17 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:13:17 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:13:18 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:13:18 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:13:21 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:13:21 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:13:21 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:13:21 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:13:21 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:13:22 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:13:22 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:13:22 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:13:22 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:13:22 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:13:25 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:13:25 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:13:26 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:13:26 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:13:26 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:13:26 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:13:26 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:13:26 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:13:27 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:13:27 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:13:30 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:13:30 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:13:31 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:13:31 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:13:31 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:13:31 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:13:31 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:13:31 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:13:32 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:13:32 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:13:35 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:13:35 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:13:35 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:13:35 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:13:35 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:13:36 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:13:36 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:13:36 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:13:36 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:13:36 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:13:40 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:13:40 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:13:40 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:13:40 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:13:40 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:13:41 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:13:41 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:13:41 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:13:41 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:13:41 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:13:44 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:13:44 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:13:45 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:13:45 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:13:45 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:13:45 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:13:45 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:13:45 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:13:46 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:13:46 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:13:49 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:13:49 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:13:49 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:13:49 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:13:49 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:13:50 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:13:50 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:13:50 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:13:50 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:13:50 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:13:53 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:13:53 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:13:54 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:13:54 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:13:54 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:13:54 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:13:54 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:13:54 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:13:55 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:13:55 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:13:58 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:13:58 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:13:59 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:13:59 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:13:59 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:14:00 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:14:00 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:14:00 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:14:00 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:14:00 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:14:03 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:14:03 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:14:04 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:14:04 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:14:04 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:14:04 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:14:04 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:14:04 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:14:05 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:14:05 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:14:08 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:14:08 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:14:08 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:14:08 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:14:08 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:14:09 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:14:09 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:14:09 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:14:09 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:14:09 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:14:12 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:14:12 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:14:13 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:14:13 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:14:13 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:14:13 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:14:13 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:14:13 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:14:14 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:14:14 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:14:17 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:14:18 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:14:18 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:14:18 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:14:18 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:14:18 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:14:18 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:14:18 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:14:19 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:14:19 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:14:22 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:14:22 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:14:23 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:14:23 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:14:23 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:14:23 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:14:23 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:14:23 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:14:24 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:14:24 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:14:27 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:14:27 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:14:27 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:14:27 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:14:27 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:14:28 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:14:28 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:14:28 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:14:28 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:14:28 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:14:31 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:14:31 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:14:32 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:14:32 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:14:32 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:14:32 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:14:32 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:14:32 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:14:33 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:14:33 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:14:36 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:14:36 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:14:36 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:14:36 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:14:36 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:14:37 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:14:37 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:14:37 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:14:37 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:14:37 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:14:40 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:14:40 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:14:41 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:14:41 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:14:41 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:14:41 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:14:41 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:14:41 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:14:42 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:14:42 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:14:45 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:14:45 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:14:45 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:14:45 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:14:45 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:14:46 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:14:46 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:14:46 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:14:46 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:14:46 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:14:49 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:14:49 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:14:50 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:14:50 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:14:50 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:14:50 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:14:50 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:14:50 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:14:51 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:14:51 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:14:54 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:14:54 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:14:54 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:14:54 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:14:54 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:14:55 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:14:55 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:14:55 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:14:56 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:14:56 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:14:59 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:14:59 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:15:00 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:15:00 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:15:00 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:15:00 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:15:00 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:15:00 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:15:01 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:15:01 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:15:04 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:15:04 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:15:05 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:15:05 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:15:05 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:15:05 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:15:05 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:15:05 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:15:06 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:15:06 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:15:09 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:15:09 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:15:09 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:15:09 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:15:09 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:15:10 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:15:10 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:15:10 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:15:10 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:15:10 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:15:13 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:15:13 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:15:14 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:15:14 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:15:14 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:15:14 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:15:14 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:15:14 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:15:15 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:15:15 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:15:18 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:15:18 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:15:18 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:15:18 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:15:18 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:15:19 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:15:19 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:15:19 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:15:19 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:15:19 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:15:22 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:15:22 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:15:23 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:15:23 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:15:23 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:15:23 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:15:23 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:15:23 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:15:38 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:15:38 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:15:41 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:15:41 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:15:42 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:15:42 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:15:42 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:15:42 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:15:42 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:15:42 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:15:43 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:15:43 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:15:46 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:15:46 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:15:47 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:15:47 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:15:47 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:15:48 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:15:48 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:15:48 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:15:48 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:15:48 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:15:51 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:15:51 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:15:52 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:15:52 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:15:52 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:15:54 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:15:54 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:15:54 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:16:10 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:16:10 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:16:13 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:16:13 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:16:16 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:16:16 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:16:16 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:16:19 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:16:19 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:16:19 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:16:20 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:16:20 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:16:23 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:16:23 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:16:29 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:16:29 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:16:29 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:16:34 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:16:34 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:16:34 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:16:37 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:16:37 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:16:40 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:16:40 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:16:41 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:16:41 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:16:41 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:16:42 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:16:42 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:16:42 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:16:43 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:16:43 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:16:46 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:16:46 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:16:48 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:16:48 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:16:48 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:16:49 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:16:49 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:16:49 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:16:51 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:16:51 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:16:54 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:16:54 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:16:55 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:16:55 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:16:55 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:16:56 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:16:56 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:16:56 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:16:56 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:16:56 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:17:00 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:17:00 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:17:01 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:17:01 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:17:01 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:17:02 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:17:02 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:17:02 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:17:03 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:17:03 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:17:07 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:17:07 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:17:07 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:17:07 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:17:07 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:17:08 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:17:08 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:17:08 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:17:09 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:17:09 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:17:12 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:17:12 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:17:13 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:17:13 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:17:13 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:17:15 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:17:15 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:17:15 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:17:16 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:17:16 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:17:19 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:17:19 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:17:21 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:17:21 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:17:21 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:17:22 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:17:22 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:17:22 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:17:24 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:17:24 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:17:27 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:17:27 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:17:34 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:17:34 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:17:34 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:17:35 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:17:35 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:17:35 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:17:36 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:17:36 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:17:39 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:17:39 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:17:40 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:17:40 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:17:40 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:17:41 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:17:41 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:17:41 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:17:42 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:17:42 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:17:45 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:17:45 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:17:45 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:17:45 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:17:45 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:17:46 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:17:46 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:17:46 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:17:47 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:17:47 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:17:50 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:17:50 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:17:51 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:17:51 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:17:51 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:18:06 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:18:06 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:18:06 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:18:06 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:18:06 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:18:10 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:18:10 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:18:10 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:18:10 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:18:10 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:18:11 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:18:11 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:18:11 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:18:11 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:18:11 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:18:15 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:18:15 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:18:15 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:18:15 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:18:15 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:18:16 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:18:16 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:18:16 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:18:16 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:18:16 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:18:19 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:18:19 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:18:23 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:18:23 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:18:23 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:18:26 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:18:26 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:18:26 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:18:29 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:18:29 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:18:32 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:18:32 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:18:35 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:18:35 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:18:35 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:18:37 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:18:37 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:18:37 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:18:39 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:18:39 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:18:42 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:18:42 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:18:45 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:18:45 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:18:45 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:18:47 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:18:47 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:18:47 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:18:49 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:18:49 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:18:52 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:18:52 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:18:54 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:18:54 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:18:54 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:18:56 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:18:56 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:18:56 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:18:57 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:18:57 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:19:00 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:19:00 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:19:01 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:19:01 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:19:01 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:19:01 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:19:01 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:19:01 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:19:02 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:19:02 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:19:05 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:19:05 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:19:06 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:19:06 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:19:06 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:19:06 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:19:06 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:19:06 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:19:07 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:19:07 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:19:10 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:19:10 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:19:10 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515967 "HTTP/2 200 OK"
+2026-09-18 20:19:10 [INFO] \u2713 Orden ORD-1789772933694 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:19:10 [INFO] >> Procesando orden ORD-1789772909204 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:19:11 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515965 "HTTP/2 200 OK"
+2026-09-18 20:19:11 [INFO] \u2713 Orden ORD-1789772909204 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:19:11 [INFO] >> Procesando orden ORD-1789772892445 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...
+2026-09-18 20:19:11 [INFO] HTTP Request: PATCH https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?id=eq.1515963 "HTTP/2 200 OK"
+2026-09-18 20:19:11 [INFO] \u2713 Orden ORD-1789772892445 grabada en disco exitosamente en PC Scorpion.
+2026-09-18 20:19:14 [INFO] HTTP Request: GET https://onxwyrwmpjxtwlmjrosr.supabase.co/rest/v1/eventos_monitoreo?select=%2A&cuenta=eq.ORDEN_EDITOR_REMOTO&order=id.desc&limit=20 "HTTP/2 200 OK"
+2026-09-18 20:19:14 [INFO] >> Procesando orden ORD-1789772933694 (EDITAR_GENERAL) para cuenta C7CE con 112 campos...

@@ -254,7 +254,7 @@ export default function ReportesModal({
     try {
       const rows = eventosFiltrados.map((ev, idx) => ({
         '#': idx + 1,
-        'Fecha y Hora': ev.fecha_hora || '',
+        'Fecha y Hora': String(ev.fecha_hora || '').replace('T', ' ').substring(0, 19),
         'Cuenta': cuentaActiva,
         'Abonado': clienteSeleccionado?.nombre || cuentaActiva,
         'Evento': ev.evento || 'SEÑAL',
