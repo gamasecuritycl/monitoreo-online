@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { User, FileText, Megaphone, DollarSign, Wrench, BarChart3, Settings, Bot, Layers, X, ShieldCheck } from 'lucide-react'
+import { User, FileText, FileCheck, Megaphone, DollarSign, Receipt, Wrench, BarChart3, Settings, Bot, Layers, X, ShieldCheck } from 'lucide-react'
 
 interface OperacionSidebarProps {
   moduloActivo: string
@@ -34,16 +34,18 @@ export default function OperacionSidebar({
       ]
     },
     {
-      titulo: 'COMERCIAL & MARKETING',
+      titulo: 'COMERCIAL & CONTRATOS',
       items: [
         { id: 'presupuestos', label: 'Presupuestos & DTE', icon: FileText },
+        { id: 'contratos', label: 'Contratos & Firma Digital', icon: FileCheck },
         { id: 'marketing', label: 'Marketing B2B', icon: Megaphone },
       ]
     },
     {
-      titulo: 'FINANZAS & REPORTES',
+      titulo: 'FINANZAS & ERP',
       items: [
         { id: 'facturacion', label: 'Cobranza & Abonos', icon: DollarSign },
+        { id: 'compras', label: 'Compras & Proveedores', icon: Receipt },
         { id: 'kpis', label: 'Reportes & Analytics', icon: BarChart3 },
       ]
     },

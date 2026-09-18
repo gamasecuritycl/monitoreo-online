@@ -15,6 +15,9 @@ import OperacionSidebar from './operacion/OperacionSidebar'
 import CommandPaletteModal from './operacion/CommandPaletteModal'
 import SlideOverDrawer from './operacion/SlideOverDrawer'
 import BentoKpiGrid from './operacion/BentoKpiGrid'
+import ComprasProveedoresModule from './operacion/ComprasProveedoresModule'
+import ContratosModule from './operacion/ContratosModule'
+import ContratoDigitalModal from './operacion/ContratoDigitalModal'
 
 import {
   Shield,
@@ -329,7 +332,7 @@ export function normalizeCuentaCode(cta: any): string {
 }
 
 export default function OperacionCRM() {
-  const [moduloActivo, setModuloActivo] = useState<'ficha360' | 'autonomia' | 'presupuestos' | 'facturacion' | 'serv_tecnico' | 'kpis' | 'config' | 'marketing'>('ficha360')
+  const [moduloActivo, setModuloActivo] = useState<'ficha360' | 'autonomia' | 'presupuestos' | 'facturacion' | 'serv_tecnico' | 'kpis' | 'config' | 'marketing' | 'compras' | 'contratos'>('ficha360')
   const [sidebarAbierto, setSidebarAbierto] = useState<boolean>(true)
 
   // ── ESTADOS APPLE HIG / LINEAR (COMMAND PALETTE & SLIDE-OVER DRAWER) ──
@@ -386,7 +389,8 @@ export default function OperacionCRM() {
   const [cuentaSeleccionada, setCuentaSeleccionada] = useState<string>('')
   const [busquedaClienteInput, setBusquedaClienteInput] = useState<string>('')
   const [buscandoSpinner, setBuscandoSpinner] = useState<boolean>(false)
-  const [tabFicha360, setTabFicha360] = useState<'datos' | 'abonados' | 'facturas' | 'cotizaciones' | 'ots'>('datos')
+  const [tabFicha360, setTabFicha360] = useState<'datos' | 'abonados' | 'facturas' | 'cotizaciones' | 'ots' | 'contrato'>('datos')
+  const [mostrarModalContratoFicha, setMostrarModalContratoFicha] = useState(false)
 
   // UF Global
   const [valorUF, setValorUF] = useState(38500)
@@ -2860,6 +2864,7 @@ export default function OperacionCRM() {
                     {[
                       { id: 'datos', label: 'Datos Comerciales', icon: Building2 },
                       { id: 'abonados', label: `Centros de Costo (${clienteActivo?.cuentas_abonados.length || 1})`, icon: Layers },
+                      { id: 'contrato', label: 'Contrato Digital', icon: FileCheck },
                       { id: 'facturas', label: `Facturas & Abonos`, icon: Receipt },
                       { id: 'cotizaciones', label: `Presupuestos DTE`, icon: FileText },
                       { id: 'ots', label: `Órdenes Técnicas (SLA)`, icon: Wrench },
@@ -2974,6 +2979,74 @@ export default function OperacionCRM() {
                             </div>
                           )
                         })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* SUB-SECCIÓN CONTRATO DIGITAL (BENTO CARD LEGAL) */}
+                  {tabFicha360 === 'contrato' && (
+                    <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 p-6 sm:p-8 rounded-3xl space-y-6 text-xs shadow-xl">
+                      <div className="flex justify-between items-center flex-wrap gap-4 border-b border-white/10 pb-4">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2.5 bg-emerald-500/15 text-emerald-400 rounded-xl border border-emerald-500/20">
+                            <FileCheck className="h-5 w-5" />
+                          </div>
+                          <div>
+                            <span className="font-extrabold text-sm uppercase tracking-wider text-white block">
+                              CONTRATO DE PRESTACIÓN DE SERVICIOS DE MONITOREO 24/7
+                            </span>
+                            <span className="text-[11px] text-slate-400 font-mono">
+                              Contrato N° CTR-2026-{(abonadoActivo?.cuenta || clienteActivo?.cuentas_abonados?.[0] || 'C701').toUpperCase()}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <button
+                            onClick={() => setMostrarModalContratoFicha(true)}
+                            className="btn-apple-primary text-xs py-2.5 px-5 font-bold flex items-center gap-2 shadow-lg shadow-[#0066cc]/30"
+                          >
+                            <FileCheck className="h-4 w-4" />
+                            <span>Abrir Editor & Pad de Firma Digital</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Bento Grid Resumen del Contrato */}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="bg-white/[0.04] border border-white/10 p-4 rounded-2xl space-y-2">
+                          <span className="text-[10px] font-bold text-blue-400 uppercase tracking-widest block">1. EMPRESA EMISORA</span>
+                          <div className="font-extrabold text-white text-sm">INVERSIONES GAMA SpA</div>
+                          <div className="font-mono text-slate-400 text-xs">RUT: 78.297.009-7</div>
+                          <div className="text-slate-400 text-[11px]">Representante: Tomás Toro-Moreno Olavarría</div>
+                        </div>
+
+                        <div className="bg-white/[0.04] border border-white/10 p-4 rounded-2xl space-y-2">
+                          <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest block">2. EL SUSCRIPTOR / CLIENTE</span>
+                          <div className="font-extrabold text-white text-sm truncate">{clienteActivo?.razon_social}</div>
+                          <div className="font-mono text-slate-400 text-xs">RUT: {clienteActivo?.rut}</div>
+                          <div className="text-slate-400 text-[11px] truncate">{clienteActivo?.direccion_comercial}</div>
+                        </div>
+
+                        <div className="bg-white/[0.04] border border-white/10 p-4 rounded-2xl space-y-2">
+                          <span className="text-[10px] font-bold text-amber-400 uppercase tracking-widest block">3. TARIFA PACTADA</span>
+                          <div className="font-mono font-black text-[#2997ff] text-base">
+                            {clienteActivo?.moneda === 'UF' ? `${clienteActivo.tarifa_mensual} UF/mes` : `$${(clienteActivo?.tarifa_mensual || 29900).toLocaleString('es-CL')} CLP/mes`} + IVA
+                          </div>
+                          <div className="text-slate-400 text-[11px]">Plazo: 36 Meses (Sin multas de salida con aviso 30 días)</div>
+                        </div>
+                      </div>
+
+                      {/* Resumen de Cláusulas Principales */}
+                      <div className="bg-black/30 border border-white/10 rounded-2xl p-5 space-y-3 text-slate-300 text-xs leading-relaxed">
+                        <div className="font-bold text-white uppercase text-[11px] flex items-center gap-2">
+                          <Shield className="h-4 w-4 text-[#2997ff]" />
+                          <span>SÍNTESIS DE CLÁUSULAS OFICIALES GAMA:</span>
+                        </div>
+                        <p>• <strong>Propiedad de Equipos:</strong> El Cliente declara ser dueño absoluto del sistema de alarma instalado, habiéndolo adquirido previamente a Gama Seguridad SpA con respaldo tributario. No existe régimen de comodato forzoso ni derechos de retiro físico al término del servicio.</p>
+                        <p>• <strong>Garantía de Instalación:</strong> Garantía de 12 meses sobre la instalación y funcionamiento de equipos.</p>
+                        <p>• <strong>Protocolo de Central:</strong> Obligación de medios para verificación telefónica y sobreaviso a unidades de emergencia (Carabineros / Bomberos / Ambulancia).</p>
+                        <p>• <strong>Término Anticipado:</strong> El Cliente podrá poner término al contrato en cualquier momento, sin multas ni amarres, con aviso previo de 30 días corridos.</p>
                       </div>
                     </div>
                   )}
@@ -5430,6 +5503,23 @@ export default function OperacionCRM() {
             </div>
           )}
 
+          {/* ── MÓDULO ERP: COMPRAS, GASTOS & PROVEEDORES ── */}
+          {moduloActivo === 'compras' && (
+            <ComprasProveedoresModule
+              clientesMaestros={clientesMaestros}
+              abonadosCentrosCosto={abonadosCentrosCosto}
+            />
+          )}
+
+          {/* ── MÓDULO ERP: CONTRATOS & FIRMA DIGITAL ── */}
+          {moduloActivo === 'contratos' && (
+            <ContratosModule
+              clientesMaestros={clientesMaestros}
+              abonadosCentrosCosto={abonadosCentrosCosto}
+              empresasConglomerado={empresasConglomerado}
+            />
+          )}
+
         </main>
       </div>
 
@@ -6842,6 +6932,17 @@ export default function OperacionCRM() {
         tipo={drawerState.tipo}
         datos={drawerState.datos}
       />
+
+      {/* ── MODAL CONTRATO DIGITAL DESDE FICHA 360° ── */}
+      {mostrarModalContratoFicha && (
+        <ContratoDigitalModal
+          isOpen={mostrarModalContratoFicha}
+          onClose={() => setMostrarModalContratoFicha(false)}
+          cliente={clienteActivo}
+          abonado={abonadoActivo}
+          empresaEmisora={empresasConglomerado?.[0]}
+        />
+      )}
 
     </div>
   )
