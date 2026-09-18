@@ -2808,7 +2808,8 @@ export default function OperacionCRM() {
                             const cta = abonadoActivo?.cuenta || clienteActivo?.cuentas_abonados?.[0] || cuentaSeleccionada || ''
                             const tel = (clienteActivo?.telefono || '').replace(/[^0-9]/g, '')
                             const nombre = abonadoActivo?.alias_centro_costo || clienteActivo?.razon_social || 'Cliente'
-                            const link = `https://monitoreo.gamasecurity.cl/actualizar?cuenta=${cta}`
+                            const baseUrl = typeof window !== 'undefined' && window.location.origin ? window.location.origin : 'https://controltestmonitoreo.vercel.app'
+                            const link = `${baseUrl}/actualizar?cuenta=${cta}`
                             const msg = encodeURIComponent(`Hola ${nombre}, para garantizar la correcta respuesta de su sistema de alarma 24/7 y mantener al día sus contactos de emergencia, por favor confirme sus datos en el siguiente enlace oficial: ${link}`)
                             if (tel) {
                               const dest = tel.startsWith('56') ? tel : ('56' + tel)
@@ -2827,7 +2828,8 @@ export default function OperacionCRM() {
                         <button
                           onClick={() => {
                             const cta = abonadoActivo?.cuenta || clienteActivo?.cuentas_abonados?.[0] || cuentaSeleccionada || ''
-                            const link = `https://monitoreo.gamasecurity.cl/actualizar?cuenta=${cta}`
+                            const baseUrl = typeof window !== 'undefined' && window.location.origin ? window.location.origin : 'https://controltestmonitoreo.vercel.app'
+                            const link = `${baseUrl}/actualizar?cuenta=${cta}`
                             navigator.clipboard.writeText(link)
                             alert(`¡Enlace copiado al portapapeles!\n${link}`)
                           }}
@@ -2928,7 +2930,8 @@ export default function OperacionCRM() {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {(clienteActivo?.cuentas_abonados || []).map(cta => {
                           const cc = abonadosCentrosCosto[cta]
-                          const linkAbonado = `https://monitoreo.gamasecurity.cl/actualizar?cuenta=${cta}`
+                          const baseUrl = typeof window !== 'undefined' && window.location.origin ? window.location.origin : 'https://controltestmonitoreo.vercel.app'
+                          const linkAbonado = `${baseUrl}/actualizar?cuenta=${cta}`
                           return (
                             <div key={cta} className="bg-white/[0.04] hover:bg-white/[0.07] border border-white/10 p-5 rounded-2xl space-y-3 transition-all">
                               <div className="flex justify-between items-center flex-wrap gap-2">
