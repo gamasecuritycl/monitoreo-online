@@ -186,13 +186,14 @@ export default function NotificacionesWhatsAppModal({ onClose, clientesMap, cuen
           .from('eventos_monitoreo')
           .select('nombre_abonado')
           .eq('cuenta', 'CONFIG_WHATSAPP_AI_PROMPT')
-          .single()
-        if (data?.nombre_abonado) {
-          const parsed = JSON.parse(data.nombre_abonado)
-          if (parsed.prompt) setMasterPrompt(parsed.prompt)
-          if (parsed.autoResponder !== undefined) {
+          .order('id', { ascending: false })
+          .limit(1)
+        if (data && data.length > 0 && data[0]?.nombre_abonado) {
+          try {
+            const parsed = JSON.parse(data[0].nombre_abonado)
+            if (parsed.prompt) setMasterPrompt(parsed.prompt)
             setBotAutoResponder(Boolean(parsed.autoResponder))
-          } else {
+          } catch {
             setBotAutoResponder(false)
           }
         } else {

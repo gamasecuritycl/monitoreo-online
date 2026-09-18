@@ -600,24 +600,49 @@ async function conectar() {
           log(`Error guardando mensaje: ${err.message}`, 'WARN')
         }
 
-        // BOT AUTO-RESPONDER
+        // Limpiar temporizadores de inactividad si el operador responde
+        if (msg.key.fromMe && numero && inactivityTimers[numero]) {
+          clearTimeout(inactivityTimers[numero])
+          delete inactivityTimers[numero]
+          delete userAuthSessions[numero]
+        }
+
+        // BOT AUTO-RESPONDER (Solo si está explícitamente activado en la configuración)
         if (!msg.key.fromMe && body && !isGroup) {
           try {
-            let autoRespEnabled = true
+            let autoRespEnabled = false
             let promptText = ''
-            const { data: configRow } = await supabase
-              .from('eventos_monitoreo').select('nombre_abonado')
-              .eq('cuenta', 'CONFIG_WHATSAPP_AI_PROMPT').single()
-            if (configRow?.nombre_abonado) {
-              const config = JSON.parse(configRow.nombre_abonado)
-              if (config.autoResponder === false) autoRespEnabled = false
-              if (config.prompt) promptText = config.prompt
+            const { data: configRows } = await supabase
+              .from('eventos_monitoreo')
+              .select('nombre_abonado')
+              .eq('cuenta', 'CONFIG_WHATSAPP_AI_PROMPT')
+              .order('id', { ascending: false })
+              .limit(1)
+
+            if (configRows && configRows.length > 0 && configRows[0].nombre_abonado) {
+              try {
+                const config = JSON.parse(configRows[0].nombre_abonado)
+                if (config.autoResponder === true) {
+                  autoRespEnabled = true
+                }
+                if (config.prompt) promptText = config.prompt
+              } catch (parseErr) {
+                log(`Error parseando config IA: ${parseErr.message}`, 'WARN')
+              }
             }
+
             if (autoRespEnabled) {
               responderConIA(sock, rawJid, numero, body, promptText, nombre)
+            } else {
+              // Si la IA está apagada, limpiar cualquier sesión o timer residual
+              if (inactivityTimers[numero]) {
+                clearTimeout(inactivityTimers[numero])
+                delete inactivityTimers[numero]
+              }
+              delete userAuthSessions[numero]
             }
           } catch (e) {
-            responderConIA(sock, rawJid, numero, body, '', nombre)
+            log(`Error verificando estado de IA WhatsApp: ${e.message}`, 'WARN')
           }
         }
       }
@@ -1024,18 +1049,11 @@ const inactivityTimers = {}
 
 function reiniciarTemporizadorInactividad(sock, jid, numero) {
   if (inactivityTimers[numero]) clearTimeout(inactivityTimers[numero])
-  inactivityTimers[numero] = setTimeout(async () => {
-    try {
-      const msjCierre = `Estimado cliente, por inactividad de 5 minutos daremos por finalizada esta atención.\n\nGama Seguridad 24/7.`
-      await sock.sendMessage(jid, { text: msjCierre })
-      await supabase.from('conversaciones_whatsapp').insert({
-        numero, tipo_evento: 'mensaje_enviado', estado: 'enviado',
-        mensaje_enviado: msjCierre, cuenta: userAuthSessions[numero]?.cuenta || 'BOT_TIMEOUT',
-        created_at: new Date().toISOString()
-      })
-      delete userAuthSessions[numero]; delete inactivityTimers[numero]
-    } catch {}
-  }, 5 * 60 * 1000)
+  // Expiración silenciosa de sesión de bot tras 15 minutos de inactividad (sin enviar mensajes intrusivos al cliente)
+  inactivityTimers[numero] = setTimeout(() => {
+    delete userAuthSessions[numero]
+    delete inactivityTimers[numero]
+  }, 15 * 60 * 1000)
 }
 
 async function responderConIA(sock, jid, numero, bodyCliente, promptMaestro, nombreCliente) {
