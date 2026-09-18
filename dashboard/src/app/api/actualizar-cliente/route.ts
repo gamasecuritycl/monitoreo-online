@@ -330,6 +330,46 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // 6. ENVIAR WHATSAPP DE CONFIRMACIÓN AUTOMÁTICO EXCLUSIVAMENTE AL PRIMER CONTACTO
+    try {
+      const primerContacto = propiedades[0]?.contactos?.[0]
+      const telDestino = primerContacto?.fono || titular.telefono_titular
+      const nombreDestino = primerContacto?.nombre || titular.nombre_razon_social || 'Cliente'
+
+      if (telDestino) {
+        let telLimpio = String(telDestino).replace(/[^0-9]/g, '')
+        if (telLimpio.length === 9 && telLimpio.startsWith('9')) {
+          telLimpio = '56' + telLimpio
+        } else if (telLimpio.length === 8) {
+          telLimpio = '569' + telLimpio
+        }
+
+        if (telLimpio.length >= 8) {
+          const mensajeWa = `🛡️ *GAMA SEGURIDAD · CENTRAL 24/7*\n\nHola *${nombreDestino}*, confirmamos que la actualización de datos y contactos de emergencia para tu cuenta *[${cuentasLista.join(', ')}]* ha sido registrada con éxito en nuestra central.\n\n📍 *Propiedades vinculadas:* ${propiedades.map((p: any) => p.nombre_propiedad || p.cuenta).join(', ')}\n📋 *Contactos registrados:* ${propiedades[0]?.contactos?.length || 1}\n\nAnte cualquier duda o requerimiento técnico, nuestro equipo de guardia 24/7 está a tu entera disposición.`
+
+          const { data: insertWa } = await supabase.from('conversaciones_whatsapp').insert({
+            cuenta: cuentasLista[0] || 'CENTRAL',
+            numero: telLimpio,
+            mensaje_enviado: mensajeWa,
+            tipo_evento: 'confirmacion_actualizacion_contacto1',
+            estado: 'pendiente',
+            created_at: nowIso
+          }).select()
+
+          try {
+            const channel = supabase.channel('whatsapp_outbound')
+            await channel.send({
+              type: 'broadcast',
+              event: 'send_whatsapp',
+              payload: { phone: telLimpio, text: mensajeWa, id: insertWa?.[0]?.id }
+            })
+          } catch {}
+        }
+      }
+    } catch (errWaConfirm) {
+      console.warn('Advertencia enviando confirmacion WhatsApp al contacto 1:', errWaConfirm)
+    }
+
     return NextResponse.json({
       success: true,
       mensaje: '¡Información guardada y sincronizada exitosamente con la Central de Monitoreo Gama!',

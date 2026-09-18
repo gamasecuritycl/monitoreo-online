@@ -2790,13 +2790,65 @@ export default function OperacionCRM() {
                       </p>
                     </div>
 
-                    <div className="flex items-center gap-4 bg-white/[0.04] border border-white/10 p-5 rounded-2xl shadow-lg">
-                      <div>
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">TARIFA MONITOREO</span>
-                        <div className="text-xl font-black font-mono text-[#2997ff]">
-                          {clienteActivo?.moneda === 'UF' ? `${clienteActivo.tarifa_mensual} UF` : `$${(clienteActivo?.tarifa_mensual || 29900).toLocaleString('es-CL')} CLP`}
+                    <div className="flex flex-col sm:flex-row lg:flex-col gap-3 shrink-0">
+                      <div className="flex items-center gap-4 bg-white/[0.04] border border-white/10 p-5 rounded-2xl shadow-lg">
+                        <div>
+                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">TARIFA MONITOREO</span>
+                          <div className="text-xl font-black font-mono text-[#2997ff]">
+                            {clienteActivo?.moneda === 'UF' ? `${clienteActivo.tarifa_mensual} UF` : `$${(clienteActivo?.tarifa_mensual || 29900).toLocaleString('es-CL')} CLP`}
+                          </div>
+                          <span className="text-[10px] text-slate-400 font-bold block mt-0.5">Plan: {clienteActivo?.plan_monitoreo || 'Estándar 24/7'}</span>
                         </div>
-                        <span className="text-[10px] text-slate-400 font-bold block mt-0.5">Plan: {clienteActivo?.plan_monitoreo || 'Estándar 24/7'}</span>
+                      </div>
+
+                      {/* ACCIONES RÁPIDAS DE ACTUALIZACIÓN DE FICHA */}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <button
+                          onClick={() => {
+                            const cta = abonadoActivo?.cuenta || clienteActivo?.cuentas_abonados?.[0] || cuentaSeleccionada || ''
+                            const tel = (clienteActivo?.telefono || '').replace(/[^0-9]/g, '')
+                            const nombre = abonadoActivo?.alias_centro_costo || clienteActivo?.razon_social || 'Cliente'
+                            const link = `https://monitoreo.gamasecurity.cl/actualizar?cuenta=${cta}`
+                            const msg = encodeURIComponent(`Hola ${nombre}, para garantizar la correcta respuesta de su sistema de alarma 24/7 y mantener al día sus contactos de emergencia, por favor confirme sus datos en el siguiente enlace oficial: ${link}`)
+                            if (tel) {
+                              const dest = tel.startsWith('56') ? tel : ('56' + tel)
+                              window.open(`https://wa.me/${dest}?text=${msg}`, '_blank')
+                            } else {
+                              window.open(`https://wa.me/?text=${msg}`, '_blank')
+                            }
+                          }}
+                          className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-green-500 hover:brightness-110 text-white font-bold text-xs flex items-center gap-1.5 shadow-md cursor-pointer transition-all active:scale-95"
+                          title="Enviar link de actualización por WhatsApp"
+                        >
+                          <Smartphone className="h-3.5 w-3.5" />
+                          <span>Enviar WhatsApp Ficha</span>
+                        </button>
+
+                        <button
+                          onClick={() => {
+                            const cta = abonadoActivo?.cuenta || clienteActivo?.cuentas_abonados?.[0] || cuentaSeleccionada || ''
+                            const link = `https://monitoreo.gamasecurity.cl/actualizar?cuenta=${cta}`
+                            navigator.clipboard.writeText(link)
+                            alert(`¡Enlace copiado al portapapeles!\n${link}`)
+                          }}
+                          className="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 text-white font-semibold text-xs flex items-center gap-1.5 cursor-pointer transition-all"
+                          title="Copiar enlace de actualización"
+                        >
+                          <Copy className="h-3.5 w-3.5" />
+                          <span>Copiar Link</span>
+                        </button>
+
+                        <button
+                          onClick={() => {
+                            const cta = abonadoActivo?.cuenta || clienteActivo?.cuentas_abonados?.[0] || cuentaSeleccionada || ''
+                            window.open(`/actualizar?cuenta=${cta}`, '_blank')
+                          }}
+                          className="px-3 py-2 rounded-xl bg-[#0066cc]/30 hover:bg-[#0066cc]/50 border border-[#0066cc]/40 text-[#2997ff] font-semibold text-xs flex items-center gap-1.5 cursor-pointer transition-all"
+                          title="Abrir formulario de actualización en nueva pestaña"
+                        >
+                          <ExternalLink className="h-3.5 w-3.5" />
+                          <span>Abrir Portal</span>
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -2876,9 +2928,10 @@ export default function OperacionCRM() {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {(clienteActivo?.cuentas_abonados || []).map(cta => {
                           const cc = abonadosCentrosCosto[cta]
+                          const linkAbonado = `https://monitoreo.gamasecurity.cl/actualizar?cuenta=${cta}`
                           return (
                             <div key={cta} className="bg-white/[0.04] hover:bg-white/[0.07] border border-white/10 p-5 rounded-2xl space-y-3 transition-all">
-                              <div className="flex justify-between items-center">
+                              <div className="flex justify-between items-center flex-wrap gap-2">
                                 <span className="bg-gradient-to-r from-[#0066cc] to-[#2997ff] text-white font-mono font-black text-xs px-3 py-1 rounded-xl shadow-xs">
                                   Abonado #{cta}
                                 </span>
@@ -2886,6 +2939,35 @@ export default function OperacionCRM() {
                               </div>
                               <h4 className="font-extrabold text-white text-sm">{cc?.alias_centro_costo || `Abonado ${cta}`}</h4>
                               <p className="text-slate-400 text-xs flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5 text-[#2997ff]" /> {cc?.direccion || 'Dirección Instalación'} ({cc?.ciudad || 'Santiago'})</p>
+                              
+                              <div className="pt-2 border-t border-white/10 flex items-center gap-2">
+                                <button
+                                  onClick={() => {
+                                    const tel = (clienteActivo?.telefono || '').replace(/[^0-9]/g, '')
+                                    const msg = encodeURIComponent(`Hola ${cc?.alias_centro_costo || 'Cliente'}, por favor actualice los contactos de emergencia para la cuenta ${cta} aquí: ${linkAbonado}`)
+                                    if (tel) {
+                                      const dest = tel.startsWith('56') ? tel : ('56' + tel)
+                                      window.open(`https://wa.me/${dest}?text=${msg}`, '_blank')
+                                    } else {
+                                      window.open(`https://wa.me/?text=${msg}`, '_blank')
+                                    }
+                                  }}
+                                  className="px-2.5 py-1.5 rounded-lg bg-emerald-600/30 hover:bg-emerald-600/50 border border-emerald-500/40 text-emerald-300 text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-all"
+                                >
+                                  <Smartphone className="h-3 w-3" />
+                                  <span>WhatsApp Ficha #{cta}</span>
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(linkAbonado)
+                                    alert(`Link copiado: ${linkAbonado}`)
+                                  }}
+                                  className="px-2.5 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 border border-white/15 text-slate-200 text-[11px] font-medium flex items-center gap-1 cursor-pointer transition-all"
+                                >
+                                  <Copy className="h-3 w-3" />
+                                  <span>Copiar</span>
+                                </button>
+                              </div>
                             </div>
                           )
                         })}
