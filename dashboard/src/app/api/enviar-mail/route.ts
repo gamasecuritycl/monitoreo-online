@@ -133,7 +133,102 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: !response.error, data: response.data, error: response.error?.message })
     }
 
-    // FALLBACK: GENERAL NOTIFICATION EMAIL
+    // IF THIS IS A REPORTE HISTORICO EMAIL (MANUAL O AUTOMATICO PROGRAMADO)
+    if (tipo_evento === 'REPORTE_HISTORICO' || body.reporte_data) {
+      const rep = body.reporte_data || {}
+      const eventosList = rep.eventos || []
+      const totalEvt = rep.totalEventos ?? eventosList.length
+      const periodoTexto = `${rep.fechaDesde || 'Inicio'} al ${rep.fechaHasta || 'Fin'}`
+
+      const eventosRowsHtml = eventosList.slice(0, 40).map((ev: any, idx: number) => {
+        const fechaHora = ev.fecha_hora || ev.fecha || ''
+        const evNombre = (ev.evento || 'SEÑAL').toUpperCase()
+        const esAlarma = evNombre.includes('ALARMA') || evNombre.includes('ROBO') || evNombre.includes('PANICO') || evNombre.includes('INCENDIO')
+        const bgRow = idx % 2 === 0 ? '#f8fafc' : '#ffffff'
+        const colorTexto = esAlarma ? '#b91c1c' : '#1e293b'
+        const badgeAlarma = esAlarma ? ' <span style="background-color: #fee2e2; color: #dc2626; padding: 1px 5px; border-radius: 4px; font-weight: 800; font-size: 10px;">CRÍTICO</span>' : ''
+
+        return `
+          <tr style="background-color: ${bgRow};">
+            <td style="padding: 7px 10px; border-bottom: 1px solid #e2e8f0; font-family: monospace; font-size: 11px; color: #64748b; white-space: nowrap;">${fechaHora}</td>
+            <td style="padding: 7px 10px; border-bottom: 1px solid #e2e8f0; font-weight: bold; font-size: 12px; color: ${colorTexto};">
+              ${ev.evento || 'SEÑAL'}${badgeAlarma}
+            </td>
+            <td style="padding: 7px 10px; border-bottom: 1px solid #e2e8f0; font-size: 11px; color: #475569;">${ev.zona || ev.usuario || '-'}</td>
+          </tr>
+        `
+      }).join('')
+
+      const htmlContent = `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #1e293b; max-width: 700px; margin: 0 auto; border: 1px solid #cbd5e1; border-radius: 12px; overflow: hidden; background-color: #ffffff;">
+          <div style="background: linear-gradient(135deg, #001f3f 0%, #003366 50%, #005bea 100%); padding: 24px; text-align: center; color: #ffffff;">
+            <h1 style="margin: 0; font-size: 20px; font-weight: 900; letter-spacing: 0.5px; text-transform: uppercase;">GAMA SECURITY — CENTRAL 24/7</h1>
+            <p style="margin: 4px 0 0 0; font-size: 12px; opacity: 0.9; font-weight: 600;">Informe de Auditoría y Reporte Histórico de Monitoreo</p>
+          </div>
+
+          <div style="padding: 24px;">
+            <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px; margin-bottom: 20px;">
+              <table style="width: 100%; border-collapse: collapse; margin-bottom: 6px;">
+                <tr>
+                  <td><span style="font-size: 11px; font-weight: 800; color: #005bea; text-transform: uppercase;">ABONADO N° ${cuenta}</span></td>
+                  <td style="text-align: right;"><span style="font-size: 10px; font-weight: bold; color: #475569; background: #e2e8f0; padding: 2px 8px; border-radius: 6px;">${rep.frecuencia ? String(rep.frecuencia).toUpperCase() : 'CONSOLIDADO'}</span></td>
+                </tr>
+              </table>
+              <h2 style="margin: 4px 0; font-size: 16px; color: #0f172a; font-weight: 800;">${nombre_cliente || cuenta}</h2>
+              <p style="margin: 2px 0; font-size: 12px; color: #64748b;">Periodo Consultado: <strong>${periodoTexto}</strong></p>
+              <p style="margin: 2px 0; font-size: 12px; color: #64748b;">Total Eventos en Rango: <strong style="color: #005bea; font-size: 13px;">${totalEvt}</strong></p>
+            </div>
+
+            <p style="font-size: 12.5px; color: #334155; line-height: 1.5; margin-bottom: 14px;">
+              Estimado cliente, a continuación se detalla la bitácora de eventos procesados para su instalación:
+            </p>
+
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 16px;">
+              <thead>
+                <tr style="background-color: #0f172a; color: #ffffff; font-size: 11px; text-transform: uppercase;">
+                  <th style="padding: 8px 10px; text-align: left; border-radius: 6px 0 0 0;">Fecha / Hora</th>
+                  <th style="padding: 8px 10px; text-align: left;">Evento</th>
+                  <th style="padding: 8px 10px; text-align: left; border-radius: 0 6px 0 0;">Zona / Usuario</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${eventosRowsHtml || '<tr><td colspan="3" style="padding: 16px; text-align: center; color: #94a3b8; font-style: italic;">Sin eventos registrados en el rango seleccionado</td></tr>'}
+              </tbody>
+            </table>
+
+            ${totalEvt > 40 ? `<p style="font-size: 11px; color: #64748b; font-style: italic; text-align: center; margin-top: 6px;">Mostrando los últimos 40 eventos de un total de ${totalEvt}.</p>` : ''}
+
+            <div style="margin-top: 20px; padding: 14px; background-color: #f0fdf4; border-left: 4px solid #22c55e; border-radius: 6px; font-size: 11.5px; color: #15803d;">
+              <p style="margin: 0; font-weight: bold;">🛡️ Central de Monitoreo Gama Security 24/7</p>
+              <p style="margin: 3px 0 0 0;">Para consultas operativas o requerimientos técnicos, comuníquese con nuestra central al <strong>+56 9 4885 5190</strong> o al correo <strong>contacto@gamasecurity.cl</strong>.</p>
+            </div>
+          </div>
+
+          <div style="background-color: #f1f5f9; padding: 14px; text-align: center; font-size: 11px; color: #64748b; border-top: 1px solid #e2e8f0;">
+            <p style="margin: 0; font-weight: bold; color: #0f172a;">GAMA SECURITY SpA — Central 24/7</p>
+            <p style="margin: 2px 0;"><a href="https://www.gamasecurity.cl" style="color: #005bea; text-decoration: none; font-weight: bold;">www.gamasecurity.cl</a></p>
+          </div>
+        </div>
+      `
+
+      let response = await getResend().emails.send({
+        from: 'Central Gama Seguridad <contacto@gamasecurity.cl>',
+        to: toList,
+        subject: `Reporte Histórico de Monitoreo [Cuenta #${cuenta}] — ${nombre_cliente || 'Gama Security'}`,
+        html: htmlContent
+      })
+
+      if (response.error) {
+        response = await getResend().emails.send({
+          from: 'Central Gama Seguridad <onboarding@resend.dev>',
+          to: toList,
+          subject: `Reporte Histórico de Monitoreo [Cuenta #${cuenta}] — ${nombre_cliente || 'Gama Security'}`,
+          html: htmlContent
+        })
+      }
+
+      return NextResponse.json({ success: !response.error, data: response.data, error: response.error?.message })
+    }
     let fechaFormat = fecha_hora
     let horaFormat = ''
     try {

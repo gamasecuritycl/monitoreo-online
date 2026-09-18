@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import clientesDataRaw from '@/lib/clientes_general.json'
 import personasAutorizadasRaw from '@/lib/personas_autorizadas.json'
+import { guardarConfigMail } from '@/lib/notificacionesMail'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://onxwyrwmpjxtwlmjrosr.supabase.co'
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9ueHd5cndtcGp4dHdsbWpyb3NyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI4NTUxNDQsImV4cCI6MjA5ODQzMTE0NH0.8kJRf8hm3rHK8sygMcyBT0R83tyK8hIQCmnAQxannJs'
@@ -279,15 +280,14 @@ export async function POST(req: NextRequest) {
         console.warn(`Advertencia guardando ficha para cuenta ${cClean}:`, errFicha)
       }
 
-      // 3. Sincronizar correos si se proporcionaron
+      // 3. Sincronizar correos si se proporcionaron (preservando configuraciones de reportes)
       if (titular.email_contacto || titular.email_cobranza) {
         try {
           const emailsArr = [titular.email_contacto, titular.email_cobranza].filter(Boolean)
-          await supabase.from('notificaciones_mail').upsert({
-            cuenta: cClean,
-            emails: emailsArr
-          }, { onConflict: 'cuenta' })
-        } catch {}
+          await guardarConfigMail(cClean, emailsArr)
+        } catch (errMail) {
+          console.warn(`Advertencia sincronizando correos para cuenta ${cClean}:`, errMail)
+        }
       }
 
       // 4. Sincronizar contactos en `notificaciones_whatsapp`

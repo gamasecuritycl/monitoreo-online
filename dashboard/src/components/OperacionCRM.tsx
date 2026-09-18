@@ -9,6 +9,7 @@ import clientesMaestrosPreasociados from '@/lib/clientes_maestros_preasociados.j
 import centrosCostoPreasociados from '@/lib/centros_costo_preasociados.json'
 import facturasJulioReal from '@/lib/facturas_julio_real.json'
 import { esAbonadoInactivo } from '@/lib/inactivos_filter'
+import { guardarConfigMail } from '@/lib/notificacionesMail'
 
 import OperacionHeader from './operacion/OperacionHeader'
 import OperacionSidebar from './operacion/OperacionSidebar'
@@ -544,7 +545,20 @@ export default function OperacionCRM() {
         evento: 'ACTUALIZACION_CORREO_CLIENTE',
         fecha_hora: new Date().toISOString()
       })
-      alert(`✅ Correos de cobranza guardados permanentemente para ${clienteEditingEmail.razon_social}.`)
+
+      // Sincronizar centralmente con notificaciones_mail para que esté disponible en todos los modales
+      const cli = clientesMaestros[rut]
+      const cuentas = cli?.cuentas_abonados || []
+      const emailsList = [email_contacto, email_cobranza].filter(Boolean)
+      if (emailsList.length > 0) {
+        for (const cta of cuentas) {
+          try {
+            await guardarConfigMail(cta, emailsList)
+          } catch {}
+        }
+      }
+
+      alert(`✅ Correos de cobranza y contacto guardados y sincronizados centralmente para ${clienteEditingEmail.razon_social}.`)
     } catch (e) {
       alert(`⚠️ Guardado en memoria local`)
     }

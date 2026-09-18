@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react'
 import * as XLSX from 'xlsx'
 import { supabase, type EventoMonitoreo } from '@/lib/supabase'
 import clientesDataRaw from '@/lib/clientes_general.json'
+import { obtenerConfigMail, guardarConfigMail, enviarReporteHistoricoMail, CORREOS_GAMA_PREDEFINIDOS } from '@/lib/notificacionesMail'
 
 const clientesFallback = clientesDataRaw as Record<string, Record<string, string>>
 
@@ -99,8 +100,177 @@ export default function ReportesModal({
   const [reporteGenerado, setReporteGenerado] = useState(false)
   const [fechaEmision, setFechaEmision] = useState<string>('')
 
+  // Estados para Notificaciones y Envío por Correo (Única Fuente de Verdad: notificaciones_mail)
+  const [emailsAbonado, setEmailsAbonado] = useState<string[]>([])
+  const [nuevoEmailInput, setNuevoEmailInput] = useState('')
+  const [reporteAutoActivo, setReporteAutoActivo] = useState(false)
+  const [frecuenciaAuto, setFrecuenciaAuto] = useState<'diario' | 'semanal' | 'mensual'>('mensual')
+  const [enviarCopiaGama, setEnviarCopiaGama] = useState(true)
+  const [correoGamaSeleccionado, setCorreoGamaSeleccionado] = useState('contacto@gamasecurity.cl')
+  const [guardandoMail, setGuardandoMail] = useState(false)
+  const [enviandoMail, setEnviandoMail] = useState(false)
+  const [mailStatusMsg, setMailStatusMsg] = useState<{ tipo: 'ok' | 'err'; texto: string } | null>(null)
+
   // Referencia para impresión directa
   const printableAreaRef = useRef<HTMLDivElement>(null)
+
+  // Cargar configuración de correos al cambiar cuentaActiva
+  useEffect(() => {
+    if (!cuentaActiva) {
+      setEmailsAbonado([])
+      setReporteAutoActivo(false)
+      return
+    }
+    let isMounted = true
+    obtenerConfigMail(cuentaActiva).then(cfg => {
+      if (isMounted) {
+        setEmailsAbonado(cfg.emails)
+        setReporteAutoActivo(cfg.reporteAutomatico)
+        setFrecuenciaAuto(cfg.frecuencia)
+        setEnviarCopiaGama(cfg.copiaGama ?? false)
+        if (cfg.emailGama) setCorreoGamaSeleccionado(cfg.emailGama)
+      }
+    })
+    return () => { isMounted = false }
+  }, [cuentaActiva])
+
+  const handleAgregarEmail = async () => {
+    if (!nuevoEmailInput || !nuevoEmailInput.includes('@') || !cuentaActiva) return
+    const clean = nuevoEmailInput.trim().toLowerCase()
+    if (emailsAbonado.includes(clean)) {
+      setNuevoEmailInput('')
+      return
+    }
+    const nuevaLista = [...emailsAbonado, clean]
+    setEmailsAbonado(nuevaLista)
+    setNuevoEmailInput('')
+    setGuardandoMail(true)
+    await guardarConfigMail(cuentaActiva, nuevaLista, {
+      reporteAutomatico: reporteAutoActivo,
+      frecuencia: frecuenciaAuto,
+      copiaGama: enviarCopiaGama,
+      emailGama: correoGamaSeleccionado
+    })
+    setGuardandoMail(false)
+    setMailStatusMsg({ tipo: 'ok', texto: `Correo ${clean} guardado en la base de datos central.` })
+    setTimeout(() => setMailStatusMsg(null), 4000)
+  }
+
+  const handleEliminarEmail = async (emailEliminar: string) => {
+    if (!cuentaActiva) return
+    const nuevaLista = emailsAbonado.filter(e => e !== emailEliminar)
+    setEmailsAbonado(nuevaLista)
+    setGuardandoMail(true)
+    await guardarConfigMail(cuentaActiva, nuevaLista, {
+      reporteAutomatico: reporteAutoActivo,
+      frecuencia: frecuenciaAuto,
+      copiaGama: enviarCopiaGama,
+      emailGama: correoGamaSeleccionado
+    })
+    setGuardandoMail(false)
+  }
+
+  const handleToggleReporteAuto = async (checked: boolean) => {
+    setReporteAutoActivo(checked)
+    if (!cuentaActiva) return
+    setGuardandoMail(true)
+    await guardarConfigMail(cuentaActiva, emailsAbonado, {
+      reporteAutomatico: checked,
+      frecuencia: frecuenciaAuto,
+      copiaGama: enviarCopiaGama,
+      emailGama: correoGamaSeleccionado
+    })
+    setGuardandoMail(false)
+    setMailStatusMsg({
+      tipo: 'ok',
+      texto: checked ? `Envío automático programado (${frecuenciaAuto}) activado para #${cuentaActiva}.` : 'Envío automático desactivado.'
+    })
+    setTimeout(() => setMailStatusMsg(null), 4000)
+  }
+
+  const handleChangeFrecuencia = async (frec: 'diario' | 'semanal' | 'mensual') => {
+    setFrecuenciaAuto(frec)
+    if (!cuentaActiva) return
+    setGuardandoMail(true)
+    await guardarConfigMail(cuentaActiva, emailsAbonado, {
+      reporteAutomatico: reporteAutoActivo,
+      frecuencia: frec,
+      copiaGama: enviarCopiaGama,
+      emailGama: correoGamaSeleccionado
+    })
+    setGuardandoMail(false)
+  }
+
+  const handleToggleCopiaGama = async (checked: boolean) => {
+    setEnviarCopiaGama(checked)
+    if (!cuentaActiva) return
+    setGuardandoMail(true)
+    await guardarConfigMail(cuentaActiva, emailsAbonado, {
+      reporteAutomatico: reporteAutoActivo,
+      frecuencia: frecuenciaAuto,
+      copiaGama: checked,
+      emailGama: correoGamaSeleccionado
+    })
+    setGuardandoMail(false)
+  }
+
+  const handleChangeEmailGama = async (correo: string) => {
+    setCorreoGamaSeleccionado(correo)
+    if (!cuentaActiva) return
+    setGuardandoMail(true)
+    await guardarConfigMail(cuentaActiva, emailsAbonado, {
+      reporteAutomatico: reporteAutoActivo,
+      frecuencia: frecuenciaAuto,
+      copiaGama: enviarCopiaGama,
+      emailGama: correo
+    })
+    setGuardandoMail(false)
+  }
+
+  const handleEnviarReporteEmail = async () => {
+    if (!cuentaActiva) {
+      alert('Seleccione un abonado primero.')
+      return
+    }
+
+    const destinatarios = [...emailsAbonado]
+    if (enviarCopiaGama && correoGamaSeleccionado && !destinatarios.includes(correoGamaSeleccionado)) {
+      destinatarios.push(correoGamaSeleccionado)
+    }
+
+    if (destinatarios.length === 0) {
+      alert('Debe especificar al menos un destinatario (correo del abonado o marcar Usuario Gama).')
+      return
+    }
+    if (!reporteGenerado || eventosFiltrados.length === 0) {
+      alert('Genere el reporte primero para compilar los eventos a enviar.')
+      return
+    }
+
+    setEnviandoMail(true)
+    setMailStatusMsg({ tipo: 'ok', texto: 'Despachando reporte oficial por correo...' })
+
+    const res = await enviarReporteHistoricoMail({
+      cuenta: cuentaActiva,
+      nombreCliente: clienteSeleccionado?.nombre || cuentaActiva,
+      fechaDesde,
+      horaDesde,
+      fechaHasta,
+      horaHasta,
+      destinatarios,
+      totalEventos: eventosFiltrados.length,
+      eventos: eventosFiltrados,
+      frecuencia: 'manual'
+    })
+
+    setEnviandoMail(false)
+    if (res.success) {
+      setMailStatusMsg({ tipo: 'ok', texto: `✅ Reporte enviado exitosamente a: ${destinatarios.join(', ')}` })
+    } else {
+      setMailStatusMsg({ tipo: 'err', texto: `❌ Error al enviar reporte: ${res.error}` })
+    }
+    setTimeout(() => setMailStatusMsg(null), 6000)
+  }
 
   // 1. Cargar base de datos maestra de clientes si no venía en props
   useEffect(() => {
@@ -1039,8 +1209,148 @@ export default function ReportesModal({
                   <span>🖨️</span>
                   <span>Imprimir / PDF Carta</span>
                 </button>
+
+                {/* Enviar Reporte por Correo Oficial */}
+                <button
+                  onClick={handleEnviarReporteEmail}
+                  disabled={enviandoMail}
+                  className="bg-indigo-900 text-white border border-t-indigo-400 border-l-indigo-400 border-b-black border-r-black font-bold text-xs px-3 py-1 hover:bg-indigo-800 active:translate-y-0.5 flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                  title="Despachar este reporte oficial al correo del cliente"
+                >
+                  <span>{enviandoMail ? '⏳' : '📧'}</span>
+                  <span>{enviandoMail ? 'Enviando Correo...' : 'Enviar por Correo'}</span>
+                </button>
               </div>
 
+            </div>
+          )}
+
+          {/* ── NOTIFICACIONES POR CORREO & REPORTES PROGRAMADOS (ÚNICA FUENTE DE VERDAD) ── */}
+          {cuentaActiva && (
+            <div className="bg-[#f0f4f8] border border-blue-300 p-2.5 space-y-2 text-xs">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="font-bold text-blue-900 text-[11px] flex items-center gap-1.5">
+                  <span>📧</span>
+                  <span>DESTINATARIOS DE REPORTES POR CORREO (CUENTA #{cuentaActiva} — {clienteSeleccionado?.nombre || 'ABONADO'}):</span>
+                </span>
+                {guardandoMail && <span className="text-[10px] text-blue-600 font-bold animate-pulse">Sincronizando con base de datos...</span>}
+              </div>
+
+              {/* Lista de Correos Registrados */}
+              <div className="flex flex-wrap items-center gap-1.5 min-h-[26px]">
+                {emailsAbonado.length === 0 ? (
+                  <span className="text-gray-500 italic text-[11px]">
+                    No hay correos registrados para este abonado. Ingrese uno abajo para despachar reportes.
+                  </span>
+                ) : (
+                  emailsAbonado.map((em, idx) => (
+                    <span key={idx} className="bg-white border border-blue-400 text-blue-950 font-mono font-bold text-[11px] px-2 py-0.5 rounded flex items-center gap-1.5 shadow-xs">
+                      <span>{em}</span>
+                      <button
+                        onClick={() => handleEliminarEmail(em)}
+                        className="text-red-500 hover:text-red-700 font-black ml-0.5 cursor-pointer leading-none"
+                        title="Eliminar correo de este abonado"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))
+                )}
+              </div>
+
+              {/* Input para Agregar Nuevo Correo */}
+              <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-blue-200">
+                <div className="flex items-center gap-1.5 flex-1 max-w-md">
+                  <input
+                    type="email"
+                    value={nuevoEmailInput}
+                    onChange={(e) => setNuevoEmailInput(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') handleAgregarEmail() }}
+                    placeholder="Nuevo correo: ejemplo@empresa.cl"
+                    className="bg-white border border-gray-400 px-2 py-1 text-xs text-black font-semibold flex-1 focus:outline-none focus:border-blue-600"
+                  />
+                  <button
+                    onClick={handleAgregarEmail}
+                    className="bg-blue-800 text-white font-bold text-xs px-3 py-1 border border-t-blue-400 border-l-blue-400 border-b-black border-r-black hover:bg-blue-700 cursor-pointer shrink-0"
+                  >
+                    + Agregar Correo
+                  </button>
+                </div>
+
+                {/* Casilla de Programación Automática (DESMARCADA POR DEFECTO) */}
+                <div className="flex items-center gap-3 ml-auto">
+                  <label className="flex items-center gap-1.5 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={reporteAutoActivo}
+                      onChange={(e) => handleToggleReporteAuto(e.target.checked)}
+                      className="w-4 h-4 text-blue-600 rounded border-gray-400 focus:ring-blue-500 cursor-pointer"
+                    />
+                    <span className="text-[11px] font-bold text-gray-800">
+                      Habilitar Envío Automático
+                    </span>
+                  </label>
+
+                  {reporteAutoActivo && (
+                    <div className="flex items-center gap-1.5 bg-blue-100 border border-blue-300 px-2 py-0.5 rounded">
+                      <span className="text-[10px] font-bold text-blue-900">Frecuencia:</span>
+                      <select
+                        value={frecuenciaAuto}
+                        onChange={(e) => handleChangeFrecuencia(e.target.value as any)}
+                        className="bg-white border border-gray-400 text-xs font-bold text-blue-900 px-1.5 py-0.5 focus:outline-none"
+                      >
+                        <option value="diario">Diario (24h)</option>
+                        <option value="semanal">Semanal (7 días)</option>
+                        <option value="mensual">Mensual</option>
+                      </select>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Opción para enviar copia a Usuario Gama */}
+              <div className="pt-1.5 border-t border-blue-200 flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <label className="flex items-center gap-1.5 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={enviarCopiaGama}
+                      onChange={(e) => handleToggleCopiaGama(e.target.checked)}
+                      className="w-4 h-4 text-blue-600 rounded border-gray-400 focus:ring-blue-500 cursor-pointer"
+                    />
+                    <span className="text-[11px] font-bold text-blue-950">
+                      🛡️ Enviar copia a Usuario Gama:
+                    </span>
+                  </label>
+
+                  {enviarCopiaGama && (
+                    <select
+                      value={correoGamaSeleccionado}
+                      onChange={(e) => handleChangeEmailGama(e.target.value)}
+                      className="bg-white border border-gray-400 text-xs font-bold text-blue-900 px-2 py-0.5 rounded focus:outline-none"
+                    >
+                      {CORREOS_GAMA_PREDEFINIDOS.map(cg => (
+                        <option key={cg.email} value={cg.email}>
+                          {cg.etiqueta}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+
+                <span className="text-[10px] text-gray-500 font-medium italic">
+                  Al despachar el reporte, se incluirá copia oficial para el usuario Gama seleccionado.
+                </span>
+              </div>
+
+              {/* Feedback de estado */}
+              {mailStatusMsg && (
+                <div className={`text-[11px] font-bold px-2 py-1 rounded border ${
+                  mailStatusMsg.tipo === 'ok' ? 'bg-emerald-50 text-emerald-800 border-emerald-300' : 'bg-red-50 text-red-800 border-red-300'
+                }`}>
+                  {mailStatusMsg.texto}
+                </div>
+              )}
             </div>
           )}
 
