@@ -210,10 +210,10 @@ export interface OrdenDeTrabajo {
 const EMPRESAS_INICIALES: EmpresaConglomerado[] = [
   {
     id: 'EMP-1',
-    razon_social: 'Inversiones Gama SpA',
-    rut: '76.319.399-3',
-    giro: 'Servicios de Inversiones, Seguridad Electrónica & Alarmas',
-    direccion: 'Av. Valparaíso 1183 Of. 03, Viña del Mar, Chile',
+    razon_social: 'INVERSIONES GAMA SpA',
+    rut: '78.297.009-7',
+    giro: 'Servicios de Inversiones, Seguridad Electrónica & Monitoreo 24/7',
+    direccion: 'Av. Valparaíso 351, Villa Alemana',
     telefono: '+56 32 3276011',
     email_cobranza: 'cobranza@gamasecurity.cl',
     email_contacto: 'contacto@gamasecurity.cl',

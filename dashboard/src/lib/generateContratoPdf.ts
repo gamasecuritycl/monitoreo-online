@@ -49,18 +49,42 @@ export function generarContratoPdfBase64(contrato: ContratoData): string {
     format: 'a4'
   })
 
-  const emp = contrato.empresa_emisora || {
-    razon_social: 'INVERSIONES GAMA SpA',
-    rut: '78.297.009-7',
-    representante: 'TOMÁS TORO-MORENO OLAVARRÍA',
-    rut_representante: '16.182.547-6',
-    direccion: 'Av. Valparaíso 351, Villa Alemana',
-    email_contacto: 'contacto@gamasecurity.cl'
+  const emp = {
+    razon_social: contrato.empresa_emisora?.razon_social || 'INVERSIONES GAMA SpA',
+    rut: contrato.empresa_emisora?.rut || '78.297.009-7',
+    representante: contrato.empresa_emisora?.representante || 'TOMÁS TORO-MORENO OLAVARRÍA',
+    rut_representante: contrato.empresa_emisora?.rut_representante || '16.182.547-6',
+    direccion: contrato.empresa_emisora?.direccion || 'Av. Valparaíso 351, Villa Alemana',
+    email_contacto: contrato.empresa_emisora?.email_contacto || 'contacto@gamasecurity.cl'
   }
 
-  const cli = contrato.cliente
-  const prop = contrato.propiedad
-  const serv = contrato.servicio
+  const cli = {
+    nombre_razon_social: contrato.cliente?.nombre_razon_social || 'CLIENTE GAMA',
+    rut: contrato.cliente?.rut || 'S/RUT',
+    representante_legal: contrato.cliente?.representante_legal || '',
+    rut_representante: contrato.cliente?.rut_representante || 'S/RUT',
+    direccion_legal: contrato.cliente?.direccion_legal || '5 Oriente 640',
+    ciudad_legal: contrato.cliente?.ciudad_legal || 'Viña del Mar',
+    telefono: contrato.cliente?.telefono || '',
+    email: contrato.cliente?.email || ''
+  }
+
+  const prop = {
+    cuenta: contrato.propiedad?.cuenta || '0000',
+    alias: contrato.propiedad?.alias || '',
+    direccion_sucursal: contrato.propiedad?.direccion_sucursal || cli.direccion_legal || 'Dirección de Instalación',
+    ciudad_sucursal: contrato.propiedad?.ciudad_sucursal || cli.ciudad_legal || 'Viña del Mar'
+  }
+
+  const serv = {
+    tarifa_monto: contrato.servicio?.tarifa_monto ?? 0.9,
+    tarifa_texto: contrato.servicio?.tarifa_texto || (contrato.servicio?.moneda === 'UF' ? 'Cero coma nueve Unidades de Fomento' : 'Pesos Chilenos'),
+    moneda: contrato.servicio?.moneda || 'UF',
+    plazo_inicial_meses: contrato.servicio?.plazo_inicial_meses || 36,
+    renovacion_meses: contrato.servicio?.renovacion_meses || 12,
+    dias_aviso_termino: contrato.servicio?.dias_aviso_termino || 30,
+    email_actualizacion_contactos: contrato.servicio?.email_actualizacion_contactos || 'ecarrasco@gamasecurity.cl'
+  }
 
   const margenIzq = 18
   const anchoTexto = 174
@@ -73,11 +97,11 @@ export function generarContratoPdfBase64(contrato: ContratoData): string {
   doc.setTextColor(255, 255, 255)
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(10.5)
-  doc.text(emp.razon_social.toUpperCase(), margenIzq, 10.5)
+  doc.text((emp.razon_social || 'INVERSIONES GAMA SpA').toUpperCase(), margenIzq, 10.5)
 
   doc.setFontSize(7.5)
   doc.setFont('helvetica', 'normal')
-  doc.text(`R.U.T. ${emp.rut} — PLATAFORMA ERP DE MONITOREO 24/7`, 120, 10.5)
+  doc.text(`R.U.T. ${emp.rut || '78.297.009-7'} — PLATAFORMA ERP DE MONITOREO 24/7`, 120, 10.5)
 
   y = 26
   doc.setTextColor(15, 23, 42)
@@ -92,8 +116,8 @@ export function generarContratoPdfBase64(contrato: ContratoData): string {
 
   const fechaTexto = contrato.fecha_completa || new Date().toLocaleDateString('es-CL', { day: '2-digit', month: 'long', year: 'numeric' })
   const comparecencia = `En ${contrato.fecha_ciudad || 'Viña del Mar'}, a ${fechaTexto}, comparecen:
-Por una parte, ${emp.razon_social.toUpperCase()} (en adelante "GAMA" o "La Empresa"), R.U.T. N° ${emp.rut}, representada por don ${emp.representante.toUpperCase()}, cédula de identidad N° ${emp.rut_representante}, ambos domiciliados para estos efectos en ${emp.direccion}; y
-Por la otra parte, ${cli.nombre_razon_social.toUpperCase()} (en adelante "El Cliente" o "El Suscriptor"), R.U.T. N° ${cli.rut}${cli.representante_legal ? `, representada por don ${cli.representante_legal.toUpperCase()}, cédula de identidad N° ${cli.rut_representante || 'S/RUT'}` : ''}, ambos domiciliados legalmente en ${cli.direccion_legal}, comuna de ${cli.ciudad_legal};
+Por una parte, ${(emp.razon_social || 'INVERSIONES GAMA SpA').toUpperCase()} (en adelante "GAMA" o "La Empresa"), R.U.T. N° ${emp.rut || '78.297.009-7'}, representada por don ${(emp.representante || 'TOMÁS TORO-MORENO OLAVARRÍA').toUpperCase()}, cédula de identidad N° ${emp.rut_representante || '16.182.547-6'}, ambos domiciliados para estos efectos en ${emp.direccion || 'Av. Valparaíso 351, Villa Alemana'}; y
+Por la otra parte, ${(cli.nombre_razon_social || 'EL CLIENTE').toUpperCase()} (en adelante "El Cliente" o "El Suscriptor"), R.U.T. N° ${cli.rut || 'S/RUT'}${cli.representante_legal ? `, representada por don ${cli.representante_legal.toUpperCase()}, cédula de identidad N° ${cli.rut_representante || 'S/RUT'}` : ''}, ambos domiciliados legalmente en ${cli.direccion_legal || '5 Oriente 640'}, comuna de ${cli.ciudad_legal || 'Viña del Mar'};
 Quienes han convenido suscribir el presente Contrato de Prestación de Servicios de Monitoreo, el cual se regirá por las siguientes cláusulas:`
 
   const lineasComp = doc.splitTextToSize(comparecencia, anchoTexto)
@@ -112,7 +136,7 @@ Quienes han convenido suscribir el presente Contrato de Prestación de Servicios
     },
     {
       titulo: 'TERCERO: LUGAR DE PRESTACIÓN DEL SERVICIO',
-      cuerpo: `El servicio se prestará exclusivamente en la sucursal del Cliente ubicada en: ${prop.direccion_sucursal.toUpperCase()}, ${prop.ciudad_sucursal.toUpperCase()} (Cuenta de Monitoreo N° ${prop.cuenta}).`
+      cuerpo: `El servicio se prestará exclusivamente en la sucursal del Cliente ubicada en: ${(prop.direccion_sucursal || 'Dirección Registrada').toUpperCase()}, ${(prop.ciudad_sucursal || 'Viña del Mar').toUpperCase()} (Cuenta de Monitoreo N° ${prop.cuenta || '0000'}).`
     },
     {
       titulo: 'CUARTO: GARANTÍA Y MANTENCIÓN DE EQUIPOS',
@@ -190,25 +214,25 @@ Quienes han convenido suscribir el presente Contrato de Prestación de Servicios
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(7.5)
   doc.setTextColor(0, 31, 63)
-  doc.text('p.p. ' + emp.razon_social.toUpperCase(), margenIzq + 41, yFirma + 6, { align: 'center' })
+  doc.text('p.p. ' + (emp.razon_social || 'INVERSIONES GAMA SpA').toUpperCase(), margenIzq + 41, yFirma + 6, { align: 'center' })
   doc.setFontSize(7)
-  doc.text(`RUT: ${emp.rut}`, margenIzq + 41, yFirma + 10, { align: 'center' })
+  doc.text(`RUT: ${emp.rut || '78.297.009-7'}`, margenIzq + 41, yFirma + 10, { align: 'center' })
   
   doc.setDrawColor(148, 163, 184)
   doc.line(margenIzq + 10, yFirma + 25, margenIzq + 72, yFirma + 25)
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(6.5)
   doc.setTextColor(71, 85, 105)
-  doc.text(emp.representante, margenIzq + 41, yFirma + 29, { align: 'center' })
-  doc.text(`C.I. ${emp.rut_representante}`, margenIzq + 41, yFirma + 33, { align: 'center' })
+  doc.text(emp.representante || 'Tomás Toro-Moreno Olavarría', margenIzq + 41, yFirma + 29, { align: 'center' })
+  doc.text(`C.I. ${emp.rut_representante || '16.182.547-6'}`, margenIzq + 41, yFirma + 33, { align: 'center' })
 
   // Firma Cliente / Suscriptor
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(7.5)
   doc.setTextColor(0, 31, 63)
-  doc.text('p.p. ' + cli.nombre_razon_social.toUpperCase(), margenIzq + 133, yFirma + 6, { align: 'center', maxWidth: 78 })
+  doc.text('p.p. ' + (cli.nombre_razon_social || 'EL CLIENTE').toUpperCase(), margenIzq + 133, yFirma + 6, { align: 'center', maxWidth: 78 })
   doc.setFontSize(7)
-  doc.text(`RUT: ${cli.rut}`, margenIzq + 133, yFirma + 10, { align: 'center' })
+  doc.text(`RUT: ${cli.rut || 'S/RUT'}`, margenIzq + 133, yFirma + 10, { align: 'center' })
 
   if (contrato.firma_base64) {
     try {

@@ -138,13 +138,13 @@ export default function ContratoDigitalModal({
       codigo_contrato: codigoContrato,
       fecha_ciudad: ciudadFirma,
       fecha_completa: now.toLocaleDateString('es-CL', { day: '2-digit', month: 'long', year: 'numeric' }),
-      empresa_emisora: empresaEmisora || {
-        razon_social: 'INVERSIONES GAMA SpA',
-        rut: '78.297.009-7',
-        representante: 'TOMÁS TORO-MORENO OLAVARRÍA',
-        rut_representante: '16.182.547-6',
-        direccion: 'Av. Valparaíso 351, Villa Alemana',
-        email_contacto: 'contacto@gamasecurity.cl'
+      empresa_emisora: {
+        razon_social: empresaEmisora?.razon_social || 'INVERSIONES GAMA SpA',
+        rut: empresaEmisora?.rut || '78.297.009-7',
+        representante: empresaEmisora?.representante || 'TOMÁS TORO-MORENO OLAVARRÍA',
+        rut_representante: empresaEmisora?.rut_representante || '16.182.547-6',
+        direccion: empresaEmisora?.direccion || 'Av. Valparaíso 351, Villa Alemana',
+        email_contacto: empresaEmisora?.email_contacto || 'contacto@gamasecurity.cl'
       },
       cliente: {
         nombre_razon_social: razonSocial,
