@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
+import { CheckCircle2, AlertCircle, Loader2, Send, Mail, Phone, ExternalLink } from 'lucide-react'
 
 function isOficinaAbierta() {
   const now = new Date()
@@ -10,35 +11,60 @@ function isOficinaAbierta() {
   return d >= 1 && d <= 5 && h >= 9 && h < 18
 }
 
-const INPUT_STYLE = 'w-full bg-[#fafafc] border border-slate-200 rounded-xl px-4 py-3 text-[#1d1d1f] text-sm placeholder-slate-400 focus:outline-none focus:border-[#0066cc] focus:bg-white transition-all duration-200'
+const INPUT_STYLE = 'w-full bg-[#fafafc] border border-slate-200 rounded-xl px-4 py-3 text-[#1d1d1f] text-sm placeholder-slate-400 focus:outline-none focus:border-[#0066cc] focus:bg-white transition-all duration-200 shadow-sm'
 
 export default function Contacto() {
   const abierta = isOficinaAbierta()
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    service: '',
+    message: ''
+  })
   const [sending, setSending] = useState(false)
   const [sent, setSent] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }))
+    if (errorMessage) setErrorMessage(null)
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!formData.name.trim() || !formData.email.trim()) {
+      setErrorMessage('Por favor completa los campos obligatorios (*)')
+      return
+    }
+
     setSending(true)
+    setErrorMessage(null)
 
-    const name = (document.getElementById('name') as HTMLInputElement)?.value || ''
-    const email = (document.getElementById('email') as HTMLInputElement)?.value || ''
-    const phone = (document.getElementById('phone') as HTMLInputElement)?.value || ''
-    const service = (document.getElementById('service') as HTMLSelectElement)?.value || ''
-    const message = (document.getElementById('message') as HTMLTextAreaElement)?.value || ''
+    try {
+      const res = await fetch('/api/contacto-landing', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      })
 
-    const subject = encodeURIComponent(`Cotización GAMA Security: ${service} - ${name}`)
-    const body = encodeURIComponent(`Nombre: ${name}\nEmail: ${email}\nTeléfono: ${phone}\nServicio: ${service}\nMensaje: ${message}`)
-    
-    setTimeout(() => {
-      setSending(false)
+      const data = await res.json()
+
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Error al enviar la solicitud. Intenta nuevamente.')
+      }
+
       setSent(true)
-      window.location.href = `mailto:contacto@gamasecurity.cl?subject=${subject}&body=${body}`
-    }, 1200)
+    } catch (err: any) {
+      console.error('Error al enviar formulario:', err)
+      setErrorMessage(err?.message || 'No fue posible enviar la solicitud. Por favor intenta por WhatsApp.')
+    } finally {
+      setSending(false)
+    }
   }
 
   const handleWhatsAppClick = () => {
-    window.open('https://wa.me/56991016912', '_blank', 'noopener,noreferrer')
+    window.open('https://wa.me/56991016912?text=Hola%20GAMA%20Seguridad,%20quisiera%20solicitar%20una%20cotizaci%C3%B3n.', '_blank', 'noopener,noreferrer')
   }
 
   return (
@@ -60,13 +86,13 @@ export default function Contacto() {
             Hablemos sobre tus necesidades de seguridad.
           </h2>
           <p className="apple-lead text-[#7a7a7a] text-base sm:text-lg max-w-xl mx-auto">
-            Cotización rápida y transparente sin compromiso. Comunícate por WhatsApp o envíanos un correo a contacto@gamasecurity.cl.
+            Cotización rápida y transparente sin compromiso. Nuestro equipo responderá a tu solicitud con una propuesta a tu medida.
           </p>
         </motion.div>
 
         <div className="grid lg:grid-cols-12 gap-12 items-start">
           
-          {/* Left Column: Direct Action Buttons (No raw phone text) */}
+          {/* Left Column: Direct Action Buttons */}
           <motion.div
             initial={{ opacity: 0, x: -30 }}
             whileInView={{ opacity: 1, x: 0 }}
@@ -86,7 +112,7 @@ export default function Contacto() {
               {/* WhatsApp Main Card Button */}
               <button
                 onClick={handleWhatsAppClick}
-                className="w-full apple-card-light p-6 flex items-center gap-4 transition-all duration-300 hover:-translate-y-1 bg-gradient-to-r from-green-50 to-emerald-50/40 border-green-200 text-left cursor-pointer group"
+                className="w-full apple-card-light p-6 flex items-center gap-4 transition-all duration-300 hover:-translate-y-1 bg-gradient-to-r from-green-50 to-emerald-50/40 border-green-200 text-left cursor-pointer group shadow-sm hover:shadow-md"
               >
                 <div className="p-3.5 rounded-2xl bg-[#25D366] text-white flex-shrink-0 shadow-md group-hover:scale-105 transition-transform">
                   <svg className="w-7 h-7 fill-current" viewBox="0 0 24 24">
@@ -109,12 +135,10 @@ export default function Contacto() {
               {/* Email Card Button */}
               <a
                 href="mailto:contacto@gamasecurity.cl"
-                className="apple-card-light p-5 flex items-center gap-4 transition-transform duration-200 hover:-translate-y-0.5 group text-left"
+                className="apple-card-light p-5 flex items-center gap-4 transition-transform duration-200 hover:-translate-y-0.5 group text-left shadow-sm hover:shadow"
               >
                 <div className="p-3 rounded-xl bg-slate-100 flex-shrink-0 text-[#0066cc]">
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                  </svg>
+                  <Mail className="w-5 h-5" />
                 </div>
                 <div>
                   <div className="text-xs text-[#7a7a7a] font-sans">
@@ -131,12 +155,10 @@ export default function Contacto() {
                 href="https://www.gamasecurity.cl"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="apple-card-light p-5 flex items-center gap-4 transition-transform duration-200 hover:-translate-y-0.5 group text-left"
+                className="apple-card-light p-5 flex items-center gap-4 transition-transform duration-200 hover:-translate-y-0.5 group text-left shadow-sm hover:shadow"
               >
                 <div className="p-3 rounded-xl bg-slate-100 flex-shrink-0 text-[#0066cc]">
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
-                  </svg>
+                  <ExternalLink className="w-5 h-5" />
                 </div>
                 <div>
                   <div className="text-xs text-[#7a7a7a] font-sans">
@@ -150,7 +172,7 @@ export default function Contacto() {
             </div>
           </motion.div>
 
-          {/* Right Column: Form */}
+          {/* Right Column: Form with Resend */}
           <motion.div
             initial={{ opacity: 0, x: 30 }}
             whileInView={{ opacity: 1, x: 0 }}
@@ -158,115 +180,185 @@ export default function Contacto() {
             transition={{ duration: 0.6 }}
             className="lg:col-span-7"
           >
-            <div className="apple-card-light p-8 sm:p-10 text-left">
-              <h3 className="apple-display-md text-[#1d1d1f] text-2xl mb-6">
+            <div className="apple-card-light p-8 sm:p-10 text-left border border-slate-200/80 shadow-lg relative overflow-hidden">
+              <h3 className="apple-display-md text-[#1d1d1f] text-2xl mb-2">
                 Solicitar Cotización por Formulario
               </h3>
+              <p className="text-xs text-slate-500 mb-6 font-sans">
+                Completa tus datos y recibirás un correo de confirmación de inmediato.
+              </p>
 
-              {sent ? (
-                <div className="text-center py-12 space-y-4">
-                  <div className="w-16 h-16 rounded-full bg-green-100 text-green-600 flex items-center justify-center mx-auto">
-                    <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                  </div>
-                  <h4 className="text-[#1d1d1f] font-bold text-xl">
-                    ¡Solicitud Lista para Envío!
-                  </h4>
-                  <p className="text-[#7a7a7a] text-sm max-w-sm mx-auto">
-                    Se abrirá tu cliente de correo para enviar a <strong>contacto@gamasecurity.cl</strong>. También puedes escribirnos por WhatsApp.
-                  </p>
-                </div>
-              ) : (
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div className="grid sm:grid-cols-2 gap-4">
-                    <div>
-                      <label htmlFor="name" className="block text-xs font-semibold text-[#1d1d1f] mb-1.5">
-                        Nombre completo *
-                      </label>
-                      <input
-                        id="name"
-                        type="text"
-                        placeholder="Ej. Juan Pérez"
-                        required
-                        className={INPUT_STYLE}
-                      />
+              <AnimatePresence mode="wait">
+                {sent ? (
+                  <motion.div
+                    key="sent-success"
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="text-center py-10 space-y-5"
+                  >
+                    <div className="w-16 h-16 rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-200 flex items-center justify-center mx-auto shadow-sm">
+                      <CheckCircle2 className="w-9 h-9" />
                     </div>
-                    <div>
-                      <label htmlFor="email" className="block text-xs font-semibold text-[#1d1d1f] mb-1.5">
-                        Correo electrónico *
-                      </label>
-                      <input
-                        id="email"
-                        type="email"
-                        placeholder="ejemplo@correo.cl"
-                        required
-                        className={INPUT_STYLE}
-                      />
+                    <div className="space-y-2">
+                      <h4 className="text-[#1d1d1f] font-bold text-2xl tracking-tight">
+                        ¡Solicitud Recibida con Éxito!
+                      </h4>
+                      <p className="text-slate-600 text-sm max-w-md mx-auto leading-relaxed">
+                        Hemos enviado un correo de confirmación a <strong className="text-blue-700 font-semibold">{formData.email}</strong>. 
+                        Un especialista en seguridad de <strong>GAMA Seguridad</strong> revisará tus requerimientos y te contactará a la brevedad.
+                      </p>
                     </div>
-                  </div>
 
-                  <div className="grid sm:grid-cols-2 gap-4">
-                    <div>
-                      <label htmlFor="phone" className="block text-xs font-semibold text-[#1d1d1f] mb-1.5">
-                        Teléfono de contacto
-                      </label>
-                      <input
-                        id="phone"
-                        type="tel"
-                        placeholder="+56 9 1234 5678"
-                        className={INPUT_STYLE}
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="service" className="block text-xs font-semibold text-[#1d1d1f] mb-1.5">
-                        Servicio requerido *
-                      </label>
-                      <select
-                        id="service"
-                        required
-                        defaultValue=""
-                        className={`${INPUT_STYLE} text-[#1d1d1f]`}
+                    <div className="pt-4 flex flex-col sm:flex-row gap-3 justify-center">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSent(false)
+                          setFormData({ name: '', email: '', phone: '', service: '', message: '' })
+                        }}
+                        className="px-5 py-2.5 rounded-xl border border-slate-300 text-slate-700 text-xs font-semibold hover:bg-slate-50 transition-colors"
                       >
-                        <option value="" disabled>Selecciona una opción</option>
-                        <option value="vetti">Alarma Inteligente Vetti & App CLICK</option>
-                        <option value="monitoreo">Monitoreo Central 24/7</option>
-                        <option value="camaras">Cámaras 4K con IA</option>
-                        <option value="cercos">Cercos Eléctricos</option>
-                        <option value="dsc">Teclados y Alarmas DSC PK5501</option>
-                        <option value="prevencion">Prevención de Robo GAMA</option>
-                        <option value="incendio">Detección de Incendio</option>
-                      </select>
+                        Enviar otra solicitud
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleWhatsAppClick}
+                        className="px-5 py-2.5 rounded-xl bg-[#25D366] text-white text-xs font-bold hover:bg-emerald-600 transition-colors flex items-center justify-center gap-2"
+                      >
+                        <span>Conversar por WhatsApp ahora</span>
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </button>
                     </div>
-                  </div>
+                  </motion.div>
+                ) : (
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                    {errorMessage && (
+                      <div className="p-3.5 bg-red-50 border border-red-200 rounded-xl flex items-center gap-2.5 text-xs text-red-700">
+                        <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                        <span>{errorMessage}</span>
+                      </div>
+                    )}
 
-                  <div>
-                    <label htmlFor="message" className="block text-xs font-semibold text-[#1d1d1f] mb-1.5">
-                      Detalles de tu propiedad o empresa
-                    </label>
-                    <textarea
-                      id="message"
-                      rows={4}
-                      placeholder="Cuéntanos brevemente ubicación, tipo de propiedad o requisitos específicos..."
-                      className={`${INPUT_STYLE} resize-none`}
-                    />
-                  </div>
+                    <div className="grid sm:grid-cols-2 gap-4">
+                      <div>
+                        <label htmlFor="name" className="block text-xs font-semibold text-[#1d1d1f] mb-1.5">
+                          Nombre completo *
+                        </label>
+                        <input
+                          id="name"
+                          name="name"
+                          type="text"
+                          value={formData.name}
+                          onChange={handleChange}
+                          placeholder="Ej. Juan Pérez"
+                          required
+                          disabled={sending}
+                          className={INPUT_STYLE}
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="email" className="block text-xs font-semibold text-[#1d1d1f] mb-1.5">
+                          Correo electrónico *
+                        </label>
+                        <input
+                          id="email"
+                          name="email"
+                          type="email"
+                          value={formData.email}
+                          onChange={handleChange}
+                          placeholder="ejemplo@correo.cl"
+                          required
+                          disabled={sending}
+                          className={INPUT_STYLE}
+                        />
+                      </div>
+                    </div>
 
-                  <div className="pt-2">
-                    <button
-                      type="submit"
-                      disabled={sending}
-                      className="btn-apple-primary w-full justify-center text-base py-3 disabled:opacity-50"
-                    >
-                      {sending ? 'Enviando solicitud...' : 'Enviar Solicitud a contacto@gamasecurity.cl →'}
-                    </button>
-                  </div>
+                    <div className="grid sm:grid-cols-2 gap-4">
+                      <div>
+                        <label htmlFor="phone" className="block text-xs font-semibold text-[#1d1d1f] mb-1.5">
+                          Teléfono de contacto
+                        </label>
+                        <input
+                          id="phone"
+                          name="phone"
+                          type="tel"
+                          value={formData.phone}
+                          onChange={handleChange}
+                          placeholder="+56 9 1234 5678"
+                          disabled={sending}
+                          className={INPUT_STYLE}
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="service" className="block text-xs font-semibold text-[#1d1d1f] mb-1.5">
+                          Servicio requerido *
+                        </label>
+                        <select
+                          id="service"
+                          name="service"
+                          required
+                          value={formData.service}
+                          onChange={handleChange}
+                          disabled={sending}
+                          className={`${INPUT_STYLE} text-[#1d1d1f]`}
+                        >
+                          <option value="" disabled>Selecciona una opción</option>
+                          <option value="vetti">Alarma Inteligente Vetti & App CLICK</option>
+                          <option value="monitoreo">Monitoreo Central 24/7 con IA</option>
+                          <option value="camaras">Cámaras 4K con IA</option>
+                          <option value="cercos">Cercos Eléctricos Perimetrales</option>
+                          <option value="dsc">Teclados y Alarmas DSC PK5501</option>
+                          <option value="prevencion">Prevención de Robo GAMA</option>
+                          <option value="incendio">Detección Temprana de Incendio</option>
+                          <option value="general">Cotización Integral de Seguridad</option>
+                        </select>
+                      </div>
+                    </div>
 
-                  <p className="text-center text-xs text-[#7a7a7a] pt-2">
-                    Sin compromisos comerciales · Respuesta garantizada
-                  </p>
-                </form>
-              )}
+                    <div>
+                      <label htmlFor="message" className="block text-xs font-semibold text-[#1d1d1f] mb-1.5">
+                        Detalles de tu propiedad o requerimientos
+                      </label>
+                      <textarea
+                        id="message"
+                        name="message"
+                        rows={4}
+                        value={formData.message}
+                        onChange={handleChange}
+                        placeholder="Cuéntanos brevemente ubicación, tipo de inmueble (casa, oficina, bodega) o requerimientos específicos..."
+                        disabled={sending}
+                        className={`${INPUT_STYLE} resize-none`}
+                      />
+                    </div>
+
+                    <div className="pt-2">
+                      <button
+                        type="submit"
+                        disabled={sending}
+                        className="btn-apple-primary w-full justify-center text-base py-3.5 disabled:opacity-60 cursor-pointer flex items-center gap-2 shadow-md hover:shadow-lg transition-all"
+                      >
+                        {sending ? (
+                          <>
+                            <Loader2 className="w-5 h-5 animate-spin" />
+                            <span>Enviando cotización por Resend...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Send className="w-4 h-4" />
+                            <span>Solicitar Cotización Oficial →</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                    <p className="text-center text-[11px] text-[#7a7a7a] pt-1 font-sans">
+                      🔒 Datos protegidos bajo estricta confidencialidad · Respuesta en minutos
+                    </p>
+                  </form>
+                )}
+              </AnimatePresence>
             </div>
           </motion.div>
 
