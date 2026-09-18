@@ -222,7 +222,7 @@ export default function FooterActions({
         
         {/* LADO IZQUIERDO (ESCRITORIO): Estado e Identificación del Operador (Bisel Hundido Retro) */}
         <div className="hidden lg:flex items-center gap-2 shrink-0">
-          <div className="bg-[#b0b0b0] border-2 border-t-gray-700 border-l-gray-700 border-b-white border-r-white px-2.5 py-1 text-[11px] font-mono text-gray-900 font-bold flex items-center gap-1.5">
+          <div className="bg-[#b0b0b0] border-2 border-t-gray-700 border-l-gray-700 border-b-white border-r-white px-2.5 py-1 text-xs md:text-[12px] font-mono text-gray-900 font-bold flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse" />
             <span>OPERADOR: {operadorNombre ? operadorNombre.toUpperCase() : 'CENTRAL'} {operadorRol ? `(${operadorRol.toUpperCase()})` : ''}</span>
           </div>
@@ -241,12 +241,12 @@ export default function FooterActions({
                   : 'bg-[#d4d0c8] border-t-white border-l-white border-b-gray-700 border-r-gray-700 text-gray-700 hover:bg-gray-200'
               } active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white`}
             >
-              <span className="text-sm leading-none">🤖</span>
+              <span className="text-base leading-none">🤖</span>
               <div className="flex flex-col items-start leading-tight">
-                <span className={`text-[10px] font-black tracking-wider uppercase ${autoOperadorActivo ? 'text-cyan-200' : 'text-gray-900'}`}>
+                <span className={`text-[10.5px] md:text-[11px] font-black tracking-wider uppercase ${autoOperadorActivo ? 'text-cyan-200' : 'text-gray-900'}`}>
                   AUTO-OPERADOR
                 </span>
-                <span className="text-[9px] font-mono font-bold flex items-center gap-1">
+                <span className="text-[9.5px] md:text-[10px] font-mono font-bold flex items-center gap-1">
                   <span className={`w-1.5 h-1.5 rounded-full ${autoOperadorActivo ? 'bg-emerald-400 animate-pulse shadow-[0_0_6px_#34d399]' : 'bg-gray-500'}`} />
                   <span className={autoOperadorActivo ? 'text-emerald-300' : 'text-gray-600'}>
                     {autoOperadorActivo ? 'ACTIVO 24/7' : 'MANUAL'}
@@ -262,7 +262,7 @@ export default function FooterActions({
             title="Bitácora de Eventos"
             className="h-10 bg-[#d4d0c8] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 flex items-center justify-center cursor-pointer select-none hover:bg-gray-200 active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white shadow-sm px-2.5"
           >
-            <span className="text-[12px] font-bold text-[#000080] tracking-wider whitespace-nowrap">BITÁCORA</span>
+            <span className="text-[12.5px] md:text-[13px] font-black text-[#000080] tracking-wider whitespace-nowrap">BITÁCORA</span>
           </button>
           {/* Botón ENTREGA DE TURNO */}
           <button
@@ -270,7 +270,7 @@ export default function FooterActions({
             title="Ingresar Novedades de Entrega de Turno"
             className="h-10 bg-[#d4d0c8] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 flex items-center justify-center cursor-pointer select-none hover:bg-gray-200 active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white shadow-sm px-2.5"
           >
-            <span className="text-[11px] font-bold text-amber-900 tracking-wider whitespace-nowrap">📝 ENTREGA TURNO</span>
+            <span className="text-[11.5px] md:text-[12px] font-black text-amber-900 tracking-wider whitespace-nowrap">📝 ENTREGA TURNO</span>
           </button>
           {/* Botón APERTURAS & CIERRES */}
           <button
@@ -278,7 +278,7 @@ export default function FooterActions({
             title="Control de Aperturas y Cierres por Partición (Semáforo)"
             className="h-10 bg-[#d4d0c8] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 flex items-center justify-center cursor-pointer select-none hover:bg-gray-200 active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white shadow-sm px-2.5"
           >
-            <span className="text-[11px] font-bold text-emerald-800 tracking-wider whitespace-nowrap flex items-center gap-1">
+            <span className="text-[11.5px] md:text-[12px] font-black text-emerald-800 tracking-wider whitespace-nowrap flex items-center gap-1">
               🔑 APERTURAS / CIERRES
             </span>
           </button>
@@ -306,7 +306,7 @@ export default function FooterActions({
 
         {/* LADO DERECHO (ESCRITORIO): Reloj Digital en Vivo (Bisel Hundido Retro) */}
         <div className="hidden lg:flex items-center gap-2 shrink-0">
-          <div className="bg-[#b0b0b0] border-2 border-t-gray-700 border-l-gray-700 border-b-white border-r-white px-3 py-1 text-[11px] font-mono text-gray-900 font-bold flex items-center gap-1.5">
+          <div className="bg-[#b0b0b0] border-2 border-t-gray-700 border-l-gray-700 border-b-white border-r-white px-3 py-1 text-xs md:text-[12px] font-mono text-gray-900 font-bold flex items-center gap-1.5">
             <span>🕒</span>
             <span>{horaLocal || '00:00:00'}</span>
           </div>

@@ -1375,9 +1375,9 @@ export default function ScorpionDashboard() {
                 bg: '',
               },
             ].map((kpi, i) => (
-              <div key={i} className={`flex items-center gap-2 px-4 py-1.5 border-r border-[#1e293b] font-mono text-[10px] whitespace-nowrap ${kpi.bg}`}>
+              <div key={i} className={`flex items-center gap-2 px-3.5 py-1.5 border-r border-[#1e293b] font-mono text-[11px] md:text-[11.5px] whitespace-nowrap ${kpi.bg}`}>
                 <span>{kpi.icon}</span>
-                <span className="text-slate-600 tracking-wider">{kpi.label}:</span>
+                <span className="text-slate-400 font-bold tracking-wider">{kpi.label}:</span>
                 <span className={`font-black ${kpi.color}`}>{kpi.value}</span>
               </div>
             ))}
@@ -1498,7 +1498,7 @@ export default function ScorpionDashboard() {
                   setMenuDropdownAbierto(item.id)
                 }
               }}
-              className={`px-3 py-1 text-xs font-bold text-white tracking-wider whitespace-nowrap rounded-xs cursor-pointer transition-all border flex items-center gap-1 shadow-xs select-none ${
+              className={`px-3 py-1 text-[12px] md:text-[12.5px] font-black text-white tracking-wider whitespace-nowrap rounded-xs cursor-pointer transition-all border flex items-center gap-1 shadow-xs select-none ${
                 menuDropdownAbierto === item.id
                   ? 'bg-[#000080] border-t-blue-400 border-l-blue-400 border-b-black border-r-black'
                   : 'bg-[#9b0000] hover:bg-[#b80000] hover:border-amber-300 active:bg-[#7a0000] border-t-[#c82020] border-l-[#c82020] border-b-[#500000] border-r-[#500000]'
@@ -1558,8 +1558,8 @@ export default function ScorpionDashboard() {
       {/* Contenedor Principal: Izquierda (Tabla), Derecha (Widgets de Scorpion) */}
       <div className="flex-1 min-h-0 flex overflow-hidden">
         
-        {/* Lado Izquierdo: Tabla de Eventos (Ocupa 100% en móvil y 866px fijos en PC) */}
-        <div className="w-full md:w-[866px] md:shrink-0 border-r border-[#1e293b] flex flex-col h-full bg-[#070b13] overflow-hidden">
+        {/* Lado Izquierdo: Tabla de Eventos (Ocupa 100% en móvil y 875px fijos en PC) */}
+        <div className="w-full md:w-[875px] md:shrink-0 border-r border-[#1e293b] flex flex-col h-full bg-[#070b13] overflow-hidden">
           <EventGrid
             eventos={eventos}
             onEventClick={(e) => setEventoSeleccionado(e)}
@@ -1569,33 +1569,33 @@ export default function ScorpionDashboard() {
         </div>
 
         {/* Lado Derecho: Réplica Panel Scorpion (Oculto en móvil, visible en PC) */}
-        <div className="hidden md:flex flex-1 flex-col bg-[#c0c0c0] text-black overflow-y-auto border-l border-white p-1 gap-1 select-text text-[11px]">
+        <div className="hidden md:flex flex-1 flex-col bg-[#c0c0c0] text-black overflow-y-auto border-l border-white p-1 gap-1 select-text text-xs md:text-[12.5px]">
           
           {/* 1. INFORMACION BASICA & ESTADO VIVO DEL ABONADO */}
           <div className="bg-[#e0e0e0] border border-t-white border-l-white border-b-gray-600 border-r-gray-600 flex flex-col shrink-0 shadow-xs">
-            <div className="bg-[#000080] text-white text-xs font-black px-2.5 py-1 tracking-wider uppercase flex items-center justify-between">
+            <div className="bg-[#000080] text-white text-[13px] font-black px-2.5 py-1 tracking-wider uppercase flex items-center justify-between">
               <span>Información Básica del Abonado</span>
-              <span className="font-mono text-cyan-300 text-[10px]">GENERAL.MDB</span>
+              <span className="font-mono text-cyan-300 text-[11px] font-bold">GENERAL.MDB</span>
             </div>
-            <div className="p-2 space-y-1 text-xs">
+            <div className="p-2 space-y-1 text-xs md:text-[12.5px]">
               <div className="flex gap-2">
                 <div className="flex-1 space-y-1">
                   <div className="grid grid-cols-4 gap-1 items-center">
-                    <span className="font-black text-gray-800">Abonado:</span>
-                    <span className="col-span-3 bg-white px-1.5 py-0.5 border border-gray-400 font-mono font-black text-blue-900 text-xs">
+                    <span className="font-black text-gray-800 text-[12px] md:text-[12.5px]">Abonado:</span>
+                    <span className="col-span-3 bg-white px-1.5 py-0.5 border border-gray-400 font-mono font-black text-blue-900 text-xs md:text-[13px]">
                       {activeEvent?.cuenta || '---'}
                     </span>
                   </div>
                   <div className="grid grid-cols-4 gap-1 items-center">
-                    <span className="font-black text-gray-800">Nombre:</span>
-                    <span className="col-span-3 bg-white px-1.5 py-0.5 border border-gray-400 truncate font-extrabold text-gray-900 text-xs">
+                    <span className="font-black text-gray-800 text-[12px] md:text-[12.5px]">Nombre:</span>
+                    <span className="col-span-3 bg-white px-1.5 py-0.5 border border-gray-400 truncate font-extrabold text-gray-900 text-xs md:text-[13px]">
                       {clientData?.nombre || activeEvent?.nombre_abonado || '---'}
                     </span>
                   </div>
                   <div className="grid grid-cols-4 gap-1 items-center">
-                    <span className="font-black text-gray-800">Dirección:</span>
+                    <span className="font-black text-gray-800 text-[12px] md:text-[12.5px]">Dirección:</span>
                     <div className="col-span-3 flex items-center gap-1">
-                      <span className="flex-1 bg-white px-1.5 py-0.5 border border-gray-400 truncate font-bold text-gray-800 text-xs">
+                      <span className="flex-1 bg-white px-1.5 py-0.5 border border-gray-400 truncate font-bold text-gray-800 text-xs md:text-[12.5px]">
                         {clientData?.direccion || '---'}
                       </span>
                       {clientData?.direccion && clientData.direccion !== '---' && (
@@ -1604,7 +1604,7 @@ export default function ScorpionDashboard() {
                           target="_blank"
                           rel="noopener noreferrer"
                           title="Ver en Google Maps"
-                          className="px-1.5 py-0.5 bg-[#d4d0c8] border border-t-white border-l-white border-b-gray-700 border-r-gray-700 text-[10px] font-bold text-blue-900 hover:bg-white shrink-0"
+                          className="px-1.5 py-0.5 bg-[#d4d0c8] border border-t-white border-l-white border-b-gray-700 border-r-gray-700 text-[11px] font-bold text-blue-900 hover:bg-white shrink-0"
                         >
                           📍
                         </a>
@@ -1612,23 +1612,23 @@ export default function ScorpionDashboard() {
                     </div>
                   </div>
                   <div className="grid grid-cols-4 gap-1 items-center">
-                    <span className="font-black text-gray-800">Comuna:</span>
-                    <span className="col-span-3 bg-white px-1.5 py-0.5 border border-gray-400 truncate font-bold text-gray-800 text-xs">
+                    <span className="font-black text-gray-800 text-[12px] md:text-[12.5px]">Comuna:</span>
+                    <span className="col-span-3 bg-white px-1.5 py-0.5 border border-gray-400 truncate font-bold text-gray-800 text-xs md:text-[12.5px]">
                       {clientData?.comuna || '---'}
                     </span>
                   </div>
                   {/* Teléfono Central / Directo si existe */}
                   {(clienteDb?.telefono1 || clienteDb?.t1 || clienteDb?.telefono) && (
                     <div className="grid grid-cols-4 gap-1 items-center">
-                      <span className="font-black text-gray-800">Teléfono:</span>
+                      <span className="font-black text-gray-800 text-[12px] md:text-[12.5px]">Teléfono:</span>
                       <div className="col-span-3 flex items-center gap-1">
-                        <span className="flex-1 bg-white px-1.5 py-0.5 border border-gray-400 font-mono font-bold text-blue-950 text-xs truncate">
+                        <span className="flex-1 bg-white px-1.5 py-0.5 border border-gray-400 font-mono font-bold text-blue-950 text-xs md:text-[13px] truncate">
                           {clienteDb?.telefono1 || clienteDb?.t1 || clienteDb?.telefono}
                         </span>
                         <a
                           href={`tel:${(clienteDb?.telefono1 || clienteDb?.t1 || clienteDb?.telefono || '').replace(/[^0-9+]/g, '')}`}
                           title="Llamar"
-                          className="px-1 py-0.5 bg-[#d4d0c8] border border-t-white border-l-white border-b-gray-700 border-r-gray-700 text-[9px] hover:bg-white"
+                          className="px-1.5 py-0.5 bg-[#d4d0c8] border border-t-white border-l-white border-b-gray-700 border-r-gray-700 text-[10px] hover:bg-white"
                         >
                           📞
                         </a>
@@ -1637,7 +1637,7 @@ export default function ScorpionDashboard() {
                           target="_blank"
                           rel="noopener noreferrer"
                           title="WhatsApp"
-                          className="px-1 py-0.5 bg-[#d4d0c8] border border-t-white border-l-white border-b-gray-700 border-r-gray-700 text-[9px] text-green-700 font-bold hover:bg-white"
+                          className="px-1.5 py-0.5 bg-[#d4d0c8] border border-t-white border-l-white border-b-gray-700 border-r-gray-700 text-[10px] text-green-700 font-bold hover:bg-white"
                         >
                           💬
                         </a>
@@ -1647,11 +1647,11 @@ export default function ScorpionDashboard() {
                   {/* Señal Activa en Tiempo Real */}
                   {activeEvent && (
                     <div className="grid grid-cols-4 gap-1 items-center pt-0.5">
-                      <span className="font-black text-gray-800">Última Señal:</span>
-                      <div className="col-span-3 bg-blue-950 text-yellow-300 px-1.5 py-0.5 border border-black font-mono font-bold text-xs truncate flex items-center justify-between">
+                      <span className="font-black text-gray-800 text-[12px] md:text-[12.5px]">Última Señal:</span>
+                      <div className="col-span-3 bg-blue-950 text-yellow-300 px-1.5 py-0.5 border border-black font-mono font-bold text-xs md:text-[13px] truncate flex items-center justify-between">
                         <span className="truncate">{getSenalLegible(activeEvent.evento, codigosMap) || activeEvent.evento}</span>
                         {(activeEvent.zona || activeEvent.usuario) && (
-                          <span className="text-[10px] text-cyan-300 shrink-0 ml-1">
+                          <span className="text-[11px] font-bold text-cyan-300 shrink-0 ml-1">
                             ZN:{activeEvent.zona || '--'} US:{activeEvent.usuario || '--'}
                           </span>
                         )}
@@ -1674,7 +1674,7 @@ export default function ScorpionDashboard() {
             </div>
           </div>
 
-          {/* 3. NUEVO: CUADRO CON PESTAÑAS (GENERAL.MDB: Referencias, Características, Observaciones & Fecha) */}
+          {/* 3. CUADRO CON PESTAÑAS (GENERAL.MDB: Referencias, Características, Observaciones & Fecha) */}
           <div className="bg-[#e0e0e0] border border-t-white border-l-white border-b-gray-600 border-r-gray-600 flex flex-col shrink-0 shadow-xs">
             {/* Barra de Pestañas estilo Scorpion / Windows */}
             <div className="flex items-center bg-[#c0c0c0] border-b border-gray-500 pt-1 px-1 gap-1 select-none">
@@ -1688,7 +1688,7 @@ export default function ScorpionDashboard() {
                   <button
                     key={t.id}
                     onClick={() => setTabGeneralActiva(t.id as any)}
-                    className={`px-2 py-0.5 text-[10px] font-bold border-t border-l border-r rounded-t-sm transition-colors cursor-pointer ${
+                    className={`px-2.5 py-1 text-[11px] md:text-[11.5px] font-bold border-t border-l border-r rounded-t-sm transition-colors cursor-pointer ${
                       esActiva
                         ? 'bg-white text-[#000080] border-t-gray-400 border-l-gray-400 border-r-gray-600 font-black shadow-xs -mb-[1px] z-10'
                         : 'bg-[#d0d0d0] text-gray-700 border-t-white border-l-white border-r-gray-600 hover:bg-[#e0e0e0]'
@@ -1704,7 +1704,7 @@ export default function ScorpionDashboard() {
             </div>
 
             {/* Contenido dinámico de la pestaña activa */}
-            <div className="p-1.5 bg-white min-h-[85px] max-h-[135px] overflow-y-auto border border-gray-400 m-1 font-sans text-xs text-gray-900 leading-relaxed shadow-inner">
+            <div className="p-2 bg-white min-h-[90px] max-h-[145px] overflow-y-auto border border-gray-400 m-1 font-sans text-xs md:text-[12.5px] text-gray-900 leading-relaxed shadow-inner">
               {(() => {
                 const refTexto = (clienteDb?.referencia1 || clienteDb?.referencia || '').trim()
                 const caractTexto = (clienteDb?.['caract adic1'] || clienteDb?.caract_adic1 || clienteDb?.caracteristicas || '').trim()
@@ -1718,15 +1718,15 @@ export default function ScorpionDashboard() {
                 if (tabGeneralActiva === 'referencias') {
                   return (
                     <div className="space-y-1">
-                      <div className="text-[10px] font-black text-[#000080] uppercase flex items-center gap-1 border-b border-gray-200 pb-0.5">
+                      <div className="text-[11px] md:text-[11.5px] font-black text-[#000080] uppercase flex items-center gap-1 border-b border-gray-200 pb-0.5">
                         <span>Puntos de Referencia & Fachada (REFERENCIA1)</span>
                       </div>
                       {refTexto ? (
-                        <div className="whitespace-pre-wrap font-semibold text-gray-800 text-[11px] leading-snug">
+                        <div className="whitespace-pre-wrap font-bold text-gray-800 text-xs md:text-[12.5px] leading-snug">
                           {refTexto}
                         </div>
                       ) : (
-                        <div className="text-gray-400 italic text-[11px]">Sin referencias registradas para este abonado.</div>
+                        <div className="text-gray-400 italic text-xs">Sin referencias registradas para este abonado.</div>
                       )}
                     </div>
                   )
@@ -1735,15 +1735,15 @@ export default function ScorpionDashboard() {
                 if (tabGeneralActiva === 'caracteristicas') {
                   return (
                     <div className="space-y-1">
-                      <div className="text-[10px] font-black text-[#000080] uppercase flex items-center gap-1 border-b border-gray-200 pb-0.5">
+                      <div className="text-[11px] md:text-[11.5px] font-black text-[#000080] uppercase flex items-center gap-1 border-b border-gray-200 pb-0.5">
                         <span>Características Adicionales & Horarios (CARACT ADIC1)</span>
                       </div>
                       {caractTexto ? (
-                        <div className="whitespace-pre-wrap font-semibold text-gray-800 text-[11px] leading-snug">
+                        <div className="whitespace-pre-wrap font-bold text-gray-800 text-xs md:text-[12.5px] leading-snug">
                           {caractTexto}
                         </div>
                       ) : (
-                        <div className="text-gray-400 italic text-[11px]">Sin características adicionales registradas.</div>
+                        <div className="text-gray-400 italic text-xs">Sin características adicionales registradas.</div>
                       )}
                     </div>
                   )
@@ -1752,26 +1752,26 @@ export default function ScorpionDashboard() {
                 if (tabGeneralActiva === 'observaciones') {
                   return (
                     <div className="space-y-1.5">
-                      <div className="text-[10px] font-black text-[#000080] uppercase flex items-center justify-between border-b border-gray-200 pb-0.5">
+                      <div className="text-[11px] md:text-[11.5px] font-black text-[#000080] uppercase flex items-center justify-between border-b border-gray-200 pb-0.5">
                         <span>Observaciones Operativas (OBSERVACION1)</span>
                         {fechaTexto && (
-                          <span className="font-mono text-amber-800 font-bold text-[9px] bg-amber-100 border border-amber-300 px-1 rounded">
+                          <span className="font-mono text-amber-900 font-bold text-[10px] bg-amber-100 border border-amber-300 px-1 rounded">
                             FECHA: {fechaTexto}
                           </span>
                         )}
                       </div>
                       {fechaTexto && (
-                        <div className="bg-blue-50 border-l-2 border-[#000080] px-1.5 py-0.5 text-[10px] text-blue-900 font-bold flex items-center gap-1">
+                        <div className="bg-blue-50 border-l-2 border-[#000080] px-1.5 py-0.5 text-[11px] text-blue-900 font-bold flex items-center gap-1">
                           <span>📅 Fecha / Batería:</span>
                           <span className="font-mono">{fechaTexto}</span>
                         </div>
                       )}
                       {obsTexto ? (
-                        <div className="whitespace-pre-wrap font-semibold text-gray-800 text-[11px] leading-snug">
+                        <div className="whitespace-pre-wrap font-bold text-gray-800 text-xs md:text-[12.5px] leading-snug">
                           {obsTexto}
                         </div>
                       ) : (
-                        <div className="text-gray-400 italic text-[11px]">Sin observaciones registradas para este abonado.</div>
+                        <div className="text-gray-400 italic text-xs">Sin observaciones registradas para este abonado.</div>
                       )}
                     </div>
                   )
@@ -1784,43 +1784,43 @@ export default function ScorpionDashboard() {
 
           {/* Box 3: CONTACTOS / PERSONAS AUTORIZADAS */}
           <div className="bg-[#e0e0e0] border border-t-white border-l-white border-b-gray-600 border-r-gray-600 flex flex-col flex-1 min-h-[160px] max-h-[280px] overflow-hidden shadow-xs">
-            <div className="bg-[#000080] text-white text-xs font-black px-2.5 py-1 tracking-wider uppercase flex items-center justify-between">
+            <div className="bg-[#000080] text-white text-[13px] font-black px-2.5 py-1 tracking-wider uppercase flex items-center justify-between">
               <span>Personas Autorizadas</span>
               <div className="flex items-center gap-2">
-                <span className="text-[10px] text-cyan-300 font-mono font-normal">
+                <span className="text-[11px] text-cyan-300 font-mono font-bold">
                   {clientData?.contactos.length || 0} Registrados
                 </span>
                 <button
                   type="button"
                   onClick={() => setModalActivo('personas-autorizadas')}
-                  className="px-2 py-0.5 bg-[#d4d0c8] text-black font-bold text-[10px] border border-t-white border-l-white border-b-gray-800 border-r-gray-800 hover:bg-white active:border-t-gray-800 active:border-l-gray-800 cursor-pointer transition-colors"
+                  className="px-2 py-0.5 bg-[#d4d0c8] text-black font-bold text-[11px] border border-t-white border-l-white border-b-gray-800 border-r-gray-800 hover:bg-white active:border-t-gray-800 active:border-l-gray-800 cursor-pointer transition-colors"
                 >
                   🔑 Directorio 1:1
                 </button>
               </div>
             </div>
             <div className="flex-1 overflow-y-auto">
-              <table className="w-full border-collapse text-xs text-left bg-white">
+              <table className="w-full border-collapse text-xs md:text-[12.5px] text-left bg-white">
                 <thead className="sticky top-0 bg-[#c4c0b8] border-b border-gray-400 z-10 text-gray-900">
                   <tr>
-                    <th className="p-1.5 font-black border-r border-gray-400 w-8 text-center">PR</th>
-                    <th className="p-1.5 font-black border-r border-gray-400">Nombre / Cargo</th>
-                    <th className="p-1.5 font-black">Teléfono / Clave</th>
+                    <th className="p-1.5 font-black border-r border-gray-400 w-8 text-center text-xs md:text-[12px]">PR</th>
+                    <th className="p-1.5 font-black border-r border-gray-400 text-xs md:text-[12px]">Nombre / Cargo</th>
+                    <th className="p-1.5 font-black text-xs md:text-[12px]">Teléfono / Clave</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-300">
                   {clientData?.contactos.map((contact) => (
-                    <tr key={contact.prioridad} className="hover:bg-blue-100 font-bold text-gray-900 text-xs">
+                    <tr key={contact.prioridad} className="hover:bg-blue-100 font-bold text-gray-900 text-xs md:text-[12.5px]">
                       <td className="p-1 text-center font-mono font-black text-blue-900 border-r border-gray-300">{contact.prioridad}</td>
                       <td className="p-1 border-r border-gray-300 truncate max-w-[160px] font-extrabold uppercase">
                         <div className="truncate">{contact.nombre}</div>
-                        {contact.cargo && <div className="text-[9px] text-gray-500 font-normal truncate">{contact.cargo}</div>}
+                        {contact.cargo && <div className="text-[10px] text-gray-600 font-semibold truncate">{contact.cargo}</div>}
                       </td>
                       <td className="p-1 font-mono text-blue-900 flex items-center justify-between gap-1 font-bold">
                         <div className="flex flex-col truncate">
                           <span className="truncate max-w-[110px]">{contact.telefono || 'Sin tel.'}</span>
                           {contact.contrasena && (
-                            <span className="text-[9px] text-red-800 bg-amber-100 border border-amber-300 px-1 rounded-xs font-bold w-fit mt-0.5 truncate">
+                            <span className="text-[10px] text-red-800 bg-amber-100 border border-amber-300 px-1 rounded-xs font-bold w-fit mt-0.5 truncate">
                               🔑 {contact.contrasena}
                             </span>
                           )}
@@ -1867,9 +1867,9 @@ export default function ScorpionDashboard() {
 
           {/* Box 4: ZONIFICACION */}
           <div className="bg-[#e0e0e0] border border-t-white border-l-white border-b-gray-600 border-r-gray-600 flex flex-col flex-1 min-h-[150px] max-h-[260px] overflow-hidden shadow-xs">
-            <div className="bg-[#000080] text-white text-xs font-black px-2.5 py-1 tracking-wider uppercase flex items-center justify-between">
+            <div className="bg-[#000080] text-white text-[13px] font-black px-2.5 py-1 tracking-wider uppercase flex items-center justify-between">
               <span>Zonificación</span>
-              <span className="text-[10px] text-yellow-300 font-mono font-normal">
+              <span className="text-[11px] text-yellow-300 font-mono font-bold">
                 {buscarZonasAbonado(activeEvent?.cuenta).length} Zonas
               </span>
             </div>
@@ -1890,17 +1890,17 @@ export default function ScorpionDashboard() {
                   )
                 }
                 return (
-                  <table className="w-full border-collapse text-xs text-left bg-white">
+                  <table className="w-full border-collapse text-xs md:text-[12.5px] text-left bg-white">
                     <thead className="sticky top-0 bg-[#c4c0b8] border-b border-gray-400 z-10 text-gray-900">
                       <tr>
-                        <th className="p-1.5 font-black border-r border-gray-400 w-9 text-center">ZN</th>
-                        <th className="p-1.5 font-black border-r border-gray-400">Dispositivos</th>
-                        <th className="p-1.5 font-black">Área Cubierta</th>
+                        <th className="p-1.5 font-black border-r border-gray-400 w-9 text-center text-xs md:text-[12px]">ZN</th>
+                        <th className="p-1.5 font-black border-r border-gray-400 text-xs md:text-[12px]">Dispositivos</th>
+                        <th className="p-1.5 font-black text-xs md:text-[12px]">Área Cubierta</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-300">
                       {zonasAbonado.map((zona, idx) => (
-                        <tr key={idx} className="hover:bg-blue-100 font-bold text-gray-900 text-xs">
+                        <tr key={idx} className="hover:bg-blue-100 font-bold text-gray-900 text-xs md:text-[12.5px]">
                           <td className="p-1 text-center font-mono font-black border-r border-gray-300 text-amber-800">{zona.numero}</td>
                           <td className="p-1 border-r border-gray-300 truncate max-w-[120px] capitalize font-bold">{(zona.dispositivo || '').toLowerCase()}</td>
                           <td className="p-1 truncate max-w-[120px] capitalize font-semibold">{(zona.area || '').toLowerCase()}</td>
@@ -1928,7 +1928,7 @@ export default function ScorpionDashboard() {
               }
             }}
             title={tieneCamaras ? `Verificación por video activa (${cantCamarasActiva} cámaras registradas)` : 'Sin cámaras registradas. Clic para configurar en Expediente'}
-            className={`w-full border-2 py-1 text-xs font-bold flex items-center justify-center gap-1.5 transition-all select-none shrink-0 cursor-pointer ${
+            className={`w-full border-2 py-1.5 text-xs md:text-[12.5px] font-bold flex items-center justify-center gap-1.5 transition-all select-none shrink-0 cursor-pointer ${
               tieneCamaras
                 ? 'bg-blue-900 text-white border-t-blue-400 border-l-blue-400 border-b-black border-r-black hover:bg-blue-800 active:border-t-black active:border-l-black active:border-b-white active:border-r-white shadow-sm'
                 : 'bg-[#d4d0c8] text-gray-700 border-t-white border-l-white border-b-gray-600 border-r-gray-600 hover:bg-[#e0e0e0] active:border-t-gray-600 active:border-l-gray-600 active:border-b-white active:border-r-white'

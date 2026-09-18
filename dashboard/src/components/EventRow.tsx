@@ -223,45 +223,45 @@ export default function EventRow({ evento, onClick, isNew, isLatest, codigosMap,
       style={{ backgroundColor: style.bg, color: style.text }}
     >
       {/* FECHA/HORA */}
-      <td className="px-1.5 py-0.5 text-xs md:text-[13px] whitespace-nowrap border border-black leading-snug font-bold align-middle">
+      <td className="px-1.5 py-0.5 text-xs md:text-[13.5px] whitespace-nowrap border border-black leading-snug font-bold align-middle">
         {renderFecha(evento.fecha_hora)}
       </td>
 
       {/* ABONADO */}
-      <td className="px-1.5 py-0.5 text-xs md:text-[13px] font-bold border border-black leading-snug align-middle">
+      <td className="px-1.5 py-0.5 text-xs md:text-[13.5px] font-bold border border-black leading-snug align-middle">
         {evento.cuenta}
       </td>
 
       {/* NOMBRE */}
-      <td className="px-1.5 py-0.5 text-xs md:text-[13px] truncate max-w-[160px] md:max-w-[275px] border border-black leading-snug font-bold align-middle" title={nombreFinal}>
+      <td className="px-1.5 py-0.5 text-xs md:text-[13.5px] truncate max-w-[160px] md:max-w-[275px] border border-black leading-snug font-bold align-middle" title={nombreFinal}>
         {nombreFinal}
       </td>
 
       {/* SEÑAL (Traducida automáticamente de Contact ID a español si viene como código) */}
       <td
-        className="px-1.5 py-0.5 text-xs md:text-[13px] font-bold border border-black leading-snug align-middle truncate max-w-[100px] md:max-w-[220px]"
+        className="px-1.5 py-0.5 text-xs md:text-[13.5px] font-bold border border-black leading-snug align-middle truncate max-w-[100px] md:max-w-[220px]"
         title={tieneTraduccion ? `Código original transmitido: ${evento.evento}` : undefined}
       >
         {senalLegible}
       </td>
 
       {/* ZN */}
-      <td className="px-1 py-0.5 text-xs md:text-[13px] font-bold text-center border border-black leading-snug align-middle">
+      <td className="px-1 py-0.5 text-xs md:text-[13.5px] font-bold text-center border border-black leading-snug align-middle">
         {evento.zona && evento.zona !== 'None' ? evento.zona.padStart(2, '0') : '00'}
       </td>
 
       {/* PAR */}
-      <td className="px-1 py-0.5 text-xs md:text-[13px] font-bold text-center border border-black leading-snug align-middle hidden md:table-cell">
+      <td className="px-1 py-0.5 text-xs md:text-[13.5px] font-bold text-center border border-black leading-snug align-middle hidden md:table-cell">
         {evento.zona && evento.zona !== 'None' ? '01' : '--'}
       </td>
 
       {/* US */}
-      <td className="px-1 py-0.5 text-xs md:text-[13px] font-bold text-center border border-black leading-snug align-middle hidden md:table-cell">
+      <td className="px-1 py-0.5 text-xs md:text-[13.5px] font-bold text-center border border-black leading-snug align-middle hidden md:table-cell">
         {evento.usuario && evento.usuario !== 'None' ? evento.usuario.padStart(2, '0') : '00'}
       </td>
 
       {/* UN */}
-      <td className="px-1 py-0.5 text-xs md:text-[13px] font-bold text-center border border-black leading-snug align-middle hidden md:table-cell">
+      <td className="px-1 py-0.5 text-xs md:text-[13.5px] font-bold text-center border border-black leading-snug align-middle hidden md:table-cell">
         01
       </td>
     </tr>

@@ -69,14 +69,14 @@ export default function EventGrid({ eventos, onEventClick, codigosMap, clientesM
       <table className="border-collapse table-fixed w-full" style={{ fontFamily: "'Consolas', 'Courier New', monospace" }}>
         <thead className="sticky top-0 z-10">
           <tr className="bg-[#111827]">
-            <th className="px-1.5 py-1 text-xs md:text-[12px] font-black text-slate-200 uppercase tracking-wider text-left border border-[#1e293b] w-[110px] md:w-[160px]">FECHA/HORA</th>
-            <th className="px-1.5 py-1 text-xs md:text-[12px] font-black text-slate-200 uppercase tracking-wider text-left border border-[#1e293b] w-[55px] md:w-[65px]">ABONADO</th>
-            <th className="px-1.5 py-1 text-xs md:text-[12px] font-black text-slate-200 uppercase tracking-wider text-left border border-[#1e293b] w-[160px] md:w-[275px]">NOMBRE</th>
-            <th className="px-1.5 py-1 text-xs md:text-[12px] font-black text-slate-200 uppercase tracking-wider text-left border border-[#1e293b] w-[100px] md:w-[220px]">SEÑAL</th>
-            <th className="px-1 py-1 text-xs md:text-[12px] font-black text-slate-200 uppercase tracking-wider text-center border border-[#1e293b] w-[32px] md:w-[38px]">ZN</th>
-            <th className="px-1 py-1 text-xs md:text-[12px] font-black text-slate-200 uppercase tracking-wider text-center border border-[#1e293b] w-[36px] hidden md:table-cell">PAR</th>
-            <th className="px-1 py-1 text-xs md:text-[12px] font-black text-slate-200 uppercase tracking-wider text-center border border-[#1e293b] w-[36px] hidden md:table-cell">US</th>
-            <th className="px-1 py-1 text-xs md:text-[12px] font-black text-slate-200 uppercase tracking-wider text-center border border-[#1e293b] w-[36px] hidden md:table-cell">UN</th>
+            <th className="px-1.5 py-1 text-xs md:text-[13px] font-black text-slate-200 uppercase tracking-wider text-left border border-[#1e293b] w-[110px] md:w-[162px]">FECHA/HORA</th>
+            <th className="px-1.5 py-1 text-xs md:text-[13px] font-black text-slate-200 uppercase tracking-wider text-left border border-[#1e293b] w-[55px] md:w-[68px]">ABONADO</th>
+            <th className="px-1.5 py-1 text-xs md:text-[13px] font-black text-slate-200 uppercase tracking-wider text-left border border-[#1e293b] w-[160px] md:w-[275px]">NOMBRE</th>
+            <th className="px-1.5 py-1 text-xs md:text-[13px] font-black text-slate-200 uppercase tracking-wider text-left border border-[#1e293b] w-[100px] md:w-[220px]">SEÑAL</th>
+            <th className="px-1 py-1 text-xs md:text-[13px] font-black text-slate-200 uppercase tracking-wider text-center border border-[#1e293b] w-[32px] md:w-[38px]">ZN</th>
+            <th className="px-1 py-1 text-xs md:text-[13px] font-black text-slate-200 uppercase tracking-wider text-center border border-[#1e293b] w-[36px] hidden md:table-cell">PAR</th>
+            <th className="px-1 py-1 text-xs md:text-[13px] font-black text-slate-200 uppercase tracking-wider text-center border border-[#1e293b] w-[36px] hidden md:table-cell">US</th>
+            <th className="px-1 py-1 text-xs md:text-[13px] font-black text-slate-200 uppercase tracking-wider text-center border border-[#1e293b] w-[36px] hidden md:table-cell">UN</th>
           </tr>
         </thead>
         <tbody>
