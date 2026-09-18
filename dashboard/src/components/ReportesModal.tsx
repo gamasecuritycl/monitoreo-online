@@ -250,6 +250,29 @@ export default function ReportesModal({
     setEnviandoMail(true)
     setMailStatusMsg({ tipo: 'ok', texto: 'Despachando reporte oficial por correo...' })
 
+    const attachments: Array<{ filename: string; content: string }> = []
+    try {
+      const rows = eventosFiltrados.map((ev, idx) => ({
+        '#': idx + 1,
+        'Fecha y Hora': ev.fecha_hora || '',
+        'Cuenta': cuentaActiva,
+        'Abonado': clienteSeleccionado?.nombre || cuentaActiva,
+        'Evento': ev.evento || 'SEÑAL',
+        'Zona': ev.zona || '',
+        'Usuario': ev.usuario || ''
+      }))
+      const ws = XLSX.utils.json_to_sheet(rows)
+      const wb = XLSX.utils.book_new()
+      XLSX.utils.book_append_sheet(wb, ws, `Señales_${cuentaActiva}`)
+      const xlsxBase64 = XLSX.write(wb, { bookType: 'xlsx', type: 'base64' })
+      attachments.push({
+        filename: `Reporte_${cuentaActiva}_${fechaDesde}_al_${fechaHasta}.xlsx`,
+        content: xlsxBase64
+      })
+    } catch (errXlsx) {
+      console.warn('Error adjuntando Excel en ReportesModal:', errXlsx)
+    }
+
     const res = await enviarReporteHistoricoMail({
       cuenta: cuentaActiva,
       nombreCliente: clienteSeleccionado?.nombre || cuentaActiva,
@@ -260,7 +283,8 @@ export default function ReportesModal({
       destinatarios,
       totalEventos: eventosFiltrados.length,
       eventos: eventosFiltrados,
-      frecuencia: 'manual'
+      frecuencia: 'manual',
+      attachments: attachments.length > 0 ? attachments : undefined
     })
 
     setEnviandoMail(false)

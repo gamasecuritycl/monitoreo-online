@@ -211,11 +211,26 @@ export async function POST(req: Request) {
         </div>
       `
 
+      const attachments = Array.isArray(body.attachments) ? [...body.attachments] : []
+      if (body.pdf_base64) {
+        attachments.push({
+          filename: `Reporte_${cuenta}_${rep.fechaDesde || 'historico'}.pdf`,
+          content: body.pdf_base64
+        })
+      }
+      if (body.xlsx_base64) {
+        attachments.push({
+          filename: `Reporte_${cuenta}_${rep.fechaDesde || 'historico'}.xlsx`,
+          content: body.xlsx_base64
+        })
+      }
+
       let response = await getResend().emails.send({
         from: 'Central Gama Seguridad <contacto@gamasecurity.cl>',
         to: toList,
         subject: `Reporte Histórico de Monitoreo [Cuenta #${cuenta}] — ${nombre_cliente || 'Gama Security'}`,
-        html: htmlContent
+        html: htmlContent,
+        attachments: attachments.length > 0 ? attachments : undefined
       })
 
       if (response.error) {
@@ -223,7 +238,8 @@ export async function POST(req: Request) {
           from: 'Central Gama Seguridad <onboarding@resend.dev>',
           to: toList,
           subject: `Reporte Histórico de Monitoreo [Cuenta #${cuenta}] — ${nombre_cliente || 'Gama Security'}`,
-          html: htmlContent
+          html: htmlContent,
+          attachments: attachments.length > 0 ? attachments : undefined
         })
       }
 

@@ -12,11 +12,10 @@ export interface ConfigMailAbonado {
 }
 
 export const CORREOS_GAMA_PREDEFINIDOS = [
-  { email: 'contacto@gamasecurity.cl', etiqueta: 'Central Oficial (contacto@gamasecurity.cl)' },
-  { email: 'tetoromoreno@gamasecurity.cl', etiqueta: 'Administración (tetoromoreno@gamasecurity.cl)' },
-  { email: 'central@gamasecurity.cl', etiqueta: 'Mesa de Monitoreo (central@gamasecurity.cl)' },
-  { email: 'operaciones@gamasecurity.cl', etiqueta: 'Operaciones (operaciones@gamasecurity.cl)' },
-  { email: 'cobranza@gamasecurity.cl', etiqueta: 'Cobranza (cobranza@gamasecurity.cl)' },
+  { email: 'contacto@gamasecurity.cl', etiqueta: 'contacto@gamasecurity.cl (Central Oficial)' },
+  { email: 'tetoromoreno@gamasecurity.cl', etiqueta: 'tetoromoreno@gamasecurity.cl (Administración)' },
+  { email: 'soporte@gamasecurity.cl', etiqueta: 'soporte@gamasecurity.cl (Soporte Técnico)' },
+  { email: 'ecarrasco@gamasecurity.cl', etiqueta: 'ecarrasco@gamasecurity.cl (Operaciones)' },
 ]
 
 const DEFAULT_CONFIG: Omit<ConfigMailAbonado, 'cuenta' | 'emails'> = {
@@ -151,6 +150,7 @@ export async function enviarReporteHistoricoMail(params: {
   totalEventos: number
   eventos: any[]
   frecuencia?: string
+  attachments?: Array<{ filename: string; content: string }>
 }): Promise<{ success: boolean; error?: string }> {
   try {
     const res = await fetch('/api/enviar-mail', {
@@ -162,6 +162,7 @@ export async function enviarReporteHistoricoMail(params: {
         tipo_evento: 'REPORTE_HISTORICO',
         fecha_hora: new Date().toISOString(),
         destinatarios: params.destinatarios,
+        attachments: params.attachments,
         reporte_data: {
           fechaDesde: params.fechaDesde,
           horaDesde: params.horaDesde || '00:00',

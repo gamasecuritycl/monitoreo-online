@@ -1,22 +1,72 @@
+'use client'
+
 import React, { useState, useEffect } from 'react'
-import { obtenerConfigMail, guardarConfigMail, ConfigMailAbonado, CORREOS_GAMA_PREDEFINIDOS } from '@/lib/notificacionesMail'
+import { jsPDF } from 'jspdf'
+import * as XLSX from 'xlsx'
+import { supabase } from '@/lib/supabase'
+import {
+  obtenerConfigMail,
+  guardarConfigMail,
+  CORREOS_GAMA_PREDEFINIDOS,
+  enviarReporteHistoricoMail
+} from '@/lib/notificacionesMail'
 
 interface NotificacionesMailModalProps {
   onClose: () => void
   clientesMap: Record<string, Record<string, string>>
 }
 
+const _fmtChile = new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'America/Santiago',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+})
+
+function hoyChile(): string {
+  return _fmtChile.format(new Date())
+}
+
+function getDiasAtras(dias: number): string {
+  const d = new Date()
+  d.setDate(d.getDate() - dias)
+  return _fmtChile.format(d)
+}
+
+function getInicioMes(): string {
+  const d = new Date()
+  d.setDate(1)
+  return _fmtChile.format(d)
+}
+
 export default function NotificacionesMailModal({ onClose, clientesMap }: NotificacionesMailModalProps) {
   const [busqueda, setBusqueda] = useState('')
   const [clienteSeleccionado, setClienteSeleccionado] = useState<{ cuenta: string; nombre: string } | null>(null)
+  
+  // Casillas del cliente
   const [emails, setEmails] = useState<string[]>([])
   const [nuevoEmail, setNuevoEmail] = useState('')
-  const [reporteAuto, setReporteAuto] = useState(false)
-  const [frecuencia, setFrecuencia] = useState<'diario' | 'semanal' | 'mensual'>('mensual')
+  const [enviarAbonado, setEnviarAbonado] = useState(true)
+
+  // Filtro de fechas manual
+  const [fechaDesde, setFechaDesde] = useState(getDiasAtras(7))
+  const [fechaHasta, setFechaHasta] = useState(hoyChile())
+
+  // Formato de reporte
+  const [formatoAdjunto, setFormatoAdjunto] = useState<'pdf' | 'xlsx' | 'ambos' | 'ninguno'>('pdf')
+
+  // Usuario Gama (Estrictamente los 4 solicitados)
   const [enviarCopiaGama, setEnviarCopiaGama] = useState(false)
   const [correoGama, setCorreoGama] = useState('contacto@gamasecurity.cl')
+
+  // Programación Automática (desmarcada por defecto)
+  const [reporteAuto, setReporteAuto] = useState(false)
+  const [frecuencia, setFrecuencia] = useState<'diario' | 'semanal' | 'mensual'>('mensual')
+
+  // Estados de proceso
   const [guardando, setGuardando] = useState(false)
-  const [mensaje, setMensaje] = useState('')
+  const [enviando, setEnviando] = useState(false)
+  const [mensaje, setMensaje] = useState<{ tipo: 'ok' | 'err'; texto: string } | null>(null)
 
   // Lista de clientes filtrada
   const clientesFiltrados = Object.entries(clientesMap)
@@ -25,7 +75,7 @@ export default function NotificacionesMailModal({ onClose, clientesMap }: Notifi
       if (!b) return true
       return cuenta.toLowerCase().includes(b) || (datos.nombre || '').toLowerCase().includes(b)
     })
-    .slice(0, 50) // Limitar para rendimiento
+    .slice(0, 60)
 
   // Cargar emails y config cuando se selecciona un cliente desde la fuente única
   useEffect(() => {
@@ -34,17 +84,22 @@ export default function NotificacionesMailModal({ onClose, clientesMap }: Notifi
       setReporteAuto(false)
       return
     }
+    let isMounted = true
     const cargarDatos = async () => {
       setGuardando(true)
       const cfg = await obtenerConfigMail(clienteSeleccionado.cuenta)
-      setEmails(cfg.emails)
-      setReporteAuto(cfg.reporteAutomatico)
-      setFrecuencia(cfg.frecuencia)
-      setEnviarCopiaGama(cfg.copiaGama ?? false)
-      if (cfg.emailGama) setCorreoGama(cfg.emailGama)
-      setGuardando(false)
+      if (isMounted) {
+        setEmails(cfg.emails)
+        setReporteAuto(cfg.reporteAutomatico)
+        setFrecuencia(cfg.frecuencia)
+        setEnviarCopiaGama(cfg.copiaGama ?? false)
+        if (cfg.emailGama) setCorreoGama(cfg.emailGama)
+        setEnviarAbonado(cfg.emails.length > 0)
+        setGuardando(false)
+      }
     }
     cargarDatos()
+    return () => { isMounted = false }
   }, [clienteSeleccionado])
 
   const agregarEmail = async () => {
@@ -58,8 +113,8 @@ export default function NotificacionesMailModal({ onClose, clientesMap }: Notifi
     const nuevosEmails = [...emails, emailLimpiado]
     setEmails(nuevosEmails)
     setNuevoEmail('')
+    setEnviarAbonado(true)
     setGuardando(true)
-    setMensaje('Guardando...')
     await guardarConfigMail(clienteSeleccionado.cuenta, nuevosEmails, {
       reporteAutomatico: reporteAuto,
       frecuencia,
@@ -67,14 +122,15 @@ export default function NotificacionesMailModal({ onClose, clientesMap }: Notifi
       emailGama: correoGama
     })
     setGuardando(false)
-    setMensaje('Guardado OK')
-    setTimeout(() => setMensaje(''), 2500)
+    setMensaje({ tipo: 'ok', texto: `Correo ${emailLimpiado} guardado en la base de datos.` })
+    setTimeout(() => setMensaje(null), 3000)
   }
 
   const eliminarEmail = async (emailAEliminar: string) => {
     if (!clienteSeleccionado) return
     const nuevosEmails = emails.filter(e => e !== emailAEliminar)
     setEmails(nuevosEmails)
+    if (nuevosEmails.length === 0) setEnviarAbonado(false)
     setGuardando(true)
     await guardarConfigMail(clienteSeleccionado.cuenta, nuevosEmails, {
       reporteAutomatico: reporteAuto,
@@ -83,8 +139,8 @@ export default function NotificacionesMailModal({ onClose, clientesMap }: Notifi
       emailGama: correoGama
     })
     setGuardando(false)
-    setMensaje('Eliminado OK')
-    setTimeout(() => setMensaje(''), 2500)
+    setMensaje({ tipo: 'ok', texto: 'Correo eliminado' })
+    setTimeout(() => setMensaje(null), 2500)
   }
 
   const handleToggleAuto = async (checked: boolean) => {
@@ -98,8 +154,8 @@ export default function NotificacionesMailModal({ onClose, clientesMap }: Notifi
       emailGama: correoGama
     })
     setGuardando(false)
-    setMensaje(checked ? 'Envío automático activado' : 'Automático desactivado')
-    setTimeout(() => setMensaje(''), 3000)
+    setMensaje({ tipo: 'ok', texto: checked ? 'Envío automático activado' : 'Envío automático desactivado' })
+    setTimeout(() => setMensaje(null), 3000)
   }
 
   const handleChangeFrecuencia = async (frec: 'diario' | 'semanal' | 'mensual') => {
@@ -113,8 +169,8 @@ export default function NotificacionesMailModal({ onClose, clientesMap }: Notifi
       emailGama: correoGama
     })
     setGuardando(false)
-    setMensaje(`Frecuencia: ${frec}`)
-    setTimeout(() => setMensaje(''), 2500)
+    setMensaje({ tipo: 'ok', texto: `Frecuencia: ${frec}` })
+    setTimeout(() => setMensaje(null), 2500)
   }
 
   const handleToggleCopiaGama = async (checked: boolean) => {
@@ -128,8 +184,6 @@ export default function NotificacionesMailModal({ onClose, clientesMap }: Notifi
       emailGama: correoGama
     })
     setGuardando(false)
-    setMensaje(checked ? 'Copia a Gama activada' : 'Copia a Gama desactivada')
-    setTimeout(() => setMensaje(''), 2500)
   }
 
   const handleChangeCorreoGama = async (val: string) => {
@@ -143,69 +197,186 @@ export default function NotificacionesMailModal({ onClose, clientesMap }: Notifi
       emailGama: val
     })
     setGuardando(false)
-    setMensaje('Destinatario Gama actualizado')
-    setTimeout(() => setMensaje(''), 2500)
   }
 
-  const probarEmail = async () => {
-    if (!clienteSeleccionado) return
-    const destinatarios = [...emails]
+  // Generador de PDF en Base64
+  const generarPdfBase64 = (cuenta: string, nombre: string, eventos: any[]): string => {
+    const doc = new jsPDF()
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(13)
+    doc.text('GAMA SECURITY — REPORTE HISTÓRICO DE MONITOREO 24/7', 14, 15)
+    
+    doc.setFontSize(9)
+    doc.setFont('helvetica', 'normal')
+    doc.text(`Abonado: #${cuenta} — ${nombre}`, 14, 21)
+    doc.text(`Rango Consultado: ${fechaDesde} al ${fechaHasta} | Total Eventos: ${eventos.length}`, 14, 26)
+    doc.text(`Fecha de Emisión: ${new Date().toLocaleString('es-CL')}`, 14, 31)
+    doc.line(14, 33, 196, 33)
+
+    let y = 39
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(8)
+    doc.text('FECHA / HORA', 14, y)
+    doc.text('EVENTO / SEÑAL', 60, y)
+    doc.text('ZONA / USUARIO', 145, y)
+    doc.line(14, y + 2, 196, y + 2)
+    y += 6
+
+    doc.setFont('helvetica', 'normal')
+    const muestra = eventos.slice(0, 80)
+    for (const ev of muestra) {
+      if (y > 280) {
+        doc.addPage()
+        y = 18
+        doc.setFont('helvetica', 'bold')
+        doc.text('FECHA / HORA', 14, y)
+        doc.text('EVENTO / SEÑAL', 60, y)
+        doc.text('ZONA / USUARIO', 145, y)
+        doc.line(14, y + 2, 196, y + 2)
+        y += 6
+        doc.setFont('helvetica', 'normal')
+      }
+      const fechaHora = String(ev.fecha_hora || ev.fecha || '').substring(0, 19)
+      const evento = String(ev.evento || 'SEÑAL').substring(0, 42)
+      const zonaUsr = String(ev.zona || ev.usuario || '-').substring(0, 25)
+
+      doc.text(fechaHora, 14, y)
+      doc.text(evento, 60, y)
+      doc.text(zonaUsr, 145, y)
+      y += 5
+    }
+
+    if (eventos.length > 80) {
+      doc.setFont('helvetica', 'italic')
+      doc.text(`... y ${eventos.length - 80} eventos adicionales registrados en el sistema central.`, 14, y + 4)
+    }
+
+    const dataUri = doc.output('datauristring')
+    return dataUri.split(',')[1] || ''
+  }
+
+  // Generador de Excel XLSX en Base64
+  const generarExcelBase64 = (cuenta: string, nombre: string, eventos: any[]): string => {
+    const rows = eventos.map((ev, idx) => ({
+      '#': idx + 1,
+      'Fecha y Hora': ev.fecha_hora || ev.fecha || '',
+      'Cuenta': cuenta,
+      'Abonado': nombre,
+      'Evento': ev.evento || 'SEÑAL',
+      'Zona / Código': ev.zona || '',
+      'Usuario': ev.usuario || '',
+      'Detalle': ev.descripcion || ev.protocolo || ''
+    }))
+
+    const ws = XLSX.utils.json_to_sheet(rows.length > 0 ? rows : [{ 'Mensaje': 'Sin eventos registrados en el período' }])
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, `Señales_${cuenta}`)
+    return XLSX.write(wb, { bookType: 'xlsx', type: 'base64' })
+  }
+
+  // Botón Principal: ENVIAR
+  const handleEnviarReporte = async () => {
+    if (!clienteSeleccionado) {
+      alert('Seleccione un abonado de la lista izquierda primero.')
+      return
+    }
+
+    // Compilar lista de destinatarios
+    const destinatarios: string[] = []
+    if (enviarAbonado) {
+      destinatarios.push(...emails)
+    }
     if (enviarCopiaGama && correoGama && !destinatarios.includes(correoGama)) {
       destinatarios.push(correoGama)
     }
 
     if (destinatarios.length === 0) {
-      alert("Agregue al menos un correo o marque copia a Usuario Gama.")
+      alert('Debe marcar al menos un destinatario: casillas del abonado o marcar Usuario Gama.')
       return
     }
 
+    setEnviando(true)
+    setMensaje({ tipo: 'ok', texto: 'Consultando bitácora de eventos y generando reporte...' })
+
     try {
-      setMensaje('Enviando prueba...')
-      const res = await fetch('/api/enviar-mail', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          cuenta: clienteSeleccionado.cuenta,
-          nombre_cliente: clienteSeleccionado.nombre,
-          tipo_evento: 'REPORTE_HISTORICO',
-          fecha_hora: new Date().toISOString(),
-          destinatarios,
-          reporte_data: {
-            fechaDesde: new Date().toLocaleDateString('es-CL'),
-            fechaHasta: new Date().toLocaleDateString('es-CL'),
-            totalEventos: 1,
-            frecuencia: 'prueba',
-            eventos: [
-              {
-                fecha_hora: new Date().toLocaleString('es-CL'),
-                evento: 'TEST DE TRANSMISIÓN Y VERIFICACIÓN POR CORREO',
-                zona: 'Central Gama',
-                usuario: 'Operador Central'
-              }
-            ]
-          }
-        })
+      // 1. Obtener eventos de monitoreo para la cuenta en el rango de fechas
+      const { data: rawEventos, error: errEvt } = await supabase
+        .from('eventos_monitoreo')
+        .select('*')
+        .eq('cuenta', clienteSeleccionado.cuenta)
+        .gte('fecha_hora', `${fechaDesde}T00:00:00`)
+        .lte('fecha_hora', `${fechaHasta}T23:59:59`)
+        .order('fecha_hora', { ascending: false })
+        .limit(300)
+
+      if (errEvt) console.warn('Aviso consultando eventos por fecha:', errEvt)
+
+      const eventosLista = rawEventos || []
+
+      // 2. Construir adjuntos según el formato seleccionado
+      const attachments: Array<{ filename: string; content: string }> = []
+      const ctaClean = clienteSeleccionado.cuenta
+      const nombreClean = clienteSeleccionado.nombre || ctaClean
+
+      if (formatoAdjunto === 'pdf' || formatoAdjunto === 'ambos') {
+        const pdfBase64 = generarPdfBase64(ctaClean, nombreClean, eventosLista)
+        if (pdfBase64) {
+          attachments.push({
+            filename: `Reporte_${ctaClean}_${fechaDesde}_al_${fechaHasta}.pdf`,
+            content: pdfBase64
+          })
+        }
+      }
+
+      if (formatoAdjunto === 'xlsx' || formatoAdjunto === 'ambos') {
+        const xlsxBase64 = generarExcelBase64(ctaClean, nombreClean, eventosLista)
+        if (xlsxBase64) {
+          attachments.push({
+            filename: `Reporte_${ctaClean}_${fechaDesde}_al_${fechaHasta}.xlsx`,
+            content: xlsxBase64
+          })
+        }
+      }
+
+      // 3. Despachar a la API de correo
+      const res = await enviarReporteHistoricoMail({
+        cuenta: ctaClean,
+        nombreCliente: nombreClean,
+        fechaDesde,
+        fechaHasta,
+        destinatarios,
+        totalEventos: eventosLista.length,
+        eventos: eventosLista,
+        frecuencia: 'manual',
+        attachments: attachments.length > 0 ? attachments : undefined
       })
 
-      if (res.ok) {
-        setMensaje('Prueba enviada OK')
+      setEnviando(false)
+      if (res.success) {
+        setMensaje({
+          tipo: 'ok',
+          texto: `✅ Reporte enviado con éxito a: ${destinatarios.join(', ')}`
+        })
       } else {
-        const error = await res.json()
-        console.error(error)
-        setMensaje('Error al enviar prueba')
+        setMensaje({
+          tipo: 'err',
+          texto: `❌ Error al enviar: ${res.error || 'Falla de conexión'}`
+        })
       }
-      setTimeout(() => setMensaje(''), 3500)
-    } catch (err) {
-      console.error(err)
-      setMensaje('Error de conexión')
+      setTimeout(() => setMensaje(null), 6000)
+    } catch (err: any) {
+      setEnviando(false)
+      console.error('Error enviando reporte:', err)
+      setMensaje({ tipo: 'err', texto: `❌ Error inesperado: ${err.message || err}` })
+      setTimeout(() => setMensaje(null), 6000)
     }
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-3 sm:p-4">
-      <div className="bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 w-full max-w-4xl max-h-[92vh] flex flex-col shadow-2xl font-sans">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-xs p-2 sm:p-4">
+      <div className="bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 w-full max-w-5xl max-h-[95vh] flex flex-col shadow-2xl font-sans">
         
-        {/* Header Modal */}
+        {/* Header Modal Clásico */}
         <div className="bg-[#000080] text-white px-3 py-1.5 flex justify-between items-center shrink-0 shadow-inner">
           <div className="font-bold text-xs sm:text-sm tracking-wide flex items-center gap-2">
             <span>CENTRAL DE CORREOS & REPORTES HISTÓRICOS</span>
@@ -216,14 +387,16 @@ export default function NotificacionesMailModal({ onClose, clientesMap }: Notifi
           <button 
             onClick={onClose}
             className="bg-[#c0c0c0] text-black font-bold border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 px-2 leading-none hover:bg-[#d0d0d0] active:border-t-gray-700 cursor-pointer"
+            title="Cerrar ventana"
           >
             ✕
           </button>
         </div>
 
-        <div className="p-3 sm:p-4 flex flex-col md:flex-row gap-3 sm:gap-4 h-[560px]">
-          {/* Panel Izquierdo: Lista de Clientes */}
-          <div className="flex-1 border-2 border-gray-600 bg-black text-green-400 flex flex-col font-mono text-[11px] min-h-[180px]">
+        <div className="p-3 flex flex-col md:flex-row gap-3 flex-1 min-h-0 overflow-hidden">
+          
+          {/* Panel Izquierdo: Lista de Abonados (Terminal UNIX / MDB) */}
+          <div className="w-full md:w-[320px] border-2 border-gray-600 bg-black text-green-400 flex flex-col font-mono text-[11px] shrink-0">
             <div className="p-1.5 border-b border-gray-700 bg-gray-900 shrink-0">
               <input 
                 type="text" 
@@ -249,7 +422,7 @@ export default function NotificacionesMailModal({ onClose, clientesMap }: Notifi
                       onClick={() => setClienteSeleccionado({ cuenta, nombre: datos.nombre || '' })}
                     >
                       <td className="p-1.5 border-r border-gray-800 font-bold">{cuenta}</td>
-                      <td className="p-1.5 truncate max-w-[220px]">{datos.nombre}</td>
+                      <td className="p-1.5 truncate max-w-[200px]">{datos.nombre}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -257,72 +430,249 @@ export default function NotificacionesMailModal({ onClose, clientesMap }: Notifi
             </div>
           </div>
 
-          {/* Panel Derecho: Configuración de Correos del Cliente */}
-          <div className="w-full md:w-[420px] border-2 border-t-gray-700 border-l-gray-700 border-b-white border-r-white bg-[#e0e0e0] flex flex-col p-3 text-xs">
+          {/* Panel Derecho: Configuración y Envío de Reporte */}
+          <div className="flex-1 border-2 border-t-gray-700 border-l-gray-700 border-b-white border-r-white bg-[#e8e8e8] flex flex-col p-3 text-xs overflow-y-auto">
             <div className="text-[#000080] font-bold text-xs sm:text-sm border-b border-gray-400 pb-1 mb-2 flex justify-between items-center">
-              <span>CASILLAS & ENVÍO DE REPORTES</span>
+              <span>CONFIGURACIÓN Y ENVÍO DE REPORTE HISTÓRICO</span>
               {guardando && <span className="text-[10px] text-blue-700 font-bold animate-pulse">Sincronizando...</span>}
             </div>
             
             {!clienteSeleccionado ? (
-              <div className="flex-1 flex items-center justify-center text-gray-500 font-bold text-xs text-center p-4">
-                SELECCIONE UN ABONADO<br/>EN LA LISTA IZQUIERDA
+              <div className="flex-1 flex flex-col items-center justify-center text-gray-500 font-bold text-xs text-center p-6 gap-2">
+                <span className="text-3xl">👈</span>
+                <span>SELECCIONE UN ABONADO EN LA LISTA IZQUIERDA PARA CONFIGURAR O ENVIAR REPORTES</span>
               </div>
             ) : (
-              <div className="flex flex-col flex-1 gap-2.5 overflow-hidden">
-                {/* Identificación Abonado */}
-                <div className="bg-white border border-gray-400 p-2 shadow-xs">
-                  <div className="text-[9px] font-bold text-gray-600 uppercase">Abonado Seleccionado:</div>
-                  <div className="font-bold text-xs text-gray-900 truncate">
-                    #{clienteSeleccionado.cuenta} — {clienteSeleccionado.nombre}
+              <div className="flex flex-col gap-2.5">
+                
+                {/* 1. Identificación del Abonado */}
+                <div className="bg-white border border-gray-400 p-2 shadow-xs flex items-center justify-between">
+                  <div>
+                    <div className="text-[9px] font-bold text-gray-600 uppercase">Abonado Seleccionado:</div>
+                    <div className="font-bold text-xs text-blue-950">
+                      #{clienteSeleccionado.cuenta} — {clienteSeleccionado.nombre}
+                    </div>
+                  </div>
+                  <span className="bg-blue-100 text-blue-900 font-mono text-[10px] font-bold px-2 py-0.5 border border-blue-300 rounded-xs">
+                    CUENTA ACTIVA
+                  </span>
+                </div>
+
+                {/* 2. Filtro de Fechas para el Reporte Manual */}
+                <div className="bg-[#f0f4f8] border border-blue-300 p-2 space-y-1.5">
+                  <div className="text-[11px] font-bold text-blue-900 flex items-center justify-between">
+                    <span>📅 RANGO DE FECHAS PARA EL REPORTE:</span>
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => { setFechaDesde(hoyChile()); setFechaHasta(hoyChile()) }}
+                        className="bg-white border border-gray-400 px-1.5 py-0.5 text-[10px] font-bold hover:bg-gray-100 cursor-pointer"
+                      >
+                        Hoy
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setFechaDesde(getDiasAtras(7)); setFechaHasta(hoyChile()) }}
+                        className="bg-white border border-gray-400 px-1.5 py-0.5 text-[10px] font-bold hover:bg-gray-100 cursor-pointer"
+                      >
+                        7 Días
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setFechaDesde(getInicioMes()); setFechaHasta(hoyChile()) }}
+                        className="bg-white border border-gray-400 px-1.5 py-0.5 text-[10px] font-bold hover:bg-gray-100 cursor-pointer"
+                      >
+                        Mes Actual
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setFechaDesde(getDiasAtras(30)); setFechaHasta(hoyChile()) }}
+                        className="bg-white border border-gray-400 px-1.5 py-0.5 text-[10px] font-bold hover:bg-gray-100 cursor-pointer"
+                      >
+                        30 Días
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                    <div className="flex items-center gap-1.5">
+                      <label className="text-[10px] font-bold text-gray-700 w-12 shrink-0">Desde:</label>
+                      <input 
+                        type="date"
+                        value={fechaDesde}
+                        onChange={(e) => setFechaDesde(e.target.value)}
+                        className="bg-white border border-gray-400 px-2 py-0.5 text-xs text-blue-950 font-bold flex-1 focus:outline-none"
+                      />
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <label className="text-[10px] font-bold text-gray-700 w-12 shrink-0">Hasta:</label>
+                      <input 
+                        type="date"
+                        value={fechaHasta}
+                        onChange={(e) => setFechaHasta(e.target.value)}
+                        className="bg-white border border-gray-400 px-2 py-0.5 text-xs text-blue-950 font-bold flex-1 focus:outline-none"
+                      />
+                    </div>
                   </div>
                 </div>
 
-                {/* Agregar Nuevo Correo */}
-                <div>
-                  <div className="text-[10px] font-bold text-gray-800 mb-1">Agregar Correo para Reportes:</div>
-                  <div className="flex gap-1">
+                {/* 3. Formato del Reporte (PDF / Excel XLSX / Ambos) */}
+                <div className="bg-white border border-gray-300 p-2 space-y-1">
+                  <div className="text-[10px] font-bold text-gray-700 uppercase">
+                    📎 Formato de Exportación Adjunto:
+                  </div>
+                  <div className="flex flex-wrap gap-2 text-xs">
+                    <label className={`flex items-center gap-1.5 px-2 py-1 border cursor-pointer select-none font-bold rounded-xs ${
+                      formatoAdjunto === 'pdf' ? 'bg-indigo-50 border-indigo-500 text-indigo-900' : 'bg-gray-50 border-gray-300 text-gray-700 hover:bg-gray-100'
+                    }`}>
+                      <input 
+                        type="radio" 
+                        name="formato" 
+                        checked={formatoAdjunto === 'pdf'} 
+                        onChange={() => setFormatoAdjunto('pdf')} 
+                        className="cursor-pointer"
+                      />
+                      <span>📄 Documento PDF</span>
+                    </label>
+
+                    <label className={`flex items-center gap-1.5 px-2 py-1 border cursor-pointer select-none font-bold rounded-xs ${
+                      formatoAdjunto === 'xlsx' ? 'bg-emerald-50 border-emerald-500 text-emerald-900' : 'bg-gray-50 border-gray-300 text-gray-700 hover:bg-gray-100'
+                    }`}>
+                      <input 
+                        type="radio" 
+                        name="formato" 
+                        checked={formatoAdjunto === 'xlsx'} 
+                        onChange={() => setFormatoAdjunto('xlsx')} 
+                        className="cursor-pointer"
+                      />
+                      <span>📊 Planilla Excel (.xlsx)</span>
+                    </label>
+
+                    <label className={`flex items-center gap-1.5 px-2 py-1 border cursor-pointer select-none font-bold rounded-xs ${
+                      formatoAdjunto === 'ambos' ? 'bg-blue-50 border-blue-500 text-blue-900' : 'bg-gray-50 border-gray-300 text-gray-700 hover:bg-gray-100'
+                    }`}>
+                      <input 
+                        type="radio" 
+                        name="formato" 
+                        checked={formatoAdjunto === 'ambos'} 
+                        onChange={() => setFormatoAdjunto('ambos')} 
+                        className="cursor-pointer"
+                      />
+                      <span>📑 Ambos (PDF + Excel)</span>
+                    </label>
+
+                    <label className={`flex items-center gap-1.5 px-2 py-1 border cursor-pointer select-none font-bold rounded-xs ${
+                      formatoAdjunto === 'ninguno' ? 'bg-amber-50 border-amber-500 text-amber-900' : 'bg-gray-50 border-gray-300 text-gray-700 hover:bg-gray-100'
+                    }`}>
+                      <input 
+                        type="radio" 
+                        name="formato" 
+                        checked={formatoAdjunto === 'ninguno'} 
+                        onChange={() => setFormatoAdjunto('ninguno')} 
+                        className="cursor-pointer"
+                      />
+                      <span>✉️ Solo Cuerpo HTML</span>
+                    </label>
+                  </div>
+                </div>
+
+                {/* 4. Casillas del Abonado */}
+                <div className="bg-white border border-gray-300 p-2 space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="flex items-center gap-1.5 cursor-pointer select-none">
+                      <input 
+                        type="checkbox"
+                        checked={enviarAbonado}
+                        onChange={(e) => setEnviarAbonado(e.target.checked)}
+                        className="w-4 h-4 text-blue-600 rounded border-gray-400 cursor-pointer"
+                      />
+                      <span className="text-[11px] font-bold text-gray-800">
+                        Enviar a correos del Abonado ({emails.length}):
+                      </span>
+                    </label>
+                    <span className="text-[10px] text-gray-500 italic">Sincronizado con base de datos</span>
+                  </div>
+
+                  {/* Input Agregar Correo Manual */}
+                  <div className="flex gap-1 pt-1">
                     <input 
                       type="email" 
-                      className="flex-1 border border-gray-500 px-2 text-xs py-1 text-gray-800 bg-white focus:outline-none focus:border-blue-700"
-                      placeholder="ejemplo@correo.com"
+                      className="flex-1 border border-gray-400 px-2 text-xs py-1 text-gray-800 bg-white focus:outline-none focus:border-blue-700"
+                      placeholder="Nuevo correo: ejemplo@empresa.cl"
                       value={nuevoEmail}
                       onChange={e => setNuevoEmail(e.target.value)}
                       onKeyDown={e => e.key === 'Enter' && agregarEmail()}
                     />
                     <button 
                       onClick={agregarEmail}
-                      className="bg-[#c0c0c0] font-bold border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 px-3 hover:bg-[#d0d0d0] active:border-t-gray-700 text-green-800 text-base leading-none cursor-pointer"
+                      className="bg-[#c0c0c0] font-bold border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 px-3 hover:bg-[#d0d0d0] active:border-t-gray-700 text-blue-900 text-xs cursor-pointer flex items-center gap-1"
                     >
-                      +
+                      + Agregar
                     </button>
+                  </div>
+
+                  {/* Lista de Correos Registrados */}
+                  <div className="max-h-[70px] overflow-y-auto border border-gray-300 bg-gray-50 p-1">
+                    {emails.length === 0 ? (
+                      <div className="text-[11px] text-gray-500 italic p-1">
+                        No hay correos registrados para este abonado. Ingrese uno arriba o marque abajo para enviar solo a Usuario Gama.
+                      </div>
+                    ) : (
+                      <div className="flex flex-wrap gap-1">
+                        {emails.map((email, i) => (
+                          <span key={i} className="bg-white border border-blue-300 text-blue-900 font-mono text-[11px] px-1.5 py-0.5 rounded flex items-center gap-1">
+                            <span>{email}</span>
+                            <button 
+                              onClick={() => eliminarEmail(email)}
+                              className="text-red-500 hover:text-red-700 font-bold cursor-pointer leading-none"
+                              title="Eliminar correo"
+                            >
+                              ×
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                {/* Lista de Correos Registrados */}
-                <div className="flex-1 border border-gray-500 bg-white overflow-y-auto p-1">
-                  {emails.length === 0 ? (
-                    <div className="p-3 text-center text-[11px] text-gray-400 italic">No hay correos registrados para este abonado</div>
-                  ) : (
-                    <ul className="divide-y divide-gray-200">
-                      {emails.map((email, i) => (
-                        <li key={i} className="flex justify-between items-center p-1.5 text-xs font-bold text-gray-800 hover:bg-blue-50">
-                          <span className="truncate mr-2 font-mono text-[11px]">{email}</span>
-                          <button 
-                            onClick={() => eliminarEmail(email)}
-                            className="text-red-600 hover:text-white hover:bg-red-600 px-1.5 py-0.5 border border-transparent rounded-sm font-bold leading-none cursor-pointer"
-                            title="Eliminar"
-                          >
-                            ×
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
+                {/* 5. Enviar a Usuario Gama (SOLO los 4 solicitados) */}
+                <div className="bg-[#f8fafc] border border-blue-300 p-2 space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="flex items-center gap-1.5 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={enviarCopiaGama}
+                        onChange={(e) => handleToggleCopiaGama(e.target.checked)}
+                        className="w-4 h-4 text-blue-600 rounded border-gray-400 focus:ring-blue-500 cursor-pointer"
+                      />
+                      <span className="text-[11px] font-bold text-blue-950 flex items-center gap-1">
+                        <span>🛡️</span>
+                        <span>Enviar a Usuario Gama (puede enviarse solo a Gama):</span>
+                      </span>
+                    </label>
+                    <span className="text-[10px] text-blue-700 font-semibold">Casillas autorizadas</span>
+                  </div>
+
+                  {enviarCopiaGama && (
+                    <div className="pt-1 flex items-center gap-2">
+                      <select
+                        value={correoGama}
+                        onChange={(e) => handleChangeCorreoGama(e.target.value)}
+                        className="flex-1 bg-white border border-gray-400 text-xs font-bold text-blue-950 px-2 py-1 rounded-xs focus:outline-none"
+                      >
+                        {CORREOS_GAMA_PREDEFINIDOS.map(cg => (
+                          <option key={cg.email} value={cg.email}>
+                            {cg.etiqueta}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                   )}
                 </div>
 
-                {/* Control de Envío Automático Programado (DESMARCADO POR DEFECTO) */}
-                <div className="bg-[#f0f4f8] border border-blue-300 p-2 space-y-1.5">
+                {/* 6. Control de Envío Automático Programado (DESMARCADO POR DEFECTO) */}
+                <div className="bg-white border border-gray-300 p-2 flex flex-wrap items-center justify-between gap-2">
                   <label className="flex items-center gap-1.5 cursor-pointer select-none">
                     <input
                       type="checkbox"
@@ -330,14 +680,14 @@ export default function NotificacionesMailModal({ onClose, clientesMap }: Notifi
                       onChange={(e) => handleToggleAuto(e.target.checked)}
                       className="w-4 h-4 text-blue-600 rounded border-gray-400 focus:ring-blue-500 cursor-pointer"
                     />
-                    <span className="text-[11px] font-bold text-blue-950">
+                    <span className="text-[11px] font-bold text-gray-800">
                       Habilitar Envío Automático Programado
                     </span>
                   </label>
                   
                   {reporteAuto && (
-                    <div className="flex items-center gap-2 pt-1 border-t border-blue-200">
-                      <span className="text-[10px] font-bold text-gray-700">Frecuencia:</span>
+                    <div className="flex items-center gap-1.5 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-xs">
+                      <span className="text-[10px] font-bold text-blue-900">Frecuencia:</span>
                       <select
                         value={frecuencia}
                         onChange={(e) => handleChangeFrecuencia(e.target.value as any)}
@@ -351,50 +701,42 @@ export default function NotificacionesMailModal({ onClose, clientesMap }: Notifi
                   )}
                 </div>
 
-                {/* Copia a Usuario Gama */}
-                <div className="bg-gray-100 border border-gray-300 p-2 space-y-1">
-                  <label className="flex items-center gap-1.5 cursor-pointer select-none">
-                    <input
-                      type="checkbox"
-                      checked={enviarCopiaGama}
-                      onChange={(e) => handleToggleCopiaGama(e.target.checked)}
-                      className="w-4 h-4 text-blue-600 rounded border-gray-400 focus:ring-blue-500 cursor-pointer"
-                    />
-                    <span className="text-[11px] font-bold text-gray-800">
-                      🛡️ Enviar copia a Usuario Gama:
-                    </span>
-                  </label>
-                  {enviarCopiaGama && (
-                    <select
-                      value={correoGama}
-                      onChange={(e) => handleChangeCorreoGama(e.target.value)}
-                      className="w-full bg-white border border-gray-400 text-[11px] font-bold text-blue-900 px-2 py-0.5 focus:outline-none"
-                    >
-                      {CORREOS_GAMA_PREDEFINIDOS.map(cg => (
-                        <option key={cg.email} value={cg.email}>
-                          {cg.etiqueta}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                </div>
-
-                {/* Footer de Acciones y Prueba */}
-                <div className="flex gap-2 justify-between items-center pt-1 border-t border-gray-400">
-                  <div className="text-[11px] font-bold text-[#000080] truncate max-w-[200px]">
-                    {guardando ? 'Guardando...' : mensaje}
+                {/* Feedback de Estado */}
+                {mensaje && (
+                  <div className={`p-2 text-xs font-bold border rounded-xs ${
+                    mensaje.tipo === 'ok' ? 'bg-emerald-50 text-emerald-900 border-emerald-300' : 'bg-red-50 text-red-900 border-red-300'
+                  }`}>
+                    {mensaje.texto}
                   </div>
+                )}
+
+                {/* Footer de Acciones: Botón ENVIAR */}
+                <div className="flex gap-2 justify-between items-center pt-2 border-t border-gray-400 mt-1">
+                  <div className="text-[10px] text-gray-600 italic">
+                    Destinatarios activos: {
+                      [
+                        ...(enviarAbonado ? emails : []),
+                        ...(enviarCopiaGama && correoGama ? [correoGama] : [])
+                      ].length
+                    } casillas
+                  </div>
+
                   <button 
-                    onClick={probarEmail}
-                    className="bg-[#000080] text-white text-[11px] font-bold border-2 border-t-blue-400 border-l-blue-400 border-b-black border-r-black px-4 py-1.5 hover:bg-blue-900 active:translate-y-0.5 cursor-pointer shadow-xs"
+                    onClick={handleEnviarReporte}
+                    disabled={enviando}
+                    className="bg-[#000080] text-white text-xs font-black border-2 border-t-blue-400 border-l-blue-400 border-b-black border-r-black px-6 py-2 hover:bg-blue-900 active:translate-y-0.5 cursor-pointer shadow-md disabled:opacity-50 flex items-center gap-1.5"
+                    title="Despachar reporte oficial por correo"
                   >
-                    ENVIAR PRUEBA REAL
+                    <span>{enviando ? '⏳' : '📧'}</span>
+                    <span>{enviando ? 'ENVIANDO...' : 'ENVIAR'}</span>
                   </button>
                 </div>
+
               </div>
             )}
           </div>
         </div>
+
       </div>
     </div>
   )
