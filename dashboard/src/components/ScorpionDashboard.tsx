@@ -32,6 +32,7 @@ import BuscadorUniversalModal from './BuscadorUniversalModal'
 import PersonasAutorizadasModal from './PersonasAutorizadasModal'
 import RegistroCambiosModal from './RegistroCambiosModal'
 import OperadorAutomaticoModal from './OperadorAutomaticoModal'
+import WhatsAppNotificationToast from './WhatsAppNotificationToast'
 import { lookupContactId } from '@/lib/contact_id_library'
 import { sendMessage, generarMensajeAlerta, generarMensajeEnergia, detectarPatronEvento, type EventInfo } from '@/lib/whatsapp'
 import { Operator, ensureUserAttributes, OPERADORES_PREDETERMINADOS } from '@/types/operator'
@@ -2232,6 +2233,15 @@ export default function ScorpionDashboard() {
             setExpedientePestana('telefonos')
           }
           setModalActivo(id)
+        }}
+      />
+
+      {/* Alerta Realtime en Pantalla de Mensajes WhatsApp con Audio & Emergencias */}
+      <WhatsAppNotificationToast
+        clientesMap={clientesMap}
+        onOpenChat={(numero, cta) => {
+          setWhatsappTelefonoInicial(numero)
+          setModalActivo('notificaciones-whatsapp')
         }}
       />
     </div>

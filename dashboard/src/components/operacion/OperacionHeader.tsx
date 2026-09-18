@@ -12,6 +12,7 @@ interface OperacionHeaderProps {
   onOpenCommandPalette: () => void
   onQuickCotizacion: () => void
   onQuickOT: () => void
+  onOpenWhatsAppPlantillas?: () => void
 }
 
 export default function OperacionHeader({
@@ -22,7 +23,8 @@ export default function OperacionHeader({
   setSidebarAbierto,
   onOpenCommandPalette,
   onQuickCotizacion,
-  onQuickOT
+  onQuickOT,
+  onOpenWhatsAppPlantillas
 }: OperacionHeaderProps) {
   return (
     <header className="bg-[#0a1628]/90 backdrop-blur-xl border border-[#1e3a5f]/60 rounded-2xl p-4 sm:p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shrink-0 no-imprimir shadow-2xl transition-all font-sans">
@@ -93,11 +95,23 @@ export default function OperacionHeader({
         {/* Quick OT */}
         <button
           onClick={onQuickOT}
-          className="btn-apple-primary text-xs py-2 px-4 flex items-center gap-1.5 font-sans shadow-md shadow-[#0066cc]/20"
+          className="btn-apple-primary text-xs py-2 px-3.5 flex items-center gap-1.5 font-sans shadow-md shadow-[#0066cc]/20"
         >
           <Plus className="h-3.5 w-3.5" />
           <span>Nueva OT</span>
         </button>
+
+        {/* Quick WhatsApp 1-Clic */}
+        {onOpenWhatsAppPlantillas && (
+          <button
+            onClick={onOpenWhatsAppPlantillas}
+            className="bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 hover:text-emerald-200 border border-emerald-500/40 text-xs py-2 px-3 rounded-xl flex items-center gap-1.5 font-sans font-semibold transition-all shadow-md active:scale-95 cursor-pointer"
+            title="Enviar Plantillas Oficiales de WhatsApp con 1 Clic"
+          >
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span>Plantillas WhatsApp</span>
+          </button>
+        )}
       </div>
 
     </header>

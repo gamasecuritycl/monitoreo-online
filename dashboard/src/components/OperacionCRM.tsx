@@ -18,6 +18,9 @@ import BentoKpiGrid from './operacion/BentoKpiGrid'
 import ComprasProveedoresModule from './operacion/ComprasProveedoresModule'
 import ContratosModule from './operacion/ContratosModule'
 import ContratoDigitalModal from './operacion/ContratoDigitalModal'
+import WhatsAppNotificationToast from './WhatsAppNotificationToast'
+import WhatsAppPlantillasModal, { PlantillaAbonadoData } from './operacion/WhatsAppPlantillasModal'
+import NotificacionesWhatsAppModal from './NotificacionesWhatsAppModal'
 
 import {
   Shield,
@@ -391,6 +394,10 @@ export default function OperacionCRM() {
   const [buscandoSpinner, setBuscandoSpinner] = useState<boolean>(false)
   const [tabFicha360, setTabFicha360] = useState<'datos' | 'abonados' | 'facturas' | 'cotizaciones' | 'ots' | 'contrato'>('datos')
   const [mostrarModalContratoFicha, setMostrarModalContratoFicha] = useState(false)
+  const [modalWhatsAppActivo, setModalWhatsAppActivo] = useState(false)
+  const [modalPlantillasWhatsAppActivo, setModalPlantillasWhatsAppActivo] = useState(false)
+  const [plantillaWhatsAppAbonado, setPlantillaWhatsAppAbonado] = useState<PlantillaAbonadoData | undefined>(undefined)
+  const [whatsappTelefonoDirecto, setWhatsappTelefonoDirecto] = useState<string | undefined>(undefined)
 
   // UF Global
   const [valorUF, setValorUF] = useState(38500)
@@ -2601,6 +2608,8 @@ export default function OperacionCRM() {
           moduloActivo === 'marketing' ? 'Marketing B2B' :
           moduloActivo === 'facturacion' ? 'Cobranza & Abonos' :
           moduloActivo === 'serv_tecnico' ? 'Servicios Técnicos' :
+          moduloActivo === 'compras' ? 'Compras & Proveedores' :
+          moduloActivo === 'contratos' ? 'Contratos & Firma' :
           moduloActivo === 'kpis' ? 'Reportes & Analytics' :
           moduloActivo === 'config' ? 'Configuración & Claves' : 'Agentes Autónomos'
         }
@@ -2616,6 +2625,16 @@ export default function OperacionCRM() {
         onQuickOT={() => {
           setModuloActivo('serv_tecnico')
           setMostrarModalOT(true)
+        }}
+        onOpenWhatsAppPlantillas={() => {
+          setPlantillaWhatsAppAbonado({
+            cuenta: cuentaSeleccionada || (clienteActivo?.cuentas_abonados?.[0] || '1042'),
+            nombre: clienteActivo?.razon_social || abonadoActivo?.alias_centro_costo || 'Cliente Gama',
+            telefono: clienteActivo?.telefono || '+56991016912',
+            direccion: abonadoActivo?.direccion || clienteActivo?.direccion_comercial || 'Dirección Registrada',
+            rut: clienteActivo?.rut || ''
+          })
+          setModalPlantillasWhatsAppActivo(true)
         }}
       />
 
@@ -6943,6 +6962,40 @@ export default function OperacionCRM() {
           empresaEmisora={empresasConglomerado?.[0]}
         />
       )}
+
+      {/* ── MODAL PLANTILLAS RÁPIDAS WHATSAPP 1-CLIC ── */}
+      {modalPlantillasWhatsAppActivo && (
+        <WhatsAppPlantillasModal
+          onClose={() => {
+            setModalPlantillasWhatsAppActivo(false)
+            setPlantillaWhatsAppAbonado(undefined)
+          }}
+          abonadoInicial={plantillaWhatsAppAbonado}
+        />
+      )}
+
+      {/* ── MODAL OFICIAL DE CONSOLA WHATSAPP ── */}
+      {modalWhatsAppActivo && (
+        <NotificacionesWhatsAppModal
+          onClose={() => {
+            setModalWhatsAppActivo(false)
+            setWhatsappTelefonoDirecto(undefined)
+          }}
+          clientesMap={clientesFallback}
+          cuentaInicial={cuentaSeleccionada || undefined}
+          telefonoInicial={whatsappTelefonoDirecto}
+        />
+      )}
+
+      {/* ── NOTIFICACIÓN REALTIME EN PANTALLA CON AUDIO & DETECCIÓN DE EMERGENCIAS ── */}
+      <WhatsAppNotificationToast
+        clientesMap={clientesFallback}
+        onOpenChat={(numero, cta) => {
+          setWhatsappTelefonoDirecto(numero)
+          if (cta) setCuentaSeleccionada(cta)
+          setModalWhatsAppActivo(true)
+        }}
+      />
 
     </div>
   )

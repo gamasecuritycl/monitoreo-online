@@ -600,6 +600,41 @@ async function conectar() {
           log(`Error guardando mensaje: ${err.message}`, 'WARN')
         }
 
+// Caché en memoria con TTL de 30s para no sobrecargar Supabase en ráfagas
+let cachedConfigIA = null
+let cachedConfigIATimestamp = 0
+
+async function obtenerConfigIA() {
+  const now = Date.now()
+  if (cachedConfigIA && (now - cachedConfigIATimestamp < 30000)) {
+    return cachedConfigIA
+  }
+  try {
+    const { data: configRows } = await supabase
+      .from('eventos_monitoreo')
+      .select('nombre_abonado')
+      .eq('cuenta', 'CONFIG_WHATSAPP_AI_PROMPT')
+      .order('id', { ascending: false })
+      .limit(1)
+
+    let config = { autoResponder: false, prompt: '' }
+    if (configRows && configRows.length > 0 && configRows[0].nombre_abonado) {
+      try {
+        const parsed = JSON.parse(configRows[0].nombre_abonado)
+        config = {
+          autoResponder: parsed.autoResponder === true,
+          prompt: parsed.prompt || ''
+        }
+      } catch {}
+    }
+    cachedConfigIA = config
+    cachedConfigIATimestamp = now
+    return config
+  } catch {
+    return cachedConfigIA || { autoResponder: false, prompt: '' }
+  }
+}
+
         // Limpiar temporizadores de inactividad si el operador responde
         if (msg.key.fromMe && numero && inactivityTimers[numero]) {
           clearTimeout(inactivityTimers[numero])
@@ -610,29 +645,10 @@ async function conectar() {
         // BOT AUTO-RESPONDER (Solo si está explícitamente activado en la configuración)
         if (!msg.key.fromMe && body && !isGroup) {
           try {
-            let autoRespEnabled = false
-            let promptText = ''
-            const { data: configRows } = await supabase
-              .from('eventos_monitoreo')
-              .select('nombre_abonado')
-              .eq('cuenta', 'CONFIG_WHATSAPP_AI_PROMPT')
-              .order('id', { ascending: false })
-              .limit(1)
+            const config = await obtenerConfigIA()
 
-            if (configRows && configRows.length > 0 && configRows[0].nombre_abonado) {
-              try {
-                const config = JSON.parse(configRows[0].nombre_abonado)
-                if (config.autoResponder === true) {
-                  autoRespEnabled = true
-                }
-                if (config.prompt) promptText = config.prompt
-              } catch (parseErr) {
-                log(`Error parseando config IA: ${parseErr.message}`, 'WARN')
-              }
-            }
-
-            if (autoRespEnabled) {
-              responderConIA(sock, rawJid, numero, body, promptText, nombre)
+            if (config.autoResponder === true) {
+              responderConIA(sock, rawJid, numero, body, config.prompt, nombre)
             } else {
               // Si la IA está apagada, limpiar cualquier sesión o timer residual
               if (inactivityTimers[numero]) {
