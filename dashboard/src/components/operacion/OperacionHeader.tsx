@@ -1,18 +1,20 @@
 'use client'
 
 import React from 'react'
-import { Shield, Search, DollarSign, ExternalLink, Plus, SlidersHorizontal, Sparkles } from 'lucide-react'
+import { Shield, Search, DollarSign, ExternalLink, Plus, Sparkles, ArrowLeft } from 'lucide-react'
 
 interface OperacionHeaderProps {
   moduloActivoLabel: string
   cantEmpresas: number
   valorUF: number
-  sidebarAbierto: boolean
-  setSidebarAbierto: (v: boolean) => void
+  sidebarAbierto?: boolean
+  setSidebarAbierto?: (v: boolean) => void
   onOpenCommandPalette: () => void
   onQuickCotizacion: () => void
   onQuickOT: () => void
   onOpenWhatsAppPlantillas?: () => void
+  moduloActivo?: string | null
+  onVolverMenu?: () => void
 }
 
 export default function OperacionHeader({
@@ -24,7 +26,9 @@ export default function OperacionHeader({
   onOpenCommandPalette,
   onQuickCotizacion,
   onQuickOT,
-  onOpenWhatsAppPlantillas
+  onOpenWhatsAppPlantillas,
+  moduloActivo,
+  onVolverMenu
 }: OperacionHeaderProps) {
   return (
     <header className="bg-[#0a1628]/90 backdrop-blur-xl border border-[#1e3a5f]/60 rounded-2xl p-4 sm:p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shrink-0 no-imprimir shadow-2xl transition-all font-sans">
@@ -32,17 +36,20 @@ export default function OperacionHeader({
       {/* Brand & Breadcrumb */}
       <div className="flex items-center gap-3 sm:gap-4 w-full md:w-auto justify-between md:justify-start">
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => setSidebarAbierto(!sidebarAbierto)}
-            className="bg-[#0f2240] hover:bg-[#162a4a] text-slate-300 hover:text-white p-2.5 rounded-xl border border-[#1e3a5f] transition-all cursor-pointer flex items-center justify-center"
-            title="Abrir/Cerrar Menú Lateral"
-          >
-            <SlidersHorizontal className="h-4 w-4 text-[#2997ff] stroke-[1.5]" />
-          </button>
-
-          <div className="w-10 h-10 rounded-xl bg-[#0066cc]/20 border border-[#0066cc]/40 text-[#2997ff] flex items-center justify-center shrink-0 shadow-inner">
-            <Shield className="h-5 w-5 stroke-[1.5]" />
-          </div>
+          {moduloActivo && onVolverMenu ? (
+            <button
+              onClick={onVolverMenu}
+              className="bg-[#0f2240] hover:bg-[#162a4a] text-slate-200 hover:text-white px-3.5 py-2.5 rounded-xl border border-[#1e3a5f] hover:border-[#2997ff] transition-all cursor-pointer flex items-center gap-2 font-bold text-xs shadow-md group"
+              title="Volver al Menú Principal"
+            >
+              <ArrowLeft className="h-4 w-4 text-[#2997ff] group-hover:-translate-x-1 transition-transform" />
+              <span className="hidden sm:inline">Menú Principal</span>
+            </button>
+          ) : (
+            <div className="w-10 h-10 rounded-xl bg-[#0066cc]/20 border border-[#0066cc]/40 text-[#2997ff] flex items-center justify-center shrink-0 shadow-inner">
+              <Shield className="h-5 w-5 stroke-[1.5]" />
+            </div>
+          )}
 
           <div>
             <div className="flex items-center gap-2 text-xs font-semibold text-white">

@@ -53,6 +53,7 @@ import {
   Phone,
   ExternalLink,
   ArrowRight,
+  ArrowLeft,
   Check,
   AlertCircle,
   FileCheck,
@@ -335,8 +336,8 @@ export function normalizeCuentaCode(cta: any): string {
 }
 
 export default function OperacionCRM() {
-  const [moduloActivo, setModuloActivo] = useState<'ficha360' | 'autonomia' | 'presupuestos' | 'facturacion' | 'serv_tecnico' | 'kpis' | 'config' | 'marketing' | 'compras' | 'contratos'>('ficha360')
-  const [sidebarAbierto, setSidebarAbierto] = useState<boolean>(true)
+  const [moduloActivo, setModuloActivo] = useState<'ficha360' | 'autonomia' | 'presupuestos' | 'facturacion' | 'serv_tecnico' | 'kpis' | 'config' | 'marketing' | 'compras' | 'contratos' | null>(null)
+  const [sidebarAbierto, setSidebarAbierto] = useState<boolean>(false)
 
   // ── ESTADOS APPLE HIG / LINEAR (COMMAND PALETTE & SLIDE-OVER DRAWER) ──
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
@@ -357,6 +358,17 @@ export default function OperacionCRM() {
   const [empresasConglomerado, setEmpresasConglomerado] = useState<EmpresaConglomerado[]>(EMPRESAS_INICIALES)
   const [mostrarModalEmpresa, setMostrarModalEmpresa] = useState(false)
   const [empresaEditando, setEmpresaEditando] = useState<EmpresaConglomerado | null>(null)
+
+  // Cerrar módulo emergente con la tecla Escape y volver al Launchpad Principal
+  useEffect(() => {
+    const handleEscKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && moduloActivo && !commandPaletteOpen && !mostrarModalEmpresa && !drawerState.isOpen) {
+        setModuloActivo(null)
+      }
+    }
+    window.addEventListener('keydown', handleEscKey)
+    return () => window.removeEventListener('keydown', handleEscKey)
+  }, [moduloActivo, commandPaletteOpen, mostrarModalEmpresa, drawerState.isOpen])
 
   const [empFormId, setEmpFormId] = useState('')
   const [empFormRazonSocial, setEmpFormRazonSocial] = useState('')
@@ -2567,6 +2579,129 @@ export default function OperacionCRM() {
     }
   }
 
+  const modulosLaunchpad = [
+    {
+      id: 'ficha360',
+      titulo: 'Ficha 360° Cliente',
+      categoria: 'OPERACIONES',
+      descripcion: 'Búsqueda inteligente de abonados, expedientes maestros, personas autorizadas e historial de eventos.',
+      icono: User,
+      gradient: 'from-[#0066cc] to-[#2997ff]',
+      borderColor: 'hover:border-[#2997ff]',
+      glowColor: 'group-hover:shadow-[#0066cc]/25',
+      badgeColor: 'bg-blue-500/10 text-blue-300 border-blue-500/20',
+      tag: `${Object.keys(clientesMaestros).length} Clientes`
+    },
+    {
+      id: 'contratos',
+      titulo: 'Contratos & Firma Digital',
+      categoria: 'LEGAL & VENTAS',
+      descripcion: 'Generación de contratos con direcciones reales de GENERAL.MDB, firma en pantalla táctil y descarga PDF.',
+      icono: FileCheck,
+      gradient: 'from-emerald-600 to-teal-500',
+      borderColor: 'hover:border-emerald-400',
+      glowColor: 'group-hover:shadow-emerald-500/25',
+      badgeColor: 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20',
+      tag: 'Firma Táctil'
+    },
+    {
+      id: 'presupuestos',
+      titulo: 'Presupuestos & DTE',
+      categoria: 'COMERCIAL',
+      descripcion: 'Cotizaciones oficiales en PDF corporativo, catálogo de seguridad electrónica y control de propuestas comerciales.',
+      icono: FileText,
+      gradient: 'from-amber-500 to-orange-500',
+      borderColor: 'hover:border-amber-400',
+      glowColor: 'group-hover:shadow-amber-500/25',
+      badgeColor: 'bg-amber-500/10 text-amber-300 border-amber-500/20',
+      tag: `${cotizaciones.length} Cotizaciones`
+    },
+    {
+      id: 'serv_tecnico',
+      titulo: 'Servicios Técnicos (OTs)',
+      categoria: 'OPERACIONES',
+      descripcion: 'Órdenes de trabajo, asignación de técnicos en terreno, estado de visitas y soporte técnico.',
+      icono: Wrench,
+      gradient: 'from-orange-600 to-amber-500',
+      borderColor: 'hover:border-orange-400',
+      glowColor: 'group-hover:shadow-orange-500/25',
+      badgeColor: 'bg-orange-500/10 text-orange-300 border-orange-500/20',
+      tag: `${ordenesTrabajo.length} OTs`
+    },
+    {
+      id: 'facturacion',
+      titulo: 'Cobranza & Abonos',
+      categoria: 'FINANZAS',
+      descripcion: 'Gestión de facturación mensual, control de recaudación, saldos pendientes y estados de cuenta.',
+      icono: DollarSign,
+      gradient: 'from-emerald-500 to-green-600',
+      borderColor: 'hover:border-green-400',
+      glowColor: 'group-hover:shadow-green-500/25',
+      badgeColor: 'bg-green-500/10 text-green-300 border-green-500/20',
+      tag: `${facturas.length} Facturas`
+    },
+    {
+      id: 'compras',
+      titulo: 'Compras & Proveedores',
+      categoria: 'ERP & ABASTECIMIENTO',
+      descripcion: 'Control de insumos de seguridad, hardware de monitoreo, órdenes de compra y proveedores autorizados.',
+      icono: Receipt,
+      gradient: 'from-purple-600 to-indigo-500',
+      borderColor: 'hover:border-purple-400',
+      glowColor: 'group-hover:shadow-purple-500/25',
+      badgeColor: 'bg-purple-500/10 text-purple-300 border-purple-500/20',
+      tag: 'Insumos'
+    },
+    {
+      id: 'autonomia',
+      titulo: 'Agentes Autónomos IA',
+      categoria: 'INTELIGENCIA ARTIFICIAL',
+      descripcion: 'Supervisión 24/7 de eventos críticos, auditoría automatizada y diagnóstico inteligente de operativas.',
+      icono: Bot,
+      gradient: 'from-cyan-500 to-blue-600',
+      borderColor: 'hover:border-cyan-400',
+      glowColor: 'group-hover:shadow-cyan-500/25',
+      badgeColor: 'bg-cyan-500/10 text-cyan-300 border-cyan-500/20',
+      tag: '24/7 Activo'
+    },
+    {
+      id: 'marketing',
+      titulo: 'Marketing B2B',
+      categoria: 'COMERCIAL',
+      descripcion: 'Campañas comerciales, prospección de abonados corporativos y embudo de oportunidades de venta.',
+      icono: Megaphone,
+      gradient: 'from-pink-600 to-rose-500',
+      borderColor: 'hover:border-pink-400',
+      glowColor: 'group-hover:shadow-pink-500/25',
+      badgeColor: 'bg-pink-500/10 text-pink-300 border-pink-500/20',
+      tag: 'Leads'
+    },
+    {
+      id: 'kpis',
+      titulo: 'Reportes & Analytics',
+      categoria: 'DIRECCIÓN',
+      descripcion: 'Métricas de rendimiento operativo, facturación acumulada, gráficos ejecutivos y análisis estadístico.',
+      icono: BarChart3,
+      gradient: 'from-indigo-600 to-cyan-500',
+      borderColor: 'hover:border-indigo-400',
+      glowColor: 'group-hover:shadow-indigo-500/25',
+      badgeColor: 'bg-indigo-500/10 text-indigo-300 border-indigo-500/20',
+      tag: 'Analytics'
+    },
+    {
+      id: 'config',
+      titulo: 'Configuración & Claves',
+      categoria: 'SISTEMA',
+      descripcion: 'Administración de 4 razones sociales emisoras del conglomerado, parámetros del sistema y seguridad.',
+      icono: Settings,
+      gradient: 'from-slate-600 to-slate-400',
+      borderColor: 'hover:border-slate-400',
+      glowColor: 'group-hover:shadow-slate-500/25',
+      badgeColor: 'bg-slate-500/10 text-slate-300 border-slate-500/20',
+      tag: `${empresasConglomerado.length} Emisores`
+    }
+  ]
+
   return (
     <div className="min-h-screen bg-[#050d1a] text-slate-100 font-sans flex flex-col select-none p-3 sm:p-5 md:p-6 gap-4 sm:gap-6 antialiased">
       
@@ -2603,6 +2738,7 @@ export default function OperacionCRM() {
       {/* ── HEADER PRINCIPAL STYLE APPLE / LINEAR ── */}
       <OperacionHeader
         moduloActivoLabel={
+          !moduloActivo ? 'Menú Principal' :
           moduloActivo === 'ficha360' ? 'Ficha 360° Cliente' :
           moduloActivo === 'presupuestos' ? 'Presupuestos & DTE' :
           moduloActivo === 'marketing' ? 'Marketing B2B' :
@@ -2615,8 +2751,8 @@ export default function OperacionCRM() {
         }
         cantEmpresas={empresasConglomerado.length}
         valorUF={valorUF}
-        sidebarAbierto={sidebarAbierto}
-        setSidebarAbierto={setSidebarAbierto}
+        moduloActivo={moduloActivo}
+        onVolverMenu={() => setModuloActivo(null)}
         onOpenCommandPalette={() => setCommandPaletteOpen(true)}
         onQuickCotizacion={() => {
           setModuloActivo('presupuestos')
@@ -2638,22 +2774,147 @@ export default function OperacionCRM() {
         }}
       />
 
-      {/* ── CONTENEDOR PRINCIPAL RESPONSIVE ── */}
-      <div className="flex-1 flex flex-col lg:flex-row gap-6 sm:gap-8 overflow-hidden min-h-0 no-imprimir relative">
-        
-        {/* ── SIDEBAR CATEGORIZADO DE MONITOREO ── */}
-        <OperacionSidebar
-          moduloActivo={moduloActivo}
-          setModuloActivo={setModuloActivo}
-          sidebarAbierto={sidebarAbierto}
-          setSidebarAbierto={setSidebarAbierto}
-          cantEmpresas={empresasConglomerado.length}
-          cantClientes={Object.keys(clientesMaestros).length}
-          cantCentros={Object.keys(abonadosCentrosCosto).length}
-        />
+      {/* ── CONTENEDOR PRINCIPAL RESPONSIVE (SIN DIVISIONES, CON MODALES AMPLIOS) ── */}
+      <div className="flex-1 overflow-hidden min-h-0 no-imprimir flex flex-col relative">
 
-        {/* ── PANEL DERECHO PRINCIPAL CON BENTO GRID & ESPACIADO AMPLIO ── */}
-        <main className="flex-1 overflow-y-auto min-h-0 flex flex-col gap-6 sm:gap-8">
+        {/* ── VISTA 1: LAUNCHPAD HUB PRINCIPAL (10 BOTONES GRANDES) ── */}
+        {!moduloActivo ? (
+          <div className="flex-1 overflow-y-auto min-h-0 flex flex-col gap-6 sm:gap-8 no-imprimir pb-8 pr-1 animate-in fade-in duration-200">
+            
+            {/* BANNER DE BIENVENIDA EJECUTIVO */}
+            <div className="bg-gradient-to-r from-[#0a1628]/95 via-[#0d1f38]/90 to-[#0a1628]/95 backdrop-blur-xl border border-[#1e3a5f]/70 rounded-3xl p-6 sm:p-8 shadow-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-[#0066cc]/20 text-[#2997ff] border border-[#0066cc]/40 flex items-center gap-1.5 font-mono">
+                    <span className="w-2 h-2 rounded-full bg-[#2997ff] animate-pulse" />
+                    CENTRAL OPERATIVA GAMA
+                  </span>
+                  <span className="text-xs text-slate-400 font-mono">| PLATAFORMA INTEGRAL</span>
+                </div>
+                <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+                  Centro de Control & Gestión Operativa
+                </h2>
+                <p className="text-xs sm:text-sm text-slate-300 max-w-2xl leading-relaxed">
+                  Seleccione cualquiera de los módulos para operar en pantalla completa, con máxima amplitud y sin barras laterales restrictivas.
+                </p>
+              </div>
+
+              {/* STATS EN TIEMPO REAL */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 w-full md:w-auto shrink-0">
+                <div className="bg-[#050d1a]/80 border border-[#1e3a5f]/80 px-4 py-2.5 rounded-2xl flex flex-col">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Empresas</span>
+                  <span className="text-base font-extrabold text-white font-mono">{empresasConglomerado.length}</span>
+                </div>
+                <div className="bg-[#050d1a]/80 border border-[#1e3a5f]/80 px-4 py-2.5 rounded-2xl flex flex-col">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Clientes</span>
+                  <span className="text-base font-extrabold text-[#2997ff] font-mono">{Object.keys(clientesMaestros).length}</span>
+                </div>
+                <div className="bg-[#050d1a]/80 border border-[#1e3a5f]/80 px-4 py-2.5 rounded-2xl flex flex-col">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Abonados</span>
+                  <span className="text-base font-extrabold text-emerald-400 font-mono">{Object.keys(abonadosCentrosCosto).length}</span>
+                </div>
+                <div className="bg-[#050d1a]/80 border border-[#1e3a5f]/80 px-4 py-2.5 rounded-2xl flex flex-col">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">OTs Activas</span>
+                  <span className="text-base font-extrabold text-amber-400 font-mono">{ordenesTrabajo.length}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* GRID DE BOTONES GRANDES (LAUNCHPAD DE 10 MÓDULOS) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5 sm:gap-6">
+              {modulosLaunchpad.map((mod) => {
+                const IconComp = mod.icono
+                return (
+                  <button
+                    key={mod.id}
+                    onClick={() => setModuloActivo(mod.id as any)}
+                    className={`group relative text-left rounded-3xl bg-gradient-to-b from-[#0c1a2e] to-[#07111e] border border-[#1e3a5f]/60 ${mod.borderColor} p-6 flex flex-col justify-between transition-all duration-300 hover:shadow-2xl ${mod.glowColor} hover:-translate-y-1.5 cursor-pointer min-h-[220px] overflow-hidden`}
+                  >
+                    {/* Glow de fondo */}
+                    <div className="absolute -right-8 -top-8 w-28 h-28 rounded-full bg-white/[0.02] group-hover:bg-white/[0.06] transition-all blur-xl pointer-events-none" />
+
+                    {/* Top Bar de la Card */}
+                    <div className="flex items-start justify-between gap-3 relative z-10">
+                      <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${mod.gradient} text-white flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+                        <IconComp className="h-6 w-6 stroke-[2]" />
+                      </div>
+                      <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold border font-mono tracking-wider ${mod.badgeColor}`}>
+                        {mod.categoria}
+                      </span>
+                    </div>
+
+                    {/* Contenido Central */}
+                    <div className="space-y-1.5 my-3 relative z-10">
+                      <h3 className="text-base sm:text-lg font-black text-white tracking-tight group-hover:text-[#2997ff] transition-colors">
+                        {mod.titulo}
+                      </h3>
+                      <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed">
+                        {mod.descripcion}
+                      </p>
+                    </div>
+
+                    {/* Footer de la Card con Acción */}
+                    <div className="pt-3 border-t border-white/5 flex items-center justify-between text-xs font-semibold relative z-10">
+                      <span className="text-slate-500 font-mono text-[11px]">
+                        {mod.tag}
+                      </span>
+                      <span className="text-[#2997ff] group-hover:text-white flex items-center gap-1 text-xs font-bold transition-colors">
+                        <span>Abrir Módulo</span>
+                        <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-1 transition-transform" />
+                      </span>
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+
+          </div>
+        ) : (
+          /* ── VISTA 2: VENTANA EMERGENTE DEL MÓDULO (PANTALLA COMPLETA ESPACIOSA) ── */
+          <div className="flex-1 flex flex-col overflow-hidden bg-[#07111e]/95 backdrop-blur-xl border border-[#1e3a5f]/70 rounded-3xl shadow-2xl p-4 sm:p-6 min-h-0 relative no-imprimir animate-in zoom-in-95 duration-200">
+            
+            {/* BARRA SUPERIOR DE NAVEGACIÓN, VOLVER Y CERRAR */}
+            <div className="flex items-center justify-between gap-4 pb-4 mb-4 border-b border-white/10 shrink-0">
+              <button
+                onClick={() => setModuloActivo(null)}
+                className="flex items-center gap-2.5 px-4 sm:px-5 py-2.5 bg-[#0f2240] hover:bg-[#162a4a] text-white border border-[#1e3a5f] hover:border-[#2997ff] rounded-2xl font-bold text-xs sm:text-sm shadow-lg transition-all group cursor-pointer active:scale-95"
+              >
+                <ArrowLeft className="h-4 w-4 text-[#2997ff] group-hover:-translate-x-1 transition-transform" />
+                <span>← Volver al Menú Principal</span>
+              </button>
+
+              <div className="flex items-center gap-2 sm:gap-3">
+                <span className="text-xs sm:text-sm font-bold text-white tracking-wide flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  {
+                    moduloActivo === 'ficha360' ? 'Ficha 360° Cliente' :
+                    moduloActivo === 'presupuestos' ? 'Presupuestos & DTE' :
+                    moduloActivo === 'marketing' ? 'Marketing B2B' :
+                    moduloActivo === 'facturacion' ? 'Cobranza & Abonos' :
+                    moduloActivo === 'serv_tecnico' ? 'Servicios Técnicos' :
+                    moduloActivo === 'compras' ? 'Compras & Proveedores' :
+                    moduloActivo === 'contratos' ? 'Contratos & Firma' :
+                    moduloActivo === 'kpis' ? 'Reportes & Analytics' :
+                    moduloActivo === 'config' ? 'Configuración & Claves' : 'Agentes Autónomos'
+                  }
+                </span>
+                <span className="hidden md:inline-block px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-[#0066cc]/20 text-[#2997ff] border border-[#0066cc]/40">
+                  VENTANA COMPLETA
+                </span>
+              </div>
+
+              <button
+                onClick={() => setModuloActivo(null)}
+                className="flex items-center gap-2 px-4 py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-300 hover:text-white border border-red-500/30 hover:border-red-500 rounded-2xl font-bold text-xs sm:text-sm transition-all cursor-pointer active:scale-95"
+                title="Cerrar módulo y volver al menú (Esc)"
+              >
+                <X className="h-4 w-4" />
+                <span>✕ Cerrar</span>
+              </button>
+            </div>
+
+            {/* CONTENEDOR PRINCIPAL CON ESPACIO MÁXIMO PARA EL MÓDULO */}
+            <main className="flex-1 overflow-y-auto min-h-0 flex flex-col gap-6 pr-1">
 
           {/* ── BENTO GRID DE KPIS EJECUTIVOS EN TOP DE FICHA 360 Y REPORTES ── */}
           {(moduloActivo === 'ficha360' || moduloActivo === 'kpis') && (
@@ -5539,7 +5800,9 @@ export default function OperacionCRM() {
             />
           )}
 
-        </main>
+            </main>
+          </div>
+        )}
       </div>
 
       {/* ── MODAL EDITAR / CREAR EMPRESA CONGLOMERADO (APPLE BENTO DARK) ── */}

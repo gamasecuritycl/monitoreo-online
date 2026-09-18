@@ -18,6 +18,7 @@ import {
   Plus
 } from 'lucide-react'
 import ContratoDigitalModal from './ContratoDigitalModal'
+import clientesDataRaw from '@/lib/clientes_general.json'
 
 export interface ContratoItem {
   id: string
@@ -37,6 +38,20 @@ export interface ContratoItem {
   email: string
 }
 
+function getDatosGeneralMdb(cta: string) {
+  const g = (clientesDataRaw as Record<string, any>) || {}
+  if (!cta) return null
+  const clean = cta.toString().trim().toUpperCase()
+  const match = g[clean] 
+    || g[clean.padStart(4, '0')] 
+    || g[clean.replace(/^0+/, '')] 
+    || g[clean.replace(/^C0*/, 'C')]
+    || g['C' + clean.replace(/^0+/, '')]
+    || g[clean.replace(/^C/, '')]
+    || g[clean.replace(/^C/, '').padStart(4, '0')]
+  return match || null
+}
+
 export default function ContratosModule({
   clientesMaestros,
   abonadosCentrosCosto,
@@ -51,33 +66,55 @@ export default function ContratosModule({
   const [contratoSeleccionado, setContratoSeleccionado] = useState<any | null>(null)
   const [modalAbierto, setModalAbierto] = useState(false)
 
-  // Generar lista de contratos a partir de abonados y maestros
+  // Generar lista de contratos a partir de abonados y maestros, vinculando direcciones reales de GENERAL.MDB
   const listaContratos: ContratoItem[] = useMemo(() => {
     return Object.entries(abonadosCentrosCosto || {}).map(([cta, cc]: [string, any], idx) => {
       const cli = clientesMaestros[cc.rut_cliente] || {}
       const ctaUpper = cta.toUpperCase()
       const codigo = `CTR-2026-${ctaUpper}`
 
+      // Obtener datos reales de GENERAL.MDB
+      const general = getDatosGeneralMdb(ctaUpper)
+      const dirMdb = (general?.direccion || general?.DIRECCION || '').trim()
+      const ciudadMdb = (general?.ciudad || general?.CIUDAD || '').trim()
+      const nomMdb = (general?.nombre || general?.NOMBRE || '').trim()
+      const telMdb = (general?.telefono1 || general?.t1 || general?.telefono || '').trim()
+
+      // Buscar si en la ficha viene algún RUT registrado en observaciones
+      let rutGeneral = ''
+      if (general) {
+        const obsTexto = `${general.observacion1 || ''} ${general.referencia1 || ''} ${general.comentario || ''}`
+        const rutMatch = obsTexto.match(/RUT(?:\s+CLIENTA|\s+CLIENTE)?[:\s]+([\d\.\-kK]+)/i)
+        if (rutMatch && rutMatch[1]) {
+          rutGeneral = rutMatch[1].trim()
+        }
+      }
+
       // Mock status para demostración
       let estado: ContratoItem['estado'] = 'Pendiente Firma'
       if (idx % 3 === 0) estado = 'Firmado'
       else if (idx % 5 === 0) estado = 'Por Renovar'
 
+      const direccionFinal = dirMdb || cc.direccion || cli.direccion_comercial || 'Dirección sin registrar'
+      const ciudadFinal = ciudadMdb || cc.ciudad || cli.ciudad || 'Viña del Mar'
+      const razonSocialFinal = nomMdb || cc.alias_centro_costo || cli.razon_social || `Abonado ${ctaUpper}`
+      const rutFinal = rutGeneral || cc.rut_cliente || cli.rut || 'S/RUT'
+
       return {
         id: `CTR-${ctaUpper}`,
         codigo_contrato: codigo,
         cuenta: ctaUpper,
-        razon_social: cc.alias_centro_costo || cli.razon_social || `Abonado ${ctaUpper}`,
-        rut: cc.rut_cliente || cli.rut || 'S/RUT',
-        direccion: cc.direccion || cli.direccion_comercial || 'Dirección de Monitoreo',
-        ciudad: cc.ciudad || cli.ciudad || 'Viña del Mar',
+        razon_social: razonSocialFinal,
+        rut: rutFinal,
+        direccion: direccionFinal,
+        ciudad: ciudadFinal,
         plan: cli.plan_monitoreo || 'Monitoreo Central 24/7 con Verificación IA',
         tarifa: cli.tarifa_mensual || 29900,
         moneda: cli.moneda || 'CLP',
         estado,
         fecha_inicio: '2026-01-01',
         plazo_meses: 12,
-        telefono: cli.telefono || '+56 9 9101 6912',
+        telefono: telMdb || cli.telefono || '+56 9 9101 6912',
         email: cli.email_cobranza || cli.email_contacto || 'contacto@cliente.cl'
       }
     })
@@ -90,7 +127,8 @@ export default function ContratosModule({
         c.codigo_contrato.toLowerCase().includes(busqueda.toLowerCase()) ||
         c.cuenta.toLowerCase().includes(busqueda.toLowerCase()) ||
         c.razon_social.toLowerCase().includes(busqueda.toLowerCase()) ||
-        c.rut.toLowerCase().includes(busqueda.toLowerCase())
+        c.rut.toLowerCase().includes(busqueda.toLowerCase()) ||
+        c.direccion.toLowerCase().includes(busqueda.toLowerCase())
       return matchEstado && matchBusqueda
     })
   }, [listaContratos, filtroEstado, busqueda])
@@ -100,12 +138,18 @@ export default function ContratosModule({
   const totalPorRenovar = listaContratos.filter(c => c.estado === 'Por Renovar').length
 
   const handleAbrirModal = (contrato: ContratoItem) => {
+    const general = getDatosGeneralMdb(contrato.cuenta)
+    const dirMdb = (general?.direccion || general?.DIRECCION || '').trim()
+    const ciudadMdb = (general?.ciudad || general?.CIUDAD || '').trim()
+    const nomMdb = (general?.nombre || general?.NOMBRE || '').trim()
+    const telMdb = (general?.telefono1 || general?.t1 || general?.telefono || '').trim()
+
     const cli = clientesMaestros[contrato.rut] || {
-      razon_social: contrato.razon_social,
+      razon_social: nomMdb || contrato.razon_social,
       rut: contrato.rut,
-      direccion_comercial: contrato.direccion,
-      ciudad: contrato.ciudad,
-      telefono: contrato.telefono,
+      direccion_comercial: dirMdb || contrato.direccion,
+      ciudad: ciudadMdb || contrato.ciudad,
+      telefono: telMdb || contrato.telefono,
       email_cobranza: contrato.email,
       tarifa_mensual: contrato.tarifa,
       moneda: contrato.moneda,
@@ -113,9 +157,9 @@ export default function ContratosModule({
     }
     const abon = {
       cuenta: contrato.cuenta,
-      alias_centro_costo: contrato.razon_social,
-      direccion: contrato.direccion,
-      ciudad: contrato.ciudad
+      alias_centro_costo: nomMdb || contrato.razon_social,
+      direccion: dirMdb || contrato.direccion,
+      ciudad: ciudadMdb || contrato.ciudad
     }
 
     setContratoSeleccionado({ cliente: cli, abonado: abon })
