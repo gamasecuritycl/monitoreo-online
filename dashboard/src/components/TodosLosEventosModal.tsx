@@ -68,33 +68,58 @@ interface ParsedEventDate {
 }
 
 /**
- * Parsea marcas de tiempo preservando la hora exacta registrada en Scorpion (sin desface UTC)
+ * Parsea marcas de tiempo corrigiendo el desfase de +1 hora almacenado en base de datos.
+ * La hora local real de Chile corresponde al valor almacenado menos 1 hora.
  */
 function parseEventDate(rawStr?: string): ParsedEventDate {
   if (!rawStr) return { dateIsoStr: '', horaStr: '00:00:00', timestamp: 0 }
   const s = rawStr.trim()
+  let match = s.match(/^(\d{4})[-/](\d{2})[-/](\d{2})(?:[T\s]+(\d{2}):(\d{2}):(\d{2}))?/)
+  let anio: string, mes: string, dia: string, hh: string = '00', mm: string = '00', ss: string = '00'
 
-  // 1. Formato "DD-MM-YYYY HH:mm:ss" o "DD/MM/YYYY HH:mm:ss"
-  const matchDDMM = s.match(/^(\d{2})[-/](\d{2})[-/](\d{4})(?:[T\s]+(\d{2}):(\d{2}):(\d{2}))?/)
-  if (matchDDMM) {
-    const [, dia, mes, anio, hh = '00', mm = '00', ss = '00'] = matchDDMM
-    const dateIsoStr = `${anio}-${mes}-${dia}`
-    const horaStr = `${hh}:${mm}:${ss}`
-    const ts = Date.UTC(Number(anio), Number(mes) - 1, Number(dia), Number(hh), Number(mm), Number(ss))
-    return { dateIsoStr, horaStr, timestamp: ts }
+  if (match) {
+    [, anio, mes, dia, hh = '00', mm = '00', ss = '00'] = match
+  } else {
+    match = s.match(/^(\d{2})[-/](\d{2})[-/](\d{4})(?:[T\s]+(\d{2}):(\d{2}):(\d{2}))?/)
+    if (match) {
+      [, dia, mes, anio, hh = '00', mm = '00', ss = '00'] = match
+    } else {
+      return { dateIsoStr: s.slice(0, 10), horaStr: '00:00:00', timestamp: 0 }
+    }
   }
 
-  // 2. Formato "YYYY-MM-DDTHH:mm:ss" o "YYYY-MM-DD HH:mm:ss"
-  const matchYYYYMM = s.match(/^(\d{4})[-/](\d{2})[-/](\d{2})(?:[T\s]+(\d{2}):(\d{2}):(\d{2}))?/)
-  if (matchYYYYMM) {
-    const [, anio, mes, dia, hh = '00', mm = '00', ss = '00'] = matchYYYYMM
-    const dateIsoStr = `${anio}-${mes}-${dia}`
-    const horaStr = `${hh}:${mm}:${ss}`
-    const ts = Date.UTC(Number(anio), Number(mes) - 1, Number(dia), Number(hh), Number(mm), Number(ss))
-    return { dateIsoStr, horaStr, timestamp: ts }
-  }
+  // Corregir la hora adelantada restando 1 hora exacta (3,600,000 ms)
+  const rawTs = Date.UTC(Number(anio), Number(mes) - 1, Number(dia), Number(hh), Number(mm), Number(ss))
+  const adjustedTs = rawTs - 3600000
+  const d = new Date(adjustedTs)
+  const y = d.getUTCFullYear()
+  const m = (d.getUTCMonth() + 1).toString().padStart(2, '0')
+  const day = d.getUTCDate().toString().padStart(2, '0')
+  const h = d.getUTCHours().toString().padStart(2, '0')
+  const min = d.getUTCMinutes().toString().padStart(2, '0')
+  const sec = d.getUTCSeconds().toString().padStart(2, '0')
 
-  return { dateIsoStr: s.slice(0, 10), horaStr: '00:00:00', timestamp: 0 }
+  return {
+    dateIsoStr: `${y}-${m}-${day}`,
+    horaStr: `${h}:${min}:${sec}`,
+    timestamp: adjustedTs
+  }
+}
+
+/**
+ * Deduplica eventos idénticos emitidos en paralelo por las dos fuentes de Scorpion (MySQL + MDB)
+ */
+function deduplicarEventos(lista: Evento[]): Evento[] {
+  const vistos = new Set<string>()
+  const unicos: Evento[] = []
+  for (const ev of lista) {
+    const key = `${ev.cuenta}_${ev.evento}_${ev.zona || ''}_${ev.usuario || ''}_${ev._dateIsoStr}_${ev._horaFormatted}`
+    if (!vistos.has(key)) {
+      vistos.add(key)
+      unicos.push(ev)
+    }
+  }
+  return unicos
 }
 
 function formatTrama(cuenta: string, eventoText: string, zona: string, usuario: string) {
@@ -185,7 +210,7 @@ export default function TodosLosEventosModal({ onClose, clientesMap: propCliente
   }, [propClientesMap])
 
   /**
-   * Carga el 100% de los eventos del día completo de 00:00:00 a 23:59:59 sin límites
+   * Carga el 100% de los eventos del día completo de 00:00:00 a 23:59:59 sin duplicados y con hora exacta
    */
   const cargarEventos = useCallback(async (fechaSeleccionada: string, mantenerOrdenAbajo = true) => {
     if (!fechaSeleccionada) {
@@ -201,9 +226,11 @@ export default function TodosLosEventosModal({ onClose, clientesMap: propCliente
       const [anio, mes, dia] = fechaSeleccionada.split('-')
       const dateChileStr = `${dia}-${mes}-${anio}`
 
-      // Rango exacto de día completo de 00:00:00 a 23:59:59.999
+      // Margen de consulta: como en DB la hora está adelantada en 1 hora,
+      // las 00:00 del día están guardadas como 01:00, y las 23:59 del día están como 00:59 del día siguiente.
       const startIso = `${fechaSeleccionada}T00:00:00`
-      const endIso = `${fechaSeleccionada}T23:59:59.999`
+      const nextDay = new Date(new Date(`${fechaSeleccionada}T12:00:00Z`).getTime() + 86400000).toISOString().slice(0, 10)
+      const endIso = `${nextDay}T01:30:00`
 
       let allRows: any[] = []
       let page = 0
@@ -251,7 +278,7 @@ export default function TodosLosEventosModal({ onClose, clientesMap: propCliente
         }
       }
 
-      // Filtrar abonados reales y normalizar fecha/hora sin desface UTC
+      // Filtrar abonados reales y normalizar hora corregida
       const eventosFiltrados: Evento[] = allRows
         .filter(e => isRealAccount(e.cuenta, e.evento, e.nombre_abonado))
         .map(e => {
@@ -265,18 +292,21 @@ export default function TodosLosEventosModal({ onClose, clientesMap: propCliente
         })
         .filter(e => e._dateIsoStr === fechaSeleccionada)
 
+      // DEDUPLICAR: elimina eventos duplicados
+      const eventosUnicos = deduplicarEventos(eventosFiltrados)
+
       // Ordenamiento según configuración:
       // Si mantenerOrdenAbajo es true -> Últimos en la parte inferior (00:00:00 arriba -> 23:59:59 abajo)
       // Si mantenerOrdenAbajo es false -> Últimos en la parte superior (23:59:59 arriba -> 00:00:00 abajo)
       if (mantenerOrdenAbajo) {
-        eventosFiltrados.sort((a, b) => {
+        eventosUnicos.sort((a, b) => {
           if ((a._timestamp || 0) !== (b._timestamp || 0)) {
             return (a._timestamp || 0) - (b._timestamp || 0)
           }
           return a.id - b.id
         })
       } else {
-        eventosFiltrados.sort((a, b) => {
+        eventosUnicos.sort((a, b) => {
           if ((b._timestamp || 0) !== (a._timestamp || 0)) {
             return (b._timestamp || 0) - (a._timestamp || 0)
           }
@@ -284,10 +314,10 @@ export default function TodosLosEventosModal({ onClose, clientesMap: propCliente
         })
       }
 
-      setEventos(eventosFiltrados)
+      setEventos(eventosUnicos)
 
-      if (eventosFiltrados.length > 0) {
-        setMensaje(`¡${eventosFiltrados.length} eventos del día completo cargados para el ${fechaSeleccionada}!`)
+      if (eventosUnicos.length > 0) {
+        setMensaje(`¡${eventosUnicos.length} eventos únicos cargados para el ${fechaSeleccionada}!`)
         // Auto-scroll a los más recientes si los últimos están en la parte inferior
         if (mantenerOrdenAbajo) {
           setTimeout(() => {
@@ -444,7 +474,7 @@ export default function TodosLosEventosModal({ onClose, clientesMap: propCliente
                   
                   return (
                     <tr 
-                      key={e.id} 
+                      key={`${e.id}-${e.cuenta}-${index}`} 
                       className="hover:opacity-90 border-b border-gray-300"
                       style={{ backgroundColor: rowBg, color: rowFg }}
                     >
@@ -511,7 +541,7 @@ export default function TodosLosEventosModal({ onClose, clientesMap: propCliente
           {/* Status Bar */}
           <div className="mt-1 bg-[#d4d0c8] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white px-2 py-0.5 text-[10px] text-gray-600 font-bold tracking-wide shrink-0 flex flex-wrap justify-between items-center gap-1">
             <span>
-              {mensaje} {eventos.length > 0 && `(${eventos.length} eventos · 00:00 a 23:59)`}
+              {mensaje} {eventos.length > 0 && `(${eventos.length} eventos únicos · 00:00 a 23:59)`}
             </span>
             {eventos.length > 0 && (
               <span className="text-gray-700 font-mono text-[9px] md:text-[10px]">
