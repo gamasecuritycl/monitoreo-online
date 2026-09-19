@@ -86,7 +86,7 @@ export async function obtenerConfigMail(cuenta: string): Promise<ConfigMailAbona
  */
 export async function guardarConfigMail(
   cuenta: string,
-  emails: string[],
+  emails?: string[],
   configParcial?: Partial<Omit<ConfigMailAbonado, 'cuenta' | 'emails'>>
 ): Promise<{ success: boolean; error?: string }> {
   const cta = (cuenta || '').toUpperCase().trim()
@@ -106,8 +106,11 @@ export async function guardarConfigMail(
     const nuevoCopiaGama = configParcial?.copiaGama !== undefined ? configParcial.copiaGama : actual.copiaGama
     const nuevoEmailGama = configParcial?.emailGama || actual.emailGama || 'contacto@gamasecurity.cl'
 
+    // Si no se pasaron emails específicos, preservar estrictamente los existentes
+    const baseEmails = emails !== undefined ? emails : actual.emails
+
     const cleanEmails = Array.from(new Set(
-      emails
+      baseEmails
         .map(e => e.trim().toLowerCase())
         .filter(e => e.includes('@') && !e.startsWith('__cfg:'))
     ))
@@ -180,8 +183,8 @@ export async function enviarReporteHistoricoMail(params: {
       return { success: false, error: data.error || 'Error al enviar reporte' }
     }
 
-    // Actualizar último envío en la base de datos
-    await guardarConfigMail(params.cuenta, params.destinatarios, {
+    // Actualizar solo último envío en la base de datos SIN modificar ni borrar los correos del abonado
+    await guardarConfigMail(params.cuenta, undefined, {
       ultimoEnvio: new Date().toISOString()
     })
 

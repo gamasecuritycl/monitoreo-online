@@ -48,6 +48,9 @@ export default function NotificacionesMailModal({ onClose, clientesMap }: Notifi
   const [emailsAbonadoSeleccionados, setEmailsAbonadoSeleccionados] = useState<string[]>([])
   const [nuevoEmail, setNuevoEmail] = useState('')
 
+  // Mapa de cuentas con correos registrados para ver en la lista izquierda { [cta]: cantidad }
+  const [cuentasConMail, setCuentasConMail] = useState<Record<string, number>>({})
+
   // Filtro de fechas manual
   const [fechaDesde, setFechaDesde] = useState(getDiasAtras(7))
   const [fechaHasta, setFechaHasta] = useState(hoyChile())
@@ -67,6 +70,33 @@ export default function NotificacionesMailModal({ onClose, clientesMap }: Notifi
   const [guardando, setGuardando] = useState(false)
   const [enviando, setEnviando] = useState(false)
   const [mensaje, setMensaje] = useState<{ tipo: 'ok' | 'err'; texto: string } | null>(null)
+
+  // Cargar mapa global de cuentas con correos registrados para mostrar indicador en la lista
+  useEffect(() => {
+    let isMounted = true
+    const cargarListadoCuentasMail = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('notificaciones_mail')
+          .select('cuenta, emails')
+        if (!error && data && isMounted) {
+          const mapa: Record<string, number> = {}
+          for (const row of data) {
+            const arr = Array.isArray(row.emails) ? row.emails : []
+            const valid = arr.filter((e: any) => typeof e === 'string' && !e.startsWith('__cfg:'))
+            if (valid.length > 0) {
+              mapa[String(row.cuenta).toUpperCase().trim()] = valid.length
+            }
+          }
+          setCuentasConMail(mapa)
+        }
+      } catch (e) {
+        console.error('Error cargando listado global de cuentas con mail:', e)
+      }
+    }
+    cargarListadoCuentasMail()
+    return () => { isMounted = false }
+  }, [])
 
   // Lista de clientes filtrada
   const clientesFiltrados = Object.entries(clientesMap)
@@ -91,11 +121,12 @@ export default function NotificacionesMailModal({ onClose, clientesMap }: Notifi
       const cfg = await obtenerConfigMail(clienteSeleccionado.cuenta)
       if (isMounted) {
         setEmails(cfg.emails)
-        // SEGURIDAD TOTAL: Por defecto NO seleccionar correos del abonado para evitar envíos accidentales
+        // SEGURIDAD CRÍTICA: Por defecto los correos del cliente vienen DESMARCADOS (EXCLUIDOS)
+        // Para evitar enviar reportes accidentales a clientes durante pruebas o envíos internos
         setEmailsAbonadoSeleccionados([])
         setReporteAuto(cfg.reporteAutomatico)
         setFrecuencia(cfg.frecuencia)
-        setEnviarCopiaGama(cfg.copiaGama !== undefined ? cfg.copiaGama : true)
+        if (cfg.copiaGama !== undefined) setEnviarCopiaGama(cfg.copiaGama)
         if (cfg.emailGama) setCorreoGama(cfg.emailGama)
         setGuardando(false)
       }
@@ -149,8 +180,12 @@ export default function NotificacionesMailModal({ onClose, clientesMap }: Notifi
 
     const nuevosEmails = [...emails, emailLimpiado]
     setEmails(nuevosEmails)
-    // Al agregar manualmente uno nuevo, lo incluimos automáticamente en la selección
+    // Al agregar un nuevo correo manualmente, lo marcamos para el envío actual
     setEmailsAbonadoSeleccionados(prev => [...prev, emailLimpiado])
+    setCuentasConMail(prev => ({
+      ...prev,
+      [clienteSeleccionado.cuenta.toUpperCase().trim()]: nuevosEmails.length
+    }))
     setNuevoEmail('')
     setGuardando(true)
     await guardarConfigMail(clienteSeleccionado.cuenta, nuevosEmails, {
@@ -169,6 +204,10 @@ export default function NotificacionesMailModal({ onClose, clientesMap }: Notifi
     const nuevosEmails = emails.filter(e => e !== emailAEliminar)
     setEmails(nuevosEmails)
     setEmailsAbonadoSeleccionados(prev => prev.filter(x => x !== emailAEliminar))
+    setCuentasConMail(prev => ({
+      ...prev,
+      [clienteSeleccionado.cuenta.toUpperCase().trim()]: nuevosEmails.length
+    }))
     setGuardando(true)
     await guardarConfigMail(clienteSeleccionado.cuenta, nuevosEmails, {
       reporteAutomatico: reporteAuto,
@@ -177,8 +216,8 @@ export default function NotificacionesMailModal({ onClose, clientesMap }: Notifi
       emailGama: correoGama
     })
     setGuardando(false)
-    setMensaje({ tipo: 'ok', texto: 'Correo eliminado' })
-    setTimeout(() => setMensaje(null), 2500)
+    setMensaje({ tipo: 'ok', texto: `Correo ${emailAEliminar} eliminado.` })
+    setTimeout(() => setMensaje(null), 3000)
   }
 
   const handleToggleAuto = async (checked: boolean) => {
@@ -447,16 +486,32 @@ export default function NotificacionesMailModal({ onClose, clientesMap }: Notifi
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-800">
-                  {clientesFiltrados.map(([cuenta, datos]) => (
-                    <tr 
-                      key={cuenta} 
-                      className={`cursor-pointer hover:bg-green-950 ${clienteSeleccionado?.cuenta === cuenta ? 'bg-green-800 text-white font-bold' : ''}`}
-                      onClick={() => setClienteSeleccionado({ cuenta, nombre: datos.nombre || '' })}
-                    >
-                      <td className="p-1.5 border-r border-gray-800 font-bold">{cuenta}</td>
-                      <td className="p-1.5 truncate max-w-[200px]">{datos.nombre}</td>
-                    </tr>
-                  ))}
+                  {clientesFiltrados.map(([cuenta, datos]) => {
+                    const ctaUpper = cuenta.toUpperCase().trim()
+                    const cant = cuentasConMail[ctaUpper] || 0
+                    return (
+                      <tr 
+                        key={cuenta} 
+                        className={`cursor-pointer hover:bg-green-950 transition-colors ${clienteSeleccionado?.cuenta === cuenta ? 'bg-green-800 text-white font-bold' : ''}`}
+                        onClick={() => setClienteSeleccionado({ cuenta, nombre: datos.nombre || '' })}
+                      >
+                        <td className="p-1.5 border-r border-gray-800 font-bold">{cuenta}</td>
+                        <td className="p-1.5">
+                          <div className="flex items-center justify-between gap-1">
+                            <span className="truncate max-w-[170px]">{datos.nombre}</span>
+                            {cant > 0 && (
+                              <span 
+                                className="bg-blue-600 text-white text-[9px] font-mono px-1.5 py-0.5 rounded-xs font-bold shrink-0 shadow-2xs" 
+                                title={`Este abonado tiene ${cant} correo(s) guardado(s)`}
+                              >
+                                ✉️ {cant}
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
             </div>
@@ -477,17 +532,35 @@ export default function NotificacionesMailModal({ onClose, clientesMap }: Notifi
             ) : (
               <div className="flex flex-col gap-2.5">
                 
-                {/* 1. Identificación del Abonado */}
-                <div className="bg-white border border-gray-400 p-2 shadow-xs flex items-center justify-between">
-                  <div>
-                    <div className="text-[9px] font-bold text-gray-600 uppercase">Abonado Seleccionado:</div>
-                    <div className="font-bold text-xs text-blue-950">
-                      #{clienteSeleccionado.cuenta} — {clienteSeleccionado.nombre}
+                {/* 1. Identificación del Abonado y Alerta de Correos Registrados */}
+                <div className="bg-white border border-gray-400 p-2 shadow-xs space-y-1">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-[9px] font-bold text-gray-600 uppercase">Abonado Seleccionado:</div>
+                      <div className="font-bold text-xs text-blue-950">
+                        #{clienteSeleccionado.cuenta} — {clienteSeleccionado.nombre}
+                      </div>
                     </div>
+                    {emails.length > 0 ? (
+                      <span className="bg-blue-700 text-white font-mono text-[10px] font-bold px-2 py-0.5 border border-blue-900 rounded-xs flex items-center gap-1 shadow-xs">
+                        <span>✉️</span>
+                        <span>{emails.length} CORREO(S) GUARDADO(S)</span>
+                      </span>
+                    ) : (
+                      <span className="bg-gray-100 text-gray-500 font-mono text-[10px] font-bold px-2 py-0.5 border border-gray-300 rounded-xs">
+                        SIN CORREOS GUARDADOS
+                      </span>
+                    )}
                   </div>
-                  <span className="bg-blue-100 text-blue-900 font-mono text-[10px] font-bold px-2 py-0.5 border border-blue-300 rounded-xs">
-                    CUENTA ACTIVA
-                  </span>
+
+                  {emails.length > 0 && (
+                    <div className="bg-amber-50 border border-amber-300 p-1.5 rounded-xs text-[10px] text-amber-950 flex items-start gap-1.5">
+                      <span className="text-amber-600 font-bold text-xs shrink-0">⚠️</span>
+                      <div>
+                        <strong>Correos guardados detectados:</strong> Por seguridad están <strong>DESMARCADOS (EXCLUIDOS)</strong> por defecto para evitar envíos involuntarios a clientes. Si deseas enviar al cliente, márcalo manualmente; si no, déjalo con la <strong>[✕]</strong>.
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* 2. Filtro de Fechas para el Reporte Manual */}
@@ -613,7 +686,7 @@ export default function NotificacionesMailModal({ onClose, clientesMap }: Notifi
                   <div className="flex flex-wrap items-center justify-between gap-1">
                     <span className="text-[11px] font-bold text-gray-800 flex items-center gap-1">
                       <span>📧</span>
-                      <span>Correos Registrados del Abonado ({emails.length}):</span>
+                      <span>Correos Registrados del Cliente ({emails.length}):</span>
                     </span>
                     {emails.length > 0 && (
                       <div className="flex items-center gap-1">
@@ -627,9 +700,9 @@ export default function NotificacionesMailModal({ onClose, clientesMap }: Notifi
                         <button
                           type="button"
                           onClick={handleDeseleccionarTodosEmails}
-                          className="bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300 text-[10px] font-bold px-1.5 py-0.5 rounded-xs cursor-pointer"
+                          className="bg-red-50 hover:bg-red-100 text-red-800 border border-red-300 text-[10px] font-bold px-1.5 py-0.5 rounded-xs cursor-pointer"
                         >
-                          Desmarcar todos
+                          ✕ Excluir todos
                         </button>
                       </div>
                     )}
@@ -654,7 +727,7 @@ export default function NotificacionesMailModal({ onClose, clientesMap }: Notifi
                   </div>
 
                   {/* Lista de Correos Registrados con Checkbox y opción de X para no incluirlos */}
-                  <div className="max-h-[85px] overflow-y-auto border border-gray-300 bg-gray-50 p-1 space-y-1">
+                  <div className="max-h-[90px] overflow-y-auto border border-gray-300 bg-gray-50 p-1 space-y-1">
                     {emails.length === 0 ? (
                       <div className="text-[11px] text-gray-500 italic p-1">
                         No hay correos registrados para este abonado. Ingrese uno arriba o marque abajo para enviar solo a Usuario Gama.
@@ -665,8 +738,10 @@ export default function NotificacionesMailModal({ onClose, clientesMap }: Notifi
                         return (
                           <div 
                             key={i} 
-                            className={`flex items-center justify-between p-1 rounded-xs border text-xs ${
-                              estaIncluido ? 'bg-blue-50 border-blue-400 shadow-2xs' : 'bg-white border-gray-300 opacity-80'
+                            className={`flex items-center justify-between p-1 rounded-xs border text-xs transition-colors ${
+                              estaIncluido 
+                                ? 'bg-emerald-50 border-emerald-500 shadow-2xs' 
+                                : 'bg-white border-gray-300 opacity-85'
                             }`}
                           >
                             <label className="flex items-center gap-1.5 cursor-pointer flex-1 min-w-0 select-none">
@@ -674,9 +749,9 @@ export default function NotificacionesMailModal({ onClose, clientesMap }: Notifi
                                 type="checkbox"
                                 checked={estaIncluido}
                                 onChange={() => handleToggleEmailAbonado(email)}
-                                className="w-4 h-4 text-blue-600 rounded cursor-pointer"
+                                className="w-4 h-4 text-emerald-600 rounded cursor-pointer"
                               />
-                              <span className={`font-mono text-[11px] truncate ${estaIncluido ? 'font-bold text-blue-950' : 'text-gray-600'}`}>
+                              <span className={`font-mono text-[11px] truncate ${estaIncluido ? 'font-bold text-emerald-950' : 'text-gray-600 line-through decoration-gray-400'}`}>
                                 {email}
                               </span>
                             </label>
@@ -686,20 +761,28 @@ export default function NotificacionesMailModal({ onClose, clientesMap }: Notifi
                                 <button
                                   type="button"
                                   onClick={() => handleExcluirEmailAbonado(email)}
-                                  className="bg-red-100 hover:bg-red-200 text-red-700 border border-red-300 text-[10px] font-bold px-1.5 py-0.5 rounded-xs cursor-pointer flex items-center gap-0.5"
-                                  title="No incluir este correo en el envío actual"
+                                  className="bg-red-600 hover:bg-red-700 text-white text-[10px] font-bold px-2 py-0.5 rounded-xs cursor-pointer flex items-center gap-1 shadow-2xs"
+                                  title="Quitar este correo de este envío"
                                 >
                                   <span>✕</span>
-                                  <span>No incluir</span>
+                                  <span>NO INCLUIR</span>
                                 </button>
                               ) : (
-                                <span className="text-[10px] text-gray-400 italic px-1">Excluido</span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleEmailAbonado(email)}
+                                  className="bg-gray-100 hover:bg-gray-200 text-gray-600 border border-gray-300 text-[10px] font-bold px-1.5 py-0.5 rounded-xs cursor-pointer flex items-center gap-1"
+                                  title="Este correo está EXCLUIDO. Pulsa para incluirlo si lo deseas."
+                                >
+                                  <span className="text-red-600 font-bold">✕</span>
+                                  <span>EXCLUIDO</span>
+                                </button>
                               )}
 
                               <button 
                                 onClick={() => eliminarEmail(email)}
                                 className="text-gray-400 hover:text-red-600 font-bold p-1 cursor-pointer"
-                                title="Eliminar de la base de datos permanentemente"
+                                title="Eliminar definitivamente este correo de la base de datos"
                               >
                                 🗑️
                               </button>
@@ -783,9 +866,19 @@ export default function NotificacionesMailModal({ onClose, clientesMap }: Notifi
                       <span>📬</span>
                       <span>DESTINATARIOS CONFIRMADOS PARA ESTE REPORTE ({destinatariosFinales.length}):</span>
                     </span>
-                    {destinatariosFinales.length === 0 && (
+                    {destinatariosFinales.length === 0 ? (
                       <span className="text-red-600 text-[10px] font-black uppercase tracking-wider animate-pulse">
                         ⚠️ NINGUNO MARCADO
+                      </span>
+                    ) : (
+                      <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded-xs ${
+                        emailsAbonadoSeleccionados.length > 0 
+                          ? 'bg-amber-100 text-amber-900 border border-amber-300' 
+                          : 'bg-emerald-100 text-emerald-900 border border-emerald-300'
+                      }`}>
+                        {emailsAbonadoSeleccionados.length > 0 
+                          ? `⚠️ INCLUYE ${emailsAbonadoSeleccionados.length} CORREO(S) DEL CLIENTE` 
+                          : '🛡️ ENVÍO INTERNO A USUARIO GAMA'}
                       </span>
                     )}
                   </div>
@@ -796,19 +889,27 @@ export default function NotificacionesMailModal({ onClose, clientesMap }: Notifi
                     </div>
                   ) : (
                     <div className="flex flex-wrap gap-1">
-                      {destinatariosFinales.map(d => (
-                        <span key={d} className="bg-emerald-800 text-white font-mono font-bold text-[11px] px-2 py-0.5 rounded-xs flex items-center gap-1.5 shadow-xs">
-                          <span>{d}</span>
-                          <button
-                            type="button"
-                            onClick={() => handleExcluirDestinatarioFinal(d)}
-                            className="text-red-300 hover:text-white font-black cursor-pointer leading-none"
-                            title="Quitar este destinatario de este envío"
+                      {destinatariosFinales.map(d => {
+                        const esCliente = emails.includes(d)
+                        return (
+                          <span 
+                            key={d} 
+                            className={`font-mono font-bold text-[11px] px-2 py-0.5 rounded-xs flex items-center gap-1.5 shadow-xs text-white ${
+                              esCliente ? 'bg-blue-700' : 'bg-emerald-800'
+                            }`}
                           >
-                            ✕
-                          </button>
-                        </span>
-                      ))}
+                            <span>{esCliente ? '👤 [CLIENTE] ' : '🛡️ [GAMA] '} {d}</span>
+                            <button
+                              type="button"
+                              onClick={() => handleExcluirDestinatarioFinal(d)}
+                              className="bg-black/25 hover:bg-red-600 text-white font-black px-1 rounded-xs cursor-pointer leading-none text-xs ml-0.5"
+                              title="Pulsar X para excluir este correo de este envío"
+                            >
+                              ✕
+                            </button>
+                          </span>
+                        )
+                      })}
                     </div>
                   )}
                 </div>
