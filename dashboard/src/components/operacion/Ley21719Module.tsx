@@ -468,6 +468,93 @@ export default function Ley21719Module() {
     }
   }
 
+  // Doc 6: Formulario Físico de Consentimiento Informado (Art. 13 & 14 Ley 21.719)
+  const generarDocConsentimientoFisico = () => {
+    setGenerandoPdf('consentimiento-fisico')
+    try {
+      const doc = new jsPDF()
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(13)
+      doc.text('GAMA SEGURIDAD — FORMULARIO DE CONSENTIMIENTO INFORMADO', 14, 18)
+      doc.setFontSize(10)
+      doc.setTextColor(0, 51, 153)
+      doc.text('AUTORIZACIÓN DE TRATAMIENTO DE DATOS Y PROTOCOLO DE ALARMAS', 14, 25)
+      doc.text('CONFORME A LA LEY N° 21.719 Y LEY N° 21.659 DE CHILE', 14, 31)
+
+      doc.setTextColor(60, 60, 60)
+      doc.setFontSize(8.5)
+      doc.setFont('helvetica', 'normal')
+      doc.text(`Fecha: ${fechaHoy} | Formato: Soporte Papel / Terreno | Canal ARCO+: privacidad@gamasecurity.cl`, 14, 38)
+      doc.line(14, 40, 196, 40)
+
+      let y = 48
+      const addField = (label: string, widthLine: number) => {
+        doc.setFont('helvetica', 'bold')
+        doc.setFontSize(8.5)
+        doc.setTextColor(0, 0, 0)
+        doc.text(label, 14, y)
+        doc.setDrawColor(180, 180, 180)
+        doc.line(14 + doc.getTextWidth(label) + 2, y, 14 + doc.getTextWidth(label) + widthLine, y)
+        y += 7
+      }
+
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(9)
+      doc.setTextColor(0, 31, 63)
+      doc.text('1. IDENTIFICACIÓN DEL TITULAR O REPRESENTANTE LEGAL', 14, y)
+      y += 6
+
+      addField('Nombre Completo o Razón Social: ', 120)
+      addField('RUT: ', 60)
+      addField('Dirección de la Propiedad Monitoreada: ', 110)
+      addField('Teléfono Titular: ', 50)
+      addField('Correo Electrónico de Reportes: ', 90)
+
+      y += 2
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(9)
+      doc.setTextColor(0, 31, 63)
+      doc.text('2. DECLARACIÓN EXPRESA DE CONSENTIMIENTO (LEY N° 21.719)', 14, y)
+      y += 6
+
+      const clausulasConsentimiento = [
+        '1. Autorizo a GAMA SEGURIDAD SpA para almacenar y tratar mis datos de contacto, horarios y contraclaves con el propósito exclusivo de verificar señales de alarma, coordinar auxilio con Carabineros (OS-10) y Bomberos, y despachar novedades operativas.',
+        '2. Declaro que los contactos de emergencia que he proporcionado para la lista de llamadas correlativas han sido informados y han consentido en ser contactados ante activaciones de seguridad.',
+        '3. Autorizo expresamente el envío de alertas automatizadas mediante llamadas de voz IA, mensajes SMS, WhatsApp y correos electrónicos ante emergencias en la propiedad.',
+        '4. Declaro conocer que puedo ejercer mis derechos de Acceso, Rectificación, Supresión, Oposición y Portabilidad enviando solicitud escrita con copia de mi cédula a privacidad@gamasecurity.cl.'
+      ]
+
+      clausulasConsentimiento.forEach(cl => {
+        doc.setFont('helvetica', 'normal')
+        doc.setFontSize(8)
+        doc.setTextColor(40, 40, 40)
+        const split = doc.splitTextToSize(cl, 182)
+        doc.text(split, 14, y)
+        y += split.length * 3.8 + 2.5
+      })
+
+      y += 15
+      doc.setDrawColor(100, 100, 100)
+      doc.line(30, y, 100, y)
+      doc.line(120, y, 180, y)
+      doc.rect(125, y + 5, 25, 30) // Recuadro para huella dactilar
+
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(8)
+      doc.setTextColor(0, 0, 0)
+      doc.text('FIRMA DEL TITULAR O APODERADO', 65, y + 5, { align: 'center' })
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(7)
+      doc.text('RUT / C.I.: ___________________________', 65, y + 10, { align: 'center' })
+
+      doc.text('HUELLA DACTILAR', 137, y + 38, { align: 'center' })
+
+      doc.save(`GamaSeguridad_Formulario_Consentimiento_Ley21719_${new Date().toISOString().slice(0,10)}.pdf`)
+    } finally {
+      setGenerandoPdf(null)
+    }
+  }
+
   // Certificado Oficial de Peritaje y Trazabilidad Forense de Cuenta
   const generarCertificadoAuditoriaCuenta = (cuentaTarget?: string) => {
     setGenerandoPdf('cert-forense')
@@ -701,7 +788,7 @@ FOR ALL TO anon, authenticated, service_role USING (true) WITH CHECK (true);`
           <div className="bg-white/5 border border-white/10 p-3 rounded-xl">
             <div className="text-[11px] text-slate-400 font-mono">DOCUMENTOS LEGALES</div>
             <div className="text-lg font-bold text-amber-300 flex items-center gap-1.5 mt-0.5">
-              <FileText className="w-4 h-4" /> 5 Documentos + Certificados
+              <FileText className="w-4 h-4" /> 6 Documentos + Certificados
             </div>
           </div>
         </div>
@@ -925,6 +1012,37 @@ FOR ALL TO anon, authenticated, service_role USING (true) WITH CHECK (true);`
                 >
                   <Download className="w-3.5 h-3.5" />
                   <span>{generandoPdf === 'rat' ? 'Generando...' : 'Descargar RAT Oficial (PDF)'}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Doc 6: Formulario Físico de Consentimiento */}
+            <div className="bg-[#0c182b] border border-slate-700/60 p-5 rounded-2xl flex flex-col justify-between shadow-xl hover:border-cyan-500/50 transition-all md:col-span-2">
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="px-2.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 font-mono text-[10px] font-bold border border-cyan-400/30">
+                    DOC-CONSENTIMIENTO-06 · SOPORTE FÍSICO / TERRENO
+                  </span>
+                  <span className="text-[11px] text-slate-400 font-mono">Firma Manuscrita & Huella</span>
+                </div>
+                <h3 className="text-base font-bold text-white flex items-center gap-2">
+                  <Lock className="w-4 h-4 text-cyan-400" />
+                  <span>Formulario Físico de Consentimiento Informado & Declaración Jurada</span>
+                </h3>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  Instrumento oficial listo para imprimir y hacer firmar en terreno por técnicos o inspectores a abonados que no gestionan online. Incluye autorización expresa para monitoreo 24/7, llamadas automáticas IA, lista correlativa de llamadas y recuadro oficial para huella dactilar.
+                </p>
+              </div>
+
+              <div className="pt-5 border-t border-slate-800 mt-4 flex items-center justify-between">
+                <div className="text-[11px] text-slate-400 font-mono">Impresión A4 Lista para Terreno</div>
+                <button
+                  onClick={generarDocConsentimientoFisico}
+                  disabled={generandoPdf === 'consentimiento-fisico'}
+                  className="bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold px-4 py-2 rounded-xl flex items-center gap-2 shadow-lg cursor-pointer transition-all active:scale-95 disabled:opacity-50"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>{generandoPdf === 'consentimiento-fisico' ? 'Generando...' : 'Descargar Formato Papel (PDF)'}</span>
                 </button>
               </div>
             </div>

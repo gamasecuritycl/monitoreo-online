@@ -229,7 +229,8 @@ export async function POST(req: NextRequest) {
     const {
       titular,
       propiedades,
-      declaracionAceptada = true
+      declaracionAceptada = true,
+      consentimientoDatosAceptado = true
     } = body
 
     if (!titular || !titular.rut || !propiedades || !Array.isArray(propiedades) || propiedades.length === 0) {
@@ -239,6 +240,7 @@ export async function POST(req: NextRequest) {
       }, { status: 400 })
     }
 
+    const clientIp = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || req.headers.get('x-real-ip') || '127.0.0.1'
     const rutLimpio = normalizarRut(titular.rut)
     const nowIso = new Date().toISOString()
     const cuentasLista = propiedades.map((p: any) => p.cuenta.toUpperCase().trim())
@@ -258,7 +260,7 @@ export async function POST(req: NextRequest) {
       console.warn('Advertencia guardando en clientes_rut_maestro:', errMaestro)
     }
 
-    // 2. Guardar cada propiedad en `clientes_fichas_cuentas`
+    // 2. Guardar cada propiedad en `clientes_fichas_cuentas` y registrar auditoría forense
     for (const prop of propiedades) {
       const cClean = prop.cuenta.toUpperCase().trim()
 
@@ -273,11 +275,35 @@ export async function POST(req: NextRequest) {
           contactos: prop.contactos || [],
           procedimiento_especial: prop.procedimiento_especial || '',
           declaracion_aceptada: declaracionAceptada,
+          consentimiento_ley_21719: consentimientoDatosAceptado,
+          ip_declaracion: clientIp,
           fecha_declaracion: nowIso,
           updated_at: nowIso
         }, { onConflict: 'cuenta' })
       } catch (errFicha) {
         console.warn(`Advertencia guardando ficha para cuenta ${cClean}:`, errFicha)
+      }
+
+      // Registro en bitácora forense de auditoría Ley 21.719
+      try {
+        await supabase.from('bitacora_auditoria_datos').insert({
+          operacion: 'CONSENTIMIENTO_LEY_21719',
+          tabla_afectada: 'clientes_fichas_cuentas',
+          cuenta_abonado: cClean,
+          usuario_operador: `TITULAR_${rutLimpio}`,
+          detalle_accion: `Consentimiento informado Ley 21.719 otorgado online. Contactos configurados: ${prop.contactos?.length || 0}`,
+          datos_nuevos: {
+            rut_titular: rutLimpio,
+            cuenta: cClean,
+            declaracion_aceptada: declaracionAceptada,
+            consentimiento_ley_21719: consentimientoDatosAceptado,
+            fecha_consentimiento: nowIso,
+            ip: clientIp
+          },
+          ip_origen: clientIp
+        })
+      } catch (errAudit) {
+        console.warn('Advertencia registrando en bitacora_auditoria_datos:', errAudit)
       }
 
       // 3. Sincronizar correos si se proporcionaron (preservando configuraciones de reportes)

@@ -71,6 +71,7 @@ export default function FichaActualizacionCliente() {
 
   // Estado de Guardado
   const [declaracionAceptada, setDeclaracionAceptada] = useState(false)
+  const [consentimientoDatosAceptado, setConsentimientoDatosAceptado] = useState(false)
   const [guardando, setGuardando] = useState(false)
   const [exitoGuardado, setExitoGuardado] = useState(false)
   const [errorGuardado, setErrorGuardado] = useState('')
@@ -192,8 +193,8 @@ export default function FichaActualizacionCliente() {
 
   // Guardar ficha oficial
   const handleGuardarFicha = async () => {
-    if (!declaracionAceptada) {
-      setErrorGuardado('Debe marcar la declaración de veracidad y responsabilidad para poder guardar.')
+    if (!declaracionAceptada || !consentimientoDatosAceptado) {
+      setErrorGuardado('Debe marcar ambas casillas obligatorias de veracidad y consentimiento de la Ley N° 21.719 para poder guardar.')
       return
     }
 
@@ -212,7 +213,8 @@ export default function FichaActualizacionCliente() {
         body: JSON.stringify({
           titular,
           propiedades,
-          declaracionAceptada
+          declaracionAceptada,
+          consentimientoDatosAceptado
         })
       })
 
@@ -767,7 +769,30 @@ export default function FichaActualizacionCliente() {
                     className="w-4 h-4 mt-0.5 sm:mt-0 rounded text-[#0066cc] bg-black border-slate-700 focus:ring-[#2997ff] shrink-0 cursor-pointer"
                   />
                   <span className="text-xs font-bold text-white">
-                    He revisado la información provista y asumo la responsabilidad sobre la exactitud de los números de contacto.
+                    1. He revisado la información provista y asumo la responsabilidad sobre la exactitud de los números de contacto.
+                  </span>
+                </label>
+              </div>
+
+              {/* Consentimiento Expreso Ley 21.719 */}
+              <div className="bg-[#060c18] border border-blue-500/30 p-4 sm:p-5 rounded-2xl space-y-2.5">
+                <div className="flex items-center gap-2 text-[#2997ff] text-xs font-bold uppercase tracking-wider">
+                  <Lock className="w-4 h-4" />
+                  <span>Consentimiento Informado & Privacidad (Ley N° 21.719 Chile)</span>
+                </div>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  Conforme a la Ley N° 21.719 sobre Protección de Datos Personales, autorizo expresamente a Gama Seguridad SpA para el tratamiento de estos antecedentes con fines exclusivos de monitoreo, televigilancia y despacho de alertas ante emergencias (llamadas automáticas IA, WhatsApp, SMS y correo). Sé que puedo ejercer mis derechos ARCO+ en <strong>privacidad@gamasecurity.cl</strong>.
+                </p>
+
+                <label className="flex items-start sm:items-center gap-3 pt-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={consentimientoDatosAceptado}
+                    onChange={(e) => setConsentimientoDatosAceptado(e.target.checked)}
+                    className="w-4 h-4 mt-0.5 sm:mt-0 rounded text-[#0066cc] bg-black border-slate-700 focus:ring-[#2997ff] shrink-0 cursor-pointer"
+                  />
+                  <span className="text-xs font-bold text-emerald-300">
+                    2. Autorizo expresamente el tratamiento de datos y la recepción de alertas de seguridad conforme a la Ley N° 21.719.
                   </span>
                 </label>
               </div>
@@ -787,7 +812,7 @@ export default function FichaActualizacionCliente() {
                 <button
                   type="button"
                   onClick={handleGuardarFicha}
-                  disabled={!declaracionAceptada || guardando}
+                  disabled={!declaracionAceptada || !consentimientoDatosAceptado || guardando}
                   className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-gradient-to-r from-blue-600 to-[#2997ff] hover:from-blue-500 hover:to-blue-400 text-white font-extrabold text-xs uppercase tracking-wider shadow-xl shadow-blue-950/60 transition active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-2"
                 >
                   {guardando ? (
