@@ -1972,7 +1972,7 @@ export default function ScorpionDashboard() {
 
       {/* Todos los Eventos Modal */}
       {modalActivo === 'todos-los-eventos' && (
-        <TodosLosEventosModal onClose={() => setModalActivo(null)} />
+        <TodosLosEventosModal onClose={() => setModalActivo(null)} clientesMap={clientesMap} />
       )}
 
       {/* Servicio Técnico Modal */}

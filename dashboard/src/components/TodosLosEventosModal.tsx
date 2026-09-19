@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getSenalLegible } from './EventRow'
 
@@ -10,10 +10,14 @@ interface Evento {
   nombre_abonado: string
   zona: string
   usuario: string
+  _dateIsoStr?: string
+  _horaFormatted?: string
+  _timestamp?: number
 }
 
 interface Props {
   onClose: () => void
+  clientesMap?: Record<string, any>
 }
 
 const SYSTEM_ACCOUNTS = new Set([
@@ -64,7 +68,7 @@ interface ParsedEventDate {
 }
 
 /**
- * Parsea cualquier marca de tiempo de eventos_monitoreo ("DD-MM-YYYY HH:mm:ss" o "YYYY-MM-DD HH:mm:ss" o ISO)
+ * Parsea cualquier marca de tiempo de eventos_monitoreo en hora oficial de Chile (America/Santiago)
  */
 function parseEventDate(rawStr?: string): ParsedEventDate {
   if (!rawStr) return { dateIsoStr: '', horaStr: '00:00:00', timestamp: 0 }
@@ -80,29 +84,27 @@ function parseEventDate(rawStr?: string): ParsedEventDate {
     return { dateIsoStr, horaStr, timestamp: dObj.getTime() }
   }
 
-  // 2. Formato "YYYY-MM-DD HH:mm:ss" o "2026-08-25 20:53:57"
-  const matchYYYYMM = s.match(/^(\d{4})[-/](\d{2})[-/](\d{2})(?:[T\s]+(\d{2}):(\d{2}):(\d{2}))?/)
-  if (matchYYYYMM) {
-    const [, anio, mes, dia, hh = '00', mm = '00', ss = '00'] = matchYYYYMM
-    const dateIsoStr = `${anio}-${mes}-${dia}`
-    const horaStr = `${hh}:${mm}:${ss}`
-    const dObj = new Date(Number(anio), Number(mes) - 1, Number(dia), Number(hh), Number(mm), Number(ss))
-    return { dateIsoStr, horaStr, timestamp: dObj.getTime() }
-  }
-
-  // 3. Fallback con Date object nativo
+  // 2. Formato ISO o timestamp nativo con conversión estricta a zona horaria de Chile
   try {
     const d = new Date(s)
     if (!isNaN(d.getTime())) {
-      const anio = d.getFullYear()
-      const mes = (d.getMonth() + 1).toString().padStart(2, '0')
-      const dia = d.getDate().toString().padStart(2, '0')
-      const hh = d.getHours().toString().padStart(2, '0')
-      const mm = d.getMinutes().toString().padStart(2, '0')
-      const ss = d.getSeconds().toString().padStart(2, '0')
+      const formatterFecha = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'America/Santiago',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      })
+      const formatterHora = new Intl.DateTimeFormat('es-CL', {
+        timeZone: 'America/Santiago',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+      })
+
       return {
-        dateIsoStr: `${anio}-${mes}-${dia}`,
-        horaStr: `${hh}:${mm}:${ss}`,
+        dateIsoStr: formatterFecha.format(d),
+        horaStr: formatterHora.format(d),
         timestamp: d.getTime()
       }
     }
@@ -113,7 +115,7 @@ function parseEventDate(rawStr?: string): ParsedEventDate {
 
 function formatTrama(cuenta: string, eventoText: string, zona: string, usuario: string) {
   const upperEv = (eventoText || '').toUpperCase()
-  // Intentar extraer código de Contact ID (ej. E130, R401)
+  // Extraer código de Contact ID (ej. E130, R401)
   const match = upperEv.match(/[ER]\d{3}/)
   let code = match ? match[0] : 'E130'
   
@@ -139,7 +141,7 @@ function formatTrama(cuenta: string, eventoText: string, zona: string, usuario: 
 function getRowStyle(eventoTexto: string) {
   const upper = (eventoTexto || '').toUpperCase()
 
-  // 1. Aperturas / Cierres -> Fondo blanco o celeste aleatorio
+  // 1. Aperturas / Cierres -> Fondo blanco o celeste
   if (upper.includes('APERTURA') || upper.includes('CIERRE') || upper.includes('DESARMADO') || upper.includes('ARMADO')) {
     const hash = (eventoTexto || '').split('').reduce((a, c) => a + c.charCodeAt(0), 0)
     return hash % 2 === 0
@@ -159,52 +161,112 @@ function getRowStyle(eventoTexto: string) {
     return { bg: '#ffc0cb', text: '#000000' }
   }
   
-  return null // Alternado por defecto
+  return null
 }
 
-export default function TodosLosEventosModal({ onClose }: Props) {
-  // Inicializar con la fecha local de Chile en formato YYYY-MM-DD
+export default function TodosLosEventosModal({ onClose, clientesMap: propClientesMap }: Props) {
+  // Fecha actual en hora local de Chile YYYY-MM-DD
   const getChileLocalDate = () => {
     const d = new Date()
-    const tzOffset = -4 * 60 // UTC-4 para Chile estándar
-    const localTime = d.getTime() + (d.getTimezoneOffset() + tzOffset) * 60000
-    const localDate = new Date(localTime)
-    const anio = localDate.getFullYear()
-    const mes = (localDate.getMonth() + 1).toString().padStart(2, '0')
-    const dia = localDate.getDate().toString().padStart(2, '0')
-    return `${anio}-${mes}-${dia}`
+    const formatterFecha = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/Santiago',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    })
+    return formatterFecha.format(d)
   }
 
   const [fecha, setFecha] = useState(getChileLocalDate())
   const [eventos, setEventos] = useState<Evento[]>([])
   const [cargando, setCargando] = useState(false)
-  const [mensaje, setMensaje] = useState('Seleccione una fecha y presione VER.')
+  const [mensaje, setMensaje] = useState('Cargando eventos del día...')
+  const [clientesLocal, setClientesLocal] = useState<Record<string, any>>({})
 
-  const cargarEventos = async () => {
-    if (!fecha) {
+  // Cargar mapa de clientes desde cache local si no viene por props
+  useEffect(() => {
+    if (propClientesMap && Object.keys(propClientesMap).length > 0) {
+      setClientesLocal(propClientesMap)
+    } else {
+      try {
+        const cached = localStorage.getItem('gama_clientes_cache')
+        if (cached) {
+          setClientesLocal(JSON.parse(cached))
+        }
+      } catch {}
+    }
+  }, [propClientesMap])
+
+  /**
+   * Carga la totalidad de los eventos del día seleccionado en orden DESCENDENTE
+   * (El más reciente arriba, el primero del día abajo en la parte inferior).
+   */
+  const cargarEventos = useCallback(async (fechaSeleccionada: string) => {
+    if (!fechaSeleccionada) {
       alert('Por favor seleccione una fecha')
       return
     }
 
     setCargando(true)
-    setMensaje('Buscando eventos en base de datos...')
+    setMensaje(`Consultando todos los eventos del ${fechaSeleccionada}...`)
     setEventos([])
 
     try {
-      const [anio, mes, dia] = fecha.split('-')
-      const dateChileStr = `${dia}-${mes}-${anio}` // "25-08-2026"
+      const [anio, mes, dia] = fechaSeleccionada.split('-')
+      const dateChileStr = `${dia}-${mes}-${anio}`
 
-      // Paso 1: Consultar los 5000 registros más recientes directamente de eventos_monitoreo
-      let { data, error } = await supabase
-        .from('eventos_monitoreo')
-        .select('*')
-        .order('id', { ascending: false })
-        .limit(5000)
+      // Ventana ISO amplia para cubrir la totalidad del día en cualquier huso de Chile (-04:00 / -03:00)
+      const startIso = `${fechaSeleccionada}T00:00:00-05:00`
+      const endIso = `${fechaSeleccionada}T23:59:59+01:00`
 
-      if (error) throw error
+      let allRows: any[] = []
+      let page = 0
+      const pageSize = 1000
 
-      // Filtrar y asociar en JavaScript
-      let eventosFiltrados = (data || [])
+      // Paginación continua para garantizar la carga del 100% de los eventos del día
+      while (true) {
+        const from = page * pageSize
+        const to = from + pageSize - 1
+
+        const { data, error } = await supabase
+          .from('eventos_monitoreo')
+          .select('id, fecha_hora, cuenta, evento, zona, usuario, nombre_abonado')
+          .not('cuenta', 'in', '(CLIENTES,CODIGOS,ZONAS,__SINCRONIZADOR__,CONFIG_OPERADORES,CLIENTES_MAESTROS_CRM,EMPRESAS_CONGLOMERADO,COTIZACIONES_DOLIBARR,ORDENES_TRABAJO,ORDEN_EDITOR_REMOTO,AUDITORIA_EDITOR_REMOTO,0000,000)')
+          .not('cuenta', 'like', 'CONFIG_WHATSAPP_%')
+          .not('cuenta', 'like', 'DAHUA_%')
+          .not('cuenta', 'like', 'CAMARAS_%')
+          .not('cuenta', 'like', 'SNAPSHOT_%')
+          .gte('fecha_hora', startIso)
+          .lte('fecha_hora', endIso)
+          .order('id', { ascending: false })
+          .range(from, to)
+
+        if (error) throw error
+        if (!data || data.length === 0) break
+
+        allRows = allRows.concat(data)
+        if (data.length < pageSize) break
+        page++
+      }
+
+      // Fallback para fechas históricas guardadas con formato de texto libre "DD-MM-YYYY"
+      if (allRows.length === 0) {
+        const { data: dateData } = await supabase
+          .from('eventos_monitoreo')
+          .select('id, fecha_hora, cuenta, evento, zona, usuario, nombre_abonado')
+          .not('cuenta', 'in', '(CLIENTES,CODIGOS,ZONAS,__SINCRONIZADOR__,CONFIG_OPERADORES,0000,000)')
+          .not('cuenta', 'like', 'CONFIG_WHATSAPP_%')
+          .like('fecha_hora', `%${dateChileStr}%`)
+          .order('id', { ascending: false })
+          .limit(3000)
+
+        if (dateData && dateData.length > 0) {
+          allRows = dateData
+        }
+      }
+
+      // Filtrar abonados reales y normalizar fecha/hora a zona horaria de Chile
+      const eventosFiltrados: Evento[] = allRows
         .filter(e => isRealAccount(e.cuenta, e.evento, e.nombre_abonado))
         .map(e => {
           const parsed = parseEventDate(e.fecha_hora)
@@ -215,58 +277,64 @@ export default function TodosLosEventosModal({ onClose }: Props) {
             _timestamp: parsed.timestamp
           }
         })
-        .filter(e => e._dateIsoStr === fecha)
+        .filter(e => e._dateIsoStr === fechaSeleccionada)
 
-      // Paso 2: Si por ser una fecha pasada no estaba en las últimas 5000 filas, buscar por patrón de fecha en Supabase
-      if (eventosFiltrados.length === 0) {
-        const { data: dateData } = await supabase
-          .from('eventos_monitoreo')
-          .select('*')
-          .like('fecha_hora', `%${dateChileStr}%`)
-          .limit(5000)
-
-        if (dateData && dateData.length > 0) {
-          eventosFiltrados = dateData
-            .filter(e => isRealAccount(e.cuenta, e.evento, e.nombre_abonado))
-            .map(e => {
-              const parsed = parseEventDate(e.fecha_hora)
-              return {
-                ...e,
-                _dateIsoStr: parsed.dateIsoStr,
-                _horaFormatted: parsed.horaStr,
-                _timestamp: parsed.timestamp
-              }
-            })
-            .filter(e => e._dateIsoStr === fecha)
+      // ORDEN DESCENDENTE:
+      // El evento más reciente del día arriba (índice 0).
+      // El PRIMERO del día seleccionado en la parte inferior (último índice).
+      eventosFiltrados.sort((a, b) => {
+        if ((b._timestamp || 0) !== (a._timestamp || 0)) {
+          return (b._timestamp || 0) - (a._timestamp || 0)
         }
-      }
-
-      // Ordenar cronológicamente ascendente (00:00:00 -> 23:59:59 o hora actual)
-      eventosFiltrados.sort((a, b) => a._timestamp - b._timestamp)
+        return b.id - a.id
+      })
 
       setEventos(eventosFiltrados)
+
       if (eventosFiltrados.length > 0) {
-        setMensaje(`¡${eventosFiltrados.length} eventos de abonados cargados para el ${fecha}!`)
+        setMensaje(`¡${eventosFiltrados.length} eventos cargados para el ${fechaSeleccionada}!`)
       } else {
-        setMensaje(`No hay eventos de abonados registrados para el ${fecha}.`)
+        setMensaje(`No hay eventos registrados para el ${fechaSeleccionada}.`)
       }
     } catch (err: any) {
-      setMensaje('❌ Error de consulta: ' + err.message)
+      console.error('[TODOS LOS EVENTOS] Error:', err)
+      setMensaje('❌ Error de consulta: ' + (err.message || 'Error de conexión'))
     } finally {
       setCargando(false)
     }
+  }, [])
+
+  // Cargar automáticamente los eventos de la fecha seleccionada al montar el componente
+  useEffect(() => {
+    cargarEventos(fecha)
+  }, [cargarEventos, fecha])
+
+  // Obtener nombre del abonado con fallback
+  const getNombreAbonado = (cuenta: string, nombreOriginal?: string) => {
+    const c = (cuenta || '').toUpperCase().trim()
+    if (clientesLocal[c]?.nombre) return clientesLocal[c].nombre
+    if (nombreOriginal && !nombreOriginal.includes('RECEPTOR') && nombreOriginal.trim() !== '') {
+      return nombreOriginal
+    }
+    return `ABONADO ${cuenta}`
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 font-mono">
-      <div className="bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 w-full max-w-3xl md:max-w-4xl max-h-[90vh] flex flex-col shadow-2xl text-black select-none">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-2 md:p-4 font-mono">
+      <div className="bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 w-full max-w-5xl md:max-w-6xl max-h-[95vh] flex flex-col shadow-2xl text-black select-none">
         
-        {/* Title bar */}
+        {/* Title bar Windows 98 / Scorpion */}
         <div className="bg-[#000080] text-white px-2 py-1 flex justify-between items-center shrink-0">
-          <div className="font-bold text-xs tracking-wide">Scorpion - Eventos Ingresados por Día</div>
+          <div className="font-bold text-xs tracking-wide flex items-center gap-2">
+            <span>Scorpion - Eventos Ingresados por Día</span>
+            <span className="text-[10px] text-yellow-300 font-normal hidden sm:inline">
+              (Orden descendente · Primero del día en parte inferior)
+            </span>
+          </div>
           <button 
             onClick={onClose} 
             className="bg-[#c0c0c0] text-black font-bold border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 px-2 leading-none hover:bg-[#d0d0d0] cursor-pointer"
+            title="Cerrar ventana"
           >
             X
           </button>
@@ -276,14 +344,14 @@ export default function TodosLosEventosModal({ onClose }: Props) {
         <div className="p-2 flex-1 flex flex-col overflow-hidden bg-[#c0c0c0]">
           
           {/* Main Title Header */}
-          <div className="text-center my-1">
-            <h1 className="text-lg md:text-xl font-black text-[#000080] tracking-wider uppercase">
+          <div className="text-center my-1 shrink-0">
+            <h1 className="text-base md:text-lg font-black text-[#000080] tracking-wider uppercase">
               EVENTOS RECIBIDOS {fecha}
             </h1>
           </div>
 
           {/* Table Container */}
-          <div className="flex-1 overflow-auto border-2 border-t-gray-700 border-l-gray-700 border-b-white border-r-white bg-white min-h-[150px] h-[220px] md:h-[300px]">
+          <div className="flex-1 overflow-auto border-2 border-t-gray-700 border-l-gray-700 border-b-white border-r-white bg-white min-h-[300px] md:min-h-[450px]">
             <table className="w-full text-left border-collapse text-[10px] md:text-[11px] leading-tight font-bold whitespace-nowrap">
               <thead>
                 <tr className="bg-[#d4d0c8] text-black sticky top-0 border-b border-gray-400 select-none z-10">
@@ -294,7 +362,7 @@ export default function TodosLosEventosModal({ onClose }: Props) {
                   <th className="p-1 border-r border-b border-gray-400 w-10 text-center">PAR.</th>
                   <th className="p-1 border-r border-b border-gray-400 w-10 text-center">ZN.</th>
                   <th className="p-1 border-r border-b border-gray-400 w-10 text-center">USR.</th>
-                  <th className="p-1 border-r border-b border-gray-400 w-44 font-mono text-center">TRAMA</th>
+                  <th className="p-1 border-r border-b border-gray-400 w-48 font-mono text-center">TRAMA</th>
                   <th className="p-1 border-r border-b border-gray-400">OBSERVACION</th>
                   <th className="p-1 border-b border-gray-400 w-12 text-center">COM</th>
                 </tr>
@@ -310,7 +378,8 @@ export default function TodosLosEventosModal({ onClose }: Props) {
                   const par = (e.zona && e.zona !== 'None' ? '01' : '---')
                   const zn = (e.zona && e.zona !== 'None' ? e.zona.padStart(2, '0') : '---')
                   const usr = (e.usuario && e.usuario !== 'None' ? e.usuario.padStart(3, '0') : '---')
-                  const horaDisplay = (e as any)._horaFormatted || parseEventDate(e.fecha_hora).horaStr
+                  const horaDisplay = e._horaFormatted || parseEventDate(e.fecha_hora).horaStr
+                  const nombreDisplay = getNombreAbonado(e.cuenta, e.nombre_abonado)
                   
                   return (
                     <tr 
@@ -320,7 +389,7 @@ export default function TodosLosEventosModal({ onClose }: Props) {
                     >
                       <td className="p-1 border-r border-gray-300 text-center font-mono">{horaDisplay}</td>
                       <td className="p-1 border-r border-gray-300 text-center font-mono">{e.cuenta}</td>
-                      <td className="p-1 border-r border-gray-300 max-w-[200px] truncate uppercase">{e.nombre_abonado || '******** RECEPTOR ********'}</td>
+                      <td className="p-1 border-r border-gray-300 max-w-[220px] truncate uppercase" title={nombreDisplay}>{nombreDisplay}</td>
                       <td className="p-1 border-r border-gray-300 uppercase" title={e.evento !== senalLegible ? `Código original: ${e.evento}` : undefined}>{senalLegible}</td>
                       <td className="p-1 border-r border-gray-300 text-center font-mono">{par}</td>
                       <td className="p-1 border-r border-gray-300 text-center font-mono">{zn}</td>
@@ -333,8 +402,15 @@ export default function TodosLosEventosModal({ onClose }: Props) {
                 })}
                 {eventos.length === 0 && !cargando && (
                   <tr>
-                    <td colSpan={10} className="p-8 text-center text-gray-500 italic bg-gray-50">
-                      No hay eventos cargados. Seleccione una fecha y presione VER.
+                    <td colSpan={10} className="p-12 text-center text-gray-500 italic bg-gray-50">
+                      No hay eventos registrados para el {fecha}.
+                    </td>
+                  </tr>
+                )}
+                {cargando && (
+                  <tr>
+                    <td colSpan={10} className="p-12 text-center text-blue-800 font-bold bg-gray-50 animate-pulse">
+                      ⏳ Cargando todos los eventos del {fecha}...
                     </td>
                   </tr>
                 )}
@@ -355,7 +431,7 @@ export default function TodosLosEventosModal({ onClose }: Props) {
                 className="bg-white border border-gray-400 font-bold px-2 py-0.5 text-xs text-black select-text focus:outline-none"
               />
               <button
-                onClick={cargarEventos}
+                onClick={() => cargarEventos(fecha)}
                 disabled={cargando}
                 className="bg-[#d4d0c8] hover:bg-[#e0e0e0] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 px-4 py-0.5 font-bold text-xs cursor-pointer active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white shadow-sm"
               >
@@ -372,8 +448,16 @@ export default function TodosLosEventosModal({ onClose }: Props) {
           </div>
 
           {/* Status Bar */}
-          <div className="mt-1 bg-[#d4d0c8] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white px-2 py-0.5 text-[10px] text-gray-600 font-bold tracking-wide shrink-0">
-            {mensaje} {eventos.length > 0 && `(${eventos.length} registros)`}
+          <div className="mt-1 bg-[#d4d0c8] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white px-2 py-0.5 text-[10px] text-gray-600 font-bold tracking-wide shrink-0 flex flex-wrap justify-between items-center gap-1">
+            <span>
+              {mensaje} {eventos.length > 0 && `(${eventos.length} eventos · orden descendente)`}
+            </span>
+            {eventos.length > 0 && (
+              <span className="text-gray-700 font-mono text-[9px] md:text-[10px]">
+                ▲ MÁS RECIENTE: <strong className="text-blue-900">{eventos[0]._horaFormatted || ''}</strong> &nbsp;|&nbsp; 
+                ▼ PRIMERO DEL DÍA: <strong className="text-emerald-900">{eventos[eventos.length - 1]._horaFormatted || ''}</strong>
+              </span>
+            )}
           </div>
 
         </div>
