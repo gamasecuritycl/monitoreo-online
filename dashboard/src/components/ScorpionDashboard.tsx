@@ -584,6 +584,13 @@ export default function ScorpionDashboard() {
     if (c.startsWith('CAMARAS_DAHUA_') || c.startsWith('DAHUA_FRAME_') || c.startsWith('DAHUA_STREAM_REQ_') || c.startsWith('SNAPSHOT_') || c.startsWith('CLIP_') || c.startsWith('CONFIG_WHATSAPP_') || c.startsWith('CONFIG_APERTURAS_') || c.startsWith('CONFIG_') || c.startsWith('__')) return true
     if (c.startsWith('ORDEN_') || c.startsWith('AUDITORIA_') || ['CLIENTES', 'CODIGOS', 'ZONAS', '__SINCRONIZADOR__', 'EMPRESAS_CONGLOMERADO', 'COTIZACIONES_DOLIBARR', 'ORDENES_TRABAJO', 'CONFIG_OPERADORES', 'CLIENTES_MAESTROS_CRM', 'CONFIG_APERTURAS_CIERRES_LISTA', 'ORDEN_EDITOR_REMOTO', 'AUDITORIA_EDITOR_REMOTO', '0000'].includes(c)) return true
     if (['PREMIUM', 'ELIMINACION_DAHUA_CRUD', 'GENERACION_NVR_MULTICANAL', 'FRAME_SYNC', 'NVR_DVR_FRAME_SYNC', 'CAMERA_FRAME_SYNC', 'STREAM_REQ', 'SNAPSHOT_OPERADOR', 'CLIP_VIDEO_OPERADOR', 'CONFIG_UPDATE_APERTURAS_CIERRES'].includes(e) || e.startsWith('CONFIG_UPDATE_') || e.startsWith('EDITAR_GENERAL') || e.startsWith('EDITOR REMOTO') || e.includes('EDITOR_REMOTO') || e.includes('EDITAR_GENERAL') || e.startsWith('REGISTRO_CAMBIO')) return true
+
+    // Descartar abonados genéricos ajenos a Gama Seguridad
+    if (n.startsWith('ABONADO ') && Object.keys(clientesMap).length > 0) {
+      const existe = Boolean(clientesMap[c] || clientesMap[c.padStart(4, '0')] || clientesMap[c.replace(/^0+/, '')])
+      if (!existe) return true
+    }
+
     return false
   }
 

@@ -110,14 +110,10 @@ CODIGOS_LOCAL_MAP = {}
 PASSWORDS_PROBAR_MDB = ['Administ', 'SCORPION29', 'SCORPION7', '', 'scorpion', 'SCORPION', 'SCORPION2026', 'admin', 'ADMIN']
 
 def get_chile_offset() -> str:
-    if time.daylight and time.localtime().tm_isdst:
-        offset_hours = -3
-    else:
-        offset_hours = -4
-    sign = '+' if offset_hours >= 0 else '-'
-    return f"{sign}{abs(offset_hours):02d}:00"
+    # Chile continental en horario de verano / estándar actual: GMT-3 (-03:00)
+    return "-03:00"
 
-def parse_fecha_hora(dia_str, hora_str, chile_tz):
+def parse_fecha_hora(dia_str, hora_str, chile_tz, add_hours=0):
     now_dt = datetime.now()
     year, month, day = now_dt.year, now_dt.month, now_dt.day
     h, m, s = 0, 0, 0
@@ -168,7 +164,11 @@ def parse_fecha_hora(dia_str, hora_str, chile_tz):
         if is_pm and h < 12: h += 12
         elif is_am and h == 12: h = 0
 
-    return f"{year:04d}-{month:02d}-{day:02d}T{h:02d}:{m:02d}:{s:02d}{chile_tz}"
+    base_dt = datetime(year, month, day, h, m, s)
+    if add_hours:
+        base_dt += timedelta(hours=add_hours)
+
+    return f"{base_dt.year:04d}-{base_dt.month:02d}-{base_dt.day:02d}T{base_dt.hour:02d}:{base_dt.minute:02d}:{base_dt.second:02d}{chile_tz}"
 
 def load_maestros():
     """ Carga mapa de clientes y códigos para resolver nombres en vivo """
@@ -457,7 +457,7 @@ def sincronizar_desde_mysql(cache):
             f_tokens = str(fecha_str).strip().split()
             d_part = f_tokens[0] if len(f_tokens) > 0 else ""
             h_part = f_tokens[1] if len(f_tokens) > 1 else ""
-            fecha_hora = parse_fecha_hora(d_part, h_part, chile_tz)
+            fecha_hora = parse_fecha_hora(d_part, h_part, chile_tz, add_hours=2)
 
             nombre_abonado = CLIENTES_LOCAL_MAP.get(cuenta, {}).get('nombre', '') if isinstance(CLIENTES_LOCAL_MAP.get(cuenta), dict) else str(CLIENTES_LOCAL_MAP.get(cuenta) or '')
             if not nombre_abonado:
