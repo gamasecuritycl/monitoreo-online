@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getSenalLegible } from './EventRow'
 
@@ -68,47 +68,31 @@ interface ParsedEventDate {
 }
 
 /**
- * Parsea cualquier marca de tiempo de eventos_monitoreo en hora oficial de Chile (America/Santiago)
+ * Parsea marcas de tiempo preservando la hora exacta registrada en Scorpion (sin desface UTC)
  */
 function parseEventDate(rawStr?: string): ParsedEventDate {
   if (!rawStr) return { dateIsoStr: '', horaStr: '00:00:00', timestamp: 0 }
   const s = rawStr.trim()
 
-  // 1. Formato "DD-MM-YYYY HH:mm:ss" o "DD/MM/YYYY HH:mm:ss" (ej: "25-08-2026 20:53:57")
-  const matchDDMM = s.match(/^(\d{2})[-/](\d{2})[-/](\d{4})(?:\s+(\d{2}):(\d{2}):(\d{2}))?/)
+  // 1. Formato "DD-MM-YYYY HH:mm:ss" o "DD/MM/YYYY HH:mm:ss"
+  const matchDDMM = s.match(/^(\d{2})[-/](\d{2})[-/](\d{4})(?:[T\s]+(\d{2}):(\d{2}):(\d{2}))?/)
   if (matchDDMM) {
     const [, dia, mes, anio, hh = '00', mm = '00', ss = '00'] = matchDDMM
     const dateIsoStr = `${anio}-${mes}-${dia}`
     const horaStr = `${hh}:${mm}:${ss}`
-    const dObj = new Date(Number(anio), Number(mes) - 1, Number(dia), Number(hh), Number(mm), Number(ss))
-    return { dateIsoStr, horaStr, timestamp: dObj.getTime() }
+    const ts = Date.UTC(Number(anio), Number(mes) - 1, Number(dia), Number(hh), Number(mm), Number(ss))
+    return { dateIsoStr, horaStr, timestamp: ts }
   }
 
-  // 2. Formato ISO o timestamp nativo con conversión estricta a zona horaria de Chile
-  try {
-    const d = new Date(s)
-    if (!isNaN(d.getTime())) {
-      const formatterFecha = new Intl.DateTimeFormat('en-CA', {
-        timeZone: 'America/Santiago',
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit'
-      })
-      const formatterHora = new Intl.DateTimeFormat('es-CL', {
-        timeZone: 'America/Santiago',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: false
-      })
-
-      return {
-        dateIsoStr: formatterFecha.format(d),
-        horaStr: formatterHora.format(d),
-        timestamp: d.getTime()
-      }
-    }
-  } catch {}
+  // 2. Formato "YYYY-MM-DDTHH:mm:ss" o "YYYY-MM-DD HH:mm:ss"
+  const matchYYYYMM = s.match(/^(\d{4})[-/](\d{2})[-/](\d{2})(?:[T\s]+(\d{2}):(\d{2}):(\d{2}))?/)
+  if (matchYYYYMM) {
+    const [, anio, mes, dia, hh = '00', mm = '00', ss = '00'] = matchYYYYMM
+    const dateIsoStr = `${anio}-${mes}-${dia}`
+    const horaStr = `${hh}:${mm}:${ss}`
+    const ts = Date.UTC(Number(anio), Number(mes) - 1, Number(dia), Number(hh), Number(mm), Number(ss))
+    return { dateIsoStr, horaStr, timestamp: ts }
+  }
 
   return { dateIsoStr: s.slice(0, 10), horaStr: '00:00:00', timestamp: 0 }
 }
@@ -165,16 +149,13 @@ function getRowStyle(eventoTexto: string) {
 }
 
 export default function TodosLosEventosModal({ onClose, clientesMap: propClientesMap }: Props) {
-  // Fecha actual en hora local de Chile YYYY-MM-DD
+  // Fecha actual local YYYY-MM-DD
   const getChileLocalDate = () => {
     const d = new Date()
-    const formatterFecha = new Intl.DateTimeFormat('en-CA', {
-      timeZone: 'America/Santiago',
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit'
-    })
-    return formatterFecha.format(d)
+    const anio = d.getFullYear()
+    const mes = (d.getMonth() + 1).toString().padStart(2, '0')
+    const dia = d.getDate().toString().padStart(2, '0')
+    return `${anio}-${mes}-${dia}`
   }
 
   const [fecha, setFecha] = useState(getChileLocalDate())
@@ -182,6 +163,12 @@ export default function TodosLosEventosModal({ onClose, clientesMap: propCliente
   const [cargando, setCargando] = useState(false)
   const [mensaje, setMensaje] = useState('Cargando eventos del día...')
   const [clientesLocal, setClientesLocal] = useState<Record<string, any>>({})
+  
+  // Orden: true = Últimos en la parte inferior (00:00 arriba -> 23:59 abajo)
+  // false = Últimos en la parte superior (23:59 arriba -> 00:00 abajo)
+  const [ordenUltimosAbajo, setOrdenUltimosAbajo] = useState(true)
+
+  const tableContainerRef = useRef<HTMLDivElement>(null)
 
   // Cargar mapa de clientes desde cache local si no viene por props
   useEffect(() => {
@@ -198,32 +185,31 @@ export default function TodosLosEventosModal({ onClose, clientesMap: propCliente
   }, [propClientesMap])
 
   /**
-   * Carga la totalidad de los eventos del día seleccionado en orden DESCENDENTE
-   * (El más reciente arriba, el primero del día abajo en la parte inferior).
+   * Carga el 100% de los eventos del día completo de 00:00:00 a 23:59:59 sin límites
    */
-  const cargarEventos = useCallback(async (fechaSeleccionada: string) => {
+  const cargarEventos = useCallback(async (fechaSeleccionada: string, mantenerOrdenAbajo = true) => {
     if (!fechaSeleccionada) {
       alert('Por favor seleccione una fecha')
       return
     }
 
     setCargando(true)
-    setMensaje(`Consultando todos los eventos del ${fechaSeleccionada}...`)
+    setMensaje(`Consultando eventos de 00:00:00 a 23:59:59 para el ${fechaSeleccionada}...`)
     setEventos([])
 
     try {
       const [anio, mes, dia] = fechaSeleccionada.split('-')
       const dateChileStr = `${dia}-${mes}-${anio}`
 
-      // Ventana ISO amplia para cubrir la totalidad del día en cualquier huso de Chile (-04:00 / -03:00)
-      const startIso = `${fechaSeleccionada}T00:00:00-05:00`
-      const endIso = `${fechaSeleccionada}T23:59:59+01:00`
+      // Rango exacto de día completo de 00:00:00 a 23:59:59.999
+      const startIso = `${fechaSeleccionada}T00:00:00`
+      const endIso = `${fechaSeleccionada}T23:59:59.999`
 
       let allRows: any[] = []
       let page = 0
       const pageSize = 1000
 
-      // Paginación continua para garantizar la carga del 100% de los eventos del día
+      // Paginación continua sin límites para cargar todos los eventos del día
       while (true) {
         const from = page * pageSize
         const to = from + pageSize - 1
@@ -238,7 +224,7 @@ export default function TodosLosEventosModal({ onClose, clientesMap: propCliente
           .not('cuenta', 'like', 'SNAPSHOT_%')
           .gte('fecha_hora', startIso)
           .lte('fecha_hora', endIso)
-          .order('id', { ascending: false })
+          .order('fecha_hora', { ascending: true })
           .range(from, to)
 
         if (error) throw error
@@ -256,8 +242,8 @@ export default function TodosLosEventosModal({ onClose, clientesMap: propCliente
           .select('id, fecha_hora, cuenta, evento, zona, usuario, nombre_abonado')
           .not('cuenta', 'in', '(CLIENTES,CODIGOS,ZONAS,__SINCRONIZADOR__,CONFIG_OPERADORES,0000,000)')
           .not('cuenta', 'like', 'CONFIG_WHATSAPP_%')
-          .like('fecha_hora', `%${dateChileStr}%`)
-          .order('id', { ascending: false })
+          .or(`fecha_hora.like.%${dateChileStr}%,fecha_hora.like.%${fechaSeleccionada}%`)
+          .order('id', { ascending: true })
           .limit(3000)
 
         if (dateData && dateData.length > 0) {
@@ -265,7 +251,7 @@ export default function TodosLosEventosModal({ onClose, clientesMap: propCliente
         }
       }
 
-      // Filtrar abonados reales y normalizar fecha/hora a zona horaria de Chile
+      // Filtrar abonados reales y normalizar fecha/hora sin desface UTC
       const eventosFiltrados: Evento[] = allRows
         .filter(e => isRealAccount(e.cuenta, e.evento, e.nombre_abonado))
         .map(e => {
@@ -279,22 +265,39 @@ export default function TodosLosEventosModal({ onClose, clientesMap: propCliente
         })
         .filter(e => e._dateIsoStr === fechaSeleccionada)
 
-      // ORDEN DESCENDENTE:
-      // El evento más reciente del día arriba (índice 0).
-      // El PRIMERO del día seleccionado en la parte inferior (último índice).
-      eventosFiltrados.sort((a, b) => {
-        if ((b._timestamp || 0) !== (a._timestamp || 0)) {
-          return (b._timestamp || 0) - (a._timestamp || 0)
-        }
-        return b.id - a.id
-      })
+      // Ordenamiento según configuración:
+      // Si mantenerOrdenAbajo es true -> Últimos en la parte inferior (00:00:00 arriba -> 23:59:59 abajo)
+      // Si mantenerOrdenAbajo es false -> Últimos en la parte superior (23:59:59 arriba -> 00:00:00 abajo)
+      if (mantenerOrdenAbajo) {
+        eventosFiltrados.sort((a, b) => {
+          if ((a._timestamp || 0) !== (b._timestamp || 0)) {
+            return (a._timestamp || 0) - (b._timestamp || 0)
+          }
+          return a.id - b.id
+        })
+      } else {
+        eventosFiltrados.sort((a, b) => {
+          if ((b._timestamp || 0) !== (a._timestamp || 0)) {
+            return (b._timestamp || 0) - (a._timestamp || 0)
+          }
+          return b.id - a.id
+        })
+      }
 
       setEventos(eventosFiltrados)
 
       if (eventosFiltrados.length > 0) {
-        setMensaje(`¡${eventosFiltrados.length} eventos cargados para el ${fechaSeleccionada}!`)
+        setMensaje(`¡${eventosFiltrados.length} eventos del día completo cargados para el ${fechaSeleccionada}!`)
+        // Auto-scroll a los más recientes si los últimos están en la parte inferior
+        if (mantenerOrdenAbajo) {
+          setTimeout(() => {
+            if (tableContainerRef.current) {
+              tableContainerRef.current.scrollTop = tableContainerRef.current.scrollHeight
+            }
+          }, 150)
+        }
       } else {
-        setMensaje(`No hay eventos registrados para el ${fechaSeleccionada}.`)
+        setMensaje(`No hay eventos registrados de 00:00 a 23:59 para el ${fechaSeleccionada}.`)
       }
     } catch (err: any) {
       console.error('[TODOS LOS EVENTOS] Error:', err)
@@ -304,10 +307,39 @@ export default function TodosLosEventosModal({ onClose, clientesMap: propCliente
     }
   }, [])
 
-  // Cargar automáticamente los eventos de la fecha seleccionada al montar el componente
+  // Cargar automáticamente al abrir el modal
   useEffect(() => {
-    cargarEventos(fecha)
-  }, [cargarEventos, fecha])
+    cargarEventos(fecha, ordenUltimosAbajo)
+  }, [cargarEventos, fecha, ordenUltimosAbajo])
+
+  // Invertir orden entre "Últimos abajo" y "Últimos arriba"
+  const toggleOrden = () => {
+    const nuevoOrden = !ordenUltimosAbajo
+    setOrdenUltimosAbajo(nuevoOrden)
+    setEventos(prev => {
+      const copia = [...prev]
+      if (nuevoOrden) {
+        // Últimos abajo (00:00 -> 23:59)
+        copia.sort((a, b) => (a._timestamp || 0) - (b._timestamp || 0) || a.id - b.id)
+      } else {
+        // Últimos arriba (23:59 -> 00:00)
+        copia.sort((a, b) => (b._timestamp || 0) - (a._timestamp || 0) || b.id - a.id)
+      }
+      return copia
+    })
+  }
+
+  const scrollAlFinal = () => {
+    if (tableContainerRef.current) {
+      tableContainerRef.current.scrollTo({ top: tableContainerRef.current.scrollHeight, behavior: 'smooth' })
+    }
+  }
+
+  const scrollAlInicio = () => {
+    if (tableContainerRef.current) {
+      tableContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+  }
 
   // Obtener nombre del abonado con fallback
   const getNombreAbonado = (cuenta: string, nombreOriginal?: string) => {
@@ -321,14 +353,14 @@ export default function TodosLosEventosModal({ onClose, clientesMap: propCliente
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-2 md:p-4 font-mono">
-      <div className="bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 w-full max-w-5xl md:max-w-6xl max-h-[95vh] flex flex-col shadow-2xl text-black select-none">
+      <div className="bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 w-full max-w-5xl md:max-w-6xl max-h-[96vh] flex flex-col shadow-2xl text-black select-none">
         
         {/* Title bar Windows 98 / Scorpion */}
         <div className="bg-[#000080] text-white px-2 py-1 flex justify-between items-center shrink-0">
           <div className="font-bold text-xs tracking-wide flex items-center gap-2">
-            <span>Scorpion - Eventos Ingresados por Día</span>
+            <span>Scorpion - Eventos Ingresados por Día (00:00:00 a 23:59:59)</span>
             <span className="text-[10px] text-yellow-300 font-normal hidden sm:inline">
-              (Orden descendente · Primero del día en parte inferior)
+              {ordenUltimosAbajo ? '· Últimos en la parte inferior' : '· Últimos en la parte superior'}
             </span>
           </div>
           <button 
@@ -343,15 +375,44 @@ export default function TodosLosEventosModal({ onClose, clientesMap: propCliente
         {/* Interior Container */}
         <div className="p-2 flex-1 flex flex-col overflow-hidden bg-[#c0c0c0]">
           
-          {/* Main Title Header */}
-          <div className="text-center my-1 shrink-0">
+          {/* Main Title Header & Quick Actions */}
+          <div className="flex flex-wrap items-center justify-between my-1 shrink-0 gap-2">
             <h1 className="text-base md:text-lg font-black text-[#000080] tracking-wider uppercase">
-              EVENTOS RECIBIDOS {fecha}
+              EVENTOS RECIBIDOS {fecha} (DÍA COMPLETO)
             </h1>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={toggleOrden}
+                className="bg-[#d4d0c8] hover:bg-[#e0e0e0] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 px-2 py-0.5 font-bold text-[10px] md:text-xs cursor-pointer shadow-sm active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white"
+                title="Cambiar orden de visualización"
+              >
+                {ordenUltimosAbajo ? '🔽 Orden: Últimos abajo' : '🔼 Orden: Últimos arriba'}
+              </button>
+
+              <button
+                onClick={scrollAlInicio}
+                className="bg-[#d4d0c8] hover:bg-[#e0e0e0] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 px-2 py-0.5 font-bold text-[10px] cursor-pointer shadow-sm"
+                title="Ir al inicio de la lista"
+              >
+                ⬆ Inicio
+              </button>
+
+              <button
+                onClick={scrollAlFinal}
+                className="bg-[#d4d0c8] hover:bg-[#e0e0e0] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 px-2 py-0.5 font-bold text-[10px] cursor-pointer shadow-sm"
+                title="Ir al final de la lista (últimos)"
+              >
+                ⬇ Final
+              </button>
+            </div>
           </div>
 
           {/* Table Container */}
-          <div className="flex-1 overflow-auto border-2 border-t-gray-700 border-l-gray-700 border-b-white border-r-white bg-white min-h-[300px] md:min-h-[450px]">
+          <div 
+            ref={tableContainerRef}
+            className="flex-1 overflow-auto border-2 border-t-gray-700 border-l-gray-700 border-b-white border-r-white bg-white min-h-[320px] md:min-h-[480px]"
+          >
             <table className="w-full text-left border-collapse text-[10px] md:text-[11px] leading-tight font-bold whitespace-nowrap">
               <thead>
                 <tr className="bg-[#d4d0c8] text-black sticky top-0 border-b border-gray-400 select-none z-10">
@@ -403,14 +464,14 @@ export default function TodosLosEventosModal({ onClose, clientesMap: propCliente
                 {eventos.length === 0 && !cargando && (
                   <tr>
                     <td colSpan={10} className="p-12 text-center text-gray-500 italic bg-gray-50">
-                      No hay eventos registrados para el {fecha}.
+                      No hay eventos registrados para el {fecha} entre las 00:00:00 y las 23:59:59.
                     </td>
                   </tr>
                 )}
                 {cargando && (
                   <tr>
                     <td colSpan={10} className="p-12 text-center text-blue-800 font-bold bg-gray-50 animate-pulse">
-                      ⏳ Cargando todos los eventos del {fecha}...
+                      ⏳ Cargando día completo (00:00:00 a 23:59:59) sin límites...
                     </td>
                   </tr>
                 )}
@@ -431,7 +492,7 @@ export default function TodosLosEventosModal({ onClose, clientesMap: propCliente
                 className="bg-white border border-gray-400 font-bold px-2 py-0.5 text-xs text-black select-text focus:outline-none"
               />
               <button
-                onClick={() => cargarEventos(fecha)}
+                onClick={() => cargarEventos(fecha, ordenUltimosAbajo)}
                 disabled={cargando}
                 className="bg-[#d4d0c8] hover:bg-[#e0e0e0] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 px-4 py-0.5 font-bold text-xs cursor-pointer active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white shadow-sm"
               >
@@ -450,12 +511,21 @@ export default function TodosLosEventosModal({ onClose, clientesMap: propCliente
           {/* Status Bar */}
           <div className="mt-1 bg-[#d4d0c8] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white px-2 py-0.5 text-[10px] text-gray-600 font-bold tracking-wide shrink-0 flex flex-wrap justify-between items-center gap-1">
             <span>
-              {mensaje} {eventos.length > 0 && `(${eventos.length} eventos · orden descendente)`}
+              {mensaje} {eventos.length > 0 && `(${eventos.length} eventos · 00:00 a 23:59)`}
             </span>
             {eventos.length > 0 && (
               <span className="text-gray-700 font-mono text-[9px] md:text-[10px]">
-                ▲ MÁS RECIENTE: <strong className="text-blue-900">{eventos[0]._horaFormatted || ''}</strong> &nbsp;|&nbsp; 
-                ▼ PRIMERO DEL DÍA: <strong className="text-emerald-900">{eventos[eventos.length - 1]._horaFormatted || ''}</strong>
+                {ordenUltimosAbajo ? (
+                  <>
+                    ▲ PRIMERO: <strong className="text-emerald-900">{eventos[0]._horaFormatted || ''}</strong> &nbsp;|&nbsp; 
+                    ▼ ÚLTIMO (INFERIOR): <strong className="text-blue-900">{eventos[eventos.length - 1]._horaFormatted || ''}</strong>
+                  </>
+                ) : (
+                  <>
+                    ▲ ÚLTIMO (SUPERIOR): <strong className="text-blue-900">{eventos[0]._horaFormatted || ''}</strong> &nbsp;|&nbsp; 
+                    ▼ PRIMERO: <strong className="text-emerald-900">{eventos[eventos.length - 1]._horaFormatted || ''}</strong>
+                  </>
+                )}
               </span>
             )}
           </div>
