@@ -421,9 +421,9 @@ def sincronizar_desde_mysql(cache):
         cur = conn.cursor()
         
         if cursor_id == 0:
-            cur.execute("SELECT id, Fecha_Hora, Trama_evento FROM eventos_encriptados ORDER BY id DESC LIMIT 200")
+            cur.execute("SELECT id, Fecha_Hora, Trama_evento FROM eventos_encriptados WHERE IP_Publica LIKE %s ORDER BY id DESC LIMIT 200", ('%1C7%',))
         else:
-            cur.execute("SELECT id, Fecha_Hora, Trama_evento FROM eventos_encriptados WHERE id > %s ORDER BY id ASC LIMIT 500", (cursor_id,))
+            cur.execute("SELECT id, Fecha_Hora, Trama_evento FROM eventos_encriptados WHERE id > %s AND IP_Publica LIKE %s ORDER BY id ASC LIMIT 500", (cursor_id, '%1C7%'))
 
         rows = cur.fetchall()
         conn.close()
