@@ -19,12 +19,14 @@ import BentoKpiGrid from './operacion/BentoKpiGrid'
 import ComprasProveedoresModule from './operacion/ComprasProveedoresModule'
 import ContratosModule from './operacion/ContratosModule'
 import ContratoDigitalModal from './operacion/ContratoDigitalModal'
+import Ley21719Module from './operacion/Ley21719Module'
 import WhatsAppNotificationToast from './WhatsAppNotificationToast'
 import WhatsAppPlantillasModal, { PlantillaAbonadoData } from './operacion/WhatsAppPlantillasModal'
 import NotificacionesWhatsAppModal from './NotificacionesWhatsAppModal'
 
 import {
   Shield,
+  ShieldCheck,
   User,
   FileText,
   DollarSign,
@@ -337,7 +339,7 @@ export function normalizeCuentaCode(cta: any): string {
 }
 
 export default function OperacionCRM() {
-  const [moduloActivo, setModuloActivo] = useState<'ficha360' | 'autonomia' | 'presupuestos' | 'facturacion' | 'serv_tecnico' | 'kpis' | 'config' | 'marketing' | 'compras' | 'contratos' | null>(null)
+  const [moduloActivo, setModuloActivo] = useState<'ficha360' | 'autonomia' | 'presupuestos' | 'facturacion' | 'serv_tecnico' | 'kpis' | 'config' | 'marketing' | 'compras' | 'contratos' | 'ley21719' | null>(null)
   const [sidebarAbierto, setSidebarAbierto] = useState<boolean>(false)
 
   // ── ESTADOS APPLE HIG / LINEAR (COMMAND PALETTE & SLIDE-OVER DRAWER) ──
@@ -2713,6 +2715,18 @@ export default function OperacionCRM() {
       glowColor: 'group-hover:shadow-slate-500/25',
       badgeColor: 'bg-slate-500/10 text-slate-300 border-slate-500/20',
       tag: `${empresasConglomerado.length} Emisores`
+    },
+    {
+      id: 'ley21719',
+      titulo: 'Ley 21.719 Datos Personales',
+      categoria: 'LEGAL & CUMPLIMIENTO',
+      descripcion: 'Cumplimiento normativo APDP, generación de certificados oficiales PDF, contratos de secreto y auditoría.',
+      icono: ShieldCheck,
+      gradient: 'from-emerald-600 to-teal-500',
+      borderColor: 'hover:border-emerald-400',
+      glowColor: 'group-hover:shadow-emerald-500/25',
+      badgeColor: 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20',
+      tag: 'APDP Chile'
     }
   ]
 
@@ -2760,6 +2774,7 @@ export default function OperacionCRM() {
           moduloActivo === 'serv_tecnico' ? 'Servicios Técnicos' :
           moduloActivo === 'compras' ? 'Compras & Proveedores' :
           moduloActivo === 'contratos' ? 'Contratos & Firma' :
+          moduloActivo === 'ley21719' ? 'Ley 21.719 Protección de Datos' :
           moduloActivo === 'kpis' ? 'Reportes & Analytics' :
           moduloActivo === 'config' ? 'Configuración & Claves' : 'Agentes Autónomos'
         }
@@ -2908,6 +2923,7 @@ export default function OperacionCRM() {
                     moduloActivo === 'serv_tecnico' ? 'Servicios Técnicos' :
                     moduloActivo === 'compras' ? 'Compras & Proveedores' :
                     moduloActivo === 'contratos' ? 'Contratos & Firma' :
+                    moduloActivo === 'ley21719' ? 'Ley 21.719 Protección de Datos' :
                     moduloActivo === 'kpis' ? 'Reportes & Analytics' :
                     moduloActivo === 'config' ? 'Configuración & Claves' : 'Agentes Autónomos'
                   }
@@ -5812,6 +5828,11 @@ export default function OperacionCRM() {
               abonadosCentrosCosto={abonadosCentrosCosto}
               empresasConglomerado={empresasConglomerado}
             />
+          )}
+
+          {/* ── MÓDULO LEGAL: LEY 21.719 PROTECCIÓN DE DATOS PERSONALES ── */}
+          {moduloActivo === 'ley21719' && (
+            <Ley21719Module />
           )}
 
             </main>

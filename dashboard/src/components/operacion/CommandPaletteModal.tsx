@@ -86,6 +86,20 @@ export default function CommandPaletteModal({
       subtitulo: 'Auto-descubrimiento V Región y campañas de email outreach',
       categoria: 'Comando',
       accion: () => { onNavigateModule('marketing'); onClose() }
+    },
+    {
+      id: 'cmd-contratos',
+      titulo: 'Ir a Contratos & Firma Digital',
+      subtitulo: 'Generación, firma digital en pantalla y control de vigencia',
+      categoria: 'Comando',
+      accion: () => { onNavigateModule('contratos'); onClose() }
+    },
+    {
+      id: 'cmd-ley21719',
+      titulo: 'Ir a Ley 21.719 Protección de Datos',
+      subtitulo: 'Centro de cumplimiento normativo APDP, certificados y contratos descargables',
+      categoria: 'Comando',
+      accion: () => { onNavigateModule('ley21719'); onClose() }
     }
   ]
 

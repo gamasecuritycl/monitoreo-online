@@ -50,6 +50,12 @@ export default function OperacionSidebar({
       ]
     },
     {
+      titulo: 'LEGAL & CUMPLIMIENTO',
+      items: [
+        { id: 'ley21719', label: 'Ley 21.719 Datos Personales', icon: ShieldCheck },
+      ]
+    },
+    {
       titulo: 'SISTEMA',
       items: [
         { id: 'config', label: 'Configuración & Claves', icon: Settings },
