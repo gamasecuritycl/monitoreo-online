@@ -20,16 +20,117 @@ import {
   HardDrive,
   Search,
   Activity,
-  Filter
+  Filter,
+  FileCheck,
+  Calendar,
+  AlertOctagon,
+  X,
+  Send,
+  Share2
 } from 'lucide-react'
 import jsPDF from 'jspdf'
 
+export interface SolicitudArcoItem {
+  id: string
+  codigo: string
+  fecha_recepcion: string
+  titular: string
+  rut: string
+  cuenta: string
+  tipo_derecho: 'ACCESO' | 'RECTIFICACION' | 'SUPRESION' | 'OPOSICION' | 'PORTABILIDAD' | 'BLOQUEO'
+  detalle: string
+  dias_habiles_restantes: number
+  estado: 'RECIBIDA' | 'EN_REVISION' | 'EJECUTADA' | 'RECHAZADA'
+  fecha_resolucion?: string
+}
+
 export default function Ley21719Module() {
-  const [pestañaActiva, setPestañaActiva] = useState<'documentos' | 'checklist' | 'trazabilidad' | 'sql'>('documentos')
+  const [pestañaActiva, setPestañaActiva] = useState<'documentos' | 'checklist' | 'trazabilidad' | 'solicitudes_arco' | 'sql'>('documentos')
   const [copiadoSql, setCopiadoSql] = useState(false)
   const [generandoPdf, setGenerandoPdf] = useState<string | null>(null)
   const [cuentaFiltroTrazabilidad, setCuentaFiltroTrazabilidad] = useState('')
   const [filtroTipoAccion, setFiltroTipoAccion] = useState('TODOS')
+
+  // Solicitudes ARCO+
+  const [solicitudesArco, setSolicitudesArco] = useState<SolicitudArcoItem[]>([
+    {
+      id: 'arco-1',
+      codigo: 'ARCO-2026-001',
+      fecha_recepcion: '2026-09-14',
+      titular: 'MARCELO ANDRÉS SALAS SILVA',
+      rut: '14.285.912-3',
+      cuenta: '1001',
+      tipo_derecho: 'SUPRESION',
+      detalle: 'Eliminación definitiva de ex-administrador de edificio de la lista correlativa de llamadas de emergencia y borrado de clave.',
+      dias_habiles_restantes: 11,
+      estado: 'EJECUTADA',
+      fecha_resolucion: '2026-09-16'
+    },
+    {
+      id: 'arco-2',
+      codigo: 'ARCO-2026-002',
+      fecha_recepcion: '2026-09-17',
+      titular: 'FARMACÉUTICA DEL SUR SpA',
+      rut: '76.412.339-K',
+      cuenta: '0743',
+      tipo_derecho: 'RECTIFICACION',
+      detalle: 'Actualización de número telefónico de encargado nocturno de turno y nuevo correo para recepción de informes DTE.',
+      dias_habiles_restantes: 13,
+      estado: 'EN_REVISION'
+    },
+    {
+      id: 'arco-3',
+      codigo: 'ARCO-2026-003',
+      fecha_recepcion: '2026-09-18',
+      titular: 'CARLOS ALBERTO REYES GÓMEZ',
+      rut: '11.894.205-1',
+      cuenta: '0054',
+      tipo_derecho: 'PORTABILIDAD',
+      detalle: 'Solicitud de copia de historial cronológico de aperturas y cierres de los últimos 6 meses en formato interoperable CSV/JSON.',
+      dias_habiles_restantes: 14,
+      estado: 'RECIBIDA'
+    }
+  ])
+
+  const [modalNuevoArcoAbierto, setModalNuevoArcoAbierto] = useState(false)
+  const [nuevoArcoForm, setNuevoArcoForm] = useState({
+    titular: '',
+    rut: '',
+    cuenta: '',
+    tipo_derecho: 'RECTIFICACION' as SolicitudArcoItem['tipo_derecho'],
+    detalle: ''
+  })
+
+  const handleCrearSolicitudArco = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!nuevoArcoForm.titular || !nuevoArcoForm.rut || !nuevoArcoForm.cuenta) {
+      alert('Por favor complete los campos obligatorios.')
+      return
+    }
+
+    const nuevaSol: SolicitudArcoItem = {
+      id: `arco-${Date.now()}`,
+      codigo: `ARCO-2026-00${solicitudesArco.length + 1}`,
+      fecha_recepcion: new Date().toISOString().slice(0, 10),
+      titular: nuevoArcoForm.titular.toUpperCase(),
+      rut: nuevoArcoForm.rut,
+      cuenta: nuevoArcoForm.cuenta.toUpperCase(),
+      tipo_derecho: nuevoArcoForm.tipo_derecho,
+      detalle: nuevoArcoForm.detalle || 'Solicitud de ejercicio de derecho ARCO+ ingresada formalmente.',
+      dias_habiles_restantes: 15,
+      estado: 'RECIBIDA'
+    }
+
+    setSolicitudesArco(prev => [nuevaSol, ...prev])
+    setModalNuevoArcoAbierto(false)
+    setNuevoArcoForm({
+      titular: '',
+      rut: '',
+      cuenta: '',
+      tipo_derecho: 'RECTIFICACION',
+      detalle: ''
+    })
+  }
 
   const [registrosAuditoria, setRegistrosAuditoria] = useState([
     {
@@ -657,6 +758,177 @@ export default function Ley21719Module() {
     }
   }
 
+  // Resolución Formal de Derecho ARCO+ (Arts. 15-24 Ley 21.719)
+  const generarResolucionArco = (sol: SolicitudArcoItem) => {
+    setGenerandoPdf(`resolucion-${sol.id}`)
+    try {
+      const doc = new jsPDF()
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(13)
+      doc.text('GAMA SEGURIDAD — RESOLUCIÓN OFICIAL DE SOLICITUD ARCO+', 14, 18)
+      doc.setFontSize(10)
+      doc.setTextColor(0, 51, 153)
+      doc.text(`EXPEDIENTE DE ATENCIÓN DE DERECHO: ${sol.tipo_derecho} · LEY N° 21.719`, 14, 25)
+      doc.text(`CÓDIGO: ${sol.codigo} · CUENTA ABONADO: #${sol.cuenta}`, 14, 31)
+
+      doc.setTextColor(60, 60, 60)
+      doc.setFontSize(8.5)
+      doc.setFont('helvetica', 'normal')
+      doc.text(`Fecha de Emisión: ${fechaHoy} | Canal de Notificación: privacidad@gamasecurity.cl | Plazo Cumplido: ${15 - sol.dias_habiles_restantes} de 15 Días Hábiles`, 14, 38)
+      doc.line(14, 40, 196, 40)
+
+      let y = 48
+      const addSec = (tit: string, texto: string) => {
+        if (y > 250) { doc.addPage(); y = 20 }
+        doc.setFont('helvetica', 'bold')
+        doc.setFontSize(9)
+        doc.setTextColor(0, 31, 63)
+        doc.text(tit, 14, y)
+        y += 5
+        doc.setFont('helvetica', 'normal')
+        doc.setFontSize(8)
+        doc.setTextColor(40, 40, 40)
+        const split = doc.splitTextToSize(texto, 182)
+        doc.text(split, 14, y)
+        y += split.length * 3.8 + 3
+      }
+
+      addSec('1. ANTECEDENTES DEL TITULAR Y REQUERIMIENTO',
+        `Con fecha ${sol.fecha_recepcion}, don/doña ${sol.titular}, cédula de identidad / R.U.T. N° ${sol.rut}, en su calidad de titular de datos personales de la Cuenta de Monitoreo N° ${sol.cuenta}, ingresó formalmente requerimiento de ejercicio del derecho de ${sol.tipo_derecho}, solicitando textualmente: "${sol.detalle}".`)
+
+      addSec('2. FUNDAMENTACIÓN LEGAL (TÍTULO III LEY N° 21.719)',
+        `De conformidad a los Artículos 15, 16, 17, 18, 19 y 20 de la Ley N° 21.719, Gama Seguridad SpA verificó la identidad del solicitante y la legitimidad de su petición dentro del plazo legal perentorio de 15 días hábiles establecido por el legislador chileno.`)
+
+      addSec('3. MEDIDAS TÉCNICAS ADOPTADAS Y RESOLUCIÓN',
+        `Por medio del presente acto administrativo y técnico, GAMA SEGURIDAD SpA informa que la solicitud ha sido resuelta en estado: ${sol.estado === 'EJECUTADA' ? 'ACOGIDA Y TOTALMENTE EJECUTADA' : 'ACOGIDA EN TRÁMITE DE IMPLEMENTACIÓN'}. En los sistemas de base de datos de la Central 24/7 se procedió a aplicar las modificaciones requeridas, garantizando la inviolabilidad del sistema de monitoreo y la protección de los derechos del titular.`)
+
+      addSec('4. DERECHO A RECURRIR ANTE LA APDP (ART. 24)',
+        `Se hace presente al titular que en caso de disconformidad con la presente resolución, podrá recurrir ante la Agencia de Protección de Datos Personales (APDP) conforme al procedimiento de tutela de derechos contemplado en el Artículo 24 de la Ley N° 21.719.`)
+
+      y += 15
+      doc.setDrawColor(120, 120, 120)
+      doc.line(70, y, 140, y)
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(8)
+      doc.setTextColor(0, 0, 0)
+      doc.text('DELEGADO DE PROTECCIÓN DE DATOS (DPO)', 105, y + 4, { align: 'center' })
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(7)
+      doc.setTextColor(80, 80, 80)
+      doc.text('GAMA SEGURIDAD SpA · DEPARTAMENTO LEGAL & COMPLIANCE', 105, y + 8, { align: 'center' })
+
+      doc.save(`GamaSeguridad_Resolucion_ARCO_${sol.codigo}_${new Date().toISOString().slice(0,10)}.pdf`)
+    } finally {
+      setGenerandoPdf(null)
+    }
+  }
+
+  // Doc 7: Formulario de Notificación de Brechas de Seguridad en 72h (Art. 33 Ley 21.719)
+  const generarDocNotificacionBrecha = () => {
+    setGenerandoPdf('brecha-72h')
+    try {
+      const doc = new jsPDF()
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(13)
+      doc.text('GAMA SEGURIDAD — REPORTE DE INCIDENTE & BRECHA DE SEGURIDAD', 14, 18)
+      doc.setFontSize(10)
+      doc.setTextColor(180, 0, 0)
+      doc.text('FORMULARIO OFICIAL DE NOTIFICACIÓN EN MENOS DE 72 HORAS A LA APDP', 14, 25)
+      doc.text('CUMPLIMIENTO ESTRICTO ARTÍCULO 33 DE LA LEY N° 21.719', 14, 31)
+
+      doc.setTextColor(60, 60, 60)
+      doc.setFontSize(8.5)
+      doc.setFont('helvetica', 'normal')
+      doc.text(`Fecha: ${fechaHoy} | Plazo Legal de Notificación: Máximo 72 Horas desde la Detección`, 14, 38)
+      doc.line(14, 40, 196, 40)
+
+      let y = 48
+      const addField = (label: string, desc: string) => {
+        doc.setFont('helvetica', 'bold')
+        doc.setFontSize(8.5)
+        doc.setTextColor(0, 0, 0)
+        doc.text(label, 14, y)
+        y += 4.5
+        doc.setFont('helvetica', 'normal')
+        doc.setFontSize(8)
+        doc.setTextColor(60, 60, 60)
+        const split = doc.splitTextToSize(desc, 182)
+        doc.text(split, 14, y)
+        y += split.length * 3.8 + 4
+      }
+
+      addField('1. IDENTIFICACIÓN DEL RESPONSABLE DEL TRATAMIENTO',
+        'Razón Social: INVERSIONES GAMA SpA / GAMA SEGURIDAD SpA (RUT 78.297.009-7). Domicilio: Av. Valparaíso 351, Villa Alemana. Contacto DPO: privacidad@gamasecurity.cl.')
+
+      addField('2. NATURALEZA Y CIRCUNSTANCIAS DE LA VULNERACIÓN',
+        '[ ] Acceso no autorizado  [ ] Filtración accidental  [ ] Destrucción o alteración de datos  [ ] Ransomware / Ciberataque.\nFecha y hora estimada del suceso: ____/____/2026 a las ____:____ hrs. Fecha de detección: ____/____/2026.')
+
+      addField('3. CATEGORÍAS Y NÚMERO APROXIMADO DE TITULARES AFECTADOS',
+        'Número estimado de titulares: ________. Categorías de datos involucrados: Nombres, números de teléfono, direcciones físicas, señales de alarma o registros de video.')
+
+      addField('4. CONSECUENCIAS PROBABLES Y EVALUACIÓN DEL RIESGO',
+        'Evaluación del impacto sobre los derechos y libertades de los titulares: [ ] Bajo  [ ] Medio  [ ] Alto / Crítico.')
+
+      addField('5. MEDIDAS DE CONTENCIÓN Y MITIGACIÓN ADOPTADAS DE INMEDIATO',
+        'Aislamiento de terminales comprometidos, revocación inmediata de credenciales y tokens JWT, bloqueo de IPs sospechosas a nivel de Firewall (WAF), restauración de copias de seguridad inalterables en Supabase PostgreSQL.')
+
+      addField('6. COMUNICACIÓN A LOS TITULARES AFECTADOS',
+        'Conforme al Art. 33 inc. 3, se despacharán comunicaciones directas por correo y WhatsApp a los titulares cuyos datos de seguridad crítica hayan podido quedar expuestos.')
+
+      y += 12
+      doc.setDrawColor(180, 0, 0)
+      doc.line(70, y, 140, y)
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(8)
+      doc.setTextColor(180, 0, 0)
+      doc.text('OFICIAL DE SEGURIDAD DE LA INFORMACIÓN (CISO / DPO)', 105, y + 4, { align: 'center' })
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(7)
+      doc.setTextColor(80, 80, 80)
+      doc.text('GAMA SEGURIDAD SpA · NOTIFICACIÓN OFICIAL APDP CHILE', 105, y + 8, { align: 'center' })
+
+      doc.save(`GamaSeguridad_Notificacion_Brecha_72h_Art33_${new Date().toISOString().slice(0,10)}.pdf`)
+    } finally {
+      setGenerandoPdf(null)
+    }
+  }
+
+  // Descarga interoperable JSON (Art. 19 Ley 21.719)
+  const descargarExpedientePortabilidad = (sol: SolicitudArcoItem) => {
+    const payload = {
+      ley_aplicable: 'Ley N° 21.719 de Chile',
+      articulo: 'Art. 19 - Derecho a la Portabilidad de Datos Personales',
+      responsable: 'GAMA SEGURIDAD SpA (RUT 78.297.009-7)',
+      fecha_exportacion: new Date().toISOString(),
+      cuenta_abonado: sol.cuenta,
+      titular: {
+        nombre: sol.titular,
+        rut: sol.rut
+      },
+      servicios: {
+        tipo: 'Monitoreo de Alarmas 24/7 & Seguridad Electrónica',
+        estado: 'Activo'
+      },
+      consentimientos_registrados: [
+        {
+          tipo: 'MONITOREO_Y_DESPACHO_EMERGENCIAS',
+          estado: 'OTORGADO',
+          medio: 'PORTAL_CLIENTE_SSL',
+          version_politica: '2.1'
+        }
+      ],
+      solicitud_arco_referencia: sol.codigo
+    }
+
+    const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(payload, null, 2))
+    const downloadAnchor = document.createElement('a')
+    downloadAnchor.setAttribute('href', dataStr)
+    downloadAnchor.setAttribute('download', `Expediente_Portabilidad_Gama_${sol.cuenta}_${sol.rut}.json`)
+    document.body.appendChild(downloadAnchor)
+    downloadAnchor.click()
+    downloadAnchor.remove()
+  }
+
   // Script SQL de Auditoría Forense para Supabase
   const scriptSqlAuditoria = `-- ════════════════════════════════════════════════════════════════
 -- GAMA SEGURIDAD — MÓDULO DE AUDITORÍA FORENSE LEY 21.719
@@ -788,7 +1060,7 @@ FOR ALL TO anon, authenticated, service_role USING (true) WITH CHECK (true);`
           <div className="bg-white/5 border border-white/10 p-3 rounded-xl">
             <div className="text-[11px] text-slate-400 font-mono">DOCUMENTOS LEGALES</div>
             <div className="text-lg font-bold text-amber-300 flex items-center gap-1.5 mt-0.5">
-              <FileText className="w-4 h-4" /> 6 Documentos + Certificados
+              <FileText className="w-4 h-4" /> 7 Documentos + Resoluciones
             </div>
           </div>
         </div>
@@ -830,6 +1102,18 @@ FOR ALL TO anon, authenticated, service_role USING (true) WITH CHECK (true);`
         >
           <Activity className="w-4 h-4" />
           <span>BITÁCORA FORENSE & CERTIFICACIÓN (ART. 14)</span>
+        </button>
+
+        <button
+          onClick={() => setPestañaActiva('solicitudes_arco')}
+          className={`px-4 py-2.5 text-xs sm:text-sm font-bold rounded-t-xl transition-all flex items-center gap-2 cursor-pointer ${
+            pestañaActiva === 'solicitudes_arco'
+              ? 'bg-[#0f2d59] text-blue-300 border-t-2 border-t-blue-400 border-x border-slate-700/60 shadow-lg'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
+          }`}
+        >
+          <Users className="w-4 h-4" />
+          <span>SOLICITUDES ARCO+ (15 DÍAS)</span>
         </button>
 
         <button
@@ -1043,6 +1327,37 @@ FOR ALL TO anon, authenticated, service_role USING (true) WITH CHECK (true);`
                 >
                   <Download className="w-3.5 h-3.5" />
                   <span>{generandoPdf === 'consentimiento-fisico' ? 'Generando...' : 'Descargar Formato Papel (PDF)'}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Doc 7: Notificación de Brechas en 72 Horas */}
+            <div className="bg-[#0c182b] border border-slate-700/60 p-5 rounded-2xl flex flex-col justify-between shadow-xl hover:border-red-500/50 transition-all md:col-span-2">
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="px-2.5 py-0.5 rounded-full bg-red-500/20 text-red-300 font-mono text-[10px] font-bold border border-red-400/30">
+                    DOC-INCIDENTE-07 · PLAZO MÁXIMO 72H
+                  </span>
+                  <span className="text-[11px] text-slate-400 font-mono">Notificación a la APDP (Art. 33)</span>
+                </div>
+                <h3 className="text-base font-bold text-white flex items-center gap-2">
+                  <AlertOctagon className="w-4 h-4 text-red-400" />
+                  <span>Acta y Formulario de Notificación de Brechas de Seguridad (72 Horas)</span>
+                </h3>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  Instrumento pericial reglamentario para remitir formalmente a la Agencia en caso de vulneración de seguridad o fuga de datos. Detalla naturaleza del incidente, titulares afectados, evaluación del riesgo y medidas inmediatas de contención y mitigación.
+                </p>
+              </div>
+
+              <div className="pt-5 border-t border-slate-800 mt-4 flex items-center justify-between">
+                <div className="text-[11px] text-slate-400 font-mono">Art. 33 Ley N° 21.719</div>
+                <button
+                  onClick={generarDocNotificacionBrecha}
+                  disabled={generandoPdf === 'brecha-72h'}
+                  className="bg-red-700 hover:bg-red-600 text-white text-xs font-bold px-4 py-2 rounded-xl flex items-center gap-2 shadow-lg cursor-pointer transition-all active:scale-95 disabled:opacity-50"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>{generandoPdf === 'brecha-72h' ? 'Generando...' : 'Descargar Formulario de Brecha (PDF)'}</span>
                 </button>
               </div>
             </div>
@@ -1288,6 +1603,231 @@ FOR ALL TO anon, authenticated, service_role USING (true) WITH CHECK (true);`
             <span className="font-mono text-[10px] bg-emerald-500/20 px-2 py-0.5 rounded text-emerald-300 font-bold">
               ESTADO: INMUTABLE
             </span>
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════ */}
+      {/* PESTAÑA 5: GESTOR DE SOLICITUDES DE DERECHOS ARCO+ (15 DÍAS) */}
+      {/* ══════════════════════════════════════════════════════════════ */}
+      {pestañaActiva === 'solicitudes_arco' && (
+        <div className="bg-[#0c182b] border border-slate-700/60 rounded-2xl p-5 shadow-2xl space-y-4">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-800 pb-4">
+            <div>
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <Users className="w-5 h-5 text-blue-400" />
+                <span>Libro Oficial de Solicitudes ARCO+ (Arts. 15 al 24)</span>
+              </h3>
+              <p className="text-xs text-slate-400">
+                Control estricto del plazo legal perentorio de <strong>15 días hábiles</strong> para tramitar y responder formalmente solicitudes ciudadanas.
+              </p>
+            </div>
+
+            <button
+              onClick={() => setModalNuevoArcoAbierto(true)}
+              className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-4 py-2 rounded-xl flex items-center gap-2 shadow-lg cursor-pointer transition-all active:scale-95 shrink-0"
+            >
+              <span>+ Registrar Solicitud ARCO+</span>
+            </button>
+          </div>
+
+          {/* Tabla de Solicitudes ARCO+ */}
+          <div className="overflow-x-auto rounded-xl border border-slate-800">
+            <table className="w-full text-left text-xs font-mono">
+              <thead className="bg-[#0f2240] text-slate-300 uppercase tracking-wider text-[10px] border-b border-slate-800">
+                <tr>
+                  <th className="p-3">CÓDIGO</th>
+                  <th className="p-3">FECHA RECEPCIÓN</th>
+                  <th className="p-3">TITULAR / RUT</th>
+                  <th className="p-3">CUENTA</th>
+                  <th className="p-3">DERECHO EXIGIDO</th>
+                  <th className="p-3">PLAZO RESTANTE</th>
+                  <th className="p-3">ESTADO</th>
+                  <th className="p-3 text-right">ACCIONES</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800/60 bg-black/20 text-slate-300">
+                {solicitudesArco.map((sol) => (
+                  <tr key={sol.id} className="hover:bg-blue-500/5 transition-colors">
+                    <td className="p-3 font-bold text-blue-400 whitespace-nowrap">
+                      {sol.codigo}
+                    </td>
+                    <td className="p-3 text-slate-400 whitespace-nowrap">
+                      {sol.fecha_recepcion}
+                    </td>
+                    <td className="p-3 whitespace-nowrap">
+                      <div className="font-bold text-white text-xs">{sol.titular}</div>
+                      <div className="text-[10px] text-slate-400">RUT: {sol.rut}</div>
+                    </td>
+                    <td className="p-3 font-bold text-emerald-400 whitespace-nowrap">
+                      #{sol.cuenta}
+                    </td>
+                    <td className="p-3 whitespace-nowrap">
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
+                        sol.tipo_derecho === 'SUPRESION' ? 'bg-rose-500/20 text-rose-300 border-rose-500/30' :
+                        sol.tipo_derecho === 'RECTIFICACION' ? 'bg-blue-500/20 text-blue-300 border-blue-500/30' :
+                        sol.tipo_derecho === 'PORTABILIDAD' ? 'bg-purple-500/20 text-purple-300 border-purple-500/30' :
+                        'bg-amber-500/20 text-amber-300 border-amber-500/30'
+                      }`}>
+                        {sol.tipo_derecho}
+                      </span>
+                    </td>
+                    <td className="p-3 whitespace-nowrap">
+                      <span className={`px-2 py-0.5 rounded font-bold text-[10px] ${
+                        sol.estado === 'EJECUTADA' ? 'text-emerald-400 bg-emerald-950/40 border border-emerald-500/30' :
+                        sol.dias_habiles_restantes > 5 ? 'text-emerald-300 bg-emerald-500/10' :
+                        sol.dias_habiles_restantes > 2 ? 'text-amber-300 bg-amber-500/20' :
+                        'text-rose-300 bg-rose-500/30 font-black animate-pulse'
+                      }`}>
+                        {sol.estado === 'EJECUTADA' ? 'CUMPLIDO' : `${sol.dias_habiles_restantes} DÍAS HÁBILES`}
+                      </span>
+                    </td>
+                    <td className="p-3 whitespace-nowrap">
+                      <span className={`px-2 py-0.5 rounded text-[9px] font-bold ${
+                        sol.estado === 'EJECUTADA' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' :
+                        sol.estado === 'EN_REVISION' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' :
+                        'bg-blue-500/20 text-blue-300 border border-blue-500/30'
+                      }`}>
+                        {sol.estado}
+                      </span>
+                    </td>
+                    <td className="p-3 text-right whitespace-nowrap space-x-2">
+                      {sol.tipo_derecho === 'PORTABILIDAD' && (
+                        <button
+                          onClick={() => descargarExpedientePortabilidad(sol)}
+                          className="px-2.5 py-1 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border border-purple-500/30 text-[10px] font-bold cursor-pointer transition-all"
+                          title="Exportar expediente JSON interoperable (Art. 19)"
+                        >
+                          JSON Portabilidad
+                        </button>
+                      )}
+
+                      <button
+                        onClick={() => generarResolucionArco(sol)}
+                        disabled={generandoPdf === `resolucion-${sol.id}`}
+                        className="px-2.5 py-1 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-300 border border-blue-500/30 text-[10px] font-bold cursor-pointer transition-all"
+                        title="Emitir Resolución Formal de Acogimiento en PDF"
+                      >
+                        {generandoPdf === `resolucion-${sol.id}` ? 'Emitiendo...' : 'Resolución PDF'}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="p-3 bg-blue-950/20 border border-blue-500/30 rounded-xl text-xs text-blue-200 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Clock className="w-4 h-4 text-blue-400 shrink-0" />
+              <span>Plazo de Ley: 15 días hábiles computados de lunes a viernes. Respuestas formalizadas a través de privacidad@gamasecurity.cl.</span>
+            </div>
+            <span className="font-mono text-[10px] bg-blue-500/20 px-2 py-0.5 rounded text-blue-300 font-bold">
+              CANAL ACTIVO
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL NUEVA SOLICITUD ARCO+ ── */}
+      {modalNuevoArcoAbierto && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="bg-[#0c182b] border border-slate-700 rounded-2xl w-full max-w-lg p-6 shadow-2xl space-y-4 text-xs font-sans text-white">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <h4 className="font-bold text-sm text-white flex items-center gap-2">
+                <Users className="w-4 h-4 text-blue-400" />
+                <span>Registrar Solicitud Formal de Derecho ARCO+</span>
+              </h4>
+              <button
+                onClick={() => setModalNuevoArcoAbierto(false)}
+                className="text-slate-400 hover:text-white cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCrearSolicitudArco} className="space-y-3">
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Nombre Completo del Titular:</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ej: Marcelo Andrés Salas Silva"
+                  value={nuevoArcoForm.titular}
+                  onChange={(e) => setNuevoArcoForm({ ...nuevoArcoForm, titular: e.target.value })}
+                  className="w-full bg-[#060c18] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-400 font-bold"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">RUT del Solicitante:</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="12.345.678-9"
+                    value={nuevoArcoForm.rut}
+                    onChange={(e) => setNuevoArcoForm({ ...nuevoArcoForm, rut: e.target.value })}
+                    className="w-full bg-[#060c18] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-400 font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">N° de Cuenta Abonado:</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Ej: 1001"
+                    value={nuevoArcoForm.cuenta}
+                    onChange={(e) => setNuevoArcoForm({ ...nuevoArcoForm, cuenta: e.target.value })}
+                    className="w-full bg-[#060c18] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-400 font-bold"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Tipo de Derecho Ejercido:</label>
+                <select
+                  value={nuevoArcoForm.tipo_derecho}
+                  onChange={(e) => setNuevoArcoForm({ ...nuevoArcoForm, tipo_derecho: e.target.value as any })}
+                  className="w-full bg-[#060c18] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-400 font-bold"
+                >
+                  <option value="RECTIFICACION">RECTIFICACIÓN (Corregir datos inexactos o desactualizados)</option>
+                  <option value="SUPRESION">SUPRESIÓN / OLVIDO (Eliminar contactos desvinculados o claves)</option>
+                  <option value="ACCESO">ACCESO (Conocer la totalidad de los datos tratados)</option>
+                  <option value="PORTABILIDAD">PORTABILIDAD (Entrega de registros en JSON/CSV interoperable)</option>
+                  <option value="OPOSICION">OPOSICIÓN (Cese de tratamiento para fines específicos)</option>
+                  <option value="BLOQUEO">BLOQUEO (Suspensión temporal de tratamiento)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Detalle del Requerimiento:</label>
+                <textarea
+                  rows={3}
+                  required
+                  placeholder="Detalle exactamente lo solicitado por el cliente o titular..."
+                  value={nuevoArcoForm.detalle}
+                  onChange={(e) => setNuevoArcoForm({ ...nuevoArcoForm, detalle: e.target.value })}
+                  className="w-full bg-[#060c18] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-400"
+                />
+              </div>
+
+              <div className="pt-2 flex justify-end gap-2 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setModalNuevoArcoAbierto(false)}
+                  className="px-3 py-1.5 rounded-xl text-slate-400 hover:text-white text-xs cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shadow-lg cursor-pointer"
+                >
+                  Guardar Solicitud
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
