@@ -589,22 +589,9 @@ export default function ScorpionDashboard() {
 
   const parseEventoTimestamp = (rawStr?: string): number => {
     if (!rawStr) return 0
-    const s = String(rawStr).trim()
-    let anio: string, mes: string, dia: string, hh: string = '00', mm: string = '00', ss: string = '00'
-    const matchYYYYMM = s.match(/^(\d{4})[-/](\d{2})[-/](\d{2})(?:[T\s]+(\d{2}):(\d{2}):(\d{2}))?/)
-    if (matchYYYYMM) {
-      [, anio, mes, dia, hh = '00', mm = '00', ss = '00'] = matchYYYYMM
-    } else {
-      const matchDDMM = s.match(/^(\d{2})[-/](\d{2})[-/](\d{4})(?:[T\s]+(\d{2}):(\d{2}):(\d{2}))?/)
-      if (matchDDMM) {
-        [, dia, mes, anio, hh = '00', mm = '00', ss = '00'] = matchDDMM
-      } else {
-        const d = new Date(s)
-        return isNaN(d.getTime()) ? 0 : d.getTime()
-      }
-    }
-    const rawTs = Date.UTC(Number(anio), Number(mes) - 1, Number(dia), Number(hh), Number(mm), Number(ss))
-    return rawTs - 3600000
+    const d = new Date(String(rawStr).trim())
+    const t = d.getTime()
+    return isNaN(t) ? 0 : t
   }
 
   const compararEventosCronologico = (a: EventoMonitoreo, b: EventoMonitoreo): number => {

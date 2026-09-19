@@ -74,35 +74,33 @@ interface ParsedEventDate {
 function parseEventDate(rawStr?: string): ParsedEventDate {
   if (!rawStr) return { dateIsoStr: '', horaStr: '00:00:00', timestamp: 0 }
   const s = rawStr.trim()
-  let match = s.match(/^(\d{4})[-/](\d{2})[-/](\d{2})(?:[T\s]+(\d{2}):(\d{2}):(\d{2}))?/)
-  let anio: string, mes: string, dia: string, hh: string = '00', mm: string = '00', ss: string = '00'
+  const d = new Date(s)
+  if (isNaN(d.getTime())) return { dateIsoStr: s.slice(0, 10), horaStr: '00:00:00', timestamp: 0 }
 
-  if (match) {
-    [, anio, mes, dia, hh = '00', mm = '00', ss = '00'] = match
-  } else {
-    match = s.match(/^(\d{2})[-/](\d{2})[-/](\d{4})(?:[T\s]+(\d{2}):(\d{2}):(\d{2}))?/)
-    if (match) {
-      [, dia, mes, anio, hh = '00', mm = '00', ss = '00'] = match
-    } else {
-      return { dateIsoStr: s.slice(0, 10), horaStr: '00:00:00', timestamp: 0 }
-    }
-  }
+  const formatter = new Intl.DateTimeFormat('es-CL', {
+    timeZone: 'America/Santiago',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  })
+  const parts = formatter.formatToParts(d)
+  const getPart = (type: string) => parts.find(p => p.type === type)?.value || ''
 
-  // Corregir la hora adelantada restando 1 hora exacta (3,600,000 ms)
-  const rawTs = Date.UTC(Number(anio), Number(mes) - 1, Number(dia), Number(hh), Number(mm), Number(ss))
-  const adjustedTs = rawTs - 3600000
-  const d = new Date(adjustedTs)
-  const y = d.getUTCFullYear()
-  const m = (d.getUTCMonth() + 1).toString().padStart(2, '0')
-  const day = d.getUTCDate().toString().padStart(2, '0')
-  const h = d.getUTCHours().toString().padStart(2, '0')
-  const min = d.getUTCMinutes().toString().padStart(2, '0')
-  const sec = d.getUTCSeconds().toString().padStart(2, '0')
+  const dia = getPart('day')
+  const mes = getPart('month')
+  const anio = getPart('year')
+  const hora = getPart('hour')
+  const min = getPart('minute')
+  const seg = getPart('second')
 
   return {
-    dateIsoStr: `${y}-${m}-${day}`,
-    horaStr: `${h}:${min}:${sec}`,
-    timestamp: adjustedTs
+    dateIsoStr: `${anio}-${mes}-${dia}`,
+    horaStr: `${hora}:${min}:${seg}`,
+    timestamp: d.getTime()
   }
 }
 

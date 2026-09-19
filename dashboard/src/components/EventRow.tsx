@@ -156,42 +156,35 @@ function renderFecha(iso: string) {
   try {
     const s = (iso || '').trim()
     if (!s) return <span>-</span>
-
-    let anio: string, mes: string, dia: string, hh: string = '00', mm: string = '00', ss: string = '00'
-
-    const matchYYYY = s.match(/^(\d{4})[-/](\d{2})[-/](\d{2})(?:[T\s]+(\d{2}):(\d{2}):(\d{2}))?/)
-    if (matchYYYY) {
-      [, anio, mes, dia, hh = '00', mm = '00', ss = '00'] = matchYYYY
-    } else {
-      const matchDD = s.match(/^(\d{2})[-/](\d{2})[-/](\d{4})(?:[T\s]+(\d{2}):(\d{2}):(\d{2}))?/)
-      if (matchDD) {
-        [, dia, mes, anio, hh = '00', mm = '00', ss = '00'] = matchDD
-      } else {
-        return <span>{iso}</span>
-      }
-    }
-
-    // El servidor Scorpion registra la hora local exacta de Chile.
-    // La base de datos almacena con desfase de +1 hora (ej: 14:09 en DB -> 13:09 real Scorpion).
-    // Restamos 1 hora (3,600,000 ms) al valor UTC de la cadena almacenada para obtener la hora Scorpion idéntica.
-    const rawTs = Date.UTC(Number(anio), Number(mes) - 1, Number(dia), Number(hh), Number(mm), Number(ss))
-    const adjustedTs = rawTs - 3600000
-    const d = new Date(adjustedTs)
-
+    const d = new Date(s)
     if (isNaN(d.getTime())) return <span>{iso}</span>
 
-    const dStr = d.getUTCDate().toString().padStart(2, '0')
-    const mStr = (d.getUTCMonth() + 1).toString().padStart(2, '0')
-    const yStr = d.getUTCFullYear()
-    const hStr = d.getUTCHours().toString().padStart(2, '0')
-    const minStr = d.getUTCMinutes().toString().padStart(2, '0')
-    const sStr = d.getUTCSeconds().toString().padStart(2, '0')
+    // Formatear estrictamente en hora oficial de Chile (America/Santiago: GMT-3)
+    const formatter = new Intl.DateTimeFormat('es-CL', {
+      timeZone: 'America/Santiago',
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    })
+    const parts = formatter.formatToParts(d)
+    const getPart = (type: string) => parts.find(p => p.type === type)?.value || ''
+
+    const dia = getPart('day')
+    const mes = getPart('month')
+    const anio = getPart('year')
+    const hora = getPart('hour')
+    const min = getPart('minute')
+    const seg = getPart('second')
 
     return (
       <span className="whitespace-nowrap">
-        <span>{dStr}-{mStr}</span>
-        <span className="hidden md:inline">-{yStr}</span>
-        <span> {hStr}:{minStr}:{sStr}</span>
+        <span>{dia}-{mes}</span>
+        <span className="hidden md:inline">-{anio}</span>
+        <span> {hora}:{min}:{seg}</span>
       </span>
     )
   } catch {
