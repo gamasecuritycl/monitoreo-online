@@ -43,10 +43,18 @@ export async function POST(req: Request) {
 
       const htmlContent = `
         <div style="font-family: Arial, sans-serif; color: #1e293b; max-width: 680px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; background-color: #ffffff;">
-          <div style="background-color: #005bea; padding: 24px; text-align: center; color: #ffffff;">
-            <h1 style="margin: 0; font-size: 22px; font-weight: 800; text-transform: uppercase; tracking-tight: -0.025em;">${emp.razon_social}</h1>
-            <p style="margin: 4px 0 0 0; font-size: 13px; opacity: 0.9;">R.U.T. ${emp.rut} — Presupuesto Comercial DTE</p>
-          </div>
+          <table width="100%" border="0" cellpadding="0" cellspacing="0" bgcolor="#002b66" style="width: 100%; border-collapse: collapse; background-color: #002b66 !important;">
+            <tr>
+              <td align="center" style="background-color: #002b66 !important; padding: 24px; text-align: center;">
+                <h1 style="margin: 0; font-size: 22px; font-weight: 800; text-transform: uppercase; color: #ffffff !important;">
+                  <span style="color: #ffffff !important;">${emp.razon_social || 'EMPRESA GAMA'}</span>
+                </h1>
+                <p style="margin: 6px 0 0 0; font-size: 13px; color: #ffffff !important; font-weight: bold;">
+                  <span style="color: #ffffff !important;">R.U.T. ${emp.rut} — Presupuesto Comercial DTE</span>
+                </p>
+              </td>
+            </tr>
+          </table>
           
           <div style="padding: 24px;">
             <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
@@ -105,16 +113,16 @@ export async function POST(req: Request) {
           </div>
 
           <div style="background-color: #f1f5f9; padding: 16px; text-align: center; font-size: 11px; color: #64748b; border-top: 1px solid #e2e8f0;">
-            <p style="margin: 0; font-weight: bold; color: #0f172a;">${emp.razon_social}</p>
+            <p style="margin: 0; font-weight: bold; color: #0f172a;">${emp.razon_social || 'EMPRESA GAMA'}</p>
             <p style="margin: 4px 0;"><a href="https://www.gamasecurity.cl" style="color: #005bea; text-decoration: none; font-weight: bold;">www.gamasecurity.cl</a> | Contacto: contacto@gamasecurity.cl</p>
           </div>
         </div>
       `
 
       let response = await getResend().emails.send({
-        from: 'Empresas Gama Seguridad <contacto@gamasecurity.cl>',
+        from: 'EMPRESA GAMA <contacto@gamasecurity.cl>',
         to: toList,
-        subject: `Presupuesto DTE N° ${cot.codigo_cotizacion || 'PR2607'} — ${emp.razon_social}`,
+        subject: `Presupuesto DTE N° ${cot.codigo_cotizacion || 'PR2607'} — ${emp.razon_social || 'EMPRESA GAMA'}`,
         html: htmlContent,
         attachments: attachments
       })
@@ -122,9 +130,9 @@ export async function POST(req: Request) {
       if (response.error) {
         console.warn('Fallback a onboarding@resend.dev por dominio no verificado:', response.error)
         response = await getResend().emails.send({
-          from: 'Empresas Gama Seguridad <onboarding@resend.dev>',
+          from: 'EMPRESA GAMA <onboarding@resend.dev>',
           to: toList,
-          subject: `Presupuesto DTE N° ${cot.codigo_cotizacion || 'PR2607'} — ${emp.razon_social}`,
+          subject: `Presupuesto DTE N° ${cot.codigo_cotizacion || 'PR2607'} — ${emp.razon_social || 'EMPRESA GAMA'}`,
           html: htmlContent,
           attachments: attachments
         })
@@ -161,10 +169,18 @@ export async function POST(req: Request) {
 
       const htmlContent = `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #1e293b; max-width: 700px; margin: 0 auto; border: 1px solid #cbd5e1; border-radius: 12px; overflow: hidden; background-color: #ffffff;">
-          <div style="background: linear-gradient(135deg, #001f3f 0%, #003366 50%, #005bea 100%); padding: 24px; text-align: center; color: #ffffff;">
-            <h1 style="margin: 0; font-size: 20px; font-weight: 900; letter-spacing: 0.5px; text-transform: uppercase;">GAMA SECURITY — CENTRAL 24/7</h1>
-            <p style="margin: 4px 0 0 0; font-size: 12px; opacity: 0.9; font-weight: 600;">Informe de Auditoría y Reporte Histórico de Monitoreo</p>
-          </div>
+          <table width="100%" border="0" cellpadding="0" cellspacing="0" bgcolor="#002b66" style="width: 100%; border-collapse: collapse; background-color: #002b66 !important;">
+            <tr>
+              <td align="center" style="background-color: #002b66 !important; padding: 26px 20px; text-align: center;">
+                <h1 style="margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 22px; font-weight: 900; letter-spacing: 0.5px; text-transform: uppercase; color: #ffffff !important;">
+                  <span style="color: #ffffff !important;">EMPRESA GAMA — CENTRAL 24/7</span>
+                </h1>
+                <p style="margin: 6px 0 0 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 13px; font-weight: 600; color: #ffffff !important;">
+                  <span style="color: #ffffff !important;">Informe de Auditoría y Reporte Histórico de Monitoreo</span>
+                </p>
+              </td>
+            </tr>
+          </table>
 
           <div style="padding: 24px;">
             <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px; margin-bottom: 20px;">
@@ -186,9 +202,9 @@ export async function POST(req: Request) {
             <table style="width: 100%; border-collapse: collapse; margin-bottom: 16px;">
               <thead>
                 <tr style="background-color: #0f172a; color: #ffffff; font-size: 11px; text-transform: uppercase;">
-                  <th style="padding: 8px 10px; text-align: left; border-radius: 6px 0 0 0;">Fecha / Hora</th>
-                  <th style="padding: 8px 10px; text-align: left;">Evento</th>
-                  <th style="padding: 8px 10px; text-align: left; border-radius: 0 6px 0 0;">Zona / Usuario</th>
+                  <th style="padding: 8px 10px; text-align: left; border-radius: 6px 0 0 0; color: #ffffff !important;"><span style="color: #ffffff !important;">Fecha / Hora</span></th>
+                  <th style="padding: 8px 10px; text-align: left; color: #ffffff !important;"><span style="color: #ffffff !important;">Evento</span></th>
+                  <th style="padding: 8px 10px; text-align: left; border-radius: 0 6px 0 0; color: #ffffff !important;"><span style="color: #ffffff !important;">Zona / Usuario</span></th>
                 </tr>
               </thead>
               <tbody>
@@ -198,15 +214,21 @@ export async function POST(req: Request) {
 
             ${totalEvt > 40 ? `<p style="font-size: 11px; color: #64748b; font-style: italic; text-align: center; margin-top: 6px;">Mostrando los últimos 40 eventos de un total de ${totalEvt}.</p>` : ''}
 
-            <div style="margin-top: 20px; padding: 14px; background-color: #f0fdf4; border-left: 4px solid #22c55e; border-radius: 6px; font-size: 11.5px; color: #15803d;">
-              <p style="margin: 0; font-weight: bold;">🛡️ Central de Monitoreo Gama Security 24/7</p>
-              <p style="margin: 3px 0 0 0;">Para consultas operativas o requerimientos técnicos, comuníquese con nuestra central al <strong>+56 9 4885 5190</strong> o al correo <strong>contacto@gamasecurity.cl</strong>.</p>
+            <div style="margin-top: 20px; padding: 16px; background-color: #f0fdf4; border-left: 5px solid #22c55e; border-radius: 6px;">
+              <p style="margin: 0; font-weight: 800; font-size: 13px; color: #166534;">🛡️ EMPRESA GAMA 24/7</p>
+              <p style="margin: 6px 0 0 0; font-size: 12px; line-height: 1.6; color: #15803d;">
+                Para consultas operativas o requerimientos técnicos, comuníquese con nuestra central por nuestro
+                <a href="https://wa.me/56948855190" target="_blank" style="display: inline-block; background-color: #25D366; color: #ffffff !important; text-decoration: none; font-weight: bold; padding: 4px 10px; border-radius: 5px; font-size: 11.5px; vertical-align: middle; margin: 2px 4px;">
+                  <span style="color: #ffffff !important;">💬 WhatsApp +56 9 4885 5190</span>
+                </a>
+                (comunicación exclusiva por WhatsApp, no telefónicamente) o al correo <a href="mailto:contacto@gamasecurity.cl" style="color: #005bea; font-weight: bold; text-decoration: underline;">contacto@gamasecurity.cl</a>.
+              </p>
             </div>
           </div>
 
           <div style="background-color: #f1f5f9; padding: 14px; text-align: center; font-size: 11px; color: #64748b; border-top: 1px solid #e2e8f0;">
-            <p style="margin: 0; font-weight: bold; color: #0f172a;">GAMA SECURITY SpA — Central 24/7</p>
-            <p style="margin: 2px 0;"><a href="https://www.gamasecurity.cl" style="color: #005bea; text-decoration: none; font-weight: bold;">www.gamasecurity.cl</a></p>
+            <p style="margin: 0; font-weight: bold; color: #0f172a;">EMPRESA GAMA — Central 24/7</p>
+            <p style="margin: 4px 0 0 0;"><a href="https://www.gamasecurity.cl" style="color: #005bea; text-decoration: none; font-weight: bold;">www.gamasecurity.cl</a> | Contacto: contacto@gamasecurity.cl</p>
           </div>
         </div>
       `
@@ -226,18 +248,18 @@ export async function POST(req: Request) {
       }
 
       let response = await getResend().emails.send({
-        from: 'Central Gama Seguridad <contacto@gamasecurity.cl>',
+        from: 'EMPRESA GAMA <contacto@gamasecurity.cl>',
         to: toList,
-        subject: `Reporte Histórico de Monitoreo [Cuenta #${cuenta}] — ${nombre_cliente || 'Gama Security'}`,
+        subject: `Reporte Histórico de Monitoreo [Cuenta #${cuenta}] — ${nombre_cliente || 'EMPRESA GAMA'}`,
         html: htmlContent,
         attachments: attachments.length > 0 ? attachments : undefined
       })
 
       if (response.error) {
         response = await getResend().emails.send({
-          from: 'Central Gama Seguridad <onboarding@resend.dev>',
+          from: 'EMPRESA GAMA <onboarding@resend.dev>',
           to: toList,
-          subject: `Reporte Histórico de Monitoreo [Cuenta #${cuenta}] — ${nombre_cliente || 'Gama Security'}`,
+          subject: `Reporte Histórico de Monitoreo [Cuenta #${cuenta}] — ${nombre_cliente || 'EMPRESA GAMA'}`,
           html: htmlContent,
           attachments: attachments.length > 0 ? attachments : undefined
         })
@@ -282,7 +304,7 @@ export async function POST(req: Request) {
           <p>O escríbanos a <a href="mailto:contacto@gamasecurity.cl">contacto@gamasecurity.cl</a>.</p>
         </div>
         <div style="background-color: #f5f5f5; padding: 15px; text-align: center; font-size: 12px; color: #666;">
-          <p style="margin: 0;"><strong>EMPRESAS GAMA SEGURIDAD</strong></p>
+          <p style="margin: 0;"><strong>EMPRESA GAMA</strong></p>
           <p style="margin: 5px 0;"><a href="https://www.gamasecurity.cl" style="color: #000080;">www.gamasecurity.cl</a> | Síguenos en Instagram: <a href="https://instagram.com/gama.servicios" style="color: #000080;">@gama.servicios</a></p>
         </div>
       </div>
@@ -296,7 +318,7 @@ export async function POST(req: Request) {
     ] : []
 
     let response = await getResend().emails.send({
-      from: 'Empresas Gama Seguridad <contacto@gamasecurity.cl>',
+      from: 'EMPRESA GAMA <contacto@gamasecurity.cl>',
       to: toList,
       subject: `Notificación de ${(tipo_evento || 'Evento').toUpperCase()}`,
       html: htmlContent,
@@ -305,7 +327,7 @@ export async function POST(req: Request) {
 
     if (response.error) {
       response = await getResend().emails.send({
-        from: 'Empresas Gama Seguridad <onboarding@resend.dev>',
+        from: 'EMPRESA GAMA <onboarding@resend.dev>',
         to: toList,
         subject: `Notificación de ${(tipo_evento || 'Evento').toUpperCase()}`,
         html: htmlContent,

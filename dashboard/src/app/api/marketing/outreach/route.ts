@@ -21,7 +21,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Asunto y contenido del correo son obligatorios' }, { status: 400 })
     }
 
-    const senderEmail = remitente || 'Gama Seguridad <contacto@gamasecurity.cl>'
+    const senderEmail = remitente || 'EMPRESA GAMA <contacto@gamasecurity.cl>'
     const resultados = []
 
     for (let i = 0; i < leads.length; i++) {

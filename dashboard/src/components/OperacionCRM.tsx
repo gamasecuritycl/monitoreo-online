@@ -461,7 +461,7 @@ export default function OperacionCRM() {
 
   // Formulario Motor Campañas Resend
   const [campanaSegmento, setCampanaSegmento] = useState<string>('Todos')
-  const [campanaRemitente, setCampanaRemitente] = useState<string>('Gama Seguridad <contacto@gamasecurity.cl>')
+  const [campanaRemitente, setCampanaRemitente] = useState<string>('EMPRESA GAMA <contacto@gamasecurity.cl>')
   const [campanaAsunto, setCampanaAsunto] = useState<string>('Propuesta de Monitoreo 24/7 & Seguridad Electrónica para {{nombre_empresa}}')
   const [campanaContenido, setCampanaContenido] = useState<string>(
 `<p>Estimados <strong>{{nombre_empresa}}</strong>,</p>
@@ -1530,7 +1530,7 @@ export default function OperacionCRM() {
     const emailDest = cot.email_cliente || 'contacto@gamasecurity.cl'
     const emp = empresasConglomerado.find(e => e.id === cot.empresa_facturadora_id) || empresasConglomerado[0]
 
-    const emailPrompt = prompt(`Enviar Presupuesto DTE ${cot.codigo_cotizacion} por Email con PDF Adjunto (remitente: Empresas Gama Seguridad) a:`, emailDest)
+    const emailPrompt = prompt(`Enviar Presupuesto DTE ${cot.codigo_cotizacion} por Email con PDF Adjunto (remitente: EMPRESA GAMA) a:`, emailDest)
     if (!emailPrompt || !emailPrompt.trim()) return
 
     setEnviandoEmailId(cot.id)
@@ -1556,7 +1556,7 @@ export default function OperacionCRM() {
       })
       const data = await res.json()
       if (data.success) {
-        alert(`📧 Presupuesto ${cot.codigo_cotizacion} (con PDF adjunto 📄) enviado exitosamente desde Empresas Gama Seguridad a ${emailPrompt.trim()}.`)
+        alert(`📧 Presupuesto ${cot.codigo_cotizacion} (con PDF adjunto 📄) enviado exitosamente desde EMPRESA GAMA a ${emailPrompt.trim()}.`)
       } else {
         alert(`Error al enviar Email: ${data.error || 'Verifique la configuración de correo'}`)
       }
