@@ -615,7 +615,7 @@ export default function Ley21719Module() {
         { etiqueta: 'Canal de Privacidad', valor: 'privacidad@gamasecurity.cl | DPO asignado: Depto. Cumplimiento & Legal' }
       ])
 
-      addSection('2. TRATAMIENTO 01: MONITOREO DE ALARMAS Y EVENTOS C7CB', [
+      addSection('2. TRATAMIENTO 01: MONITOREO DE ALARMAS Y EVENTOS DE CENTRAL (CONTACT ID / SIA)', [
         { etiqueta: 'Finalidad', valor: 'Recepción, verificación técnica y despacho de señales de intrusión, coacción, pánico e incendio.' },
         { etiqueta: 'Categoría de Datos', valor: 'Número de abonado, eventos cronológicos de armado/desarme, aperturas, fallas técnicas y alertas.' },
         { etiqueta: 'Base Jurídica', valor: 'Art. 13 letra b) Ley 21.719 (Ejecución contractual) y Ley N° 21.659 de Seguridad Privada.' },
@@ -1281,7 +1281,7 @@ export default function Ley21719Module() {
       )
 
       addRow(
-        'Historial de Señales de Alarma C7CB (Aperturas, Cierres, Disparos)',
+        'Historial de Señales de Alarma de Abonados (Aperturas, Cierres, Disparos)',
         '5 Años Inalterables',
         'Exigencia legal imperativa de Carabineros de Chile OS-10 para cotejo penal y peritaje judicial.',
         'Purga segura de base de datos tras prescripción de acciones legales.'
@@ -1760,7 +1760,7 @@ FOR ALL TO anon, authenticated, service_role USING (true) WITH CHECK (true);`
                   <span>Registro de Actividades de Tratamiento (RAT / ROPA Oficial)</span>
                 </h3>
                 <p className="text-xs text-slate-300 leading-relaxed">
-                  Expediente legal exhaustivo exigible en fiscalizaciones de la APDP. Cataloga los 5 flujos de datos de Gama Seguridad: Monitoreo de Señales C7CB, Agenda de Contactos & Contraclaves, Grabaciones CCTV Dahua, Despacho Automatizado Multicanal y Auditoría de Operadores, detallando bases de licitud, plazos de conservación y medidas de contención.
+                  Expediente legal exhaustivo exigible en fiscalizaciones de la APDP. Cataloga los 5 flujos de datos de Gama Seguridad: Monitoreo de Señales de Paneles de Alarma (Contact ID / SIA), Agenda de Contactos & Contraclaves, Grabaciones CCTV Dahua, Despacho Automatizado Multicanal y Auditoría de Operadores, detallando bases de licitud, plazos de conservación y medidas de contención.
                 </p>
               </div>
 

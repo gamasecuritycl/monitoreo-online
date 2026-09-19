@@ -1114,7 +1114,7 @@ export default function OperacionCRM() {
             datos_nuevos: {
               modulo: 'ficha360',
               titular: clienteActivo?.razon_social || abonadoActivo?.alias_centro_costo || 'Abonado',
-              campos_consultados: ['telefonos_contacto', 'contraclaves_verbales', 'ubicacion_georreferencial', 'historial_senales_c7cb']
+              campos_consultados: ['telefonos_contacto', 'contraclaves_verbales', 'ubicacion_georreferencial', 'historial_senales_panel']
             }
           }
           await supabase.from('bitacora_auditoria_datos').insert([payload])
