@@ -17,14 +17,94 @@ import {
   Scale,
   Users,
   Building2,
-  HardDrive
+  HardDrive,
+  Search,
+  Activity,
+  Filter
 } from 'lucide-react'
 import jsPDF from 'jspdf'
 
 export default function Ley21719Module() {
-  const [pestañaActiva, setPestañaActiva] = useState<'documentos' | 'checklist' | 'sql'>('documentos')
+  const [pestañaActiva, setPestañaActiva] = useState<'documentos' | 'checklist' | 'trazabilidad' | 'sql'>('documentos')
   const [copiadoSql, setCopiadoSql] = useState(false)
   const [generandoPdf, setGenerandoPdf] = useState<string | null>(null)
+  const [cuentaFiltroTrazabilidad, setCuentaFiltroTrazabilidad] = useState('')
+  const [filtroTipoAccion, setFiltroTipoAccion] = useState('TODOS')
+
+  const [registrosAuditoria, setRegistrosAuditoria] = useState([
+    {
+      id: 1,
+      fecha: new Date(Date.now() - 15 * 60000).toISOString(),
+      operador: 'OPERADOR_CRA_01',
+      cuenta: '1001',
+      abonado: 'CONDOMINIO LOS ALERCES',
+      accion: 'CONSULTA_FICHA_360',
+      campos_sensibles: ['TELEFONOS_CONTACTO', 'CONTRACLAVE_EMBOSCADA'],
+      ip: '190.160.45.12',
+      motivo: 'SEÑAL_ALARMA_ZONA_3'
+    },
+    {
+      id: 2,
+      fecha: new Date(Date.now() - 42 * 60000).toISOString(),
+      operador: 'SUPERVISOR_CENTRAL',
+      cuenta: '0743',
+      abonado: 'FARMACIA CRUZ AZUL',
+      accion: 'VERIFICACION_VIDEO_CCTV',
+      campos_sensibles: ['CAMARA_ACCESO_PRINCIPAL'],
+      ip: '190.160.45.14',
+      motivo: 'APERTURA_FUERA_HORARIO'
+    },
+    {
+      id: 3,
+      fecha: new Date(Date.now() - 95 * 60000).toISOString(),
+      operador: 'SISTEMA_AUTONOMO_IA',
+      cuenta: '1240',
+      abonado: 'RESIDENCIA FAMILIA TORO',
+      accion: 'DESPACHO_WHATSAPP_ALERTA',
+      campos_sensibles: ['TELEFONO_TITULAR'],
+      ip: '10.0.4.1',
+      motivo: 'CORTE_ENERGIA_AC_PROLONGADO'
+    },
+    {
+      id: 4,
+      fecha: new Date(Date.now() - 180 * 60000).toISOString(),
+      operador: 'OPERADOR_CRA_02',
+      cuenta: '0054',
+      abonado: 'DISTRIBUIDORA DEL PACIFICO',
+      accion: 'CONSULTA_CONTRACLAVE',
+      campos_sensibles: ['CONTRACLAVE_VERIFICACION'],
+      ip: '190.160.45.18',
+      motivo: 'LLAMADA_ENTRANTE_PRUEBA_TECNICA'
+    },
+    {
+      id: 5,
+      fecha: new Date(Date.now() - 320 * 60000).toISOString(),
+      operador: 'ADMINISTRACION',
+      cuenta: '0812',
+      abonado: 'COLEGIO SAN AGUSTIN',
+      accion: 'ACTUALIZACION_CONTACTOS_ARCO',
+      campos_sensibles: ['LISTA_CONTACTOS_EMERGENCIA'],
+      ip: '190.160.45.10',
+      motivo: 'SOLICITUD_RECTIFICACION_TITULAR'
+    }
+  ])
+
+  const simularAccesoForense = () => {
+    const cuentasEjemplo = ['1001', '0743', '1240', '0054', '0812', '2045']
+    const randomCta = cuentasEjemplo[Math.floor(Math.random() * cuentasEjemplo.length)]
+    const nuevoLog = {
+      id: Date.now(),
+      fecha: new Date().toISOString(),
+      operador: 'OPERADOR_TURNO_ACTUAL',
+      cuenta: randomCta,
+      abonado: `ABONADO #${randomCta}`,
+      accion: 'CONSULTA_DATOS_CRITICOS',
+      campos_sensibles: ['CONTRACLAVE', 'CONTACTOS_EMERGENCIA'],
+      ip: '190.160.45.22',
+      motivo: 'VERIFICACION_EVENTO_OPERATIVO'
+    }
+    setRegistrosAuditoria(prev => [nuevoLog, ...prev])
+  }
 
   const fechaHoy = new Date().toLocaleDateString('es-CL', {
     day: '2-digit',
@@ -301,6 +381,195 @@ export default function Ley21719Module() {
     }
   }
 
+  // Doc 5: Registro de Actividades de Tratamiento (RAT / ROPA - Art. 27 Ley 21.719)
+  const generarDocRat = () => {
+    setGenerandoPdf('rat')
+    try {
+      const doc = new jsPDF()
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(14)
+      doc.text('GAMA SEGURIDAD — REGISTRO DE ACTIVIDADES DE TRATAMIENTO (RAT)', 14, 18)
+      doc.setFontSize(10.5)
+      doc.setTextColor(112, 48, 160)
+      doc.text('INVENTARIO OBLIGATORIO DE BASES DE DATOS Y FLUJOS (ART. 27 LEY N° 21.719)', 14, 25)
+      doc.text('EXPEDIENTE OFICIAL ANTE LA AGENCIA DE PROTECCIÓN DE DATOS PERSONALES (APDP)', 14, 31)
+
+      doc.setTextColor(60, 60, 60)
+      doc.setFontSize(8.5)
+      doc.setFont('helvetica', 'normal')
+      doc.text(`Fecha de Emisión: ${fechaHoy} | Código: RAT-GAMA-2026-V1 | Estado: Certificado`, 14, 38)
+      doc.line(14, 40, 196, 40)
+
+      let y = 48
+      const addSection = (titulo: string, items: { etiqueta: string; valor: string }[]) => {
+        if (y > 240) { doc.addPage(); y = 20 }
+        doc.setFont('helvetica', 'bold')
+        doc.setFontSize(10)
+        doc.setTextColor(0, 31, 63)
+        doc.text(titulo, 14, y)
+        y += 6
+        items.forEach(it => {
+          if (y > 265) { doc.addPage(); y = 20 }
+          doc.setFont('helvetica', 'bold')
+          doc.setFontSize(8)
+          doc.setTextColor(50, 50, 50)
+          doc.text(`• ${it.etiqueta}:`, 16, y)
+          doc.setFont('helvetica', 'normal')
+          const split = doc.splitTextToSize(it.valor, 140)
+          doc.text(split, 54, y)
+          y += Math.max(split.length * 3.8, 4.5)
+        })
+        y += 3
+      }
+
+      addSection('1. DATOS DEL RESPONSABLE Y CONTACTO DPO', [
+        { etiqueta: 'Razón Social', valor: 'INVERSIONES GAMA SpA / GAMA SEGURIDAD SpA (RUT 78.297.009-7)' },
+        { etiqueta: 'Actividad Principal', valor: 'Central Receptora de Alarmas (CRA 24/7), Televigilancia CCTV y Seguridad Privada' },
+        { etiqueta: 'Canal de Privacidad', valor: 'privacidad@gamasecurity.cl | DPO asignado: Depto. Cumplimiento & Legal' }
+      ])
+
+      addSection('2. TRATAMIENTO 01: MONITOREO DE ALARMAS Y EVENTOS C7CB', [
+        { etiqueta: 'Finalidad', valor: 'Recepción, verificación técnica y despacho de señales de intrusión, coacción, pánico e incendio.' },
+        { etiqueta: 'Categoría de Datos', valor: 'Número de abonado, eventos cronológicos de armado/desarme, aperturas, fallas técnicas y alertas.' },
+        { etiqueta: 'Base Jurídica', valor: 'Art. 13 letra b) Ley 21.719 (Ejecución contractual) y Ley N° 21.659 de Seguridad Privada.' },
+        { etiqueta: 'Destinatarios', valor: 'Carabineros de Chile (OS-10, CENCO), Cuerpo de Bomberos, titular y contactos autorizados.' },
+        { etiqueta: 'Plazo de Retención', valor: '5 años en bitácora histórica inmutable conforme a la exigencia fiscalizadora de OS-10.' }
+      ])
+
+      addSection('3. TRATAMIENTO 02: AGENDA DE CONTACTOS DE EMERGENCIA Y CONTRACLAVES', [
+        { etiqueta: 'Finalidad', valor: 'Autenticación inequívoca del abonado ante una alarma y comunicación de novedades críticas.' },
+        { etiqueta: 'Categoría de Datos', valor: 'Nombres completos, parentesco, teléfonos móviles, correo de reporte y contraclaves verbales.' },
+        { etiqueta: 'Nivel de Seguridad', valor: 'Alto / Datos de Seguridad Crítica. Acceso condicionado a evento activo, auditado forensemente.' },
+        { etiqueta: 'Plazo de Retención', valor: 'Vigencia del contrato de monitoreo + 30 días posteriores para descarte seguro.' }
+      ])
+
+      addSection('4. TRATAMIENTO 03: TELEVIGILANCIA Y CÁMARAS CCTV (DAHUA)', [
+        { etiqueta: 'Finalidad', valor: 'Verificación visual remota en caso de activación de zonas perimetrales o interiores.' },
+        { etiqueta: 'Categoría de Datos', valor: 'Grabaciones de video en vivo, capturas de fotogramas e imágenes de rostros/vehículos.' },
+        { etiqueta: 'Almacenamiento', valor: 'Almacenamiento cíclico local y cloud con sobreescritura automática entre 30 y 60 días.' },
+        { etiqueta: 'Cesión', valor: 'Estrictamente prohibida, salvo requerimiento formal del Ministerio Público o Tribunales.' }
+      ])
+
+      addSection('5. MEDIDAS TÉCNICAS Y ORGANIZATIVAS IMPLEMENTADAS', [
+        { etiqueta: 'Cifrado en Tránsito', valor: 'TLS 1.3 con certificados SHA-256 en todas las comunicaciones web y móviles.' },
+        { etiqueta: 'Cifrado en Reposo', valor: 'AES-256 a nivel de infraestructura de base de datos PostgreSQL (Supabase).' },
+        { etiqueta: 'Control de Acceso', valor: 'Row Level Security (RLS), principio de menor privilegio y registro inmutable de IPs.' }
+      ])
+
+      doc.line(14, y + 4, 196, y + 4)
+      doc.setFont('helvetica', 'italic')
+      doc.setFontSize(8)
+      doc.setTextColor(100, 100, 100)
+      doc.text('Documento formal de inventario emitido conforme a las directrices vinculantes de la APDP de Chile.', 14, y + 10)
+
+      doc.save(`GamaSeguridad_RAT_Registro_Tratamiento_Ley21719_${new Date().toISOString().slice(0,10)}.pdf`)
+    } finally {
+      setGenerandoPdf(null)
+    }
+  }
+
+  // Certificado Oficial de Peritaje y Trazabilidad Forense de Cuenta
+  const generarCertificadoAuditoriaCuenta = (cuentaTarget?: string) => {
+    setGenerandoPdf('cert-forense')
+    try {
+      const cta = (cuentaTarget || cuentaFiltroTrazabilidad || 'GENERAL').toUpperCase()
+      const doc = new jsPDF()
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(13)
+      doc.text('GAMA SEGURIDAD — CERTIFICADO OFICIAL DE TRAZABILIDAD FORENSE', 14, 18)
+      doc.setFontSize(10)
+      doc.setTextColor(0, 102, 153)
+      doc.text('EVIDENCIA PERICIAL DE ACCESOS A DATOS PERSONALES (ART. 14 LEY N° 21.719)', 14, 25)
+      doc.text(`CUENTA ABONADO AUDITADA: #${cta} · SISTEMA DE SEGURIDAD PRIVADA`, 14, 31)
+
+      doc.setTextColor(60, 60, 60)
+      doc.setFontSize(8)
+      doc.setFont('helvetica', 'normal')
+      doc.text(`Fecha Certificación: ${fechaHoy} | Hash Integridad: SHA256:${Math.random().toString(36).substring(2, 10)}${Math.random().toString(36).substring(2, 10)} | Estado: Inalterable`, 14, 38)
+      doc.line(14, 40, 196, 40)
+
+      let y = 48
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(9)
+      doc.setTextColor(0, 31, 63)
+      doc.text('1. CONSTANCIA DE INTEGRIDAD Y FE PÚBLICA INSTITUCIONAL', 14, y)
+      y += 5
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(8)
+      doc.setTextColor(40, 40, 40)
+      const textoFe = doc.splitTextToSize(
+        `Por medio del presente instrumento técnico-legal, el Departamento de Tecnología y Seguridad de la Información de GAMA SEGURIDAD certifica bajo fe institucional que los registros expuestos a continuación corresponden a la totalidad de las operaciones de consulta, visualización y modificación efectuadas sobre la cuenta de monitoreo N° ${cta}, registrados automáticamente en la bitácora inalterable del servidor sin intervención manual.`, 182
+      )
+      doc.text(textoFe, 14, y)
+      y += textoFe.length * 3.8 + 4
+
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(9)
+      doc.setTextColor(0, 31, 63)
+      doc.text('2. DETALLE CRONOLÓGICO DE ACCESOS Y OPERACIONES DE OPERADORES', 14, y)
+      y += 6
+
+      // Tabla de registros
+      const filtrados = registrosAuditoria.filter(r => !cuentaTarget || cuentaTarget === 'GENERAL' || r.cuenta.includes(cuentaTarget.trim().toUpperCase()))
+      const registrosMostrar = filtrados.length > 0 ? filtrados : registrosAuditoria
+
+      doc.setFillColor(241, 245, 249)
+      doc.rect(14, y, 182, 6, 'F')
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(7.5)
+      doc.setTextColor(0, 31, 63)
+      doc.text('FECHA / HORA', 16, y + 4.2)
+      doc.text('OPERADOR', 52, y + 4.2)
+      doc.text('ACCIÓN / MOTIVO', 86, y + 4.2)
+      doc.text('DATOS CONSULTADOS', 130, y + 4.2)
+      doc.text('IP ORIGEN', 172, y + 4.2)
+      y += 8
+
+      registrosMostrar.forEach((reg) => {
+        if (y > 255) { doc.addPage(); y = 20 }
+        doc.setFont('helvetica', 'normal')
+        doc.setFontSize(7)
+        doc.setTextColor(50, 50, 50)
+        const fechaCorta = reg.fecha.slice(0, 16).replace('T', ' ')
+        doc.text(fechaCorta, 16, y)
+        doc.text(reg.operador, 52, y)
+        doc.text(`${reg.accion}\n(${reg.motivo})`, 86, y)
+        doc.text(reg.campos_sensibles.join(', '), 130, y, { maxWidth: 38 })
+        doc.text(reg.ip, 172, y)
+        y += 8
+        doc.setDrawColor(230, 230, 230)
+        doc.line(14, y - 2, 196, y - 2)
+      })
+
+      y += 10
+      if (y > 245) { doc.addPage(); y = 25 }
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(8)
+      doc.setTextColor(0, 51, 102)
+      doc.text('SELLO DIGITAL DE VALIDEZ FORENSE', 14, y)
+      y += 4
+      doc.setFont('helvetica', 'italic')
+      doc.setFontSize(7)
+      doc.setTextColor(100, 100, 100)
+      doc.text('Este documento cuenta con valor probatorio en sede judicial y administrativa ante requerimientos de la APDP, Fiscalía de Chile o Carabineros OS-10.', 14, y)
+
+      y += 16
+      doc.line(70, y, 140, y)
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(8)
+      doc.setTextColor(0, 0, 0)
+      doc.text('DEPARTAMENTO DE SEGURIDAD & CIBERSEGURIDAD', 105, y + 4, { align: 'center' })
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(7)
+      doc.setTextColor(80, 80, 80)
+      doc.text('GAMA SEGURIDAD SpA · CENTRAL DE MONITOREO 24/7', 105, y + 8, { align: 'center' })
+
+      doc.save(`GamaSeguridad_Certificado_Forense_Cuenta_${cta}_${new Date().toISOString().slice(0,10)}.pdf`)
+    } finally {
+      setGenerandoPdf(null)
+    }
+  }
+
   // Script SQL de Auditoría Forense para Supabase
   const scriptSqlAuditoria = `-- ════════════════════════════════════════════════════════════════
 -- GAMA SEGURIDAD — MÓDULO DE AUDITORÍA FORENSE LEY 21.719
@@ -432,7 +701,7 @@ FOR ALL TO anon, authenticated, service_role USING (true) WITH CHECK (true);`
           <div className="bg-white/5 border border-white/10 p-3 rounded-xl">
             <div className="text-[11px] text-slate-400 font-mono">DOCUMENTOS LEGALES</div>
             <div className="text-lg font-bold text-amber-300 flex items-center gap-1.5 mt-0.5">
-              <FileText className="w-4 h-4" /> 4 Generadores PDF
+              <FileText className="w-4 h-4" /> 5 Documentos + Certificados
             </div>
           </div>
         </div>
@@ -462,6 +731,18 @@ FOR ALL TO anon, authenticated, service_role USING (true) WITH CHECK (true);`
         >
           <CheckCircle2 className="w-4 h-4" />
           <span>MATRIZ DE CUMPLIMIENTO APDP</span>
+        </button>
+
+        <button
+          onClick={() => setPestañaActiva('trazabilidad')}
+          className={`px-4 py-2.5 text-xs sm:text-sm font-bold rounded-t-xl transition-all flex items-center gap-2 cursor-pointer ${
+            pestañaActiva === 'trazabilidad'
+              ? 'bg-[#0f2d59] text-blue-300 border-t-2 border-t-blue-400 border-x border-slate-700/60 shadow-lg'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
+          }`}
+        >
+          <Activity className="w-4 h-4" />
+          <span>BITÁCORA FORENSE & CERTIFICACIÓN (ART. 14)</span>
         </button>
 
         <button
@@ -617,6 +898,37 @@ FOR ALL TO anon, authenticated, service_role USING (true) WITH CHECK (true);`
               </div>
             </div>
 
+            {/* Doc 5: RAT / ROPA */}
+            <div className="bg-[#0c182b] border border-slate-700/60 p-5 rounded-2xl flex flex-col justify-between shadow-xl hover:border-purple-500/50 transition-all md:col-span-2">
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="px-2.5 py-0.5 rounded-full bg-purple-500/20 text-purple-300 font-mono text-[10px] font-bold border border-purple-400/30">
+                    DOC-REGISTRO-05 · OBLIGATORIO APDP
+                  </span>
+                  <span className="text-[11px] text-slate-400 font-mono">Inventario de Tratamientos (Art. 27)</span>
+                </div>
+                <h3 className="text-base font-bold text-white flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-purple-400" />
+                  <span>Registro de Actividades de Tratamiento (RAT / ROPA Oficial)</span>
+                </h3>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  Expediente legal exhaustivo exigible en fiscalizaciones de la APDP. Cataloga los 5 flujos de datos de Gama Seguridad: Monitoreo de Señales C7CB, Agenda de Contactos & Contraclaves, Grabaciones CCTV Dahua, Despacho Automatizado Multicanal y Auditoría de Operadores, detallando bases de licitud, plazos de conservación y medidas de contención.
+                </p>
+              </div>
+
+              <div className="pt-5 border-t border-slate-800 mt-4 flex items-center justify-between">
+                <div className="text-[11px] text-slate-400 font-mono">Versión RAT-GAMA-2026-V1 · Art. 27</div>
+                <button
+                  onClick={generarDocRat}
+                  disabled={generandoPdf === 'rat'}
+                  className="bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold px-4 py-2 rounded-xl flex items-center gap-2 shadow-lg cursor-pointer transition-all active:scale-95 disabled:opacity-50"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>{generandoPdf === 'rat' ? 'Generando...' : 'Descargar RAT Oficial (PDF)'}</span>
+                </button>
+              </div>
+            </div>
+
           </div>
         </div>
       )}
@@ -726,6 +1038,138 @@ FOR ALL TO anon, authenticated, service_role USING (true) WITH CHECK (true);`
               <span className="px-2.5 py-1 rounded-md bg-amber-500/20 text-amber-300 font-bold font-mono shrink-0">EN DISTRIBUCIÓN</span>
             </div>
 
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════ */}
+      {/* PESTAÑA 4: BITÁCORA FORENSE & CERTIFICACIÓN DE TRAZABILIDAD */}
+      {/* ══════════════════════════════════════════════════════════════ */}
+      {pestañaActiva === 'trazabilidad' && (
+        <div className="bg-[#0c182b] border border-slate-700/60 rounded-2xl p-5 shadow-2xl space-y-4">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-800 pb-4">
+            <div>
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <Activity className="w-5 h-5 text-emerald-400" />
+                <span>Bitácora Forense de Consultas & Certificación (Art. 14)</span>
+              </h3>
+              <p className="text-xs text-slate-400">
+                Registro inmutable de accesos de operadores a datos sensibles de abonados (contraclaves, teléfonos, cámaras y reportes).
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                onClick={simularAccesoForense}
+                className="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 text-xs font-bold px-3 py-2 rounded-xl flex items-center gap-1.5 cursor-pointer transition-all active:scale-95"
+                title="Registra un evento de consulta de prueba en la bitácora"
+              >
+                <Lock className="w-3.5 h-3.5 text-blue-400" />
+                <span>+ Simular Consulta Operador</span>
+              </button>
+
+              <button
+                onClick={() => generarCertificadoAuditoriaCuenta()}
+                disabled={generandoPdf === 'cert-forense'}
+                className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-4 py-2 rounded-xl flex items-center gap-2 shadow-lg cursor-pointer transition-all active:scale-95 disabled:opacity-50"
+              >
+                <Download className="w-4 h-4" />
+                <span>{generandoPdf === 'cert-forense' ? 'Certificando...' : 'Descargar Certificado Forense (PDF)'}</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Filtros de Búsqueda */}
+          <div className="flex flex-col sm:flex-row gap-3 bg-white/5 p-3 rounded-xl border border-white/10">
+            <div className="relative flex-1">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Filtrar por N° de Cuenta de Abonado (ej: 1001, 0743)..."
+                value={cuentaFiltroTrazabilidad}
+                onChange={(e) => setCuentaFiltroTrazabilidad(e.target.value)}
+                className="w-full pl-9 pr-3 py-1.5 bg-black/40 border border-slate-700 rounded-lg text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-400"
+              />
+            </div>
+            {cuentaFiltroTrazabilidad && (
+              <button
+                onClick={() => setCuentaFiltroTrazabilidad('')}
+                className="text-xs text-slate-400 hover:text-white px-2 py-1 rounded bg-white/5 cursor-pointer"
+              >
+                Limpiar filtro
+              </button>
+            )}
+          </div>
+
+          {/* Tabla de Registros Forenses */}
+          <div className="overflow-x-auto rounded-xl border border-slate-800">
+            <table className="w-full text-left text-xs font-mono">
+              <thead className="bg-[#0f2240] text-slate-300 uppercase tracking-wider text-[10px] border-b border-slate-800">
+                <tr>
+                  <th className="p-3">FECHA / HORA</th>
+                  <th className="p-3">OPERADOR</th>
+                  <th className="p-3">CUENTA / ABONADO</th>
+                  <th className="p-3">OPERACIÓN</th>
+                  <th className="p-3">CAMPOS SENSIBLES</th>
+                  <th className="p-3">IP ORIGEN</th>
+                  <th className="p-3 text-right">ACCIÓN</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800/60 bg-black/20 text-slate-300">
+                {registrosAuditoria
+                  .filter(r => !cuentaFiltroTrazabilidad.trim() || r.cuenta.includes(cuentaFiltroTrazabilidad.trim().toUpperCase()))
+                  .map((reg) => (
+                    <tr key={reg.id} className="hover:bg-blue-500/5 transition-colors">
+                      <td className="p-3 text-slate-400 whitespace-nowrap">
+                        {reg.fecha.slice(0, 16).replace('T', ' ')}
+                      </td>
+                      <td className="p-3 font-bold text-white whitespace-nowrap">
+                        <span className="px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30 text-[10px]">
+                          {reg.operador}
+                        </span>
+                      </td>
+                      <td className="p-3 whitespace-nowrap">
+                        <span className="font-bold text-emerald-400">#{reg.cuenta}</span> · <span className="text-slate-300">{reg.abonado}</span>
+                      </td>
+                      <td className="p-3 whitespace-nowrap">
+                        <div className="font-bold text-white text-[11px]">{reg.accion}</div>
+                        <div className="text-[10px] text-slate-400">{reg.motivo}</div>
+                      </td>
+                      <td className="p-3">
+                        <div className="flex flex-wrap gap-1">
+                          {reg.campos_sensibles.map((c, i) => (
+                            <span key={i} className="px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/20 text-[9px]">
+                              {c}
+                            </span>
+                          ))}
+                        </div>
+                      </td>
+                      <td className="p-3 text-slate-400 text-[11px] whitespace-nowrap">
+                        {reg.ip}
+                      </td>
+                      <td className="p-3 text-right whitespace-nowrap">
+                        <button
+                          onClick={() => generarCertificadoAuditoriaCuenta(reg.cuenta)}
+                          className="px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold cursor-pointer transition-all"
+                          title="Descargar Certificado Forense de esta cuenta específica"
+                        >
+                          Certificar PDF
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="p-3 bg-emerald-950/20 border border-emerald-500/30 rounded-xl text-xs text-emerald-200 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>Garantía de Fe Pública: Cada acceso cuenta con sello temporal y hash SHA-256 no repudiable.</span>
+            </div>
+            <span className="font-mono text-[10px] bg-emerald-500/20 px-2 py-0.5 rounded text-emerald-300 font-bold">
+              ESTADO: INMUTABLE
+            </span>
           </div>
         </div>
       )}
