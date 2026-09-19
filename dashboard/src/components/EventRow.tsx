@@ -154,36 +154,44 @@ function getEventoStyle(
 
 function renderFecha(iso: string) {
   try {
-    let d: Date
     const s = (iso || '').trim()
-    const matchDDMM = s.match(/^(\d{2})[-/](\d{2})[-/](\d{4})(?:\s+(\d{2}):(\d{2}):(\d{2}))?/)
-    if (matchDDMM) {
-      const [, dia, mes, anio, hh = '00', mm = '00', ss = '00'] = matchDDMM
-      d = new Date(Number(anio), Number(mes) - 1, Number(dia), Number(hh), Number(mm), Number(ss))
+    if (!s) return <span>-</span>
+
+    let anio: string, mes: string, dia: string, hh: string = '00', mm: string = '00', ss: string = '00'
+
+    const matchYYYY = s.match(/^(\d{4})[-/](\d{2})[-/](\d{2})(?:[T\s]+(\d{2}):(\d{2}):(\d{2}))?/)
+    if (matchYYYY) {
+      [, anio, mes, dia, hh = '00', mm = '00', ss = '00'] = matchYYYY
     } else {
-      d = new Date(s)
+      const matchDD = s.match(/^(\d{2})[-/](\d{2})[-/](\d{4})(?:[T\s]+(\d{2}):(\d{2}):(\d{2}))?/)
+      if (matchDD) {
+        [, dia, mes, anio, hh = '00', mm = '00', ss = '00'] = matchDD
+      } else {
+        return <span>{iso}</span>
+      }
     }
+
+    // El servidor Scorpion registra la hora local exacta de Chile.
+    // La base de datos almacena con desfase de +1 hora (ej: 14:09 en DB -> 13:09 real Scorpion).
+    // Restamos 1 hora (3,600,000 ms) al valor UTC de la cadena almacenada para obtener la hora Scorpion idéntica.
+    const rawTs = Date.UTC(Number(anio), Number(mes) - 1, Number(dia), Number(hh), Number(mm), Number(ss))
+    const adjustedTs = rawTs - 3600000
+    const d = new Date(adjustedTs)
 
     if (isNaN(d.getTime())) return <span>{iso}</span>
 
-    // Si el reloj del panel transmisor venía adelantado respecto a la hora real, ajustar al límite actual
-    const now = Date.now()
-    if (d.getTime() > now + 30000) {
-      d = new Date(now)
-    }
+    const dStr = d.getUTCDate().toString().padStart(2, '0')
+    const mStr = (d.getUTCMonth() + 1).toString().padStart(2, '0')
+    const yStr = d.getUTCFullYear()
+    const hStr = d.getUTCHours().toString().padStart(2, '0')
+    const minStr = d.getUTCMinutes().toString().padStart(2, '0')
+    const sStr = d.getUTCSeconds().toString().padStart(2, '0')
 
-    const dia = d.getDate().toString().padStart(2, '0')
-    const mes = (d.getMonth() + 1).toString().padStart(2, '0')
-    const anio = d.getFullYear()
-    const hora = d.getHours().toString().padStart(2, '0')
-    const min = d.getMinutes().toString().padStart(2, '0')
-    const seg = d.getSeconds().toString().padStart(2, '0')
-    
     return (
       <span className="whitespace-nowrap">
-        <span>{dia}-{mes}</span>
-        <span className="hidden md:inline">-{anio}</span>
-        <span> {hora}:{min}:{seg}</span>
+        <span>{dStr}-{mStr}</span>
+        <span className="hidden md:inline">-{yStr}</span>
+        <span> {hStr}:{minStr}:{sStr}</span>
       </span>
     )
   } catch {

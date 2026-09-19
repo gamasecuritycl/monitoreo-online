@@ -110,16 +110,22 @@ function parseEventDate(rawStr?: string): ParsedEventDate {
  * Deduplica eventos idénticos emitidos en paralelo por las dos fuentes de Scorpion (MySQL + MDB)
  */
 function deduplicarEventos(lista: Evento[]): Evento[] {
-  const vistos = new Set<string>()
-  const unicos: Evento[] = []
+  const vistos = new Map<string, Evento>()
   for (const ev of lista) {
-    const key = `${ev.cuenta}_${ev.evento}_${ev.zona || ''}_${ev.usuario || ''}_${ev._dateIsoStr}_${ev._horaFormatted}`
-    if (!vistos.has(key)) {
-      vistos.add(key)
-      unicos.push(ev)
+    const timeBucket = Math.round((ev._timestamp || 0) / 45000)
+    const key = `${(ev.cuenta || '').trim().toUpperCase()}_${(ev.evento || '').trim().toUpperCase()}_${timeBucket}`
+    const existing = vistos.get(key)
+    if (!existing) {
+      vistos.set(key, ev)
+    } else {
+      const nomExist = (existing.nombre_abonado || '').trim().toUpperCase()
+      const nomNuevo = (ev.nombre_abonado || '').trim().toUpperCase()
+      if (nomExist.startsWith('ABONADO ') && !nomNuevo.startsWith('ABONADO ') && nomNuevo.length > 0) {
+        vistos.set(key, ev)
+      }
     }
   }
-  return unicos
+  return Array.from(vistos.values())
 }
 
 function formatTrama(cuenta: string, eventoText: string, zona: string, usuario: string) {

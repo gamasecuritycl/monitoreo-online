@@ -290,9 +290,9 @@ def load_cache():
     cache_set = set()
     try:
         res = requests.get(
-            f"{SUPABASE_URL}/rest/v1/eventos_monitoreo?select=fecha_hora,cuenta,evento,zona,usuario&cuenta=not.in.(CLIENTES,CODIGOS,ZONAS,__SINCRONIZADOR__,CONFIG_OPERADORES)&order=id.desc&limit=2000",
+            f"{SUPABASE_URL}/rest/v1/eventos_monitoreo?select=fecha_hora,cuenta,evento,zona,usuario&cuenta=not.in.(CLIENTES,CODIGOS,ZONAS,__SINCRONIZADOR__,CONFIG_OPERADORES)&order=id.desc&limit=500",
             headers=HEADERS_SUPABASE,
-            timeout=8
+            timeout=15
         )
         if res.status_code == 200:
             for item in res.json():
@@ -421,9 +421,9 @@ def sincronizar_desde_mysql(cache):
         cur = conn.cursor()
         
         if cursor_id == 0:
-            cur.execute("SELECT id, Fecha_Hora, Trama_evento FROM eventos_encriptados WHERE IP_Publica LIKE %s ORDER BY id DESC LIMIT 200", ('%1C7%',))
+            cur.execute("SELECT id, Fecha_Hora, Trama_evento FROM eventos_encriptados ORDER BY id DESC LIMIT 200")
         else:
-            cur.execute("SELECT id, Fecha_Hora, Trama_evento FROM eventos_encriptados WHERE id > %s AND IP_Publica LIKE %s ORDER BY id ASC LIMIT 500", (cursor_id, '%1C7%'))
+            cur.execute("SELECT id, Fecha_Hora, Trama_evento FROM eventos_encriptados WHERE id > %s ORDER BY id ASC LIMIT 500", (cursor_id,))
 
         rows = cur.fetchall()
         conn.close()

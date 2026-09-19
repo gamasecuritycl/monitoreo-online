@@ -590,19 +590,21 @@ export default function ScorpionDashboard() {
   const parseEventoTimestamp = (rawStr?: string): number => {
     if (!rawStr) return 0
     const s = String(rawStr).trim()
-    const matchDDMM = s.match(/^(\d{2})[-/](\d{2})[-/](\d{4})(?:\s+(\d{2}):(\d{2}):(\d{2}))?/)
-    if (matchDDMM) {
-      const [, dia, mes, anio, hh = '00', mm = '00', ss = '00'] = matchDDMM
-      return new Date(Number(anio), Number(mes) - 1, Number(dia), Number(hh), Number(mm), Number(ss)).getTime()
-    }
+    let anio: string, mes: string, dia: string, hh: string = '00', mm: string = '00', ss: string = '00'
     const matchYYYYMM = s.match(/^(\d{4})[-/](\d{2})[-/](\d{2})(?:[T\s]+(\d{2}):(\d{2}):(\d{2}))?/)
     if (matchYYYYMM) {
-      const [, anio, mes, dia, hh = '00', mm = '00', ss = '00'] = matchYYYYMM
-      return new Date(Number(anio), Number(mes) - 1, Number(dia), Number(hh), Number(mm), Number(ss)).getTime()
+      [, anio, mes, dia, hh = '00', mm = '00', ss = '00'] = matchYYYYMM
+    } else {
+      const matchDDMM = s.match(/^(\d{2})[-/](\d{2})[-/](\d{4})(?:[T\s]+(\d{2}):(\d{2}):(\d{2}))?/)
+      if (matchDDMM) {
+        [, dia, mes, anio, hh = '00', mm = '00', ss = '00'] = matchDDMM
+      } else {
+        const d = new Date(s)
+        return isNaN(d.getTime()) ? 0 : d.getTime()
+      }
     }
-    const d = new Date(s)
-    const t = d.getTime()
-    return isNaN(t) ? 0 : t
+    const rawTs = Date.UTC(Number(anio), Number(mes) - 1, Number(dia), Number(hh), Number(mm), Number(ss))
+    return rawTs - 3600000
   }
 
   const compararEventosCronologico = (a: EventoMonitoreo, b: EventoMonitoreo): number => {
@@ -615,16 +617,25 @@ export default function ScorpionDashboard() {
   }
 
   const deduplicarEventos = (lista: EventoMonitoreo[]) => {
-    const vistos = new Set<string>()
-    const unicos: EventoMonitoreo[] = []
+    const vistos = new Map<string, EventoMonitoreo>()
     for (const ev of lista) {
-      const key = `${ev.cuenta}_${ev.evento}_${ev.zona}_${ev.usuario}_${ev.fecha_hora}`
-      if (!vistos.has(key)) {
-        vistos.add(key)
-        unicos.push(ev)
+      const ts = parseEventoTimestamp(ev.fecha_hora)
+      // Agrupar en ventana de 45 segundos para descartar duplicados paralelos (MySQL + MDB)
+      const timeBucket = Math.round(ts / 45000)
+      const key = `${(ev.cuenta || '').trim().toUpperCase()}_${(ev.evento || '').trim().toUpperCase()}_${timeBucket}`
+      
+      const existing = vistos.get(key)
+      if (!existing) {
+        vistos.set(key, ev)
+      } else {
+        const nomExist = (existing.nombre_abonado || '').trim().toUpperCase()
+        const nomNuevo = (ev.nombre_abonado || '').trim().toUpperCase()
+        if (nomExist.startsWith('ABONADO ') && !nomNuevo.startsWith('ABONADO ') && nomNuevo.length > 0) {
+          vistos.set(key, ev)
+        }
       }
     }
-    return unicos
+    return Array.from(vistos.values())
   }
 
   const fetchEventos = useCallback(async () => {
