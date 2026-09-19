@@ -893,6 +893,145 @@ export default function Ley21719Module() {
     }
   }
 
+  // Doc 8: Cartel Reglamentario de Zona Videovigilada / Adhesivo Imprimible (Art. 13 Ley 21.719 & OS-10)
+  const generarDocCarteleraVideovigilancia = () => {
+    setGenerandoPdf('cartel-cctv')
+    try {
+      const doc = new jsPDF()
+
+      // Borde exterior grueso y marco de seguridad
+      doc.setDrawColor(12, 24, 43)
+      doc.setLineWidth(2)
+      doc.rect(10, 10, 190, 277)
+
+      doc.setDrawColor(245, 158, 11) // Amarillo seguridad
+      doc.setLineWidth(1)
+      doc.rect(12, 12, 186, 273)
+
+      // Encabezado principal de alto contraste
+      doc.setFillColor(12, 24, 43)
+      doc.rect(14, 14, 182, 38, 'F')
+
+      doc.setTextColor(255, 255, 255)
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(18)
+      doc.text('ZONA VIDEOVIGILADA', 105, 27, { align: 'center' })
+
+      doc.setFontSize(11)
+      doc.setTextColor(245, 158, 11)
+      doc.text('RECINTO MONITOREADO 24 HORAS · SISTEMA DISUASIVO & CCTV', 105, 36, { align: 'center' })
+
+      doc.setFontSize(8)
+      doc.setTextColor(200, 220, 255)
+      doc.setFont('helvetica', 'normal')
+      doc.text('CONEXIÓN DIRECTA A CENTRAL RECEPTORA DE ALARMAS GAMA SEGURIDAD', 105, 44, { align: 'center' })
+
+      // Cuadro de advertencia disuasiva
+      doc.setFillColor(254, 243, 199) // Fondo amarillo suave
+      doc.rect(14, 56, 182, 34, 'F')
+      doc.setDrawColor(217, 119, 6)
+      doc.setLineWidth(0.6)
+      doc.rect(14, 56, 182, 34)
+
+      doc.setTextColor(146, 64, 14)
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(11)
+      doc.text('AVISO LEGAL & PROTOCOLO DE SEGURIDAD', 105, 65, { align: 'center' })
+
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(8.5)
+      doc.setTextColor(50, 50, 50)
+      const textoAlerta = doc.splitTextToSize(
+        'Por su seguridad y la protección de bienes e instalaciones, este recinto cuenta con cámaras de circuito cerrado (CCTV) con analítica e inteligencia artificial, grabación continua las 24 horas y sensores perimetrales vinculados a protocolos de respuesta inmediata ante delitos.', 172
+      )
+      doc.text(textoAlerta, 19, 73)
+
+      // Tabla informativa exigida por el Art. 13 de la Ley N° 21.719
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(11)
+      doc.setTextColor(0, 51, 153)
+      doc.text('INFORMACIÓN OBLIGATORIA AL TITULAR (LEY N° 21.719 DE CHILE)', 14, 100)
+
+      doc.setDrawColor(0, 51, 153)
+      doc.setLineWidth(0.5)
+      doc.line(14, 103, 196, 103)
+
+      let yPos = 112
+      const addRowInfo = (label: string, contenido: string) => {
+        doc.setFillColor(248, 250, 252)
+        doc.rect(14, yPos - 4, 182, 18, 'F')
+        doc.setDrawColor(226, 232, 240)
+        doc.rect(14, yPos - 4, 182, 18)
+
+        doc.setFont('helvetica', 'bold')
+        doc.setFontSize(8.5)
+        doc.setTextColor(15, 23, 42)
+        doc.text(label, 18, yPos + 1)
+
+        doc.setFont('helvetica', 'normal')
+        doc.setFontSize(7.5)
+        doc.setTextColor(51, 65, 85)
+        const splitCont = doc.splitTextToSize(contenido, 172)
+        doc.text(splitCont, 18, yPos + 6)
+
+        yPos += 20
+      }
+
+      addRowInfo(
+        '1. RESPONSABLE DEL TRATAMIENTO:',
+        'INVERSIONES GAMA SpA / GAMA SEGURIDAD SpA (RUT 78.297.009-7). Domicilio: Av. Valparaíso 351, Villa Alemana, Región de Valparaíso. Contacto DPO: privacidad@gamasecurity.cl.'
+      )
+
+      addRowInfo(
+        '2. FINALIDAD DEL TRATAMIENTO & BASE DE LICITUD:',
+        'Seguridad de personas, control de accesos e instalaciones, prevención de delitos y auxilio ante emergencias. Base legal: Art. 13 letra b) Ley N° 21.719 y Ley N° 21.659 de Seguridad Privada.'
+      )
+
+      addRowInfo(
+        '3. PERÍODO DE CONSERVACIÓN DE LAS GRABACIONES:',
+        'Las imágenes capturadas son conservadas por un plazo máximo de 30 días, transcurrido el cual son eliminadas mediante sobreescritura automática e irreversible, salvo solicitud fundada de Fiscalía o Tribunales.'
+      )
+
+      addRowInfo(
+        '4. EJERCICIO DE DERECHOS ARCO+ (ACCESO, SUPRESIÓN Y OPOSICIÓN):',
+        'El titular puede ejercer sus derechos legales enviando solicitud escrita a privacidad@gamasecurity.cl adjuntando copia de cédula y especificando fecha, hora y lugar de captación. Plazo legal de respuesta: 15 días hábiles.'
+      )
+
+      addRowInfo(
+        '5. AUTORIDAD DE CONTROL & DELITOS INFORMÁTICOS:',
+        'Agencia de Protección de Datos Personales (APDP) de Chile. Todo acto de sabotaje, destrucción de cámaras o robo de grabaciones está penado por la Ley N° 21.459 de Delitos Informáticos y el Código Penal.'
+      )
+
+      // Footer disuasivo y datos de la central 24/7
+      doc.setFillColor(12, 24, 43)
+      doc.rect(14, 222, 182, 34, 'F')
+
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(10)
+      doc.setTextColor(255, 255, 255)
+      doc.text('CENTRAL RECEPTORA DE ALARMAS & TELEVIGILANCIA 24/7', 105, 231, { align: 'center' })
+
+      doc.setFontSize(12)
+      doc.setTextColor(245, 158, 11)
+      doc.text('LÍNEA DIRECTA DE EMERGENCIA: +56 9 3232 4000', 105, 239, { align: 'center' })
+
+      doc.setFontSize(8)
+      doc.setTextColor(180, 200, 220)
+      doc.setFont('helvetica', 'normal')
+      doc.text('COORDINACIÓN CON CARABINEROS DE CHILE (133) & BOMBEROS (132) · SISTEMA CONFORME A DS OS-10', 105, 246, { align: 'center' })
+
+      // Pie de imprenta
+      doc.setFont('helvetica', 'italic')
+      doc.setFontSize(7)
+      doc.setTextColor(120, 120, 120)
+      doc.text(`Cartel reglamentario para exhibición en accesos. Emitido por Gama Seguridad SpA el ${fechaHoy}. Cumplimiento Art. 13 Ley N° 21.719.`, 105, 268, { align: 'center' })
+
+      doc.save(`GamaSeguridad_Cartel_Reglamentario_CCTV_Ley21719_${new Date().toISOString().slice(0, 10)}.pdf`)
+    } finally {
+      setGenerandoPdf(null)
+    }
+  }
+
   // Descarga interoperable JSON (Art. 19 Ley 21.719)
   const descargarExpedientePortabilidad = (sol: SolicitudArcoItem) => {
     const payload = {
@@ -1060,7 +1199,7 @@ FOR ALL TO anon, authenticated, service_role USING (true) WITH CHECK (true);`
           <div className="bg-white/5 border border-white/10 p-3 rounded-xl">
             <div className="text-[11px] text-slate-400 font-mono">DOCUMENTOS LEGALES</div>
             <div className="text-lg font-bold text-amber-300 flex items-center gap-1.5 mt-0.5">
-              <FileText className="w-4 h-4" /> 7 Documentos + Resoluciones
+              <FileText className="w-4 h-4" /> 8 Documentos Oficiales + Resoluciones
             </div>
           </div>
         </div>
@@ -1362,6 +1501,37 @@ FOR ALL TO anon, authenticated, service_role USING (true) WITH CHECK (true);`
               </div>
             </div>
 
+            {/* Doc 8: Cartel Reglamentario de Zona Videovigilada */}
+            <div className="bg-[#0c182b] border border-amber-500/40 p-5 rounded-2xl flex flex-col justify-between shadow-xl hover:border-amber-400 transition-all md:col-span-2">
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-mono text-[10px] font-bold border border-amber-400/30">
+                    DOC-CARTELERIA-08
+                  </span>
+                  <span className="text-[11px] text-amber-300/80 font-mono font-bold">Imprimible Alta Resolución (Adhesivo / A4)</span>
+                </div>
+                <h3 className="text-base font-bold text-white flex items-center gap-2">
+                  <Eye className="w-4 h-4 text-amber-400" />
+                  <span>Cartel Reglamentario de Zona Videovigilada CCTV (Art. 13 Ley N° 21.719 & OS-10)</span>
+                </h3>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  Cartel reglamentario de exhibición obligatoria en accesos peatonales y vehiculares de recintos protegidos con cámaras Dahua / CCTV. Contiene la advertencia disuasiva de monitoreo 24/7, identificación del responsable (Gama Seguridad), finalidad de seguridad (Ley 21.659), plazo de retención de 30 días, canal de ejercicio de Derechos ARCO+ y sanción penal por delitos informáticos (Ley 21.459).
+                </p>
+              </div>
+
+              <div className="pt-5 border-t border-slate-800 mt-4 flex items-center justify-between flex-wrap gap-3">
+                <div className="text-[11px] text-slate-400 font-mono">Exhibición Obligatoria en Accesos</div>
+                <button
+                  onClick={generarDocCarteleraVideovigilancia}
+                  disabled={generandoPdf === 'cartel-cctv'}
+                  className="bg-amber-600 hover:bg-amber-500 text-slate-950 font-black text-xs px-5 py-2.5 rounded-xl flex items-center gap-2 shadow-xl cursor-pointer transition-all active:scale-95 disabled:opacity-50"
+                >
+                  <Download className="w-4 h-4 text-slate-950" />
+                  <span>{generandoPdf === 'cartel-cctv' ? 'Generando...' : 'Descargar Cartel Reglamentario CCTV (PDF)'}</span>
+                </button>
+              </div>
+            </div>
+
           </div>
         </div>
       )}
@@ -1377,7 +1547,7 @@ FOR ALL TO anon, authenticated, service_role USING (true) WITH CHECK (true);`
               <p className="text-xs text-slate-400">Puntos de control exigibles durante fiscalizaciones de la Agencia de Protección de Datos</p>
             </div>
             <span className="text-xs font-mono font-bold text-emerald-400 bg-emerald-950/50 px-3 py-1 rounded-full border border-emerald-500/30">
-              8 de 10 Puntos Cumplidos
+              9 de 10 Puntos Cumplidos (90%)
             </span>
           </div>
 
@@ -1452,23 +1622,34 @@ FOR ALL TO anon, authenticated, service_role USING (true) WITH CHECK (true);`
             <div className="py-3 flex items-center justify-between gap-4">
               <div className="space-y-0.5">
                 <div className="font-bold text-white flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
-                  <span>Firma de Anexos de Confidencialidad de Operadores</span>
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span>Cartelería Informativa en Recintos con Cámaras</span>
                 </div>
-                <p className="text-slate-400">Firma física o digital del anexo laboral descargable por parte de todo el personal de la central 24/7.</p>
+                <p className="text-slate-400">Disposición de cartel reglamentario DOC-CARTELERIA-08 descargable para accesos de clientes.</p>
               </div>
-              <span className="px-2.5 py-1 rounded-md bg-amber-500/20 text-amber-300 font-bold font-mono shrink-0">EN EJECUCIÓN</span>
+              <span className="px-2.5 py-1 rounded-md bg-emerald-500/20 text-emerald-300 font-bold font-mono shrink-0">CUMPLIDO</span>
+            </div>
+
+            <div className="py-3 flex items-center justify-between gap-4">
+              <div className="space-y-0.5">
+                <div className="font-bold text-white flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span>Portabilidad Interoperable de Datos (Art. 19)</span>
+                </div>
+                <p className="text-slate-400">Exportación digital de expediente en formato estructurado JSON conforme a estándares APDP.</p>
+              </div>
+              <span className="px-2.5 py-1 rounded-md bg-emerald-500/20 text-emerald-300 font-bold font-mono shrink-0">CUMPLIDO</span>
             </div>
 
             <div className="py-3 flex items-center justify-between gap-4">
               <div className="space-y-0.5">
                 <div className="font-bold text-white flex items-center gap-2">
                   <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
-                  <span>Cartelería Informativa en Recintos con Cámaras</span>
+                  <span>Firma de Anexos de Confidencialidad de Operadores</span>
                 </div>
-                <p className="text-slate-400">Disposición de adhesivos visibles en locales de clientes informando de la zona videovigilada.</p>
+                <p className="text-slate-400">Firma física o digital del anexo laboral descargable por parte de todo el personal de la central 24/7.</p>
               </div>
-              <span className="px-2.5 py-1 rounded-md bg-amber-500/20 text-amber-300 font-bold font-mono shrink-0">EN DISTRIBUCIÓN</span>
+              <span className="px-2.5 py-1 rounded-md bg-amber-500/20 text-amber-300 font-bold font-mono shrink-0">EN EJECUCIÓN</span>
             </div>
 
           </div>

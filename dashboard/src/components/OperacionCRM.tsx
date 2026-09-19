@@ -1086,6 +1086,47 @@ export default function OperacionCRM() {
     }))
   }, [cuentaSeleccionada, abonadoActivo, clienteActivo, bitacoraCommandCenter])
 
+  // ── AUDITORÍA FORENSE AUTOMÁTICA LEY 21.719 (TRAZABILIDAD DE ACCESO A DATOS CRÍTICOS) ──
+  useEffect(() => {
+    if (moduloActivo === 'ficha360' && cuentaSeleccionada) {
+      const cta = (cuentaSeleccionada || abonadoActivo?.cuenta || '').trim().toUpperCase()
+      if (!cta) return
+
+      // Evitar registrar duplicados innecesarios dentro de la misma sesión en menos de 60 segundos
+      const claveSesion = `auditoria_vista_ficha360_${cta}`
+      const ultimoAcceso = typeof window !== 'undefined' ? sessionStorage.getItem(claveSesion) : null
+      const ahora = Date.now()
+      if (ultimoAcceso && ahora - parseInt(ultimoAcceso, 10) < 60000) {
+        return
+      }
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem(claveSesion, ahora.toString())
+      }
+
+      const registrarAuditoriaAcceso = async () => {
+        try {
+          const payload = {
+            operacion: 'ACCESS',
+            tabla_afectada: 'clientes_fichas_cuentas',
+            cuenta_abonado: cta,
+            usuario_operador: (typeof window !== 'undefined' && localStorage.getItem('gama_operator_user')) || 'OPERADOR_CENTRAL_CRA',
+            detalle_accion: 'Visualización de Ficha 360° (contactos de emergencia, contraclaves y coordenadas)',
+            datos_nuevos: {
+              modulo: 'ficha360',
+              titular: clienteActivo?.razon_social || abonadoActivo?.alias_centro_costo || 'Abonado',
+              campos_consultados: ['telefonos_contacto', 'contraclaves_verbales', 'ubicacion_georreferencial', 'historial_senales_c7cb']
+            }
+          }
+          await supabase.from('bitacora_auditoria_datos').insert([payload])
+        } catch (e) {
+          // Fallback silencioso para no interrumpir la operativa si la tabla aún no fue creada
+        }
+      }
+
+      registrarAuditoriaAcceso()
+    }
+  }, [moduloActivo, cuentaSeleccionada, abonadoActivo, clienteActivo])
+
   const siguienteCorrelativoCode = useMemo(() => {
     let maxNum = 259
     cotizaciones.forEach(c => {
