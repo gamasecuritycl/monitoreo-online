@@ -13,7 +13,11 @@ function isOficinaAbierta() {
 
 const INPUT_STYLE = 'w-full bg-[#fafafc] border border-slate-200 rounded-xl px-4 py-3 text-[#1d1d1f] text-sm placeholder-slate-400 focus:outline-none focus:border-[#0066cc] focus:bg-white transition-all duration-200 shadow-sm'
 
-export default function Contacto() {
+interface ContactoProps {
+  onOpenLegal?: (pestaña: 'privacidad' | 'cookies' | 'terminos' | 'arco') => void
+}
+
+export default function Contacto({ onOpenLegal }: ContactoProps = {}) {
   const abierta = isOficinaAbierta()
   const [formData, setFormData] = useState({
     name: '',
@@ -22,6 +26,7 @@ export default function Contacto() {
     service: '',
     message: ''
   })
+  const [aceptoPolitica, setAceptoPolitica] = useState(true)
   const [sending, setSending] = useState(false)
   const [sent, setSent] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
@@ -38,6 +43,11 @@ export default function Contacto() {
       return
     }
 
+    if (!aceptoPolitica) {
+      setErrorMessage('Debe autorizar el tratamiento de datos personales conforme a la Ley N° 21.719 para remitir su cotización.')
+      return
+    }
+
     setSending(true)
     setErrorMessage(null)
 
@@ -45,7 +55,10 @@ export default function Contacto() {
       const res = await fetch('/api/contacto-landing', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        body: JSON.stringify({
+          ...formData,
+          consentimiento_ley_21719: true
+        })
       })
 
       const data = await res.json()
@@ -333,10 +346,32 @@ export default function Contacto() {
                       />
                     </div>
 
+                    {/* Casilla de Consentimiento Informado Ley 21.719 */}
+                    <div className="bg-slate-50 border border-slate-200/80 p-3.5 rounded-xl flex items-start gap-2.5 text-left">
+                      <input
+                        id="consentimiento_datos_landing"
+                        type="checkbox"
+                        required
+                        checked={aceptoPolitica}
+                        onChange={(e) => setAceptoPolitica(e.target.checked)}
+                        className="mt-0.5 w-4 h-4 rounded border-slate-300 text-[#0066cc] focus:ring-[#0066cc] cursor-pointer"
+                      />
+                      <label htmlFor="consentimiento_datos_landing" className="text-[11px] text-slate-600 leading-tight cursor-pointer select-none">
+                        Autorizo el tratamiento de mis datos personales de conformidad con la <strong>Ley N° 21.719 de Chile</strong> exclusivamente para elaborar y gestionar mi cotización de seguridad. He leído la{' '}
+                        <button
+                          type="button"
+                          onClick={() => onOpenLegal && onOpenLegal('privacidad')}
+                          className="text-[#0066cc] underline font-semibold hover:text-blue-800 cursor-pointer"
+                        >
+                          Política de Privacidad
+                        </button>.
+                      </label>
+                    </div>
+
                     <div className="pt-2">
                       <button
                         type="submit"
-                        disabled={sending}
+                        disabled={sending || !aceptoPolitica}
                         className="btn-apple-primary w-full justify-center text-base py-3.5 disabled:opacity-60 cursor-pointer flex items-center gap-2 shadow-md hover:shadow-lg transition-all"
                       >
                         {sending ? (
@@ -353,8 +388,8 @@ export default function Contacto() {
                       </button>
                     </div>
 
-                    <p className="text-center text-[11px] text-[#7a7a7a] pt-1 font-sans">
-                      🔒 Datos protegidos bajo estricta confidencialidad · Respuesta en minutos
+                    <p className="text-center text-[11px] text-[#7a7a7a] pt-1 font-sans flex items-center justify-center gap-1.5">
+                      <span>🔒 Cifrado TLS 1.3 · Privacidad blindada conforme a la Ley N° 21.719</span>
                     </p>
                   </form>
                 )}

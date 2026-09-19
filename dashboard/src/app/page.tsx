@@ -6,8 +6,7 @@ import QuienesSomos from '@/components/landing/QuienesSomos'
 import Tecnologia from '@/components/landing/Tecnologia'
 import Testimonios from '@/components/landing/Testimonios'
 import CTAEmergencia from '@/components/landing/CTAEmergencia'
-import Contacto from '@/components/landing/Contacto'
-import Footer from '@/components/landing/Footer'
+import LandingInteractiveLayer from '@/components/landing/LandingInteractiveLayer'
 import WhatsAppFloating from '@/components/landing/WhatsAppFloating'
 
 export const metadata = {
@@ -27,8 +26,7 @@ export default function Home() {
       <Tecnologia />
       <Testimonios />
       <CTAEmergencia />
-      <Contacto />
-      <Footer />
+      <LandingInteractiveLayer />
       <WhatsAppFloating />
     </main>
   )

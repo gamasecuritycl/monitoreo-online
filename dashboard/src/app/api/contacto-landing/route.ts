@@ -33,6 +33,8 @@ export async function POST(req: Request) {
     const cleanPhone = phone ? phone.trim() : 'No especificado'
     const waPhone = phone ? phone.replace(/[^0-9]/g, '') : ''
 
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || req.headers.get('x-real-ip') || '127.0.0.1'
+
     const now = new Date()
     const fechaHoraChilena = new Intl.DateTimeFormat('es-CL', {
       timeZone: 'America/Santiago',
@@ -184,9 +186,12 @@ export async function POST(req: Request) {
         <div style="background-color: #f1f5f9; padding: 20px; text-align: center; font-size: 11px; color: #64748b; border-top: 1px solid #e2e8f0;">
           <p style="margin: 0 0 4px 0; font-weight: 700; color: #0f172a;">GAMA SEGURIDAD SpA</p>
           <p style="margin: 0 0 8px 0;">Central de Operaciones & Monitoreo 24/7 · Chile</p>
-          <p style="margin: 0;">
+          <p style="margin: 0 0 8px 0;">
             <a href="https://www.gamasecurity.cl" style="color: #0066cc; text-decoration: none; font-weight: 600;">www.gamasecurity.cl</a> · 
             <a href="mailto:contacto@gamasecurity.cl" style="color: #0066cc; text-decoration: none;">contacto@gamasecurity.cl</a>
+          </p>
+          <p style="margin: 8px 0 0 0; font-size: 10px; color: #94a3b8; border-top: 1px dashed #cbd5e1; padding-top: 8px;">
+            🔒 Tratamiento de datos protegido conforme a la <strong>Ley N° 21.719 de Chile</strong>. Consentimiento informado otorgado desde IP: ${ip}. Para ejercer derechos ARCO+ (Acceso, Rectificación, Supresión, Oposición), escriba a <a href="mailto:privacidad@gamasecurity.cl" style="color: #0066cc;">privacidad@gamasecurity.cl</a>.
           </p>
         </div>
 
@@ -250,6 +255,26 @@ export async function POST(req: Request) {
       })
     } catch (errSupabase) {
       console.warn('Advertencia registrando evento de prospecto en Supabase:', errSupabase)
+    }
+
+    // ── REGISTRO DE AUDITORÍA FORENSE LEY 21.719 (CONSENTIMIENTO PROSPECTO) ──
+    try {
+      await supabase.from('bitacora_auditoria_datos').insert([{
+        operacion: 'INSERT',
+        tabla_afectada: 'prospectos_landing',
+        usuario_operador: 'PORTAL_PUBLICO_WEB',
+        detalle_accion: `Consentimiento informado capturado vía cotización web (${serviceLabel})`,
+        datos_nuevos: {
+          nombre: name,
+          email: email,
+          telefono: cleanPhone,
+          servicio: serviceLabel,
+          consentimiento_ley_21719: true
+        },
+        ip_origen: ip
+      }])
+    } catch (eAuditoria) {
+      // Fallback silencioso
     }
 
     return NextResponse.json({
