@@ -374,7 +374,7 @@ export default function NotificacionesMailModal({ onClose, clientesMap }: Notifi
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-xs p-2 sm:p-4">
-      <div className="bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 w-full max-w-5xl max-h-[95vh] flex flex-col shadow-2xl font-sans">
+      <div className="bg-[#c0c0c0] border-2 border-t-white border-l-white border-b-gray-800 border-r-gray-800 w-full max-w-5xl h-[620px] max-h-[95vh] flex flex-col shadow-2xl font-sans">
         
         {/* Header Modal Clásico */}
         <div className="bg-[#000080] text-white px-3 py-1.5 flex justify-between items-center shrink-0 shadow-inner">
@@ -396,7 +396,7 @@ export default function NotificacionesMailModal({ onClose, clientesMap }: Notifi
         <div className="p-3 flex flex-col md:flex-row gap-3 flex-1 min-h-0 overflow-hidden">
           
           {/* Panel Izquierdo: Lista de Abonados (Terminal UNIX / MDB) */}
-          <div className="w-full md:w-[320px] border-2 border-gray-600 bg-black text-green-400 flex flex-col font-mono text-[11px] shrink-0">
+          <div className="w-full md:w-[320px] h-full border-2 border-gray-600 bg-black text-green-400 flex flex-col font-mono text-[11px] shrink-0">
             <div className="p-1.5 border-b border-gray-700 bg-gray-900 shrink-0">
               <input 
                 type="text" 
@@ -431,8 +431,8 @@ export default function NotificacionesMailModal({ onClose, clientesMap }: Notifi
           </div>
 
           {/* Panel Derecho: Configuración y Envío de Reporte */}
-          <div className="flex-1 border-2 border-t-gray-700 border-l-gray-700 border-b-white border-r-white bg-[#e8e8e8] flex flex-col p-3 text-xs overflow-y-auto">
-            <div className="text-[#000080] font-bold text-xs sm:text-sm border-b border-gray-400 pb-1 mb-2 flex justify-between items-center">
+          <div className="flex-1 h-full border-2 border-t-gray-700 border-l-gray-700 border-b-white border-r-white bg-[#e8e8e8] flex flex-col p-3 text-xs overflow-y-auto">
+            <div className="text-[#000080] font-bold text-xs sm:text-sm border-b border-gray-400 pb-1 mb-2 flex justify-between items-center shrink-0">
               <span>CONFIGURACIÓN Y ENVÍO DE REPORTE HISTÓRICO</span>
               {guardando && <span className="text-[10px] text-blue-700 font-bold animate-pulse">Sincronizando...</span>}
             </div>
