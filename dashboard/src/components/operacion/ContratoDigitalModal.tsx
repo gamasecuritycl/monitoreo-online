@@ -338,13 +338,13 @@ export default function ContratoDigitalModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/85 backdrop-blur-md overflow-y-auto">
-      <div className="bg-[#0c182b] border border-[#1e3a5f] rounded-3xl w-full max-w-4xl shadow-2xl overflow-hidden flex flex-col max-h-[94vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-slate-900/50 backdrop-blur-sm overflow-y-auto font-sans">
+      <div className="bg-white border border-slate-300/80 rounded-3xl w-full max-w-4xl shadow-2xl overflow-hidden flex flex-col max-h-[94vh] text-slate-800">
         
         {/* Header Modal */}
-        <div className="p-5 sm:p-6 bg-gradient-to-r from-[#001f3f] to-[#003366] border-b border-white/10 flex justify-between items-center text-white">
+        <div className="p-5 sm:p-6 bg-[#0B2545] border-b border-slate-200 flex justify-between items-center text-white">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-blue-500/20 text-[#2997ff] rounded-2xl border border-blue-500/30">
+            <div className="p-2.5 bg-white/10 text-white rounded-2xl border border-white/20">
               <FileCheck className="h-6 w-6" />
             </div>
             <div>
@@ -352,7 +352,7 @@ export default function ContratoDigitalModal({
                 <h3 className="font-extrabold text-base sm:text-xl tracking-tight">
                   Contrato de Prestación de Servicios de Monitoreo
                 </h3>
-                <span className="bg-[#0066cc] text-white font-mono text-xs px-2.5 py-0.5 rounded-lg font-bold">
+                <span className="bg-white/20 text-white font-mono text-xs px-2.5 py-0.5 rounded-lg font-extrabold">
                   {codigoContrato}
                 </span>
               </div>
@@ -363,40 +363,40 @@ export default function ContratoDigitalModal({
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white transition-colors cursor-pointer"
+            className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-slate-200 hover:text-white transition-colors cursor-pointer"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
         {/* Modal Body */}
-        <div className="p-5 sm:p-7 space-y-5 overflow-y-auto text-xs sm:text-sm text-slate-300">
+        <div className="p-5 sm:p-7 space-y-5 overflow-y-auto text-xs sm:text-sm text-slate-700">
           
           {firmadoExito ? (
-            <div className="py-10 text-center space-y-5 bg-emerald-950/25 border border-emerald-500/40 rounded-3xl p-8">
-              <div className="w-16 h-16 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center mx-auto shadow-lg">
+            <div className="py-10 text-center space-y-5 bg-emerald-50 border border-emerald-300 rounded-3xl p-8">
+              <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 border border-emerald-300 flex items-center justify-center mx-auto shadow-sm">
                 <CheckCircle2 className="h-9 w-9" />
               </div>
               <div className="space-y-2">
-                <h4 className="text-xl sm:text-2xl font-black text-white">
+                <h4 className="text-xl sm:text-2xl font-extrabold text-slate-900">
                   ¡Contrato Oficial Firmado y Validado!
                 </h4>
-                <p className="text-slate-300 text-xs sm:text-sm max-w-lg mx-auto">
-                  El contrato <strong className="text-white">{codigoContrato}</strong> a nombre de <strong className="text-white">{razonSocial}</strong> (RUT: {rutCliente}) se encuentra firmado electrónicamente y con respaldo legal en la nube.
+                <p className="text-slate-600 text-xs sm:text-sm max-w-lg mx-auto">
+                  El contrato <strong className="text-slate-900">{codigoContrato}</strong> a nombre de <strong className="text-slate-900">{razonSocial}</strong> (RUT: {rutCliente}) se encuentra firmado electrónicamente y con respaldo legal en la nube.
                 </p>
               </div>
 
               <div className="flex flex-wrap gap-3 justify-center pt-4">
                 <button
                   onClick={handleDescargarPdf}
-                  className="btn-apple-primary text-xs py-3 px-6 flex items-center gap-2 font-bold cursor-pointer"
+                  className="bg-[#0B2545] hover:bg-[#07172c] text-white text-xs py-3 px-6 rounded-xl flex items-center gap-2 font-extrabold shadow-md cursor-pointer transition-all"
                 >
                   <Download className="h-4 w-4" />
                   <span>Descargar Contrato Firmado (PDF)</span>
                 </button>
                 <button
                   onClick={handleEnviarWhatsApp}
-                  className="px-5 py-3 rounded-xl bg-[#25D366] text-white font-bold text-xs flex items-center gap-2 hover:bg-emerald-600 transition-colors shadow-md cursor-pointer"
+                  className="px-5 py-3 rounded-xl bg-[#25D366] text-white font-extrabold text-xs flex items-center gap-2 hover:bg-emerald-600 transition-colors shadow-md cursor-pointer"
                 >
                   <Smartphone className="h-4 w-4" />
                   <span>Enviar Confirmación por WhatsApp</span>
@@ -406,18 +406,18 @@ export default function ContratoDigitalModal({
           ) : (
             <>
               {/* SECCIÓN 1: DATOS DEL CLIENTE / SUSCRIPTOR (100% EDITABLES) */}
-              <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-4 sm:p-5 space-y-3">
-                <div className="flex items-center justify-between border-b border-white/10 pb-2">
-                  <span className="text-xs font-black text-blue-400 uppercase tracking-wider flex items-center gap-2">
+              <div className="bg-slate-50/80 border border-slate-200/80 rounded-2xl p-4 sm:p-5 space-y-3">
+                <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                  <span className="text-xs font-extrabold text-[#0B2545] uppercase tracking-wider flex items-center gap-2">
                     <Building2 className="h-4 w-4" />
                     <span>1. Datos de la Empresa o Suscriptor (Cliente)</span>
                   </span>
-                  <span className="text-[10px] text-slate-400 font-mono">Edición en vivo</span>
+                  <span className="text-[10px] text-slate-500 font-mono font-bold">Edición en vivo</span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                   <div className="sm:col-span-2">
-                    <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                    <label className="block text-[11px] font-extrabold text-slate-700 mb-1">
                       Nombre o Razón Social del Cliente:
                     </label>
                     <input
@@ -425,12 +425,12 @@ export default function ContratoDigitalModal({
                       value={razonSocial}
                       onChange={(e) => setRazonSocial(e.target.value)}
                       placeholder="Ej. COMERCIALIZADORA DEL PACÍFICO SpA o JUAN PÉREZ"
-                      className="w-full bg-[#050d1a] border border-[#1e3a5f] focus:border-blue-400 rounded-xl px-3 py-2 text-xs font-bold text-white outline-none"
+                      className="w-full bg-white border border-slate-300 focus:border-[#0B2545] focus:ring-2 focus:ring-[#0B2545]/15 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 outline-none transition-all"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                    <label className="block text-[11px] font-extrabold text-slate-700 mb-1">
                       R.U.T. Cliente / Empresa:
                     </label>
                     <input
@@ -438,12 +438,12 @@ export default function ContratoDigitalModal({
                       value={rutCliente}
                       onChange={(e) => setRutCliente(e.target.value)}
                       placeholder="Ej. 76.543.210-K"
-                      className="w-full bg-[#050d1a] border border-[#1e3a5f] focus:border-blue-400 rounded-xl px-3 py-2 text-xs font-mono font-bold text-white outline-none"
+                      className="w-full bg-white border border-slate-300 focus:border-[#0B2545] focus:ring-2 focus:ring-[#0B2545]/15 rounded-xl px-3 py-2 text-xs font-mono font-bold text-slate-900 outline-none transition-all"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                    <label className="block text-[11px] font-extrabold text-slate-700 mb-1">
                       Cuenta Monitoreo:
                     </label>
                     <input
@@ -451,12 +451,12 @@ export default function ContratoDigitalModal({
                       value={cuentaAbonado}
                       onChange={(e) => setCuentaAbonado(e.target.value)}
                       placeholder="Ej. 1001"
-                      className="w-full bg-[#050d1a] border border-[#1e3a5f] rounded-xl px-3 py-2 text-xs font-mono font-bold text-cyan-300 outline-none"
+                      className="w-full bg-white border border-slate-300 focus:border-[#0B2545] focus:ring-2 focus:ring-[#0B2545]/15 rounded-xl px-3 py-2 text-xs font-mono font-extrabold text-[#0B2545] outline-none transition-all"
                     />
                   </div>
 
                   <div className="sm:col-span-2">
-                    <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                    <label className="block text-[11px] font-extrabold text-slate-700 mb-1">
                       Dirección Legal / Matriz:
                     </label>
                     <input
@@ -464,12 +464,12 @@ export default function ContratoDigitalModal({
                       value={direccionLegal}
                       onChange={(e) => setDireccionLegal(e.target.value)}
                       placeholder="Ej. Av. Libertad 1234, Of. 502"
-                      className="w-full bg-[#050d1a] border border-[#1e3a5f] focus:border-blue-400 rounded-xl px-3 py-2 text-xs text-white outline-none"
+                      className="w-full bg-white border border-slate-300 focus:border-[#0B2545] focus:ring-2 focus:ring-[#0B2545]/15 rounded-xl px-3 py-2 text-xs text-slate-900 font-semibold outline-none transition-all"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                    <label className="block text-[11px] font-extrabold text-slate-700 mb-1">
                       Comuna / Ciudad Legal:
                     </label>
                     <input
@@ -477,12 +477,12 @@ export default function ContratoDigitalModal({
                       value={ciudadLegal}
                       onChange={(e) => setCiudadLegal(e.target.value)}
                       placeholder="Ej. Viña del Mar"
-                      className="w-full bg-[#050d1a] border border-[#1e3a5f] focus:border-blue-400 rounded-xl px-3 py-2 text-xs text-white outline-none"
+                      className="w-full bg-white border border-slate-300 focus:border-[#0B2545] focus:ring-2 focus:ring-[#0B2545]/15 rounded-xl px-3 py-2 text-xs text-slate-900 font-semibold outline-none transition-all"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                    <label className="block text-[11px] font-extrabold text-slate-700 mb-1">
                       Teléfono Contacto:
                     </label>
                     <input
@@ -490,7 +490,7 @@ export default function ContratoDigitalModal({
                       value={telefonoCliente}
                       onChange={(e) => setTelefonoCliente(e.target.value)}
                       placeholder="Ej. +56 9 9123 4567"
-                      className="w-full bg-[#050d1a] border border-[#1e3a5f] focus:border-blue-400 rounded-xl px-3 py-2 text-xs font-mono text-white outline-none"
+                      className="w-full bg-white border border-slate-300 focus:border-[#0B2545] focus:ring-2 focus:ring-[#0B2545]/15 rounded-xl px-3 py-2 text-xs font-mono text-slate-900 font-bold outline-none transition-all"
                     />
                   </div>
                 </div>
@@ -500,14 +500,14 @@ export default function ContratoDigitalModal({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 
                 {/* Inmueble Monitoreado */}
-                <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-4 space-y-3">
-                  <span className="text-xs font-black text-emerald-400 uppercase tracking-wider flex items-center gap-2 border-b border-white/10 pb-2">
+                <div className="bg-slate-50/80 border border-slate-200/80 rounded-2xl p-4 space-y-3">
+                  <span className="text-xs font-extrabold text-[#0B2545] uppercase tracking-wider flex items-center gap-2 border-b border-slate-200 pb-2">
                     <MapPin className="h-4 w-4" />
                     <span>2. Inmueble / Sucursal Monitoreada</span>
                   </span>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                    <label className="block text-[11px] font-extrabold text-slate-700 mb-1">
                       Dirección de Instalación:
                     </label>
                     <input
@@ -515,12 +515,12 @@ export default function ContratoDigitalModal({
                       value={direccionSucursal}
                       onChange={(e) => setDireccionSucursal(e.target.value)}
                       placeholder="Ej. Marbella 49"
-                      className="w-full bg-[#050d1a] border border-[#1e3a5f] focus:border-emerald-400 rounded-xl px-3 py-2 text-xs text-white outline-none"
+                      className="w-full bg-white border border-slate-300 focus:border-[#0B2545] focus:ring-2 focus:ring-[#0B2545]/15 rounded-xl px-3 py-2 text-xs text-slate-900 font-semibold outline-none transition-all"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                    <label className="block text-[11px] font-extrabold text-slate-700 mb-1">
                       Comuna / Ciudad de la Sucursal:
                     </label>
                     <input
@@ -528,27 +528,27 @@ export default function ContratoDigitalModal({
                       value={ciudadSucursal}
                       onChange={(e) => setCiudadSucursal(e.target.value)}
                       placeholder="Ej. San Antonio"
-                      className="w-full bg-[#050d1a] border border-[#1e3a5f] focus:border-emerald-400 rounded-xl px-3 py-2 text-xs text-white outline-none"
+                      className="w-full bg-white border border-slate-300 focus:border-[#0B2545] focus:ring-2 focus:ring-[#0B2545]/15 rounded-xl px-3 py-2 text-xs text-slate-900 font-semibold outline-none transition-all"
                     />
                   </div>
                 </div>
 
                 {/* Condiciones Comerciales */}
-                <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-4 space-y-3">
-                  <span className="text-xs font-black text-amber-400 uppercase tracking-wider flex items-center gap-2 border-b border-white/10 pb-2">
+                <div className="bg-slate-50/80 border border-slate-200/80 rounded-2xl p-4 space-y-3">
+                  <span className="text-xs font-extrabold text-[#0B2545] uppercase tracking-wider flex items-center gap-2 border-b border-slate-200 pb-2">
                     <CreditCard className="h-4 w-4" />
                     <span>3. Tarifa & Plazo de Servicio</span>
                   </span>
 
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                      <label className="block text-[11px] font-extrabold text-slate-700 mb-1">
                         Moneda:
                       </label>
                       <select
                         value={moneda}
                         onChange={(e) => setMoneda(e.target.value as any)}
-                        className="w-full bg-[#050d1a] border border-[#1e3a5f] rounded-xl px-3 py-2 text-xs text-white outline-none"
+                        className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 font-bold outline-none"
                       >
                         <option value="CLP">Pesos Chilenos (CLP)</option>
                         <option value="UF">Unidades de Fomento (UF)</option>
@@ -556,7 +556,7 @@ export default function ContratoDigitalModal({
                     </div>
 
                     <div>
-                      <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                      <label className="block text-[11px] font-extrabold text-slate-700 mb-1">
                         Tarifa Mensual + IVA:
                       </label>
                       <input
@@ -564,19 +564,19 @@ export default function ContratoDigitalModal({
                         step={moneda === 'UF' ? '0.01' : '1000'}
                         value={tarifaMonto}
                         onChange={(e) => setTarifaMonto(Number(e.target.value))}
-                        className="w-full bg-[#050d1a] border border-[#1e3a5f] focus:border-amber-400 rounded-xl px-3 py-2 text-xs font-mono font-black text-[#2997ff] outline-none"
+                        className="w-full bg-white border border-slate-300 focus:border-[#0B2545] focus:ring-2 focus:ring-[#0B2545]/15 rounded-xl px-3 py-2 text-xs font-mono font-black text-[#0B2545] outline-none transition-all"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                    <label className="block text-[11px] font-extrabold text-slate-700 mb-1">
                       Plazo Inicial de Suscripción:
                     </label>
                     <select
                       value={plazoMeses}
                       onChange={(e) => setPlazoMeses(Number(e.target.value))}
-                      className="w-full bg-[#050d1a] border border-[#1e3a5f] rounded-xl px-3 py-2 text-xs text-white outline-none"
+                      className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 font-bold outline-none"
                     >
                       <option value={36}>36 Meses (Estándar GAMA - Sin multas por término)</option>
                       <option value={24}>24 Meses (2 Años)</option>
@@ -588,15 +588,15 @@ export default function ContratoDigitalModal({
               </div>
 
               {/* SECCIÓN 3: REPRESENTANTE LEGAL (SI ES EMPRESA O PERSONA JURÍDICA) */}
-              <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-4 sm:p-5 space-y-3">
-                <span className="text-xs font-black text-cyan-400 uppercase tracking-wider flex items-center gap-2 border-b border-white/10 pb-2">
+              <div className="bg-slate-50/80 border border-slate-200/80 rounded-2xl p-4 sm:p-5 space-y-3">
+                <span className="text-xs font-extrabold text-[#0B2545] uppercase tracking-wider flex items-center gap-2 border-b border-slate-200 pb-2">
                   <UserCheck className="h-4 w-4" />
                   <span>4. Representante Legal del Suscriptor (Opcional si es titular directo)</span>
                 </span>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                    <label className="block text-[11px] font-extrabold text-slate-700 mb-1">
                       Nombre Representante Legal:
                     </label>
                     <input
@@ -604,12 +604,12 @@ export default function ContratoDigitalModal({
                       value={representanteLegal}
                       onChange={(e) => setRepresentanteLegal(e.target.value)}
                       placeholder="Ej. GUILLERMO ALFONSO MONTECINOS ROJAS"
-                      className="w-full bg-[#050d1a] border border-[#1e3a5f] focus:border-cyan-400 rounded-xl px-3 py-2 text-xs text-white outline-none"
+                      className="w-full bg-white border border-slate-300 focus:border-[#0B2545] focus:ring-2 focus:ring-[#0B2545]/15 rounded-xl px-3 py-2 text-xs text-slate-900 font-semibold outline-none transition-all"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                    <label className="block text-[11px] font-extrabold text-slate-700 mb-1">
                       R.U.T. Representante:
                     </label>
                     <input
@@ -617,12 +617,12 @@ export default function ContratoDigitalModal({
                       value={rutRepresentante}
                       onChange={(e) => setRutRepresentante(e.target.value)}
                       placeholder="Ej. 7.402.401-7"
-                      className="w-full bg-[#050d1a] border border-[#1e3a5f] focus:border-cyan-400 rounded-xl px-3 py-2 text-xs font-mono text-white outline-none"
+                      className="w-full bg-white border border-slate-300 focus:border-[#0B2545] focus:ring-2 focus:ring-[#0B2545]/15 rounded-xl px-3 py-2 text-xs font-mono text-slate-900 font-bold outline-none transition-all"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                    <label className="block text-[11px] font-extrabold text-slate-700 mb-1">
                       Ciudad de Otorgamiento:
                     </label>
                     <input
@@ -630,28 +630,28 @@ export default function ContratoDigitalModal({
                       value={ciudadFirma}
                       onChange={(e) => setCiudadFirma(e.target.value)}
                       placeholder="Viña del Mar"
-                      className="w-full bg-[#050d1a] border border-[#1e3a5f] focus:border-cyan-400 rounded-xl px-3 py-2 text-xs text-white outline-none"
+                      className="w-full bg-white border border-slate-300 focus:border-[#0B2545] focus:ring-2 focus:ring-[#0B2545]/15 rounded-xl px-3 py-2 text-xs text-slate-900 font-semibold outline-none transition-all"
                     />
                   </div>
                 </div>
               </div>
 
               {/* SECCIÓN 4: PAD DE FIRMA DIGITAL CON LÍNEA BASE Y CALIBRACIÓN EXACTA */}
-              <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-4 sm:p-5 space-y-3">
+              <div className="bg-slate-50/80 border border-slate-200/80 rounded-2xl p-4 sm:p-5 space-y-3">
                 <div className="flex justify-between items-center flex-wrap gap-2">
                   <div className="space-y-0.5">
-                    <h4 className="font-black text-xs sm:text-sm uppercase tracking-wider text-white flex items-center gap-2">
-                      <Edit3 className="h-4 w-4 text-emerald-400" />
+                    <h4 className="font-extrabold text-xs sm:text-sm uppercase tracking-wider text-slate-900 flex items-center gap-2">
+                      <Edit3 className="h-4 w-4 text-[#0B2545]" />
                       <span>5. Firma Electrónica del Cliente / Suscriptor</span>
                     </h4>
-                    <p className="text-[11px] text-slate-400">
+                    <p className="text-[11px] text-slate-500 font-medium">
                       Dibuje la firma dentro del recuadro usando mouse, lápiz táctil o dedo.
                     </p>
                   </div>
                   <button
                     type="button"
                     onClick={limpiarFirma}
-                    className="px-3 py-1.5 rounded-xl bg-red-500/15 hover:bg-red-500/25 border border-red-500/30 text-red-300 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                    className="px-3 py-1.5 rounded-xl bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                     <span>Limpiar Pizarra</span>
@@ -659,7 +659,7 @@ export default function ContratoDigitalModal({
                 </div>
 
                 {/* Contenedor de Pizarra con Guía Visual para que no se dibuje desfasado */}
-                <div className="relative border-2 border-dashed border-[#1e3a5f] bg-white rounded-2xl p-1 flex justify-center items-center overflow-hidden shadow-inner">
+                <div className="relative border-2 border-dashed border-slate-300 bg-white rounded-2xl p-1 flex justify-center items-center overflow-hidden shadow-inner">
                   <canvas
                     ref={canvasRef}
                     width={720}
@@ -675,21 +675,21 @@ export default function ContratoDigitalModal({
                   />
 
                   {/* Guía de Línea de Firma en Fondo */}
-                  <div className="absolute bottom-6 left-6 right-6 border-b-2 border-slate-300 pointer-events-none flex items-center justify-between px-3 text-slate-400 select-none z-0">
-                    <span className="text-xs font-black font-mono text-slate-500">❌ FIRMAR AQUÍ</span>
-                    <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                  <div className="absolute bottom-6 left-6 right-6 border-b-2 border-slate-200 pointer-events-none flex items-center justify-between px-3 text-slate-400 select-none z-0">
+                    <span className="text-xs font-extrabold font-mono text-slate-400">❌ FIRMAR AQUÍ</span>
+                    <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">
                       {razonSocial ? `p.p. ${razonSocial}` : 'Línea oficial de firma'}
                     </span>
                   </div>
                 </div>
                 
-                <div className="text-[11px] text-slate-400 flex items-center justify-between flex-wrap gap-2 pt-1">
-                  <div className="flex items-center gap-1.5 text-blue-300">
-                    <ShieldCheck className="h-4 w-4 text-blue-400" />
+                <div className="text-[11px] text-slate-500 flex items-center justify-between flex-wrap gap-2 pt-1 font-medium">
+                  <div className="flex items-center gap-1.5 text-slate-600">
+                    <ShieldCheck className="h-4 w-4 text-[#0B2545]" />
                     <span>La firma se estampará en el contrato con R.U.T. <strong>{rutCliente || 'S/RUT'}</strong> y timbrado de fecha oficial.</span>
                   </div>
                   {hasSignature && (
-                    <span className="text-emerald-400 font-bold flex items-center gap-1">
+                    <span className="text-emerald-700 font-extrabold flex items-center gap-1">
                       <CheckCircle2 className="h-3.5 w-3.5" /> Firma capturada correctamente
                     </span>
                   )}
@@ -702,27 +702,27 @@ export default function ContratoDigitalModal({
 
         {/* Modal Footer */}
         {!firmadoExito && (
-          <div className="p-4 sm:p-6 bg-black/50 border-t border-white/10 flex flex-col sm:flex-row justify-between items-center gap-3">
+          <div className="p-4 sm:p-6 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-3">
             <button
               onClick={handleDescargarPdf}
               disabled={generandoPdf}
-              className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 text-white text-xs font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer"
+              className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-white hover:bg-slate-100 border border-slate-300 text-slate-700 text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition-colors cursor-pointer"
             >
-              <Download className="h-4 w-4" />
+              <Download className="h-4 w-4 text-slate-600" />
               <span>Vista Previa PDF (con datos actuales)</span>
             </button>
 
             <div className="flex items-center gap-3 w-full sm:w-auto">
               <button
                 onClick={onClose}
-                className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition-colors cursor-pointer"
+                className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-700 text-xs font-bold transition-colors cursor-pointer"
               >
                 Cancelar
               </button>
               <button
                 onClick={handleGuardarYFirmar}
                 disabled={generandoPdf || (!hasSignature && !firmaGuardada)}
-                className="w-full sm:w-auto btn-apple-primary text-xs py-2.5 px-6 font-black flex items-center justify-center gap-2 shadow-lg disabled:opacity-40 cursor-pointer"
+                className="w-full sm:w-auto bg-[#0B2545] hover:bg-[#07172c] text-white text-xs py-2.5 px-6 font-extrabold rounded-xl shadow-md shadow-blue-950/20 flex items-center justify-center gap-2 disabled:opacity-40 cursor-pointer transition-all"
               >
                 {generandoPdf ? (
                   <>

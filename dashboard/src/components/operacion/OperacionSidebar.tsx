@@ -67,21 +67,21 @@ export default function OperacionSidebar({
     <>
       {/* Backdrop para movil */}
       <div
-        className="fixed inset-0 bg-black/70 backdrop-blur-md z-40 lg:hidden transition-opacity"
+        className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40 lg:hidden transition-opacity"
         onClick={() => setSidebarAbierto(false)}
       />
 
-      <aside className="fixed inset-y-0 left-0 z-50 lg:relative lg:inset-auto lg:z-auto w-72 sm:w-80 bg-[#0a1628]/95 lg:bg-[#0c182b]/85 backdrop-blur-2xl border-r lg:border border-white/10 lg:border-[#1e3a5f]/60 p-5 sm:p-6 rounded-r-3xl lg:rounded-3xl flex flex-col gap-6 shrink-0 shadow-2xl transition-all overflow-y-auto max-h-screen lg:max-h-none font-sans">
+      <aside className="fixed inset-y-0 left-0 z-50 lg:relative lg:inset-auto lg:z-auto w-72 sm:w-80 bg-white/95 backdrop-blur-2xl border-r lg:border border-slate-300/80 p-5 sm:p-6 rounded-r-3xl lg:rounded-3xl flex flex-col gap-6 shrink-0 shadow-2xl transition-all overflow-y-auto max-h-screen lg:max-h-none font-sans">
         
         {/* Header Mobile Toggle */}
-        <div className="text-[11px] font-bold text-slate-300 uppercase tracking-wider px-2 mb-1 flex justify-between items-center">
-          <span className="flex items-center gap-2 text-slate-100 font-semibold text-xs">
-            <span className="w-2 h-2 rounded-full bg-[#2997ff] animate-pulse" />
+        <div className="text-[11px] font-extrabold text-slate-700 uppercase tracking-wider px-2 mb-1 flex justify-between items-center">
+          <span className="flex items-center gap-2 text-slate-900 font-extrabold text-xs">
+            <span className="w-2 h-2 rounded-full bg-[#0B2545] animate-pulse" />
             CENTRAL OPERATIVA GAMA
           </span>
           <button
             onClick={() => setSidebarAbierto(false)}
-            className="text-slate-400 hover:text-white font-bold text-sm cursor-pointer p-2 rounded-xl bg-white/5 hover:bg-white/10 lg:hidden transition-colors"
+            className="text-slate-400 hover:text-slate-700 font-bold text-sm cursor-pointer p-2 rounded-xl bg-slate-100 hover:bg-slate-200 lg:hidden transition-colors"
           >
             <X className="h-5 w-5" />
           </button>
@@ -91,7 +91,7 @@ export default function OperacionSidebar({
         <div className="space-y-6 sm:space-y-7">
           {grupos.map((grp) => (
             <div key={grp.titulo} className="space-y-2.5">
-              <div className="text-[10px] sm:text-[11px] font-bold text-[#2997ff]/80 uppercase tracking-widest px-2.5 font-mono">
+              <div className="text-[10px] sm:text-[11px] font-extrabold text-slate-500 uppercase tracking-widest px-2.5 font-mono">
                 {grp.titulo}
               </div>
               <div className="space-y-2">
@@ -107,13 +107,13 @@ export default function OperacionSidebar({
                           setSidebarAbierto(false)
                         }
                       }}
-                      className={`w-full min-h-[52px] text-left py-3.5 px-4.5 rounded-2xl font-semibold text-xs sm:text-sm transition-all duration-200 flex items-center gap-3.5 cursor-pointer relative group ${
+                      className={`w-full min-h-[52px] text-left py-3.5 px-4.5 rounded-2xl font-bold text-xs sm:text-sm transition-all duration-200 flex items-center gap-3.5 cursor-pointer relative group ${
                         esActivo
-                          ? 'bg-gradient-to-r from-[#0066cc] to-[#0077ed] text-white shadow-xl shadow-[#0066cc]/30 border border-[#2997ff]/60 scale-[1.01]'
-                          : 'bg-[#0f2240]/40 text-slate-300 hover:bg-[#162a4a]/80 hover:text-white border border-[#1e3a5f]/40 hover:border-[#2997ff]/40 hover:scale-[1.005]'
+                          ? 'bg-[#0B2545] text-white shadow-xl shadow-blue-950/20 border border-[#0B2545] scale-[1.01]'
+                          : 'bg-slate-50/70 text-slate-700 hover:bg-slate-100/90 hover:text-slate-900 border border-slate-200/80 hover:border-slate-300 hover:scale-[1.005]'
                       }`}
                     >
-                      <IconComp className={`h-5 w-5 stroke-[1.8] shrink-0 transition-transform duration-200 group-hover:scale-110 ${esActivo ? 'text-white' : 'text-[#2997ff]'}`} />
+                      <IconComp className={`h-5 w-5 stroke-[2] shrink-0 transition-transform duration-200 group-hover:scale-110 ${esActivo ? 'text-white' : 'text-[#0B2545]'}`} />
                       <span className="truncate tracking-tight flex-1">{m.label}</span>
                       {esActivo && (
                         <span className="w-1.5 h-4 rounded-full bg-white/80 shrink-0" />
@@ -127,27 +127,27 @@ export default function OperacionSidebar({
         </div>
 
         {/* Data Architecture Widget */}
-        <div className="mt-auto bg-[#050d1a]/80 border border-white/10 p-5 rounded-2xl text-xs space-y-3 text-slate-400 backdrop-blur-md">
-          <div className="font-semibold text-white text-[10px] uppercase tracking-widest mb-1 flex items-center justify-between">
-            <span className="flex items-center gap-1.5 text-[#2997ff]">
-              <Layers className="h-4 w-4 stroke-[1.5]" />
+        <div className="mt-auto bg-slate-50 border border-slate-200/90 p-5 rounded-2xl text-xs space-y-3 text-slate-600 shadow-sm">
+          <div className="font-extrabold text-slate-900 text-[10px] uppercase tracking-widest mb-1 flex items-center justify-between">
+            <span className="flex items-center gap-1.5 text-[#0B2545]">
+              <Layers className="h-4 w-4 stroke-[2]" />
               ESTRUCTURA DE DATOS
             </span>
-            <span className="text-[9px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-1.5 py-0.5 rounded-full font-mono font-bold">
+            <span className="text-[9px] bg-blue-50 text-[#0B2545] border border-blue-200 px-2 py-0.5 rounded-full font-mono font-extrabold">
               PRO
             </span>
           </div>
-          <div className="flex justify-between items-center text-xs pt-1 border-t border-white/5">
+          <div className="flex justify-between items-center text-xs pt-2 border-t border-slate-200/70">
             <span>Empresas Emisoras:</span>
-            <strong className="text-white font-mono font-semibold text-xs sm:text-sm">{cantEmpresas}</strong>
+            <strong className="text-slate-900 font-mono font-bold text-xs sm:text-sm">{cantEmpresas}</strong>
           </div>
           <div className="flex justify-between items-center text-xs">
             <span>Clientes Registrados:</span>
-            <strong className="text-white font-mono font-semibold text-xs sm:text-sm">{cantClientes}</strong>
+            <strong className="text-slate-900 font-mono font-bold text-xs sm:text-sm">{cantClientes}</strong>
           </div>
           <div className="flex justify-between items-center text-xs">
             <span>Centros de Costo:</span>
-            <strong className="text-white font-mono font-semibold text-xs sm:text-sm">{cantCentros}</strong>
+            <strong className="text-slate-900 font-mono font-bold text-xs sm:text-sm">{cantCentros}</strong>
           </div>
         </div>
 
