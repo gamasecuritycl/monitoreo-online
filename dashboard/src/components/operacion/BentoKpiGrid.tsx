@@ -30,7 +30,7 @@ export default function BentoKpiGrid({
     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 sm:gap-7 font-sans text-left">
       
       {/* ── BENTO CARD 1 (ESTILO DSTUDIO SOFT BLUE): CENTRAL DE RESPUESTA & EVENTOS EN VIVO ── */}
-      <div className="bg-[#EFF6FF] border border-[#BFDBFE] p-7 sm:p-8 rounded-3xl shadow-sm hover:shadow-md transition-all flex flex-col justify-between group relative overflow-hidden">
+      <div className="bg-[#EFF6FF] border border-[#BFDBFE] p-7 sm:p-8 rounded-2xl shadow-sm hover:shadow-md transition-all flex flex-col justify-between group relative overflow-hidden">
         <div className="flex justify-between items-center mb-3">
           <span className="text-[11px] font-bold text-[#1E40AF] bg-white/90 border border-blue-200/80 px-3.5 py-1.5 rounded-full shadow-2xs">
             12:30 - 24/7 ACTIVO
@@ -71,7 +71,7 @@ export default function BentoKpiGrid({
       </div>
 
       {/* ── BENTO CARD 2 (ESTILO DSTUDIO SALES DATA): RECURRENCIA MRR & BARRAS SEMANALES ── */}
-      <div className="bg-white border border-slate-300/80 p-7 sm:p-8 rounded-3xl shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
+      <div className="bg-white border border-slate-300/80 p-7 sm:p-8 rounded-2xl shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
         <div className="flex justify-between items-start mb-2">
           <div>
             <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">
@@ -114,7 +114,7 @@ export default function BentoKpiGrid({
       </div>
 
       {/* ── BENTO CARD 3 (ESTILO DSTUDIO REVENUE): FACTURACIÓN TOTAL & CURVA SUAVE ── */}
-      <div className="bg-white border border-slate-300/80 p-7 sm:p-8 rounded-3xl shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
+      <div className="bg-white border border-slate-300/80 p-7 sm:p-8 rounded-2xl shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
         <div className="flex justify-between items-center mb-2">
           <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
             Cobranza & Facturación
@@ -167,7 +167,7 @@ export default function BentoKpiGrid({
       <div className="flex flex-col gap-4 justify-between">
         
         {/* WIDGET SUPERIOR: COTIZACIONES PIPELINE */}
-        <div className="bg-white border border-slate-300/80 p-5 sm:p-6 rounded-3xl shadow-sm flex items-center justify-between">
+        <div className="bg-white border border-slate-300/80 p-5 sm:p-6 rounded-2xl shadow-sm flex items-center justify-between">
           <div className="space-y-0.5">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
               Cotizaciones DTE
@@ -184,7 +184,7 @@ export default function BentoKpiGrid({
         </div>
 
         {/* WIDGET INFERIOR (SOFT MINT TINT): SERVICIOS TÉCNICOS & SLA */}
-        <div className="bg-[#F0FDF4] border border-[#BBF7D0] p-5 sm:p-6 rounded-3xl shadow-sm flex items-center justify-between">
+        <div className="bg-[#F0FDF4] border border-[#BBF7D0] p-5 sm:p-6 rounded-2xl shadow-sm flex items-center justify-between">
           <div className="space-y-0.5">
             <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider block">
               Servicios Técnicos (OTs)

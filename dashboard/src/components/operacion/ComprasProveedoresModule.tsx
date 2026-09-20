@@ -310,79 +310,95 @@ export default function ComprasProveedoresModule({
   }, [compras, filtroEstado, filtroCategoria, busqueda])
 
   return (
-    <div className="space-y-6 text-slate-100 font-sans">
+    <div className="space-y-7 text-slate-800 font-sans">
       
-      {/* ── BENTO HERO FINANCIERO DE COMPRAS & EGRESOS ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* ── BENTO CARDS DE RESUMEN FINANCIERO ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         
         {/* KPI 1: Cuentas por Pagar */}
-        <div className="bg-gradient-to-br from-[#0c182b] to-[#112240] border border-red-500/30 p-5 rounded-3xl shadow-xl space-y-2 relative overflow-hidden">
-          <div className="flex justify-between items-center text-red-400">
-            <span className="text-[11px] font-extrabold uppercase tracking-widest">CUENTAS POR PAGAR (PENDIENTES)</span>
-            <div className="p-2 rounded-xl bg-red-500/15 border border-red-500/20">
-              <Clock className="h-4 w-4" />
+        <div className="bg-red-50/70 border border-red-200/90 p-5 sm:p-6 rounded-2xl shadow-sm hover:shadow-md transition-all">
+          <div className="space-y-3 px-1 py-0.5">
+            <div className="flex justify-between items-center gap-2 text-red-900">
+              <span className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider leading-tight">
+                CUENTAS POR PAGAR
+              </span>
+              <div className="w-8 h-8 rounded-full bg-white text-red-600 flex items-center justify-center shadow-2xs shrink-0">
+                <Clock className="h-4 w-4" />
+              </div>
             </div>
+            <div className="text-2xl sm:text-3xl font-black font-sans text-slate-900">
+              ${totalCuentasPorPagar.toLocaleString('es-CL')} <span className="text-xs font-bold text-slate-400">CLP</span>
+            </div>
+            <p className="text-[11px] sm:text-xs text-slate-600 font-medium">
+              {compras.filter(c => c.estado === 'Pendiente').length} facturas por liquidar
+            </p>
           </div>
-          <div className="text-2xl font-black font-mono text-white">
-            ${totalCuentasPorPagar.toLocaleString('es-CL')} CLP
-          </div>
-          <p className="text-[11px] text-slate-400">
-            {compras.filter(c => c.estado === 'Pendiente').length} facturas de proveedores por liquidar
-          </p>
         </div>
 
         {/* KPI 2: Total Pagado */}
-        <div className="bg-gradient-to-br from-[#0c182b] to-[#112240] border border-emerald-500/30 p-5 rounded-3xl shadow-xl space-y-2 relative overflow-hidden">
-          <div className="flex justify-between items-center text-emerald-400">
-            <span className="text-[11px] font-extrabold uppercase tracking-widest">TOTAL LIQUIDADO / PAGADO</span>
-            <div className="p-2 rounded-xl bg-emerald-500/15 border border-emerald-500/20">
-              <CheckCircle2 className="h-4 w-4" />
+        <div className="bg-emerald-50/70 border border-emerald-200/90 p-5 sm:p-6 rounded-2xl shadow-sm hover:shadow-md transition-all">
+          <div className="space-y-3 px-1 py-0.5">
+            <div className="flex justify-between items-center gap-2 text-emerald-900">
+              <span className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider leading-tight">
+                TOTAL LIQUIDADO / PAGADO
+              </span>
+              <div className="w-8 h-8 rounded-full bg-white text-emerald-600 flex items-center justify-center shadow-2xs shrink-0">
+                <CheckCircle2 className="h-4 w-4" />
+              </div>
             </div>
+            <div className="text-2xl sm:text-3xl font-black font-sans text-emerald-700">
+              ${totalPagadoMes.toLocaleString('es-CL')} <span className="text-xs font-bold text-slate-400">CLP</span>
+            </div>
+            <p className="text-[11px] sm:text-xs text-slate-600 font-medium">
+              Egresos operacionales confirmados
+            </p>
           </div>
-          <div className="text-2xl font-black font-mono text-emerald-400">
-            ${totalPagadoMes.toLocaleString('es-CL')} CLP
-          </div>
-          <p className="text-[11px] text-slate-400">
-            Egresos operacionales confirmados
-          </p>
         </div>
 
         {/* KPI 3: IVA Crédito Fiscal */}
-        <div className="bg-gradient-to-br from-[#0c182b] to-[#112240] border border-blue-500/30 p-5 rounded-3xl shadow-xl space-y-2 relative overflow-hidden">
-          <div className="flex justify-between items-center text-[#2997ff]">
-            <span className="text-[11px] font-extrabold uppercase tracking-widest">IVA CRÉDITO FISCAL (19%)</span>
-            <div className="p-2 rounded-xl bg-blue-500/15 border border-blue-500/20">
-              <Receipt className="h-4 w-4" />
+        <div className="bg-blue-50/70 border border-blue-200/90 p-5 sm:p-6 rounded-2xl shadow-sm hover:shadow-md transition-all">
+          <div className="space-y-3 px-1 py-0.5">
+            <div className="flex justify-between items-center gap-2 text-[#1E40AF]">
+              <span className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider leading-tight">
+                IVA CRÉDITO FISCAL (19%)
+              </span>
+              <div className="w-8 h-8 rounded-full bg-white text-[#1E40AF] flex items-center justify-center shadow-2xs shrink-0">
+                <Receipt className="h-4 w-4" />
+              </div>
             </div>
+            <div className="text-2xl sm:text-3xl font-black font-sans text-slate-900">
+              ${totalIvaCreditoFiscal.toLocaleString('es-CL')} <span className="text-xs font-bold text-slate-400">CLP</span>
+            </div>
+            <p className="text-[11px] sm:text-xs text-slate-600 font-medium">
+              Crédito a descontar en F29 SII
+            </p>
           </div>
-          <div className="text-2xl font-black font-mono text-white">
-            ${totalIvaCreditoFiscal.toLocaleString('es-CL')} CLP
-          </div>
-          <p className="text-[11px] text-slate-400">
-            Crédito a descontar en F29 del SII
-          </p>
         </div>
 
         {/* KPI 4: Margen Promedio */}
-        <div className="bg-gradient-to-br from-[#0c182b] to-[#112240] border border-indigo-500/30 p-5 rounded-3xl shadow-xl space-y-2 relative overflow-hidden">
-          <div className="flex justify-between items-center text-indigo-400">
-            <span className="text-[11px] font-extrabold uppercase tracking-widest">MARGEN NETO / ABONADO</span>
-            <div className="p-2 rounded-xl bg-indigo-500/15 border border-indigo-500/20">
-              <TrendingUp className="h-4 w-4" />
+        <div className="bg-indigo-50/70 border border-indigo-200/90 p-5 sm:p-6 rounded-2xl shadow-sm hover:shadow-md transition-all">
+          <div className="space-y-3 px-1 py-0.5">
+            <div className="flex justify-between items-center gap-2 text-indigo-900">
+              <span className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider leading-tight">
+                MARGEN NETO / ABONADO
+              </span>
+              <div className="w-8 h-8 rounded-full bg-white text-indigo-600 flex items-center justify-center shadow-2xs shrink-0">
+                <TrendingUp className="h-4 w-4" />
+              </div>
             </div>
+            <div className="text-2xl sm:text-3xl font-black font-sans text-indigo-900">
+              71% Promedio
+            </div>
+            <p className="text-[11px] sm:text-xs text-slate-600 font-medium">
+              Sobre base de {Object.keys(abonadosCentrosCosto).length} cuentas activas
+            </p>
           </div>
-          <div className="text-2xl font-black font-mono text-indigo-300">
-            71% Promedio
-          </div>
-          <p className="text-[11px] text-slate-400">
-            Sobre base de {Object.keys(abonadosCentrosCosto).length} cuentas activas
-          </p>
         </div>
 
       </div>
 
       {/* ── NAVEGACIÓN SUB-PESTAÑAS DE COMPRAS ── */}
-      <div className="flex items-center justify-between gap-4 flex-wrap bg-[#0c182b]/80 backdrop-blur-xl p-3 rounded-2xl border border-white/10 shadow-lg">
+      <div className="flex items-center justify-between gap-4 flex-wrap bg-slate-100/90 p-2 rounded-2xl border border-slate-200 shadow-2xs">
         <div className="flex items-center gap-2 flex-wrap">
           {[
             { id: 'facturas', label: `Facturas de Compra (${compras.length})`, icon: Receipt },
@@ -395,7 +411,7 @@ export default function ComprasProveedoresModule({
               <button
                 key={t.id}
                 onClick={() => setSubTab(t.id as any)}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${esActivo ? 'bg-gradient-to-r from-[#0066cc] to-[#2997ff] text-white shadow-md shadow-[#0066cc]/30' : 'text-slate-400 hover:text-white hover:bg-white/[0.06]'}`}
+                className={`px-4.5 py-2.5 rounded-xl text-xs sm:text-[13px] font-bold transition-all flex items-center gap-2 cursor-pointer ${esActivo ? 'bg-[#0B2545] text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 hover:bg-white'}`}
               >
                 <Icon className="h-4 w-4" />
                 <span>{t.label}</span>
@@ -407,7 +423,7 @@ export default function ComprasProveedoresModule({
         {subTab === 'facturas' && (
           <button
             onClick={() => setModalNuevaFactura(true)}
-            className="btn-apple-primary text-xs py-2.5 px-4 font-bold flex items-center gap-1.5 shadow-md"
+            className="bg-[#0B2545] hover:bg-[#1E40AF] text-white text-xs py-2.5 px-4 rounded-xl font-bold flex items-center gap-1.5 shadow-sm active:scale-95 cursor-pointer transition-all"
           >
             <Plus className="h-4 w-4" />
             <span>Ingresar Factura de Compra</span>
@@ -417,18 +433,18 @@ export default function ComprasProveedoresModule({
 
       {/* ── SECCIÓN 1: FACTURAS DE PROVEEDORES ── */}
       {subTab === 'facturas' && (
-        <div className="bg-[#0c182b]/85 backdrop-blur-2xl rounded-3xl p-6 border border-white/10 shadow-2xl space-y-5">
+        <div className="bg-white rounded-2xl p-6 sm:p-8 border border-slate-300/80 shadow-sm space-y-6">
           
           {/* Barra de Filtros */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="relative">
-              <Search className="absolute left-3.5 top-3 h-4 w-4 text-slate-500" />
+              <Search className="absolute left-4 top-3.5 h-4 w-4 text-[#1E40AF] pointer-events-none" />
               <input
                 type="text"
                 value={busqueda}
                 onChange={(e) => setBusqueda(e.target.value)}
                 placeholder="Buscar por N° factura, proveedor o detalle..."
-                className="w-full bg-[#050d1a] border border-[#1e3a5f] rounded-xl pl-10 pr-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#2997ff]"
+                className="w-full bg-slate-50/80 border border-slate-300 rounded-xl pl-11 pr-4 py-3 text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#1E40AF] focus:bg-white font-sans transition-all"
               />
             </div>
 
@@ -436,12 +452,12 @@ export default function ComprasProveedoresModule({
               <select
                 value={filtroEstado}
                 onChange={(e) => setFiltroEstado(e.target.value)}
-                className="w-full bg-[#050d1a] border border-[#1e3a5f] rounded-xl px-3 py-2 text-xs text-white"
+                className="w-full bg-slate-50/80 border border-slate-300 rounded-xl px-4 py-3 text-xs sm:text-sm text-slate-900 focus:outline-none focus:border-[#1E40AF] focus:bg-white font-sans font-semibold cursor-pointer transition-all"
               >
                 <option value="Todas">Todos los Estados</option>
-                <option value="Pendiente">Pendiente de Pago</option>
-                <option value="Pagada">Pagadas</option>
-                <option value="Vencida">Vencidas</option>
+                <option value="Pendiente">🟡 Pendientes de Pago</option>
+                <option value="Pagada">🟢 Pagadas</option>
+                <option value="Vencida">🔴 Vencidas</option>
               </select>
             </div>
 
@@ -449,7 +465,7 @@ export default function ComprasProveedoresModule({
               <select
                 value={filtroCategoria}
                 onChange={(e) => setFiltroCategoria(e.target.value)}
-                className="w-full bg-[#050d1a] border border-[#1e3a5f] rounded-xl px-3 py-2 text-xs text-white"
+                className="w-full bg-slate-50/80 border border-slate-300 rounded-xl px-4 py-3 text-xs sm:text-sm text-slate-900 focus:outline-none focus:border-[#1E40AF] focus:bg-white font-sans font-semibold cursor-pointer transition-all"
               >
                 <option value="Todas">Todas las Categorías</option>
                 <option value="Hardware Alarmas">Hardware Alarmas</option>
@@ -461,63 +477,63 @@ export default function ComprasProveedoresModule({
           </div>
 
           {/* Tabla de Facturas de Compra */}
-          <div className="overflow-x-auto rounded-2xl border border-white/10 bg-black/20">
+          <div className="overflow-x-auto rounded-xl border border-slate-200 bg-slate-50/60 p-2 sm:p-3">
             <table className="w-full text-left border-collapse text-xs sm:text-sm">
               <thead>
-                <tr className="border-b border-white/10 font-black uppercase text-[10px] text-slate-400 tracking-wider bg-white/[0.02]">
-                  <th className="py-3.5 px-4">FOLIO FACTURA</th>
-                  <th className="py-3.5 px-4">PROVEEDOR</th>
-                  <th className="py-3.5 px-4">CATEGORÍA</th>
-                  <th className="py-3.5 px-4">VENCIMIENTO</th>
-                  <th className="py-3.5 px-4 text-right">NETO</th>
-                  <th className="py-3.5 px-4 text-right">TOTAL</th>
-                  <th className="py-3.5 px-4 text-center">ESTADO</th>
-                  <th className="py-3.5 px-4 text-center">ACCIONES</th>
+                <tr className="border-b border-slate-200 font-black uppercase text-[10px] sm:text-[11px] text-slate-500 tracking-wider">
+                  <th className="py-3 px-4">FOLIO FACTURA</th>
+                  <th className="py-3 px-4">PROVEEDOR</th>
+                  <th className="py-3 px-4">CATEGORÍA</th>
+                  <th className="py-3 px-4">VENCIMIENTO</th>
+                  <th className="py-3 px-4 text-right">NETO</th>
+                  <th className="py-3 px-4 text-right">TOTAL</th>
+                  <th className="py-3 px-4 text-center">ESTADO</th>
+                  <th className="py-3 px-4 text-center">ACCIONES</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/5 font-medium">
+              <tbody className="divide-y divide-slate-200/70 font-medium">
                 {comprasFiltradas.map((c) => (
-                  <tr key={c.id} className="hover:bg-white/[0.04] transition-colors">
-                    <td className="py-3.5 px-4 font-mono font-black text-[#2997ff]">{c.numero_factura}</td>
+                  <tr key={c.id} className="hover:bg-blue-50/50 transition-colors">
+                    <td className="py-3.5 px-4 font-mono font-black text-[#1E40AF] whitespace-nowrap">{c.numero_factura}</td>
                     <td className="py-3.5 px-4">
-                      <div className="font-bold text-white">{c.proveedor_nombre}</div>
-                      <div className="text-[10px] text-slate-400 font-mono">RUT: {c.proveedor_rut}</div>
+                      <div className="font-bold text-slate-900">{c.proveedor_nombre}</div>
+                      <div className="text-[11px] text-slate-500 font-mono">RUT: {c.proveedor_rut}</div>
                     </td>
                     <td className="py-3.5 px-4">
-                      <span className="text-[11px] px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-slate-300">
+                      <span className="text-[11px] px-2.5 py-1 rounded-lg bg-slate-100 border border-slate-200 text-slate-700 font-medium">
                         {c.categoria}
                       </span>
                     </td>
-                    <td className="py-3.5 px-4 font-mono text-slate-300 text-xs">
+                    <td className="py-3.5 px-4 font-mono text-slate-600 text-xs whitespace-nowrap">
                       {c.fecha_vencimiento}
                     </td>
-                    <td className="py-3.5 px-4 text-right font-mono text-slate-300">
+                    <td className="py-3.5 px-4 text-right font-mono text-slate-600 whitespace-nowrap">
                       ${c.monto_neto.toLocaleString('es-CL')}
                     </td>
-                    <td className="py-3.5 px-4 text-right font-mono font-bold text-white">
+                    <td className="py-3.5 px-4 text-right font-mono font-bold text-slate-900 whitespace-nowrap">
                       ${c.monto_total.toLocaleString('es-CL')}
                     </td>
                     <td className="py-3.5 px-4 text-center">
-                      <span className={`px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider ${
+                      <span className={`inline-flex items-center justify-center px-3.5 py-1 rounded-full text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wide whitespace-nowrap shadow-2xs ${
                         c.estado === 'Pagada'
-                          ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                          ? 'bg-emerald-50 text-emerald-800 border border-emerald-200/90'
                           : c.estado === 'Vencida'
-                          ? 'bg-red-500/15 text-red-400 border border-red-500/30'
-                          : 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
+                          ? 'bg-red-50 text-red-800 border border-red-200/90'
+                          : 'bg-amber-50 text-amber-900 border border-amber-200/90'
                       }`}>
                         {c.estado}
                       </span>
                     </td>
-                    <td className="py-3.5 px-4 text-center">
+                    <td className="py-3.5 px-4 text-center whitespace-nowrap">
                       {c.estado !== 'Pagada' ? (
                         <button
                           onClick={() => handleCambiarEstado(c.id, 'Pagada')}
-                          className="px-2.5 py-1 rounded-lg bg-emerald-600/30 hover:bg-emerald-600/50 border border-emerald-500/40 text-emerald-300 text-[10px] font-bold transition-all cursor-pointer"
+                          className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-2xs cursor-pointer active:scale-95"
                         >
                           Marcar Pagada
                         </button>
                       ) : (
-                        <span className="text-[11px] text-slate-400">Liquidada</span>
+                        <span className="text-xs font-bold text-slate-400">Liquidada</span>
                       )}
                     </td>
                   </tr>
@@ -531,29 +547,29 @@ export default function ComprasProveedoresModule({
 
       {/* ── SECCIÓN 2: DIRECTORIO DE PROVEEDORES ── */}
       {subTab === 'proveedores' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {proveedores.map(p => (
-            <div key={p.rut} className="bg-[#0c182b]/85 backdrop-blur-2xl rounded-3xl p-6 border border-white/10 shadow-xl space-y-4">
-              <div className="flex justify-between items-start">
+            <div key={p.rut} className="bg-white rounded-2xl p-6 border border-slate-300/80 shadow-sm hover:shadow-md transition-all space-y-4">
+              <div className="flex justify-between items-start gap-2">
                 <div>
-                  <h4 className="font-extrabold text-white text-base">{p.razon_social}</h4>
-                  <p className="text-slate-400 text-xs font-mono mt-0.5">RUT: {p.rut}</p>
+                  <h4 className="font-extrabold text-slate-900 text-base">{p.razon_social}</h4>
+                  <p className="text-slate-500 text-xs font-mono mt-0.5">RUT: {p.rut}</p>
                 </div>
-                <span className="px-2.5 py-1 rounded-xl bg-blue-500/10 border border-blue-500/20 text-[#2997ff] text-[10px] font-bold">
+                <span className="px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-[#1E40AF] text-[10px] font-bold shrink-0">
                   Crédito {p.dias_credito} Días
                 </span>
               </div>
 
-              <div className="text-xs space-y-1.5 text-slate-300 border-t border-b border-white/10 py-3">
-                <div><strong className="text-slate-400">Giro:</strong> {p.giro}</div>
-                <div><strong className="text-slate-400">Contacto:</strong> {p.contacto}</div>
-                <div><strong className="text-slate-400">Email:</strong> {p.email}</div>
-                <div><strong className="text-slate-400">Teléfono:</strong> {p.telefono}</div>
+              <div className="text-xs space-y-2 text-slate-600 border-t border-b border-slate-100 py-3.5">
+                <div><strong className="text-slate-800">Giro:</strong> {p.giro}</div>
+                <div><strong className="text-slate-800">Contacto:</strong> {p.contacto}</div>
+                <div><strong className="text-slate-800">Email:</strong> {p.email}</div>
+                <div><strong className="text-slate-800">Teléfono:</strong> {p.telefono}</div>
               </div>
 
               <div className="flex justify-between items-center pt-1 text-xs">
-                <span className="text-slate-400">Categoría:</span>
-                <span className="font-bold text-white">{p.categoria_principal}</span>
+                <span className="text-slate-500">Categoría:</span>
+                <span className="font-bold text-[#0B2545]">{p.categoria_principal}</span>
               </div>
             </div>
           ))}
@@ -562,47 +578,47 @@ export default function ComprasProveedoresModule({
 
       {/* ── SECCIÓN 3: MATRIZ DE RENTABILIDAD POR ABONADO ── */}
       {subTab === 'rentabilidad' && (
-        <div className="bg-[#0c182b]/85 backdrop-blur-2xl rounded-3xl p-6 border border-white/10 shadow-2xl space-y-5">
-          <div className="flex justify-between items-center flex-wrap gap-2">
+        <div className="bg-white rounded-2xl p-6 sm:p-8 border border-slate-300/80 shadow-sm space-y-6">
+          <div className="flex justify-between items-center flex-wrap gap-3">
             <div>
-              <h3 className="font-extrabold text-white text-lg">
+              <h3 className="font-extrabold text-slate-900 text-lg">
                 Análisis de Margen Neto Unitario por Abonado
               </h3>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-slate-500 mt-0.5">
                 Cálculo de ingresos mensuales descontando SIM M2M, amortización de hardware y costo de central.
               </p>
             </div>
-            <span className="text-xs font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-xl font-bold">
+            <span className="text-xs font-mono text-emerald-800 bg-emerald-50 border border-emerald-200 px-3.5 py-1.5 rounded-full font-bold">
               Fórmula: Tarifa Cobrada - Costos Directos ($10.000)
             </span>
           </div>
 
-          <div className="overflow-x-auto rounded-2xl border border-white/10 bg-black/20">
+          <div className="overflow-x-auto rounded-xl border border-slate-200 bg-slate-50/60 p-2 sm:p-3">
             <table className="w-full text-left border-collapse text-xs sm:text-sm">
               <thead>
-                <tr className="border-b border-white/10 font-black uppercase text-[10px] text-slate-400 tracking-wider bg-white/[0.02]">
-                  <th className="py-3.5 px-4">CUENTA</th>
-                  <th className="py-3.5 px-4">TITULAR / RAZÓN SOCIAL</th>
-                  <th className="py-3.5 px-4 text-right">TARIFA MENSUAL</th>
-                  <th className="py-3.5 px-4 text-right">CHIP SIM M2M</th>
-                  <th className="py-3.5 px-4 text-right">AMORTIZACIÓN</th>
-                  <th className="py-3.5 px-4 text-right">MARGEN NETO</th>
-                  <th className="py-3.5 px-4 text-center">RENTABILIDAD</th>
+                <tr className="border-b border-slate-200 font-black uppercase text-[10px] sm:text-[11px] text-slate-500 tracking-wider">
+                  <th className="py-3 px-4">CUENTA</th>
+                  <th className="py-3 px-4">TITULAR / RAZÓN SOCIAL</th>
+                  <th className="py-3 px-4 text-right">TARIFA MENSUAL</th>
+                  <th className="py-3 px-4 text-right">CHIP SIM M2M</th>
+                  <th className="py-3 px-4 text-right">AMORTIZACIÓN</th>
+                  <th className="py-3 px-4 text-right">MARGEN NETO</th>
+                  <th className="py-3 px-4 text-center">RENTABILIDAD</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/5 font-medium">
+              <tbody className="divide-y divide-slate-200/70 font-medium">
                 {rentabilidadAbonados.slice(0, 30).map(r => (
-                  <tr key={r.cuenta} className="hover:bg-white/[0.04] transition-colors">
-                    <td className="py-3 px-4 font-mono font-black text-[#2997ff]">#{r.cuenta}</td>
-                    <td className="py-3 px-4 font-bold text-white truncate max-w-xs">{r.alias}</td>
-                    <td className="py-3 px-4 text-right font-mono font-bold text-white">${r.tarifaIngreso.toLocaleString('es-CL')}</td>
-                    <td className="py-3 px-4 text-right font-mono text-slate-400">-${r.costoSIM.toLocaleString('es-CL')}</td>
-                    <td className="py-3 px-4 text-right font-mono text-slate-400">-${r.costoAmortizacion.toLocaleString('es-CL')}</td>
-                    <td className="py-3 px-4 text-right font-mono font-black text-emerald-400">
+                  <tr key={r.cuenta} className="hover:bg-blue-50/50 transition-colors">
+                    <td className="py-3 px-4 font-mono font-black text-[#1E40AF] whitespace-nowrap">#{r.cuenta}</td>
+                    <td className="py-3 px-4 font-bold text-slate-900 truncate max-w-xs">{r.alias}</td>
+                    <td className="py-3 px-4 text-right font-mono font-bold text-slate-900 whitespace-nowrap">${r.tarifaIngreso.toLocaleString('es-CL')}</td>
+                    <td className="py-3 px-4 text-right font-mono text-slate-500 whitespace-nowrap">-${r.costoSIM.toLocaleString('es-CL')}</td>
+                    <td className="py-3 px-4 text-right font-mono text-slate-500 whitespace-nowrap">-${r.costoAmortizacion.toLocaleString('es-CL')}</td>
+                    <td className="py-3 px-4 text-right font-mono font-black text-emerald-700 whitespace-nowrap">
                       +${r.margenNeto.toLocaleString('es-CL')}
                     </td>
-                    <td className="py-3 px-4 text-center">
-                      <span className="px-2.5 py-0.5 rounded-lg bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[10px] font-mono font-black">
+                    <td className="py-3 px-4 text-center whitespace-nowrap">
+                      <span className="px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] font-mono font-black">
                         {r.margenPct}%
                       </span>
                     </td>
@@ -616,17 +632,17 @@ export default function ComprasProveedoresModule({
 
       {/* ── MODAL INGRESAR NUEVA FACTURA DE COMPRA ── */}
       {modalNuevaFactura && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-          <div className="bg-[#0c182b] border border-[#1e3a5f] rounded-3xl w-full max-w-lg shadow-2xl p-6 sm:p-8 space-y-5 text-xs text-slate-300">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+          <div className="bg-white border border-slate-300 rounded-2xl w-full max-w-lg shadow-2xl p-6 sm:p-8 space-y-5 text-xs text-slate-700">
             
-            <div className="flex justify-between items-center pb-3 border-b border-white/10">
-              <h4 className="font-extrabold text-base text-white flex items-center gap-2">
-                <Receipt className="h-5 w-5 text-[#2997ff]" />
+            <div className="flex justify-between items-center pb-3 border-b border-slate-200">
+              <h4 className="font-extrabold text-base text-slate-900 flex items-center gap-2">
+                <Receipt className="h-5 w-5 text-[#1E40AF]" />
                 <span>Ingresar Factura de Proveedor</span>
               </h4>
               <button
                 onClick={() => setModalNuevaFactura(false)}
-                className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-slate-300"
+                className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 cursor-pointer"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -635,22 +651,22 @@ export default function ComprasProveedoresModule({
             <form onSubmit={handleCrearFactura} className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] text-slate-400 mb-1">N° Folio Factura *:</label>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">N° Folio Factura *:</label>
                   <input
                     type="text"
                     required
                     value={formFolio}
                     onChange={(e) => setFormFolio(e.target.value)}
                     placeholder="Ej. FAC-12345"
-                    className="w-full bg-[#050d1a] border border-[#1e3a5f] rounded-xl px-3 py-2 text-xs text-white"
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-[#1E40AF]"
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] text-slate-400 mb-1">Proveedor *:</label>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">Proveedor *:</label>
                   <select
                     value={formProveedorRut}
                     onChange={(e) => setFormProveedorRut(e.target.value)}
-                    className="w-full bg-[#050d1a] border border-[#1e3a5f] rounded-xl px-3 py-2 text-xs text-white"
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-[#1E40AF]"
                   >
                     {proveedores.map(p => (
                       <option key={p.rut} value={p.rut}>{p.razon_social}</option>
@@ -661,11 +677,11 @@ export default function ComprasProveedoresModule({
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] text-slate-400 mb-1">Categoría:</label>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">Categoría:</label>
                   <select
                     value={formCategoria}
                     onChange={(e) => setFormCategoria(e.target.value as any)}
-                    className="w-full bg-[#050d1a] border border-[#1e3a5f] rounded-xl px-3 py-2 text-xs text-white"
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-[#1E40AF]"
                   >
                     <option value="Hardware Alarmas">Hardware Alarmas</option>
                     <option value="CCTV & Cámaras">CCTV & Cámaras</option>
@@ -676,53 +692,53 @@ export default function ComprasProveedoresModule({
                   </select>
                 </div>
                 <div>
-                  <label className="block text-[11px] text-slate-400 mb-1">Monto Neto ($ CLP) *:</label>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">Monto Neto ($ CLP) *:</label>
                   <input
                     type="number"
                     required
                     value={formMontoNeto}
                     onChange={(e) => setFormMontoNeto(Number(e.target.value))}
-                    className="w-full bg-[#050d1a] border border-[#1e3a5f] rounded-xl px-3 py-2 text-xs font-mono text-white"
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-mono text-slate-900 focus:outline-none focus:border-[#1E40AF]"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] text-slate-400 mb-1">Fecha Emisión:</label>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">Fecha Emisión:</label>
                   <input
                     type="date"
                     required
                     value={formFechaEmision}
                     onChange={(e) => setFormFechaEmision(e.target.value)}
-                    className="w-full bg-[#050d1a] border border-[#1e3a5f] rounded-xl px-3 py-2 text-xs text-white"
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-[#1E40AF]"
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] text-slate-400 mb-1">Fecha Vencimiento:</label>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">Fecha Vencimiento:</label>
                   <input
                     type="date"
                     value={formFechaVencimiento}
                     onChange={(e) => setFormFechaVencimiento(e.target.value)}
-                    className="w-full bg-[#050d1a] border border-[#1e3a5f] rounded-xl px-3 py-2 text-xs text-white"
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-[#1E40AF]"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-[11px] text-slate-400 mb-1">Descripción / Notas:</label>
+                <label className="block text-[11px] font-bold text-slate-700 mb-1">Descripción / Notas:</label>
                 <textarea
                   rows={2}
                   value={formNotas}
                   onChange={(e) => setFormNotas(e.target.value)}
                   placeholder="Detalle de insumos comprados o servicio prestado..."
-                  className="w-full bg-[#050d1a] border border-[#1e3a5f] rounded-xl px-3 py-2 text-xs text-white resize-none"
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 resize-none focus:outline-none focus:border-[#1E40AF]"
                 />
               </div>
 
-              <div className="p-3 bg-white/5 rounded-xl border border-white/10 flex justify-between items-center text-xs">
-                <span>Total con IVA (19%):</span>
-                <span className="font-mono font-bold text-emerald-400 text-sm">
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex justify-between items-center text-xs">
+                <span className="font-semibold text-slate-700">Total con IVA (19%):</span>
+                <span className="font-mono font-bold text-emerald-700 text-sm">
                   ${Math.round(formMontoNeto * 1.19).toLocaleString('es-CL')} CLP
                 </span>
               </div>
@@ -731,13 +747,13 @@ export default function ComprasProveedoresModule({
                 <button
                   type="button"
                   onClick={() => setModalNuevaFactura(false)}
-                  className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs"
+                  className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all cursor-pointer"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="btn-apple-primary text-xs py-2 px-5 font-bold"
+                  className="px-5 py-2 rounded-xl bg-[#0B2545] hover:bg-[#1E40AF] text-white text-xs font-bold transition-all shadow-sm cursor-pointer"
                 >
                   Guardar Factura de Compra
                 </button>

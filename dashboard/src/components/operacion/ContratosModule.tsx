@@ -167,65 +167,83 @@ export default function ContratosModule({
   }
 
   return (
-    <div className="space-y-6 text-slate-100 font-sans">
+    <div className="space-y-7 text-slate-800 font-sans">
       
       {/* ── BENTO CARDS DE RESUMEN DE CONTRATOS ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
         
-        <div className="bg-gradient-to-br from-[#0c182b] to-[#112240] border border-emerald-500/30 p-5 rounded-3xl shadow-xl space-y-2">
-          <div className="flex justify-between items-center text-emerald-400">
-            <span className="text-[11px] font-extrabold uppercase tracking-widest">CONTRATOS FIRMADOS VIGENTES</span>
-            <CheckCircle2 className="h-4 w-4" />
+        <div className="bg-emerald-50/70 border border-emerald-200/90 p-5 sm:p-6 rounded-2xl shadow-sm hover:shadow-md transition-all">
+          <div className="space-y-3 px-1 py-0.5">
+            <div className="flex justify-between items-center gap-2 text-emerald-900">
+              <span className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider leading-tight">
+                CONTRATOS FIRMADOS VIGENTES
+              </span>
+              <div className="w-8 h-8 rounded-full bg-white text-emerald-600 flex items-center justify-center shadow-2xs shrink-0">
+                <CheckCircle2 className="h-4 w-4" />
+              </div>
+            </div>
+            <div className="text-2xl sm:text-3xl font-black font-sans text-slate-900">
+              {totalFirmados}
+            </div>
+            <p className="text-[11px] sm:text-xs text-slate-600 font-medium">
+              Con firma digital y comodato validado
+            </p>
           </div>
-          <div className="text-2xl font-black font-mono text-emerald-400">
-            {totalFirmados}
-          </div>
-          <p className="text-[11px] text-slate-400">
-            Con firma digital y comodato validado
-          </p>
         </div>
 
-        <div className="bg-gradient-to-br from-[#0c182b] to-[#112240] border border-amber-500/30 p-5 rounded-3xl shadow-xl space-y-2">
-          <div className="flex justify-between items-center text-amber-400">
-            <span className="text-[11px] font-extrabold uppercase tracking-widest">PENDIENTES DE FIRMA</span>
-            <Clock className="h-4 w-4" />
+        <div className="bg-amber-50/70 border border-amber-200/90 p-5 sm:p-6 rounded-2xl shadow-sm hover:shadow-md transition-all">
+          <div className="space-y-3 px-1 py-0.5">
+            <div className="flex justify-between items-center gap-2 text-amber-900">
+              <span className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider leading-tight">
+                PENDIENTES DE FIRMA
+              </span>
+              <div className="w-8 h-8 rounded-full bg-white text-amber-600 flex items-center justify-center shadow-2xs shrink-0">
+                <Clock className="h-4 w-4" />
+              </div>
+            </div>
+            <div className="text-2xl sm:text-3xl font-black font-sans text-slate-900">
+              {totalPendientes}
+            </div>
+            <p className="text-[11px] sm:text-xs text-slate-600 font-medium">
+              Listos para envío y firma electrónica
+            </p>
           </div>
-          <div className="text-2xl font-black font-mono text-amber-400">
-            {totalPendientes}
-          </div>
-          <p className="text-[11px] text-slate-400">
-            Listos para envío y firma electrónica
-          </p>
         </div>
 
-        <div className="bg-gradient-to-br from-[#0c182b] to-[#112240] border border-red-500/30 p-5 rounded-3xl shadow-xl space-y-2">
-          <div className="flex justify-between items-center text-red-400">
-            <span className="text-[11px] font-extrabold uppercase tracking-widest">POR RENOVAR (30 DÍAS)</span>
-            <AlertTriangle className="h-4 w-4" />
+        <div className="bg-red-50/70 border border-red-200/90 p-5 sm:p-6 rounded-2xl shadow-sm hover:shadow-md transition-all">
+          <div className="space-y-3 px-1 py-0.5">
+            <div className="flex justify-between items-center gap-2 text-red-900">
+              <span className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider leading-tight">
+                POR RENOVAR (30 DÍAS)
+              </span>
+              <div className="w-8 h-8 rounded-full bg-white text-red-600 flex items-center justify-center shadow-2xs shrink-0">
+                <AlertTriangle className="h-4 w-4" />
+              </div>
+            </div>
+            <div className="text-2xl sm:text-3xl font-black font-sans text-slate-900">
+              {totalPorRenovar}
+            </div>
+            <p className="text-[11px] sm:text-xs text-slate-600 font-medium">
+              Próximos a vencimiento de plazo anual
+            </p>
           </div>
-          <div className="text-2xl font-black font-mono text-red-400">
-            {totalPorRenovar}
-          </div>
-          <p className="text-[11px] text-slate-400">
-            Próximos a vencimiento de plazo anual
-          </p>
         </div>
 
       </div>
 
       {/* ── PANEL DE GESTIÓN DE CONTRATOS ── */}
-      <div className="bg-[#0c182b]/85 backdrop-blur-2xl rounded-3xl p-6 border border-white/10 shadow-2xl space-y-5">
+      <div className="bg-white rounded-2xl p-6 sm:p-8 border border-slate-300/80 shadow-sm space-y-6">
         
         {/* Barra de Filtros y Búsqueda */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div className="relative sm:col-span-2">
-            <Search className="absolute left-3.5 top-3 h-4 w-4 text-slate-500" />
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="relative sm:col-span-2 flex items-center">
+            <Search className="absolute left-4 h-4.5 w-4.5 text-[#1E40AF] pointer-events-none" />
             <input
               type="text"
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
               placeholder="Buscar por N° contrato, cuenta abonado, razón social o RUT..."
-              className="w-full bg-[#050d1a] border border-[#1e3a5f] rounded-xl pl-10 pr-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#2997ff]"
+              className="w-full bg-slate-50/80 border border-slate-300 rounded-xl pl-12 pr-4 py-3 text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#1E40AF] focus:bg-white font-sans transition-all"
             />
           </div>
 
@@ -233,7 +251,7 @@ export default function ContratosModule({
             <select
               value={filtroEstado}
               onChange={(e) => setFiltroEstado(e.target.value)}
-              className="w-full bg-[#050d1a] border border-[#1e3a5f] rounded-xl px-3 py-2 text-xs text-white"
+              className="w-full bg-slate-50/80 border border-slate-300 rounded-xl px-4 py-3 text-xs sm:text-sm text-slate-900 focus:outline-none focus:border-[#1E40AF] focus:bg-white font-sans font-semibold cursor-pointer transition-all"
             >
               <option value="Todos">Todos los Estados</option>
               <option value="Firmado">🟢 Firmados</option>
@@ -244,55 +262,55 @@ export default function ContratosModule({
         </div>
 
         {/* Tabla de Contratos */}
-        <div className="overflow-x-auto rounded-2xl border border-white/10 bg-black/20">
+        <div className="overflow-x-auto rounded-xl border border-slate-200 bg-slate-50/60 p-2 sm:p-3">
           <table className="w-full text-left border-collapse text-xs sm:text-sm">
             <thead>
-              <tr className="border-b border-white/10 font-black uppercase text-[10px] text-slate-400 tracking-wider bg-white/[0.02]">
-                <th className="py-3.5 px-4">N° CONTRATO</th>
-                <th className="py-3.5 px-4">CUENTA</th>
-                <th className="py-3.5 px-4">CLIENTE / RAZÓN SOCIAL</th>
-                <th className="py-3.5 px-4">DIRECCIÓN MONITOREO</th>
-                <th className="py-3.5 px-4 text-right">TARIFA</th>
-                <th className="py-3.5 px-4 text-center">ESTADO</th>
-                <th className="py-3.5 px-4 text-center">ACCIONES</th>
+              <tr className="border-b border-slate-200 font-black uppercase text-[10px] sm:text-[11px] text-slate-500 tracking-wider">
+                <th className="py-3 px-4">N° CONTRATO</th>
+                <th className="py-3 px-4">CUENTA</th>
+                <th className="py-3 px-4">CLIENTE / RAZÓN SOCIAL</th>
+                <th className="py-3 px-4">DIRECCIÓN MONITOREO</th>
+                <th className="py-3 px-4 text-right">TARIFA</th>
+                <th className="py-3 px-4 text-center">ESTADO</th>
+                <th className="py-3 px-4 text-center">ACCIONES</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/5 font-medium">
+            <tbody className="divide-y divide-slate-200/70 font-medium">
               {contratosFiltrados.map((c) => (
-                <tr key={c.id} className="hover:bg-white/[0.04] transition-colors">
-                  <td className="py-3.5 px-4 font-mono font-black text-[#2997ff]">
+                <tr key={c.id} className="hover:bg-blue-50/50 transition-colors">
+                  <td className="py-3.5 px-4 font-mono font-black text-[#1E40AF] whitespace-nowrap">
                     {c.codigo_contrato}
                   </td>
-                  <td className="py-3.5 px-4 font-mono font-bold text-white">
+                  <td className="py-3.5 px-4 font-mono font-bold text-slate-700 whitespace-nowrap">
                     #{c.cuenta}
                   </td>
                   <td className="py-3.5 px-4">
-                    <div className="font-bold text-white">{c.razon_social}</div>
-                    <div className="text-[10px] text-slate-400 font-mono">RUT: {c.rut}</div>
+                    <div className="font-bold text-slate-900">{c.razon_social}</div>
+                    <div className="text-[11px] text-slate-500 font-mono">RUT: {c.rut}</div>
                   </td>
-                  <td className="py-3.5 px-4 text-slate-300 text-xs truncate max-w-xs">
+                  <td className="py-3.5 px-4 text-slate-600 text-xs truncate max-w-xs">
                     {c.direccion} ({c.ciudad})
                   </td>
-                  <td className="py-3.5 px-4 text-right font-mono font-bold text-white">
+                  <td className="py-3.5 px-4 text-right font-mono font-bold text-slate-900 whitespace-nowrap">
                     {c.moneda === 'UF' ? `${c.tarifa} UF` : `$${c.tarifa.toLocaleString('es-CL')}`}
                   </td>
                   <td className="py-3.5 px-4 text-center">
-                    <span className={`px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider ${
+                    <span className={`inline-flex items-center justify-center px-3.5 py-1 rounded-full text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wide whitespace-nowrap shadow-2xs ${
                       c.estado === 'Firmado'
-                        ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                        ? 'bg-emerald-50 text-emerald-800 border border-emerald-200/90'
                         : c.estado === 'Por Renovar'
-                        ? 'bg-red-500/15 text-red-400 border border-red-500/30'
-                        : 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
+                        ? 'bg-red-50 text-red-800 border border-red-200/90'
+                        : 'bg-amber-50 text-amber-900 border border-amber-200/90'
                     }`}>
                       {c.estado}
                     </span>
                   </td>
-                  <td className="py-3.5 px-4 text-center">
+                  <td className="py-3.5 px-4 text-center whitespace-nowrap">
                     <button
                       onClick={() => handleAbrirModal(c)}
-                      className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-[#0066cc] to-[#2997ff] text-white text-xs font-bold hover:brightness-110 transition-all flex items-center gap-1.5 mx-auto shadow-md"
+                      className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#0B2545] hover:bg-[#1E40AF] text-white text-xs font-bold transition-all shadow-2xs active:scale-95 cursor-pointer"
                     >
-                      <FileCheck className="h-3.5 w-3.5" />
+                      <FileCheck className="h-3.5 w-3.5 shrink-0" />
                       <span>{c.estado === 'Firmado' ? 'Ver Contrato' : 'Firmar / Emitir'}</span>
                     </button>
                   </td>

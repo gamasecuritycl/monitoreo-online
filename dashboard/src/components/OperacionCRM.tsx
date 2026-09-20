@@ -3947,31 +3947,31 @@ export default function OperacionCRM() {
 
           {/* ── MÓDULO 2: AGENTES AUTÓNOMOS (AUTO-COMPANY) ── */}
           {moduloActivo === 'autonomia' && (
-            <div className="flex-1 bg-[#0c182b]/85 backdrop-blur-2xl rounded-3xl p-6 md:p-8 flex flex-col gap-6 border border-white/10 shadow-2xl overflow-y-auto">
-              <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 p-5 rounded-2xl flex justify-between items-center shadow-xl">
-                <div className="flex items-center gap-3">
-                  <div className="p-2.5 bg-gradient-to-r from-[#0066cc] to-[#2997ff] text-white rounded-xl shadow-lg shadow-[#0066cc]/20">
+            <div className="flex-1 bg-white rounded-2xl p-6 sm:p-8 flex flex-col gap-6 border border-slate-300/80 shadow-sm overflow-y-auto">
+              <div className="bg-slate-50 border border-slate-200 p-5 sm:p-6 rounded-2xl flex justify-between items-center shadow-2xs">
+                <div className="flex items-center gap-3.5">
+                  <div className="p-3 bg-[#0B2545] text-white rounded-2xl shadow-sm">
                     <Bot className="h-5 w-5 stroke-[2]" />
                   </div>
                   <div>
-                    <h2 className="text-base font-black text-white tracking-tight">
+                    <h2 className="text-base font-black text-slate-900 tracking-tight">
                       Central de Agentes Virtuales Autónomos (Auto-Company Engine)
                     </h2>
-                    <p className="text-xs text-slate-400 font-semibold">Bucle continuo de verificación 24/7 y consenso operativo</p>
+                    <p className="text-xs text-slate-500 font-semibold">Bucle continuo de verificación 24/7 y consenso operativo</p>
                   </div>
                 </div>
 
                 <button
                   disabled={ejecutandoCiclo}
                   onClick={handleEjecutarCicloConsenso}
-                  className="px-5 py-2.5 bg-gradient-to-r from-[#0066cc] to-[#2997ff] text-white font-bold rounded-xl text-xs shadow-lg shadow-[#0066cc]/20 hover:brightness-110 active:scale-95 cursor-pointer flex items-center gap-2"
+                  className="px-5 py-2.5 bg-[#0B2545] hover:bg-[#1E40AF] text-white font-bold rounded-xl text-xs shadow-sm active:scale-95 cursor-pointer flex items-center gap-2 transition-all"
                 >
                   <RefreshCw className={`h-4 w-4 ${ejecutandoCiclo ? 'animate-spin' : ''}`} />
                   <span>{ejecutandoCiclo ? 'Ejecutando...' : 'Ejecutar Consenso'}</span>
                 </button>
               </div>
 
-              <div className="bg-black/40 rounded-2xl p-6 border border-white/10 text-slate-200 font-mono text-xs shadow-2xl flex flex-col gap-3">
+              <div className="bg-slate-900 rounded-2xl p-6 border border-slate-800 text-slate-200 font-mono text-xs shadow-md flex flex-col gap-3">
                 <div className="font-bold text-emerald-400 flex items-center gap-2">
                   <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
                   <span>MEMORIA DE CONSENSO EN VIVO (consensus.md)</span>
@@ -3987,35 +3987,35 @@ export default function OperacionCRM() {
 
           {/* ── MÓDULO 3: PRESUPUESTOS & PIPELINE CRM (ESPO-CRM INSPIRED) ── */}
           {moduloActivo === 'presupuestos' && (
-            <div className="flex-1 bg-[#0a1628]/60 backdrop-blur-2xl rounded-3xl p-4 sm:p-6 lg:p-8 flex flex-col gap-6 border border-white/10 shadow-2xl min-h-0 overflow-hidden">
+            <div className="flex-1 bg-white rounded-2xl p-6 sm:p-8 flex flex-col gap-6 border border-slate-300/80 shadow-sm min-h-0 overflow-hidden">
               
-              {/* ENCABEZADO Y ALTERNADOR DE VISTA TABLA / KANBAN (APPLE HOMEKIT STYLE) */}
-              <div className="bg-[#0c182b]/80 backdrop-blur-2xl border border-white/10 p-6 rounded-3xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-2xl">
+              {/* ENCABEZADO Y ALTERNADOR DE VISTA TABLA / KANBAN */}
+              <div className="bg-slate-50/80 border border-slate-200 p-6 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-2xs">
                 <div>
-                  <div className="flex items-center gap-2.5 text-xs font-mono text-[#2997ff] uppercase tracking-wider mb-1">
-                    <span className="w-2 h-2 rounded-full bg-[#2997ff] animate-pulse" />
+                  <div className="flex items-center gap-2 text-xs font-mono text-[#1E40AF] uppercase tracking-wider mb-1">
+                    <span className="w-2 h-2 rounded-full bg-[#1E40AF] animate-pulse" />
                     <span>MÓDULO COMERCIAL & DTE CHILE</span>
                   </div>
-                  <h2 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight flex items-center gap-3">
-                    <FileText className="h-6 w-6 text-[#2997ff]" />
+                  <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight flex items-center gap-3">
+                    <FileText className="h-6 w-6 text-[#1E40AF]" />
                     <span>Presupuestos & Pipeline CRM</span>
-                    <span className="bg-[#2997ff]/20 text-[#2997ff] border border-[#2997ff]/30 text-xs px-3 py-1 rounded-full font-mono font-bold">
+                    <span className="bg-blue-50 text-[#1E40AF] border border-blue-200 text-xs px-3 py-1 rounded-full font-mono font-bold">
                       {siguienteCorrelativoCode}
                     </span>
                   </h2>
-                  <p className="text-xs text-slate-400 mt-1">
+                  <p className="text-xs text-slate-500 mt-1">
                     Gestión comercial, cotizaciones PDF DTE Chile (19% IVA) y despacho multicanal (WhatsApp & Email).
                   </p>
                 </div>
 
                 <div className="flex items-center gap-3 flex-wrap">
-                  <div className="flex items-center gap-1 bg-black/40 border border-white/10 p-1.5 rounded-2xl backdrop-blur-md">
+                  <div className="flex items-center gap-1 bg-white border border-slate-200 p-1.5 rounded-2xl shadow-2xs">
                     <button
                       onClick={() => setVistaCotizaciones('tabla')}
                       className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
                         vistaCotizaciones === 'tabla'
-                          ? 'bg-gradient-to-r from-[#0066cc] to-[#2997ff] text-white shadow-lg shadow-[#0066cc]/30'
-                          : 'text-slate-400 hover:text-white'
+                          ? 'bg-[#0B2545] text-white shadow-sm'
+                          : 'text-slate-600 hover:text-slate-900'
                       }`}
                     >
                       <TableIcon className="h-4 w-4" />
@@ -4025,8 +4025,8 @@ export default function OperacionCRM() {
                       onClick={() => setVistaCotizaciones('kanban')}
                       className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
                         vistaCotizaciones === 'kanban'
-                          ? 'bg-gradient-to-r from-[#0066cc] to-[#2997ff] text-white shadow-lg shadow-[#0066cc]/30'
-                          : 'text-slate-400 hover:text-white'
+                          ? 'bg-[#0B2545] text-white shadow-sm'
+                          : 'text-slate-600 hover:text-slate-900'
                       }`}
                     >
                       <LayoutGrid className="h-4 w-4" />
@@ -4036,7 +4036,7 @@ export default function OperacionCRM() {
 
                   <button
                     onClick={abrirModalNuevaCotizacion}
-                    className="px-5 py-3 bg-gradient-to-r from-[#0066cc] to-[#2997ff] hover:from-[#0055b3] hover:to-[#1a85f2] text-white font-bold rounded-2xl text-xs sm:text-sm shadow-xl shadow-[#0066cc]/30 active:scale-95 cursor-pointer transition-all flex items-center gap-2"
+                    className="px-5 py-3 bg-[#0B2545] hover:bg-[#1E40AF] text-white font-bold rounded-2xl text-xs sm:text-sm shadow-sm active:scale-95 cursor-pointer transition-all flex items-center gap-2"
                   >
                     <Plus className="h-4 w-4 stroke-[2.5]" />
                     <span>Crear Presupuesto</span>
@@ -4429,29 +4429,29 @@ export default function OperacionCRM() {
 
           {/* ── MÓDULO 4: FACTURACIÓN & ABONOS PARCIALES CON CONCILIADOR AUTOMÁTICO ── */}
           {moduloActivo === 'facturacion' && (
-            <div className="flex-1 bg-[#0c182b]/85 backdrop-blur-2xl rounded-3xl p-6 sm:p-8 flex flex-col gap-6 border border-white/10 shadow-2xl overflow-y-auto">
+            <div className="flex-1 bg-white rounded-2xl p-6 sm:p-8 flex flex-col gap-6 border border-slate-300/80 shadow-sm overflow-y-auto">
               
               {/* ENCABEZADO Y BOTONES DE CARGA EXCEL / CSV */}
-              <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 p-6 rounded-3xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shadow-xl">
+              <div className="bg-slate-50 border border-slate-200 p-6 rounded-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shadow-2xs">
                 <div className="flex items-center gap-3.5">
-                  <div className="p-3 bg-gradient-to-r from-[#0066cc] to-[#2997ff] text-white rounded-2xl shadow-lg shadow-[#0066cc]/20">
+                  <div className="p-3 bg-[#0B2545] text-white rounded-2xl shadow-sm">
                     <DollarSign className="h-6 w-6 stroke-[2.5]" />
                   </div>
                   <div>
-                    <h2 className="text-base sm:text-lg font-black text-white uppercase tracking-wide flex items-center gap-2.5 flex-wrap">
+                    <h2 className="text-base sm:text-lg font-black text-slate-900 uppercase tracking-wide flex items-center gap-2.5 flex-wrap">
                       <span>Gestor de Facturación & Conciliador de Cobranza (Julio 2026)</span>
-                      <span className="bg-[#2997ff]/20 text-[#2997ff] border border-[#2997ff]/30 text-[10px] font-black px-3 py-0.5 rounded-full font-mono">
+                      <span className="bg-blue-50 text-[#1E40AF] border border-blue-200 text-[10px] font-black px-3 py-0.5 rounded-full font-mono">
                         {facturas.length} Facturas Reales
                       </span>
                     </h2>
-                    <p className="text-xs text-slate-400 font-semibold mt-0.5">
+                    <p className="text-xs text-slate-500 font-semibold mt-0.5">
                       Asociación automática por Inteligencia Artificial y concordancia inteligente de abonados perimetrales
                     </p>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-3 flex-wrap">
-                  <label className="px-5 py-3 bg-gradient-to-r from-[#0066cc] to-[#2997ff] text-white font-black rounded-2xl text-xs shadow-lg shadow-[#0066cc]/20 hover:brightness-110 active:scale-95 cursor-pointer transition-all flex items-center gap-2 uppercase tracking-wider">
+                  <label className="px-5 py-3 bg-[#0B2545] hover:bg-[#1E40AF] text-white font-bold rounded-2xl text-xs shadow-sm hover:brightness-110 active:scale-95 cursor-pointer transition-all flex items-center gap-2 uppercase tracking-wider">
                     <FileSpreadsheet className="h-4 w-4 stroke-[2.5]" />
                     <span>📁 Subir Planilla Cobranza (Excel / CSV)</span>
                     <input
@@ -4465,29 +4465,29 @@ export default function OperacionCRM() {
               </div>
 
               {/* ── CARDS DE RESUMEN FINANCIERO DE COBRANZA EN TIEMPO REAL BENTO ── */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 p-6 rounded-3xl space-y-2 transition-all hover:border-white/20 shadow-xl">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">TOTAL FACTURADO JULIO</span>
-                  <div className="text-2xl font-black font-mono text-white">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+                <div className="bg-slate-50 border border-slate-200/90 p-5 sm:p-6 rounded-2xl space-y-2 shadow-2xs">
+                  <span className="text-[10px] sm:text-[11px] font-extrabold text-slate-500 uppercase tracking-wider block">TOTAL FACTURADO JULIO</span>
+                  <div className="text-2xl font-black font-sans text-slate-900">
                     ${facturas.reduce((acc, curr) => acc + curr.monto_total, 0).toLocaleString('es-CL')} CLP
                   </div>
-                  <span className="text-xs text-slate-300 font-bold bg-white/5 border border-white/10 px-2.5 py-0.5 rounded-lg inline-block">34 Facturas procesadas</span>
+                  <span className="text-[11px] text-slate-600 font-bold bg-white border border-slate-200 px-3 py-1 rounded-full inline-block whitespace-nowrap shadow-2xs">34 Facturas procesadas</span>
                 </div>
 
-                <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 p-6 rounded-3xl space-y-2 transition-all hover:border-white/20 shadow-xl">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">TOTAL RECAUDADO / ABONADO</span>
-                  <div className="text-2xl font-black font-mono text-emerald-400">
+                <div className="bg-emerald-50/70 border border-emerald-200/90 p-5 sm:p-6 rounded-2xl space-y-2 shadow-2xs">
+                  <span className="text-[10px] sm:text-[11px] font-extrabold text-emerald-900 uppercase tracking-wider block">TOTAL RECAUDADO / ABONADO</span>
+                  <div className="text-2xl font-black font-sans text-emerald-700">
                     ${facturas.reduce((acc, curr) => acc + (curr.monto_abonado || 0), 0).toLocaleString('es-CL')} CLP
                   </div>
-                  <span className="text-xs text-emerald-400 font-extrabold bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-0.5 rounded-lg inline-block">Abonos al día</span>
+                  <span className="text-[11px] text-emerald-800 font-extrabold bg-white border border-emerald-200 px-3 py-1 rounded-full inline-block whitespace-nowrap shadow-2xs">Abonos al día</span>
                 </div>
 
-                <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 p-6 rounded-3xl space-y-2 transition-all hover:border-white/20 shadow-xl">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">SALDO PENDIENTE POR COBRAR</span>
-                  <div className="text-2xl font-black font-mono text-rose-400">
+                <div className="bg-red-50/70 border border-red-200/90 p-5 sm:p-6 rounded-2xl space-y-2 shadow-2xs">
+                  <span className="text-[10px] sm:text-[11px] font-extrabold text-red-900 uppercase tracking-wider block">SALDO PENDIENTE POR COBRAR</span>
+                  <div className="text-2xl font-black font-sans text-red-700">
                     ${facturas.reduce((acc, curr) => acc + (curr.saldo_pendiente || 0), 0).toLocaleString('es-CL')} CLP
                   </div>
-                  <span className="text-xs text-rose-400 font-extrabold bg-rose-500/15 border border-rose-500/30 px-2.5 py-0.5 rounded-lg inline-block">Por conciliar</span>
+                  <span className="text-[11px] text-red-800 font-extrabold bg-white border border-red-200 px-3 py-1 rounded-full inline-block whitespace-nowrap shadow-2xs">Por conciliar</span>
                 </div>
               </div>
 
@@ -4672,19 +4672,19 @@ export default function OperacionCRM() {
 
           {/* ── MÓDULO 5: SERVICIO TÉCNICO & SLAs (COMMAND CENTER 24/7 INTEGRATED) ── */}
           {moduloActivo === 'serv_tecnico' && (
-            <div className="flex-1 bg-[#0c182b]/85 backdrop-blur-2xl rounded-3xl p-6 md:p-8 flex flex-col gap-6 border border-white/10 shadow-2xl overflow-y-auto">
+            <div className="flex-1 bg-white rounded-2xl p-6 md:p-8 flex flex-col gap-6 border border-slate-300/80 shadow-sm overflow-y-auto">
               
               {/* ENCABEZADO MÓDULO */}
-              <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 p-5 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-xl">
-                <div className="flex items-center gap-3">
-                  <div className="p-2.5 bg-gradient-to-r from-[#0066cc] to-[#2997ff] text-white rounded-xl shadow-lg shadow-[#0066cc]/20">
+              <div className="bg-slate-50 border border-slate-200 p-5 sm:p-6 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-2xs">
+                <div className="flex items-center gap-3.5">
+                  <div className="p-3 bg-[#0B2545] text-white rounded-2xl shadow-sm">
                     <Wrench className="h-5 w-5 stroke-[2]" />
                   </div>
                   <div>
-                    <h2 className="text-base font-black text-white uppercase tracking-wide">
+                    <h2 className="text-base font-black text-slate-900 uppercase tracking-wide">
                       Servicios Técnicos & Órdenes de Trabajo (Command Center 24/7)
                     </h2>
-                    <p className="text-xs text-slate-400 font-semibold">
+                    <p className="text-xs text-slate-500 font-semibold mt-0.5">
                       Sincronización en tiempo real con bitácora central, asignación técnica y gestión de SLAs (2h / 6h / 24h)
                     </p>
                   </div>
@@ -4692,9 +4692,9 @@ export default function OperacionCRM() {
                 <div className="flex items-center gap-3 flex-wrap">
                   <button
                     onClick={() => setMostrarModalPWATerreno(true)}
-                    className="px-4 py-2.5 bg-white/10 hover:bg-white/15 border border-white/10 text-white font-bold rounded-xl text-xs active:scale-95 cursor-pointer flex items-center gap-2 transition-all shadow-md"
+                    className="px-4 py-2.5 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-bold rounded-xl text-xs active:scale-95 cursor-pointer flex items-center gap-2 transition-all shadow-2xs"
                   >
-                    <Smartphone className="h-4 w-4 text-emerald-400" />
+                    <Smartphone className="h-4 w-4 text-emerald-600" />
                     <span>📱 App PWA Técnico en Terreno</span>
                   </button>
                   <button
@@ -4705,7 +4705,7 @@ export default function OperacionCRM() {
                       setOtFormObservaciones('')
                       setMostrarModalOT(true)
                     }}
-                    className="px-5 py-2.5 bg-gradient-to-r from-[#0066cc] to-[#2997ff] text-white font-bold rounded-xl text-xs shadow-lg shadow-[#0066cc]/20 hover:brightness-110 active:scale-95 cursor-pointer flex items-center gap-2 transition-all"
+                    className="px-5 py-2.5 bg-[#0B2545] hover:bg-[#1E40AF] text-white font-bold rounded-xl text-xs shadow-sm hover:brightness-110 active:scale-95 cursor-pointer flex items-center gap-2 transition-all"
                   >
                     <Plus className="h-4 w-4" />
                     <span>Nueva Orden Técnica (OT)</span>
@@ -4714,13 +4714,13 @@ export default function OperacionCRM() {
               </div>
 
               {/* ── ALERTA DE NOVEDADES TÉCNICAS EN VIVO DESDE CENTRAL DE MONITOREO ── */}
-              <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 p-5 rounded-3xl space-y-3 shadow-xl">
-                <div className="flex justify-between items-center border-b border-white/10 pb-2">
-                  <h3 className="font-black text-white uppercase tracking-wider text-xs flex items-center gap-2">
-                    <AlertTriangle className="h-4 w-4 text-amber-400 animate-pulse" />
+              <div className="bg-slate-50 border border-slate-200 p-5 rounded-2xl space-y-3 shadow-2xs">
+                <div className="flex justify-between items-center border-b border-slate-200 pb-2">
+                  <h3 className="font-black text-slate-900 uppercase tracking-wider text-xs flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4 text-amber-500" />
                     <span>NOVEDADES & ALERTAS TÉCNICAS RECIENTES DEL COMMAND CENTER (24/7 API)</span>
                   </h3>
-                  <span className="text-[10px] font-bold text-slate-300 bg-white/10 border border-white/10 px-2.5 py-1 rounded-xl">
+                  <span className="text-[10px] font-bold text-slate-600 bg-white border border-slate-200 px-3 py-1 rounded-full shadow-2xs">
                     Central Operativa
                   </span>
                 </div>
@@ -4961,43 +4961,43 @@ export default function OperacionCRM() {
 
           {/* ── MÓDULO 6: KPIS EJECUTIVOS ── */}
           {moduloActivo === 'kpis' && (
-            <div className="flex-1 bg-[#0c182b]/85 backdrop-blur-2xl rounded-3xl p-6 md:p-8 flex flex-col gap-6 border border-white/10 shadow-2xl overflow-y-auto">
-              <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 p-5 rounded-2xl flex items-center gap-3 shadow-xl">
-                <div className="p-2.5 bg-gradient-to-r from-[#0066cc] to-[#2997ff] text-white rounded-xl shadow-lg shadow-[#0066cc]/20">
+            <div className="flex-1 bg-white rounded-2xl p-6 md:p-8 flex flex-col gap-6 border border-slate-300/80 shadow-sm overflow-y-auto">
+              <div className="bg-slate-50 border border-slate-200 p-5 rounded-2xl flex items-center gap-3.5 shadow-2xs">
+                <div className="p-3 bg-[#0B2545] text-white rounded-2xl shadow-sm">
                   <BarChart3 className="h-5 w-5 stroke-[2]" />
                 </div>
                 <div>
-                  <h2 className="text-base font-black text-white tracking-tight">
+                  <h2 className="text-base font-black text-slate-900 tracking-tight">
                     Tablero de KPIs Ejecutivos & Recaudación por Razón Social
                   </h2>
-                  <p className="text-xs text-slate-400 font-semibold">
+                  <p className="text-xs text-slate-500 font-semibold mt-0.5">
                     Distribución de facturación mensual y participación financiera de las 4 Empresas del Conglomerado
                   </p>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 p-6 rounded-3xl space-y-2 shadow-xl hover:border-white/20 transition-all">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">FAC. MENSUAL PROYECTADA TOTAL</span>
-                  <div className="text-2xl font-bold font-mono text-emerald-400">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                <div className="bg-slate-50 border border-slate-200/90 p-5 sm:p-6 rounded-2xl space-y-2 shadow-2xs">
+                  <span className="text-[10px] sm:text-[11px] font-extrabold text-slate-500 uppercase tracking-wider block">FAC. MENSUAL PROYECTADA TOTAL</span>
+                  <div className="text-2xl font-black font-sans text-emerald-700">
                     ${kpisFinancieros.totalTarifasCLP.toLocaleString('es-CL')} CLP
                   </div>
-                  <span className="text-xs text-slate-400 font-semibold">Calculado sobre {kpisFinancieros.totalClientes} Clientes</span>
+                  <span className="text-[11px] text-slate-600 font-bold bg-white border border-slate-200 px-3 py-1 rounded-full inline-block whitespace-nowrap shadow-2xs">Calculado sobre {kpisFinancieros.totalClientes} Clientes</span>
                 </div>
 
-                <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 p-6 rounded-3xl space-y-2 shadow-xl hover:border-white/20 transition-all">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">EFECTIVIDAD DE COBRANZA</span>
-                  <div className="text-2xl font-bold font-mono text-[#2997ff]">96.4%</div>
-                  <span className="text-xs text-emerald-400 font-bold flex items-center gap-1">
-                    <CheckCircle2 className="h-3.5 w-3.5" />
+                <div className="bg-blue-50/70 border border-blue-200/90 p-5 sm:p-6 rounded-2xl space-y-2 shadow-2xs">
+                  <span className="text-[10px] sm:text-[11px] font-extrabold text-[#1E40AF] uppercase tracking-wider block">EFECTIVIDAD DE COBRANZA</span>
+                  <div className="text-2xl font-black font-sans text-[#1E40AF]">96.4%</div>
+                  <span className="text-[11px] text-emerald-800 font-extrabold bg-white border border-emerald-200 px-3 py-1 rounded-full inline-flex items-center gap-1 whitespace-nowrap shadow-2xs">
+                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
                     <span>Meta Cumplida</span>
                   </span>
                 </div>
 
-                <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 p-6 rounded-3xl space-y-2 shadow-xl hover:border-white/20 transition-all">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">UF REFERENCIA</span>
-                  <div className="text-2xl font-bold font-mono text-white">${valorUF.toLocaleString('es-CL')} CLP</div>
-                  <span className="text-xs text-slate-400 font-semibold">Oficial hoy</span>
+                <div className="bg-slate-50 border border-slate-200/90 p-5 sm:p-6 rounded-2xl space-y-2 shadow-2xs">
+                  <span className="text-[10px] sm:text-[11px] font-extrabold text-slate-500 uppercase tracking-wider block">UF REFERENCIA</span>
+                  <div className="text-2xl font-black font-sans text-slate-900">${valorUF.toLocaleString('es-CL')} CLP</div>
+                  <span className="text-[11px] text-slate-600 font-bold bg-white border border-slate-200 px-3 py-1 rounded-full inline-block whitespace-nowrap shadow-2xs">Oficial hoy</span>
                 </div>
               </div>
             </div>
