@@ -674,8 +674,24 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
                     )}
                   </div>
 
+                  {/* Chips Clave de Licitación (Visita Técnica, Garantías y Ponderaciones) */}
+                  <div className="flex items-center gap-1.5 flex-wrap mb-3 pt-1">
+                    <span className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30 flex items-center gap-1">
+                      <Calendar className="w-3 h-3 text-amber-400" />
+                      Visita: Obligatoria
+                    </span>
+                    <span className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 flex items-center gap-1">
+                      <Shield className="w-3 h-3 text-indigo-400" />
+                      Garantía: ~5% (${Math.round((lic.MontoEstimado || 35000000) * 0.05 / 1000000 * 10) / 10}M)
+                    </span>
+                    <span className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
+                      <Scale className="w-3 h-3 text-emerald-400" />
+                      Pauta: 45% Econ / 25% Téc
+                    </span>
+                  </div>
+
                   {/* Descripción */}
-                  <p className="text-xs text-slate-400 line-clamp-3 mb-4 leading-relaxed">
+                  <p className="text-xs text-slate-400 line-clamp-2 sm:line-clamp-3 mb-3 leading-relaxed">
                     {lic.Descripcion}
                   </p>
                 </div>
@@ -685,7 +701,7 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
                   <div className="grid grid-cols-2 gap-2 mb-3 text-xs">
                     <div>
                       <span className="text-[10px] text-slate-500 block">Monto Estimado</span>
-                      <span className="font-bold font-mono text-emerald-400">
+                      <span className="font-bold font-mono text-emerald-400 text-xs sm:text-sm">
                         ${Math.round(lic.MontoEstimado).toLocaleString('es-CL')} {lic.Moneda}
                       </span>
                     </div>
@@ -724,66 +740,82 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
         </div>
       )}
 
-      {/* ── VENTANA EMERGENTE: MODAL LICITACIÓN 360° & POSTULACIÓN OFICIAL ── */}
+      {/* ── VENTANA EMERGENTE: MODAL LICITACIÓN 360° & POSTULACIÓN OFICIAL RESPONSIVE ── */}
       {licitacionModal && (
-        <div className="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 flex items-center justify-center p-3 sm:p-5">
-          <div className="bg-slate-900 border border-slate-700 rounded-3xl max-w-4xl w-full shadow-2xl flex flex-col max-h-[94vh] animate-in zoom-in-95 overflow-hidden">
-            {/* Header Modal */}
-            <div className="p-5 border-b border-slate-800 bg-gradient-to-r from-slate-900 via-indigo-950/80 to-slate-900 shrink-0">
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex items-start gap-3">
-                  <div className="w-12 h-12 rounded-2xl bg-indigo-600/20 border border-indigo-500/40 flex items-center justify-center text-indigo-400 shrink-0 mt-0.5 shadow-md">
-                    <Building2 className="w-6 h-6" />
+        <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+          <div className="bg-slate-900 border-t sm:border border-slate-700 w-full sm:max-w-4xl h-[100dvh] sm:h-auto sm:max-h-[94vh] rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-5 sm:zoom-in-95 duration-200">
+            {/* Header Modal Responsive */}
+            <div className="p-4 sm:p-5 border-b border-slate-800 bg-gradient-to-r from-slate-900 via-indigo-950/80 to-slate-900 shrink-0">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-start gap-2.5 sm:gap-3">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-indigo-600/20 border border-indigo-500/40 flex items-center justify-center text-indigo-400 shrink-0 mt-0.5 shadow-md">
+                    <Building2 className="w-5 h-5 sm:w-6 sm:h-6" />
                   </div>
                   <div>
-                    <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                      <span className="font-mono font-black text-xs text-indigo-300 bg-indigo-950 px-2.5 py-0.5 rounded-lg border border-indigo-700/80">
+                    <div className="flex items-center gap-1.5 sm:gap-2 mb-1 flex-wrap">
+                      <span className="font-mono font-black text-[11px] sm:text-xs text-indigo-300 bg-indigo-950 px-2 py-0.5 rounded-lg border border-indigo-700/80">
                         ID: {licitacionModal.CodigoExterno}
                       </span>
-                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-700">
+                      <span className="px-2 py-0.5 rounded text-[9px] sm:text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-700">
                         {licitacionModal.Estado}
                       </span>
-                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-300 border border-slate-700">
+                      <span className="px-2 py-0.5 rounded text-[9px] sm:text-[10px] font-bold bg-slate-800 text-slate-300 border border-slate-700">
                         {licitacionModal.Rubro}
                       </span>
                       {licitacionModal.Region && (
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-950 text-blue-300 border border-blue-700/60 flex items-center gap-1">
+                        <span className="px-2 py-0.5 rounded text-[9px] sm:text-[10px] font-bold bg-blue-950 text-blue-300 border border-blue-700/60 flex items-center gap-1">
                           <MapPin className="w-3 h-3 text-red-400" />
                           {licitacionModal.Region}
                         </span>
                       )}
                     </div>
-                    <h3 className="text-base sm:text-lg font-black text-white leading-snug">
+                    <h3 className="text-sm sm:text-lg font-black text-white leading-snug line-clamp-2 sm:line-clamp-none">
                       {licitacionModal.Nombre}
                     </h3>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 sm:gap-2">
                   <button
                     onClick={exportarInformePDF}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-bold transition cursor-pointer"
+                    className="flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-bold transition cursor-pointer"
                     title="Exportar Resumen a PDF"
                   >
                     <Download className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>PDF</span>
+                    <span className="hidden sm:inline">PDF</span>
                   </button>
                   <button
                     onClick={() => setLicitacionModal(null)}
-                    className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
+                    className="p-1.5 sm:p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
                   >
                     <X className="w-5 h-5" />
                   </button>
                 </div>
               </div>
 
-              {/* Pestañas de Navegación del Modal */}
-              <div className="flex items-center gap-1 mt-4 overflow-x-auto pb-1">
+              {/* Selector Móvil de Pestañas (Visible en pantallas < 640px) */}
+              <div className="sm:hidden mt-3">
+                <select
+                  value={tabModal}
+                  onChange={(e) => setTabModal(e.target.value as any)}
+                  className="w-full bg-slate-950 border border-indigo-500/40 rounded-xl px-3 py-2 text-xs font-bold text-indigo-200 focus:outline-none"
+                >
+                  <option value="ficha">📋 Ficha & Alcance</option>
+                  <option value="visita">📍 Visita a Terreno (Obligatoria)</option>
+                  <option value="garantias">🛡️ Garantías Exigidas</option>
+                  <option value="ponderaciones">⚖️ Ponderaciones & Evaluación</option>
+                  <option value="postulacion">🎯 Formular Postulación</option>
+                  <option value="ia">🧠 Análisis con IA</option>
+                </select>
+              </div>
+
+              {/* Pestañas de Navegación del Modal (Desktop y Tablet con scroll táctil suave) */}
+              <div className="hidden sm:flex items-center gap-1.5 mt-4 overflow-x-auto pb-1 no-scrollbar">
                 {[
                   { id: 'ficha', label: 'Ficha & Alcance', icon: FileText },
                   { id: 'visita', label: 'Visita a Terreno', icon: Calendar },
                   { id: 'garantias', label: 'Garantías Exigidas', icon: Shield },
-                  { id: 'ponderaciones', label: 'Ponderaciones & Evaluación', icon: Scale },
+                  { id: 'ponderaciones', label: 'Ponderaciones', icon: Scale },
                   { id: 'postulacion', label: '🎯 Formular Postulación', icon: CheckSquare },
                   { id: 'ia', label: '🧠 Análisis con IA', icon: Brain },
                 ].map(tab => {
@@ -793,7 +825,7 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
                     <button
                       key={tab.id}
                       onClick={() => setTabModal(tab.id as any)}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition cursor-pointer ${
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap shrink-0 transition cursor-pointer ${
                         active 
                           ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30' 
                           : 'bg-slate-950/60 text-slate-400 hover:text-slate-200 hover:bg-slate-800'
@@ -808,7 +840,7 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
             </div>
 
             {/* Contenido según pestaña */}
-            <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-5 text-xs text-slate-300">
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-5 text-xs text-slate-300">
               {/* ── PESTAÑA 1: FICHA & ALCANCE ── */}
               {tabModal === 'ficha' && (
                 <div className="space-y-4">

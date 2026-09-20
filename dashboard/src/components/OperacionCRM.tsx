@@ -3244,7 +3244,7 @@ export default function OperacionCRM() {
 
           </div>
         ) : (
-          <div className="flex-1 flex flex-col overflow-y-auto bg-white border border-slate-300/80 rounded-3xl shadow-sm p-6 sm:p-8 lg:p-9 min-h-0 relative no-imprimir animate-in zoom-in-95 duration-200 text-slate-900">
+          <div className="flex-1 flex flex-col overflow-y-auto bg-white border border-slate-300/80 rounded-2xl sm:rounded-3xl shadow-sm p-2 sm:p-6 lg:p-9 min-h-0 relative no-imprimir animate-in zoom-in-95 duration-200 text-slate-900">
             {/* ── VISTA 2: VENTANA EMERGENTE DEL MÓDULO (PANTALLA COMPLETA ESPACIOSA DSTUDIO) ── */}
             
             {/* BARRA SUPERIOR DE NAVEGACIÓN, VOLVER Y CERRAR */}
@@ -4633,7 +4633,7 @@ export default function OperacionCRM() {
 
           {/* ── MÓDULO MERCADO PÚBLICO & LICITACIONES ESTATALES CHILECOMPRA ── */}
           {moduloActivo === 'mercadopublico' && (
-            <div className="flex-1 bg-white rounded-2xl p-6 sm:p-8 flex flex-col gap-6 border border-slate-300/80 shadow-sm min-h-0 overflow-y-auto">
+            <div className="flex-1 bg-white rounded-2xl p-1.5 sm:p-6 lg:p-8 flex flex-col gap-4 sm:gap-6 border border-slate-300/80 shadow-sm min-h-0 overflow-y-auto">
               <MercadoPublicoModule onCotizarLicitacion={handleCotizarDesdeLicitacion} />
             </div>
           )}
