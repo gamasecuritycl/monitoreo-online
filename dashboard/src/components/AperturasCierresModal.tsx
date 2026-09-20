@@ -145,8 +145,8 @@ export default function AperturasCierresModal({ onClose }: AperturasCierresModal
           .from('eventos_monitoreo')
           .select('*')
           .in('cuenta', cuentasUnicas)
-          .order('id', { ascending: false })
-          .limit(300)
+          .order('fecha_hora', { ascending: false })
+          .limit(400)
 
         if (isCancelled || !eventosData) return
 

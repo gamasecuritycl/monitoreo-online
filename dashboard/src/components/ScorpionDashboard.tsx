@@ -646,8 +646,8 @@ export default function ScorpionDashboard() {
         .not('cuenta', 'like', 'ORDEN_%')
         .not('cuenta', 'like', 'AUDITORIA_%')
         .not('cuenta', 'eq', '0000')
-        .order('id', { ascending: false })
-        .limit(200)
+        .order('fecha_hora', { ascending: false })
+        .limit(300)
 
       if (busqueda.trim()) {
         query = query.or(`cuenta.ilike.%${busqueda}%,nombre_abonado.ilike.%${busqueda}%`)
@@ -659,8 +659,8 @@ export default function ScorpionDashboard() {
         const limpios = data.filter(ev => !esCuentaInternaOFrame(ev.cuenta, ev.evento, ev.nombre_abonado))
         // Orden cronológico ascendente: el más reciente SIEMPRE abajo
         const ordenados = deduplicarEventos(limpios
-          .slice(0, 100)
-          .sort(compararEventosCronologico))
+          .sort(compararEventosCronologico)
+          .slice(-100))
         setEventos(ordenados)
         if (ordenados.length > 0 && !eventoSeleccionado) {
           setEventoSeleccionado(ordenados[ordenados.length - 1])
@@ -673,7 +673,7 @@ export default function ScorpionDashboard() {
         const json = await r.json()
         if (json.data && json.data.length > 0) {
           // API devuelve oldest-first (ascendente)
-          const deduplicados = deduplicarEventos(json.data.sort(compararEventosCronologico))
+          const deduplicados = deduplicarEventos(json.data.sort(compararEventosCronologico).slice(-100))
           setEventos(deduplicados)
           if (deduplicados.length > 0 && !eventoSeleccionado) setEventoSeleccionado(deduplicados[deduplicados.length - 1])
         }
@@ -687,7 +687,7 @@ export default function ScorpionDashboard() {
 
   // Polling cada 3 segundos
   useEffect(() => {
-    let latestId = 0
+    let lastSig = ''
     const poll = async () => {
       try {
         const { data, error } = await supabase
@@ -702,15 +702,16 @@ export default function ScorpionDashboard() {
           .not('cuenta', 'like', 'ORDEN_%')
           .not('cuenta', 'like', 'AUDITORIA_%')
           .not('cuenta', 'eq', '0000')
-          .order('id', { ascending: false })
-          .limit(200)
+          .order('fecha_hora', { ascending: false })
+          .limit(300)
 
         if (error) throw error
         if (!data || data.length === 0) return
-        const maxId = data[0].id
-        if (maxId <= latestId) return
 
-        latestId = maxId
+        const currentSig = `${data[0].id}_${data[0].fecha_hora}_${data.length}`
+        if (currentSig === lastSig && !busqueda.trim()) return
+        lastSig = currentSig
+
         const filtered = busqueda.trim()
           ? data.filter(e =>
               e.cuenta?.toLowerCase().includes(busqueda.toLowerCase()) ||
@@ -720,12 +721,12 @@ export default function ScorpionDashboard() {
 
         const limpios = filtered.filter(ev => !esCuentaInternaOFrame(ev.cuenta, ev.evento, ev.nombre_abonado))
         const ordenados = deduplicarEventos([...limpios]
-          .slice(0, 100)
-          .sort(compararEventosCronologico))
+          .sort(compararEventosCronologico)
+          .slice(-100))
         setEventos(ordenados)
         
         if (ordenados.length > 0) {
-          setEventoSeleccionado(ordenados[ordenados.length - 1])
+          setEventoSeleccionado(prev => prev || ordenados[ordenados.length - 1])
         }
       } catch (_) {
         // Si Supabase falla, intentar polling via PG directo cada 5s
@@ -733,12 +734,12 @@ export default function ScorpionDashboard() {
           const r = await fetch(`/api/dahua-eventos?tipo=eventos&limit=100`)
           const json = await r.json()
           if (json.data && json.data.length > 0) {
-            const maxId = json.data[json.data.length - 1].id  // último = más reciente
-            if (maxId <= latestId) return
-            latestId = maxId
-            const deduplicados = deduplicarEventos(json.data.sort(compararEventosCronologico))
-            setEventos(deduplicados)  // oldest-first
-            if (deduplicados.length > 0) setEventoSeleccionado(deduplicados[deduplicados.length - 1])
+            const currentSig = `fallback_${json.data[json.data.length - 1].id}_${json.data.length}`
+            if (currentSig === lastSig && !busqueda.trim()) return
+            lastSig = currentSig
+            const deduplicados = deduplicarEventos(json.data.sort(compararEventosCronologico).slice(-100))
+            setEventos(deduplicados)
+            if (deduplicados.length > 0) setEventoSeleccionado(prev => prev || deduplicados[deduplicados.length - 1])
           }
         } catch {}
       }

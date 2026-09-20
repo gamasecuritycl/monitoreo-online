@@ -346,7 +346,10 @@ def verificar_auto_actualizacion_github():
                 content_local = f1.read()
                 content_remote = f2.read()
             
-            if content_local != content_remote:
+            content_local_norm = content_local.replace(b'\r\n', b'\n').strip()
+            content_remote_norm = content_remote.replace(b'\r\n', b'\n').strip()
+            
+            if content_local_norm != content_remote_norm:
                 print("[AUTO-UPDATE] Aplicando actualización de sincronizador.py...")
                 shutil.copy2(temp_remote, this_file)
                 try: os.remove(temp_remote)
