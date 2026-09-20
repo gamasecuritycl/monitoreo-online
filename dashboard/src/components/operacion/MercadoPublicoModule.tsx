@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { 
   Building2, Search, Key, ExternalLink, FileText, 
   RefreshCw, AlertCircle, CheckCircle2, Clock, 
-  Sparkles, Check, X
+  Sparkles, Check, X, MapPin
 } from 'lucide-react'
 
 export interface LicitacionChileCompra {
@@ -13,6 +13,8 @@ export interface LicitacionChileCompra {
   CodigoEstado: number
   Estado: string
   Organismo: string
+  Region?: string
+  Comuna?: string
   RutComprador?: string
   DireccionUnidad?: string
   FechaCierre: string
@@ -34,6 +36,7 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
   const [licitaciones, setLicitaciones] = useState<LicitacionChileCompra[]>([])
   const [cargando, setCargando] = useState(true)
   const [filtroRubro, setFiltroRubro] = useState<string>('todos')
+  const [filtroRegion, setFiltroRegion] = useState<string>('todas')
   const [busqueda, setBusqueda] = useState<string>('')
   const [ticketApi, setTicketApi] = useState<string>('')
   const [modalTicketAbierto, setModalTicketAbierto] = useState(false)
@@ -63,6 +66,7 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
       const params = new URLSearchParams()
       if (ticketApi) params.append('ticket', ticketApi)
       if (filtroRubro !== 'todos') params.append('rubro', filtroRubro)
+      if (filtroRegion !== 'todas') params.append('region', filtroRegion)
 
       const res = await fetch(`/api/mercado-publico?${params.toString()}`)
       const data = await res.json()
@@ -82,7 +86,7 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
 
   useEffect(() => {
     fetchLicitaciones()
-  }, [ticketApi, filtroRubro])
+  }, [ticketApi, filtroRubro, filtroRegion])
 
   const guardarTicket = () => {
     const val = ticketInput.trim()
@@ -117,7 +121,7 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
     }
   }
 
-  // Filtrado local estricto por rubro y búsqueda
+  // Filtrado local estricto por rubro, región y búsqueda
   const licitacionesFiltradas = licitaciones.filter(l => {
     // 1. Filtro estricto por Rubro de la pestaña seleccionada
     if (filtroRubro === 'cctv' && !l.Rubro.includes('CCTV')) return false
@@ -125,12 +129,22 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
     if (filtroRubro === 'guardias' && !l.Rubro.includes('Guardias')) return false
     if (filtroRubro === 'acceso' && !l.Rubro.includes('Acceso')) return false
 
-    // 2. Filtro por búsqueda de texto
+    // 2. Filtro por Región
+    if (filtroRegion !== 'todas') {
+      const reg = (l.Region || '').toLowerCase()
+      const com = (l.Comuna || '').toLowerCase()
+      const f = filtroRegion.toLowerCase()
+      if (!reg.includes(f) && !com.includes(f)) return false
+    }
+
+    // 3. Filtro por búsqueda de texto
     if (!busqueda.trim()) return true
     const q = busqueda.toLowerCase()
     return (
       l.Nombre.toLowerCase().includes(q) ||
       l.Organismo.toLowerCase().includes(q) ||
+      (l.Region && l.Region.toLowerCase().includes(q)) ||
+      (l.Comuna && l.Comuna.toLowerCase().includes(q)) ||
       l.CodigoExterno.toLowerCase().includes(q) ||
       l.Descripcion.toLowerCase().includes(q)
     )
@@ -256,9 +270,9 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
       )}
 
       {/* Barra de Filtros y Búsqueda */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col md:flex-row items-center justify-between gap-4">
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col lg:flex-row items-center justify-between gap-4">
         {/* Rubro Tabs */}
-        <div className="flex flex-wrap items-center gap-1.5 w-full md:w-auto">
+        <div className="flex flex-wrap items-center gap-1.5 w-full lg:w-auto">
           {[
             { id: 'todos', label: 'Todas las Licitaciones' },
             { id: 'cctv', label: 'CCTV & Cámaras' },
@@ -280,16 +294,41 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
           ))}
         </div>
 
-        {/* Buscador */}
-        <div className="relative w-full md:w-72">
-          <Search className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            value={busqueda}
-            onChange={(e) => setBusqueda(e.target.value)}
-            placeholder="Buscar por organismo, código..."
-            className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500"
-          />
+        {/* Filtros de Región y Buscador */}
+        <div className="flex flex-col sm:flex-row items-center gap-2.5 w-full lg:w-auto">
+          {/* Selector de Región */}
+          <div className="flex items-center gap-1.5 bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1 text-xs text-slate-300 w-full sm:w-auto">
+            <MapPin className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+            <select
+              value={filtroRegion}
+              onChange={(e) => setFiltroRegion(e.target.value)}
+              className="bg-transparent text-xs text-slate-200 font-bold focus:outline-none cursor-pointer w-full sm:w-auto"
+            >
+              <option value="todas" className="bg-slate-900">Todas las Regiones</option>
+              <option value="valparaíso" className="bg-slate-900">V Región de Valparaíso</option>
+              <option value="metropolitana" className="bg-slate-900">Región Metropolitana</option>
+              <option value="biobío" className="bg-slate-900">Región del Biobío</option>
+              <option value="coquimbo" className="bg-slate-900">Región de Coquimbo</option>
+              <option value="ñuble" className="bg-slate-900">Región de Ñuble</option>
+              <option value="o'higgins" className="bg-slate-900">Región de O&apos;Higgins</option>
+              <option value="maule" className="bg-slate-900">Región del Maule</option>
+              <option value="araucanía" className="bg-slate-900">Región de La Araucanía</option>
+              <option value="los lagos" className="bg-slate-900">Región de Los Lagos</option>
+              <option value="antofagasta" className="bg-slate-900">Región de Antofagasta</option>
+            </select>
+          </div>
+
+          {/* Buscador */}
+          <div className="relative w-full sm:w-60">
+            <Search className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+              placeholder="Buscar por organismo, código..."
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+            />
+          </div>
         </div>
       </div>
 
@@ -298,13 +337,13 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-12 text-center">
           <div className="w-10 h-10 border-3 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
           <p className="text-sm font-bold text-slate-300">Consultando API de Mercado Público...</p>
-          <p className="text-xs text-slate-500 mt-1">Conectando con base de datos de ChileCompra</p>
+          <p className="text-xs text-slate-500 mt-1">Conectando con base de datos oficial de ChileCompra</p>
         </div>
       ) : licitacionesFiltradas.length === 0 ? (
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-12 text-center">
           <Building2 className="w-12 h-12 text-slate-600 mx-auto mb-3" />
           <p className="text-base font-bold text-slate-300">No se encontraron licitaciones con ese criterio</p>
-          <p className="text-xs text-slate-500 mt-1">Intenta seleccionar &quot;Todas las Licitaciones&quot; o cambiar la búsqueda.</p>
+          <p className="text-xs text-slate-500 mt-1">Intenta seleccionar &quot;Todas las Licitaciones&quot; o &quot;Todas las Regiones&quot;.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -352,10 +391,18 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
                     </span>
                   </div>
 
-                  {/* Organismo Comprador */}
-                  <div className="flex items-center gap-2 text-xs text-slate-300 mb-3 bg-slate-950/60 px-3 py-2 rounded-xl border border-slate-800/60">
-                    <Building2 className="w-4 h-4 text-indigo-400 shrink-0" />
-                    <span className="font-semibold truncate">{lic.Organismo}</span>
+                  {/* Organismo Comprador y Región Geográfica */}
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs text-slate-300 mb-3 bg-slate-950/80 px-3.5 py-2.5 rounded-xl border border-slate-800/80 shadow-2xs">
+                    <div className="flex items-center gap-2 truncate">
+                      <Building2 className="w-4 h-4 text-indigo-400 shrink-0" />
+                      <span className="font-bold text-white tracking-wide truncate">{lic.Organismo}</span>
+                    </div>
+                    {lic.Region && (
+                      <span className="shrink-0 px-2 py-0.5 rounded-md text-[10px] font-bold bg-indigo-950/90 text-indigo-300 border border-indigo-700/60 flex items-center gap-1">
+                        <MapPin className="w-3 h-3 text-red-400" />
+                        <span>{lic.Region}{lic.Comuna ? ` · ${lic.Comuna}` : ''}</span>
+                      </span>
+                    )}
                   </div>
 
                   {/* Descripción */}
