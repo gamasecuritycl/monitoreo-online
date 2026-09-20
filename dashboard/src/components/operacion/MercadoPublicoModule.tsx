@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { 
   Building2, Search, Key, ExternalLink, FileText, 
   RefreshCw, AlertCircle, CheckCircle2, Clock, 
-  Sparkles, Check, X, MapPin, ArrowUpDown, Filter
+  Sparkles, Check, X, MapPin, ArrowUpDown, Filter, Copy
 } from 'lucide-react'
 
 export interface LicitacionChileCompra {
@@ -48,6 +48,10 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
   const [errorApi, setErrorApi] = useState<string>('')
   const [probandoTicket, setProbandoTicket] = useState(false)
   const [resultadoPrueba, setResultadoPrueba] = useState<{ ok: boolean; msg: string } | null>(null)
+  
+  // Estado para la Ficha Técnica de Licitación y Copiado
+  const [licitacionFicha, setLicitacionFicha] = useState<LicitacionChileCompra | null>(null)
+  const [copiadoId, setCopiadoId] = useState<string | null>(null)
 
   // Cargar ticket guardado en localStorage
   useEffect(() => {
@@ -453,9 +457,29 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
                         {lic.Nombre}
                       </h3>
                     </div>
-                    <span className="font-mono text-[11px] font-bold text-indigo-400 bg-indigo-950/80 px-2 py-0.5 rounded-md border border-indigo-800 shrink-0">
-                      {lic.CodigoExterno}
-                    </span>
+
+                    <div className="flex items-center gap-1 shrink-0">
+                      <span className="font-mono text-[11px] font-bold text-indigo-400 bg-indigo-950/80 px-2 py-0.5 rounded-md border border-indigo-800">
+                        {lic.CodigoExterno}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          navigator.clipboard.writeText(lic.CodigoExterno)
+                          setCopiadoId(lic.CodigoExterno)
+                          setTimeout(() => setCopiadoId(null), 2000)
+                        }}
+                        title="Copiar código al portapapeles"
+                        className="p-1 rounded-md text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
+                      >
+                        {copiadoId === lic.CodigoExterno ? (
+                          <Check className="w-3.5 h-3.5 text-emerald-400" />
+                        ) : (
+                          <Copy className="w-3.5 h-3.5" />
+                        )}
+                      </button>
+                    </div>
                   </div>
 
                   {/* Organismo Comprador y Región Geográfica */}
@@ -497,15 +521,14 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <a
-                      href={lic.EnlaceMercadoPublico}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-bold transition border border-slate-700/80"
+                    <button
+                      type="button"
+                      onClick={() => setLicitacionFicha(lic)}
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-bold transition border border-slate-700/80 cursor-pointer"
                     >
+                      <FileText className="w-3.5 h-3.5 text-indigo-400" />
                       <span>Ver Ficha</span>
-                      <ExternalLink className="w-3.5 h-3.5" />
-                    </a>
+                    </button>
 
                     <button
                       onClick={() => onCotizarLicitacion(lic)}
@@ -519,6 +542,136 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
               </div>
             )
           })}
+        </div>
+      )}
+
+      {/* ── MODAL FICHA TÉCNICA OFICIAL DE LICITACIÓN ── */}
+      {licitacionFicha && (
+        <div className="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-700 rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl animate-in zoom-in-95 space-y-6 max-h-[92vh] overflow-y-auto">
+            {/* Header */}
+            <div className="flex items-start justify-between gap-4 pb-4 border-b border-slate-800">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-indigo-600/20 border border-indigo-500/40 flex items-center justify-center text-indigo-400 shadow-md">
+                  <Building2 className="w-6 h-6" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
+                    <span className="font-mono font-black text-xs text-indigo-300 bg-indigo-950 px-2.5 py-0.5 rounded-lg border border-indigo-700/80">
+                      ID: {licitacionFicha.CodigoExterno}
+                    </span>
+                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-700">
+                      {licitacionFicha.Estado}
+                    </span>
+                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-300 border border-slate-700">
+                      {licitacionFicha.Rubro}
+                    </span>
+                  </div>
+                  <h3 className="text-base sm:text-lg font-black text-white leading-snug">
+                    {licitacionFicha.Nombre}
+                  </h3>
+                </div>
+              </div>
+              <button
+                onClick={() => setLicitacionFicha(null)}
+                className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Datos Clave */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
+              <div className="bg-slate-950/80 p-4 rounded-2xl border border-slate-800 space-y-1">
+                <span className="text-[10px] uppercase font-bold text-slate-500 block">Organismo Comprador</span>
+                <strong className="text-white text-sm block">{licitacionFicha.Organismo}</strong>
+                <span className="text-slate-400 font-mono block">RUT: {licitacionFicha.RutComprador || 'No especificado'}</span>
+              </div>
+              <div className="bg-slate-950/80 p-4 rounded-2xl border border-slate-800 space-y-1">
+                <span className="text-[10px] uppercase font-bold text-slate-500 block">Ubicación Geográfica</span>
+                <strong className="text-white text-sm block flex items-center gap-1.5">
+                  <MapPin className="w-4 h-4 text-red-400 shrink-0" />
+                  {licitacionFicha.Region || 'Chile'}{licitacionFicha.Comuna ? ` (${licitacionFicha.Comuna})` : ''}
+                </strong>
+                <span className="text-slate-400 block truncate">📍 {licitacionFicha.DireccionUnidad || 'Dirección no indicada'}</span>
+              </div>
+              <div className="bg-slate-950/80 p-4 rounded-2xl border border-slate-800 space-y-1">
+                <span className="text-[10px] uppercase font-bold text-slate-500 block">Monto Estimado de Referencia</span>
+                <span className="text-base font-black font-mono text-emerald-400 block">
+                  ${Math.round(licitacionFicha.MontoEstimado).toLocaleString('es-CL')} {licitacionFicha.Moneda}
+                </span>
+                <span className="text-[10px] text-slate-500">Monto base para la formulación de propuesta</span>
+              </div>
+              <div className="bg-slate-950/80 p-4 rounded-2xl border border-slate-800 space-y-1">
+                <span className="text-[10px] uppercase font-bold text-slate-500 block">Fecha Límite Cierre de Ofertas</span>
+                <span className="text-sm font-black font-mono text-amber-300 block flex items-center gap-1.5">
+                  <Clock className="w-4 h-4 text-amber-400" />
+                  {licitacionFicha.FechaCierre ? new Date(licitacionFicha.FechaCierre).toLocaleString('es-CL') : 'Ver en portal'}
+                </span>
+                <span className="text-[10px] text-slate-500">Tipo: {licitacionFicha.Tipo}</span>
+              </div>
+            </div>
+
+            {/* Requerimiento Técnico */}
+            <div className="bg-slate-950/80 p-4 rounded-2xl border border-slate-800 space-y-2 text-xs">
+              <span className="text-[10px] uppercase font-bold text-indigo-400 block tracking-wider">
+                Especificaciones Técnicas / Resumen del Servicio
+              </span>
+              <p className="text-slate-300 leading-relaxed font-medium">
+                {licitacionFicha.Descripcion}
+              </p>
+            </div>
+
+            {/* Caja de Acceso al Portal Oficial sin error de permisos */}
+            <div className="bg-gradient-to-r from-blue-950/60 to-indigo-950/60 border border-blue-500/30 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+              <div className="space-y-1">
+                <span className="font-bold text-white block flex items-center gap-1.5">
+                  <ExternalLink className="w-4 h-4 text-cyan-400" />
+                  ¿Cómo verla en Mercado Público sin errores?
+                </span>
+                <p className="text-slate-300 text-[11px] leading-relaxed">
+                  Copia el código ID <strong>{licitacionFicha.CodigoExterno}</strong> y pégalo directamente en el buscador oficial de licitaciones de ChileCompra.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard.writeText(licitacionFicha.CodigoExterno)
+                  setCopiadoId(licitacionFicha.CodigoExterno)
+                  window.open('https://www.mercadopublico.cl/Portal/Modules/Site/Busquedas/BuscarLicitacion.aspx?qs=1', '_blank')
+                }}
+                className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-xs flex items-center gap-2 transition shadow-lg shrink-0 cursor-pointer"
+              >
+                <Copy className="w-4 h-4" />
+                <span>{copiadoId === licitacionFicha.CodigoExterno ? '¡ID Copiado! Abriendo Portal...' : 'Copiar ID e Ir al Portal'}</span>
+              </button>
+            </div>
+
+            {/* Footer con Acción Principal */}
+            <div className="flex items-center justify-between gap-3 pt-4 border-t border-slate-800">
+              <button
+                type="button"
+                onClick={() => setLicitacionFicha(null)}
+                className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition cursor-pointer"
+              >
+                Cerrar
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  const item = licitacionFicha
+                  setLicitacionFicha(null)
+                  onCotizarLicitacion(item)
+                }}
+                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white text-xs font-bold shadow-lg shadow-indigo-600/30 transition flex items-center gap-2 cursor-pointer"
+              >
+                <FileText className="w-4 h-4" />
+                <span>Cotizar con 1 Clic en Gama CRM</span>
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
