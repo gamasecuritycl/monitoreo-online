@@ -63,6 +63,7 @@ import {
   FileCheck,
   Layers,
   ChevronDown,
+  GripVertical,
   Filter,
   Send,
   Sparkles,
@@ -2926,8 +2927,105 @@ export default function OperacionCRM() {
       glowColor: 'group-hover:shadow-emerald-500/25',
       badgeColor: 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20',
       tag: 'APDP Chile'
+    },
+    {
+      id: 'mercadopublico',
+      titulo: 'Mercado Público & Licitaciones',
+      categoria: 'COMERCIAL',
+      descripcion: 'Radar de licitaciones de seguridad, CCTV, alarmas y guardias. Cotización oficial con 1 solo clic.',
+      icono: Building2,
+      gradient: 'from-indigo-600 to-blue-600',
+      borderColor: 'hover:border-indigo-400',
+      glowColor: 'group-hover:shadow-indigo-500/25',
+      badgeColor: 'bg-indigo-500/10 text-indigo-300 border-indigo-500/20',
+      tag: 'ChileCompra'
     }
   ]
+
+  // ── REORDENAMIENTO DRAG & DROP PERSISTENTE DEL LAUNCHPAD ──
+  const [ordenLaunchpad, setOrdenLaunchpad] = useState<string[]>([])
+  const [draggedItemId, setDraggedItemId] = useState<string | null>(null)
+  const [dragOverItemId, setDragOverItemId] = useState<string | null>(null)
+
+  useEffect(() => {
+    try {
+      const guardado = localStorage.getItem('gama_orden_launchpad')
+      if (guardado) {
+        const parsed = JSON.parse(guardado)
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setOrdenLaunchpad(parsed)
+        }
+      }
+    } catch {}
+  }, [])
+
+  const modulosOrdenados = useMemo(() => {
+    if (!ordenLaunchpad || ordenLaunchpad.length === 0) return modulosLaunchpad
+    const itemsMap = new Map(modulosLaunchpad.map(m => [m.id, m]))
+    const ordenados: typeof modulosLaunchpad = []
+    for (const id of ordenLaunchpad) {
+      const item = itemsMap.get(id)
+      if (item) {
+        ordenados.push(item)
+        itemsMap.delete(id)
+      }
+    }
+    for (const item of itemsMap.values()) {
+      ordenados.push(item)
+    }
+    return ordenados
+  }, [modulosLaunchpad, ordenLaunchpad])
+
+  const handleDragStart = (e: React.DragEvent, id: string) => {
+    e.dataTransfer.setData('text/plain', id)
+    e.dataTransfer.effectAllowed = 'move'
+    setDraggedItemId(id)
+  }
+
+  const handleDragOver = (e: React.DragEvent, id: string) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    if (dragOverItemId !== id) {
+      setDragOverItemId(id)
+    }
+  }
+
+  const handleDragLeave = (_e: React.DragEvent, id: string) => {
+    if (dragOverItemId === id) {
+      setDragOverItemId(null)
+    }
+  }
+
+  const handleDrop = (e: React.DragEvent, targetId: string) => {
+    e.preventDefault()
+    setDragOverItemId(null)
+    const sourceId = e.dataTransfer.getData('text/plain') || draggedItemId
+    setDraggedItemId(null)
+    
+    if (!sourceId || sourceId === targetId) return
+
+    const idsActuales = modulosOrdenados.map(m => m.id)
+    const sourceIdx = idsActuales.indexOf(sourceId)
+    const targetIdx = idsActuales.indexOf(targetId)
+
+    if (sourceIdx === -1 || targetIdx === -1) return
+
+    const nuevoOrden = [...idsActuales]
+    const [moved] = nuevoOrden.splice(sourceIdx, 1)
+    nuevoOrden.splice(targetIdx, 0, moved)
+
+    setOrdenLaunchpad(nuevoOrden)
+    try {
+      localStorage.setItem('gama_orden_launchpad', JSON.stringify(nuevoOrden))
+    } catch {}
+  }
+
+  const handleResetearOrden = () => {
+    setOrdenLaunchpad([])
+    try {
+      localStorage.removeItem('gama_orden_launchpad')
+    } catch {}
+  }
 
   return (
     <div className="min-h-screen bg-[#EAEFF5] text-slate-800 font-sans flex flex-col select-none p-4 sm:p-6 lg:p-8 gap-6 sm:gap-7 antialiased">
@@ -3049,24 +3147,65 @@ export default function OperacionCRM() {
               </div>
             </div>
 
-            {/* GRID DE BOTONES GRANDES (LAUNCHPAD DE 10 MÓDULOS ESTILO DSTUDIO CARD UI) */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5 sm:gap-6">
-              {modulosLaunchpad.map((mod) => {
+            {/* SUBHEADER DEL LAUNCHPAD CON INDICADOR DE REORDENAMIENTO */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-white/70 border border-slate-200/80 px-5 py-3 rounded-2xl shadow-2xs">
+              <span className="text-slate-600 font-semibold text-xs flex items-center gap-2">
+                <span className="p-1 rounded-md bg-indigo-50 text-indigo-600 border border-indigo-200">
+                  <GripVertical className="h-3.5 w-3.5" />
+                </span>
+                <span>Organiza tu pantalla: <strong>arrastra con el mouse las tarjetas</strong> para dejarlas en el orden que prefieras.</span>
+              </span>
+              {ordenLaunchpad.length > 0 && (
+                <button
+                  onClick={handleResetearOrden}
+                  className="text-xs font-bold text-slate-500 hover:text-indigo-600 transition-colors cursor-pointer underline text-left sm:text-right shrink-0"
+                >
+                  Restablecer orden predeterminado
+                </button>
+              )}
+            </div>
+
+            {/* GRID DE BOTONES GRANDES REORDENABLES CON DRAG & DROP NATIVO */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 gap-5 sm:gap-6">
+              {modulosOrdenados.map((mod) => {
                 const IconComp = mod.icono
+                const isDragging = draggedItemId === mod.id
+                const isDragOver = dragOverItemId === mod.id
+
                 return (
-                  <button
+                  <div
                     key={mod.id}
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, mod.id)}
+                    onDragOver={(e) => handleDragOver(e, mod.id)}
+                    onDragLeave={(e) => handleDragLeave(e, mod.id)}
+                    onDrop={(e) => handleDrop(e, mod.id)}
+                    onDragEnd={() => { setDraggedItemId(null); setDragOverItemId(null); }}
                     onClick={() => setModuloActivo(mod.id as any)}
-                    className="group relative text-left rounded-3xl bg-white border border-slate-200/90 hover:border-[#1E40AF]/60 p-6 flex flex-col justify-between transition-all duration-300 shadow-sm hover:shadow-xl hover:-translate-y-1.5 cursor-pointer min-h-[220px] overflow-hidden"
+                    className={`group relative text-left rounded-3xl bg-white border p-6 flex flex-col justify-between transition-all duration-200 cursor-grab active:cursor-grabbing min-h-[220px] overflow-hidden select-none ${
+                      isDragging
+                        ? 'opacity-30 scale-95 border-dashed border-indigo-500 bg-indigo-50/50'
+                        : isDragOver
+                        ? 'border-2 border-indigo-600 ring-4 ring-indigo-500/20 scale-[1.03] shadow-2xl bg-indigo-50/40 z-20'
+                        : 'border-slate-200/90 hover:border-[#1E40AF]/60 shadow-sm hover:shadow-xl hover:-translate-y-1.5'
+                    }`}
                   >
                     {/* Top Bar de la Card */}
                     <div className="flex items-start justify-between gap-3 relative z-10">
                       <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${mod.gradient} text-white flex items-center justify-center shadow-md group-hover:scale-105 transition-transform duration-300`}>
                         <IconComp className="h-6 w-6 stroke-[2]" />
                       </div>
-                      <span className="px-2.5 py-1 rounded-full text-[10px] font-bold border border-slate-200 bg-slate-50 text-slate-600 font-sans tracking-wide">
-                        {mod.categoria}
-                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="px-2.5 py-1 rounded-full text-[10px] font-bold border border-slate-200 bg-slate-50 text-slate-600 font-sans tracking-wide">
+                          {mod.categoria}
+                        </span>
+                        <span 
+                          title="Arrastra con el mouse para reordenar esta tarjeta"
+                          className="p-1 rounded-lg text-slate-300 group-hover:text-slate-500 hover:bg-slate-100 transition-colors"
+                        >
+                          <GripVertical className="h-4 w-4" />
+                        </span>
+                      </div>
                     </div>
 
                     {/* Contenido Central */}
@@ -3089,7 +3228,7 @@ export default function OperacionCRM() {
                         <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-1 transition-transform" />
                       </span>
                     </div>
-                  </button>
+                  </div>
                 )
               })}
             </div>
