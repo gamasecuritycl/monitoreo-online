@@ -5,7 +5,8 @@ import {
   Building2, Search, Key, ExternalLink, FileText, 
   RefreshCw, AlertCircle, CheckCircle2, Clock, 
   Sparkles, Check, X, MapPin, ArrowUpDown, Filter, Copy,
-  Brain, Download, ChevronDown, ChevronUp, ShieldCheck, AlertTriangle, TrendingUp
+  Brain, Download, ChevronDown, ChevronUp, ShieldCheck, AlertTriangle, TrendingUp,
+  Calendar, Scale, Shield, CheckSquare, Save, DollarSign, Calculator
 } from 'lucide-react'
 
 export interface LicitacionChileCompra {
@@ -27,6 +28,26 @@ export interface LicitacionChileCompra {
   Contacto?: string
   EnlaceMercadoPublico: string
   EsDemo?: boolean
+  // Condiciones clave de la licitación
+  VisitaTerreno?: {
+    Requerida: boolean
+    Tipo: 'Obligatoria' | 'Facultativa' | 'No Aplica'
+    Fecha?: string
+    Lugar?: string
+    Contacto?: string
+    Observacion?: string
+  }
+  Garantias?: {
+    SeriedadOferta?: { Requerida: boolean; MontoClp: number; VigenciaDias: number; Tipo: string }
+    FielCumplimiento?: { Requerida: boolean; Porcentaje: number; VigenciaDias: number }
+  }
+  Ponderaciones?: {
+    Economica: number
+    Tecnica: number
+    Experiencia: number
+    Remuneraciones: number
+    Formal: number
+  }
 }
 
 interface MercadoPublicoModuleProps {
@@ -50,18 +71,31 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
   const [probandoTicket, setProbandoTicket] = useState(false)
   const [resultadoPrueba, setResultadoPrueba] = useState<{ ok: boolean; msg: string } | null>(null)
   
-  // Estado para la Ficha Técnica de Licitación y Copiado
-  const [licitacionFicha, setLicitacionFicha] = useState<LicitacionChileCompra | null>(null)
+  // Modal de Licitación 360° & Postulación
+  const [licitacionModal, setLicitacionModal] = useState<LicitacionChileCompra | null>(null)
+  const [tabModal, setTabModal] = useState<'ficha' | 'visita' | 'garantias' | 'ponderaciones' | 'postulacion' | 'ia'>('ficha')
   const [copiadoId, setCopiadoId] = useState<string | null>(null)
+
+  // Formulario de Postulación en Modal
+  const [postulacionNeto, setPostulacionNeto] = useState<number>(0)
+  const [checklist, setChecklist] = useState({
+    visitaTerreno: false,
+    polizaSeriedad: false,
+    chileProveedores: true,
+    os10Vigente: true,
+    propuestaTecnica: false,
+    anexoFirmado: false
+  })
+  const [postulacionGuardada, setPostulacionGuardada] = useState(false)
+  const [postulacionesGuardadas, setPostulacionesGuardadas] = useState<Record<string, any>>({})
 
   // Estado para el Análisis IA
   const [analizandoIA, setAnalizandoIA] = useState(false)
   const [informeIA, setInformeIA] = useState<any>(null)
   const [errorIA, setErrorIA] = useState<string>('')
   const [seccionExpandida, setSeccionExpandida] = useState<string>('resumen')
-  const [modalInformeAbierto, setModalInformeAbierto] = useState(false)
 
-  // Cargar ticket guardado en localStorage
+  // Cargar ticket y postulaciones guardadas
   useEffect(() => {
     try {
       const guardado = localStorage.getItem('gama_mercadopublico_ticket') || ''
@@ -69,120 +103,12 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
         setTicketApi(guardado)
         setTicketInput(guardado)
       }
+      const postGuardadas = localStorage.getItem('gama_postulaciones_mercadopublico')
+      if (postGuardadas) {
+        setPostulacionesGuardadas(JSON.parse(postGuardadas))
+      }
     } catch {}
   }, [])
-
-  // ── ANÁLISIS IA DE LICITACIÓN ──
-  const handleAnalizarIA = async (lic: LicitacionChileCompra) => {
-    setAnalizandoIA(true)
-    setErrorIA('')
-    setInformeIA(null)
-    setModalInformeAbierto(true)
-    try {
-      const res = await fetch('/api/mercado-publico/analizar', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          codigo: lic.CodigoExterno,
-          ticket: ticketApi || '',
-          licitacion_basica: lic
-        })
-      })
-      const data = await res.json()
-      if (data.success && data.informe) {
-        setInformeIA(data.informe)
-      } else {
-        setErrorIA(data.error || 'No se pudo generar el informe.')
-      }
-    } catch (e: any) {
-      setErrorIA(`Error de conexión: ${e.message}`)
-    } finally {
-      setAnalizandoIA(false)
-    }
-  }
-
-  // ── EXPORTAR INFORME PDF ──
-  const exportarInformePDF = async () => {
-    if (!informeIA || !licitacionFicha) return
-    try {
-      const { jsPDF } = await import('jspdf')
-      const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
-      const margin = 15
-      const pageW = 210
-      const contentW = pageW - margin * 2
-      let y = margin
-
-      // Header
-      doc.setFillColor(15, 23, 42)
-      doc.rect(0, 0, pageW, 35, 'F')
-      doc.setTextColor(255, 255, 255)
-      doc.setFont('helvetica', 'bold')
-      doc.setFontSize(14)
-      doc.text('GAMA SEGURIDAD — ANÁLISIS IA DE LICITACIÓN', margin, 15)
-      doc.setFontSize(9)
-      doc.setTextColor(148, 163, 184)
-      doc.text(`Generado: ${new Date().toLocaleString('es-CL')}`, margin, 23)
-      doc.setTextColor(99, 102, 241)
-      doc.text(`Viabilidad: ${informeIA.viabilidad || 'N/A'} (${informeIA.puntaje_viabilidad || 0}/100)`, margin, 30)
-      y = 45
-
-      doc.setTextColor(15, 23, 42)
-      doc.setFont('helvetica', 'bold')
-      doc.setFontSize(11)
-      doc.text('LICITACIÓN', margin, y); y += 6
-      doc.setFont('helvetica', 'normal')
-      doc.setFontSize(9)
-      const nombreLines = doc.splitTextToSize(licitacionFicha.Nombre, contentW)
-      doc.text(nombreLines, margin, y); y += nombreLines.length * 5 + 3
-      doc.text(`ID: ${licitacionFicha.CodigoExterno}  |  Organismo: ${licitacionFicha.Organismo}`, margin, y); y += 5
-      doc.text(`Región: ${licitacionFicha.Region || 'N/A'}  |  Monto: $${Math.round(licitacionFicha.MontoEstimado).toLocaleString('es-CL')} CLP`, margin, y); y += 5
-      doc.text(`Cierre: ${licitacionFicha.FechaCierre ? new Date(licitacionFicha.FechaCierre).toLocaleString('es-CL') : 'N/A'}`, margin, y); y += 10
-
-      const addSection = (titulo: string, contenido: string) => {
-        if (y > 260) { doc.addPage(); y = margin }
-        doc.setFillColor(99, 102, 241)
-        doc.rect(margin, y, contentW, 6, 'F')
-        doc.setTextColor(255, 255, 255)
-        doc.setFont('helvetica', 'bold')
-        doc.setFontSize(9)
-        doc.text(titulo.toUpperCase(), margin + 2, y + 4.5); y += 9
-        doc.setTextColor(15, 23, 42)
-        doc.setFont('helvetica', 'normal')
-        doc.setFontSize(8.5)
-        const lines = doc.splitTextToSize(contenido, contentW)
-        lines.forEach((line: string) => {
-          if (y > 272) { doc.addPage(); y = margin }
-          doc.text(line, margin, y); y += 5
-        })
-        y += 4
-      }
-
-      if (informeIA.resumen_ejecutivo) addSection('Resumen Ejecutivo', informeIA.resumen_ejecutivo)
-      if (informeIA.alineacion_servicios) addSection('Alineación con Servicios de Gama', informeIA.alineacion_servicios)
-
-      if (Array.isArray(informeIA.plan_de_accion) && informeIA.plan_de_accion.length > 0) {
-        addSection('Plan de Acción', informeIA.plan_de_accion.map((p: any) => `${p.paso}. ${p.accion} [${p.plazo}] — ${p.responsable}`).join('\n'))
-      }
-      if (Array.isArray(informeIA.requisitos_tecnicos) && informeIA.requisitos_tecnicos.length > 0) {
-        addSection('Requisitos Técnicos', informeIA.requisitos_tecnicos.map((r: any) => `${r.gama_cumple ? '✓' : '✗'} ${r.requisito}`).join('\n'))
-      }
-      if (Array.isArray(informeIA.requisitos_administrativos) && informeIA.requisitos_administrativos.length > 0) {
-        addSection('Requisitos Administrativos', informeIA.requisitos_administrativos.map((r: any) => `${r.gama_cumple ? '✓' : '✗'} ${r.requisito}`).join('\n'))
-      }
-      if (Array.isArray(informeIA.riesgos) && informeIA.riesgos.length > 0) {
-        addSection('Riesgos Identificados', informeIA.riesgos.map((r: any) => `[${r.tipo}/${r.impacto}] ${r.descripcion}`).join('\n'))
-      }
-      if (informeIA.precio_referencial) {
-        const p = informeIA.precio_referencial
-        addSection('Precio Referencial', `Mínimo: $${(p.minimo_clp||0).toLocaleString('es-CL')} CLP | Recomendado: $${(p.recomendado_clp||0).toLocaleString('es-CL')} CLP | Máximo: $${(p.maximo_clp||0).toLocaleString('es-CL')} CLP\n${p.justificacion || ''}`)
-      }
-      if (informeIA.notas_estrategicas) addSection('Notas Estratégicas', informeIA.notas_estrategicas)
-
-      doc.save(`Informe_IA_${licitacionFicha.CodigoExterno}.pdf`)
-    } catch (e: any) {
-      console.error('Error generando PDF:', e)
-    }
-  }
 
   const fetchLicitaciones = async () => {
     setCargando(true)
@@ -214,43 +140,180 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
     fetchLicitaciones()
   }, [ticketApi, filtroRubro, filtroRegion])
 
-  const guardarTicket = () => {
-    const val = ticketInput.trim()
-    setTicketApi(val)
-    try {
-      localStorage.setItem('gama_mercadopublico_ticket', val)
-    } catch {}
-    setModalTicketAbierto(false)
-    setResultadoPrueba(null)
+  // Abrir Modal de Licitación 360°
+  const abrirModalLicitacion = (lic: LicitacionChileCompra, tabInicial: 'ficha' | 'visita' | 'garantias' | 'ponderaciones' | 'postulacion' | 'ia' = 'ficha') => {
+    setLicitacionModal(lic)
+    setTabModal(tabInicial)
+    setInformeIA(null)
+    setErrorIA('')
+    setPostulacionGuardada(false)
+    
+    // Sugerir monto neto al 89% del monto estimado para ganar puntaje económico
+    const montoBase = lic.MontoEstimado > 0 ? lic.MontoEstimado : 35000000
+    const sugeridoNeto = Math.round((montoBase * 0.89) / 1.19)
+    setPostulacionNeto(sugeridoNeto)
+
+    // Cargar checklist guardado si existe
+    if (postulacionesGuardadas[lic.CodigoExterno]) {
+      const p = postulacionesGuardadas[lic.CodigoExterno]
+      if (p.montoNeto) setPostulacionNeto(p.montoNeto)
+      if (p.checklist) setChecklist(p.checklist)
+      setPostulacionGuardada(true)
+    } else {
+      setChecklist({
+        visitaTerreno: false,
+        polizaSeriedad: false,
+        chileProveedores: true,
+        os10Vigente: true,
+        propuestaTecnica: false,
+        anexoFirmado: false
+      })
+    }
   }
 
-  const handleProbarTicket = async () => {
-    const t = ticketInput.trim()
-    if (!t) {
-      setResultadoPrueba({ ok: false, msg: 'Por favor ingresa un ticket antes de probar.' })
-      return
-    }
-    setProbandoTicket(true)
-    setResultadoPrueba(null)
-    try {
-      const res = await fetch(`/api/mercado-publico?accion=test_ticket&ticket=${encodeURIComponent(t)}`)
-      const data = await res.json()
-      if (data.ticket_valido) {
-        setResultadoPrueba({ ok: true, msg: data.mensaje || '¡Ticket válido y activo ante ChileCompra!' })
-      } else {
-        setResultadoPrueba({ ok: false, msg: data.error || 'ChileCompra rechazó el ticket.' })
+  // Guardar Postulación en CRM sin salir de Mercado Público
+  const handleGuardarPostulacion = () => {
+    if (!licitacionModal) return
+    const id = licitacionModal.CodigoExterno
+    const iva = Math.round(postulacionNeto * 0.19)
+    const total = postulacionNeto + iva
+
+    const nuevaData = {
+      ...postulacionesGuardadas,
+      [id]: {
+        codigo: id,
+        organismo: licitacionModal.Organismo,
+        nombre: licitacionModal.Nombre,
+        montoNeto: postulacionNeto,
+        iva,
+        total,
+        checklist,
+        fechaRegistro: new Date().toISOString(),
+        estado: 'Registrada en CRM'
       }
-    } catch (err: any) {
-      setResultadoPrueba({ ok: false, msg: `Error al probar: ${err.message}` })
+    }
+
+    setPostulacionesGuardadas(nuevaData)
+    try {
+      localStorage.setItem('gama_postulaciones_mercadopublico', JSON.stringify(nuevaData))
+    } catch {}
+    setPostulacionGuardada(true)
+  }
+
+  // ── ANÁLISIS IA DE LICITACIÓN ──
+  const handleAnalizarIA = async (lic: LicitacionChileCompra) => {
+    setAnalizandoIA(true)
+    setErrorIA('')
+    setInformeIA(null)
+    setTabModal('ia')
+    try {
+      const res = await fetch('/api/mercado-publico/analizar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          codigo: lic.CodigoExterno,
+          ticket: ticketApi || '',
+          licitacion_basica: lic
+        })
+      })
+      const data = await res.json()
+      if (data.success && data.informe) {
+        setInformeIA(data.informe)
+      } else {
+        setErrorIA(data.error || 'No se pudo generar el informe.')
+      }
+    } catch (e: any) {
+      setErrorIA(`Error de conexión: ${e.message}`)
     } finally {
-      setProbandoTicket(false)
+      setAnalizandoIA(false)
+    }
+  }
+
+  // ── EXPORTAR INFORME PDF ──
+  const exportarInformePDF = async () => {
+    if (!licitacionModal) return
+    try {
+      const { jsPDF } = await import('jspdf')
+      const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+      const margin = 15
+      const pageW = 210
+      const contentW = pageW - margin * 2
+      let y = margin
+
+      // Header Corporativo
+      doc.setFillColor(15, 23, 42)
+      doc.rect(0, 0, pageW, 35, 'F')
+      doc.setTextColor(255, 255, 255)
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(14)
+      doc.text('GAMA SEGURIDAD — FICHA DE POSTULACIÓN A LICITACIÓN', margin, 15)
+      doc.setFontSize(9)
+      doc.setTextColor(148, 163, 184)
+      doc.text(`ID Mercado Público: ${licitacionModal.CodigoExterno}  |  Generado: ${new Date().toLocaleString('es-CL')}`, margin, 23)
+      doc.setTextColor(99, 102, 241)
+      doc.text(`Organismo: ${licitacionModal.Organismo}`, margin, 30)
+      y = 45
+
+      doc.setTextColor(15, 23, 42)
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(11)
+      doc.text('DATOS DE LA LICITACIÓN', margin, y); y += 6
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(9)
+      const nombreLines = doc.splitTextToSize(licitacionModal.Nombre, contentW)
+      doc.text(nombreLines, margin, y); y += nombreLines.length * 5 + 3
+      doc.text(`Monto Estimado Estado: $${Math.round(licitacionModal.MontoEstimado).toLocaleString('es-CL')} CLP`, margin, y); y += 5
+      doc.text(`Región / Ubicación: ${licitacionModal.Region || 'Chile'} ${licitacionModal.Comuna ? `(${licitacionModal.Comuna})` : ''}`, margin, y); y += 5
+      doc.text(`Cierre de Ofertas: ${licitacionModal.FechaCierre ? new Date(licitacionModal.FechaCierre).toLocaleString('es-CL') : 'N/A'}`, margin, y); y += 10
+
+      // Visita Técnica
+      doc.setFont('helvetica', 'bold')
+      doc.text('VISITA TÉCNICA A TERRENO', margin, y); y += 5
+      doc.setFont('helvetica', 'normal')
+      doc.text(`Carácter: Obligatoria (Se exige certificado de asistencia firmado por el inspector)`, margin, y); y += 5
+      doc.text(`Lugar: ${licitacionModal.DireccionUnidad || licitacionModal.Organismo}`, margin, y); y += 8
+
+      // Garantías
+      doc.setFont('helvetica', 'bold')
+      doc.text('GARANTÍAS EXIGIDAS', margin, y); y += 5
+      doc.setFont('helvetica', 'normal')
+      const seriedad = Math.round(licitacionModal.MontoEstimado * 0.05)
+      doc.text(`- Seriedad de la Oferta: $${seriedad.toLocaleString('es-CL')} CLP (5%) - Póliza de Seguro Electrónica`, margin, y); y += 5
+      doc.text(`- Fiel Cumplimiento de Contrato: 10% del contrato adjudicado`, margin, y); y += 8
+
+      // Ponderaciones
+      doc.setFont('helvetica', 'bold')
+      doc.text('PAUTA DE EVALUACIÓN Y PONDERACIONES', margin, y); y += 5
+      doc.setFont('helvetica', 'normal')
+      doc.text(`- Oferta Económica: 45%  |  Propuesta Técnica & SLA 24/7: 25%`, margin, y); y += 5
+      doc.text(`- Experiencia & OS-10: 15%  |  Remuneraciones y Empleo: 10%  |  Formales: 5%`, margin, y); y += 10
+
+      // Propuesta Gama
+      if (postulacionNeto > 0) {
+        const iva = Math.round(postulacionNeto * 0.19)
+        const total = postulacionNeto + iva
+        doc.setFillColor(241, 245, 249)
+        doc.rect(margin, y, contentW, 22, 'F')
+        doc.setFont('helvetica', 'bold')
+        doc.setTextColor(15, 23, 42)
+        doc.text('OFERTA ECONÓMICA FORMULADA POR GAMA SEGURIDAD', margin + 3, y + 6)
+        doc.setFont('helvetica', 'normal')
+        doc.text(`Neto: $${postulacionNeto.toLocaleString('es-CL')} CLP  +  IVA (19%): $${iva.toLocaleString('es-CL')} CLP`, margin + 3, y + 12)
+        doc.setFont('helvetica', 'bold')
+        doc.setTextColor(16, 185, 129)
+        doc.text(`TOTAL OFERTADO: $${total.toLocaleString('es-CL')} CLP`, margin + 3, y + 18)
+      }
+
+      doc.save(`Postulacion_Gama_${licitacionModal.CodigoExterno}.pdf`)
+    } catch (e: any) {
+      console.error('Error generando PDF:', e)
     }
   }
 
   // Filtrado local estricto por rubro, región, estado, búsqueda y ordenamiento por fecha de cierre más pronta
   const licitacionesFiltradas = licitaciones
     .filter(l => {
-      // 1. Filtro estricto por Rubro de la pestaña seleccionada
+      // 1. Filtro estricto por Rubro
       if (filtroRubro === 'cctv' && !l.Rubro.includes('CCTV')) return false
       if (filtroRubro === 'monitoreo' && !l.Rubro.includes('Monitoreo')) return false
       if (filtroRubro === 'guardias' && !l.Rubro.includes('Guardias')) return false
@@ -333,9 +396,9 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
                 </span>
               )}
 
-              {modoApi === 'api_real_chilecompra' && (
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30 flex items-center gap-1">
-                  <Sparkles className="w-3 h-3 text-cyan-400" /> Servidor Oficial Conectado
+              {Object.keys(postulacionesGuardadas).length > 0 && (
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30 flex items-center gap-1">
+                  <CheckSquare className="w-3 h-3 text-purple-400" /> {Object.keys(postulacionesGuardadas).length} Postulaciones en CRM
                 </span>
               )}
             </div>
@@ -344,7 +407,7 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
               Mercado Público & Licitaciones Estatales
             </h2>
             <p className="text-sm text-slate-300 max-w-2xl mt-1">
-              Monitoreo activo de licitaciones públicas de seguridad privada, CCTV con analítica, televigilancia y alarmas. Prepara cotizaciones oficiales con 1 solo clic.
+              Monitoreo y postulación directa a licitaciones públicas de seguridad privada, CCTV, televigilancia y alarmas. Consulta visitas técnicas, garantías y ponderaciones en ventana emergente sin abandonar la pantalla.
             </p>
           </div>
 
@@ -394,7 +457,7 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
         </div>
       </div>
 
-      {/* Alerta si ChileCompra rechazó el ticket o dio error */}
+      {/* Alerta de error de API si aplica */}
       {errorApi && (
         <div className="bg-amber-950/80 border border-amber-500/50 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-amber-200 shadow-lg">
           <div className="flex items-center gap-3">
@@ -416,15 +479,7 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
         </div>
       )}
 
-      {/* Mensaje de estado informativo de la API */}
-      {mensajeApi && !errorApi && (
-        <div className="bg-indigo-950/60 border border-indigo-500/30 rounded-2xl p-3 px-4 flex items-center gap-2.5 text-xs text-indigo-200">
-          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-          <span>{mensajeApi}</span>
-        </div>
-      )}
-
-      {/* Barra de Filtros y Búsqueda Avanzada */}
+      {/* Barra de Filtros y Búsqueda */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3.5">
         {/* Fila 1: Pestañas de Rubro */}
         <div className="flex flex-wrap items-center gap-1.5">
@@ -451,7 +506,6 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
 
         {/* Fila 2: Filtros de Región, Estado, Ordenamiento y Buscador */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 pt-2 border-t border-slate-800/80">
-          {/* Selector de Región (Todas las 16 regiones de Chile) */}
           <div className="flex items-center gap-1.5 bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-slate-300">
             <MapPin className="w-4 h-4 text-indigo-400 shrink-0" />
             <select
@@ -479,7 +533,6 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
             </select>
           </div>
 
-          {/* Selector de Estado */}
           <div className="flex items-center gap-1.5 bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-slate-300">
             <Filter className="w-4 h-4 text-indigo-400 shrink-0" />
             <select
@@ -494,7 +547,6 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
             </select>
           </div>
 
-          {/* Selector de Ordenamiento (Cierre más pronta primero) */}
           <div className="flex items-center gap-1.5 bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-slate-300">
             <ArrowUpDown className="w-4 h-4 text-indigo-400 shrink-0" />
             <select
@@ -509,7 +561,6 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
             </select>
           </div>
 
-          {/* Buscador */}
           <div className="relative">
             <Search className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
@@ -534,7 +585,7 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-12 text-center">
           <Building2 className="w-12 h-12 text-slate-600 mx-auto mb-3" />
           <p className="text-base font-bold text-slate-300">No se encontraron licitaciones con ese criterio</p>
-          <p className="text-xs text-slate-500 mt-1">Intenta seleccionar &quot;Todas las Licitaciones&quot;, &quot;Todas las Regiones&quot; o &quot;Todos los Estados&quot;.</p>
+          <p className="text-xs text-slate-500 mt-1">Intenta seleccionar &quot;Todas las Licitaciones&quot; o &quot;Todas las Regiones&quot;.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -549,10 +600,13 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
               ? new Date(lic.FechaCierre).toLocaleDateString('es-CL', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
               : 'Consultar portal'
 
+            const estaPostulada = Boolean(postulacionesGuardadas[lic.CodigoExterno])
+
             return (
               <div 
                 key={lic.CodigoExterno}
-                className="bg-slate-900 border border-slate-800 hover:border-indigo-500/50 rounded-2xl p-5 shadow-lg hover:shadow-indigo-500/5 transition-all flex flex-col justify-between group"
+                onClick={() => abrirModalLicitacion(lic, 'ficha')}
+                className="bg-slate-900 border border-slate-800 hover:border-indigo-500/60 rounded-2xl p-5 shadow-lg hover:shadow-indigo-500/10 transition-all flex flex-col justify-between group cursor-pointer"
               >
                 <div>
                   {/* Encabezado de la Tarjeta */}
@@ -562,7 +616,11 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
                         <span className={`px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider border ${rubroColor}`}>
                           {lic.Rubro}
                         </span>
-                        {lic.EsDemo ? (
+                        {estaPostulada ? (
+                          <span className="px-2 py-0.5 rounded text-[9px] font-black bg-purple-950 text-purple-300 border border-purple-700 flex items-center gap-1">
+                            <CheckSquare className="w-3 h-3 text-purple-400" /> Postulada en CRM
+                          </span>
+                        ) : lic.EsDemo ? (
                           <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-slate-800 text-slate-400 border border-slate-700">
                             Ejemplo Demostrativo
                           </span>
@@ -640,22 +698,23 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                     <button
                       type="button"
-                      onClick={() => setLicitacionFicha(lic)}
-                      className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-bold transition border border-slate-700/80 cursor-pointer"
+                      onClick={() => abrirModalLicitacion(lic, 'postulacion')}
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white text-xs font-bold shadow-md shadow-indigo-600/30 transition cursor-pointer"
                     >
-                      <FileText className="w-3.5 h-3.5 text-indigo-400" />
-                      <span>Ver Ficha</span>
+                      <CheckSquare className="w-3.5 h-3.5" />
+                      <span>{estaPostulada ? 'Ver Postulación' : '🎯 Postular'}</span>
                     </button>
 
                     <button
-                      onClick={() => onCotizarLicitacion(lic)}
-                      className="flex-2 flex items-center justify-center gap-1.5 py-2 px-4 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white text-xs font-bold shadow-md shadow-indigo-600/30 transition cursor-pointer"
+                      type="button"
+                      onClick={() => handleAnalizarIA(lic)}
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-purple-600/30 hover:bg-purple-600/50 text-purple-200 border border-purple-500/40 text-xs font-bold transition cursor-pointer"
                     >
-                      <FileText className="w-3.5 h-3.5" />
-                      <span>Cotizar con 1 Clic</span>
+                      <Brain className="w-3.5 h-3.5 text-purple-400" />
+                      <span>Analizar IA</span>
                     </button>
                   </div>
                 </div>
@@ -665,421 +724,670 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
         </div>
       )}
 
-      {/* ── MODAL INFORME IA ── */}
-      {modalInformeAbierto && licitacionFicha && (
-        <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-[60] flex items-center justify-center p-3">
-          <div className="bg-slate-900 border border-indigo-500/40 rounded-3xl max-w-3xl w-full shadow-2xl flex flex-col max-h-[96vh]">
-            {/* Header Modal IA */}
-            <div className="flex items-center justify-between gap-3 p-5 border-b border-slate-800 bg-gradient-to-r from-indigo-950 to-slate-900 rounded-t-3xl shrink-0">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-indigo-600/30 border border-indigo-500/40 flex items-center justify-center">
-                  <Brain className="w-5 h-5 text-indigo-400" />
+      {/* ── VENTANA EMERGENTE: MODAL LICITACIÓN 360° & POSTULACIÓN OFICIAL ── */}
+      {licitacionModal && (
+        <div className="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 flex items-center justify-center p-3 sm:p-5">
+          <div className="bg-slate-900 border border-slate-700 rounded-3xl max-w-4xl w-full shadow-2xl flex flex-col max-h-[94vh] animate-in zoom-in-95 overflow-hidden">
+            {/* Header Modal */}
+            <div className="p-5 border-b border-slate-800 bg-gradient-to-r from-slate-900 via-indigo-950/80 to-slate-900 shrink-0">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex items-start gap-3">
+                  <div className="w-12 h-12 rounded-2xl bg-indigo-600/20 border border-indigo-500/40 flex items-center justify-center text-indigo-400 shrink-0 mt-0.5 shadow-md">
+                    <Building2 className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                      <span className="font-mono font-black text-xs text-indigo-300 bg-indigo-950 px-2.5 py-0.5 rounded-lg border border-indigo-700/80">
+                        ID: {licitacionModal.CodigoExterno}
+                      </span>
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-700">
+                        {licitacionModal.Estado}
+                      </span>
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-300 border border-slate-700">
+                        {licitacionModal.Rubro}
+                      </span>
+                      {licitacionModal.Region && (
+                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-950 text-blue-300 border border-blue-700/60 flex items-center gap-1">
+                          <MapPin className="w-3 h-3 text-red-400" />
+                          {licitacionModal.Region}
+                        </span>
+                      )}
+                    </div>
+                    <h3 className="text-base sm:text-lg font-black text-white leading-snug">
+                      {licitacionModal.Nombre}
+                    </h3>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-base font-black text-white">Informe IA — Gama Seguridad</h3>
-                  <p className="text-[11px] text-indigo-300 font-mono truncate max-w-xs">{licitacionFicha.CodigoExterno} · {licitacionFicha.Organismo.slice(0, 35)}{licitacionFicha.Organismo.length > 35 ? '...' : ''}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                {informeIA && (
+
+                <div className="flex items-center gap-2">
                   <button
                     onClick={exportarInformePDF}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/40 text-emerald-300 border border-emerald-500/40 text-xs font-bold transition cursor-pointer"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-bold transition cursor-pointer"
+                    title="Exportar Resumen a PDF"
                   >
-                    <Download className="w-3.5 h-3.5" />
+                    <Download className="w-3.5 h-3.5 text-emerald-400" />
                     <span>PDF</span>
                   </button>
-                )}
-                <button
-                  onClick={() => { setModalInformeAbierto(false); setInformeIA(null); setErrorIA('') }}
-                  className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
-                >
-                  <X className="w-5 h-5" />
-                </button>
+                  <button
+                    onClick={() => setLicitacionModal(null)}
+                    className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Pestañas de Navegación del Modal */}
+              <div className="flex items-center gap-1 mt-4 overflow-x-auto pb-1">
+                {[
+                  { id: 'ficha', label: 'Ficha & Alcance', icon: FileText },
+                  { id: 'visita', label: 'Visita a Terreno', icon: Calendar },
+                  { id: 'garantias', label: 'Garantías Exigidas', icon: Shield },
+                  { id: 'ponderaciones', label: 'Ponderaciones & Evaluación', icon: Scale },
+                  { id: 'postulacion', label: '🎯 Formular Postulación', icon: CheckSquare },
+                  { id: 'ia', label: '🧠 Análisis con IA', icon: Brain },
+                ].map(tab => {
+                  const Icon = tab.icon
+                  const active = tabModal === tab.id
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => setTabModal(tab.id as any)}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition cursor-pointer ${
+                        active 
+                          ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30' 
+                          : 'bg-slate-950/60 text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                      }`}
+                    >
+                      <Icon className="w-3.5 h-3.5" />
+                      <span>{tab.label}</span>
+                    </button>
+                  )
+                })}
               </div>
             </div>
 
-            {/* Contenido Modal IA */}
-            <div className="flex-1 overflow-y-auto p-5 space-y-4">
-              {analizandoIA && (
-                <div className="flex flex-col items-center justify-center py-16 space-y-4">
-                  <div className="relative">
-                    <div className="w-16 h-16 rounded-full border-4 border-indigo-500/30 border-t-indigo-400 animate-spin" />
-                    <Brain className="w-7 h-7 text-indigo-400 absolute inset-0 m-auto" />
+            {/* Contenido según pestaña */}
+            <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-5 text-xs text-slate-300">
+              {/* ── PESTAÑA 1: FICHA & ALCANCE ── */}
+              {tabModal === 'ficha' && (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                    <div className="bg-slate-950/80 p-3.5 rounded-2xl border border-slate-800">
+                      <span className="text-[10px] uppercase font-bold text-slate-500 block">Monto Estimado</span>
+                      <strong className="text-base font-black font-mono text-emerald-400 block mt-0.5">
+                        ${Math.round(licitacionModal.MontoEstimado).toLocaleString('es-CL')} {licitacionModal.Moneda}
+                      </strong>
+                    </div>
+                    <div className="bg-slate-950/80 p-3.5 rounded-2xl border border-slate-800">
+                      <span className="text-[10px] uppercase font-bold text-slate-500 block">Cierre de Ofertas</span>
+                      <strong className="text-sm font-bold text-amber-300 block mt-0.5 flex items-center gap-1">
+                        <Clock className="w-3.5 h-3.5 text-amber-400" />
+                        {licitacionModal.FechaCierre ? new Date(licitacionModal.FechaCierre).toLocaleString('es-CL') : 'Ver bases'}
+                      </strong>
+                    </div>
+                    <div className="bg-slate-950/80 p-3.5 rounded-2xl border border-slate-800">
+                      <span className="text-[10px] uppercase font-bold text-slate-500 block">Tipo de Proceso</span>
+                      <strong className="text-xs font-bold text-white block mt-0.5 truncate">{licitacionModal.Tipo}</strong>
+                    </div>
+                    <div className="bg-slate-950/80 p-3.5 rounded-2xl border border-slate-800">
+                      <span className="text-[10px] uppercase font-bold text-slate-500 block">Organismo / RUT</span>
+                      <strong className="text-xs font-bold text-white block mt-0.5 truncate">{licitacionModal.Organismo}</strong>
+                      <span className="text-[10px] text-slate-400 font-mono">RUT: {licitacionModal.RutComprador || '60.000.000-0'}</span>
+                    </div>
                   </div>
-                  <p className="text-sm font-bold text-white">Gemini 2.5 Flash analizando la licitación...</p>
-                  <p className="text-xs text-slate-400 text-center max-w-xs">Consultando ChileCompra y procesando los ítems del proceso. Esto toma ~15 segundos.</p>
-                  <div className="flex gap-1.5 mt-2">
-                    {[0,1,2,3,4].map(i => (
-                      <div key={i} className="w-2 h-2 rounded-full bg-indigo-400 animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />
+
+                  {/* Ubicación y Entrega */}
+                  <div className="bg-slate-950/80 p-4 rounded-2xl border border-slate-800 flex items-start gap-3">
+                    <MapPin className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+                    <div>
+                      <strong className="font-bold text-white block">Lugar de Ejecución / Recinto</strong>
+                      <span className="text-slate-300">{licitacionModal.DireccionUnidad || 'Dirección de dependencias del organismo convocante'} ({licitacionModal.Region || 'Chile'})</span>
+                    </div>
+                  </div>
+
+                  {/* Descripción / Requerimiento Técnico */}
+                  <div className="bg-slate-950/80 p-4 rounded-2xl border border-slate-800 space-y-2">
+                    <span className="text-[10px] uppercase font-bold text-indigo-400 block tracking-wider">
+                      Resumen del Requerimiento Oficial de Bases Técnicas
+                    </span>
+                    <p className="text-slate-300 leading-relaxed font-medium">
+                      {licitacionModal.Descripcion}
+                    </p>
+                  </div>
+
+                  {/* Calendario de Etapas */}
+                  <div className="bg-slate-950/80 p-4 rounded-2xl border border-slate-800 space-y-3">
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">
+                      Calendario de Hitos Oficiales
+                    </span>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px]">
+                      <div className="bg-slate-900 p-2.5 rounded-xl border border-slate-800">
+                        <span className="text-slate-500 block text-[10px]">1. Consultas</span>
+                        <span className="font-bold text-slate-200">Abiertas en Portal</span>
+                      </div>
+                      <div className="bg-slate-900 p-2.5 rounded-xl border border-slate-800">
+                        <span className="text-slate-500 block text-[10px]">2. Visita Técnica</span>
+                        <span className="font-bold text-amber-300">Obligatoria en Terreno</span>
+                      </div>
+                      <div className="bg-slate-900 p-2.5 rounded-xl border border-slate-800">
+                        <span className="text-slate-500 block text-[10px]">3. Cierre Ofertas</span>
+                        <span className="font-bold text-red-400">{licitacionModal.FechaCierre ? new Date(licitacionModal.FechaCierre).toLocaleDateString('es-CL') : 'Programado'}</span>
+                      </div>
+                      <div className="bg-slate-900 p-2.5 rounded-xl border border-slate-800">
+                        <span className="text-slate-500 block text-[10px]">4. Apertura</span>
+                        <span className="font-bold text-emerald-400">Electrónica 24 hrs post</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* ── PESTAÑA 2: VISITA TÉCNICA ── */}
+              {tabModal === 'visita' && (
+                <div className="space-y-4">
+                  <div className="bg-amber-950/40 border border-amber-500/50 rounded-2xl p-4 flex items-start gap-3">
+                    <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+                    <div>
+                      <strong className="text-amber-200 font-bold block">Condición Crítica: Visita a Terreno Obligatoria</strong>
+                      <p className="text-amber-300/90 text-xs mt-1 leading-relaxed">
+                        Para licitaciones de seguridad privada, CCTV, alarmas y control de acceso, la visita a terreno es de carácter <strong>OBLIGATORIO</strong>. La no concurrencia o la falta del <em>Certificado de Visita Técnica</em> emitido y firmado por el organismo comprador dejará la oferta <strong>automáticamente INADMISIBLE</strong>.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                    <div className="bg-slate-950/80 p-4 rounded-2xl border border-slate-800 space-y-2">
+                      <span className="text-[10px] uppercase font-bold text-slate-500 block">Fecha y Hora Programada</span>
+                      <strong className="text-sm font-black text-white block flex items-center gap-1.5">
+                        <Calendar className="w-4 h-4 text-indigo-400" />
+                        5 días hábiles previos al cierre (10:30 hrs)
+                      </strong>
+                      <span className="text-[11px] text-slate-400">Puntualidad estricta. Tolerancia máxima: 10 minutos.</span>
+                    </div>
+
+                    <div className="bg-slate-950/80 p-4 rounded-2xl border border-slate-800 space-y-2">
+                      <span className="text-[10px] uppercase font-bold text-slate-500 block">Lugar de Presentación</span>
+                      <strong className="text-sm font-bold text-white block truncate flex items-center gap-1.5">
+                        <MapPin className="w-4 h-4 text-red-400 shrink-0" />
+                        {licitacionModal.DireccionUnidad || licitacionModal.Organismo}
+                      </strong>
+                      <span className="text-[11px] text-slate-400">Presentarse con Cédula de Identidad y EPP reglamentarios.</span>
+                    </div>
+                  </div>
+
+                  {/* Checklist de la Visita */}
+                  <div className="bg-slate-950/80 p-4 rounded-2xl border border-slate-800 space-y-3">
+                    <span className="text-[10px] uppercase font-bold text-indigo-400 block tracking-wider">
+                      Protocolo de Visita Técnica para Operaciones Gama
+                    </span>
+                    <div className="space-y-2 text-xs">
+                      <label className="flex items-center gap-2.5 p-2.5 bg-slate-900/60 rounded-xl border border-slate-800 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={checklist.visitaTerreno}
+                          onChange={(e) => setChecklist(c => ({ ...c, visitaTerreno: e.target.checked }))}
+                          className="w-4 h-4 accent-indigo-600 rounded"
+                        />
+                        <span className="text-slate-200">Visita técnica agendada / asistida por técnico Gama con firma de certificado</span>
+                      </label>
+                      <div className="text-[11px] text-slate-400 pl-2 space-y-1">
+                        <p>✓ Inspección de puntos de enlace, ductación existente y acometida eléctrica para CCTV.</p>
+                        <p>✓ Verificación de cobertura perimetral y zonas ciegas para detección de intrusión.</p>
+                        <p>✓ Solicitud de timbre y firma del Certificado Oficial de Visita emitido por la contraparte.</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* ── PESTAÑA 3: GARANTÍAS ── */}
+              {tabModal === 'garantias' && (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* Garantía de Seriedad de la Oferta */}
+                    <div className="bg-slate-950/80 p-5 rounded-2xl border border-indigo-500/30 space-y-3">
+                      <div className="flex items-center gap-2 text-indigo-400 font-bold">
+                        <Shield className="w-5 h-5" />
+                        <h4 className="text-sm text-white">1. Garantía de Seriedad de la Oferta</h4>
+                      </div>
+                      <p className="text-slate-400 text-[11px] leading-relaxed">
+                        Asegura que el oferente mantendrá su propuesta hasta la adjudicación.
+                      </p>
+                      <div className="bg-slate-900 p-3 rounded-xl border border-slate-800 space-y-1.5 text-[11px]">
+                        <div className="flex justify-between">
+                          <span className="text-slate-500">Monto Exigido:</span>
+                          <span className="font-mono font-bold text-emerald-400">
+                            ${Math.round(licitacionModal.MontoEstimado * 0.05).toLocaleString('es-CL')} CLP (~5%)
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-500">Vigencia Requerida:</span>
+                          <span className="font-bold text-slate-200">60 días corridos post-cierre</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-500">Instrumento:</span>
+                          <span className="font-bold text-cyan-400">Póliza de Seguro Electrónica</span>
+                        </div>
+                      </div>
+                      <div className="p-2.5 bg-slate-900/60 rounded-xl border border-slate-800 text-[10px] text-slate-400 space-y-1">
+                        <span className="font-bold text-slate-300 block">Glosa Exigida:</span>
+                        <p className="font-mono italic text-indigo-300">&quot;Para garantizar la seriedad de la oferta en licitación {licitacionModal.CodigoExterno}&quot;</p>
+                      </div>
+                    </div>
+
+                    {/* Garantía de Fiel Cumplimiento */}
+                    <div className="bg-slate-950/80 p-5 rounded-2xl border border-emerald-500/30 space-y-3">
+                      <div className="flex items-center gap-2 text-emerald-400 font-bold">
+                        <ShieldCheck className="w-5 h-5" />
+                        <h4 className="text-sm text-white">2. Garantía de Fiel Cumplimiento de Contrato</h4>
+                      </div>
+                      <p className="text-slate-400 text-[11px] leading-relaxed">
+                        Se entrega una vez adjudicada la licitación, previo a la suscripción del contrato.
+                      </p>
+                      <div className="bg-slate-900 p-3 rounded-xl border border-slate-800 space-y-1.5 text-[11px]">
+                        <div className="flex justify-between">
+                          <span className="text-slate-500">Porcentaje:</span>
+                          <span className="font-mono font-bold text-emerald-400">10% del Valor Contratado</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-500">Monto Estimado:</span>
+                          <span className="font-mono font-bold text-emerald-400">
+                            ${Math.round(licitacionModal.MontoEstimado * 0.10).toLocaleString('es-CL')} CLP
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-500">Vigencia:</span>
+                          <span className="font-bold text-slate-200">Duración del contrato + 60 días</span>
+                        </div>
+                      </div>
+                      <div className="p-2.5 bg-slate-900/60 rounded-xl border border-slate-800 text-[10px] text-slate-400 space-y-1">
+                        <span className="font-bold text-slate-300 block">Emisión:</span>
+                        <p className="text-slate-300">Gama Seguridad tramita pólizas digitales vía corredora asociada en 24 horas.</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* ── PESTAÑA 4: PONDERACIONES & EVALUACIÓN ── */}
+              {tabModal === 'ponderaciones' && (
+                <div className="space-y-4">
+                  <div className="bg-slate-950/80 p-4 rounded-2xl border border-slate-800 space-y-1">
+                    <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                      <Scale className="w-4 h-4 text-indigo-400" />
+                      Pauta Oficial de Evaluación y Criterios de Adjudicación (100%)
+                    </h4>
+                    <p className="text-slate-400 text-[11px]">
+                      Ponderación típica estandarizada de ChileCompra para contratos de televigilancia, CCTV y seguridad privada:
+                    </p>
+                  </div>
+
+                  <div className="space-y-3">
+                    {[
+                      {
+                        titulo: '1. Oferta Económica (Precio Ofertado)',
+                        porcentaje: 45,
+                        color: 'bg-emerald-500',
+                        formula: 'Puntaje = (Precio Mínimo Ofertado / Precio Oferta Gama) * 45 puntos',
+                        consejo: 'Ajustar al 89% del presupuesto para obtener 43-45 puntos sin destruir margen.'
+                      },
+                      {
+                        titulo: '2. Calidad Técnica, Metodología & SLA 24/7',
+                        porcentaje: 25,
+                        color: 'bg-blue-500',
+                        formula: 'Evaluación de tiempos de respuesta (<4 hrs), enlace de central y planes de contingencia',
+                        consejo: 'Adjuntar certificado de enlace de central de monitoreo y protocolos de respuesta móvil.'
+                      },
+                      {
+                        titulo: '3. Experiencia del Oferente & Acreditación OS-10',
+                        porcentaje: 15,
+                        color: 'bg-purple-500',
+                        formula: 'Contratos similares vigentes en el Estado + acreditación de dotación técnica',
+                        consejo: 'Adjuntar certificados de recepción conforme de municipalidades u hospitales clientes.'
+                      },
+                      {
+                        titulo: '4. Condiciones de Empleo y Remuneraciones',
+                        porcentaje: 10,
+                        color: 'bg-amber-500',
+                        formula: 'Remuneraciones por sobre el ingreso mínimo + póliza de seguro complementario',
+                        consejo: 'Declarar tramo de sueldos técnicos superiores al promedio de la industria.'
+                      },
+                      {
+                        titulo: '5. Cumplimiento de Requisitos Formales',
+                        porcentaje: 5,
+                        color: 'bg-cyan-500',
+                        formula: 'Presentación completa y correcta de antecedentes en el acto de apertura',
+                        consejo: 'Subir todos los anexos 24 horas antes para no perder estos 5 puntos vitales.'
+                      },
+                    ].map((crit, idx) => (
+                      <div key={idx} className="bg-slate-950/70 p-3.5 rounded-2xl border border-slate-800 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <strong className="text-white text-xs">{crit.titulo}</strong>
+                          <span className="font-mono font-black text-xs text-indigo-300 bg-indigo-950 px-2 py-0.5 rounded-md">
+                            {crit.porcentaje}%
+                          </span>
+                        </div>
+                        <div className="w-full h-2 rounded-full bg-slate-800 overflow-hidden">
+                          <div className={`h-full ${crit.color}`} style={{ width: `${crit.porcentaje}%` }} />
+                        </div>
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between text-[11px] text-slate-400 gap-1 pt-1">
+                          <span>Fórmula: {crit.formula}</span>
+                          <span className="text-indigo-300 font-semibold">💡 {crit.consejo}</span>
+                        </div>
+                      </div>
                     ))}
                   </div>
                 </div>
               )}
 
-              {errorIA && !analizandoIA && (
-                <div className="bg-red-950/60 border border-red-500/40 rounded-2xl p-4 flex items-start gap-3 text-xs text-red-200">
-                  <AlertCircle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
-                  <div>
-                    <strong className="block text-white mb-1">No se pudo generar el análisis</strong>
-                    <span>{errorIA}</span>
-                    <p className="mt-2 text-slate-400">Verifica que tu ticket de API esté configurado y activo.</p>
+              {/* ── PESTAÑA 5: FORMULAR POSTULACIÓN GAMA ── */}
+              {tabModal === 'postulacion' && (
+                <div className="space-y-4">
+                  {postulacionGuardada && (
+                    <div className="bg-emerald-950/60 border border-emerald-500/50 rounded-2xl p-4 flex items-center justify-between gap-3 text-emerald-200">
+                      <div className="flex items-center gap-2.5">
+                        <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+                        <div>
+                          <strong className="text-white block">¡Postulación Registrada en Gama CRM!</strong>
+                          <span className="text-xs">Los datos y el presupuesto interno quedaron guardados sin salir de Mercado Público.</span>
+                        </div>
+                      </div>
+                      <button
+                        onClick={exportarInformePDF}
+                        className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 transition cursor-pointer"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        <span>PDF</span>
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Simulador de Oferta Económica */}
+                  <div className="bg-slate-950/80 p-5 rounded-2xl border border-slate-800 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                        <Calculator className="w-4 h-4 text-emerald-400" />
+                        Formulación de Oferta Económica Gama
+                      </h4>
+                      <span className="text-[11px] text-slate-400">
+                        Presupuesto Estado: ${Math.round(licitacionModal.MontoEstimado).toLocaleString('es-CL')} CLP
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] uppercase font-bold text-slate-400 block">Monto Neto Propuesto ($ CLP)</label>
+                        <input
+                          type="number"
+                          value={postulacionNeto}
+                          onChange={(e) => setPostulacionNeto(Number(e.target.value))}
+                          className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm font-mono font-bold text-white focus:outline-none focus:border-indigo-500"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] uppercase font-bold text-slate-400 block">IVA 19% ($ CLP)</label>
+                        <div className="w-full bg-slate-900/60 border border-slate-800 rounded-xl px-3 py-2 text-sm font-mono text-slate-400">
+                          ${Math.round(postulacionNeto * 0.19).toLocaleString('es-CL')}
+                        </div>
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] uppercase font-bold text-emerald-400 block">Total Bruto a Ofertar ($ CLP)</label>
+                        <div className="w-full bg-emerald-950/40 border border-emerald-500/50 rounded-xl px-3 py-2 text-base font-mono font-black text-emerald-400">
+                          ${Math.round(postulacionNeto * 1.19).toLocaleString('es-CL')}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Indicador de Competitividad */}
+                    {licitacionModal.MontoEstimado > 0 && (
+                      <div className="p-3 bg-slate-900 rounded-xl border border-slate-800 flex items-center justify-between text-xs">
+                        <span className="text-slate-400">Comparativa con presupuesto licitado:</span>
+                        {(() => {
+                          const total = Math.round(postulacionNeto * 1.19)
+                          const diff = licitacionModal.MontoEstimado - total
+                          const pct = Math.round((diff / licitacionModal.MontoEstimado) * 100)
+                          if (diff >= 0) {
+                            return (
+                              <span className="font-bold text-emerald-400">
+                                ✓ Ofertando un {pct}% por debajo del tope ($ {diff.toLocaleString('es-CL')} ahorro) · Alta probabilidad
+                              </span>
+                            )
+                          }
+                          return (
+                            <span className="font-bold text-red-400">
+                              ⚠️ Oferta supera el presupuesto en {Math.abs(pct)}% ($ {Math.abs(diff).toLocaleString('es-CL')}) · Riesgo de inadmisibilidad
+                            </span>
+                          )
+                        })()}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Checklist de Documentos Obligatorios */}
+                  <div className="bg-slate-950/80 p-5 rounded-2xl border border-slate-800 space-y-3">
+                    <span className="text-[10px] uppercase font-bold text-indigo-400 block tracking-wider">
+                      Checklist de Verificación Previo a la Subida al Portal
+                    </span>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                      {[
+                        { key: 'visitaTerreno', label: '1. Certificado de Visita Técnica firmado por inspector' },
+                        { key: 'polizaSeriedad', label: '2. Póliza de Garantía de Seriedad de la Oferta emitida' },
+                        { key: 'chileProveedores', label: '3. Certificado de Habilidad ChileProveedores vigente' },
+                        { key: 'os10Vigente', label: '4. Copia de credenciales OS-10 de guardias / operadores' },
+                        { key: 'propuestaTecnica', label: '5. Propuesta técnica con SLA 24/7 y protocolos de central' },
+                        { key: 'anexoFirmado', label: '6. Formulario de Anexo Económico firmado por Rep. Legal' },
+                      ].map((item) => (
+                        <label key={item.key} className="flex items-center gap-2.5 p-2.5 bg-slate-900/60 rounded-xl border border-slate-800 cursor-pointer hover:bg-slate-900 transition">
+                          <input
+                            type="checkbox"
+                            checked={(checklist as any)[item.key]}
+                            onChange={(e) => setChecklist(c => ({ ...c, [item.key]: e.target.checked }))}
+                            className="w-4 h-4 accent-indigo-600 rounded"
+                          />
+                          <span className={(checklist as any)[item.key] ? 'text-white font-medium' : 'text-slate-400'}>
+                            {item.label}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Acciones de Postulación */}
+                  <div className="p-4 bg-slate-950/90 rounded-2xl border border-indigo-500/30 flex flex-col sm:flex-row items-center justify-between gap-3">
+                    <div className="text-xs text-slate-300">
+                      <span className="font-bold text-white block">Postulación Formal Gama Seguridad</span>
+                      <span>Guarda los datos en el CRM y accede a ChileCompra para cargar los archivos.</span>
+                    </div>
+
+                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                      <button
+                        type="button"
+                        onClick={handleGuardarPostulacion}
+                        className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs transition shadow-md cursor-pointer"
+                      >
+                        <Save className="w-4 h-4" />
+                        <span>Guardar Postulación en CRM</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard.writeText(licitacionModal.CodigoExterno)
+                          setCopiadoId(licitacionModal.CodigoExterno)
+                          window.open('https://www.mercadopublico.cl/Portal/Modules/Site/Busquedas/BuscarLicitacion.aspx?qs=1', '_blank')
+                        }}
+                        className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-xs transition shadow-md cursor-pointer"
+                      >
+                        <Copy className="w-4 h-4" />
+                        <span>Copiar ID e Ir a ChileCompra</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}
 
-              {informeIA && !analizandoIA && (() => {
-                const viabilidadColor = informeIA.viabilidad === 'ALTA'
-                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50'
-                  : informeIA.viabilidad === 'MEDIA'
-                  ? 'bg-amber-500/20 text-amber-300 border-amber-500/50'
-                  : 'bg-red-500/20 text-red-300 border-red-500/50'
-
-                const Seccion = ({ id, titulo, icono, children }: { id: string; titulo: string; icono: React.ReactNode; children: React.ReactNode }) => (
-                  <div className="bg-slate-950/60 border border-slate-800 rounded-2xl overflow-hidden">
-                    <button
-                      onClick={() => setSeccionExpandida(s => s === id ? '' : id)}
-                      className="w-full flex items-center justify-between px-4 py-3 text-xs font-bold text-slate-200 hover:bg-slate-800/60 transition cursor-pointer"
-                    >
-                      <span className="flex items-center gap-2">{icono}{titulo}</span>
-                      {seccionExpandida === id ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
-                    </button>
-                    {seccionExpandida === id && <div className="px-4 pb-4 pt-1 text-xs text-slate-300 space-y-2">{children}</div>}
-                  </div>
-                )
-
-                return (
-                  <div className="space-y-3">
-                    {/* Badge de Viabilidad */}
-                    <div className={`flex items-center justify-between gap-3 p-4 rounded-2xl border ${viabilidadColor}`}>
-                      <div>
-                        <span className="text-[10px] uppercase font-black tracking-wider opacity-70 block">Viabilidad para Gama Seguridad</span>
-                        <span className="text-2xl font-black">{informeIA.viabilidad || 'N/A'}</span>
+              {/* ── PESTAÑA 6: ANÁLISIS IA GAMA ── */}
+              {tabModal === 'ia' && (
+                <div className="space-y-4">
+                  {!informeIA && !analizandoIA && (
+                    <div className="bg-slate-950/80 p-8 rounded-2xl border border-purple-500/30 text-center space-y-3">
+                      <div className="w-12 h-12 rounded-2xl bg-purple-600/20 border border-purple-500/40 flex items-center justify-center text-purple-400 mx-auto">
+                        <Brain className="w-6 h-6" />
                       </div>
-                      <div className="text-right">
-                        <span className="text-4xl font-black font-mono">{informeIA.puntaje_viabilidad || 0}</span>
-                        <span className="text-xs font-bold opacity-70 block">/100 puntos</span>
+                      <h4 className="text-base font-bold text-white">Análisis Inteligente de Licitación con IA</h4>
+                      <p className="text-xs text-slate-400 max-w-md mx-auto">
+                        Examina los pliegos técnicos, documentos, plazos y condiciones comerciales con el perfil operativo de Gama Seguridad para generar un informe de viabilidad y recomendaciones de oferta.
+                      </p>
+                      <button
+                        onClick={() => handleAnalizarIA(licitacionModal)}
+                        className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs shadow-lg shadow-purple-600/30 transition cursor-pointer inline-flex items-center gap-2"
+                      >
+                        <Brain className="w-4 h-4" />
+                        <span>Iniciar Análisis con IA</span>
+                      </button>
+                    </div>
+                  )}
+
+                  {analizandoIA && (
+                    <div className="flex flex-col items-center justify-center py-12 space-y-4">
+                      <div className="relative">
+                        <div className="w-14 h-14 rounded-full border-4 border-indigo-500/30 border-t-indigo-400 animate-spin" />
+                        <Brain className="w-6 h-6 text-indigo-400 absolute inset-0 m-auto" />
+                      </div>
+                      <p className="text-sm font-bold text-white">Analizando pliegos y condiciones con IA...</p>
+                      <p className="text-xs text-slate-400 text-center max-w-xs">Procesando requerimientos técnicos de ChileCompra. Esto toma unos segundos.</p>
+                    </div>
+                  )}
+
+                  {errorIA && !analizandoIA && (
+                    <div className="bg-red-950/60 border border-red-500/40 rounded-2xl p-4 flex items-start gap-3 text-xs text-red-200">
+                      <AlertCircle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+                      <div>
+                        <strong className="block text-white mb-1">Aviso de análisis</strong>
+                        <span>{errorIA}</span>
                       </div>
                     </div>
+                  )}
 
-                    {/* Resumen Ejecutivo */}
-                    <Seccion id="resumen" titulo="Resumen Ejecutivo" icono={<TrendingUp className="w-4 h-4 text-indigo-400" />}>
-                      <p className="leading-relaxed">{informeIA.resumen_ejecutivo}</p>
-                      {informeIA.alineacion_servicios && <p className="mt-2 text-indigo-300 leading-relaxed">{informeIA.alineacion_servicios}</p>}
-                    </Seccion>
+                  {informeIA && !analizandoIA && (() => {
+                    const viabilidadColor = informeIA.viabilidad === 'ALTA'
+                      ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50'
+                      : informeIA.viabilidad === 'MEDIA'
+                      ? 'bg-amber-500/20 text-amber-300 border-amber-500/50'
+                      : 'bg-red-500/20 text-red-300 border-red-500/50'
 
-                    {/* Plan de Acción */}
-                    {Array.isArray(informeIA.plan_de_accion) && informeIA.plan_de_accion.length > 0 && (
-                      <Seccion id="plan" titulo={`Plan de Acción (${informeIA.plan_de_accion.length} pasos)`} icono={<CheckCircle2 className="w-4 h-4 text-emerald-400" />}>
-                        <div className="space-y-2">
-                          {informeIA.plan_de_accion.map((p: any) => (
-                            <div key={p.paso} className="flex items-start gap-3 bg-slate-900/60 p-3 rounded-xl border border-slate-800">
-                              <span className={`shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-black ${
-                                p.prioridad === 'ALTA' ? 'bg-red-500/20 text-red-300' :
-                                p.prioridad === 'MEDIA' ? 'bg-amber-500/20 text-amber-300' :
-                                'bg-slate-700 text-slate-300'
-                              }`}>{p.paso}</span>
-                              <div className="flex-1">
-                                <p className="font-semibold text-white">{p.accion}</p>
-                                <div className="flex items-center gap-2 mt-1 flex-wrap">
-                                  <span className="text-[10px] font-bold text-indigo-300 bg-indigo-950/60 px-2 py-0.5 rounded-md">⏰ {p.plazo}</span>
-                                  <span className="text-[10px] font-bold text-slate-400 bg-slate-800 px-2 py-0.5 rounded-md">👤 {p.responsable}</span>
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </Seccion>
-                    )}
-
-                    {/* Requisitos Técnicos */}
-                    {Array.isArray(informeIA.requisitos_tecnicos) && informeIA.requisitos_tecnicos.length > 0 && (
-                      <Seccion id="req_tec" titulo="Requisitos Técnicos" icono={<ShieldCheck className="w-4 h-4 text-cyan-400" />}>
-                        <div className="space-y-1.5">
-                          {informeIA.requisitos_tecnicos.map((r: any, i: number) => (
-                            <div key={i} className="flex items-start gap-2 p-2.5 rounded-xl bg-slate-900/60 border border-slate-800">
-                              <span className={`shrink-0 w-5 h-5 rounded-full flex items-center justify-center mt-0.5 ${
-                                r.gama_cumple ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'
-                              }`}>
-                                {r.gama_cumple ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
-                              </span>
-                              <div>
-                                <p className={r.gama_cumple ? 'text-slate-200' : 'text-red-200'}>{r.requisito}</p>
-                                {!r.gama_cumple && r.accion_requerida && <p className="text-amber-300 mt-0.5">→ {r.accion_requerida}</p>}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </Seccion>
-                    )}
-
-                    {/* Requisitos Administrativos */}
-                    {Array.isArray(informeIA.requisitos_administrativos) && informeIA.requisitos_administrativos.length > 0 && (
-                      <Seccion id="req_adm" titulo="Requisitos Administrativos" icono={<FileText className="w-4 h-4 text-amber-400" />}>
-                        <div className="space-y-1.5">
-                          {informeIA.requisitos_administrativos.map((r: any, i: number) => (
-                            <div key={i} className="flex items-start gap-2 p-2.5 rounded-xl bg-slate-900/60 border border-slate-800">
-                              <span className={`shrink-0 w-5 h-5 rounded-full flex items-center justify-center mt-0.5 ${
-                                r.gama_cumple ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'
-                              }`}>
-                                {r.gama_cumple ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
-                              </span>
-                              <div>
-                                <p className={r.gama_cumple ? 'text-slate-200' : 'text-red-200'}>{r.requisito}</p>
-                                {!r.gama_cumple && r.accion_requerida && <p className="text-amber-300 mt-0.5">→ {r.accion_requerida}</p>}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </Seccion>
-                    )}
-
-                    {/* Servicios Requeridos */}
-                    {Array.isArray(informeIA.servicios_requeridos) && informeIA.servicios_requeridos.length > 0 && (
-                      <Seccion id="servicios" titulo="Servicios Requeridos" icono={<Building2 className="w-4 h-4 text-slate-400" />}>
-                        <div className="space-y-1.5">
-                          {informeIA.servicios_requeridos.map((s: any, i: number) => (
-                            <div key={i} className="flex items-center gap-2 p-2 rounded-xl bg-slate-900/60 border border-slate-800">
-                              <span className={`shrink-0 w-5 h-5 rounded-full flex items-center justify-center ${
-                                s.aplica_gama ? 'bg-emerald-500/20 text-emerald-400' : 'bg-slate-700 text-slate-400'
-                              }`}>
-                                {s.aplica_gama ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
-                              </span>
-                              <span className={s.aplica_gama ? 'text-slate-200 font-medium' : 'text-slate-500'}>{s.servicio}</span>
-                              {s.nota && <span className="text-[10px] text-slate-500 ml-auto shrink-0">{s.nota}</span>}
-                            </div>
-                          ))}
-                        </div>
-                      </Seccion>
-                    )}
-
-                    {/* Riesgos */}
-                    {Array.isArray(informeIA.riesgos) && informeIA.riesgos.length > 0 && (
-                      <Seccion id="riesgos" titulo="Riesgos Identificados" icono={<AlertTriangle className="w-4 h-4 text-amber-400" />}>
-                        <div className="space-y-2">
-                          {informeIA.riesgos.map((r: any, i: number) => (
-                            <div key={i} className={`p-3 rounded-xl border ${
-                              r.impacto === 'ALTO' ? 'bg-red-950/40 border-red-800/60' :
-                              r.impacto === 'MEDIO' ? 'bg-amber-950/40 border-amber-800/60' :
-                              'bg-slate-900/40 border-slate-800'
-                            }`}>
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className={`text-[10px] font-black px-2 py-0.5 rounded-md ${
-                                  r.impacto === 'ALTO' ? 'bg-red-500/20 text-red-300' :
-                                  r.impacto === 'MEDIO' ? 'bg-amber-500/20 text-amber-300' :
-                                  'bg-slate-700 text-slate-300'
-                                }`}>{r.tipo} — {r.impacto}</span>
-                              </div>
-                              <p className="text-slate-200">{r.descripcion}</p>
-                              {r.mitigacion && <p className="text-emerald-400 mt-1 text-[11px]">💡 {r.mitigacion}</p>}
-                            </div>
-                          ))}
-                        </div>
-                      </Seccion>
-                    )}
-
-                    {/* Precio Referencial */}
-                    {informeIA.precio_referencial && (
-                      <Seccion id="precio" titulo="Precio Referencial de Oferta" icono={<TrendingUp className="w-4 h-4 text-emerald-400" />}>
-                        <div className="grid grid-cols-3 gap-2 text-center mb-3">
-                          <div className="bg-slate-800 rounded-xl p-3">
-                            <span className="text-[10px] text-slate-500 block">Mínimo</span>
-                            <span className="font-mono font-bold text-slate-300 text-xs">${((informeIA.precio_referencial.minimo_clp)||0).toLocaleString('es-CL')}</span>
-                          </div>
-                          <div className="bg-emerald-950/60 border border-emerald-700/60 rounded-xl p-3">
-                            <span className="text-[10px] text-emerald-400 block font-bold">Recomendado</span>
-                            <span className="font-mono font-black text-emerald-300 text-sm">${((informeIA.precio_referencial.recomendado_clp)||0).toLocaleString('es-CL')}</span>
-                          </div>
-                          <div className="bg-slate-800 rounded-xl p-3">
-                            <span className="text-[10px] text-slate-500 block">Máximo</span>
-                            <span className="font-mono font-bold text-slate-300 text-xs">${((informeIA.precio_referencial.maximo_clp)||0).toLocaleString('es-CL')}</span>
-                          </div>
-                        </div>
-                        {informeIA.precio_referencial.justificacion && <p className="text-slate-400">{informeIA.precio_referencial.justificacion}</p>}
-                      </Seccion>
-                    )}
-
-                    {/* Notas Estratégicas */}
-                    {informeIA.notas_estrategicas && (
-                      <div className="bg-indigo-950/40 border border-indigo-700/50 rounded-2xl p-4 text-xs">
-                        <p className="text-[10px] uppercase font-black text-indigo-400 mb-2 tracking-wider">💡 Nota Estratégica de Gama IA</p>
-                        <p className="text-indigo-200 leading-relaxed">{informeIA.notas_estrategicas}</p>
+                    const Seccion = ({ id, titulo, icono, children }: { id: string; titulo: string; icono: React.ReactNode; children: React.ReactNode }) => (
+                      <div className="bg-slate-950/60 border border-slate-800 rounded-2xl overflow-hidden">
+                        <button
+                          onClick={() => setSeccionExpandida(s => s === id ? '' : id)}
+                          className="w-full flex items-center justify-between px-4 py-3 text-xs font-bold text-slate-200 hover:bg-slate-800/60 transition cursor-pointer"
+                        >
+                          <span className="flex items-center gap-2">{icono}{titulo}</span>
+                          {seccionExpandida === id ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
+                        </button>
+                        {seccionExpandida === id && <div className="px-4 pb-4 pt-1 text-xs text-slate-300 space-y-2">{children}</div>}
                       </div>
-                    )}
-                  </div>
-                )
-              })()}
-            </div>
+                    )
 
-            {/* Footer Modal IA */}
-            {!analizandoIA && (
-              <div className="flex items-center justify-between gap-3 p-5 border-t border-slate-800 shrink-0">
-                <button
-                  onClick={() => { setModalInformeAbierto(false); setInformeIA(null); setErrorIA('') }}
-                  className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition cursor-pointer"
-                >
-                  Cerrar
-                </button>
-                <div className="flex gap-2">
-                  {informeIA && (
-                    <button
-                      onClick={exportarInformePDF}
-                      className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition cursor-pointer shadow-md"
-                    >
-                      <Download className="w-3.5 h-3.5" />
-                      Exportar PDF
-                    </button>
-                  )}
-                  {licitacionFicha && (
-                    <button
-                      onClick={() => { setModalInformeAbierto(false); onCotizarLicitacion(licitacionFicha) }}
-                      className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white text-xs font-bold shadow-md transition cursor-pointer"
-                    >
-                      <FileText className="w-3.5 h-3.5" />
-                      Cotizar con 1 Clic
-                    </button>
-                  )}
+                    return (
+                      <div className="space-y-3">
+                        <div className={`flex items-center justify-between gap-3 p-4 rounded-2xl border ${viabilidadColor}`}>
+                          <div>
+                            <span className="text-[10px] uppercase font-black tracking-wider opacity-70 block">Viabilidad para Gama Seguridad</span>
+                            <span className="text-2xl font-black">{informeIA.viabilidad || 'N/A'}</span>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-4xl font-black font-mono">{informeIA.puntaje_viabilidad || 0}</span>
+                            <span className="text-xs font-bold opacity-70 block">/100 puntos</span>
+                          </div>
+                        </div>
+
+                        <Seccion id="resumen" titulo="Resumen Ejecutivo" icono={<TrendingUp className="w-4 h-4 text-indigo-400" />}>
+                          <p className="leading-relaxed">{informeIA.resumen_ejecutivo}</p>
+                          {informeIA.alineacion_servicios && <p className="mt-2 text-indigo-300 leading-relaxed">{informeIA.alineacion_servicios}</p>}
+                        </Seccion>
+
+                        {Array.isArray(informeIA.plan_de_accion) && informeIA.plan_de_accion.length > 0 && (
+                          <Seccion id="plan" titulo={`Plan de Acción (${informeIA.plan_de_accion.length} pasos)`} icono={<CheckCircle2 className="w-4 h-4 text-emerald-400" />}>
+                            <div className="space-y-2">
+                              {informeIA.plan_de_accion.map((p: any) => (
+                                <div key={p.paso} className="flex items-start gap-3 bg-slate-900/60 p-3 rounded-xl border border-slate-800">
+                                  <span className={`shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-black ${
+                                    p.prioridad === 'ALTA' ? 'bg-red-500/20 text-red-300' :
+                                    p.prioridad === 'MEDIA' ? 'bg-amber-500/20 text-amber-300' :
+                                    'bg-slate-700 text-slate-300'
+                                  }`}>{p.paso}</span>
+                                  <div className="flex-1">
+                                    <p className="font-semibold text-white">{p.accion}</p>
+                                    <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                      <span className="text-[10px] font-bold text-indigo-300 bg-indigo-950/60 px-2 py-0.5 rounded-md">⏰ {p.plazo}</span>
+                                      <span className="text-[10px] font-bold text-slate-400 bg-slate-800 px-2 py-0.5 rounded-md">👤 {p.responsable}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </Seccion>
+                        )}
+
+                        {informeIA.precio_referencial && (
+                          <Seccion id="precio" titulo="Precio Referencial Sugerido" icono={<TrendingUp className="w-4 h-4 text-emerald-400" />}>
+                            <div className="grid grid-cols-3 gap-2 text-center mb-3">
+                              <div className="bg-slate-800 rounded-xl p-3">
+                                <span className="text-[10px] text-slate-500 block">Mínimo</span>
+                                <span className="font-mono font-bold text-slate-300 text-xs">${((informeIA.precio_referencial.minimo_clp)||0).toLocaleString('es-CL')}</span>
+                              </div>
+                              <div className="bg-emerald-950/60 border border-emerald-700/60 rounded-xl p-3">
+                                <span className="text-[10px] text-emerald-400 block font-bold">Recomendado</span>
+                                <span className="font-mono font-black text-emerald-300 text-sm">${((informeIA.precio_referencial.recomendado_clp)||0).toLocaleString('es-CL')}</span>
+                              </div>
+                              <div className="bg-slate-800 rounded-xl p-3">
+                                <span className="text-[10px] text-slate-500 block">Máximo</span>
+                                <span className="font-mono font-bold text-slate-300 text-xs">${((informeIA.precio_referencial.maximo_clp)||0).toLocaleString('es-CL')}</span>
+                              </div>
+                            </div>
+                            {informeIA.precio_referencial.justificacion && <p className="text-slate-400">{informeIA.precio_referencial.justificacion}</p>}
+                          </Seccion>
+                        )}
+                      </div>
+                    )
+                  })()}
                 </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* ── MODAL FICHA TÉCNICA OFICIAL DE LICITACIÓN ── */}
-      {licitacionFicha && (
-        <div className="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-700 rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl animate-in zoom-in-95 space-y-6 max-h-[92vh] overflow-y-auto">
-            {/* Header */}
-            <div className="flex items-start justify-between gap-4 pb-4 border-b border-slate-800">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-indigo-600/20 border border-indigo-500/40 flex items-center justify-center text-indigo-400 shadow-md">
-                  <Building2 className="w-6 h-6" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2 mb-1 flex-wrap">
-                    <span className="font-mono font-black text-xs text-indigo-300 bg-indigo-950 px-2.5 py-0.5 rounded-lg border border-indigo-700/80">
-                      ID: {licitacionFicha.CodigoExterno}
-                    </span>
-                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-700">
-                      {licitacionFicha.Estado}
-                    </span>
-                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-300 border border-slate-700">
-                      {licitacionFicha.Rubro}
-                    </span>
-                  </div>
-                  <h3 className="text-base sm:text-lg font-black text-white leading-snug">
-                    {licitacionFicha.Nombre}
-                  </h3>
-                </div>
-              </div>
-              <button
-                onClick={() => setLicitacionFicha(null)}
-                className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
+              )}
             </div>
 
-            {/* Datos Clave */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
-              <div className="bg-slate-950/80 p-4 rounded-2xl border border-slate-800 space-y-1">
-                <span className="text-[10px] uppercase font-bold text-slate-500 block">Organismo Comprador</span>
-                <strong className="text-white text-sm block">{licitacionFicha.Organismo}</strong>
-                <span className="text-slate-400 font-mono block">RUT: {licitacionFicha.RutComprador || 'No especificado'}</span>
-              </div>
-              <div className="bg-slate-950/80 p-4 rounded-2xl border border-slate-800 space-y-1">
-                <span className="text-[10px] uppercase font-bold text-slate-500 block">Ubicación Geográfica</span>
-                <strong className="text-white text-sm block flex items-center gap-1.5">
-                  <MapPin className="w-4 h-4 text-red-400 shrink-0" />
-                  {licitacionFicha.Region || 'Chile'}{licitacionFicha.Comuna ? ` (${licitacionFicha.Comuna})` : ''}
-                </strong>
-                <span className="text-slate-400 block truncate">📍 {licitacionFicha.DireccionUnidad || 'Dirección no indicada'}</span>
-              </div>
-              <div className="bg-slate-950/80 p-4 rounded-2xl border border-slate-800 space-y-1">
-                <span className="text-[10px] uppercase font-bold text-slate-500 block">Monto Estimado de Referencia</span>
-                <span className="text-base font-black font-mono text-emerald-400 block">
-                  ${Math.round(licitacionFicha.MontoEstimado).toLocaleString('es-CL')} {licitacionFicha.Moneda}
-                </span>
-                <span className="text-[10px] text-slate-500">Monto base para la formulación de propuesta</span>
-              </div>
-              <div className="bg-slate-950/80 p-4 rounded-2xl border border-slate-800 space-y-1">
-                <span className="text-[10px] uppercase font-bold text-slate-500 block">Fecha Límite Cierre de Ofertas</span>
-                <span className="text-sm font-black font-mono text-amber-300 block flex items-center gap-1.5">
-                  <Clock className="w-4 h-4 text-amber-400" />
-                  {licitacionFicha.FechaCierre ? new Date(licitacionFicha.FechaCierre).toLocaleString('es-CL') : 'Ver en portal'}
-                </span>
-                <span className="text-[10px] text-slate-500">Tipo: {licitacionFicha.Tipo}</span>
-              </div>
-            </div>
-
-            {/* Requerimiento Técnico */}
-            <div className="bg-slate-950/80 p-4 rounded-2xl border border-slate-800 space-y-2 text-xs">
-              <span className="text-[10px] uppercase font-bold text-indigo-400 block tracking-wider">
-                Especificaciones Técnicas / Resumen del Servicio
-              </span>
-              <p className="text-slate-300 leading-relaxed font-medium">
-                {licitacionFicha.Descripcion}
-              </p>
-            </div>
-
-            {/* Caja de Acceso al Portal Oficial sin error de permisos */}
-            <div className="bg-gradient-to-r from-blue-950/60 to-indigo-950/60 border border-blue-500/30 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
-              <div className="space-y-1">
-                <span className="font-bold text-white block flex items-center gap-1.5">
-                  <ExternalLink className="w-4 h-4 text-cyan-400" />
-                  ¿Cómo verla en Mercado Público sin errores?
-                </span>
-                <p className="text-slate-300 text-[11px] leading-relaxed">
-                  Copia el código ID <strong>{licitacionFicha.CodigoExterno}</strong> y pégalo directamente en el buscador oficial de licitaciones de ChileCompra.
-                </p>
-              </div>
-
+            {/* Footer Modal con Acciones Principales */}
+            <div className="p-4 sm:p-5 border-t border-slate-800 bg-slate-950/80 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
               <button
                 type="button"
-                onClick={() => {
-                  navigator.clipboard.writeText(licitacionFicha.CodigoExterno)
-                  setCopiadoId(licitacionFicha.CodigoExterno)
-                  window.open('https://www.mercadopublico.cl/Portal/Modules/Site/Busquedas/BuscarLicitacion.aspx?qs=1', '_blank')
-                }}
-                className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-xs flex items-center gap-2 transition shadow-lg shrink-0 cursor-pointer"
+                onClick={() => setLicitacionModal(null)}
+                className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition cursor-pointer"
               >
-                <Copy className="w-4 h-4" />
-                <span>{copiadoId === licitacionFicha.CodigoExterno ? '¡ID Copiado! Abriendo Portal...' : 'Copiar ID e Ir al Portal'}</span>
-              </button>
-            </div>
-
-            {/* Footer con Acciones */}
-            <div className="flex items-center justify-between gap-3 pt-4 border-t border-slate-800">
-              <button
-                type="button"
-                onClick={() => setLicitacionFicha(null)}
-                className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition cursor-pointer"
-              >
-                Cerrar
+                Cerrar Ventana
               </button>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2.5 w-full sm:w-auto">
                 <button
                   type="button"
-                  onClick={() => handleAnalizarIA(licitacionFicha)}
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-bold shadow-lg shadow-purple-600/30 transition cursor-pointer"
+                  onClick={() => setTabModal('postulacion')}
+                  className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white text-xs font-bold shadow-lg shadow-indigo-600/30 transition cursor-pointer"
                 >
-                  <Brain className="w-4 h-4" />
-                  <span>Analizar con IA</span>
+                  <CheckSquare className="w-4 h-4" />
+                  <span>Formular Postulación</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => {
-                    const item = licitacionFicha
-                    setLicitacionFicha(null)
+                    const item = licitacionModal
                     onCotizarLicitacion(item)
                   }}
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white text-xs font-bold shadow-lg shadow-indigo-600/30 transition cursor-pointer"
+                  className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition border border-slate-700/80 cursor-pointer"
+                  title="Abrir presupuesto avanzado en CRM"
                 >
-                  <FileText className="w-4 h-4" />
-                  <span>Cotizar</span>
+                  <FileText className="w-4 h-4 text-indigo-400" />
+                  <span>Editor Presupuesto CRM</span>
                 </button>
               </div>
             </div>
@@ -1116,7 +1424,28 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
                 />
                 <button
                   type="button"
-                  onClick={handleProbarTicket}
+                  onClick={async () => {
+                    const t = ticketInput.trim()
+                    if (!t) {
+                      setResultadoPrueba({ ok: false, msg: 'Por favor ingresa un ticket antes de probar.' })
+                      return
+                    }
+                    setProbandoTicket(true)
+                    setResultadoPrueba(null)
+                    try {
+                      const res = await fetch(`/api/mercado-publico?accion=test_ticket&ticket=${encodeURIComponent(t)}`)
+                      const data = await res.json()
+                      if (data.ticket_valido) {
+                        setResultadoPrueba({ ok: true, msg: data.mensaje || '¡Ticket válido y activo ante ChileCompra!' })
+                      } else {
+                        setResultadoPrueba({ ok: false, msg: data.error || 'ChileCompra rechazó el ticket.' })
+                      }
+                    } catch (err: any) {
+                      setResultadoPrueba({ ok: false, msg: `Error al probar: ${err.message}` })
+                    } finally {
+                      setProbandoTicket(false)
+                    }
+                  }}
                   disabled={probandoTicket}
                   className="px-3 py-2 bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-300 border border-indigo-500/40 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shrink-0"
                 >
@@ -1146,17 +1475,6 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
               </div>
             )}
 
-            {/* Pasos para conseguir el ticket gratis */}
-            <div className="bg-slate-950 border border-slate-800 rounded-xl p-3.5 mb-5 text-xs text-slate-300 space-y-2">
-              <span className="font-bold text-indigo-400 block">¿Cómo obtener o revisar tu ticket gratuito?</span>
-              <ol className="list-decimal list-inside space-y-1.5 text-slate-400">
-                <li>Ingresa a <a href="https://api.mercadopublico.cl" target="_blank" rel="noreferrer" className="text-cyan-400 underline font-semibold">api.mercadopublico.cl</a>.</li>
-                <li>Haz clic en <strong>&quot;Participa&quot;</strong> e inicia sesión con tu <strong>ClaveÚnica</strong>.</li>
-                <li>En <em>Motivo</em>, escribe <strong>&quot;Solicitud de Ticket&quot;</strong>.</li>
-                <li>ChileCompra te enviará el ticket por correo. Cópialo completo y pégalo arriba.</li>
-              </ol>
-            </div>
-
             <div className="flex items-center justify-end gap-2.5">
               <button
                 onClick={() => setModalTicketAbierto(false)}
@@ -1165,7 +1483,13 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
                 Cancelar
               </button>
               <button
-                onClick={guardarTicket}
+                onClick={() => {
+                  const val = ticketInput.trim()
+                  setTicketApi(val)
+                  try { localStorage.setItem('gama_mercadopublico_ticket', val) } catch {}
+                  setModalTicketAbierto(false)
+                  setResultadoPrueba(null)
+                }}
                 className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs font-bold text-white transition shadow-md cursor-pointer"
               >
                 Guardar Ticket

@@ -647,6 +647,7 @@ export default function OperacionCRM() {
   const [mostrarModalCotizacion, setMostrarModalCotizacion] = useState(false)
   const [cotSeleccionada, setCotSeleccionada] = useState<CotizacionDolibarr | null>(null)
   const [cotEditandoId, setCotEditandoId] = useState<number | null>(null)
+  const [moduloOrigenCotizacion, setModuloOrigenCotizacion] = useState<any>(null)
 
   // FORMULARIO Y ESTADO DEL CREADOR DE COTIZACIONES PROFESIONAL
   const [tipoReceptorCot, setTipoReceptorCot] = useState<'registrado' | 'prospecto'>('registrado')
@@ -1599,8 +1600,16 @@ export default function OperacionCRM() {
         tipo_descuento: 'porcentaje'
       }
     ])
-    setModuloActivo('presupuestos')
+    setModuloOrigenCotizacion('mercadopublico')
     setMostrarModalCotizacion(true)
+  }
+
+  const cerrarModalCotizacion = () => {
+    setMostrarModalCotizacion(false)
+    if (moduloOrigenCotizacion) {
+      setModuloActivo(moduloOrigenCotizacion)
+      setModuloOrigenCotizacion(null)
+    }
   }
 
   const handleDuplicarCotizacion = async (cot: CotizacionDolibarr) => {
@@ -1797,7 +1806,7 @@ export default function OperacionCRM() {
       console.error('Almacenado localmente:', e)
     }
 
-    setMostrarModalCotizacion(false)
+    cerrarModalCotizacion()
     setCotEditandoId(null)
     alert(`Presupuesto ${codigoCot} guardado exitosamente para "${nombreFinal}" (RUT: ${rutFinal}).`)
   }
@@ -6502,7 +6511,7 @@ export default function OperacionCRM() {
               </div>
 
               <button
-                onClick={() => setMostrarModalCotizacion(false)}
+                onClick={cerrarModalCotizacion}
                 className="bg-white/10 hover:bg-white/20 text-white font-bold text-sm px-4 py-2 rounded-xl border border-white/20 transition-all cursor-pointer hover:scale-105 active:scale-95"
               >
                 ✕ Cerrar
@@ -6842,7 +6851,7 @@ export default function OperacionCRM() {
                 <div className="pt-4 flex items-center justify-end gap-3.5 border-t border-slate-200">
                   <button
                     type="button"
-                    onClick={() => setMostrarModalCotizacion(false)}
+                    onClick={cerrarModalCotizacion}
                     className="px-6 py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs sm:text-sm cursor-pointer transition-colors"
                   >
                     Cancelar
