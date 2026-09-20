@@ -585,6 +585,36 @@ export default function ExpedienteModal({ evento, pestanaInicial, onClose, usuar
                 </div>
               </div>
 
+              {/* Fila Fiscal: RUT y Razón Social / Holding */}
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 w-44 shrink-0">
+                  <span className="font-bold text-[11px] text-blue-950">R.U.T.:</span>
+                  <input
+                    type="text"
+                    value={clienteForm.rut || ''}
+                    readOnly={!modoEdicion}
+                    onChange={(e) => updateField('rut', e.target.value.toUpperCase())}
+                    placeholder="S/RUT"
+                    className={`w-full border border-t-gray-700 border-l-gray-700 border-b-white border-r-white font-mono font-bold px-1.5 py-0.5 text-blue-900 text-[11px] focus:outline-none ${
+                      modoEdicion ? 'bg-white' : 'bg-[#ffffd0]'
+                    }`}
+                  />
+                </div>
+                <div className="flex-1 flex items-center gap-1">
+                  <span className="font-bold text-[11px] text-blue-950">Razón Social:</span>
+                  <input
+                    type="text"
+                    value={clienteForm.razon_social || clienteForm.grupo_holding || ''}
+                    readOnly={!modoEdicion}
+                    onChange={(e) => updateField('razon_social', e.target.value.toUpperCase())}
+                    placeholder="Particular / Domicilio"
+                    className={`w-full border border-t-gray-700 border-l-gray-700 border-b-white border-r-white font-bold px-1.5 py-0.5 text-blue-900 text-[11px] truncate focus:outline-none ${
+                      modoEdicion ? 'bg-white' : 'bg-[#ffffd0]'
+                    }`}
+                  />
+                </div>
+              </div>
+
               {/* Fila 2: Ciudad, Plan y Tipo */}
               <div className="flex items-center gap-2">
                 <div className="flex items-center gap-1 flex-1">

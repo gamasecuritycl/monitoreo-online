@@ -12,39 +12,91 @@
     "plan_monitoreo": "MONITOREO MULTI-ABONADO CONSOLIDADOR 24/7",
     "estado_pago": "Al Día",
     "cuentas_abonados": [
-      "8",
+      "0006",
+      "0008",
+      "0018",
+      "0020",
+      "0026",
+      "0040",
+      "0044",
+      "0045",
+      "0049",
+      "0051",
+      "0052",
+      "0053",
+      "0054",
+      "0055",
+      "0057",
+      "0070",
+      "0098",
+      "0190",
+      "0191",
+      "0253",
+      "0261",
+      "0345",
+      "0420",
+      "0423",
+      "0504",
+      "0558",
+      "0564",
+      "0607",
+      "0675",
+      "0693",
+      "0696",
+      "0731",
+      "0732",
+      "0738",
+      "0739",
+      "0802",
+      "0859",
+      "0862",
+      "0863",
+      "0864",
+      "0865",
+      "0867",
+      "0871",
+      "0872",
+      "0873",
+      "0874",
+      "0875",
+      "0876",
+      "0877",
+      "0878",
+      "0881",
+      "0886",
+      "0895",
       "13",
       "18",
+      "190",
+      "191",
       "20",
+      "253",
       "26",
+      "261",
+      "345",
       "40",
+      "420",
+      "423",
       "44",
       "45",
       "49",
+      "504",
       "53",
       "54",
       "55",
-      "57",
-      "70",
-      "98",
-      "190",
-      "191",
-      "253",
-      "261",
-      "345",
-      "420",
-      "423",
-      "504",
       "558",
       "564",
+      "57",
       "607",
       "675",
       "693",
       "696",
+      "70",
       "731",
       "732",
       "738",
       "739",
+      "8",
       "802",
       "859",
       "861",
@@ -65,7 +117,10 @@
       "881",
       "883",
       "886",
+      "98",
       "C700",
+      "C702",
+      "C706",
       "C708",
       "C712",
       "C715",
@@ -75,8 +130,11 @@
       "C719",
       "C720",
       "C725",
+      "C731",
       "C750",
       "C763",
+      "C767",
+      "C769",
       "C790",
       "C793",
       "C794",
@@ -125,7 +183,15 @@
     "plan_monitoreo": "MONITOREO MULTI-ABONADO CONSOLIDADOR 24/7",
     "estado_pago": "Al Día",
     "cuentas_abonados": [
-      "99",
+      "0099",
+      "0100",
+      "0102",
+      "0219",
+      "0226",
+      "0230",
+      "0237",
+      "0617",
+      "0655",
       "100",
       "102",
       "103",
@@ -160,6 +226,7 @@
       "838",
       "907",
       "911",
+      "99",
       "C710",
       "C722",
       "C730",
@@ -314,6 +381,9 @@
     "plan_monitoreo": "MONITOREO MULTI-ABONADO CONSOLIDADOR 24/7",
     "estado_pago": "Al Día",
     "cuentas_abonados": [
+      "0031",
+      "0427",
+      "0432",
       "432",
       "C767",
       "C769",
@@ -359,6 +429,7 @@
     "plan_monitoreo": "MONITOREO MULTI-ABONADO CONSOLIDADOR 24/7",
     "estado_pago": "Al Día",
     "cuentas_abonados": [
+      "0535",
       "535"
     ]
   },
@@ -391,6 +462,7 @@
     "plan_monitoreo": "MONITOREO MULTI-ABONADO CONSOLIDADOR 24/7",
     "estado_pago": "Al Día",
     "cuentas_abonados": [
+      "0178",
       "C7C9"
     ]
   },
@@ -522,38 +594,6 @@
       "419"
     ]
   },
-  "RUT-C723": {
-    "rut": "RUT-C723",
-    "razon_social": "EDICION UNIVERSITARIA CASA RAWSON",
-    "empresa_facturadora_id": "EMP-1",
-    "email_cobranza": "cobranza@gamasecurity.cl",
-    "telefono": "+56991016912",
-    "direccion_comercial": "CASA RAWSON",
-    "moneda": "CLP",
-    "tarifa_mensual": 29900,
-    "dia_vencimiento": 5,
-    "plan_monitoreo": "MONITOREO MULTI-ABONADO CONSOLIDADOR 24/7",
-    "estado_pago": "Al Día",
-    "cuentas_abonados": [
-      "C723"
-    ]
-  },
-  "RUT-C778": {
-    "rut": "RUT-C778",
-    "razon_social": "EDITH FERNANDEZ ASTORGA.",
-    "empresa_facturadora_id": "EMP-1",
-    "email_cobranza": "cobranza@gamasecurity.cl",
-    "telefono": "+56991016912",
-    "direccion_comercial": "Dirección Fiscal Registrada",
-    "moneda": "CLP",
-    "tarifa_mensual": 29900,
-    "dia_vencimiento": 5,
-    "plan_monitoreo": "MONITOREO MULTI-ABONADO CONSOLIDADOR 24/7",
-    "estado_pago": "Al Día",
-    "cuentas_abonados": [
-      "C778"
-    ]
-  },
   "RUT-297": {
     "rut": "RUT-297",
     "razon_social": "ERIC SALINAS",
@@ -568,22 +608,6 @@
     "estado_pago": "Al Día",
     "cuentas_abonados": [
       "297"
-    ]
-  },
-  "RUT-C726": {
-    "rut": "RUT-C726",
-    "razon_social": "FERNANDO FUHRMANN SHEVERS",
-    "empresa_facturadora_id": "EMP-1",
-    "email_cobranza": "cobranza@gamasecurity.cl",
-    "telefono": "+56991016912",
-    "direccion_comercial": "Dirección Fiscal Registrada",
-    "moneda": "CLP",
-    "tarifa_mensual": 29900,
-    "dia_vencimiento": 5,
-    "plan_monitoreo": "MONITOREO MULTI-ABONADO CONSOLIDADOR 24/7",
-    "estado_pago": "Al Día",
-    "cuentas_abonados": [
-      "C726"
     ]
   },
   "RUT-C792": {
@@ -696,22 +720,6 @@
     "estado_pago": "Al Día",
     "cuentas_abonados": [
       "C782"
-    ]
-  },
-  "RUT-565": {
-    "rut": "RUT-565",
-    "razon_social": "LIDIA CASTILLO CHOUPAY",
-    "empresa_facturadora_id": "EMP-1",
-    "email_cobranza": "cobranza@gamasecurity.cl",
-    "telefono": "+56991016912",
-    "direccion_comercial": "Dirección Fiscal Registrada",
-    "moneda": "CLP",
-    "tarifa_mensual": 29900,
-    "dia_vencimiento": 5,
-    "plan_monitoreo": "MONITOREO MULTI-ABONADO CONSOLIDADOR 24/7",
-    "estado_pago": "Al Día",
-    "cuentas_abonados": [
-      "565"
     ]
   },
   "RUT-C754": {
@@ -890,22 +898,6 @@
       "C745"
     ]
   },
-  "RUT-C701": {
-    "rut": "RUT-C701",
-    "razon_social": "MIRNA REBOLLEDO  NUÑEZ",
-    "empresa_facturadora_id": "EMP-1",
-    "email_cobranza": "cobranza@gamasecurity.cl",
-    "telefono": "+56991016912",
-    "direccion_comercial": "Dirección Fiscal Registrada",
-    "moneda": "CLP",
-    "tarifa_mensual": 29900,
-    "dia_vencimiento": 5,
-    "plan_monitoreo": "MONITOREO MULTI-ABONADO CONSOLIDADOR 24/7",
-    "estado_pago": "Al Día",
-    "cuentas_abonados": [
-      "C701"
-    ]
-  },
   "RUT-792": {
     "rut": "RUT-792",
     "razon_social": "MT . INGENIERIA",
@@ -983,8 +975,15 @@
     "plan_monitoreo": "MONITOREO MULTI-ABONADO CONSOLIDADOR 24/7",
     "estado_pago": "Al Día",
     "cuentas_abonados": [
+      "0269",
+      "0285",
+      "0428",
+      "0905",
+      "0906",
+      "C703",
       "C752",
       "C761",
+      "C789",
       "C798",
       "C7AE",
       "C7B6",
@@ -1084,102 +1083,6 @@
       "668"
     ]
   },
-  "RUT-430": {
-    "rut": "RUT-430",
-    "razon_social": "PRODERE",
-    "empresa_facturadora_id": "EMP-1",
-    "email_cobranza": "cobranza@gamasecurity.cl",
-    "telefono": "+56991016912",
-    "direccion_comercial": "ADM CENTRAL",
-    "moneda": "CLP",
-    "tarifa_mensual": 29900,
-    "dia_vencimiento": 5,
-    "plan_monitoreo": "MONITOREO MULTI-ABONADO CONSOLIDADOR 24/7",
-    "estado_pago": "Al Día",
-    "cuentas_abonados": [
-      "430"
-    ]
-  },
-  "RUT-C704": {
-    "rut": "RUT-C704",
-    "razon_social": "PRODERE BHUA PUENTE ALTO",
-    "empresa_facturadora_id": "EMP-1",
-    "email_cobranza": "cobranza@gamasecurity.cl",
-    "telefono": "+56991016912",
-    "direccion_comercial": "BHUA",
-    "moneda": "CLP",
-    "tarifa_mensual": 29900,
-    "dia_vencimiento": 5,
-    "plan_monitoreo": "MONITOREO MULTI-ABONADO CONSOLIDADOR 24/7",
-    "estado_pago": "Al Día",
-    "cuentas_abonados": [
-      "C704"
-    ]
-  },
-  "RUT-C705": {
-    "rut": "RUT-C705",
-    "razon_social": "PRODERE DYGGO PUENTE ALTO",
-    "empresa_facturadora_id": "EMP-1",
-    "email_cobranza": "cobranza@gamasecurity.cl",
-    "telefono": "+56991016912",
-    "direccion_comercial": "DYGGO",
-    "moneda": "CLP",
-    "tarifa_mensual": 29900,
-    "dia_vencimiento": 5,
-    "plan_monitoreo": "MONITOREO MULTI-ABONADO CONSOLIDADOR 24/7",
-    "estado_pago": "Al Día",
-    "cuentas_abonados": [
-      "C705"
-    ]
-  },
-  "RUT-C707": {
-    "rut": "RUT-C707",
-    "razon_social": "PRODERE NAGARTA BUIN",
-    "empresa_facturadora_id": "EMP-1",
-    "email_cobranza": "cobranza@gamasecurity.cl",
-    "telefono": "+56991016912",
-    "direccion_comercial": "NAGARTA",
-    "moneda": "CLP",
-    "tarifa_mensual": 29900,
-    "dia_vencimiento": 5,
-    "plan_monitoreo": "MONITOREO MULTI-ABONADO CONSOLIDADOR 24/7",
-    "estado_pago": "Al Día",
-    "cuentas_abonados": [
-      "C707"
-    ]
-  },
-  "RUT-C795": {
-    "rut": "RUT-C795",
-    "razon_social": "PRODERE.",
-    "empresa_facturadora_id": "EMP-1",
-    "email_cobranza": "cobranza@gamasecurity.cl",
-    "telefono": "+56991016912",
-    "direccion_comercial": "Dirección Fiscal Registrada",
-    "moneda": "CLP",
-    "tarifa_mensual": 29900,
-    "dia_vencimiento": 5,
-    "plan_monitoreo": "MONITOREO MULTI-ABONADO CONSOLIDADOR 24/7",
-    "estado_pago": "Al Día",
-    "cuentas_abonados": [
-      "C795"
-    ]
-  },
-  "RUT-524": {
-    "rut": "RUT-524",
-    "razon_social": "RODRIGO CASTILLO RIQUELME JOHNNY LETRER",
-    "empresa_facturadora_id": "EMP-1",
-    "email_cobranza": "cobranza@gamasecurity.cl",
-    "telefono": "+56991016912",
-    "direccion_comercial": "Dirección Fiscal Registrada",
-    "moneda": "CLP",
-    "tarifa_mensual": 29900,
-    "dia_vencimiento": 5,
-    "plan_monitoreo": "MONITOREO MULTI-ABONADO CONSOLIDADOR 24/7",
-    "estado_pago": "Al Día",
-    "cuentas_abonados": [
-      "524"
-    ]
-  },
   "RUT-566": {
     "rut": "RUT-566",
     "razon_social": "SHELLEY RICHARD HOWWARD",
@@ -1194,22 +1097,6 @@
     "estado_pago": "Al Día",
     "cuentas_abonados": [
       "566"
-    ]
-  },
-  "RUT-C765": {
-    "rut": "RUT-C765",
-    "razon_social": "TOYS MOTORS",
-    "empresa_facturadora_id": "EMP-1",
-    "email_cobranza": "cobranza@gamasecurity.cl",
-    "telefono": "+56991016912",
-    "direccion_comercial": "Dirección Fiscal Registrada",
-    "moneda": "CLP",
-    "tarifa_mensual": 29900,
-    "dia_vencimiento": 5,
-    "plan_monitoreo": "MONITOREO MULTI-ABONADO CONSOLIDADOR 24/7",
-    "estado_pago": "Al Día",
-    "cuentas_abonados": [
-      "C765"
     ]
   },
   "RUT-555": {
@@ -1260,9 +1147,31 @@
       "805"
     ]
   },
-  "RUT-C7B4": {
-    "rut": "RUT-C7B4",
-    "razon_social": "VICTOR WILSON  BROWNE.",
+  "65.153.954-4": {
+    "rut": "65.153.954-4",
+    "razon_social": "Fundación PRODERE",
+    "empresa_facturadora_id": "EMP-1",
+    "email_cobranza": "cobranza@gamasecurity.cl",
+    "telefono": "+56991016912",
+    "direccion_comercial": "BHUA",
+    "moneda": "CLP",
+    "tarifa_mensual": 29900,
+    "dia_vencimiento": 5,
+    "plan_monitoreo": "MONITOREO MULTI-ABONADO CONSOLIDADOR 24/7",
+    "estado_pago": "Al Día",
+    "cuentas_abonados": [
+      "0430",
+      "0431",
+      "430",
+      "C704",
+      "C705",
+      "C707",
+      "C795"
+    ]
+  },
+  "77.839.684-K": {
+    "rut": "77.839.684-K",
+    "razon_social": "Toys Motors SpA",
     "empresa_facturadora_id": "EMP-1",
     "email_cobranza": "cobranza@gamasecurity.cl",
     "telefono": "+56991016912",
@@ -1273,6 +1182,123 @@
     "plan_monitoreo": "MONITOREO MULTI-ABONADO CONSOLIDADOR 24/7",
     "estado_pago": "Al Día",
     "cuentas_abonados": [
+      "C765"
+    ]
+  },
+  "96.832.590-6": {
+    "rut": "96.832.590-6",
+    "razon_social": "Ediciones Universitarias de Valparaíso S.A.",
+    "empresa_facturadora_id": "EMP-1",
+    "email_cobranza": "cobranza@gamasecurity.cl",
+    "telefono": "+56991016912",
+    "direccion_comercial": "CASA RAWSON",
+    "moneda": "CLP",
+    "tarifa_mensual": 29900,
+    "dia_vencimiento": 5,
+    "plan_monitoreo": "MONITOREO MULTI-ABONADO CONSOLIDADOR 24/7",
+    "estado_pago": "Al Día",
+    "cuentas_abonados": [
+      "C723"
+    ]
+  },
+  "13.756.882-9": {
+    "rut": "13.756.882-9",
+    "razon_social": "Mirna Rebolledo Núñez",
+    "empresa_facturadora_id": "EMP-1",
+    "email_cobranza": "cobranza@gamasecurity.cl",
+    "telefono": "+56991016912",
+    "direccion_comercial": "Dirección Fiscal Registrada",
+    "moneda": "CLP",
+    "tarifa_mensual": 29900,
+    "dia_vencimiento": 5,
+    "plan_monitoreo": "MONITOREO MULTI-ABONADO CONSOLIDADOR 24/7",
+    "estado_pago": "Al Día",
+    "cuentas_abonados": [
+      "C701"
+    ]
+  },
+  "10.849.662-2": {
+    "rut": "10.849.662-2",
+    "razon_social": "Rodrigo Castillo Riquelme (Johnny Letreros)",
+    "empresa_facturadora_id": "EMP-1",
+    "email_cobranza": "cobranza@gamasecurity.cl",
+    "telefono": "+56991016912",
+    "direccion_comercial": "Dirección Fiscal Registrada",
+    "moneda": "CLP",
+    "tarifa_mensual": 29900,
+    "dia_vencimiento": 5,
+    "plan_monitoreo": "MONITOREO MULTI-ABONADO CONSOLIDADOR 24/7",
+    "estado_pago": "Al Día",
+    "cuentas_abonados": [
+      "0524",
+      "524"
+    ]
+  },
+  "7.550.661-9": {
+    "rut": "7.550.661-9",
+    "razon_social": "Lidia Castillo Choupay",
+    "empresa_facturadora_id": "EMP-1",
+    "email_cobranza": "cobranza@gamasecurity.cl",
+    "telefono": "+56991016912",
+    "direccion_comercial": "Dirección Fiscal Registrada",
+    "moneda": "CLP",
+    "tarifa_mensual": 29900,
+    "dia_vencimiento": 5,
+    "plan_monitoreo": "MONITOREO MULTI-ABONADO CONSOLIDADOR 24/7",
+    "estado_pago": "Al Día",
+    "cuentas_abonados": [
+      "0565",
+      "565"
+    ]
+  },
+  "2.549.817-8": {
+    "rut": "2.549.817-8",
+    "razon_social": "Fernando Fuhrmann Schevers",
+    "empresa_facturadora_id": "EMP-1",
+    "email_cobranza": "cobranza@gamasecurity.cl",
+    "telefono": "+56991016912",
+    "direccion_comercial": "Dirección Fiscal Registrada",
+    "moneda": "CLP",
+    "tarifa_mensual": 29900,
+    "dia_vencimiento": 5,
+    "plan_monitoreo": "MONITOREO MULTI-ABONADO CONSOLIDADOR 24/7",
+    "estado_pago": "Al Día",
+    "cuentas_abonados": [
+      "0002",
+      "C726"
+    ]
+  },
+  "9.685.926-0": {
+    "rut": "9.685.926-0",
+    "razon_social": "Edith Fernández Astorga",
+    "empresa_facturadora_id": "EMP-1",
+    "email_cobranza": "cobranza@gamasecurity.cl",
+    "telefono": "+56991016912",
+    "direccion_comercial": "Dirección Fiscal Registrada",
+    "moneda": "CLP",
+    "tarifa_mensual": 29900,
+    "dia_vencimiento": 5,
+    "plan_monitoreo": "MONITOREO MULTI-ABONADO CONSOLIDADOR 24/7",
+    "estado_pago": "Al Día",
+    "cuentas_abonados": [
+      "0493",
+      "C778"
+    ]
+  },
+  "4.503.044-K": {
+    "rut": "4.503.044-K",
+    "razon_social": "Víctor Wilson Browne",
+    "empresa_facturadora_id": "EMP-1",
+    "email_cobranza": "cobranza@gamasecurity.cl",
+    "telefono": "+56991016912",
+    "direccion_comercial": "Dirección Fiscal Registrada",
+    "moneda": "CLP",
+    "tarifa_mensual": 29900,
+    "dia_vencimiento": 5,
+    "plan_monitoreo": "MONITOREO MULTI-ABONADO CONSOLIDADOR 24/7",
+    "estado_pago": "Al Día",
+    "cuentas_abonados": [
+      "0003",
       "C7B4"
     ]
   }
