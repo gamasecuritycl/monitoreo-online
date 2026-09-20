@@ -4,7 +4,8 @@ import React, { useState, useEffect } from 'react'
 import { 
   Building2, Search, Key, ExternalLink, FileText, 
   RefreshCw, AlertCircle, CheckCircle2, Clock, 
-  Sparkles, Check, X, MapPin, ArrowUpDown, Filter, Copy
+  Sparkles, Check, X, MapPin, ArrowUpDown, Filter, Copy,
+  Brain, Download, ChevronDown, ChevronUp, ShieldCheck, AlertTriangle, TrendingUp
 } from 'lucide-react'
 
 export interface LicitacionChileCompra {
@@ -53,6 +54,13 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
   const [licitacionFicha, setLicitacionFicha] = useState<LicitacionChileCompra | null>(null)
   const [copiadoId, setCopiadoId] = useState<string | null>(null)
 
+  // Estado para el Análisis IA
+  const [analizandoIA, setAnalizandoIA] = useState(false)
+  const [informeIA, setInformeIA] = useState<any>(null)
+  const [errorIA, setErrorIA] = useState<string>('')
+  const [seccionExpandida, setSeccionExpandida] = useState<string>('resumen')
+  const [modalInformeAbierto, setModalInformeAbierto] = useState(false)
+
   // Cargar ticket guardado en localStorage
   useEffect(() => {
     try {
@@ -63,6 +71,118 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
       }
     } catch {}
   }, [])
+
+  // ── ANÁLISIS IA DE LICITACIÓN ──
+  const handleAnalizarIA = async (lic: LicitacionChileCompra) => {
+    setAnalizandoIA(true)
+    setErrorIA('')
+    setInformeIA(null)
+    setModalInformeAbierto(true)
+    try {
+      const res = await fetch('/api/mercado-publico/analizar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          codigo: lic.CodigoExterno,
+          ticket: ticketApi || '',
+          licitacion_basica: lic
+        })
+      })
+      const data = await res.json()
+      if (data.success && data.informe) {
+        setInformeIA(data.informe)
+      } else {
+        setErrorIA(data.error || 'No se pudo generar el informe.')
+      }
+    } catch (e: any) {
+      setErrorIA(`Error de conexión: ${e.message}`)
+    } finally {
+      setAnalizandoIA(false)
+    }
+  }
+
+  // ── EXPORTAR INFORME PDF ──
+  const exportarInformePDF = async () => {
+    if (!informeIA || !licitacionFicha) return
+    try {
+      const { jsPDF } = await import('jspdf')
+      const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+      const margin = 15
+      const pageW = 210
+      const contentW = pageW - margin * 2
+      let y = margin
+
+      // Header
+      doc.setFillColor(15, 23, 42)
+      doc.rect(0, 0, pageW, 35, 'F')
+      doc.setTextColor(255, 255, 255)
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(14)
+      doc.text('GAMA SEGURIDAD — ANÁLISIS IA DE LICITACIÓN', margin, 15)
+      doc.setFontSize(9)
+      doc.setTextColor(148, 163, 184)
+      doc.text(`Generado: ${new Date().toLocaleString('es-CL')}`, margin, 23)
+      doc.setTextColor(99, 102, 241)
+      doc.text(`Viabilidad: ${informeIA.viabilidad || 'N/A'} (${informeIA.puntaje_viabilidad || 0}/100)`, margin, 30)
+      y = 45
+
+      doc.setTextColor(15, 23, 42)
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(11)
+      doc.text('LICITACIÓN', margin, y); y += 6
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(9)
+      const nombreLines = doc.splitTextToSize(licitacionFicha.Nombre, contentW)
+      doc.text(nombreLines, margin, y); y += nombreLines.length * 5 + 3
+      doc.text(`ID: ${licitacionFicha.CodigoExterno}  |  Organismo: ${licitacionFicha.Organismo}`, margin, y); y += 5
+      doc.text(`Región: ${licitacionFicha.Region || 'N/A'}  |  Monto: $${Math.round(licitacionFicha.MontoEstimado).toLocaleString('es-CL')} CLP`, margin, y); y += 5
+      doc.text(`Cierre: ${licitacionFicha.FechaCierre ? new Date(licitacionFicha.FechaCierre).toLocaleString('es-CL') : 'N/A'}`, margin, y); y += 10
+
+      const addSection = (titulo: string, contenido: string) => {
+        if (y > 260) { doc.addPage(); y = margin }
+        doc.setFillColor(99, 102, 241)
+        doc.rect(margin, y, contentW, 6, 'F')
+        doc.setTextColor(255, 255, 255)
+        doc.setFont('helvetica', 'bold')
+        doc.setFontSize(9)
+        doc.text(titulo.toUpperCase(), margin + 2, y + 4.5); y += 9
+        doc.setTextColor(15, 23, 42)
+        doc.setFont('helvetica', 'normal')
+        doc.setFontSize(8.5)
+        const lines = doc.splitTextToSize(contenido, contentW)
+        lines.forEach((line: string) => {
+          if (y > 272) { doc.addPage(); y = margin }
+          doc.text(line, margin, y); y += 5
+        })
+        y += 4
+      }
+
+      if (informeIA.resumen_ejecutivo) addSection('Resumen Ejecutivo', informeIA.resumen_ejecutivo)
+      if (informeIA.alineacion_servicios) addSection('Alineación con Servicios de Gama', informeIA.alineacion_servicios)
+
+      if (Array.isArray(informeIA.plan_de_accion) && informeIA.plan_de_accion.length > 0) {
+        addSection('Plan de Acción', informeIA.plan_de_accion.map((p: any) => `${p.paso}. ${p.accion} [${p.plazo}] — ${p.responsable}`).join('\n'))
+      }
+      if (Array.isArray(informeIA.requisitos_tecnicos) && informeIA.requisitos_tecnicos.length > 0) {
+        addSection('Requisitos Técnicos', informeIA.requisitos_tecnicos.map((r: any) => `${r.gama_cumple ? '✓' : '✗'} ${r.requisito}`).join('\n'))
+      }
+      if (Array.isArray(informeIA.requisitos_administrativos) && informeIA.requisitos_administrativos.length > 0) {
+        addSection('Requisitos Administrativos', informeIA.requisitos_administrativos.map((r: any) => `${r.gama_cumple ? '✓' : '✗'} ${r.requisito}`).join('\n'))
+      }
+      if (Array.isArray(informeIA.riesgos) && informeIA.riesgos.length > 0) {
+        addSection('Riesgos Identificados', informeIA.riesgos.map((r: any) => `[${r.tipo}/${r.impacto}] ${r.descripcion}`).join('\n'))
+      }
+      if (informeIA.precio_referencial) {
+        const p = informeIA.precio_referencial
+        addSection('Precio Referencial', `Mínimo: $${(p.minimo_clp||0).toLocaleString('es-CL')} CLP | Recomendado: $${(p.recomendado_clp||0).toLocaleString('es-CL')} CLP | Máximo: $${(p.maximo_clp||0).toLocaleString('es-CL')} CLP\n${p.justificacion || ''}`)
+      }
+      if (informeIA.notas_estrategicas) addSection('Notas Estratégicas', informeIA.notas_estrategicas)
+
+      doc.save(`Informe_IA_${licitacionFicha.CodigoExterno}.pdf`)
+    } catch (e: any) {
+      console.error('Error generando PDF:', e)
+    }
+  }
 
   const fetchLicitaciones = async () => {
     setCargando(true)
@@ -545,6 +665,287 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
         </div>
       )}
 
+      {/* ── MODAL INFORME IA ── */}
+      {modalInformeAbierto && licitacionFicha && (
+        <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-[60] flex items-center justify-center p-3">
+          <div className="bg-slate-900 border border-indigo-500/40 rounded-3xl max-w-3xl w-full shadow-2xl flex flex-col max-h-[96vh]">
+            {/* Header Modal IA */}
+            <div className="flex items-center justify-between gap-3 p-5 border-b border-slate-800 bg-gradient-to-r from-indigo-950 to-slate-900 rounded-t-3xl shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-indigo-600/30 border border-indigo-500/40 flex items-center justify-center">
+                  <Brain className="w-5 h-5 text-indigo-400" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-white">Informe IA — Gama Seguridad</h3>
+                  <p className="text-[11px] text-indigo-300 font-mono truncate max-w-xs">{licitacionFicha.CodigoExterno} · {licitacionFicha.Organismo.slice(0, 35)}{licitacionFicha.Organismo.length > 35 ? '...' : ''}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                {informeIA && (
+                  <button
+                    onClick={exportarInformePDF}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/40 text-emerald-300 border border-emerald-500/40 text-xs font-bold transition cursor-pointer"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span>PDF</span>
+                  </button>
+                )}
+                <button
+                  onClick={() => { setModalInformeAbierto(false); setInformeIA(null); setErrorIA('') }}
+                  className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Contenido Modal IA */}
+            <div className="flex-1 overflow-y-auto p-5 space-y-4">
+              {analizandoIA && (
+                <div className="flex flex-col items-center justify-center py-16 space-y-4">
+                  <div className="relative">
+                    <div className="w-16 h-16 rounded-full border-4 border-indigo-500/30 border-t-indigo-400 animate-spin" />
+                    <Brain className="w-7 h-7 text-indigo-400 absolute inset-0 m-auto" />
+                  </div>
+                  <p className="text-sm font-bold text-white">Gemini 2.5 Flash analizando la licitación...</p>
+                  <p className="text-xs text-slate-400 text-center max-w-xs">Consultando ChileCompra y procesando los ítems del proceso. Esto toma ~15 segundos.</p>
+                  <div className="flex gap-1.5 mt-2">
+                    {[0,1,2,3,4].map(i => (
+                      <div key={i} className="w-2 h-2 rounded-full bg-indigo-400 animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {errorIA && !analizandoIA && (
+                <div className="bg-red-950/60 border border-red-500/40 rounded-2xl p-4 flex items-start gap-3 text-xs text-red-200">
+                  <AlertCircle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+                  <div>
+                    <strong className="block text-white mb-1">No se pudo generar el análisis</strong>
+                    <span>{errorIA}</span>
+                    <p className="mt-2 text-slate-400">Verifica que tu ticket de API esté configurado y activo.</p>
+                  </div>
+                </div>
+              )}
+
+              {informeIA && !analizandoIA && (() => {
+                const viabilidadColor = informeIA.viabilidad === 'ALTA'
+                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50'
+                  : informeIA.viabilidad === 'MEDIA'
+                  ? 'bg-amber-500/20 text-amber-300 border-amber-500/50'
+                  : 'bg-red-500/20 text-red-300 border-red-500/50'
+
+                const Seccion = ({ id, titulo, icono, children }: { id: string; titulo: string; icono: React.ReactNode; children: React.ReactNode }) => (
+                  <div className="bg-slate-950/60 border border-slate-800 rounded-2xl overflow-hidden">
+                    <button
+                      onClick={() => setSeccionExpandida(s => s === id ? '' : id)}
+                      className="w-full flex items-center justify-between px-4 py-3 text-xs font-bold text-slate-200 hover:bg-slate-800/60 transition cursor-pointer"
+                    >
+                      <span className="flex items-center gap-2">{icono}{titulo}</span>
+                      {seccionExpandida === id ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
+                    </button>
+                    {seccionExpandida === id && <div className="px-4 pb-4 pt-1 text-xs text-slate-300 space-y-2">{children}</div>}
+                  </div>
+                )
+
+                return (
+                  <div className="space-y-3">
+                    {/* Badge de Viabilidad */}
+                    <div className={`flex items-center justify-between gap-3 p-4 rounded-2xl border ${viabilidadColor}`}>
+                      <div>
+                        <span className="text-[10px] uppercase font-black tracking-wider opacity-70 block">Viabilidad para Gama Seguridad</span>
+                        <span className="text-2xl font-black">{informeIA.viabilidad || 'N/A'}</span>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-4xl font-black font-mono">{informeIA.puntaje_viabilidad || 0}</span>
+                        <span className="text-xs font-bold opacity-70 block">/100 puntos</span>
+                      </div>
+                    </div>
+
+                    {/* Resumen Ejecutivo */}
+                    <Seccion id="resumen" titulo="Resumen Ejecutivo" icono={<TrendingUp className="w-4 h-4 text-indigo-400" />}>
+                      <p className="leading-relaxed">{informeIA.resumen_ejecutivo}</p>
+                      {informeIA.alineacion_servicios && <p className="mt-2 text-indigo-300 leading-relaxed">{informeIA.alineacion_servicios}</p>}
+                    </Seccion>
+
+                    {/* Plan de Acción */}
+                    {Array.isArray(informeIA.plan_de_accion) && informeIA.plan_de_accion.length > 0 && (
+                      <Seccion id="plan" titulo={`Plan de Acción (${informeIA.plan_de_accion.length} pasos)`} icono={<CheckCircle2 className="w-4 h-4 text-emerald-400" />}>
+                        <div className="space-y-2">
+                          {informeIA.plan_de_accion.map((p: any) => (
+                            <div key={p.paso} className="flex items-start gap-3 bg-slate-900/60 p-3 rounded-xl border border-slate-800">
+                              <span className={`shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-black ${
+                                p.prioridad === 'ALTA' ? 'bg-red-500/20 text-red-300' :
+                                p.prioridad === 'MEDIA' ? 'bg-amber-500/20 text-amber-300' :
+                                'bg-slate-700 text-slate-300'
+                              }`}>{p.paso}</span>
+                              <div className="flex-1">
+                                <p className="font-semibold text-white">{p.accion}</p>
+                                <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                  <span className="text-[10px] font-bold text-indigo-300 bg-indigo-950/60 px-2 py-0.5 rounded-md">⏰ {p.plazo}</span>
+                                  <span className="text-[10px] font-bold text-slate-400 bg-slate-800 px-2 py-0.5 rounded-md">👤 {p.responsable}</span>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </Seccion>
+                    )}
+
+                    {/* Requisitos Técnicos */}
+                    {Array.isArray(informeIA.requisitos_tecnicos) && informeIA.requisitos_tecnicos.length > 0 && (
+                      <Seccion id="req_tec" titulo="Requisitos Técnicos" icono={<ShieldCheck className="w-4 h-4 text-cyan-400" />}>
+                        <div className="space-y-1.5">
+                          {informeIA.requisitos_tecnicos.map((r: any, i: number) => (
+                            <div key={i} className="flex items-start gap-2 p-2.5 rounded-xl bg-slate-900/60 border border-slate-800">
+                              <span className={`shrink-0 w-5 h-5 rounded-full flex items-center justify-center mt-0.5 ${
+                                r.gama_cumple ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'
+                              }`}>
+                                {r.gama_cumple ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
+                              </span>
+                              <div>
+                                <p className={r.gama_cumple ? 'text-slate-200' : 'text-red-200'}>{r.requisito}</p>
+                                {!r.gama_cumple && r.accion_requerida && <p className="text-amber-300 mt-0.5">→ {r.accion_requerida}</p>}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </Seccion>
+                    )}
+
+                    {/* Requisitos Administrativos */}
+                    {Array.isArray(informeIA.requisitos_administrativos) && informeIA.requisitos_administrativos.length > 0 && (
+                      <Seccion id="req_adm" titulo="Requisitos Administrativos" icono={<FileText className="w-4 h-4 text-amber-400" />}>
+                        <div className="space-y-1.5">
+                          {informeIA.requisitos_administrativos.map((r: any, i: number) => (
+                            <div key={i} className="flex items-start gap-2 p-2.5 rounded-xl bg-slate-900/60 border border-slate-800">
+                              <span className={`shrink-0 w-5 h-5 rounded-full flex items-center justify-center mt-0.5 ${
+                                r.gama_cumple ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'
+                              }`}>
+                                {r.gama_cumple ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
+                              </span>
+                              <div>
+                                <p className={r.gama_cumple ? 'text-slate-200' : 'text-red-200'}>{r.requisito}</p>
+                                {!r.gama_cumple && r.accion_requerida && <p className="text-amber-300 mt-0.5">→ {r.accion_requerida}</p>}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </Seccion>
+                    )}
+
+                    {/* Servicios Requeridos */}
+                    {Array.isArray(informeIA.servicios_requeridos) && informeIA.servicios_requeridos.length > 0 && (
+                      <Seccion id="servicios" titulo="Servicios Requeridos" icono={<Building2 className="w-4 h-4 text-slate-400" />}>
+                        <div className="space-y-1.5">
+                          {informeIA.servicios_requeridos.map((s: any, i: number) => (
+                            <div key={i} className="flex items-center gap-2 p-2 rounded-xl bg-slate-900/60 border border-slate-800">
+                              <span className={`shrink-0 w-5 h-5 rounded-full flex items-center justify-center ${
+                                s.aplica_gama ? 'bg-emerald-500/20 text-emerald-400' : 'bg-slate-700 text-slate-400'
+                              }`}>
+                                {s.aplica_gama ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
+                              </span>
+                              <span className={s.aplica_gama ? 'text-slate-200 font-medium' : 'text-slate-500'}>{s.servicio}</span>
+                              {s.nota && <span className="text-[10px] text-slate-500 ml-auto shrink-0">{s.nota}</span>}
+                            </div>
+                          ))}
+                        </div>
+                      </Seccion>
+                    )}
+
+                    {/* Riesgos */}
+                    {Array.isArray(informeIA.riesgos) && informeIA.riesgos.length > 0 && (
+                      <Seccion id="riesgos" titulo="Riesgos Identificados" icono={<AlertTriangle className="w-4 h-4 text-amber-400" />}>
+                        <div className="space-y-2">
+                          {informeIA.riesgos.map((r: any, i: number) => (
+                            <div key={i} className={`p-3 rounded-xl border ${
+                              r.impacto === 'ALTO' ? 'bg-red-950/40 border-red-800/60' :
+                              r.impacto === 'MEDIO' ? 'bg-amber-950/40 border-amber-800/60' :
+                              'bg-slate-900/40 border-slate-800'
+                            }`}>
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className={`text-[10px] font-black px-2 py-0.5 rounded-md ${
+                                  r.impacto === 'ALTO' ? 'bg-red-500/20 text-red-300' :
+                                  r.impacto === 'MEDIO' ? 'bg-amber-500/20 text-amber-300' :
+                                  'bg-slate-700 text-slate-300'
+                                }`}>{r.tipo} — {r.impacto}</span>
+                              </div>
+                              <p className="text-slate-200">{r.descripcion}</p>
+                              {r.mitigacion && <p className="text-emerald-400 mt-1 text-[11px]">💡 {r.mitigacion}</p>}
+                            </div>
+                          ))}
+                        </div>
+                      </Seccion>
+                    )}
+
+                    {/* Precio Referencial */}
+                    {informeIA.precio_referencial && (
+                      <Seccion id="precio" titulo="Precio Referencial de Oferta" icono={<TrendingUp className="w-4 h-4 text-emerald-400" />}>
+                        <div className="grid grid-cols-3 gap-2 text-center mb-3">
+                          <div className="bg-slate-800 rounded-xl p-3">
+                            <span className="text-[10px] text-slate-500 block">Mínimo</span>
+                            <span className="font-mono font-bold text-slate-300 text-xs">${((informeIA.precio_referencial.minimo_clp)||0).toLocaleString('es-CL')}</span>
+                          </div>
+                          <div className="bg-emerald-950/60 border border-emerald-700/60 rounded-xl p-3">
+                            <span className="text-[10px] text-emerald-400 block font-bold">Recomendado</span>
+                            <span className="font-mono font-black text-emerald-300 text-sm">${((informeIA.precio_referencial.recomendado_clp)||0).toLocaleString('es-CL')}</span>
+                          </div>
+                          <div className="bg-slate-800 rounded-xl p-3">
+                            <span className="text-[10px] text-slate-500 block">Máximo</span>
+                            <span className="font-mono font-bold text-slate-300 text-xs">${((informeIA.precio_referencial.maximo_clp)||0).toLocaleString('es-CL')}</span>
+                          </div>
+                        </div>
+                        {informeIA.precio_referencial.justificacion && <p className="text-slate-400">{informeIA.precio_referencial.justificacion}</p>}
+                      </Seccion>
+                    )}
+
+                    {/* Notas Estratégicas */}
+                    {informeIA.notas_estrategicas && (
+                      <div className="bg-indigo-950/40 border border-indigo-700/50 rounded-2xl p-4 text-xs">
+                        <p className="text-[10px] uppercase font-black text-indigo-400 mb-2 tracking-wider">💡 Nota Estratégica de Gama IA</p>
+                        <p className="text-indigo-200 leading-relaxed">{informeIA.notas_estrategicas}</p>
+                      </div>
+                    )}
+                  </div>
+                )
+              })()}
+            </div>
+
+            {/* Footer Modal IA */}
+            {!analizandoIA && (
+              <div className="flex items-center justify-between gap-3 p-5 border-t border-slate-800 shrink-0">
+                <button
+                  onClick={() => { setModalInformeAbierto(false); setInformeIA(null); setErrorIA('') }}
+                  className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition cursor-pointer"
+                >
+                  Cerrar
+                </button>
+                <div className="flex gap-2">
+                  {informeIA && (
+                    <button
+                      onClick={exportarInformePDF}
+                      className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition cursor-pointer shadow-md"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      Exportar PDF
+                    </button>
+                  )}
+                  {licitacionFicha && (
+                    <button
+                      onClick={() => { setModalInformeAbierto(false); onCotizarLicitacion(licitacionFicha) }}
+                      className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white text-xs font-bold shadow-md transition cursor-pointer"
+                    >
+                      <FileText className="w-3.5 h-3.5" />
+                      Cotizar con 1 Clic
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* ── MODAL FICHA TÉCNICA OFICIAL DE LICITACIÓN ── */}
       {licitacionFicha && (
         <div className="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
@@ -648,7 +1049,7 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
               </button>
             </div>
 
-            {/* Footer con Acción Principal */}
+            {/* Footer con Acciones */}
             <div className="flex items-center justify-between gap-3 pt-4 border-t border-slate-800">
               <button
                 type="button"
@@ -658,18 +1059,29 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
                 Cerrar
               </button>
 
-              <button
-                type="button"
-                onClick={() => {
-                  const item = licitacionFicha
-                  setLicitacionFicha(null)
-                  onCotizarLicitacion(item)
-                }}
-                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white text-xs font-bold shadow-lg shadow-indigo-600/30 transition flex items-center gap-2 cursor-pointer"
-              >
-                <FileText className="w-4 h-4" />
-                <span>Cotizar con 1 Clic en Gama CRM</span>
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleAnalizarIA(licitacionFicha)}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-bold shadow-lg shadow-purple-600/30 transition cursor-pointer"
+                >
+                  <Brain className="w-4 h-4" />
+                  <span>Analizar con IA</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const item = licitacionFicha
+                    setLicitacionFicha(null)
+                    onCotizarLicitacion(item)
+                  }}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white text-xs font-bold shadow-lg shadow-indigo-600/30 transition cursor-pointer"
+                >
+                  <FileText className="w-4 h-4" />
+                  <span>Cotizar</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
