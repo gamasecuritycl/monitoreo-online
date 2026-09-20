@@ -2876,7 +2876,7 @@ export default function OperacionCRM() {
   ]
 
   return (
-    <div className="min-h-screen bg-[#F4F6FA] text-slate-800 font-sans flex flex-col select-none p-3 sm:p-5 md:p-6 gap-4 sm:gap-6 antialiased">
+    <div className="min-h-screen bg-[#EAEFF5] text-slate-800 font-sans flex flex-col select-none p-4 sm:p-6 lg:p-8 gap-6 sm:gap-7 antialiased">
       
       {/* Estilos CSS para Impresión PDF Limpia (@media print) */}
       <style jsx global>{`
@@ -3041,11 +3041,11 @@ export default function OperacionCRM() {
 
           </div>
         ) : (
-          <div className="flex-1 flex flex-col overflow-hidden bg-white border border-slate-200/90 rounded-3xl shadow-[0_10px_40px_-10px_rgba(15,37,70,0.06)] p-4 sm:p-6 min-h-0 relative no-imprimir animate-in zoom-in-95 duration-200 text-slate-900">
+          <div className="flex-1 flex flex-col overflow-y-auto bg-white border border-slate-300/80 rounded-3xl shadow-sm p-6 sm:p-8 lg:p-9 min-h-0 relative no-imprimir animate-in zoom-in-95 duration-200 text-slate-900">
             {/* ── VISTA 2: VENTANA EMERGENTE DEL MÓDULO (PANTALLA COMPLETA ESPACIOSA DSTUDIO) ── */}
             
             {/* BARRA SUPERIOR DE NAVEGACIÓN, VOLVER Y CERRAR */}
-            <div className="flex items-center justify-between gap-4 pb-4 mb-4 border-b border-slate-100 shrink-0">
+            <div className="flex items-center justify-between gap-4 pb-4 mb-6 border-b border-slate-200/80 shrink-0">
               <button
                 onClick={() => setModuloActivo(null)}
                 className="flex items-center gap-2.5 px-4 sm:px-5 py-2.5 bg-slate-50 hover:bg-[#0B2545] text-slate-700 hover:text-white border border-slate-200 hover:border-[#0B2545] rounded-2xl font-bold text-xs sm:text-sm shadow-2xs transition-all group cursor-pointer active:scale-95"
@@ -3107,18 +3107,18 @@ export default function OperacionCRM() {
             <div className="flex-1 flex flex-col gap-6 sm:gap-8 min-h-0">
               
               {/* BUSCADOR SPOTLIGHT DSTUDIO CARD UI */}
-              <div className="bg-white border border-slate-200/90 p-5 sm:p-6 rounded-3xl shadow-sm flex flex-col gap-4 transition-all relative z-50">
+              <div className="bg-white border border-slate-300/80 p-6 sm:p-7 rounded-3xl shadow-sm flex flex-col gap-4 transition-all relative z-50">
                 <div className="font-bold text-xs text-slate-500 uppercase tracking-wider flex justify-between items-center font-sans">
-                  <span className="flex items-center gap-2 text-slate-700">
-                    <div className="p-1.5 bg-blue-50 text-[#1E40AF] rounded-xl border border-blue-200/60">
-                      <Search className="h-4 w-4 stroke-[2]" />
+                  <span className="flex items-center gap-2.5 text-slate-800">
+                    <div className="p-2 bg-blue-50 text-[#1E40AF] rounded-xl border border-blue-200/80">
+                      <Search className="h-4.5 w-4.5 stroke-[2]" />
                     </div>
-                    <span>BUSCADOR INTELIGENTE 360° (ABONADO, NOMBRE O RUT)</span>
+                    <span className="font-extrabold">BUSCADOR INTELIGENTE 360° (ABONADO, NOMBRE O RUT)</span>
                   </span>
                   {(cuentaSeleccionada || rutClienteSeleccionado) && (
                     <button
                       onClick={() => { setCuentaSeleccionada(''); setRutClienteSeleccionado(''); setBusquedaClienteInput('') }}
-                      className="text-xs text-[#DC2626] hover:text-red-700 font-bold cursor-pointer flex items-center gap-1 bg-red-50 border border-red-200/80 px-3 py-1 rounded-xl transition-all"
+                      className="text-xs text-[#DC2626] hover:text-red-700 font-bold cursor-pointer flex items-center gap-1.5 bg-red-50 border border-red-200 px-3.5 py-1.5 rounded-xl transition-all"
                     >
                       <X className="h-3.5 w-3.5 stroke-[2]" />
                       <span>Limpiar Selección</span>
@@ -3126,23 +3126,23 @@ export default function OperacionCRM() {
                   )}
                 </div>
 
-                <div className="relative flex flex-col sm:flex-row items-center gap-3">
+                <div className="relative flex flex-col sm:flex-row items-center gap-3.5">
                   <div className="relative flex-1 w-full flex items-center">
-                    <Search className="absolute left-4 h-4 w-4 text-[#1E40AF] pointer-events-none stroke-[2]" />
+                    <Search className="absolute left-5 h-4.5 w-4.5 text-[#1E40AF] pointer-events-none stroke-[2]" />
                     <input
                       type="text"
                       value={busquedaClienteInput}
                       onChange={(e) => setBusquedaClienteInput(e.target.value)}
                       onKeyDown={(e) => { if (e.key === 'Enter') handleDispararBusqueda() }}
                       placeholder="Escriba código de Abonado (ej: 0999, C701, C774), Nombre del Cliente o RUT..."
-                      className="w-full bg-slate-50 border border-slate-200 rounded-2xl pl-11 pr-4 py-3.5 text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#1E40AF] focus:bg-white font-sans transition-all"
+                      className="w-full bg-slate-50/80 border border-slate-300 rounded-2xl pl-13 pr-5 py-4 text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#1E40AF] focus:bg-white font-sans transition-all"
                     />
                   </div>
 
                   <button
                     onClick={handleDispararBusqueda}
                     disabled={buscandoSpinner}
-                    className="w-full sm:w-auto bg-[#0B2545] hover:bg-[#1E40AF] text-white text-xs py-3.5 px-6 font-bold rounded-2xl shadow-sm hover:shadow-md flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-95 shrink-0"
+                    className="w-full sm:w-auto bg-[#0B2545] hover:bg-[#1E40AF] text-white text-xs py-4 px-7 font-bold rounded-2xl shadow-sm hover:shadow-md flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-95 shrink-0"
                   >
                     {buscandoSpinner ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
@@ -3212,28 +3212,28 @@ export default function OperacionCRM() {
 
               {/* EXPEDIENTE COMPLETO DOSSIER FICHA 360° */}
               {clienteActivo || abonadoActivo ? (
-                <div className="flex-1 bg-white border border-slate-200/90 rounded-3xl p-6 sm:p-8 flex flex-col gap-6 shadow-sm overflow-y-auto relative z-10">
+                <div className="flex-1 bg-white border border-slate-300/80 rounded-3xl p-7 sm:p-9 lg:p-10 flex flex-col gap-7 shadow-sm overflow-y-auto relative z-10">
                   
                   {/* CABECERA EXPEDIENTE VISTA 360° BENTO HERO */}
-                  <div className="bg-slate-50/80 border border-slate-200/80 p-6 sm:p-7 rounded-3xl flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 shadow-2xs">
-                    <div className="space-y-3">
+                  <div className="bg-slate-50/90 border border-slate-300/80 p-7 sm:p-9 rounded-3xl flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 shadow-2xs">
+                    <div className="space-y-3.5 px-1 sm:px-2">
                       <div className="flex items-center gap-2.5 flex-wrap">
                         {abonadoActivo && (
-                          <span className="bg-[#0B2545] text-white font-mono text-xs font-bold px-3.5 py-1 rounded-xl shadow-xs">
+                          <span className="bg-[#0B2545] text-white font-mono text-xs font-bold px-4 py-1.5 rounded-xl shadow-xs">
                             CUENTA ABONADO #{abonadoActivo.cuenta}
                           </span>
                         )}
                         {clienteActivo && clienteActivo.rut && !clienteActivo.rut.startsWith('CTA-') && !clienteActivo.rut.startsWith('RUT-') && (
-                          <span className="bg-white border border-slate-200 text-slate-700 font-mono text-xs font-bold px-3.5 py-1 rounded-xl shadow-2xs">
+                          <span className="bg-white border border-slate-300 text-slate-700 font-mono text-xs font-bold px-4 py-1.5 rounded-xl shadow-2xs">
                             RUT: {clienteActivo.rut}
                           </span>
                         )}
-                        <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold px-3 py-1 rounded-xl text-xs uppercase tracking-wider">
+                        <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold px-3.5 py-1.5 rounded-xl text-xs uppercase tracking-wider">
                           🟢 {clienteActivo?.estado_pago || 'Al Día'}
                         </span>
                       </div>
 
-                      <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
+                      <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 leading-tight">
                         {abonadoActivo ? abonadoActivo.alias_centro_costo : clienteActivo?.razon_social}
                       </h2>
 
@@ -3312,7 +3312,7 @@ export default function OperacionCRM() {
                   </div>
 
                   {/* NAVEGACIÓN PESTAÑAS FICHA 360° BENTO */}
-                  <div className="flex items-center gap-1.5 bg-slate-100 p-1.5 rounded-2xl border border-slate-200/80 flex-wrap">
+                  <div className="flex items-center gap-2 bg-slate-100/90 p-2 rounded-2xl border border-slate-200 flex-wrap shadow-2xs">
                     {[
                       { id: 'datos', label: 'Datos Comerciales', icon: Building2 },
                       { id: 'abonados', label: `Centros de Costo (${clienteActivo?.cuentas_abonados.length || 1})`, icon: Layers },
@@ -3327,7 +3327,7 @@ export default function OperacionCRM() {
                         <button
                           key={tab.id}
                           onClick={() => setTabFicha360(tab.id as any)}
-                          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${esActivo ? 'bg-[#0B2545] text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 hover:bg-white/80'}`}
+                          className={`px-4.5 py-2.5 rounded-xl text-xs sm:text-[13px] font-bold transition-all cursor-pointer flex items-center gap-2 ${esActivo ? 'bg-[#0B2545] text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 hover:bg-white'}`}
                         >
                           <TabIcon className="h-4 w-4" />
                           <span>{tab.label}</span>
@@ -3338,15 +3338,15 @@ export default function OperacionCRM() {
 
                   {/* SUB-SECCIÓN 1: DATOS COMERCIALES EN BENTO GRID MODULAR DSTUDIO */}
                   {tabFicha360 === 'datos' && (
-                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                      <div className="bg-white border border-slate-200/90 p-6 rounded-3xl space-y-4 text-xs shadow-sm">
+                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 sm:gap-7">
+                      <div className="bg-white border border-slate-300/80 p-7 sm:p-8 rounded-3xl space-y-4 text-xs shadow-sm">
                         <div className="flex items-center gap-2.5 border-b border-slate-100 pb-3">
                           <div className="p-2 bg-blue-50 text-[#1E40AF] rounded-xl border border-blue-200/60">
                             <MapPin className="h-4 w-4" />
                           </div>
                           <span className="font-extrabold text-xs uppercase tracking-wider text-slate-800">📍 DATOS DE CONTACTO & UBICACIÓN</span>
                         </div>
-                        <div className="space-y-2.5">
+                        <div className="space-y-3">
                           <div className="flex justify-between items-center"><strong className="text-slate-500 font-medium">Razón Social:</strong> <span className="text-slate-900 font-bold bg-slate-50 border border-slate-200 px-3 py-1 rounded-xl">{clienteActivo?.razon_social}</span></div>
                           <div className="flex justify-between items-center"><strong className="text-slate-500 font-medium">RUT Tributario:</strong> <span className="text-slate-900 font-mono font-bold bg-slate-50 border border-slate-200 px-3 py-1 rounded-xl">{clienteActivo?.rut}</span></div>
                           <div className="flex justify-between items-center"><strong className="text-slate-500 font-medium">Dirección Comercial:</strong> <span className="text-slate-800 font-bold">{direccionActivaReal}</span></div>
@@ -3356,7 +3356,7 @@ export default function OperacionCRM() {
                         </div>
                       </div>
 
-                      <div className="bg-white border border-slate-200/90 p-6 rounded-3xl space-y-4 text-xs shadow-sm">
+                      <div className="bg-white border border-slate-300/80 p-7 sm:p-8 rounded-3xl space-y-4 text-xs shadow-sm">
                         <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                           <div className="flex items-center gap-2.5">
                             <div className="p-2 bg-blue-50 text-[#1E40AF] rounded-xl border border-blue-200/60">
@@ -3578,9 +3578,9 @@ export default function OperacionCRM() {
                       </div>
 
                       {/* Resumen de Cláusulas Principales */}
-                      <div className="bg-black/30 border border-white/10 rounded-2xl p-5 space-y-3 text-slate-300 text-xs leading-relaxed">
-                        <div className="font-bold text-white uppercase text-[11px] flex items-center gap-2">
-                          <Shield className="h-4 w-4 text-[#2997ff]" />
+                      <div className="bg-slate-50/90 border border-slate-200 rounded-2xl p-6 sm:p-7 space-y-3 text-slate-700 text-xs leading-relaxed shadow-2xs">
+                        <div className="font-extrabold text-[#0B2545] uppercase text-[11px] flex items-center gap-2">
+                          <Shield className="h-4 w-4 text-[#1E40AF]" />
                           <span>SÍNTESIS DE CLÁUSULAS OFICIALES GAMA:</span>
                         </div>
                         <p>• <strong>Propiedad de Equipos:</strong> El Cliente declara ser dueño absoluto del sistema de alarma instalado, habiéndolo adquirido previamente a Gama Seguridad SpA con respaldo tributario. No existe régimen de comodato forzoso ni derechos de retiro físico al término del servicio.</p>
@@ -3593,44 +3593,44 @@ export default function OperacionCRM() {
 
                   {/* SUB-SECCIÓN 3: FACTURAS (BENTO CARD) */}
                   {tabFicha360 === 'facturas' && (
-                    <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 p-6 rounded-3xl space-y-5 text-xs shadow-xl">
-                      <div className="flex justify-between items-center flex-wrap gap-3 border-b border-white/10 pb-3">
+                    <div className="bg-white border border-slate-300/80 p-7 sm:p-8 rounded-3xl space-y-6 text-xs shadow-sm">
+                      <div className="flex justify-between items-center flex-wrap gap-3 border-b border-slate-100 pb-3">
                         <div className="flex items-center gap-2.5">
-                          <div className="p-2 bg-emerald-500/15 text-emerald-400 rounded-xl border border-emerald-500/20">
+                          <div className="p-2 bg-emerald-50 text-emerald-700 rounded-xl border border-emerald-200/80">
                             <Receipt className="h-4 w-4" />
                           </div>
-                          <span className="font-extrabold text-xs uppercase tracking-wider text-slate-300">🧾 FACTURACIÓN & RECAUDACIÓN DE ESTE CLIENTE</span>
+                          <span className="font-extrabold text-xs uppercase tracking-wider text-slate-800">🧾 FACTURACIÓN & RECAUDACIÓN DE ESTE CLIENTE</span>
                         </div>
                         <button
                           onClick={() => setModuloActivo('facturacion')}
-                          className="px-4 py-2.5 bg-gradient-to-r from-[#0066cc] to-[#2997ff] text-white font-bold rounded-xl text-xs shadow-lg shadow-[#0066cc]/20 hover:brightness-110 active:scale-95 cursor-pointer flex items-center gap-2"
+                          className="px-5 py-2.5 bg-[#0B2545] hover:bg-[#1E40AF] text-white font-bold rounded-xl text-xs shadow-sm hover:shadow-md active:scale-95 cursor-pointer flex items-center gap-2 transition-all"
                         >
                           <DollarSign className="h-4 w-4" />
                           <span>💰 Ir a Gestor Global de Cobranzas (34 Facturas Real)</span>
                         </button>
                       </div>
-                      <div className="overflow-x-auto rounded-2xl border border-white/10 bg-black/20 p-2">
+                      <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-slate-50/70 p-3 sm:p-4">
                         <table className="w-full text-left border-collapse text-xs sm:text-sm">
                           <thead>
-                            <tr className="border-b border-white/10 font-black uppercase text-[11px] text-slate-400 tracking-wider">
-                              <th className="py-4 px-4">N° FACTURA</th>
-                              <th className="py-4 px-4">FECHA EMISIÓN</th>
-                              <th className="py-4 px-4 text-right">TOTAL</th>
-                              <th className="py-4 px-4 text-right">ABONADO</th>
-                              <th className="py-4 px-4 text-right">SALDO PENDIENTE</th>
-                              <th className="py-4 px-4 text-center">ESTADO</th>
+                            <tr className="border-b border-slate-200 font-black uppercase text-[11px] text-slate-500 tracking-wider">
+                              <th className="py-3 px-4">N° FACTURA</th>
+                              <th className="py-3 px-4">FECHA EMISIÓN</th>
+                              <th className="py-3 px-4 text-right">TOTAL</th>
+                              <th className="py-3 px-4 text-right">ABONADO</th>
+                              <th className="py-3 px-4 text-right">SALDO PENDIENTE</th>
+                              <th className="py-3 px-4 text-center">ESTADO</th>
                             </tr>
                           </thead>
-                          <tbody className="divide-y divide-white/5 font-medium">
+                          <tbody className="divide-y divide-slate-200/70 font-medium">
                             {facturas.filter(f => f.rut_cliente === clienteActivo?.rut || f.cuenta_asociada === cuentaSeleccionada).map(f => (
-                              <tr key={f.id} className="hover:bg-white/[0.04] transition-colors">
-                                <td className="py-4 px-4 font-mono font-black text-[#2997ff]">{f.numero_factura}</td>
-                                <td className="py-4 px-4 font-semibold text-slate-300">{f.fecha}</td>
-                                <td className="py-4 px-4 text-right font-mono font-bold text-white">${f.monto_total.toLocaleString('es-CL')}</td>
-                                <td className="py-4 px-4 text-right font-mono text-emerald-400 font-bold">${(f.monto_abonado || 0).toLocaleString('es-CL')}</td>
-                                <td className="py-4 px-4 text-right font-mono text-rose-400 font-bold">${(f.saldo_pendiente || 0).toLocaleString('es-CL')}</td>
-                                <td className="py-4 px-4 text-center font-bold">
-                                  <span className="bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-3 py-1 rounded-xl text-xs uppercase font-extrabold">{f.estado}</span>
+                              <tr key={f.id} className="hover:bg-blue-50/50 transition-colors">
+                                <td className="py-3.5 px-4 font-mono font-black text-[#1E40AF]">{f.numero_factura}</td>
+                                <td className="py-3.5 px-4 font-semibold text-slate-600">{f.fecha}</td>
+                                <td className="py-3.5 px-4 text-right font-mono font-bold text-slate-900">${f.monto_total.toLocaleString('es-CL')}</td>
+                                <td className="py-3.5 px-4 text-right font-mono text-emerald-700 font-bold">${(f.monto_abonado || 0).toLocaleString('es-CL')}</td>
+                                <td className="py-3.5 px-4 text-right font-mono text-[#DC2626] font-bold">${(f.saldo_pendiente || 0).toLocaleString('es-CL')}</td>
+                                <td className="py-3.5 px-4 text-center font-bold">
+                                  <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-3 py-1 rounded-xl text-xs uppercase font-extrabold">{f.estado}</span>
                                 </td>
                               </tr>
                             ))}
@@ -3642,41 +3642,41 @@ export default function OperacionCRM() {
 
                   {/* SUB-SECCIÓN 4: COTIZACIONES (BENTO CARD) */}
                   {tabFicha360 === 'cotizaciones' && (
-                    <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 p-6 rounded-3xl space-y-5 text-xs shadow-xl">
-                      <div className="flex justify-between items-center border-b border-white/10 pb-3">
+                    <div className="bg-white border border-slate-300/80 p-7 sm:p-8 rounded-3xl space-y-6 text-xs shadow-sm">
+                      <div className="flex justify-between items-center border-b border-slate-100 pb-3">
                         <div className="flex items-center gap-2.5">
-                          <div className="p-2 bg-indigo-500/15 text-indigo-400 rounded-xl border border-indigo-500/20">
+                          <div className="p-2 bg-indigo-50 text-indigo-700 rounded-xl border border-indigo-200/80">
                             <FileText className="h-4 w-4" />
                           </div>
-                          <span className="font-extrabold text-xs uppercase tracking-wider text-slate-300">📋 PRESUPUESTOS & COTIZACIONES EMITIDAS</span>
+                          <span className="font-extrabold text-xs uppercase tracking-wider text-slate-800">📋 PRESUPUESTOS & COTIZACIONES EMITIDAS</span>
                         </div>
-                        <button onClick={abrirModalNuevaCotizacion} className="px-4 py-2.5 bg-gradient-to-r from-[#0066cc] to-[#2997ff] text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-lg shadow-[#0066cc]/20 hover:brightness-110 active:scale-95 cursor-pointer">
+                        <button onClick={abrirModalNuevaCotizacion} className="px-5 py-2.5 bg-[#0B2545] hover:bg-[#1E40AF] text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-sm hover:shadow-md active:scale-95 cursor-pointer transition-all">
                           <Plus className="h-4 w-4" />
                           <span>Nueva Cotización</span>
                         </button>
                       </div>
-                      <div className="overflow-x-auto rounded-2xl border border-white/10 bg-black/20 p-2">
+                      <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-slate-50/70 p-3 sm:p-4">
                         <table className="w-full text-left border-collapse text-xs sm:text-sm">
                           <thead>
-                            <tr className="border-b border-white/10 font-black uppercase text-[11px] text-slate-400 tracking-wider">
-                              <th className="py-4 px-4">FOLIO</th>
-                              <th className="py-4 px-4">FECHA</th>
-                              <th className="py-4 px-4 text-right">TOTAL IVA INCL.</th>
-                              <th className="py-4 px-4 text-center">ETAPA PIPELINE</th>
-                              <th className="py-4 px-4 text-center">ACCIONES</th>
+                            <tr className="border-b border-slate-200 font-black uppercase text-[11px] text-slate-500 tracking-wider">
+                              <th className="py-3 px-4">FOLIO</th>
+                              <th className="py-3 px-4">FECHA</th>
+                              <th className="py-3 px-4 text-right">TOTAL IVA INCL.</th>
+                              <th className="py-3 px-4 text-center">ETAPA PIPELINE</th>
+                              <th className="py-3 px-4 text-center">ACCIONES</th>
                             </tr>
                           </thead>
-                          <tbody className="divide-y divide-white/5 font-medium">
+                          <tbody className="divide-y divide-slate-200/70 font-medium">
                             {cotizaciones.filter(c => c.rut_cliente === clienteActivo?.rut || c.cuenta === cuentaSeleccionada).map(c => (
-                              <tr key={c.id} className="hover:bg-white/[0.04] transition-colors">
-                                <td className="py-4 px-4 font-mono font-black text-[#2997ff]">{c.codigo_cotizacion}</td>
-                                <td className="py-4 px-4 font-semibold text-slate-300">{c.fecha}</td>
-                                <td className="py-4 px-4 text-right font-mono font-black text-emerald-400">${Math.round(c.monto_total_iva_incluido || 0).toLocaleString('es-CL')}</td>
-                                <td className="py-4 px-4 text-center font-bold">
-                                  <span className="bg-white/5 border border-white/10 text-slate-200 px-3 py-1 rounded-xl text-xs font-bold">{c.etapa_pipeline || 'Cotización'}</span>
+                              <tr key={c.id} className="hover:bg-blue-50/50 transition-colors">
+                                <td className="py-3.5 px-4 font-mono font-black text-[#1E40AF]">{c.codigo_cotizacion}</td>
+                                <td className="py-3.5 px-4 font-semibold text-slate-600">{c.fecha}</td>
+                                <td className="py-3.5 px-4 text-right font-mono font-black text-emerald-700">${Math.round(c.monto_total_iva_incluido || 0).toLocaleString('es-CL')}</td>
+                                <td className="py-3.5 px-4 text-center font-bold">
+                                  <span className="bg-slate-100 border border-slate-200 text-slate-700 px-3 py-1 rounded-xl text-xs font-bold">{c.etapa_pipeline || 'Cotización'}</span>
                                 </td>
-                                <td className="py-4 px-4 text-center">
-                                  <button onClick={() => setCotSeleccionada(c)} className="px-3.5 py-1.5 bg-white/10 hover:bg-white/20 border border-white/10 text-white font-extrabold rounded-xl text-xs cursor-pointer shadow-md active:scale-95 transition-all">
+                                <td className="py-3.5 px-4 text-center">
+                                  <button onClick={() => setCotSeleccionada(c)} className="px-3.5 py-1.5 bg-slate-100 hover:bg-[#0B2545] hover:text-white border border-slate-300 text-slate-800 font-extrabold rounded-xl text-xs cursor-pointer shadow-2xs active:scale-95 transition-all">
                                     Ver DTE
                                   </button>
                                 </td>
@@ -3690,33 +3690,37 @@ export default function OperacionCRM() {
 
                   {/* SUB-SECCIÓN 5: ORDENES TÉCNICAS (BENTO CARD) */}
                   {tabFicha360 === 'ots' && (
-                    <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 p-6 rounded-3xl space-y-5 text-xs shadow-xl">
-                      <div className="flex items-center gap-2.5 border-b border-white/10 pb-3">
-                        <div className="p-2 bg-amber-500/15 text-amber-400 rounded-xl border border-amber-500/20">
+                    <div className="bg-white border border-slate-300/80 p-7 sm:p-8 rounded-3xl space-y-6 text-xs shadow-sm">
+                      <div className="flex items-center gap-2.5 border-b border-slate-100 pb-3">
+                        <div className="p-2 bg-amber-50 text-amber-700 rounded-xl border border-amber-200/80">
                           <Wrench className="h-4 w-4" />
                         </div>
-                        <span className="font-extrabold text-xs uppercase tracking-wider text-slate-300">🛠️ ÓRDENES TÉCNICAS (SLA FIELD SERVICE)</span>
+                        <span className="font-extrabold text-xs uppercase tracking-wider text-slate-800">🛠️ ÓRDENES TÉCNICAS (SLA FIELD SERVICE)</span>
                       </div>
-                      <div className="overflow-x-auto rounded-2xl border border-white/10 bg-black/20 p-2">
+                      <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-slate-50/70 p-3 sm:p-4">
                         <table className="w-full text-left border-collapse text-xs sm:text-sm">
                           <thead>
-                            <tr className="border-b border-white/10 font-black uppercase text-[11px] text-slate-400 tracking-wider">
-                              <th className="py-4 px-4">CÓDIGO OT</th>
-                              <th className="py-4 px-4">SERVICIO</th>
-                              <th className="py-4 px-4">SLA</th>
-                              <th className="py-4 px-4">TÉCNICO</th>
-                              <th className="py-4 px-4 text-center">ESTADO</th>
+                            <tr className="border-b border-slate-200 font-black uppercase text-[11px] text-slate-500 tracking-wider">
+                              <th className="py-3 px-4">CÓDIGO OT</th>
+                              <th className="py-3 px-4">SERVICIO</th>
+                              <th className="py-3 px-4">SLA</th>
+                              <th className="py-3 px-4">TÉCNICO</th>
+                              <th className="py-3 px-4 text-center">ESTADO</th>
                             </tr>
                           </thead>
-                          <tbody className="divide-y divide-white/5 font-medium">
+                          <tbody className="divide-y divide-slate-200/70 font-medium">
                           {ordenesTrabajo.filter(ot => ot.cuenta === cuentaSeleccionada || ot.cliente_nombre.includes(clienteActivo?.razon_social || '')).map(ot => (
-                              <tr key={ot.id} className="hover:bg-white/[0.04] transition-colors">
-                                <td className="py-4 px-4 font-mono font-black text-[#2997ff]">{ot.codigo_ot}</td>
-                                <td className="py-4 px-4 font-extrabold text-white">{ot.tipo_servicio}</td>
-                                <td className="py-4 px-4 font-bold text-amber-400">{ot.prioridad_sla}</td>
-                                <td className="py-4 px-4 font-semibold text-slate-300">{ot.tecnico_asignado}</td>
-                                <td className="py-4 px-4 text-center font-bold">
-                                  <span className="bg-blue-500/20 text-blue-400 border border-blue-500/30 px-3 py-1 rounded-xl text-xs font-black">{ot.estado}</span>
+                              <tr key={ot.id} className="hover:bg-blue-50/50 transition-colors">
+                                <td className="py-3.5 px-4 font-mono font-black text-[#1E40AF]">{ot.codigo_ot}</td>
+                                <td className="py-3.5 px-4 font-extrabold text-slate-900">{ot.tipo_servicio}</td>
+                                <td className="py-3.5 px-4">
+                                  <span className="text-amber-800 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-lg font-bold text-xs">
+                                    {ot.prioridad_sla}
+                                  </span>
+                                </td>
+                                <td className="py-3.5 px-4 font-semibold text-slate-700">{ot.tecnico_asignado}</td>
+                                <td className="py-3.5 px-4 text-center font-bold">
+                                  <span className="bg-blue-50 text-[#1E40AF] border border-blue-200 px-3 py-1 rounded-xl text-xs font-black">{ot.estado}</span>
                                 </td>
                               </tr>
                             ))}

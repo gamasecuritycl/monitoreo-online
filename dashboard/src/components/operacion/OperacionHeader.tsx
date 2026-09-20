@@ -31,7 +31,7 @@ export default function OperacionHeader({
   onVolverMenu
 }: OperacionHeaderProps) {
   return (
-    <header className="bg-white border border-slate-200/90 rounded-3xl p-4 sm:p-5 flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 shrink-0 no-imprimir shadow-[0_4px_25px_-4px_rgba(15,37,70,0.05)] transition-all font-sans">
+    <header className="bg-white border border-slate-300/80 rounded-3xl p-5 sm:p-6 lg:px-8 flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 shrink-0 no-imprimir shadow-sm transition-all font-sans">
       
       {/* ── SECCIÓN IZQUIERDA: MARCA GAMA & NAVEGACIÓN ── */}
       <div className="flex items-center gap-3.5 w-full xl:w-auto justify-between xl:justify-start">

@@ -14,10 +14,11 @@
   --apple-blue-dark: #2997ff;
   --apple-blue-light: #e8f2ff;
 
-  /* ── DSTUDIO LIGHT CANVAS & GAMA CORPORATE BRANDING ── */
-  --gama-canvas: #F4F6FA;
-  --gama-canvas-subtle: #ECEFF5;
+  /* ── DSTUDIO LIGHT CANVAS & GAMA CORPORATE BRANDING (ANTI-GLARE & COMFORTABLE) ── */
+  --gama-canvas: #EAEFF5; /* Suave tono slate descansado para la vista, cero reflejo */
+  --gama-canvas-subtle: #E2E8F0;
   --gama-card-surface: #FFFFFF;
+  --gama-card-surface-soft: #F8FAFC;
   --gama-navy-dark: #0B2545;
   --gama-navy: #13325B;
   --gama-blue: #1E40AF;
@@ -28,7 +29,7 @@
   --gama-red-light: #FEF2F2;
   --gama-text-main: #0F172A;
   --gama-text-muted: #64748B;
-  --gama-border: #E2E8F0;
+  --gama-border: #CBD5E1;
 
   /* ── High-Tech Navy Dark Tiles ── */
   --navy-darkest: #050d1a;

@@ -552,27 +552,27 @@ export default function OperatorAuthGate({ children }: OperatorAuthGateProps) {
     <div className="relative">
       
       {/* Barra Superior con Estado del Usuario e Indicador de Rol */}
-      <div className="bg-[#000080] text-white border-b-2 border-gray-800 px-3 py-1.5 flex items-center justify-between text-xs md:text-[13px] font-sans select-none sticky top-0 z-50 shadow-md">
+      <div className="bg-[#0B2545] text-white border-b border-blue-900/60 px-4 sm:px-6 py-2 flex items-center justify-between text-xs font-sans select-none sticky top-0 z-50 shadow-sm">
         <div className="flex items-center gap-3">
-          <span className="w-2.5 h-2.5 rounded-full bg-green-400 animate-pulse" />
-          <span className="font-black tracking-wide text-xs md:text-[13px]">CENTRAL OPERATIVA GAMA</span>
-          <span className="text-blue-300 opacity-60">|</span>
+          <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
+          <span className="font-black tracking-wide text-xs">CENTRAL OPERATIVA GAMA</span>
+          <span className="text-blue-300 opacity-40">|</span>
           <div className="flex items-center gap-2">
-            <span className="text-slate-100 font-bold text-xs md:text-[13px]">
-              Operador: <strong>{operator.nombre}</strong>
+            <span className="text-slate-200 font-medium text-xs">
+              Operador: <strong className="text-white">{operator.nombre}</strong>
             </span>
-            <span className="px-2 py-0.5 rounded text-[11px] font-black uppercase tracking-wider bg-white/20 text-yellow-300 border border-white/30">
+            <span className="px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider bg-white/10 text-yellow-300 border border-white/20">
               {operator.rol}
             </span>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Botón de Gestión de Claves y Módulos (disponible si verConfiguracion es true o es Admin) */}
+          {/* Botón de Gestión de Claves y Módulos */}
           {canManageUsers && (
             <button
               onClick={() => setMostrarModalGestion(true)}
-              className="flex items-center gap-1.5 px-3 py-1 bg-[#d4d0c8] border border-t-white border-l-white border-b-gray-800 border-r-gray-800 text-black text-xs md:text-[12.5px] font-bold hover:bg-white active:border-t-gray-800 cursor-pointer shadow-xs"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl text-white text-xs font-semibold cursor-pointer shadow-xs transition-all active:scale-95"
             >
               ⚙️ Gestión de Operadores & Claves
             </button>
@@ -580,7 +580,7 @@ export default function OperatorAuthGate({ children }: OperatorAuthGateProps) {
 
           <button
             onClick={handleLogout}
-            className="flex items-center gap-1.5 px-3 py-1 bg-[#d4d0c8] border border-t-white border-l-white border-b-gray-800 border-r-gray-800 text-red-900 text-xs md:text-[12.5px] font-bold hover:bg-red-700 hover:text-white active:border-t-gray-800 cursor-pointer shadow-xs"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/20 hover:bg-red-600 border border-red-400/40 rounded-xl text-red-200 hover:text-white text-xs font-semibold cursor-pointer shadow-xs transition-all active:scale-95"
           >
             🔒 Cerrar Sesión
           </button>
