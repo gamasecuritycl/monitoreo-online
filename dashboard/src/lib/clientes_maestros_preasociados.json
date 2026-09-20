@@ -152,7 +152,8 @@
       "C7B1",
       "C7BF",
       "C7C7"
-    ]
+    ],
+    "ciudad": "Quintero"
   },
   "11.657.716-K": {
     "rut": "11.657.716-K",
@@ -160,7 +161,7 @@
     "empresa_facturadora_id": "EMP-1",
     "email_cobranza": "cobranza@gamasecurity.cl",
     "telefono": "+56991016912",
-    "direccion_comercial": "Dirección Fiscal Registrada",
+    "direccion_comercial": "GABRIELA MISTRAL N°47",
     "moneda": "CLP",
     "tarifa_mensual": 29900,
     "dia_vencimiento": 5,
@@ -168,7 +169,8 @@
     "estado_pago": "Al Día",
     "cuentas_abonados": [
       "C774"
-    ]
+    ],
+    "ciudad": "Viña Del Mar"
   },
   "81.669.200-8": {
     "rut": "81.669.200-8",
@@ -253,7 +255,8 @@
       "C7A3",
       "C7B2",
       "C7B3"
-    ]
+    ],
+    "ciudad": "Valparaiso"
   },
   "RUT-C737": {
     "rut": "RUT-C737",
@@ -261,7 +264,7 @@
     "empresa_facturadora_id": "EMP-1",
     "email_cobranza": "cobranza@gamasecurity.cl",
     "telefono": "+56991016912",
-    "direccion_comercial": "Dirección Fiscal Registrada",
+    "direccion_comercial": "AVDA BORINQUEN 204",
     "moneda": "CLP",
     "tarifa_mensual": 29900,
     "dia_vencimiento": 5,
@@ -269,7 +272,8 @@
     "estado_pago": "Al Día",
     "cuentas_abonados": [
       "C737"
-    ]
+    ],
+    "ciudad": "Viña Del Mar"
   },
   "65.155.616-3": {
     "rut": "65.155.616-3",
@@ -286,7 +290,8 @@
     "cuentas_abonados": [
       "C736",
       "C735"
-    ]
+    ],
+    "ciudad": "Valparaiso"
   },
   "4.531.254-2": {
     "rut": "4.531.254-2",
@@ -294,7 +299,7 @@
     "empresa_facturadora_id": "EMP-1",
     "email_cobranza": "cobranza@gamasecurity.cl",
     "telefono": "+56991016912",
-    "direccion_comercial": "Dirección Fiscal Registrada",
+    "direccion_comercial": "MARBELLA 49",
     "moneda": "CLP",
     "tarifa_mensual": 29900,
     "dia_vencimiento": 5,
@@ -302,7 +307,8 @@
     "estado_pago": "Al Día",
     "cuentas_abonados": [
       "C7AD"
-    ]
+    ],
+    "ciudad": "San Antonio"
   },
   "11.111.111-1": {
     "rut": "11.111.111-1",
@@ -310,7 +316,7 @@
     "empresa_facturadora_id": "EMP-1",
     "email_cobranza": "cobranza@gamasecurity.cl",
     "telefono": "+56991016912",
-    "direccion_comercial": "Dirección Fiscal Registrada",
+    "direccion_comercial": "CAMINO LA RINCONADA # 891",
     "moneda": "CLP",
     "tarifa_mensual": 29900,
     "dia_vencimiento": 5,
@@ -318,7 +324,8 @@
     "estado_pago": "Al Día",
     "cuentas_abonados": [
       "C773"
-    ]
+    ],
+    "ciudad": "Peñablanca"
   },
   "65.072.516-6": {
     "rut": "65.072.516-6",
@@ -326,7 +333,7 @@
     "empresa_facturadora_id": "EMP-1",
     "email_cobranza": "cobranza@gamasecurity.cl",
     "telefono": "+56991016912",
-    "direccion_comercial": "Dirección Fiscal Registrada",
+    "direccion_comercial": "AV. UNIVERSIDAD 330 VALPARAISO",
     "moneda": "CLP",
     "tarifa_mensual": 29900,
     "dia_vencimiento": 5,
@@ -342,7 +349,7 @@
     "empresa_facturadora_id": "EMP-1",
     "email_cobranza": "cobranza@gamasecurity.cl",
     "telefono": "+56991016912",
-    "direccion_comercial": "Dirección Fiscal Registrada",
+    "direccion_comercial": "LOS AROMOS 2432",
     "moneda": "CLP",
     "tarifa_mensual": 29900,
     "dia_vencimiento": 5,
@@ -350,7 +357,8 @@
     "estado_pago": "Al Día",
     "cuentas_abonados": [
       "C760"
-    ]
+    ],
+    "ciudad": "Viña Del Mar"
   },
   "10.379.376-9": {
     "rut": "10.379.376-9",
@@ -358,7 +366,7 @@
     "empresa_facturadora_id": "EMP-1",
     "email_cobranza": "cobranza@gamasecurity.cl",
     "telefono": "+56991016912",
-    "direccion_comercial": "Dirección Fiscal Registrada",
+    "direccion_comercial": "PORVENIR #1250",
     "moneda": "CLP",
     "tarifa_mensual": 29900,
     "dia_vencimiento": 5,
@@ -366,7 +374,8 @@
     "estado_pago": "Al Día",
     "cuentas_abonados": [
       "C747"
-    ]
+    ],
+    "ciudad": "Villa Alemana"
   },
   "65.628.810-8": {
     "rut": "65.628.810-8",
@@ -397,7 +406,8 @@
       "C7C0",
       "C7C1",
       "C7CE"
-    ]
+    ],
+    "ciudad": "Viña Del Mar"
   },
   "8.061.920-0": {
     "rut": "8.061.920-0",
@@ -414,7 +424,8 @@
     "cuentas_abonados": [
       "C741",
       "C738"
-    ]
+    ],
+    "ciudad": "Quilpue"
   },
   "3.398.320-4": {
     "rut": "3.398.320-4",
@@ -422,7 +433,7 @@
     "empresa_facturadora_id": "EMP-1",
     "email_cobranza": "cobranza@gamasecurity.cl",
     "telefono": "+56991016912",
-    "direccion_comercial": "Dirección Fiscal Registrada",
+    "direccion_comercial": "AV.MEXICO 391 BLOCK 1 DEPTO B-S,  MARINA MERCANTE",
     "moneda": "CLP",
     "tarifa_mensual": 29900,
     "dia_vencimiento": 5,
@@ -431,7 +442,8 @@
     "cuentas_abonados": [
       "0535",
       "535"
-    ]
+    ],
+    "ciudad": "Valparaiso"
   },
   "76.855.279-7": {
     "rut": "76.855.279-7",
@@ -439,7 +451,7 @@
     "empresa_facturadora_id": "EMP-1",
     "email_cobranza": "cobranza@gamasecurity.cl",
     "telefono": "+56991016912",
-    "direccion_comercial": "Dirección Fiscal Registrada",
+    "direccion_comercial": "FREIRE 399 ESQUINA PUDETO",
     "moneda": "CLP",
     "tarifa_mensual": 29900,
     "dia_vencimiento": 5,
@@ -447,7 +459,8 @@
     "estado_pago": "Al Día",
     "cuentas_abonados": [
       "C713"
-    ]
+    ],
+    "ciudad": "Quillota"
   },
   "70.267.000-4": {
     "rut": "70.267.000-4",
@@ -455,7 +468,7 @@
     "empresa_facturadora_id": "EMP-1",
     "email_cobranza": "cobranza@gamasecurity.cl",
     "telefono": "+56991016912",
-    "direccion_comercial": "Dirección Fiscal Registrada",
+    "direccion_comercial": "1 NORTE Nª2047",
     "moneda": "CLP",
     "tarifa_mensual": 29900,
     "dia_vencimiento": 5,
@@ -464,7 +477,8 @@
     "cuentas_abonados": [
       "0178",
       "C7C9"
-    ]
+    ],
+    "ciudad": "Viña Del Mar"
   },
   "70.607.500-3": {
     "rut": "70.607.500-3",
@@ -472,7 +486,7 @@
     "empresa_facturadora_id": "EMP-1",
     "email_cobranza": "cobranza@gamasecurity.cl",
     "telefono": "+56991016912",
-    "direccion_comercial": "Dirección Fiscal Registrada",
+    "direccion_comercial": "LOS CASTAÑOS 351",
     "moneda": "CLP",
     "tarifa_mensual": 29900,
     "dia_vencimiento": 5,
@@ -480,7 +494,8 @@
     "estado_pago": "Al Día",
     "cuentas_abonados": [
       "C775"
-    ]
+    ],
+    "ciudad": "Viña Del Mar"
   },
   "77.075.932-3": {
     "rut": "77.075.932-3",
@@ -488,7 +503,7 @@
     "empresa_facturadora_id": "EMP-1",
     "email_cobranza": "cobranza@gamasecurity.cl",
     "telefono": "+56991016912",
-    "direccion_comercial": "Dirección Fiscal Registrada",
+    "direccion_comercial": "6 1/2 ORIENTE NUMERO 216",
     "moneda": "CLP",
     "tarifa_mensual": 29900,
     "dia_vencimiento": 5,
@@ -496,7 +511,8 @@
     "estado_pago": "Al Día",
     "cuentas_abonados": [
       "C781"
-    ]
+    ],
+    "ciudad": "Viña Del Mar"
   },
   "77.194.160-5": {
     "rut": "77.194.160-5",
@@ -504,7 +520,7 @@
     "empresa_facturadora_id": "EMP-1",
     "email_cobranza": "cobranza@gamasecurity.cl",
     "telefono": "+56991016912",
-    "direccion_comercial": "Dirección Fiscal Registrada",
+    "direccion_comercial": "CALLE MARGA MARGA 1628",
     "moneda": "CLP",
     "tarifa_mensual": 29900,
     "dia_vencimiento": 5,
@@ -512,7 +528,8 @@
     "estado_pago": "Al Día",
     "cuentas_abonados": [
       "C728"
-    ]
+    ],
+    "ciudad": "Quilpue"
   },
   "70.816.800-9": {
     "rut": "70.816.800-9",
@@ -520,7 +537,7 @@
     "empresa_facturadora_id": "EMP-1",
     "email_cobranza": "cobranza@gamasecurity.cl",
     "telefono": "+56991016912",
-    "direccion_comercial": "Dirección Fiscal Registrada",
+    "direccion_comercial": "2 NORTE #610  ESQUINA 1 PONIENTE",
     "moneda": "CLP",
     "tarifa_mensual": 29900,
     "dia_vencimiento": 5,
@@ -528,7 +545,8 @@
     "estado_pago": "Al Día",
     "cuentas_abonados": [
       "C721"
-    ]
+    ],
+    "ciudad": "Viña Del Mar"
   },
   "12.850.460-5": {
     "rut": "12.850.460-5",
@@ -616,7 +634,7 @@
     "empresa_facturadora_id": "EMP-1",
     "email_cobranza": "cobranza@gamasecurity.cl",
     "telefono": "+56991016912",
-    "direccion_comercial": "Dirección Fiscal Registrada",
+    "direccion_comercial": "LOS CAROLINOS Nº 270-B ALTURA PLAZA MIRAFLORES",
     "moneda": "CLP",
     "tarifa_mensual": 29900,
     "dia_vencimiento": 5,
@@ -624,7 +642,8 @@
     "estado_pago": "Al Día",
     "cuentas_abonados": [
       "C792"
-    ]
+    ],
+    "ciudad": "Viña Del Mar"
   },
   "RUT-755": {
     "rut": "RUT-755",
@@ -648,7 +667,7 @@
     "empresa_facturadora_id": "EMP-1",
     "email_cobranza": "cobranza@gamasecurity.cl",
     "telefono": "+56991016912",
-    "direccion_comercial": "Dirección Fiscal Registrada",
+    "direccion_comercial": "CALLE PEDRO MONTT N 320",
     "moneda": "CLP",
     "tarifa_mensual": 29900,
     "dia_vencimiento": 5,
@@ -656,7 +675,8 @@
     "estado_pago": "Al Día",
     "cuentas_abonados": [
       "C777"
-    ]
+    ],
+    "ciudad": "Viña Del Mar"
   },
   "RUT-C744": {
     "rut": "RUT-C744",
@@ -664,7 +684,7 @@
     "empresa_facturadora_id": "EMP-1",
     "email_cobranza": "cobranza@gamasecurity.cl",
     "telefono": "+56991016912",
-    "direccion_comercial": "Dirección Fiscal Registrada",
+    "direccion_comercial": "ANIBAL PINTO Nº 848",
     "moneda": "CLP",
     "tarifa_mensual": 29900,
     "dia_vencimiento": 5,
@@ -672,7 +692,8 @@
     "estado_pago": "Al Día",
     "cuentas_abonados": [
       "C744"
-    ]
+    ],
+    "ciudad": "Quilpue"
   },
   "RUT-C727": {
     "rut": "RUT-C727",
@@ -680,7 +701,7 @@
     "empresa_facturadora_id": "EMP-1",
     "email_cobranza": "cobranza@gamasecurity.cl",
     "telefono": "+56991016912",
-    "direccion_comercial": "Dirección Fiscal Registrada",
+    "direccion_comercial": "LOS PALTOS 342",
     "moneda": "CLP",
     "tarifa_mensual": 29900,
     "dia_vencimiento": 5,
@@ -688,7 +709,8 @@
     "estado_pago": "Al Día",
     "cuentas_abonados": [
       "C727"
-    ]
+    ],
+    "ciudad": "Villa Alemana"
   },
   "RUT-C714": {
     "rut": "RUT-C714",
@@ -696,7 +718,7 @@
     "empresa_facturadora_id": "EMP-1",
     "email_cobranza": "cobranza@gamasecurity.cl",
     "telefono": "+56991016912",
-    "direccion_comercial": "Dirección Fiscal Registrada",
+    "direccion_comercial": "CALLE THOMPSON # 1075 ALA ALTURA DE ESMERALDA CON COVADONGA",
     "moneda": "CLP",
     "tarifa_mensual": 29900,
     "dia_vencimiento": 5,
@@ -704,7 +726,8 @@
     "estado_pago": "Al Día",
     "cuentas_abonados": [
       "C714"
-    ]
+    ],
+    "ciudad": "Quilpue"
   },
   "RUT-C782": {
     "rut": "RUT-C782",
@@ -712,7 +735,7 @@
     "empresa_facturadora_id": "EMP-1",
     "email_cobranza": "cobranza@gamasecurity.cl",
     "telefono": "+56991016912",
-    "direccion_comercial": "Dirección Fiscal Registrada",
+    "direccion_comercial": "DIEGO RAMIREZ 125 CERRO PLACERES",
     "moneda": "CLP",
     "tarifa_mensual": 29900,
     "dia_vencimiento": 5,
@@ -720,7 +743,8 @@
     "estado_pago": "Al Día",
     "cuentas_abonados": [
       "C782"
-    ]
+    ],
+    "ciudad": "Valparaiso"
   },
   "RUT-C754": {
     "rut": "RUT-C754",
@@ -728,7 +752,7 @@
     "empresa_facturadora_id": "EMP-1",
     "email_cobranza": "cobranza@gamasecurity.cl",
     "telefono": "+56991016912",
-    "direccion_comercial": "Dirección Fiscal Registrada",
+    "direccion_comercial": "ETCHEVERS 226",
     "moneda": "CLP",
     "tarifa_mensual": 29900,
     "dia_vencimiento": 5,
@@ -736,7 +760,8 @@
     "estado_pago": "Al Día",
     "cuentas_abonados": [
       "C754"
-    ]
+    ],
+    "ciudad": "Viña Del Mar"
   },
   "RUT-C729": {
     "rut": "RUT-C729",
@@ -744,7 +769,7 @@
     "empresa_facturadora_id": "EMP-1",
     "email_cobranza": "cobranza@gamasecurity.cl",
     "telefono": "+56991016912",
-    "direccion_comercial": "Dirección Fiscal Registrada",
+    "direccion_comercial": "GENERAL BULNES N° 190 CON ESQUINA CONCHA Y TORO",
     "moneda": "CLP",
     "tarifa_mensual": 29900,
     "dia_vencimiento": 5,
@@ -752,7 +777,8 @@
     "estado_pago": "Al Día",
     "cuentas_abonados": [
       "C729"
-    ]
+    ],
+    "ciudad": "Viña Del Mar"
   },
   "RUT-291": {
     "rut": "RUT-291",
@@ -776,7 +802,7 @@
     "empresa_facturadora_id": "EMP-1",
     "email_cobranza": "cobranza@gamasecurity.cl",
     "telefono": "+56991016912",
-    "direccion_comercial": "Dirección Fiscal Registrada",
+    "direccion_comercial": "10 NORTE 550",
     "moneda": "CLP",
     "tarifa_mensual": 29900,
     "dia_vencimiento": 5,
@@ -784,7 +810,8 @@
     "estado_pago": "Al Día",
     "cuentas_abonados": [
       "C755"
-    ]
+    ],
+    "ciudad": "Viña Del Mar"
   },
   "RUT-C734": {
     "rut": "RUT-C734",
@@ -792,7 +819,7 @@
     "empresa_facturadora_id": "EMP-1",
     "email_cobranza": "cobranza@gamasecurity.cl",
     "telefono": "+56991016912",
-    "direccion_comercial": "Dirección Fiscal Registrada",
+    "direccion_comercial": "MANUEL RODRIGUEZ CASA 11 VILLA CODINA RECREO",
     "moneda": "CLP",
     "tarifa_mensual": 29900,
     "dia_vencimiento": 5,
@@ -800,7 +827,8 @@
     "estado_pago": "Al Día",
     "cuentas_abonados": [
       "C734"
-    ]
+    ],
+    "ciudad": "Viña Del Mar"
   },
   "RUT-93": {
     "rut": "RUT-93",
@@ -824,7 +852,7 @@
     "empresa_facturadora_id": "EMP-1",
     "email_cobranza": "cobranza@gamasecurity.cl",
     "telefono": "+56991016912",
-    "direccion_comercial": "Dirección Fiscal Registrada",
+    "direccion_comercial": "AROMOS 2445",
     "moneda": "CLP",
     "tarifa_mensual": 29900,
     "dia_vencimiento": 5,
@@ -832,7 +860,8 @@
     "estado_pago": "Al Día",
     "cuentas_abonados": [
       "C742"
-    ]
+    ],
+    "ciudad": "Viña Del Mar"
   },
   "RUT-C746": {
     "rut": "RUT-C746",
@@ -840,7 +869,7 @@
     "empresa_facturadora_id": "EMP-1",
     "email_cobranza": "cobranza@gamasecurity.cl",
     "telefono": "+56991016912",
-    "direccion_comercial": "Dirección Fiscal Registrada",
+    "direccion_comercial": "21 DE MAYO Nº 31 CERRO ESPERANZA",
     "moneda": "CLP",
     "tarifa_mensual": 29900,
     "dia_vencimiento": 5,
@@ -848,7 +877,8 @@
     "estado_pago": "Al Día",
     "cuentas_abonados": [
       "C746"
-    ]
+    ],
+    "ciudad": "Valparaiso"
   },
   "RUT-342": {
     "rut": "RUT-342",
@@ -888,7 +918,7 @@
     "empresa_facturadora_id": "EMP-1",
     "email_cobranza": "cobranza@gamasecurity.cl",
     "telefono": "+56991016912",
-    "direccion_comercial": "Dirección Fiscal Registrada",
+    "direccion_comercial": "CALLE VIENA 445 , CASA 11",
     "moneda": "CLP",
     "tarifa_mensual": 29900,
     "dia_vencimiento": 5,
@@ -896,7 +926,8 @@
     "estado_pago": "Al Día",
     "cuentas_abonados": [
       "C745"
-    ]
+    ],
+    "ciudad": "Viña Del Mar"
   },
   "RUT-792": {
     "rut": "RUT-792",
@@ -920,7 +951,7 @@
     "empresa_facturadora_id": "EMP-1",
     "email_cobranza": "cobranza@gamasecurity.cl",
     "telefono": "+56991016912",
-    "direccion_comercial": "Dirección Fiscal Registrada",
+    "direccion_comercial": "BARROS ARANA 729 DEPTO 32",
     "moneda": "CLP",
     "tarifa_mensual": 29900,
     "dia_vencimiento": 5,
@@ -928,7 +959,8 @@
     "estado_pago": "Al Día",
     "cuentas_abonados": [
       "C733"
-    ]
+    ],
+    "ciudad": "Valparaiso"
   },
   "RUT-C753": {
     "rut": "RUT-C753",
@@ -936,7 +968,7 @@
     "empresa_facturadora_id": "EMP-1",
     "email_cobranza": "cobranza@gamasecurity.cl",
     "telefono": "+56991016912",
-    "direccion_comercial": "Dirección Fiscal Registrada",
+    "direccion_comercial": "LO VENEGAS 192",
     "moneda": "CLP",
     "tarifa_mensual": 29900,
     "dia_vencimiento": 5,
@@ -944,7 +976,8 @@
     "estado_pago": "Al Día",
     "cuentas_abonados": [
       "C753"
-    ]
+    ],
+    "ciudad": "Valparaiso"
   },
   "RUT-207": {
     "rut": "RUT-207",
@@ -1001,7 +1034,8 @@
       "C7CB",
       "C7CC",
       "C7CD"
-    ]
+    ],
+    "ciudad": "Valparaiso"
   },
   "RUT-C751": {
     "rut": "RUT-C751",
@@ -1009,7 +1043,7 @@
     "empresa_facturadora_id": "EMP-1",
     "email_cobranza": "cobranza@gamasecurity.cl",
     "telefono": "+56991016912",
-    "direccion_comercial": "Dirección Fiscal Registrada",
+    "direccion_comercial": "LAS NALCAS 415 CURAUMA",
     "moneda": "CLP",
     "tarifa_mensual": 29900,
     "dia_vencimiento": 5,
@@ -1025,7 +1059,7 @@
     "empresa_facturadora_id": "EMP-1",
     "email_cobranza": "cobranza@gamasecurity.cl",
     "telefono": "+56991016912",
-    "direccion_comercial": "Dirección Fiscal Registrada",
+    "direccion_comercial": "AVDA VALPARAISO 190 LOCAL A Y B",
     "moneda": "CLP",
     "tarifa_mensual": 29900,
     "dia_vencimiento": 5,
@@ -1033,7 +1067,8 @@
     "estado_pago": "Al Día",
     "cuentas_abonados": [
       "C732"
-    ]
+    ],
+    "ciudad": "Villa Alemana"
   },
   "RUT-277": {
     "rut": "RUT-277",
@@ -1057,7 +1092,7 @@
     "empresa_facturadora_id": "EMP-1",
     "email_cobranza": "cobranza@gamasecurity.cl",
     "telefono": "+56991016912",
-    "direccion_comercial": "Dirección Fiscal Registrada",
+    "direccion_comercial": "CAMILO HENRIQUEZ 135",
     "moneda": "CLP",
     "tarifa_mensual": 29900,
     "dia_vencimiento": 5,
@@ -1065,7 +1100,8 @@
     "estado_pago": "Al Día",
     "cuentas_abonados": [
       "C743"
-    ]
+    ],
+    "ciudad": "Quilpue"
   },
   "RUT-668": {
     "rut": "RUT-668",
@@ -1167,7 +1203,8 @@
       "C705",
       "C707",
       "C795"
-    ]
+    ],
+    "ciudad": "Valparaiso"
   },
   "77.839.684-K": {
     "rut": "77.839.684-K",
@@ -1175,7 +1212,7 @@
     "empresa_facturadora_id": "EMP-1",
     "email_cobranza": "cobranza@gamasecurity.cl",
     "telefono": "+56991016912",
-    "direccion_comercial": "Dirección Fiscal Registrada",
+    "direccion_comercial": "AVENIDA MAROTO 1210",
     "moneda": "CLP",
     "tarifa_mensual": 29900,
     "dia_vencimiento": 5,
@@ -1183,7 +1220,8 @@
     "estado_pago": "Al Día",
     "cuentas_abonados": [
       "C765"
-    ]
+    ],
+    "ciudad": "Con Con"
   },
   "96.832.590-6": {
     "rut": "96.832.590-6",
@@ -1199,7 +1237,8 @@
     "estado_pago": "Al Día",
     "cuentas_abonados": [
       "C723"
-    ]
+    ],
+    "ciudad": "Valparaiso"
   },
   "13.756.882-9": {
     "rut": "13.756.882-9",
@@ -1207,7 +1246,7 @@
     "empresa_facturadora_id": "EMP-1",
     "email_cobranza": "cobranza@gamasecurity.cl",
     "telefono": "+56991016912",
-    "direccion_comercial": "Dirección Fiscal Registrada",
+    "direccion_comercial": "BORRIQUEROS PARCELA 15  ACCESO POR PEÑABLANCA",
     "moneda": "CLP",
     "tarifa_mensual": 29900,
     "dia_vencimiento": 5,
@@ -1215,7 +1254,8 @@
     "estado_pago": "Al Día",
     "cuentas_abonados": [
       "C701"
-    ]
+    ],
+    "ciudad": "Limache"
   },
   "10.849.662-2": {
     "rut": "10.849.662-2",
@@ -1223,7 +1263,7 @@
     "empresa_facturadora_id": "EMP-1",
     "email_cobranza": "cobranza@gamasecurity.cl",
     "telefono": "+56991016912",
-    "direccion_comercial": "Dirección Fiscal Registrada",
+    "direccion_comercial": "AVENIDA VALPARAISO Nº 1140",
     "moneda": "CLP",
     "tarifa_mensual": 29900,
     "dia_vencimiento": 5,
@@ -1232,7 +1272,8 @@
     "cuentas_abonados": [
       "0524",
       "524"
-    ]
+    ],
+    "ciudad": "Villa Alemana"
   },
   "7.550.661-9": {
     "rut": "7.550.661-9",
@@ -1240,7 +1281,7 @@
     "empresa_facturadora_id": "EMP-1",
     "email_cobranza": "cobranza@gamasecurity.cl",
     "telefono": "+56991016912",
-    "direccion_comercial": "Dirección Fiscal Registrada",
+    "direccion_comercial": "AVDA. MATTA Nº 2425 CASA 12 VILLA BERLIN",
     "moneda": "CLP",
     "tarifa_mensual": 29900,
     "dia_vencimiento": 5,
@@ -1249,7 +1290,8 @@
     "cuentas_abonados": [
       "0565",
       "565"
-    ]
+    ],
+    "ciudad": "Valparaiso"
   },
   "2.549.817-8": {
     "rut": "2.549.817-8",
@@ -1257,7 +1299,7 @@
     "empresa_facturadora_id": "EMP-1",
     "email_cobranza": "cobranza@gamasecurity.cl",
     "telefono": "+56991016912",
-    "direccion_comercial": "Dirección Fiscal Registrada",
+    "direccion_comercial": "ALVAREZ 454 PSJE JOFRE CASA 21",
     "moneda": "CLP",
     "tarifa_mensual": 29900,
     "dia_vencimiento": 5,
@@ -1266,7 +1308,8 @@
     "cuentas_abonados": [
       "0002",
       "C726"
-    ]
+    ],
+    "ciudad": "Viña Del Mar"
   },
   "9.685.926-0": {
     "rut": "9.685.926-0",
@@ -1274,7 +1317,7 @@
     "empresa_facturadora_id": "EMP-1",
     "email_cobranza": "cobranza@gamasecurity.cl",
     "telefono": "+56991016912",
-    "direccion_comercial": "Dirección Fiscal Registrada",
+    "direccion_comercial": "CHILE SUR 330 PDO.4 NUEVA AURORA",
     "moneda": "CLP",
     "tarifa_mensual": 29900,
     "dia_vencimiento": 5,
@@ -1283,7 +1326,8 @@
     "cuentas_abonados": [
       "0493",
       "C778"
-    ]
+    ],
+    "ciudad": "Viña Del Mar"
   },
   "4.503.044-K": {
     "rut": "4.503.044-K",
@@ -1291,7 +1335,7 @@
     "empresa_facturadora_id": "EMP-1",
     "email_cobranza": "cobranza@gamasecurity.cl",
     "telefono": "+56991016912",
-    "direccion_comercial": "Dirección Fiscal Registrada",
+    "direccion_comercial": "ALVAREZ 454 PSJE JOFRE CASA 22",
     "moneda": "CLP",
     "tarifa_mensual": 29900,
     "dia_vencimiento": 5,
@@ -1300,6 +1344,7 @@
     "cuentas_abonados": [
       "0003",
       "C7B4"
-    ]
+    ],
+    "ciudad": "Viña Del Mar"
   }
 }

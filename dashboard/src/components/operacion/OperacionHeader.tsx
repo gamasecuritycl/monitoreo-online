@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { Shield, Search, DollarSign, ExternalLink, Plus, Sparkles, ArrowLeft } from 'lucide-react'
+import { Shield, Search, DollarSign, Plus, ArrowLeft, Bell, MessageSquare, UserCheck } from 'lucide-react'
 
 interface OperacionHeaderProps {
   moduloActivoLabel: string
@@ -31,94 +31,119 @@ export default function OperacionHeader({
   onVolverMenu
 }: OperacionHeaderProps) {
   return (
-    <header className="bg-[#0a1628]/90 backdrop-blur-xl border border-[#1e3a5f]/60 rounded-2xl p-4 sm:p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shrink-0 no-imprimir shadow-2xl transition-all font-sans">
+    <header className="bg-white border border-slate-200/90 rounded-3xl p-4 sm:p-5 flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 shrink-0 no-imprimir shadow-[0_4px_25px_-4px_rgba(15,37,70,0.05)] transition-all font-sans">
       
-      {/* Brand & Breadcrumb */}
-      <div className="flex items-center gap-3 sm:gap-4 w-full md:w-auto justify-between md:justify-start">
-        <div className="flex items-center gap-3">
+      {/* ── SECCIÓN IZQUIERDA: MARCA GAMA & NAVEGACIÓN ── */}
+      <div className="flex items-center gap-3.5 w-full xl:w-auto justify-between xl:justify-start">
+        <div className="flex items-center gap-3.5">
           {moduloActivo && onVolverMenu ? (
             <button
               onClick={onVolverMenu}
-              className="bg-[#0f2240] hover:bg-[#162a4a] text-slate-200 hover:text-white px-3.5 py-2.5 rounded-xl border border-[#1e3a5f] hover:border-[#2997ff] transition-all cursor-pointer flex items-center gap-2 font-bold text-xs shadow-md group"
+              className="bg-slate-50 hover:bg-[#0B2545] text-slate-700 hover:text-white px-4 py-2.5 rounded-2xl border border-slate-200 hover:border-[#0B2545] transition-all cursor-pointer flex items-center gap-2 font-bold text-xs shadow-xs group"
               title="Volver al Menú Principal"
             >
-              <ArrowLeft className="h-4 w-4 text-[#2997ff] group-hover:-translate-x-1 transition-transform" />
-              <span className="hidden sm:inline">Menú Principal</span>
+              <ArrowLeft className="h-4 w-4 text-[#1E40AF] group-hover:text-white group-hover:-translate-x-1 transition-all" />
+              <span>← Menú Principal</span>
             </button>
           ) : (
-            <div className="w-10 h-10 rounded-xl bg-[#0066cc]/20 border border-[#0066cc]/40 text-[#2997ff] flex items-center justify-center shrink-0 shadow-inner">
-              <Shield className="h-5 w-5 stroke-[1.5]" />
+            <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-[#0B2545] to-[#1E40AF] text-white flex items-center justify-center shrink-0 shadow-md shadow-blue-900/10 relative overflow-hidden">
+              <Shield className="h-6 w-6 stroke-[1.75]" />
+              <span className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-[#DC2626] rounded-full border-2 border-white" />
             </div>
           )}
 
           <div>
-            <div className="flex items-center gap-2 text-xs font-semibold text-white">
+            <div className="flex items-center gap-2 text-xs font-semibold">
               <span className="text-slate-400">Central Operativa</span>
-              <span className="text-slate-600">/</span>
-              <span className="text-[#2997ff]">{moduloActivoLabel}</span>
+              <span className="text-slate-300">/</span>
+              <span className="text-[#1E40AF] font-bold">{moduloActivoLabel}</span>
             </div>
-            <h1 className="text-base sm:text-lg font-bold text-white tracking-tight flex items-center gap-2 mt-0.5">
-              GAMA SECURITY CRM 360°
-              <span className="bg-[#0066cc]/20 text-[#2997ff] border border-[#0066cc]/40 text-[10px] font-semibold px-2.5 py-0.5 rounded-full flex items-center gap-1.5 font-sans">
-                <span className="h-1.5 w-1.5 rounded-full bg-[#2997ff] animate-pulse" />
-                <span>24/7 ONLINE</span>
+            <div className="flex items-center gap-2.5 mt-0.5">
+              <h1 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
+                EMPRESA GAMA <span className="text-[#DC2626]">24/7</span>
+              </h1>
+              <span className="bg-emerald-50 text-emerald-700 border border-emerald-200/80 text-[10px] font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1.5 shadow-2xs">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span>CENTRAL ACTIVA</span>
               </span>
-            </h1>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Spotlight Command Palette Trigger & Actions */}
-      <div className="flex flex-wrap items-center gap-2.5 text-xs font-medium w-full md:w-auto justify-between md:justify-end">
+      {/* ── SECCIÓN CENTRAL & DERECHA: BUSCADOR PÍLDORA + WIDGET OPERADOR (ESTILO DSTUDIO) ── */}
+      <div className="flex flex-wrap items-center gap-3 text-xs w-full xl:w-auto justify-between xl:justify-end">
         
-        {/* Spotlight Button */}
+        {/* BUSCADOR SPOTLIGHT PÍLDORA REDONDEADA (DSTUDIO SEARCH PILL) */}
         <button
           onClick={onOpenCommandPalette}
-          className="flex-1 md:flex-initial bg-[#050d1a] hover:bg-[#0f2240] border border-[#1e3a5f] hover:border-[#2997ff]/50 px-4 py-2 rounded-xl text-slate-300 hover:text-white flex items-center gap-2.5 transition-all text-xs font-mono group cursor-pointer"
+          className="flex-1 sm:flex-initial bg-slate-50 hover:bg-slate-100/80 border border-slate-200 px-4 py-2.5 rounded-full text-slate-600 hover:text-slate-900 flex items-center gap-3 transition-all text-xs font-sans group cursor-pointer shadow-2xs"
         >
-          <Search className="h-3.5 w-3.5 text-[#2997ff] stroke-[1.5] group-hover:scale-110 transition-transform" />
-          <span>Buscar o ejecutar...</span>
-          <kbd className="hidden sm:inline-block px-1.5 py-0.5 rounded bg-[#162a4a] text-[10px] text-slate-400 font-mono border border-[#1e3a5f]">
+          <Search className="h-4 w-4 text-[#1E40AF] stroke-[2] group-hover:scale-110 transition-transform" />
+          <span className="font-medium text-slate-500">Buscar módulo, cliente o comando...</span>
+          <kbd className="hidden sm:inline-block px-2 py-0.5 rounded-full bg-white text-[10px] text-slate-500 font-mono border border-slate-200 shadow-2xs">
             ⌘ K
           </kbd>
         </button>
 
-        {/* UF Value */}
-        <div className="bg-[#050d1a] border border-[#1e3a5f] px-3.5 py-2 rounded-xl text-slate-300 font-mono flex items-center gap-2 text-[11px] sm:text-xs">
-          <DollarSign className="h-3.5 w-3.5 text-[#2997ff] stroke-[1.5]" />
-          <span className="text-slate-400">UF:</span>
-          <strong className="text-emerald-400 font-bold">${valorUF.toLocaleString('es-CL')}</strong>
+        {/* INDICADOR DE UF EN TARJETA MINIMALISTA */}
+        <div className="bg-slate-50 border border-slate-200 px-3.5 py-2 rounded-2xl text-slate-700 font-mono flex items-center gap-2 text-xs shadow-2xs">
+          <DollarSign className="h-3.5 w-3.5 text-[#1E40AF] stroke-[2]" />
+          <span className="text-slate-400 font-sans font-medium text-[11px]">UF:</span>
+          <strong className="text-slate-900 font-bold">${valorUF.toLocaleString('es-CL')}</strong>
         </div>
 
-        {/* Quick Presupuesto */}
+        {/* BOTÓN RÁPIDO NUEVA COTIZACIÓN */}
         <button
           onClick={onQuickCotizacion}
-          className="btn-apple-secondary-dark text-xs py-2 px-3 flex items-center gap-1 font-sans"
+          className="bg-white hover:bg-slate-50 text-[#0B2545] border border-slate-200 hover:border-[#0B2545] text-xs py-2 px-3.5 rounded-2xl flex items-center gap-1.5 font-bold transition-all shadow-2xs active:scale-95 cursor-pointer"
         >
-          <Plus className="h-3.5 w-3.5" />
+          <Plus className="h-3.5 w-3.5 text-[#1E40AF]" />
           <span>Cotización</span>
         </button>
 
-        {/* Quick OT */}
+        {/* BOTÓN RÁPIDO NUEVA OT (EN ROJO GAMA OFICIAL) */}
         <button
           onClick={onQuickOT}
-          className="btn-apple-primary text-xs py-2 px-3.5 flex items-center gap-1.5 font-sans shadow-md shadow-[#0066cc]/20"
+          className="bg-[#DC2626] hover:bg-[#B91C1C] text-white text-xs py-2 px-4 rounded-2xl flex items-center gap-1.5 font-bold transition-all shadow-sm shadow-red-500/20 active:scale-95 cursor-pointer"
         >
           <Plus className="h-3.5 w-3.5" />
           <span>Nueva OT</span>
         </button>
 
-        {/* Quick WhatsApp 1-Clic */}
+        {/* BOTÓN RÁPIDO WHATSAPP */}
         {onOpenWhatsAppPlantillas && (
           <button
             onClick={onOpenWhatsAppPlantillas}
-            className="bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 hover:text-emerald-200 border border-emerald-500/40 text-xs py-2 px-3 rounded-xl flex items-center gap-1.5 font-sans font-semibold transition-all shadow-md active:scale-95 cursor-pointer"
-            title="Enviar Plantillas Oficiales de WhatsApp con 1 Clic"
+            className="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs py-2 px-3.5 rounded-2xl flex items-center gap-1.5 font-bold transition-all shadow-2xs active:scale-95 cursor-pointer"
+            title="Enviar Plantillas Oficiales de WhatsApp"
           >
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span>Plantillas WhatsApp</span>
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span>WhatsApp</span>
           </button>
         )}
+
+        {/* ── WIDGET DE PERFIL OPERADOR (CARD UI DSTUDIO SHOT EXACTO) ── */}
+        <div className="bg-gradient-to-r from-blue-50/80 to-indigo-50/50 border border-blue-100/90 py-1.5 px-3.5 rounded-2xl flex items-center gap-3 shadow-2xs">
+          <div className="flex items-center gap-1.5 text-slate-500 border-r border-slate-200/80 pr-2.5">
+            <button className="p-1 hover:text-[#1E40AF] transition-colors cursor-pointer" title="Mensajes Operativos">
+              <MessageSquare className="h-3.5 w-3.5" />
+            </button>
+            <button className="p-1 hover:text-[#DC2626] transition-colors cursor-pointer" title="Novedades del Sistema">
+              <Bell className="h-3.5 w-3.5" />
+            </button>
+          </div>
+
+          <div className="text-right">
+            <span className="text-[11px] font-extrabold text-slate-800 block leading-tight">Admin Central</span>
+            <span className="text-[9px] font-bold text-[#1E40AF] tracking-wider uppercase block">SUPER ADMIN</span>
+          </div>
+
+          <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#0B2545] to-[#2563EB] text-white flex items-center justify-center font-bold text-xs shadow-xs border border-white">
+            <UserCheck className="h-4 w-4" />
+          </div>
+        </div>
+
       </div>
 
     </header>

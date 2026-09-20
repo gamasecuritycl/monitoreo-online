@@ -78,7 +78,11 @@ import {
   UserPlus,
   Activity,
   Smartphone,
-  Upload
+  Upload,
+  Save,
+  Eye,
+  EyeOff,
+  ChevronUp
 } from 'lucide-react'
 import ServicioTecnicoModal from './ServicioTecnicoModal'
 
@@ -413,6 +417,17 @@ export default function OperacionCRM() {
   const [modalPlantillasWhatsAppActivo, setModalPlantillasWhatsAppActivo] = useState(false)
   const [plantillaWhatsAppAbonado, setPlantillaWhatsAppAbonado] = useState<PlantillaAbonadoData | undefined>(undefined)
   const [whatsappTelefonoDirecto, setWhatsappTelefonoDirecto] = useState<string | undefined>(undefined)
+
+  // ── VISIBILIDAD OPCIONAL DE SEÑALES & BITÁCORA PARA AHORRAR ESPACIO ──
+  const [mostrarSenalesBitacora, setMostrarSenalesBitacora] = useState<boolean>(false)
+
+  // ── EDICIÓN INTERACTIVA DE CONDICIONES DE FACTURACIÓN Y PLAN ──
+  const [editEmpresaFacturadora, setEditEmpresaFacturadora] = useState<string>('EMP-1')
+  const [editMoneda, setEditMoneda] = useState<'CLP' | 'UF'>('CLP')
+  const [editTarifa, setEditTarifa] = useState<string>('29900')
+  const [editDiaVencimiento, setEditDiaVencimiento] = useState<number>(5)
+  const [editPlanMonitoreo, setEditPlanMonitoreo] = useState<string>('MONITOREO MULTI-ABONADO CONSOLIDADOR 24/7')
+  const [guardandoCondiciones, setGuardandoCondiciones] = useState<boolean>(false)
 
   // UF Global
   const [valorUF, setValorUF] = useState(38500)
@@ -987,6 +1002,95 @@ export default function OperacionCRM() {
 
     return null
   }, [abonadoActivo, rutClienteSeleccionado, cuentaSeleccionada, clientesMaestros])
+
+  // Sincronizar estados de edición cuando cambia el cliente activo
+  useEffect(() => {
+    if (clienteActivo) {
+      setEditEmpresaFacturadora(clienteActivo.empresa_facturadora_id || 'EMP-1')
+      setEditMoneda(clienteActivo.moneda || 'CLP')
+      setEditTarifa(String(clienteActivo.tarifa_mensual || 29900))
+      setEditDiaVencimiento(clienteActivo.dia_vencimiento || 5)
+      setEditPlanMonitoreo(clienteActivo.plan_monitoreo || 'MONITOREO MULTI-ABONADO CONSOLIDADOR 24/7')
+    }
+  }, [clienteActivo?.rut, clienteActivo?.tarifa_mensual, clienteActivo?.moneda, clienteActivo?.empresa_facturadora_id])
+
+  // Obtención directa y verídica de Dirección y Comuna/Ciudad desde GENERAL.MDB (clientesDataRaw)
+  const cCodeActivo = useMemo(() => {
+    return (abonadoActivo?.cuenta || cuentaSeleccionada || (clienteActivo?.cuentas_abonados?.[0]) || '').toUpperCase().trim()
+  }, [abonadoActivo?.cuenta, cuentaSeleccionada, clienteActivo?.cuentas_abonados])
+
+  const rawInfoActivo = useMemo(() => {
+    return cCodeActivo && (clientesDataRaw as any)?.[cCodeActivo] ? (clientesDataRaw as any)[cCodeActivo] : null
+  }, [cCodeActivo])
+
+  const direccionActivaReal = useMemo(() => {
+    if (rawInfoActivo?.direccion && rawInfoActivo.direccion.trim() && !rawInfoActivo.direccion.includes('Dirección de Instalación')) {
+      return rawInfoActivo.direccion.trim()
+    }
+    if (abonadoActivo?.direccion && !abonadoActivo.direccion.includes('Dirección de Instalación') && abonadoActivo.direccion !== 'Dirección sin registrar') {
+      return abonadoActivo.direccion.trim()
+    }
+    if (clienteActivo?.direccion_comercial && !clienteActivo.direccion_comercial.includes('Dirección de Instalación') && !clienteActivo.direccion_comercial.includes('Dirección Fiscal Registrada')) {
+      return clienteActivo.direccion_comercial.trim()
+    }
+    return rawInfoActivo?.direccion || abonadoActivo?.direccion || clienteActivo?.direccion_comercial || 'Dirección de Instalación'
+  }, [rawInfoActivo, abonadoActivo, clienteActivo])
+
+  const ciudadComunaActivaReal = useMemo(() => {
+    if (rawInfoActivo?.comuna && rawInfoActivo.comuna.trim()) return rawInfoActivo.comuna.trim()
+    if (rawInfoActivo?.ciudad && rawInfoActivo.ciudad.trim()) return rawInfoActivo.ciudad.trim()
+    if (abonadoActivo?.ciudad && abonadoActivo.ciudad !== 'Santiago') return abonadoActivo.ciudad.trim()
+    if (clienteActivo?.ciudad && clienteActivo.ciudad !== 'Santiago') return clienteActivo.ciudad.trim()
+    return abonadoActivo?.ciudad || clienteActivo?.ciudad || 'Santiago'
+  }, [rawInfoActivo, abonadoActivo, clienteActivo])
+
+  // Guardar y persistir condiciones de facturación (Razón Social Emisora, Moneda UF/Pesos, Tarifa, Plan)
+  const handleGuardarCondicionesFacturacion = async () => {
+    if (!clienteActivo) return
+    setGuardandoCondiciones(true)
+    try {
+      const rutKey = clienteActivo.rut
+      const tarifaNum = parseFloat(editTarifa.replace(/[^0-9.]/g, '')) || 0
+      const updatedCliente: ClienteMaestro = {
+        ...clienteActivo,
+        empresa_facturadora_id: editEmpresaFacturadora,
+        moneda: editMoneda,
+        tarifa_mensual: tarifaNum,
+        dia_vencimiento: Number(editDiaVencimiento) || 5,
+        plan_monitoreo: editPlanMonitoreo || 'MONITOREO MULTI-ABONADO CONSOLIDADOR 24/7'
+      }
+
+      const nuevosMaestros = {
+        ...clientesMaestros,
+        [rutKey]: updatedCliente
+      }
+      setClientesMaestros(nuevosMaestros)
+      try {
+        localStorage.setItem('gama_clientes_maestros', JSON.stringify(nuevosMaestros))
+      } catch (e) {}
+
+      // Persistir en Supabase con costo mínimo (1 fila compacta)
+      try {
+        await supabase.from('eventos_monitoreo').upsert({
+          cuenta: 'CLIENTES_MAESTROS_CRM',
+          nombre_abonado: JSON.stringify(nuevosMaestros),
+          fecha_hora: new Date().toISOString()
+        }, { onConflict: 'cuenta' })
+      } catch (errSup) {
+        console.warn('Supabase offline / error al guardar maestros:', errSup)
+      }
+
+      setToastNotificacion({
+        tipo: 'exito',
+        texto: `Condiciones comerciales guardadas (${editMoneda === 'UF' ? `${tarifaNum} UF` : `$${tarifaNum.toLocaleString('es-CL')} CLP`})`
+      })
+    } catch (err: any) {
+      alert(`Error al guardar condiciones: ${err?.message || err}`)
+    } finally {
+      setGuardandoCondiciones(false)
+      setTimeout(() => setToastNotificacion(null), 3500)
+    }
+  }
 
   // ── SEÑALES DE ALARMA EN VIVO (DESDE SUPABASE) Y BITÁCORA REAL COMMAND CENTER ──
   const [senalesRealtime, setSenalesRealtime] = useState<any[]>([])
@@ -2772,7 +2876,7 @@ export default function OperacionCRM() {
   ]
 
   return (
-    <div className="min-h-screen bg-[#050d1a] text-slate-100 font-sans flex flex-col select-none p-3 sm:p-5 md:p-6 gap-4 sm:gap-6 antialiased">
+    <div className="min-h-screen bg-[#F4F6FA] text-slate-800 font-sans flex flex-col select-none p-3 sm:p-5 md:p-6 gap-4 sm:gap-6 antialiased">
       
       {/* Estilos CSS para Impresión PDF Limpia (@media print) */}
       <style jsx global>{`
@@ -2851,46 +2955,46 @@ export default function OperacionCRM() {
         {!moduloActivo ? (
           <div className="flex-1 overflow-y-auto min-h-0 flex flex-col gap-6 sm:gap-8 no-imprimir pb-8 pr-1 animate-in fade-in duration-200">
             
-            {/* BANNER DE BIENVENIDA EJECUTIVO */}
-            <div className="bg-gradient-to-r from-[#0a1628]/95 via-[#0d1f38]/90 to-[#0a1628]/95 backdrop-blur-xl border border-[#1e3a5f]/70 rounded-3xl p-6 sm:p-8 shadow-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+            {/* BANNER DE BIENVENIDA EJECUTIVO ESTILO DSTUDIO */}
+            <div className="bg-white border border-slate-200/90 rounded-3xl p-6 sm:p-8 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-[#0066cc]/20 text-[#2997ff] border border-[#0066cc]/40 flex items-center gap-1.5 font-mono">
-                    <span className="w-2 h-2 rounded-full bg-[#2997ff] animate-pulse" />
+                  <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-blue-50 text-[#1E40AF] border border-blue-200/70 flex items-center gap-1.5 font-sans">
+                    <span className="w-2 h-2 rounded-full bg-[#1E40AF] animate-pulse" />
                     CENTRAL OPERATIVA GAMA
                   </span>
-                  <span className="text-xs text-slate-400 font-mono">| PLATAFORMA INTEGRAL</span>
+                  <span className="text-xs text-slate-400 font-mono">| SEGURIDAD 24/7</span>
                 </div>
-                <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+                <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
                   Centro de Control & Gestión Operativa
                 </h2>
-                <p className="text-xs sm:text-sm text-slate-300 max-w-2xl leading-relaxed">
+                <p className="text-xs sm:text-sm text-slate-500 max-w-2xl leading-relaxed font-medium">
                   Seleccione cualquiera de los módulos para operar en pantalla completa, con máxima amplitud y sin barras laterales restrictivas.
                 </p>
               </div>
 
               {/* STATS EN TIEMPO REAL */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 w-full md:w-auto shrink-0">
-                <div className="bg-[#050d1a]/80 border border-[#1e3a5f]/80 px-4 py-2.5 rounded-2xl flex flex-col">
+                <div className="bg-slate-50 border border-slate-200/80 px-4 py-2.5 rounded-2xl flex flex-col shadow-2xs">
                   <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Empresas</span>
-                  <span className="text-base font-extrabold text-white font-mono">{empresasConglomerado.length}</span>
+                  <span className="text-base font-extrabold text-slate-900 font-mono">{empresasConglomerado.length}</span>
                 </div>
-                <div className="bg-[#050d1a]/80 border border-[#1e3a5f]/80 px-4 py-2.5 rounded-2xl flex flex-col">
+                <div className="bg-slate-50 border border-slate-200/80 px-4 py-2.5 rounded-2xl flex flex-col shadow-2xs">
                   <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Clientes</span>
-                  <span className="text-base font-extrabold text-[#2997ff] font-mono">{Object.keys(clientesMaestros).length}</span>
+                  <span className="text-base font-extrabold text-[#1E40AF] font-mono">{Object.keys(clientesMaestros).length}</span>
                 </div>
-                <div className="bg-[#050d1a]/80 border border-[#1e3a5f]/80 px-4 py-2.5 rounded-2xl flex flex-col">
+                <div className="bg-slate-50 border border-slate-200/80 px-4 py-2.5 rounded-2xl flex flex-col shadow-2xs">
                   <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Abonados</span>
-                  <span className="text-base font-extrabold text-emerald-400 font-mono">{Object.keys(abonadosCentrosCosto).length}</span>
+                  <span className="text-base font-extrabold text-emerald-600 font-mono">{Object.keys(abonadosCentrosCosto).length}</span>
                 </div>
-                <div className="bg-[#050d1a]/80 border border-[#1e3a5f]/80 px-4 py-2.5 rounded-2xl flex flex-col">
+                <div className="bg-slate-50 border border-slate-200/80 px-4 py-2.5 rounded-2xl flex flex-col shadow-2xs">
                   <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">OTs Activas</span>
-                  <span className="text-base font-extrabold text-amber-400 font-mono">{ordenesTrabajo.length}</span>
+                  <span className="text-base font-extrabold text-[#DC2626] font-mono">{ordenesTrabajo.length}</span>
                 </div>
               </div>
             </div>
 
-            {/* GRID DE BOTONES GRANDES (LAUNCHPAD DE 10 MÓDULOS) */}
+            {/* GRID DE BOTONES GRANDES (LAUNCHPAD DE 10 MÓDULOS ESTILO DSTUDIO CARD UI) */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5 sm:gap-6">
               {modulosLaunchpad.map((mod) => {
                 const IconComp = mod.icono
@@ -2898,37 +3002,34 @@ export default function OperacionCRM() {
                   <button
                     key={mod.id}
                     onClick={() => setModuloActivo(mod.id as any)}
-                    className={`group relative text-left rounded-3xl bg-gradient-to-b from-[#0c1a2e] to-[#07111e] border border-[#1e3a5f]/60 ${mod.borderColor} p-6 flex flex-col justify-between transition-all duration-300 hover:shadow-2xl ${mod.glowColor} hover:-translate-y-1.5 cursor-pointer min-h-[220px] overflow-hidden`}
+                    className="group relative text-left rounded-3xl bg-white border border-slate-200/90 hover:border-[#1E40AF]/60 p-6 flex flex-col justify-between transition-all duration-300 shadow-sm hover:shadow-xl hover:-translate-y-1.5 cursor-pointer min-h-[220px] overflow-hidden"
                   >
-                    {/* Glow de fondo */}
-                    <div className="absolute -right-8 -top-8 w-28 h-28 rounded-full bg-white/[0.02] group-hover:bg-white/[0.06] transition-all blur-xl pointer-events-none" />
-
                     {/* Top Bar de la Card */}
                     <div className="flex items-start justify-between gap-3 relative z-10">
-                      <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${mod.gradient} text-white flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+                      <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${mod.gradient} text-white flex items-center justify-center shadow-md group-hover:scale-105 transition-transform duration-300`}>
                         <IconComp className="h-6 w-6 stroke-[2]" />
                       </div>
-                      <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold border font-mono tracking-wider ${mod.badgeColor}`}>
+                      <span className="px-2.5 py-1 rounded-full text-[10px] font-bold border border-slate-200 bg-slate-50 text-slate-600 font-sans tracking-wide">
                         {mod.categoria}
                       </span>
                     </div>
 
                     {/* Contenido Central */}
                     <div className="space-y-1.5 my-3 relative z-10">
-                      <h3 className="text-base sm:text-lg font-black text-white tracking-tight group-hover:text-[#2997ff] transition-colors">
+                      <h3 className="text-base sm:text-lg font-black text-slate-900 tracking-tight group-hover:text-[#1E40AF] transition-colors">
                         {mod.titulo}
                       </h3>
-                      <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed">
+                      <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed font-medium">
                         {mod.descripcion}
                       </p>
                     </div>
 
                     {/* Footer de la Card con Acción */}
-                    <div className="pt-3 border-t border-white/5 flex items-center justify-between text-xs font-semibold relative z-10">
-                      <span className="text-slate-500 font-mono text-[11px]">
+                    <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-semibold relative z-10">
+                      <span className="text-slate-400 font-mono text-[11px]">
                         {mod.tag}
                       </span>
-                      <span className="text-[#2997ff] group-hover:text-white flex items-center gap-1 text-xs font-bold transition-colors">
+                      <span className="text-[#1E40AF] group-hover:text-[#0B2545] flex items-center gap-1 text-xs font-bold transition-colors">
                         <span>Abrir Módulo</span>
                         <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-1 transition-transform" />
                       </span>
@@ -2940,22 +3041,22 @@ export default function OperacionCRM() {
 
           </div>
         ) : (
-          /* ── VISTA 2: VENTANA EMERGENTE DEL MÓDULO (PANTALLA COMPLETA ESPACIOSA) ── */
-          <div className="flex-1 flex flex-col overflow-hidden bg-[#07111e]/95 backdrop-blur-xl border border-[#1e3a5f]/70 rounded-3xl shadow-2xl p-4 sm:p-6 min-h-0 relative no-imprimir animate-in zoom-in-95 duration-200">
+          <div className="flex-1 flex flex-col overflow-hidden bg-white border border-slate-200/90 rounded-3xl shadow-[0_10px_40px_-10px_rgba(15,37,70,0.06)] p-4 sm:p-6 min-h-0 relative no-imprimir animate-in zoom-in-95 duration-200 text-slate-900">
+            {/* ── VISTA 2: VENTANA EMERGENTE DEL MÓDULO (PANTALLA COMPLETA ESPACIOSA DSTUDIO) ── */}
             
             {/* BARRA SUPERIOR DE NAVEGACIÓN, VOLVER Y CERRAR */}
-            <div className="flex items-center justify-between gap-4 pb-4 mb-4 border-b border-white/10 shrink-0">
+            <div className="flex items-center justify-between gap-4 pb-4 mb-4 border-b border-slate-100 shrink-0">
               <button
                 onClick={() => setModuloActivo(null)}
-                className="flex items-center gap-2.5 px-4 sm:px-5 py-2.5 bg-[#0f2240] hover:bg-[#162a4a] text-white border border-[#1e3a5f] hover:border-[#2997ff] rounded-2xl font-bold text-xs sm:text-sm shadow-lg transition-all group cursor-pointer active:scale-95"
+                className="flex items-center gap-2.5 px-4 sm:px-5 py-2.5 bg-slate-50 hover:bg-[#0B2545] text-slate-700 hover:text-white border border-slate-200 hover:border-[#0B2545] rounded-2xl font-bold text-xs sm:text-sm shadow-2xs transition-all group cursor-pointer active:scale-95"
               >
-                <ArrowLeft className="h-4 w-4 text-[#2997ff] group-hover:-translate-x-1 transition-transform" />
+                <ArrowLeft className="h-4 w-4 text-[#1E40AF] group-hover:text-white group-hover:-translate-x-1 transition-transform" />
                 <span>← Volver al Menú Principal</span>
               </button>
 
               <div className="flex items-center gap-2 sm:gap-3">
-                <span className="text-xs sm:text-sm font-bold text-white tracking-wide flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="text-xs sm:text-sm font-black text-slate-900 tracking-wide flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                   {
                     moduloActivo === 'ficha360' ? 'Ficha 360° Cliente' :
                     moduloActivo === 'presupuestos' ? 'Presupuestos & DTE' :
@@ -2969,14 +3070,14 @@ export default function OperacionCRM() {
                     moduloActivo === 'config' ? 'Configuración & Claves' : 'Agentes Autónomos'
                   }
                 </span>
-                <span className="hidden md:inline-block px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-[#0066cc]/20 text-[#2997ff] border border-[#0066cc]/40">
+                <span className="hidden md:inline-block px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-blue-50 text-[#1E40AF] border border-blue-200">
                   VENTANA COMPLETA
                 </span>
               </div>
 
               <button
                 onClick={() => setModuloActivo(null)}
-                className="flex items-center gap-2 px-4 py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-300 hover:text-white border border-red-500/30 hover:border-red-500 rounded-2xl font-bold text-xs sm:text-sm transition-all cursor-pointer active:scale-95"
+                className="flex items-center gap-2 px-4 py-2.5 bg-red-50 hover:bg-[#DC2626] text-[#DC2626] hover:text-white border border-red-200 hover:border-[#DC2626] rounded-2xl font-bold text-xs sm:text-sm transition-all cursor-pointer active:scale-95 shadow-2xs"
                 title="Cerrar módulo y volver al menú (Esc)"
               >
                 <X className="h-4 w-4" />
@@ -3005,21 +3106,21 @@ export default function OperacionCRM() {
           {moduloActivo === 'ficha360' && (
             <div className="flex-1 flex flex-col gap-6 sm:gap-8 min-h-0">
               
-              {/* BUSCADOR SPOTLIGHT APPLE HIG */}
-              <div className="bg-[#0a1628]/80 backdrop-blur-md border border-[#1e3a5f]/60 p-5 sm:p-6 rounded-2xl shadow-lg flex flex-col gap-4 transition-all">
-                <div className="font-semibold text-xs text-slate-400 uppercase tracking-wider flex justify-between items-center font-sans">
-                  <span className="flex items-center gap-2 text-slate-300">
-                    <div className="p-1.5 bg-[#0066cc]/20 text-[#2997ff] rounded-lg border border-[#0066cc]/30">
-                      <Search className="h-4 w-4 stroke-[1.5]" />
+              {/* BUSCADOR SPOTLIGHT DSTUDIO CARD UI */}
+              <div className="bg-white border border-slate-200/90 p-5 sm:p-6 rounded-3xl shadow-sm flex flex-col gap-4 transition-all relative z-50">
+                <div className="font-bold text-xs text-slate-500 uppercase tracking-wider flex justify-between items-center font-sans">
+                  <span className="flex items-center gap-2 text-slate-700">
+                    <div className="p-1.5 bg-blue-50 text-[#1E40AF] rounded-xl border border-blue-200/60">
+                      <Search className="h-4 w-4 stroke-[2]" />
                     </div>
-                    <span>BUSCADOR INTELIGENTE 360° (CÓDIGO DE ABONADO, NOMBRE O RUT)</span>
+                    <span>BUSCADOR INTELIGENTE 360° (ABONADO, NOMBRE O RUT)</span>
                   </span>
                   {(cuentaSeleccionada || rutClienteSeleccionado) && (
                     <button
                       onClick={() => { setCuentaSeleccionada(''); setRutClienteSeleccionado(''); setBusquedaClienteInput('') }}
-                      className="text-xs text-red-400 hover:text-red-300 font-semibold cursor-pointer flex items-center gap-1 bg-red-500/10 border border-red-500/20 px-3 py-1 rounded-xl transition-all"
+                      className="text-xs text-[#DC2626] hover:text-red-700 font-bold cursor-pointer flex items-center gap-1 bg-red-50 border border-red-200/80 px-3 py-1 rounded-xl transition-all"
                     >
-                      <X className="h-3.5 w-3.5 stroke-[1.5]" />
+                      <X className="h-3.5 w-3.5 stroke-[2]" />
                       <span>Limpiar Selección</span>
                     </button>
                   )}
@@ -3027,33 +3128,33 @@ export default function OperacionCRM() {
 
                 <div className="relative flex flex-col sm:flex-row items-center gap-3">
                   <div className="relative flex-1 w-full flex items-center">
-                    <Search className="absolute left-4 h-4 w-4 text-[#2997ff] pointer-events-none stroke-[1.5]" />
+                    <Search className="absolute left-4 h-4 w-4 text-[#1E40AF] pointer-events-none stroke-[2]" />
                     <input
                       type="text"
                       value={busquedaClienteInput}
                       onChange={(e) => setBusquedaClienteInput(e.target.value)}
                       onKeyDown={(e) => { if (e.key === 'Enter') handleDispararBusqueda() }}
-                      placeholder="Escriba código de Abonado (ej: 0999, C774, C7C5), Nombre del Cliente o RUT..."
-                      className="w-full bg-[#050d1a] border border-[#1e3a5f] rounded-xl pl-11 pr-4 py-3.5 text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-[#2997ff] font-mono tracking-wide transition-colors"
+                      placeholder="Escriba código de Abonado (ej: 0999, C701, C774), Nombre del Cliente o RUT..."
+                      className="w-full bg-slate-50 border border-slate-200 rounded-2xl pl-11 pr-4 py-3.5 text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#1E40AF] focus:bg-white font-sans transition-all"
                     />
                   </div>
 
                   <button
                     onClick={handleDispararBusqueda}
                     disabled={buscandoSpinner}
-                    className="w-full sm:w-auto btn-apple-primary text-xs py-3.5 px-6 font-semibold shadow-lg shadow-[#0066cc]/20 shrink-0"
+                    className="w-full sm:w-auto bg-[#0B2545] hover:bg-[#1E40AF] text-white text-xs py-3.5 px-6 font-bold rounded-2xl shadow-sm hover:shadow-md flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-95 shrink-0"
                   >
                     {buscandoSpinner ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
-                      <Search className="h-4 w-4 stroke-[1.5]" />
+                      <Search className="h-4 w-4 stroke-[2]" />
                     )}
                     <span>Buscar 360°</span>
                   </button>
 
-                  {/* DESPLEGABLE FLOTANTE DE RESULTADOS DE BÚSQUEDA APPLE HIG */}
+                  {/* DESPLEGABLE FLOTANTE DE RESULTADOS DE BÚSQUEDA DSTUDIO */}
                   {busquedaClienteInput.trim().length > 0 && (
-                    <div className="absolute top-full left-0 right-0 mt-3 bg-[#0a1628]/95 backdrop-blur-xl border border-[#1e3a5f] rounded-2xl shadow-2xl z-30 max-h-96 overflow-y-auto p-2 space-y-1 text-left">
+                    <div className="absolute top-full left-0 right-0 mt-3 bg-white border border-slate-200 rounded-3xl shadow-2xl z-50 max-h-96 overflow-y-auto p-2 space-y-1 text-left">
                       {resultadosBusqueda.length > 0 ? (
                         resultadosBusqueda.map(item => (
                           <div
@@ -3078,28 +3179,28 @@ export default function OperacionCRM() {
                               }
                               setBusquedaClienteInput('')
                             }}
-                            className="p-4 bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 rounded-2xl cursor-pointer flex justify-between items-center transition-all group"
+                            className="p-3.5 bg-slate-50/70 hover:bg-blue-50/70 border border-slate-100 hover:border-blue-200 rounded-2xl cursor-pointer flex justify-between items-center transition-all group"
                           >
                             <div className="space-y-1">
-                              <div className="font-bold text-xs text-white flex items-center gap-2 flex-wrap">
+                              <div className="font-bold text-xs text-slate-900 flex items-center gap-2 flex-wrap">
                                 {item.tipo === 'abonado' && (
-                                  <span className="bg-gradient-to-r from-[#0066cc] to-[#2997ff] text-white font-mono text-[10px] px-2.5 py-0.5 rounded-lg font-bold shadow-xs">
+                                  <span className="bg-[#0B2545] text-white font-mono text-[10px] px-2.5 py-0.5 rounded-lg font-bold">
                                     Abonado #{item.cuenta}
                                   </span>
                                 )}
-                                <span className="text-white font-extrabold">{item.alias || item.razon_social}</span>
+                                <span className="text-slate-900 font-extrabold">{item.alias || item.razon_social}</span>
                                 {item.rut && !item.rut.startsWith('CTA-') && !item.rut.startsWith('RUT-') && (
-                                  <span className="font-mono text-slate-300 text-[10px] bg-white/10 border border-white/10 px-2 py-0.5 rounded-lg font-bold">
+                                  <span className="font-mono text-slate-600 text-[10px] bg-slate-200/80 px-2 py-0.5 rounded-lg font-bold">
                                     RUT: {item.rut}
                                   </span>
                                 )}
                               </div>
                             </div>
-                            <ChevronRight className="h-5 w-5 text-[#2997ff] group-hover:translate-x-1 transition-transform" />
+                            <ChevronRight className="h-5 w-5 text-[#1E40AF] group-hover:translate-x-1 transition-transform" />
                           </div>
                         ))
                       ) : (
-                        <div className="p-6 text-center text-slate-400 font-bold text-xs">
+                        <div className="p-6 text-center text-slate-500 font-bold text-xs">
                           No se encontraron coincidencias para &quot;{busquedaClienteInput}&quot;.
                         </div>
                       )}
@@ -3111,48 +3212,48 @@ export default function OperacionCRM() {
 
               {/* EXPEDIENTE COMPLETO DOSSIER FICHA 360° */}
               {clienteActivo || abonadoActivo ? (
-                <div className="flex-1 bg-[#0c182b]/85 backdrop-blur-2xl rounded-3xl p-6 sm:p-8 flex flex-col gap-6 border border-white/10 shadow-2xl overflow-y-auto">
+                <div className="flex-1 bg-white border border-slate-200/90 rounded-3xl p-6 sm:p-8 flex flex-col gap-6 shadow-sm overflow-y-auto relative z-10">
                   
                   {/* CABECERA EXPEDIENTE VISTA 360° BENTO HERO */}
-                  <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 p-6 sm:p-7 rounded-3xl flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 shadow-xl">
+                  <div className="bg-slate-50/80 border border-slate-200/80 p-6 sm:p-7 rounded-3xl flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 shadow-2xs">
                     <div className="space-y-3">
                       <div className="flex items-center gap-2.5 flex-wrap">
                         {abonadoActivo && (
-                          <span className="bg-gradient-to-r from-[#0066cc] to-[#2997ff] text-white font-mono text-xs font-bold px-3.5 py-1 rounded-xl shadow-xs">
+                          <span className="bg-[#0B2545] text-white font-mono text-xs font-bold px-3.5 py-1 rounded-xl shadow-xs">
                             CUENTA ABONADO #{abonadoActivo.cuenta}
                           </span>
                         )}
                         {clienteActivo && clienteActivo.rut && !clienteActivo.rut.startsWith('CTA-') && !clienteActivo.rut.startsWith('RUT-') && (
-                          <span className="bg-white/10 border border-white/10 text-white font-mono text-xs font-bold px-3.5 py-1 rounded-xl shadow-xs">
+                          <span className="bg-white border border-slate-200 text-slate-700 font-mono text-xs font-bold px-3.5 py-1 rounded-xl shadow-2xs">
                             RUT: {clienteActivo.rut}
                           </span>
                         )}
-                        <span className="bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-black px-3 py-1 rounded-xl text-xs uppercase tracking-wider">
+                        <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold px-3 py-1 rounded-xl text-xs uppercase tracking-wider">
                           🟢 {clienteActivo?.estado_pago || 'Al Día'}
                         </span>
                       </div>
 
-                      <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
+                      <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
                         {abonadoActivo ? abonadoActivo.alias_centro_costo : clienteActivo?.razon_social}
                       </h2>
 
-                      <p className="text-xs text-slate-400 font-semibold flex items-center gap-4 flex-wrap">
-                        <span className="flex items-center gap-1.5"><MapPin className="h-4 w-4 text-[#2997ff]" /> {abonadoActivo ? abonadoActivo.direccion : clienteActivo?.direccion_comercial} ({clienteActivo?.ciudad || 'Santiago'})</span>
+                      <p className="text-xs text-slate-500 font-medium flex items-center gap-4 flex-wrap">
+                        <span className="flex items-center gap-1.5"><MapPin className="h-4 w-4 text-[#1E40AF]" /> {direccionActivaReal} ({ciudadComunaActivaReal})</span>
                         <span>•</span>
-                        <span className="flex items-center gap-1.5"><Mail className="h-4 w-4 text-[#2997ff]" /> {clienteActivo?.email_cobranza}</span>
+                        <span className="flex items-center gap-1.5"><Mail className="h-4 w-4 text-[#1E40AF]" /> {clienteActivo?.email_cobranza}</span>
                         <span>•</span>
-                        <span className="flex items-center gap-1.5"><Phone className="h-4 w-4 text-[#2997ff]" /> {clienteActivo?.telefono}</span>
+                        <span className="flex items-center gap-1.5"><Phone className="h-4 w-4 text-[#1E40AF]" /> {clienteActivo?.telefono}</span>
                       </p>
                     </div>
 
                     <div className="flex flex-col sm:flex-row lg:flex-col gap-3 shrink-0">
-                      <div className="flex items-center gap-4 bg-white/[0.04] border border-white/10 p-5 rounded-2xl shadow-lg">
+                      <div className="flex items-center gap-4 bg-white border border-slate-200 p-5 rounded-2xl shadow-2xs">
                         <div>
                           <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">TARIFA MONITOREO</span>
-                          <div className="text-xl font-black font-mono text-[#2997ff]">
+                          <div className="text-xl font-black font-mono text-[#1E40AF]">
                             {clienteActivo?.moneda === 'UF' ? `${clienteActivo.tarifa_mensual} UF` : `$${(clienteActivo?.tarifa_mensual || 29900).toLocaleString('es-CL')} CLP`}
                           </div>
-                          <span className="text-[10px] text-slate-400 font-bold block mt-0.5">Plan: {clienteActivo?.plan_monitoreo || 'Estándar 24/7'}</span>
+                          <span className="text-[10px] text-slate-500 font-semibold block mt-0.5">Plan: {clienteActivo?.plan_monitoreo || 'Estándar 24/7'}</span>
                         </div>
                       </div>
 
@@ -3173,7 +3274,7 @@ export default function OperacionCRM() {
                               window.open(`https://wa.me/?text=${msg}`, '_blank')
                             }
                           }}
-                          className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-green-500 hover:brightness-110 text-white font-bold text-xs flex items-center gap-1.5 shadow-md cursor-pointer transition-all active:scale-95"
+                          className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm cursor-pointer transition-all active:scale-95"
                           title="Enviar link de actualización por WhatsApp"
                         >
                           <Smartphone className="h-3.5 w-3.5" />
@@ -3188,7 +3289,7 @@ export default function OperacionCRM() {
                             navigator.clipboard.writeText(link)
                             alert(`¡Enlace copiado al portapapeles!\n${link}`)
                           }}
-                          className="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 text-white font-semibold text-xs flex items-center gap-1.5 cursor-pointer transition-all"
+                          className="px-3 py-2 rounded-xl bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 font-bold text-xs flex items-center gap-1.5 cursor-pointer transition-all shadow-2xs"
                           title="Copiar enlace de actualización"
                         >
                           <Copy className="h-3.5 w-3.5" />
@@ -3200,7 +3301,7 @@ export default function OperacionCRM() {
                             const cta = abonadoActivo?.cuenta || clienteActivo?.cuentas_abonados?.[0] || cuentaSeleccionada || ''
                             window.open(`/actualizar?cuenta=${cta}`, '_blank')
                           }}
-                          className="px-3 py-2 rounded-xl bg-[#0066cc]/30 hover:bg-[#0066cc]/50 border border-[#0066cc]/40 text-[#2997ff] font-semibold text-xs flex items-center gap-1.5 cursor-pointer transition-all"
+                          className="px-3 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 border border-blue-200 text-[#1E40AF] font-bold text-xs flex items-center gap-1.5 cursor-pointer transition-all shadow-2xs"
                           title="Abrir formulario de actualización en nueva pestaña"
                         >
                           <ExternalLink className="h-3.5 w-3.5" />
@@ -3211,7 +3312,7 @@ export default function OperacionCRM() {
                   </div>
 
                   {/* NAVEGACIÓN PESTAÑAS FICHA 360° BENTO */}
-                  <div className="flex items-center gap-2 bg-black/30 p-2 rounded-2xl border border-white/10 flex-wrap">
+                  <div className="flex items-center gap-1.5 bg-slate-100 p-1.5 rounded-2xl border border-slate-200/80 flex-wrap">
                     {[
                       { id: 'datos', label: 'Datos Comerciales', icon: Building2 },
                       { id: 'abonados', label: `Centros de Costo (${clienteActivo?.cuentas_abonados.length || 1})`, icon: Layers },
@@ -3226,7 +3327,7 @@ export default function OperacionCRM() {
                         <button
                           key={tab.id}
                           onClick={() => setTabFicha360(tab.id as any)}
-                          className={`px-4 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-2 ${esActivo ? 'bg-gradient-to-r from-[#0066cc] to-[#2997ff] text-white shadow-lg shadow-[#0066cc]/30' : 'text-slate-400 hover:text-white hover:bg-white/[0.06]'}`}
+                          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${esActivo ? 'bg-[#0B2545] text-white shadow-xs' : 'text-slate-600 hover:text-slate-900 hover:bg-white/80'}`}
                         >
                           <TabIcon className="h-4 w-4" />
                           <span>{tab.label}</span>
@@ -3235,71 +3336,159 @@ export default function OperacionCRM() {
                     })}
                   </div>
 
-                  {/* SUB-SECCIÓN 1: DATOS COMERCIALES EN BENTO GRID MODULAR */}
+                  {/* SUB-SECCIÓN 1: DATOS COMERCIALES EN BENTO GRID MODULAR DSTUDIO */}
                   {tabFicha360 === 'datos' && (
                     <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                      <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 p-6 rounded-3xl space-y-4 text-xs shadow-xl">
-                        <div className="flex items-center gap-2.5 border-b border-white/10 pb-3">
-                          <div className="p-2 bg-blue-500/15 text-[#2997ff] rounded-xl border border-blue-500/20">
+                      <div className="bg-white border border-slate-200/90 p-6 rounded-3xl space-y-4 text-xs shadow-sm">
+                        <div className="flex items-center gap-2.5 border-b border-slate-100 pb-3">
+                          <div className="p-2 bg-blue-50 text-[#1E40AF] rounded-xl border border-blue-200/60">
                             <MapPin className="h-4 w-4" />
                           </div>
-                          <span className="font-extrabold text-xs uppercase tracking-wider text-slate-300">📍 DATOS DE CONTACTO & UBICACIÓN</span>
+                          <span className="font-extrabold text-xs uppercase tracking-wider text-slate-800">📍 DATOS DE CONTACTO & UBICACIÓN</span>
                         </div>
                         <div className="space-y-2.5">
-                          <div className="flex justify-between items-center"><strong className="text-slate-400">Razón Social:</strong> <span className="text-white font-bold bg-white/5 border border-white/10 px-3 py-1 rounded-xl">{clienteActivo?.razon_social}</span></div>
-                          <div className="flex justify-between items-center"><strong className="text-slate-400">RUT Tributario:</strong> <span className="text-white font-mono font-bold bg-white/5 border border-white/10 px-3 py-1 rounded-xl">{clienteActivo?.rut}</span></div>
-                          <div className="flex justify-between items-center"><strong className="text-slate-400">Dirección Comercial:</strong> <span className="text-slate-200 font-medium">{clienteActivo?.direccion_comercial}</span></div>
-                          <div className="flex justify-between items-center"><strong className="text-slate-400">Ciudad / Comuna:</strong> <span className="text-white font-bold">{clienteActivo?.ciudad || 'Santiago'}</span></div>
-                          <div className="flex justify-between items-center"><strong className="text-slate-400">Teléfono Principal:</strong> <span className="text-white font-mono font-bold">{clienteActivo?.telefono}</span></div>
-                          <div className="flex justify-between items-center"><strong className="text-slate-400">Email Facturación:</strong> <span className="text-slate-200 font-medium">{clienteActivo?.email_cobranza}</span></div>
+                          <div className="flex justify-between items-center"><strong className="text-slate-500 font-medium">Razón Social:</strong> <span className="text-slate-900 font-bold bg-slate-50 border border-slate-200 px-3 py-1 rounded-xl">{clienteActivo?.razon_social}</span></div>
+                          <div className="flex justify-between items-center"><strong className="text-slate-500 font-medium">RUT Tributario:</strong> <span className="text-slate-900 font-mono font-bold bg-slate-50 border border-slate-200 px-3 py-1 rounded-xl">{clienteActivo?.rut}</span></div>
+                          <div className="flex justify-between items-center"><strong className="text-slate-500 font-medium">Dirección Comercial:</strong> <span className="text-slate-800 font-bold">{direccionActivaReal}</span></div>
+                          <div className="flex justify-between items-center"><strong className="text-slate-500 font-medium">Ciudad / Comuna:</strong> <span className="text-slate-900 font-bold">{ciudadComunaActivaReal}</span></div>
+                          <div className="flex justify-between items-center"><strong className="text-slate-500 font-medium">Teléfono Principal:</strong> <span className="text-slate-900 font-mono font-bold">{clienteActivo?.telefono}</span></div>
+                          <div className="flex justify-between items-center"><strong className="text-slate-500 font-medium">Email Facturación:</strong> <span className="text-slate-800 font-medium">{clienteActivo?.email_cobranza}</span></div>
                         </div>
                       </div>
 
-                      <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 p-6 rounded-3xl space-y-4 text-xs shadow-xl">
-                        <div className="flex items-center gap-2.5 border-b border-white/10 pb-3">
-                          <div className="p-2 bg-emerald-500/15 text-emerald-400 rounded-xl border border-emerald-500/20">
-                            <Receipt className="h-4 w-4" />
+                      <div className="bg-white border border-slate-200/90 p-6 rounded-3xl space-y-4 text-xs shadow-sm">
+                        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                          <div className="flex items-center gap-2.5">
+                            <div className="p-2 bg-blue-50 text-[#1E40AF] rounded-xl border border-blue-200/60">
+                              <Receipt className="h-4 w-4" />
+                            </div>
+                            <span className="font-extrabold text-xs uppercase tracking-wider text-slate-800">💳 CONDICIONES DE FACTURACIÓN & PLAN</span>
                           </div>
-                          <span className="font-extrabold text-xs uppercase tracking-wider text-slate-300">💳 CONDICIONES DE FACTURACIÓN & PLAN</span>
+                          <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-lg">
+                            🟢 {clienteActivo?.estado_pago || 'Al Día'}
+                          </span>
                         </div>
-                        <div className="space-y-2.5">
-                          <div className="flex justify-between items-center"><strong className="text-slate-400">Razón Social Emisora:</strong> <span className="text-[#2997ff] font-extrabold bg-white/5 border border-white/10 px-3 py-1 rounded-xl">Gama Seguridad SpA (EMP-1)</span></div>
-                          <div className="flex justify-between items-center"><strong className="text-slate-400">Moneda Pactada:</strong> <span className="text-white font-bold">{clienteActivo?.moneda}</span></div>
-                          <div className="flex justify-between items-center"><strong className="text-slate-400">Tarifa Mensual:</strong> <span className="text-emerald-400 font-mono font-bold">{clienteActivo?.moneda === 'UF' ? `${clienteActivo.tarifa_mensual} UF` : `$${(clienteActivo?.tarifa_mensual || 29900).toLocaleString('es-CL')} CLP`}</span></div>
-                          <div className="flex justify-between items-center"><strong className="text-slate-400">Día Vencimiento:</strong> <span className="text-white font-bold">Día {clienteActivo?.dia_vencimiento || 5} de cada mes</span></div>
-                          <div className="flex justify-between items-center"><strong className="text-slate-400">Plan de Monitoreo:</strong> <span className="text-white font-bold">{clienteActivo?.plan_monitoreo}</span></div>
-                          <div className="flex justify-between items-center"><strong className="text-slate-400">Estado de Cobranza:</strong> <span className="text-emerald-400 font-bold">🟢 {clienteActivo?.estado_pago}</span></div>
+
+                        <div className="space-y-3">
+                          <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-1.5">
+                            <label className="text-slate-500 font-semibold">Razón Social Emisora:</label>
+                            <select
+                              value={editEmpresaFacturadora}
+                              onChange={(e) => setEditEmpresaFacturadora(e.target.value)}
+                              className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-[#1E40AF] font-bold focus:outline-none focus:border-[#1E40AF] cursor-pointer"
+                            >
+                              {empresasConglomerado.map(emp => (
+                                <option key={emp.id} value={emp.id} className="bg-white text-slate-900">
+                                  {emp.razon_social} ({emp.id})
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+
+                          <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-1.5">
+                            <label className="text-slate-500 font-semibold">Moneda & Tarifa Mensual:</label>
+                            <div className="flex items-center gap-2">
+                              <div className="flex rounded-xl bg-slate-100 p-0.5 border border-slate-200 shrink-0">
+                                <button
+                                  type="button"
+                                  onClick={() => setEditMoneda('CLP')}
+                                  className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${editMoneda === 'CLP' ? 'bg-[#0B2545] text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}`}
+                                >
+                                  CLP ($)
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setEditMoneda('UF')}
+                                  className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${editMoneda === 'UF' ? 'bg-[#0B2545] text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}`}
+                                >
+                                  UF
+                                </button>
+                              </div>
+                              <input
+                                type="number"
+                                step={editMoneda === 'UF' ? '0.01' : '100'}
+                                value={editTarifa}
+                                onChange={(e) => setEditTarifa(e.target.value)}
+                                placeholder={editMoneda === 'UF' ? '1.20' : '29900'}
+                                className="w-28 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-[#1E40AF] font-mono font-bold text-right focus:outline-none focus:border-[#1E40AF]"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-1.5">
+                            <label className="text-slate-500 font-semibold">Día Vencimiento:</label>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-slate-500">Día</span>
+                              <input
+                                type="number"
+                                min="1"
+                                max="31"
+                                value={editDiaVencimiento}
+                                onChange={(e) => setEditDiaVencimiento(parseInt(e.target.value) || 5)}
+                                className="w-16 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs text-slate-900 font-mono text-center font-bold focus:outline-none focus:border-[#1E40AF]"
+                              />
+                              <span className="text-xs text-slate-500">de cada mes</span>
+                            </div>
+                          </div>
+
+                          <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-1.5">
+                            <label className="text-slate-500 font-semibold">Plan de Monitoreo:</label>
+                            <input
+                              type="text"
+                              value={editPlanMonitoreo}
+                              onChange={(e) => setEditPlanMonitoreo(e.target.value)}
+                              className="sm:w-64 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-900 font-semibold focus:outline-none focus:border-[#1E40AF]"
+                            />
+                          </div>
+
+                          <div className="pt-2 border-t border-slate-100 flex justify-end">
+                            <button
+                              onClick={handleGuardarCondicionesFacturacion}
+                              disabled={guardandoCondiciones}
+                              className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#DC2626] hover:bg-[#B91C1C] active:scale-95 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-sm shadow-red-500/20 cursor-pointer transition-all disabled:opacity-50"
+                            >
+                              {guardandoCondiciones ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Save className="h-4 w-4" />
+                              )}
+                              <span>Guardar Condiciones Comerciales</span>
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
                   )}
 
-                  {/* SUB-SECCIÓN 2: CENTROS DE COSTO (BENTO CARDS) */}
+                  {/* SUB-SECCIÓN 2: CENTROS DE COSTO (BENTO CARDS DSTUDIO) */}
                   {tabFicha360 === 'abonados' && (
-                    <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 p-6 rounded-3xl space-y-5 text-xs shadow-xl">
-                      <div className="flex items-center gap-2.5 border-b border-white/10 pb-3">
-                        <div className="p-2 bg-blue-500/15 text-[#2997ff] rounded-xl border border-blue-500/20">
+                    <div className="bg-white border border-slate-200/90 p-6 rounded-3xl space-y-5 text-xs shadow-sm">
+                      <div className="flex items-center gap-2.5 border-b border-slate-100 pb-3">
+                        <div className="p-2 bg-blue-50 text-[#1E40AF] rounded-xl border border-blue-200/60">
                           <Layers className="h-4 w-4" />
                         </div>
-                        <span className="font-extrabold text-xs uppercase tracking-wider text-slate-300">🏢 CENTROS DE COSTO & CUENTAS DE ABONADO ASOCIADAS</span>
+                        <span className="font-extrabold text-xs uppercase tracking-wider text-slate-800">🏢 CENTROS DE COSTO & CUENTAS DE ABONADO ASOCIADAS</span>
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {(clienteActivo?.cuentas_abonados || []).map(cta => {
                           const cc = abonadosCentrosCosto[cta]
+                          const rawCta = (clientesDataRaw as any)?.[cta]
+                          const dirCta = rawCta?.direccion && !rawCta.direccion.includes('Dirección de Instalación') ? rawCta.direccion : (cc?.direccion || 'Dirección Instalación')
+                          const ciuCta = rawCta?.comuna || rawCta?.ciudad || cc?.ciudad || 'Santiago'
                           const baseUrl = typeof window !== 'undefined' && window.location.origin ? window.location.origin : 'https://controltestmonitoreo.vercel.app'
                           const linkAbonado = `${baseUrl}/actualizar?cuenta=${cta}`
                           return (
-                            <div key={cta} className="bg-white/[0.04] hover:bg-white/[0.07] border border-white/10 p-5 rounded-2xl space-y-3 transition-all">
+                            <div key={cta} className="bg-slate-50/70 hover:bg-slate-100/90 border border-slate-200/80 p-5 rounded-2xl space-y-3 transition-all shadow-2xs">
                               <div className="flex justify-between items-center flex-wrap gap-2">
-                                <span className="bg-gradient-to-r from-[#0066cc] to-[#2997ff] text-white font-mono font-black text-xs px-3 py-1 rounded-xl shadow-xs">
+                                <span className="bg-[#0B2545] text-white font-mono font-bold text-xs px-3 py-1 rounded-xl shadow-xs">
                                   Abonado #{cta}
                                 </span>
-                                <span className="text-[10px] text-emerald-400 font-extrabold bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-0.5 rounded-lg">🟢 Monitoreo Activo 24/7</span>
+                                <span className="text-[10px] text-emerald-700 font-extrabold bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-lg">🟢 Monitoreo Activo 24/7</span>
                               </div>
-                              <h4 className="font-extrabold text-white text-sm">{cc?.alias_centro_costo || `Abonado ${cta}`}</h4>
-                              <p className="text-slate-400 text-xs flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5 text-[#2997ff]" /> {cc?.direccion || 'Dirección Instalación'} ({cc?.ciudad || 'Santiago'})</p>
+                              <h4 className="font-extrabold text-slate-900 text-sm">{cc?.alias_centro_costo || `Abonado ${cta}`}</h4>
+                              <p className="text-slate-600 text-xs flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5 text-[#1E40AF]" /> {dirCta} ({ciuCta})</p>
                               
-                              <div className="pt-2 border-t border-white/10 flex items-center gap-2">
+                              <div className="pt-2 border-t border-slate-200/60 flex items-center gap-2">
                                 <button
                                   onClick={() => {
                                     const tel = (clienteActivo?.telefono || '').replace(/[^0-9]/g, '')
@@ -3537,50 +3726,90 @@ export default function OperacionCRM() {
                     </div>
                   )}
 
-                  {/* ── BENTO CARD: ÚLTIMAS 10 SEÑALES DE ALARMA RECEPTOR ── */}
-                  <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 p-6 rounded-3xl space-y-4 text-xs transition-all shadow-xl">
-                    <div className="flex justify-between items-center border-b border-white/10 pb-3">
-                      <div className="flex items-center gap-2.5">
-                        <div className="p-2 bg-blue-500/15 text-[#2997ff] rounded-xl border border-blue-500/20">
+                  {/* ── SECCIÓN COLAPSABLE OPCIONAL: SEÑALES DE ALARMA & BITÁCORA COMMAND CENTER ── */}
+                  <div className="space-y-4 pt-2">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white hover:bg-slate-50/80 border border-slate-200/90 p-4 rounded-2xl transition-all shadow-xs">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-blue-50 text-[#1e40af] rounded-xl border border-blue-200/60">
                           <Activity className="h-4 w-4" />
                         </div>
-                        <span className="font-extrabold text-xs uppercase tracking-wider text-slate-300">
+                        <div>
+                          <span className="font-extrabold text-xs text-slate-800 uppercase tracking-wider block">
+                            Actividad de Alarma & Bitácora Command Center
+                          </span>
+                          <span className="text-[11px] text-slate-500 font-medium">
+                            {mostrarSenalesBitacora
+                              ? 'Visualizando señales del receptor y novedades en vivo'
+                              : 'Oculto para optimizar espacio en pantalla (Opcional)'}
+                          </span>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => setMostrarSenalesBitacora(prev => !prev)}
+                        className="px-4 py-2 bg-slate-100 hover:bg-blue-50 text-slate-700 hover:text-blue-700 border border-slate-200 hover:border-blue-300 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer self-start sm:self-auto shadow-xs active:scale-95"
+                      >
+                        {mostrarSenalesBitacora ? (
+                          <>
+                            <ChevronUp className="h-4 w-4" />
+                            <span>Ocultar Señales & Bitácora</span>
+                          </>
+                        ) : (
+                          <>
+                            <Eye className="h-4 w-4" />
+                            <span>Ver Señales & Bitácora (Opcional)</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                    {mostrarSenalesBitacora && (
+                      <div className="space-y-6 animate-in fade-in-50 duration-200">
+                        {/* ── BENTO CARD: ÚLTIMAS 10 SEÑALES DE ALARMA RECEPTOR ── */}
+                        <div className="bg-white border border-slate-200/90 p-6 rounded-3xl space-y-4 text-xs transition-all shadow-[0_4px_25px_-4px_rgba(15,37,70,0.05)]">
+                          <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+                            <div className="flex items-center gap-2.5">
+                              <div className="p-2 bg-blue-50 text-[#1e40af] rounded-xl border border-blue-200/60">
+                                <Activity className="h-4 w-4" />
+                              </div>
+                        <span className="font-extrabold text-xs uppercase tracking-wider text-slate-800">
                           ÚLTIMAS 10 SEÑALES DE SU ALARMA (#{(abonadoActivo?.cuenta || cuentaSeleccionada || 'ACTIVA').toUpperCase()})
                         </span>
                       </div>
-                      <span className="bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[10px] font-black px-3 py-1 rounded-xl flex items-center gap-1.5 uppercase tracking-wider">
-                        <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                      <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-black px-3 py-1 rounded-xl flex items-center gap-1.5 uppercase tracking-wider">
+                        <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
                         <span>Receptor en Línea</span>
                       </span>
                     </div>
 
-                    <div className="overflow-x-auto rounded-2xl border border-white/10 bg-black/20 p-2">
+                    <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-slate-50/50 p-2">
                       <table className="w-full text-left border-collapse text-xs">
                         <thead>
-                          <tr className="border-b border-white/10 font-extrabold uppercase text-[11px] text-slate-400">
+                          <tr className="border-b border-slate-200 font-extrabold uppercase text-[11px] text-slate-500">
                             <th className="p-3">FECHA Y HORA</th>
                             <th className="p-3">DESCRIPCIÓN RECEPTOR</th>
                             <th className="p-3">ZONA / USUARIO</th>
                             <th className="p-3 text-center">PRIORIDAD</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-white/5 font-medium">
+                        <tbody className="divide-y divide-slate-100 font-medium">
                           {cargandoSenales ? (
                             <tr>
-                              <td colSpan={4} className="p-6 text-center text-slate-400 font-bold">
-                                <Loader2 className="h-4 w-4 animate-spin inline mr-2 text-[#2997ff]" />
+                              <td colSpan={4} className="p-6 text-center text-slate-500 font-bold">
+                                <Loader2 className="h-4 w-4 animate-spin inline mr-2 text-[#1e40af]" />
                                 Cargando señales del abonado...
                               </td>
                             </tr>
                           ) : senalesRealtime.length === 0 ? (
                             <tr>
                               <td colSpan={4} className="p-6 text-center">
-                                <div className="bg-white/[0.02] p-5 rounded-2xl border border-white/10 space-y-1 inline-block max-w-xl">
-                                  <div className="flex items-center justify-center gap-2 text-amber-400 font-extrabold text-xs">
-                                    <AlertTriangle className="h-4 w-4 shrink-0 text-amber-400" />
+                                <div className="bg-amber-50/60 p-5 rounded-2xl border border-amber-200 space-y-1 inline-block max-w-xl">
+                                  <div className="flex items-center justify-center gap-2 text-amber-800 font-extrabold text-xs">
+                                    <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600" />
                                     <span>Sin transmisiones recientes de señales de alarma</span>
                                   </div>
-                                  <p className="text-[11px] text-slate-400 font-semibold">
+                                  <p className="text-[11px] text-slate-600 font-semibold">
                                     No se registran transmisiones de señales emitidas por el panel a la central para la cuenta #{(abonadoActivo?.cuenta || cuentaSeleccionada || '').toUpperCase()}.
                                   </p>
                                 </div>
@@ -3588,10 +3817,10 @@ export default function OperacionCRM() {
                             </tr>
                           ) : (
                             senalesRealtime.map(s => (
-                              <tr key={s.id} className="hover:bg-white/[0.04] transition-all">
-                                <td className="p-3 font-mono text-slate-300 text-[11px] font-bold">{s.fecha}</td>
-                                <td className="p-3 font-bold text-white">{s.desc}</td>
-                                <td className="p-3 text-slate-300 font-semibold">{s.zona}</td>
+                              <tr key={s.id} className="hover:bg-blue-50/50 transition-all">
+                                <td className="p-3 font-mono text-slate-600 text-[11px] font-bold">{s.fecha}</td>
+                                <td className="p-3 font-bold text-slate-900">{s.desc}</td>
+                                <td className="p-3 text-slate-600 font-semibold">{s.zona}</td>
                                 <td className="p-3 text-center">
                                   <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider ${s.color}`}>
                                     {s.prioridad}
@@ -3606,68 +3835,68 @@ export default function OperacionCRM() {
                   </div>
 
                   {/* ── BENTO CARD: ÚLTIMAS 5 NOVEDADES REGISTRADAS EN BITÁCORA DEL COMMAND CENTER ── */}
-                  <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 p-6 rounded-3xl space-y-4 text-xs transition-all shadow-xl">
-                    <div className="flex justify-between items-center border-b border-white/10 pb-3">
+                  <div className="bg-white border border-slate-200/90 p-6 rounded-3xl space-y-4 text-xs transition-all shadow-[0_4px_25px_-4px_rgba(15,37,70,0.05)]">
+                    <div className="flex justify-between items-center border-b border-slate-100 pb-3">
                       <div className="flex items-center gap-2.5">
-                        <div className="p-2 bg-blue-500/15 text-[#2997ff] rounded-xl border border-blue-500/20">
+                        <div className="p-2 bg-blue-50 text-[#1e40af] rounded-xl border border-blue-200/60">
                           <ClipboardList className="h-4 w-4" />
                         </div>
-                        <span className="font-extrabold text-xs uppercase tracking-wider text-slate-300">
+                        <span className="font-extrabold text-xs uppercase tracking-wider text-slate-800">
                           ÚLTIMAS NOVEDADES REGISTRADAS EN BITÁCORA COMMAND CENTER (#{(abonadoActivo?.cuenta || cuentaSeleccionada || 'ACTIVA').toUpperCase()})
                         </span>
                       </div>
-                      <span className="text-[10px] font-extrabold text-slate-300 bg-white/10 border border-white/10 px-3 py-1 rounded-xl">
+                      <span className="text-[10px] font-extrabold text-slate-600 bg-slate-100 border border-slate-200 px-3 py-1 rounded-xl">
                         Central 24/7 API
                       </span>
                     </div>
 
-                    <div className="relative pl-3 md:pl-6 border-l-2 border-white/10 space-y-4 my-2">
+                    <div className="relative pl-3 md:pl-6 border-l-2 border-slate-200 space-y-4 my-2">
                       {cargandoBitacoraCC ? (
-                        <div className="text-center p-6 text-slate-400 font-bold text-xs">
-                          <Loader2 className="h-4 w-4 animate-spin inline mr-2 text-[#2997ff]" />
+                        <div className="text-center p-6 text-slate-500 font-bold text-xs">
+                          <Loader2 className="h-4 w-4 animate-spin inline mr-2 text-[#1e40af]" />
                           Cargando novedades de la bitácora del Command Center...
                         </div>
                       ) : bitacoraCommandCenterAbonado.length === 0 ? (
-                        <div className="bg-white/[0.02] border border-white/10 p-5 rounded-2xl text-center space-y-1">
-                          <p className="font-bold text-slate-300 text-xs flex items-center justify-center gap-2">
-                            <ClipboardList className="h-4 w-4 text-slate-400" />
+                        <div className="bg-slate-50 border border-slate-200 p-5 rounded-2xl text-center space-y-1">
+                          <p className="font-bold text-slate-700 text-xs flex items-center justify-center gap-2">
+                            <ClipboardList className="h-4 w-4 text-slate-500" />
                             <span>Sin novedades registradas en la bitácora para la cuenta #{(abonadoActivo?.cuenta || cuentaSeleccionada || '').toUpperCase()}.</span>
                           </p>
-                          <p className="text-[11px] text-slate-400 font-medium">No existen registros ni novedades asociadas a este abonado en la bitácora del Command Center.</p>
+                          <p className="text-[11px] text-slate-500 font-medium">No existen registros ni novedades asociadas a este abonado en la bitácora del Command Center.</p>
                         </div>
                       ) : (
                         bitacoraCommandCenterAbonado.map(b => (
                           <div key={b.id} className="relative group">
                             {/* PUNTAL DE LÍNEA DE TIEMPO */}
                             <span 
-                              className="absolute -left-[19px] md:-left-[31px] top-4 h-3.5 w-3.5 rounded-full border-2 border-[#0c182b] shadow-xs" 
-                              style={{ backgroundColor: b.color || '#2997ff' }}
+                              className="absolute -left-[19px] md:-left-[31px] top-4 h-3.5 w-3.5 rounded-full border-2 border-white shadow-xs" 
+                              style={{ backgroundColor: b.color || '#1e40af' }}
                             />
 
                             {/* TARJETA DE NOVEDAD */}
-                            <div className="bg-white/[0.04] border border-white/10 p-4 md:p-5 rounded-2xl space-y-3 hover:border-white/20 transition-all border-l-4" style={{ borderLeftColor: b.color || '#2997ff' }}>
+                            <div className="bg-slate-50/60 border border-slate-200 p-4 md:p-5 rounded-2xl space-y-3 hover:border-slate-300 transition-all border-l-4 shadow-xs" style={{ borderLeftColor: b.color || '#1e40af' }}>
                               
                               {/* CABECERA ESTRUCTURADA */}
-                              <div className="flex flex-wrap justify-between items-center gap-2 border-b border-white/10 pb-2.5">
+                              <div className="flex flex-wrap justify-between items-center gap-2 border-b border-slate-200/80 pb-2.5">
                                 <div className="flex items-center gap-2 flex-wrap">
                                   {/* BADGE DE TIPO DE NOVEDAD */}
                                   <span 
-                                    className="px-3 py-1 rounded-xl text-[11px] font-black uppercase tracking-wider bg-white/10 border border-white/10 flex items-center gap-1.5"
-                                    style={{ color: b.color || '#2997ff' }}
+                                    className="px-3 py-1 rounded-xl text-[11px] font-black uppercase tracking-wider bg-white border border-slate-200 flex items-center gap-1.5"
+                                    style={{ color: b.color || '#1e40af' }}
                                   >
                                     <MessageSquare className="h-3 w-3 stroke-[2.5]" />
                                     <span>{b.tipo}</span>
                                   </span>
 
                                   {/* OPERADOR RESPONSABLE */}
-                                  <span className="bg-white/5 border border-white/10 text-slate-300 font-bold px-3 py-1 rounded-xl text-[11px] flex items-center gap-1.5">
-                                    <User className="h-3 w-3 text-slate-400 stroke-[2.5]" />
+                                  <span className="bg-white border border-slate-200 text-slate-700 font-bold px-3 py-1 rounded-xl text-[11px] flex items-center gap-1.5">
+                                    <User className="h-3 w-3 text-slate-500 stroke-[2.5]" />
                                     <span>{b.autor}</span>
                                   </span>
                                 </div>
 
                                 {/* FECHA Y HORA FORMATO MONO */}
-                                <span className="bg-white/5 border border-white/10 text-slate-400 font-mono text-[11px] font-bold px-3 py-1 rounded-xl flex items-center gap-1.5">
+                                <span className="bg-white border border-slate-200 text-slate-600 font-mono text-[11px] font-bold px-3 py-1 rounded-xl flex items-center gap-1.5">
                                   <Clock className="h-3 w-3 text-slate-400" />
                                   <span>{b.fecha}</span>
                                 </span>
@@ -3676,9 +3905,9 @@ export default function OperacionCRM() {
                               {/* CUERPO DEL COMENTARIO ESTRUCTURADO EN BLOQUES */}
                               <div className="space-y-1.5 pt-1">
                                 {b.nota.split(/\r?\n/).filter(Boolean).map((line: string, idx: number) => (
-                                  <div key={idx} className="flex items-start gap-2.5 text-xs text-slate-200 font-medium leading-relaxed">
-                                    <span className="text-[#2997ff] font-black text-xs shrink-0 mt-0.5">•</span>
-                                    <span className="bg-white/[0.03] border border-white/5 px-3 py-2 rounded-xl w-full text-slate-200 font-medium leading-relaxed">
+                                  <div key={idx} className="flex items-start gap-2.5 text-xs text-slate-700 font-medium leading-relaxed">
+                                    <span className="text-[#1e40af] font-black text-xs shrink-0 mt-0.5">•</span>
+                                    <span className="bg-white border border-slate-200/70 px-3 py-2 rounded-xl w-full text-slate-700 font-medium leading-relaxed">
                                       {line.trim()}
                                     </span>
                                   </div>
@@ -3692,14 +3921,18 @@ export default function OperacionCRM() {
                     </div>
                   </div>
 
+                      </div>
+                    )}
+                  </div>
+
                 </div>
               ) : (
-                <div className="flex-1 bg-[#0c182b]/85 backdrop-blur-2xl rounded-3xl p-16 text-center border border-white/10 shadow-2xl flex flex-col items-center justify-center gap-4">
-                  <div className="p-5 bg-white/[0.04] border border-white/10 rounded-2xl text-[#2997ff] shadow-xl">
+                <div className="flex-1 bg-white rounded-3xl p-16 text-center border border-slate-200/90 shadow-[0_4px_25px_-4px_rgba(15,37,70,0.05)] flex flex-col items-center justify-center gap-4">
+                  <div className="p-5 bg-blue-50/80 border border-blue-100 rounded-2xl text-[#1e40af] shadow-xs">
                     <User className="h-12 w-12 stroke-[1.75]" />
                   </div>
-                  <h3 className="text-lg font-black text-white">Búsqueda de Abonado / Cliente 360°</h3>
-                  <p className="text-xs text-slate-400 max-w-md font-semibold leading-relaxed">
+                  <h3 className="text-lg font-black text-slate-900">Búsqueda de Abonado / Cliente 360°</h3>
+                  <p className="text-xs text-slate-500 max-w-md font-semibold leading-relaxed">
                     Escriba un código de Abonado (ej: 0999, C774), Razón Social o RUT en el buscador superior y presione Enter o Buscar.
                   </p>
                 </div>
