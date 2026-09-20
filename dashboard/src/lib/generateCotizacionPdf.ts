@@ -99,14 +99,17 @@ export function generarCotizacionPdfBase64(cot: any, emp: any): string {
   doc.line(14, y, 196, y)
   y += 6
 
+  const esUF = cot.moneda_cotizacion === 'UF'
+  const fmtMonto = (num: number) => esUF ? `UF ${(num || 0).toFixed(2)}` : `$${Math.round(num || 0).toLocaleString('es-CL')} CLP`
+
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(8.5)
   doc.text('Neto Afecto:', 130, y)
-  doc.text(`$${Math.round(cot.neto_con_descuento || 0).toLocaleString('es-CL')} ${cot.moneda_cotizacion || 'CLP'}`, 194, y, { align: 'right' })
+  doc.text(fmtMonto(cot.neto_con_descuento), 194, y, { align: 'right' })
 
   y += 5
   doc.text('IVA 19% (Ley 825 Chile):', 130, y)
-  doc.text(`$${Math.round(cot.monto_iva || 0).toLocaleString('es-CL')} ${cot.moneda_cotizacion || 'CLP'}`, 194, y, { align: 'right' })
+  doc.text(fmtMonto(cot.monto_iva), 194, y, { align: 'right' })
 
   y += 6
   doc.setFillColor(0, 91, 234)
@@ -114,7 +117,7 @@ export function generarCotizacionPdfBase64(cot: any, emp: any): string {
   doc.setTextColor(255, 255, 255)
   doc.setFontSize(9.5)
   doc.text('TOTAL GENERAL:', 129, y + 1)
-  doc.text(`$${Math.round(cot.monto_total_iva_incluido || 0).toLocaleString('es-CL')} ${cot.moneda_cotizacion || 'CLP'}`, 194, y + 1, { align: 'right' })
+  doc.text(fmtMonto(cot.monto_total_iva_incluido), 194, y + 1, { align: 'right' })
 
   // Transfer Info Footer Box
   y += 15

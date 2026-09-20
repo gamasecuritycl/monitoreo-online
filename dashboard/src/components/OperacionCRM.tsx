@@ -23,6 +23,7 @@ import Ley21719Module from './operacion/Ley21719Module'
 import WhatsAppNotificationToast from './WhatsAppNotificationToast'
 import WhatsAppPlantillasModal, { PlantillaAbonadoData } from './operacion/WhatsAppPlantillasModal'
 import NotificacionesWhatsAppModal from './NotificacionesWhatsAppModal'
+import MercadoPublicoModule, { LicitacionChileCompra } from './operacion/MercadoPublicoModule'
 
 import {
   Shield,
@@ -343,7 +344,7 @@ export function normalizeCuentaCode(cta: any): string {
 }
 
 export default function OperacionCRM() {
-  const [moduloActivo, setModuloActivo] = useState<'ficha360' | 'autonomia' | 'presupuestos' | 'facturacion' | 'serv_tecnico' | 'kpis' | 'config' | 'marketing' | 'compras' | 'contratos' | 'ley21719' | null>(null)
+  const [moduloActivo, setModuloActivo] = useState<'ficha360' | 'autonomia' | 'presupuestos' | 'mercadopublico' | 'facturacion' | 'serv_tecnico' | 'kpis' | 'config' | 'marketing' | 'compras' | 'contratos' | 'ley21719' | null>(null)
   const [sidebarAbierto, setSidebarAbierto] = useState<boolean>(false)
 
   // ── ESTADOS APPLE HIG / LINEAR (COMMAND PALETTE & SLIDE-OVER DRAWER) ──
@@ -429,8 +430,25 @@ export default function OperacionCRM() {
   const [editPlanMonitoreo, setEditPlanMonitoreo] = useState<string>('MONITOREO MULTI-ABONADO CONSOLIDADOR 24/7')
   const [guardandoCondiciones, setGuardandoCondiciones] = useState<boolean>(false)
 
-  // UF Global
-  const [valorUF, setValorUF] = useState(38500)
+  // UF Global en tiempo real (API Oficial mindicador.cl / Banco Central)
+  const [valorUF, setValorUF] = useState<number>(38550)
+  const [fechaUF, setFechaUF] = useState<string>('')
+
+  useEffect(() => {
+    const fetchIndicadores = async () => {
+      try {
+        const res = await fetch('/api/indicadores')
+        const data = await res.json()
+        if (data.success && data.uf?.valor) {
+          setValorUF(Math.round(data.uf.valor * 100) / 100)
+          if (data.uf.fecha) setFechaUF(data.uf.fecha)
+        }
+      } catch (err) {
+        console.warn('Error cargando indicadores económicos:', err)
+      }
+    }
+    fetchIndicadores()
+  }, [])
 
   // Estado envio de correos por Resend
   const [enviandoEmailId, setEnviandoEmailId] = useState<number | null>(null)
@@ -1545,6 +1563,42 @@ export default function OperacionCRM() {
       descuento_valor: (it as any).descuento_valor ?? it.descuento_porcentaje ?? 0,
       tipo_descuento: (it as any).tipo_descuento || 'porcentaje'
     })))
+    setMostrarModalCotizacion(true)
+  }
+
+  const handleCotizarDesdeLicitacion = (lic: LicitacionChileCompra) => {
+    setCotEditandoId(null)
+    setTipoReceptorCot('prospecto')
+    setCotClienteRutSeleccionado('')
+    setCotNombreCliente(lic.Organismo || 'Organismo Mercado Público')
+    setCotRutCliente(lic.RutComprador || '60.000.000-0')
+    setCotDireccion(lic.DireccionUnidad || 'Dirección de Entrega / Licitación')
+    setCotCiudadCliente(lic.DireccionUnidad?.split(',').pop()?.trim() || 'Valparaíso')
+    setCotContactoPersona(lic.Contacto || 'Encargado de Licitaciones y Compras Públicas')
+    setCotEmailCliente('adquisiciones@mercadopublico.cl')
+    setCotTelefonoCliente('+56 2 2999 9000')
+    setCotGiroCliente('Organismo Público / Gobierno Central / Municipal')
+    setCotVendedor('Ejecutivo Licitaciones Gama Seguridad')
+    setCotEtapaPipeline('Cotizacion')
+    setCotValidez(30)
+    setCotFormaPago('30 días contra factura según bases de licitación')
+    setCotMoneda('CLP')
+    setDescuentoGlobalValor(0)
+    setDescuentoGlobalTipo('porcentaje')
+    setCotObservaciones(`Propuesta Oficial para Licitación Mercado Público ID ${lic.CodigoExterno} (${lic.Nombre}). Oferta económica ajustada a las especificaciones técnicas y requerimientos solicitados por el organismo comprador.`)
+    
+    const montoNeto = lic.MontoEstimado > 0 ? Math.round(lic.MontoEstimado / 1.19) : 1000000
+    setItemsCot([
+      {
+        id: '1',
+        descripcion: `${lic.Nombre} - Suministro, implementación y mantención integral según bases técnicas ID ${lic.CodigoExterno}`,
+        cantidad: 1,
+        precio_neto_unitario: montoNeto,
+        descuento_valor: 0,
+        tipo_descuento: 'porcentaje'
+      }
+    ])
+    setModuloActivo('presupuestos')
     setMostrarModalCotizacion(true)
   }
 
@@ -2914,6 +2968,7 @@ export default function OperacionCRM() {
           !moduloActivo ? 'Menú Principal' :
           moduloActivo === 'ficha360' ? 'Ficha 360° Cliente' :
           moduloActivo === 'presupuestos' ? 'Presupuestos Comerciales' :
+          moduloActivo === 'mercadopublico' ? 'Mercado Público & Licitaciones' :
           moduloActivo === 'marketing' ? 'Marketing B2B' :
           moduloActivo === 'facturacion' ? 'Cobranza & Abonos' :
           moduloActivo === 'serv_tecnico' ? 'Servicios Técnicos' :
@@ -3060,6 +3115,7 @@ export default function OperacionCRM() {
                   {
                     moduloActivo === 'ficha360' ? 'Ficha 360° Cliente' :
                     moduloActivo === 'presupuestos' ? 'Presupuestos Comerciales' :
+                    moduloActivo === 'mercadopublico' ? 'Mercado Público & Licitaciones' :
                     moduloActivo === 'marketing' ? 'Marketing B2B' :
                     moduloActivo === 'facturacion' ? 'Cobranza & Abonos' :
                     moduloActivo === 'serv_tecnico' ? 'Servicios Técnicos' :
@@ -4424,6 +4480,13 @@ export default function OperacionCRM() {
                 </div>
               )}
 
+            </div>
+          )}
+
+          {/* ── MÓDULO MERCADO PÚBLICO & LICITACIONES ESTATALES CHILECOMPRA ── */}
+          {moduloActivo === 'mercadopublico' && (
+            <div className="flex-1 bg-white rounded-2xl p-6 sm:p-8 flex flex-col gap-6 border border-slate-300/80 shadow-sm min-h-0 overflow-y-auto">
+              <MercadoPublicoModule onCotizarLicitacion={handleCotizarDesdeLicitacion} />
             </div>
           )}
 
@@ -6455,9 +6518,14 @@ export default function OperacionCRM() {
                       </select>
                     </div>
                     <div>
-                      <label className="text-xs font-bold text-slate-600 block mb-1.5">MONEDA:</label>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="text-xs font-bold text-slate-600 block">MONEDA:</label>
+                        <span className="text-[10px] font-mono font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-lg border border-indigo-200 shadow-2xs">
+                          1 UF = ${valorUF.toLocaleString('es-CL')} CLP
+                        </span>
+                      </div>
                       <select value={cotMoneda} onChange={(e: any) => setCotMoneda(e.target.value)} className="w-full bg-white border border-slate-300 p-3 rounded-xl font-bold text-xs sm:text-sm focus:ring-2 focus:ring-[#0B2545]/20 focus:border-[#0B2545] shadow-xs">
-                        <option value="CLP">CLP (Pesos Chilenos)</option>
+                        <option value="CLP">CLP (Pesos Chilenos $)</option>
                         <option value="UF">UF (Unidad de Fomento)</option>
                       </select>
                     </div>
@@ -6540,7 +6608,7 @@ export default function OperacionCRM() {
                               <div className="text-right">
                                 <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Subtotal Neto</span>
                                 <span className="text-sm font-black font-mono text-slate-900">
-                                  ${subtotalFila.toLocaleString('es-CL')}
+                                  {cotMoneda === 'UF' ? `UF ${subtotalFila.toFixed(2)}` : `$${subtotalFila.toLocaleString('es-CL')}`}
                                 </span>
                               </div>
                               {itemsCot.length > 1 && (
@@ -6593,20 +6661,34 @@ export default function OperacionCRM() {
                               />
                             </div>
                             <div>
-                              <label className="text-[11px] font-bold text-slate-600 block mb-1.5 uppercase">
-                                Precio Unitario Neto (CLP):
-                              </label>
+                              <div className="flex items-center justify-between mb-1.5">
+                                <label className="text-[11px] font-bold text-slate-600 uppercase">
+                                  Precio Unitario Neto ({cotMoneda}):
+                                </label>
+                                {cotMoneda === 'UF' ? (
+                                  <span className="text-[10px] font-bold font-mono text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 shadow-2xs">
+                                    ≈ ${(it.precio_neto_unitario * valorUF).toLocaleString('es-CL', { maximumFractionDigits: 0 })} CLP
+                                  </span>
+                                ) : (
+                                  <span className="text-[10px] font-bold font-mono text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-200 shadow-2xs">
+                                    ≈ {(it.precio_neto_unitario / valorUF).toFixed(2)} UF
+                                  </span>
+                                )}
+                              </div>
                               <div className="relative">
-                                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 font-bold font-mono text-slate-400 text-xs">$</span>
+                                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 font-bold font-mono text-slate-400 text-xs">
+                                  {cotMoneda === 'UF' ? 'UF' : '$'}
+                                </span>
                                 <input
                                   type="number"
+                                  step={cotMoneda === 'UF' ? '0.01' : '1'}
                                   value={it.precio_neto_unitario}
                                   onChange={(e) => {
                                     const newIt = [...itemsCot]
                                     newIt[idx].precio_neto_unitario = Number(e.target.value) || 0
                                     setItemsCot(newIt)
                                   }}
-                                  className="w-full bg-slate-50 border border-slate-200 focus:bg-white p-3 pl-8 rounded-xl text-xs sm:text-sm text-right font-black font-mono text-[#1E40AF] focus:ring-2 focus:ring-[#0B2545]/20 focus:border-[#0B2545] shadow-2xs"
+                                  className="w-full bg-slate-50 border border-slate-200 focus:bg-white p-3 pl-9 rounded-xl text-xs sm:text-sm text-right font-black font-mono text-[#1E40AF] focus:ring-2 focus:ring-[#0B2545]/20 focus:border-[#0B2545] shadow-2xs"
                                 />
                               </div>
                             </div>
@@ -6687,8 +6769,8 @@ export default function OperacionCRM() {
                             <th className="p-2.5 border-r border-slate-300 w-8 text-center">#</th>
                             <th className="p-2.5 border-r border-slate-300">Descripción del Servicio / Equipo</th>
                             <th className="p-2.5 border-r border-slate-300 text-center w-12">Cant.</th>
-                            <th className="p-2.5 border-r border-slate-300 text-right w-20">P. Unit</th>
-                            <th className="p-2.5 text-right w-24">Subtotal</th>
+                            <th className="p-2.5 border-r border-slate-300 text-right w-24">P. Unit ({cotMoneda})</th>
+                            <th className="p-2.5 text-right w-28">Subtotal ({cotMoneda})</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-200">
@@ -6697,8 +6779,12 @@ export default function OperacionCRM() {
                               <td className="p-2.5 text-center font-mono text-slate-400 border-r border-slate-200">{idx + 1}</td>
                               <td className="p-2.5 font-semibold text-slate-900 border-r border-slate-200">{it.descripcion}</td>
                               <td className="p-2.5 text-center font-mono font-bold border-r border-slate-200">{it.cantidad}</td>
-                              <td className="p-2.5 text-right font-mono border-r border-slate-200">${(it.precio_neto_unitario || 0).toLocaleString('es-CL')}</td>
-                              <td className="p-2.5 text-right font-mono font-bold text-slate-900">${Math.round((it.cantidad || 1) * (it.precio_neto_unitario || 0)).toLocaleString('es-CL')}</td>
+                              <td className="p-2.5 text-right font-mono border-r border-slate-200">
+                                {cotMoneda === 'UF' ? `UF ${(it.precio_neto_unitario || 0).toFixed(2)}` : `$${(it.precio_neto_unitario || 0).toLocaleString('es-CL')}`}
+                              </td>
+                              <td className="p-2.5 text-right font-mono font-bold text-slate-900">
+                                {cotMoneda === 'UF' ? `UF ${((it.cantidad || 1) * (it.precio_neto_unitario || 0)).toFixed(2)}` : `$${Math.round((it.cantidad || 1) * (it.precio_neto_unitario || 0)).toLocaleString('es-CL')}`}
+                              </td>
                             </tr>
                           ))}
                         </tbody>
@@ -6713,20 +6799,46 @@ export default function OperacionCRM() {
                         <p>{empresaEmisoraSeleccionadaCot.banco_tipo_cuenta}: <strong className="font-mono">{empresaEmisoraSeleccionadaCot.banco_numero_cuenta}</strong></p>
                         <p>RUT: <strong className="font-mono">{empresaEmisoraSeleccionadaCot.rut}</strong></p>
                         <p>Mail: {empresaEmisoraSeleccionadaCot.email_cobranza}</p>
+                        {cotMoneda === 'UF' && (
+                          <p className="text-indigo-700 font-bold bg-indigo-50 p-1.5 rounded-lg border border-indigo-200 mt-1">
+                            * UF de referencia: ${valorUF.toLocaleString('es-CL')} CLP
+                          </p>
+                        )}
                       </div>
 
-                      <div className="w-64 border border-slate-300 rounded-xl overflow-hidden font-mono text-xs shadow-xs">
-                        <div className="flex justify-between p-2 bg-white border-b">
+                      <div className="w-72 border border-slate-300 rounded-xl overflow-hidden font-mono text-xs shadow-xs">
+                        <div className="flex justify-between items-baseline p-2 bg-white border-b">
                           <span className="text-[11px] font-semibold text-slate-600">Neto Afecto:</span>
-                          <span className="font-bold">${Math.round(calculoCotizacionActual.netoConDescuento).toLocaleString('es-CL')} {cotMoneda}</span>
+                          <div className="text-right">
+                            <span className="font-bold block">
+                              {cotMoneda === 'UF' ? `UF ${calculoCotizacionActual.netoConDescuento.toFixed(2)}` : `$${Math.round(calculoCotizacionActual.netoConDescuento).toLocaleString('es-CL')} CLP`}
+                            </span>
+                            <span className="text-[10px] text-slate-400 font-medium block">
+                              {cotMoneda === 'UF' ? `≈ $${Math.round(calculoCotizacionActual.netoConDescuento * valorUF).toLocaleString('es-CL')} CLP` : `≈ ${(calculoCotizacionActual.netoConDescuento / valorUF).toFixed(2)} UF`}
+                            </span>
+                          </div>
                         </div>
-                        <div className="flex justify-between p-2 bg-slate-50 border-b text-slate-900">
+                        <div className="flex justify-between items-baseline p-2 bg-slate-50 border-b text-slate-900">
                           <span className="text-[11px] font-bold">IVA 19% (Ley 825):</span>
-                          <span className="font-bold">${Math.round(calculoCotizacionActual.montoIva).toLocaleString('es-CL')} {cotMoneda}</span>
+                          <div className="text-right">
+                            <span className="font-bold block">
+                              {cotMoneda === 'UF' ? `UF ${calculoCotizacionActual.montoIva.toFixed(2)}` : `$${Math.round(calculoCotizacionActual.montoIva).toLocaleString('es-CL')} CLP`}
+                            </span>
+                            <span className="text-[10px] text-slate-500 font-medium block">
+                              {cotMoneda === 'UF' ? `≈ $${Math.round(calculoCotizacionActual.montoIva * valorUF).toLocaleString('es-CL')} CLP` : `≈ ${(calculoCotizacionActual.montoIva / valorUF).toFixed(2)} UF`}
+                            </span>
+                          </div>
                         </div>
-                        <div className="flex justify-between p-3 bg-slate-900 text-white font-bold">
+                        <div className="flex justify-between items-baseline p-3 bg-slate-900 text-white font-bold">
                           <span>TOTAL:</span>
-                          <span>${Math.round(calculoCotizacionActual.totalIvaIncluido).toLocaleString('es-CL')} {cotMoneda}</span>
+                          <div className="text-right">
+                            <span className="text-sm block">
+                              {cotMoneda === 'UF' ? `UF ${calculoCotizacionActual.totalIvaIncluido.toFixed(2)}` : `$${Math.round(calculoCotizacionActual.totalIvaIncluido).toLocaleString('es-CL')} CLP`}
+                            </span>
+                            <span className="text-[10px] text-slate-300 font-normal block">
+                              {cotMoneda === 'UF' ? `≈ $${Math.round(calculoCotizacionActual.totalIvaIncluido * valorUF).toLocaleString('es-CL')} CLP` : `≈ ${(calculoCotizacionActual.totalIvaIncluido / valorUF).toFixed(2)} UF`}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </div>
