@@ -170,7 +170,6 @@ export async function GET(request: Request) {
 
     // Consulta general de licitaciones con ticket
     if (ticket && ticket.length > 5) {
-      // 1. Probar con estado=activas
       const apiUrl = `https://api.mercadopublico.cl/servicios/v1/publico/licitaciones.json?estado=activas&ticket=${encodeURIComponent(ticket)}`
       const res = await fetch(apiUrl, {
         headers: { 'User-Agent': 'GamaSecurity-MercadoPublico/2.0' },
@@ -180,7 +179,7 @@ export async function GET(request: Request) {
       if (res.ok) {
         const data = await res.json().catch(() => null)
 
-        // Si ChileCompra respondió con código de error (ej: Ticket no válido)
+        // Si ChileCompra respondió con error de ticket
         if (data && data.Codigo && data.Mensaje) {
           return NextResponse.json({
             success: false,
@@ -194,32 +193,31 @@ export async function GET(request: Request) {
 
         if (data && Array.isArray(data.Listado)) {
           const listadoReal = data.Listado
-          const terminosSeguridad = [
-            'seguridad', 'camara', 'cctv', 'alarma', 'monitoreo', 
-            'guardia', 'vigilancia', 'acceso', 'torniquete', 'patrullaje', 
-            'intrus', 'custodia', 'proteccion', 'sereno', 'televigilancia',
-            'control', 'biometr', 'deteccion', 'incendio'
-          ]
 
-          // Filtrar las que coincidan con seguridad
-          let filtradas = listadoReal.filter((lic: any) => {
-            const texto = (lic.Nombre || '').toLowerCase()
-            return terminosSeguridad.some(t => texto.includes(t))
+          // FILTRADO ESTRICTO: Solo procesos genuinos de seguridad privada, CCTV, alarmas, guardias y control de acceso
+          const filtradas = listadoReal.filter((lic: any) => {
+            const nombre = lic.Nombre || ''
+            return esLicitacionSeguridadReal(nombre)
           })
 
-          // Si hoy no hubo licitaciones de seguridad específicas entre las activas del día,
-          // mostrar las primeras 12 licitaciones activas reales del estado chileno
-          const aMostrar = filtradas.length > 0 ? filtradas : listadoReal.slice(0, 15)
+          let mapeadas = filtradas.map((lic: any) => normalizarLicitacionReal(lic))
 
-          const mapeadas = aMostrar.map((lic: any) => normalizarLicitacionReal(lic))
+          // Filtro por rubro a nivel de API si viene especificado
+          if (rubroFiltro && rubroFiltro !== 'todos') {
+            mapeadas = mapeadas.filter((l: any) => {
+              if (rubroFiltro === 'cctv') return l.Rubro.includes('CCTV')
+              if (rubroFiltro === 'monitoreo') return l.Rubro.includes('Monitoreo')
+              if (rubroFiltro === 'guardias') return l.Rubro.includes('Guardias')
+              if (rubroFiltro === 'acceso') return l.Rubro.includes('Acceso')
+              return true
+            })
+          }
 
           return NextResponse.json({
             success: true,
             ticket_valido: true,
             modo: 'api_real_chilecompra',
-            mensaje: filtradas.length > 0 
-              ? `Conectado en vivo: ${filtradas.length} licitaciones de seguridad encontradas de ${listadoReal.length} activas.`
-              : `Conectado en vivo: Se analizaron ${listadoReal.length} licitaciones activas hoy en ChileCompra. Mostrando las más recientes.`,
+            mensaje: `Conectado en vivo: ${mapeadas.length} licitaciones exclusivas de seguridad encontradas de ${listadoReal.length} procesos activos.`,
             total_encontradas: mapeadas.length,
             licitaciones: mapeadas
           })
@@ -230,7 +228,13 @@ export async function GET(request: Request) {
     // Sin ticket configurado: Catálogo demostración
     let resultado = [...LICITACIONES_DEMO]
     if (rubroFiltro && rubroFiltro !== 'todos') {
-      resultado = resultado.filter(l => l.Rubro.toLowerCase().includes(rubroFiltro))
+      resultado = resultado.filter((l: any) => {
+        if (rubroFiltro === 'cctv') return l.Rubro.includes('CCTV')
+        if (rubroFiltro === 'monitoreo') return l.Rubro.includes('Monitoreo')
+        if (rubroFiltro === 'guardias') return l.Rubro.includes('Guardias')
+        if (rubroFiltro === 'acceso') return l.Rubro.includes('Acceso')
+        return true
+      })
     }
 
     return NextResponse.json({
@@ -254,11 +258,93 @@ export async function GET(request: Request) {
   }
 }
 
+/**
+ * Filtro de Seguridad Riguroso:
+ * Elimina falsos positivos (médicos, glaciología, vialidad, alimentos, aseo, etc.)
+ * y solo acepta licitaciones del rubro de Seguridad y Vigilancia.
+ */
+function esLicitacionSeguridadReal(nombreRaw: string): boolean {
+  const n = nombreRaw.toLowerCase()
+
+  // 1. LISTA NEGRA: Descartar inmediatamente procesos fuera del rubro
+  const terminosExcluidos = [
+    'vascular', 'glaciar', 'glaciares', 'medico', 'médico', 'médica', 'medica',
+    'quirurg', 'quirúrg', 'salud', 'hospitalari', 'enfermer', 'farmac', 'farmacia',
+    'paciente', 'clinico', 'clínico', 'infecc', 'odontol', 'dental', 'medicamento',
+    'ambiental', 'ambiente', 'reductores de velocidad', 'lomo de toro', 'señalética', 'vial',
+    'flora', 'fauna', 'forestal', 'plaga', 'desratiz', 'fumig', 'fumiga',
+    'basura', 'residuos', 'aseo', 'limpieza', 'jardiner', 'jardin', 'áreas verdes',
+    'alimento', 'alimentos', 'colacion', 'colación', 'almuerzo', 'catering',
+    'vestuario', 'ropa', 'uniforme escolar', 'juguete', 'didactico',
+    'software contable', 'erp', 'auditoria financiera', 'capacitacion', 'curso',
+    'accesorios', 'accesorio', 'accesibilidad', 'acceso vascular', 'acceso a internet',
+    'redes asistenciales', 'vehicular pesado', 'neumatico', 'repuesto'
+  ]
+
+  if (terminosExcluidos.some(ex => n.includes(ex))) {
+    return false
+  }
+
+  // 2. LISTA BLANCA ESTRICTA:
+  // A. CCTV, Cámaras y Televigilancia
+  if (
+    n.includes('cctv') || n.includes('televigilancia') || n.includes('videovigilancia') || n.includes('video vigilancia') ||
+    n.includes('camara de seguridad') || n.includes('cámara de seguridad') || n.includes('camaras de seguridad') || n.includes('cámaras de seguridad') ||
+    n.includes('camara ip') || n.includes('cámara ip') || n.includes('camaras ip') || n.includes('cámaras ip') ||
+    n.includes('camaras domo') || n.includes('cámaras domo') || n.includes('dvr') || n.includes('nvr') || n.includes('ptz') ||
+    n.includes('analitica de video') || n.includes('analítica de video') || n.includes('lpr') || n.includes('patentes')
+  ) {
+    return true
+  }
+
+  // B. Alarmas y Monitoreo Electrónico
+  if (
+    n.includes('alarma de robo') || n.includes('alarma de intrusion') || n.includes('alarma de intrusión') ||
+    n.includes('alarma de incendio') || n.includes('deteccion de incendio') || n.includes('detección de incendio') ||
+    n.includes('central de monitoreo') || n.includes('cerco electrico') || n.includes('cerco eléctrico') ||
+    n.includes('sensor de movimiento') || (n.includes('alarma') && !n.includes('reloj') && !n.includes('retroceso')) ||
+    (n.includes('monitoreo') && (n.includes('alarma') || n.includes('cámara') || n.includes('camara') || n.includes('seguridad') || n.includes('24/7') || n.includes('central')))
+  ) {
+    return true
+  }
+
+  // C. Guardias de Seguridad y Vigilancia OS-10
+  if (
+    n.includes('guardia') || n.includes('guardias') || n.includes('os-10') || n.includes('os10') ||
+    n.includes('vigilancia privada') || n.includes('vigilante') || n.includes('rondin') || n.includes('rondín') ||
+    n.includes('rondines') || n.includes('custodia') || n.includes('patrullaje')
+  ) {
+    return true
+  }
+
+  // D. Control de Acceso Físico y Tecnológico
+  if (
+    n.includes('torniquete') || n.includes('torniquetes') || n.includes('control de acceso') || n.includes('control de accesos') ||
+    n.includes('biometrico') || n.includes('biométrico') || n.includes('lector facial') || n.includes('barrera vehicular') ||
+    n.includes('talanquera') || n.includes('tarjeta rfid')
+  ) {
+    return true
+  }
+
+  // E. Seguridad en General (Descartando falsos amigos)
+  if (n.includes('seguridad')) {
+    if (
+      n.includes('seguridad social') || n.includes('seguridad del paciente') || n.includes('seguridad vial') ||
+      n.includes('seguridad alimentaria') || n.includes('seguridad en el trabajo') || n.includes('seguridad laboral') ||
+      n.includes('seguridad y salud') || n.includes('elementos de proteccion personal') || n.includes('epp')
+    ) {
+      return false
+    }
+    return true
+  }
+
+  return false
+}
+
 function normalizarLicitacionReal(lic: any) {
   const nombre = lic.Nombre || 'Licitación Pública de ChileCompra'
   const rubro = clasificarRubro(nombre)
   
-  // Si no viene organismo en la lista corta, extraer contexto
   const organismo = lic.Comprador?.NombreOrganismo || lic.Organismo || 'Organismo del Estado de Chile'
 
   return {
@@ -283,9 +369,15 @@ function normalizarLicitacionReal(lic: any) {
 
 function clasificarRubro(nombre: string): string {
   const n = nombre.toLowerCase()
-  if (n.includes('cctv') || n.includes('camara') || n.includes('cámara') || n.includes('video') || n.includes('televigil')) return 'CCTV & Cámaras'
-  if (n.includes('guardia') || n.includes('vigilante') || n.includes('os-10') || n.includes('os10') || n.includes('sereno') || n.includes('custodia')) return 'Guardias de Seguridad'
-  if (n.includes('acceso') || n.includes('torniquete') || n.includes('biometr') || n.includes('torniq')) return 'Control de Acceso'
+  if (n.includes('cctv') || n.includes('camara') || n.includes('cámara') || n.includes('video') || n.includes('televigil') || n.includes('dvr') || n.includes('nvr') || n.includes('ptz')) {
+    return 'CCTV & Cámaras'
+  }
+  if (n.includes('guardia') || n.includes('vigilante') || n.includes('os-10') || n.includes('os10') || n.includes('sereno') || n.includes('custodia') || n.includes('patrull')) {
+    return 'Guardias de Seguridad'
+  }
+  if (n.includes('torniquete') || n.includes('biometr') || n.includes('facial') || n.includes('control de acceso') || n.includes('talanquera') || n.includes('barrera')) {
+    return 'Control de Acceso'
+  }
   return 'Monitoreo & Alarmas'
 }
 

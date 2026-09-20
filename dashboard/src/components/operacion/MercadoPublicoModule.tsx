@@ -117,8 +117,15 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
     }
   }
 
-  // Filtrado local por búsqueda de texto
+  // Filtrado local estricto por rubro y búsqueda
   const licitacionesFiltradas = licitaciones.filter(l => {
+    // 1. Filtro estricto por Rubro de la pestaña seleccionada
+    if (filtroRubro === 'cctv' && !l.Rubro.includes('CCTV')) return false
+    if (filtroRubro === 'monitoreo' && !l.Rubro.includes('Monitoreo')) return false
+    if (filtroRubro === 'guardias' && !l.Rubro.includes('Guardias')) return false
+    if (filtroRubro === 'acceso' && !l.Rubro.includes('Acceso')) return false
+
+    // 2. Filtro por búsqueda de texto
     if (!busqueda.trim()) return true
     const q = busqueda.toLowerCase()
     return (
