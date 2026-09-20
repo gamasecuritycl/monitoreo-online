@@ -50,7 +50,7 @@ export async function POST(req: Request) {
                   <span style="color: #ffffff !important;">${emp.razon_social || 'EMPRESA GAMA'}</span>
                 </h1>
                 <p style="margin: 6px 0 0 0; font-size: 13px; color: #ffffff !important; font-weight: bold;">
-                  <span style="color: #ffffff !important;">R.U.T. ${emp.rut} — Presupuesto Comercial DTE</span>
+                  <span style="color: #ffffff !important;">R.U.T. ${emp.rut} — Presupuesto Comercial</span>
                 </p>
               </td>
             </tr>
@@ -122,7 +122,7 @@ export async function POST(req: Request) {
       let response = await getResend().emails.send({
         from: 'EMPRESA GAMA <contacto@gamasecurity.cl>',
         to: toList,
-        subject: `Presupuesto DTE N° ${cot.codigo_cotizacion || 'PR2607'} — ${emp.razon_social || 'EMPRESA GAMA'}`,
+        subject: `Presupuesto N° ${cot.codigo_cotizacion || 'PR2607'} — ${emp.razon_social || 'EMPRESA GAMA'}`,
         html: htmlContent,
         attachments: attachments
       })
@@ -132,7 +132,7 @@ export async function POST(req: Request) {
         response = await getResend().emails.send({
           from: 'EMPRESA GAMA <onboarding@resend.dev>',
           to: toList,
-          subject: `Presupuesto DTE N° ${cot.codigo_cotizacion || 'PR2607'} — ${emp.razon_social || 'EMPRESA GAMA'}`,
+          subject: `Presupuesto N° ${cot.codigo_cotizacion || 'PR2607'} — ${emp.razon_social || 'EMPRESA GAMA'}`,
           html: htmlContent,
           attachments: attachments
         })

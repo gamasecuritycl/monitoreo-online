@@ -62,7 +62,7 @@ export default function CommandPaletteModal({
     {
       id: 'cmd-cot',
       titulo: 'Ir a Presupuestos & Cotizaciones',
-      subtitulo: 'Gestión de DTE, cotizador rápido y pipeline comercial',
+      subtitulo: 'Gestión de presupuestos, cotizador rápido y pipeline comercial',
       categoria: 'Comando',
       accion: () => { onNavigateModule('presupuestos'); onClose() }
     },

@@ -170,7 +170,7 @@ export default function BentoKpiGrid({
         <div className="bg-white border border-slate-300/80 p-5 sm:p-6 rounded-2xl shadow-sm flex items-center justify-between">
           <div className="space-y-0.5">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-              Cotizaciones DTE
+              Presupuestos Comerciales
             </span>
             <div className="text-xl font-black text-slate-900">
               ${cotizacionesTotalMonto.toLocaleString('es-CL')}

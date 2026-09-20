@@ -150,7 +150,7 @@ export default function Ley21719Module() {
       rut: '76.412.339-K',
       cuenta: '0743',
       tipo_derecho: 'RECTIFICACION',
-      detalle: 'Actualización de número telefónico de encargado nocturno de turno y nuevo correo para recepción de informes DTE.',
+      detalle: 'Actualización de número telefónico de encargado nocturno de turno y nuevo correo para recepción de informes y comprobantes.',
       dias_habiles_restantes: 13,
       estado: 'EN_REVISION'
     },
@@ -1302,7 +1302,7 @@ export default function Ley21719Module() {
       )
 
       addRow(
-        'Contratos Digitales, Cláusulas y Facturación Electrónica DTE',
+        'Contratos Digitales, Cláusulas y Facturación Electrónica',
         '6 Años',
         'Plazo legal prescrito por el Código Tributario y Servicio de Impuestos Internos (SII).',
         'Archivo contable tributario cerrado.'

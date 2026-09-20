@@ -36,7 +36,7 @@ export default function OperacionSidebar({
     {
       titulo: 'COMERCIAL & CONTRATOS',
       items: [
-        { id: 'presupuestos', label: 'Presupuestos & DTE', icon: FileText },
+        { id: 'presupuestos', label: 'Presupuestos Comerciales', icon: FileText },
         { id: 'contratos', label: 'Contratos & Firma Digital', icon: FileCheck },
         { id: 'marketing', label: 'Marketing B2B', icon: Megaphone },
       ]
