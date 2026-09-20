@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { 
   Building2, Search, Key, ExternalLink, FileText, 
   RefreshCw, AlertCircle, CheckCircle2, Clock, 
-  Sparkles, Check, X, MapPin
+  Sparkles, Check, X, MapPin, ArrowUpDown, Filter
 } from 'lucide-react'
 
 export interface LicitacionChileCompra {
@@ -37,6 +37,8 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
   const [cargando, setCargando] = useState(true)
   const [filtroRubro, setFiltroRubro] = useState<string>('todos')
   const [filtroRegion, setFiltroRegion] = useState<string>('todas')
+  const [filtroEstado, setFiltroEstado] = useState<string>('todas')
+  const [ordenCriterio, setOrdenCriterio] = useState<string>('cierre_pronto') // Predeterminado: Cierre más pronta primero
   const [busqueda, setBusqueda] = useState<string>('')
   const [ticketApi, setTicketApi] = useState<string>('')
   const [modalTicketAbierto, setModalTicketAbierto] = useState(false)
@@ -121,34 +123,63 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
     }
   }
 
-  // Filtrado local estricto por rubro, región y búsqueda
-  const licitacionesFiltradas = licitaciones.filter(l => {
-    // 1. Filtro estricto por Rubro de la pestaña seleccionada
-    if (filtroRubro === 'cctv' && !l.Rubro.includes('CCTV')) return false
-    if (filtroRubro === 'monitoreo' && !l.Rubro.includes('Monitoreo')) return false
-    if (filtroRubro === 'guardias' && !l.Rubro.includes('Guardias')) return false
-    if (filtroRubro === 'acceso' && !l.Rubro.includes('Acceso')) return false
+  // Filtrado local estricto por rubro, región, estado, búsqueda y ordenamiento por fecha de cierre más pronta
+  const licitacionesFiltradas = licitaciones
+    .filter(l => {
+      // 1. Filtro estricto por Rubro de la pestaña seleccionada
+      if (filtroRubro === 'cctv' && !l.Rubro.includes('CCTV')) return false
+      if (filtroRubro === 'monitoreo' && !l.Rubro.includes('Monitoreo')) return false
+      if (filtroRubro === 'guardias' && !l.Rubro.includes('Guardias')) return false
+      if (filtroRubro === 'acceso' && !l.Rubro.includes('Acceso')) return false
 
-    // 2. Filtro por Región
-    if (filtroRegion !== 'todas') {
-      const reg = (l.Region || '').toLowerCase()
-      const com = (l.Comuna || '').toLowerCase()
-      const f = filtroRegion.toLowerCase()
-      if (!reg.includes(f) && !com.includes(f)) return false
-    }
+      // 2. Filtro por Región
+      if (filtroRegion !== 'todas') {
+        const reg = (l.Region || '').toLowerCase()
+        const com = (l.Comuna || '').toLowerCase()
+        const f = filtroRegion.toLowerCase()
+        if (!reg.includes(f) && !com.includes(f)) return false
+      }
 
-    // 3. Filtro por búsqueda de texto
-    if (!busqueda.trim()) return true
-    const q = busqueda.toLowerCase()
-    return (
-      l.Nombre.toLowerCase().includes(q) ||
-      l.Organismo.toLowerCase().includes(q) ||
-      (l.Region && l.Region.toLowerCase().includes(q)) ||
-      (l.Comuna && l.Comuna.toLowerCase().includes(q)) ||
-      l.CodigoExterno.toLowerCase().includes(q) ||
-      l.Descripcion.toLowerCase().includes(q)
-    )
-  })
+      // 3. Filtro por Estado
+      if (filtroEstado !== 'todas') {
+        const est = (l.Estado || '').toLowerCase()
+        if (filtroEstado === 'publicada' && est !== 'publicada' && l.CodigoEstado !== 5) return false
+        if (filtroEstado === 'cerrada' && est !== 'cerrada' && l.CodigoEstado !== 6) return false
+        if (filtroEstado === 'adjudicada' && est !== 'adjudicada' && l.CodigoEstado !== 8) return false
+      }
+
+      // 4. Filtro por búsqueda de texto
+      if (!busqueda.trim()) return true
+      const q = busqueda.toLowerCase()
+      return (
+        l.Nombre.toLowerCase().includes(q) ||
+        l.Organismo.toLowerCase().includes(q) ||
+        (l.Region && l.Region.toLowerCase().includes(q)) ||
+        (l.Comuna && l.Comuna.toLowerCase().includes(q)) ||
+        l.CodigoExterno.toLowerCase().includes(q) ||
+        l.Descripcion.toLowerCase().includes(q)
+      )
+    })
+    .sort((a, b) => {
+      // 5. Ordenamiento: Por fecha de cierre más pronta primero (Default)
+      if (ordenCriterio === 'cierre_pronto') {
+        const timeA = a.FechaCierre ? new Date(a.FechaCierre).getTime() : Infinity
+        const timeB = b.FechaCierre ? new Date(b.FechaCierre).getTime() : Infinity
+        return timeA - timeB
+      }
+      if (ordenCriterio === 'cierre_lejano') {
+        const timeA = a.FechaCierre ? new Date(a.FechaCierre).getTime() : -Infinity
+        const timeB = b.FechaCierre ? new Date(b.FechaCierre).getTime() : -Infinity
+        return timeB - timeA
+      }
+      if (ordenCriterio === 'monto_desc') {
+        return (b.MontoEstimado || 0) - (a.MontoEstimado || 0)
+      }
+      if (ordenCriterio === 'monto_asc') {
+        return (a.MontoEstimado || 0) - (b.MontoEstimado || 0)
+      }
+      return 0
+    })
 
   // KPIs
   const montoTotalEnJuego = licitacionesFiltradas.reduce((acc, l) => acc + (l.MontoEstimado || 0), 0)
@@ -269,10 +300,10 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
         </div>
       )}
 
-      {/* Barra de Filtros y Búsqueda */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col lg:flex-row items-center justify-between gap-4">
-        {/* Rubro Tabs */}
-        <div className="flex flex-wrap items-center gap-1.5 w-full lg:w-auto">
+      {/* Barra de Filtros y Búsqueda Avanzada */}
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3.5">
+        {/* Fila 1: Pestañas de Rubro */}
+        <div className="flex flex-wrap items-center gap-1.5">
           {[
             { id: 'todos', label: 'Todas las Licitaciones' },
             { id: 'cctv', label: 'CCTV & Cámaras' },
@@ -294,32 +325,68 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
           ))}
         </div>
 
-        {/* Filtros de Región y Buscador */}
-        <div className="flex flex-col sm:flex-row items-center gap-2.5 w-full lg:w-auto">
-          {/* Selector de Región */}
-          <div className="flex items-center gap-1.5 bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1 text-xs text-slate-300 w-full sm:w-auto">
-            <MapPin className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+        {/* Fila 2: Filtros de Región, Estado, Ordenamiento y Buscador */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 pt-2 border-t border-slate-800/80">
+          {/* Selector de Región (Todas las 16 regiones de Chile) */}
+          <div className="flex items-center gap-1.5 bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-slate-300">
+            <MapPin className="w-4 h-4 text-indigo-400 shrink-0" />
             <select
               value={filtroRegion}
               onChange={(e) => setFiltroRegion(e.target.value)}
-              className="bg-transparent text-xs text-slate-200 font-bold focus:outline-none cursor-pointer w-full sm:w-auto"
+              className="bg-transparent text-xs text-slate-200 font-bold focus:outline-none cursor-pointer w-full"
             >
-              <option value="todas" className="bg-slate-900">Todas las Regiones</option>
-              <option value="valparaíso" className="bg-slate-900">V Región de Valparaíso</option>
-              <option value="metropolitana" className="bg-slate-900">Región Metropolitana</option>
-              <option value="biobío" className="bg-slate-900">Región del Biobío</option>
-              <option value="coquimbo" className="bg-slate-900">Región de Coquimbo</option>
-              <option value="ñuble" className="bg-slate-900">Región de Ñuble</option>
-              <option value="o'higgins" className="bg-slate-900">Región de O&apos;Higgins</option>
-              <option value="maule" className="bg-slate-900">Región del Maule</option>
-              <option value="araucanía" className="bg-slate-900">Región de La Araucanía</option>
-              <option value="los lagos" className="bg-slate-900">Región de Los Lagos</option>
-              <option value="antofagasta" className="bg-slate-900">Región de Antofagasta</option>
+              <option value="todas" className="bg-slate-900">🗺️ Todas las Regiones</option>
+              <option value="valparaíso" className="bg-slate-900 font-bold text-cyan-400">⭐ V Región de Valparaíso</option>
+              <option value="metropolitana" className="bg-slate-900 font-bold text-cyan-400">⭐ Región Metropolitana (RM)</option>
+              <option value="arica" className="bg-slate-900">XV Región de Arica y Parinacota</option>
+              <option value="tarapacá" className="bg-slate-900">I Región de Tarapacá</option>
+              <option value="antofagasta" className="bg-slate-900">II Región de Antofagasta</option>
+              <option value="atacama" className="bg-slate-900">III Región de Atacama</option>
+              <option value="coquimbo" className="bg-slate-900">IV Región de Coquimbo</option>
+              <option value="o'higgins" className="bg-slate-900">VI Región de O&apos;Higgins</option>
+              <option value="maule" className="bg-slate-900">VII Región del Maule</option>
+              <option value="ñuble" className="bg-slate-900">XVI Región de Ñuble</option>
+              <option value="biobío" className="bg-slate-900">VIII Región del Biobío</option>
+              <option value="araucanía" className="bg-slate-900">IX Región de La Araucanía</option>
+              <option value="los ríos" className="bg-slate-900">XIV Región de Los Ríos</option>
+              <option value="los lagos" className="bg-slate-900">X Región de Los Lagos</option>
+              <option value="aysén" className="bg-slate-900">XI Región de Aysén</option>
+              <option value="magallanes" className="bg-slate-900">XII Región de Magallanes</option>
+            </select>
+          </div>
+
+          {/* Selector de Estado */}
+          <div className="flex items-center gap-1.5 bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-slate-300">
+            <Filter className="w-4 h-4 text-indigo-400 shrink-0" />
+            <select
+              value={filtroEstado}
+              onChange={(e) => setFiltroEstado(e.target.value)}
+              className="bg-transparent text-xs text-slate-200 font-bold focus:outline-none cursor-pointer w-full"
+            >
+              <option value="todas" className="bg-slate-900">Todos los Estados</option>
+              <option value="publicada" className="bg-slate-900 text-emerald-400 font-bold">🟢 Publicadas / Activas</option>
+              <option value="cerrada" className="bg-slate-900 text-slate-400">🔒 Cerradas (Evaluación)</option>
+              <option value="adjudicada" className="bg-slate-900 text-blue-400">🏆 Adjudicadas</option>
+            </select>
+          </div>
+
+          {/* Selector de Ordenamiento (Cierre más pronta primero) */}
+          <div className="flex items-center gap-1.5 bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-slate-300">
+            <ArrowUpDown className="w-4 h-4 text-indigo-400 shrink-0" />
+            <select
+              value={ordenCriterio}
+              onChange={(e) => setOrdenCriterio(e.target.value)}
+              className="bg-transparent text-xs text-slate-200 font-bold focus:outline-none cursor-pointer w-full"
+            >
+              <option value="cierre_pronto" className="bg-slate-900">⏱️ Cierre más pronta primero (Urgentes)</option>
+              <option value="monto_desc" className="bg-slate-900">💰 Mayor Monto Estimado</option>
+              <option value="monto_asc" className="bg-slate-900">💵 Menor Monto Estimado</option>
+              <option value="cierre_lejano" className="bg-slate-900">📅 Cierre más lejano primero</option>
             </select>
           </div>
 
           {/* Buscador */}
-          <div className="relative w-full sm:w-60">
+          <div className="relative">
             <Search className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
@@ -343,7 +410,7 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-12 text-center">
           <Building2 className="w-12 h-12 text-slate-600 mx-auto mb-3" />
           <p className="text-base font-bold text-slate-300">No se encontraron licitaciones con ese criterio</p>
-          <p className="text-xs text-slate-500 mt-1">Intenta seleccionar &quot;Todas las Licitaciones&quot; o &quot;Todas las Regiones&quot;.</p>
+          <p className="text-xs text-slate-500 mt-1">Intenta seleccionar &quot;Todas las Licitaciones&quot;, &quot;Todas las Regiones&quot; o &quot;Todos los Estados&quot;.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -355,7 +422,7 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
               'text-emerald-400 bg-emerald-950/60 border-emerald-800'
 
             const fechaCierreFormateada = lic.FechaCierre 
-              ? new Date(lic.FechaCierre).toLocaleDateString('es-CL', { day: '2-digit', month: 'short', year: 'numeric' })
+              ? new Date(lic.FechaCierre).toLocaleDateString('es-CL', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
               : 'Consultar portal'
 
             return (
@@ -422,8 +489,8 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
                     </div>
                     <div className="text-right">
                       <span className="text-[10px] text-slate-500 block">Cierre Ofertas</span>
-                      <span className="font-bold text-slate-300 flex items-center justify-end gap-1">
-                        <Clock className="w-3 h-3 text-amber-400" />
+                      <span className="font-bold text-amber-300 flex items-center justify-end gap-1 font-mono text-[11px]">
+                        <Clock className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
                         {fechaCierreFormateada}
                       </span>
                     </div>
