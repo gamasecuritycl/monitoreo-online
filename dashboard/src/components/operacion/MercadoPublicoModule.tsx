@@ -3,9 +3,8 @@
 import React, { useState, useEffect } from 'react'
 import { 
   Building2, Search, Key, ExternalLink, FileText, 
-  Shield, Camera, Users, Lock, RefreshCw, AlertCircle, 
-  CheckCircle2, Clock, Calendar, HelpCircle, ChevronRight,
-  TrendingUp, DollarSign, Filter
+  RefreshCw, AlertCircle, CheckCircle2, Clock, 
+  Sparkles, Check, X
 } from 'lucide-react'
 
 export interface LicitacionChileCompra {
@@ -24,6 +23,7 @@ export interface LicitacionChileCompra {
   Tipo: string
   Contacto?: string
   EnlaceMercadoPublico: string
+  EsDemo?: boolean
 }
 
 interface MercadoPublicoModuleProps {
@@ -39,6 +39,10 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
   const [modalTicketAbierto, setModalTicketAbierto] = useState(false)
   const [ticketInput, setTicketInput] = useState('')
   const [modoApi, setModoApi] = useState<string>('catalogo_seguridad_radar')
+  const [mensajeApi, setMensajeApi] = useState<string>('')
+  const [errorApi, setErrorApi] = useState<string>('')
+  const [probandoTicket, setProbandoTicket] = useState(false)
+  const [resultadoPrueba, setResultadoPrueba] = useState<{ ok: boolean; msg: string } | null>(null)
 
   // Cargar ticket guardado en localStorage
   useEffect(() => {
@@ -53,6 +57,8 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
 
   const fetchLicitaciones = async () => {
     setCargando(true)
+    setErrorApi('')
+    setMensajeApi('')
     try {
       const params = new URLSearchParams()
       if (ticketApi) params.append('ticket', ticketApi)
@@ -63,9 +69,12 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
       if (data.licitaciones) {
         setLicitaciones(data.licitaciones)
         setModoApi(data.modo || 'catalogo_seguridad_radar')
+        if (data.mensaje) setMensajeApi(data.mensaje)
+        if (data.error) setErrorApi(data.error)
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error cargando licitaciones:', err)
+      setErrorApi('Error de conexión al consultar el radar.')
     } finally {
       setCargando(false)
     }
@@ -82,6 +91,30 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
       localStorage.setItem('gama_mercadopublico_ticket', val)
     } catch {}
     setModalTicketAbierto(false)
+    setResultadoPrueba(null)
+  }
+
+  const handleProbarTicket = async () => {
+    const t = ticketInput.trim()
+    if (!t) {
+      setResultadoPrueba({ ok: false, msg: 'Por favor ingresa un ticket antes de probar.' })
+      return
+    }
+    setProbandoTicket(true)
+    setResultadoPrueba(null)
+    try {
+      const res = await fetch(`/api/mercado-publico?accion=test_ticket&ticket=${encodeURIComponent(t)}`)
+      const data = await res.json()
+      if (data.ticket_valido) {
+        setResultadoPrueba({ ok: true, msg: data.mensaje || '¡Ticket válido y activo ante ChileCompra!' })
+      } else {
+        setResultadoPrueba({ ok: false, msg: data.error || 'ChileCompra rechazó el ticket.' })
+      }
+    } catch (err: any) {
+      setResultadoPrueba({ ok: false, msg: `Error al probar: ${err.message}` })
+    } finally {
+      setProbandoTicket(false)
+    }
   }
 
   // Filtrado local por búsqueda de texto
@@ -109,18 +142,24 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
         
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 relative z-10">
           <div>
-            <div className="flex items-center gap-2 mb-2">
+            <div className="flex items-center gap-2 mb-2 flex-wrap">
               <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                 ChileCompra · Radar Oficial 24/7
               </span>
               {ticketApi ? (
                 <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
-                  <CheckCircle2 className="w-3 h-3" /> Ticket Activo
+                  <CheckCircle2 className="w-3 h-3" /> Ticket Configurado
                 </span>
               ) : (
                 <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1">
-                  <AlertCircle className="w-3 h-3" /> Modo Radar Público
+                  <AlertCircle className="w-3 h-3" /> Modo Demostrativo
+                </span>
+              )}
+
+              {modoApi === 'api_real_chilecompra' && (
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30 flex items-center gap-1">
+                  <Sparkles className="w-3 h-3 text-cyan-400" /> Servidor Oficial Conectado
                 </span>
               )}
             </div>
@@ -135,11 +174,14 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
 
           <div className="flex flex-wrap items-center gap-2.5">
             <button
-              onClick={() => setModalTicketAbierto(true)}
+              onClick={() => {
+                setModalTicketAbierto(true)
+                setResultadoPrueba(null)
+              }}
               className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-xs font-bold text-slate-200 border border-slate-700 transition shadow-sm cursor-pointer"
             >
               <Key className="w-4 h-4 text-indigo-400" />
-              {ticketApi ? 'Cambiar Ticket API' : 'Configurar Ticket API'}
+              {ticketApi ? 'Gestionar Ticket API' : 'Configurar Ticket API'}
             </button>
 
             <button
@@ -156,7 +198,7 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
         {/* Mini KPI Bar */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6 pt-5 border-t border-slate-800">
           <div className="bg-slate-900/60 rounded-xl p-3 border border-slate-800/80">
-            <span className="text-[11px] font-semibold text-slate-400 block">Licitaciones Activas</span>
+            <span className="text-[11px] font-semibold text-slate-400 block">Licitaciones Listadas</span>
             <span className="text-xl font-black text-white">{licitacionesFiltradas.length}</span>
           </div>
           <div className="bg-slate-900/60 rounded-xl p-3 border border-slate-800/80">
@@ -175,6 +217,36 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
           </div>
         </div>
       </div>
+
+      {/* Alerta si ChileCompra rechazó el ticket o dio error */}
+      {errorApi && (
+        <div className="bg-amber-950/80 border border-amber-500/50 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-amber-200 shadow-lg">
+          <div className="flex items-center gap-3">
+            <AlertCircle className="w-5 h-5 text-amber-400 shrink-0" />
+            <div>
+              <strong className="font-bold block text-white">Aviso de API ChileCompra:</strong>
+              <span>{errorApi}</span>
+            </div>
+          </div>
+          <button
+            onClick={() => {
+              setModalTicketAbierto(true)
+              setResultadoPrueba(null)
+            }}
+            className="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-xs shrink-0 cursor-pointer transition shadow"
+          >
+            Verificar Ticket
+          </button>
+        </div>
+      )}
+
+      {/* Mensaje de estado informativo de la API */}
+      {mensajeApi && !errorApi && (
+        <div className="bg-indigo-950/60 border border-indigo-500/30 rounded-2xl p-3 px-4 flex items-center gap-2.5 text-xs text-indigo-200">
+          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+          <span>{mensajeApi}</span>
+        </div>
+      )}
 
       {/* Barra de Filtros y Búsqueda */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col md:flex-row items-center justify-between gap-4">
@@ -219,7 +291,7 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-12 text-center">
           <div className="w-10 h-10 border-3 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
           <p className="text-sm font-bold text-slate-300">Consultando API de Mercado Público...</p>
-          <p className="text-xs text-slate-500 mt-1">Filtrando licitaciones de seguridad privada y tecnología</p>
+          <p className="text-xs text-slate-500 mt-1">Conectando con base de datos de ChileCompra</p>
         </div>
       ) : licitacionesFiltradas.length === 0 ? (
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-12 text-center">
@@ -249,9 +321,21 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
                   {/* Encabezado de la Tarjeta */}
                   <div className="flex items-start justify-between gap-3 mb-3">
                     <div>
-                      <span className={`px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider border ${rubroColor} inline-block mb-1.5`}>
-                        {lic.Rubro}
-                      </span>
+                      <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                        <span className={`px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider border ${rubroColor}`}>
+                          {lic.Rubro}
+                        </span>
+                        {lic.EsDemo ? (
+                          <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-slate-800 text-slate-400 border border-slate-700">
+                            Ejemplo Demostrativo
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-700 flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                            ChileCompra Oficial Real
+                          </span>
+                        )}
+                      </div>
                       <h3 className="font-bold text-white text-sm line-clamp-2 group-hover:text-indigo-300 transition">
                         {lic.Nombre}
                       </h3>
@@ -317,7 +401,7 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
         </div>
       )}
 
-      {/* Modal de Configuración de Ticket ChileCompra */}
+      {/* Modal de Configuración y Prueba de Ticket ChileCompra */}
       {modalTicketAbierto && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-slate-900 border border-slate-700 rounded-2xl max-w-lg w-full p-6 shadow-2xl animate-in zoom-in-95">
@@ -331,30 +415,60 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
               </div>
             </div>
 
-            <p className="text-xs text-slate-300 mb-4 leading-relaxed">
-              El ticket te permite consultar en vivo todas las licitaciones públicas publicadas hoy en ChileCompra directamente desde tu Command Center.
-            </p>
-
-            {/* Pasos para conseguir el ticket gratis */}
-            <div className="bg-slate-950 border border-slate-800 rounded-xl p-3.5 mb-4 text-xs text-slate-300 space-y-2">
-              <span className="font-bold text-indigo-400 block">¿Cómo obtener tu ticket gratuito en 1 minuto?</span>
-              <ol className="list-decimal list-inside space-y-1 text-slate-400">
-                <li>Ingresa a <a href="https://api.mercadopublico.cl" target="_blank" rel="noreferrer" className="text-cyan-400 underline">api.mercadopublico.cl</a>.</li>
-                <li>Haz clic en el botón <strong>&quot;Participa&quot;</strong> e inicia sesión con tu <strong>ClaveÚnica</strong>.</li>
-                <li>En el campo <em>Motivo</em>, escribe <strong>&quot;Solicitud de Ticket&quot;</strong>.</li>
-                <li>El ticket se generará y llegará inmediatamente a tu correo. Cópialo y pégalo abajo.</li>
-              </ol>
+            <div className="space-y-2 mb-4">
+              <label className="text-xs font-bold text-slate-300 block">Ingresa o verifica tu Ticket:</label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={ticketInput}
+                  onChange={(e) => {
+                    setTicketInput(e.target.value)
+                    setResultadoPrueba(null)
+                  }}
+                  placeholder="Ej: F8E490D0-XXXX-XXXX-XXXX-XXXXXXXXXXXX"
+                  className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-mono text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500"
+                />
+                <button
+                  type="button"
+                  onClick={handleProbarTicket}
+                  disabled={probandoTicket}
+                  className="px-3 py-2 bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-300 border border-indigo-500/40 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shrink-0"
+                >
+                  {probandoTicket ? (
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+                  )}
+                  <span>Probar Conexión</span>
+                </button>
+              </div>
             </div>
 
-            <div className="space-y-1.5 mb-5">
-              <label className="text-xs font-bold text-slate-300">Ingresa tu Ticket:</label>
-              <input
-                type="text"
-                value={ticketInput}
-                onChange={(e) => setTicketInput(e.target.value)}
-                placeholder="Ej: F8E490D0-XXXX-XXXX-XXXX-XXXXXXXXXXXX"
-                className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs font-mono text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500"
-              />
+            {/* Resultado de prueba del ticket */}
+            {resultadoPrueba && (
+              <div className={`p-3 rounded-xl mb-4 text-xs font-medium border flex items-start gap-2.5 ${
+                resultadoPrueba.ok 
+                  ? 'bg-emerald-950/60 border-emerald-500/50 text-emerald-200' 
+                  : 'bg-red-950/60 border-red-500/50 text-red-200'
+              }`}>
+                {resultadoPrueba.ok ? (
+                  <Check className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                ) : (
+                  <X className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+                )}
+                <span>{resultadoPrueba.msg}</span>
+              </div>
+            )}
+
+            {/* Pasos para conseguir el ticket gratis */}
+            <div className="bg-slate-950 border border-slate-800 rounded-xl p-3.5 mb-5 text-xs text-slate-300 space-y-2">
+              <span className="font-bold text-indigo-400 block">¿Cómo obtener o revisar tu ticket gratuito?</span>
+              <ol className="list-decimal list-inside space-y-1.5 text-slate-400">
+                <li>Ingresa a <a href="https://api.mercadopublico.cl" target="_blank" rel="noreferrer" className="text-cyan-400 underline font-semibold">api.mercadopublico.cl</a>.</li>
+                <li>Haz clic en <strong>&quot;Participa&quot;</strong> e inicia sesión con tu <strong>ClaveÚnica</strong>.</li>
+                <li>En <em>Motivo</em>, escribe <strong>&quot;Solicitud de Ticket&quot;</strong>.</li>
+                <li>ChileCompra te enviará el ticket por correo. Cópialo completo y pégalo arriba.</li>
+              </ol>
             </div>
 
             <div className="flex items-center justify-end gap-2.5">
@@ -368,7 +482,7 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
                 onClick={guardarTicket}
                 className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs font-bold text-white transition shadow-md cursor-pointer"
               >
-                Guardar y Activar Ticket
+                Guardar Ticket
               </button>
             </div>
           </div>
