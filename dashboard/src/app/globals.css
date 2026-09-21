@@ -64,6 +64,7 @@
 
 html {
   scroll-behavior: smooth;
+  text-size-adjust: 100%;
   -webkit-text-size-adjust: 100%;
 }
 
@@ -285,6 +286,7 @@ body {
   background: rgba(15, 34, 64, 0.7);
   border: 1px solid var(--navy-border-light);
   border-radius: 18px;
+  -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
   transition: all 0.3s ease;
 }
@@ -399,6 +401,7 @@ body {
   flex-direction: column !important;
   gap: 2px !important;
   transition: background 0.05s ease, border-color 0.05s ease !important;
+  -webkit-user-select: none !important;
   user-select: none !important;
   text-decoration: none !important;
 }
