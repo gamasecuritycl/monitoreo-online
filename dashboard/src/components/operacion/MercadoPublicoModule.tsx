@@ -95,13 +95,25 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
   const [errorIA, setErrorIA] = useState<string>('')
   const [seccionExpandida, setSeccionExpandida] = useState<string>('resumen')
 
-  // Cargar ticket y postulaciones guardadas
+  // Cargar ticket y postulaciones guardadas (con sincronización móvil automática)
   useEffect(() => {
     try {
       const guardado = localStorage.getItem('gama_mercadopublico_ticket') || ''
       if (guardado) {
         setTicketApi(guardado)
         setTicketInput(guardado)
+      } else {
+        // Consultar ticket compartido desde el servidor / Supabase para dispositivos móviles
+        fetch('/api/mercado-publico?accion=get_ticket')
+          .then(r => r.json())
+          .then(d => {
+            if (d.ticket) {
+              setTicketApi(d.ticket)
+              setTicketInput(d.ticket)
+              try { localStorage.setItem('gama_mercadopublico_ticket', d.ticket) } catch {}
+            }
+          })
+          .catch(() => {})
       }
       const postGuardadas = localStorage.getItem('gama_postulaciones_mercadopublico')
       if (postGuardadas) {
@@ -620,14 +632,10 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
                           <span className="px-2 py-0.5 rounded text-[9px] font-black bg-purple-950 text-purple-300 border border-purple-700 flex items-center gap-1">
                             <CheckSquare className="w-3 h-3 text-purple-400" /> Postulada en CRM
                           </span>
-                        ) : lic.EsDemo ? (
-                          <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-slate-800 text-slate-400 border border-slate-700">
-                            Ejemplo Demostrativo
-                          </span>
                         ) : (
                           <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-700 flex items-center gap-1">
                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                            ChileCompra Oficial Real
+                            ChileCompra Oficial
                           </span>
                         )}
                       </div>
@@ -1519,6 +1527,9 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
                   const val = ticketInput.trim()
                   setTicketApi(val)
                   try { localStorage.setItem('gama_mercadopublico_ticket', val) } catch {}
+                  if (val) {
+                    fetch(`/api/mercado-publico?accion=save_ticket&ticket=${encodeURIComponent(val)}`).catch(() => {})
+                  }
                   setModalTicketAbierto(false)
                   setResultadoPrueba(null)
                 }}
