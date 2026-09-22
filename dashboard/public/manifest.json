@@ -1,7 +1,7 @@
 {
-  "name": "Gama Seguridad 24/7",
-  "short_name": "Gama Seguridad",
-  "description": "Sistema de Monitoreo & Servicios Técnicos en Terreno Gama Seguridad 24/7",
+  "name": "GAMA SECURITY 24/7",
+  "short_name": "GAMA SECURITY",
+  "description": "Monitoreo electrónico 24/7, alarmas Vetti y seguridad integrada — GAMA SECURITY Chile",
   "start_url": "/tecnico",
   "display": "standalone",
   "background_color": "#ffffff",

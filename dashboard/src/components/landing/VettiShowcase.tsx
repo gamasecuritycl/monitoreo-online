@@ -23,10 +23,6 @@ const VETTI_FEATURES = [
 ]
 
 export default function VettiShowcase() {
-  const scrollToContacto = () => {
-    document.getElementById('contacto')?.scrollIntoView({ behavior: 'smooth' })
-  }
-
   return (
     <section className="relative py-24 sm:py-32 tile-navy-2 overflow-hidden text-white">
       
@@ -84,6 +80,7 @@ export default function VettiShowcase() {
                   src="/vetti-click-app.png"
                   alt="Alarma Inteligente Vetti y Aplicación CLICK"
                   fill
+                  sizes="(max-width: 1024px) 100vw, 50vw"
                   className="object-cover"
                   priority
                 />
@@ -160,12 +157,12 @@ export default function VettiShowcase() {
             </div>
 
             <div className="pt-4 flex flex-wrap items-center gap-4">
-              <button
-                onClick={scrollToContacto}
+              <a
+                href="#contacto"
                 className="btn-apple-primary text-base py-3 px-7"
               >
                 Cotizar Alarma Vetti
-              </button>
+              </a>
 
               <a
                 href="https://wa.me/56991016912"

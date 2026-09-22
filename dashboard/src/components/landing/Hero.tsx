@@ -20,10 +20,6 @@ const STATS = [
 ]
 
 export default function Hero() {
-  const scrollTo = (id: string) => {
-    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
-  }
-
   return (
     <section
       id="inicio"
@@ -87,19 +83,19 @@ export default function Hero() {
               variants={fadeUp}
               className="flex flex-wrap items-center gap-4 pt-2"
             >
-              <button
-                onClick={() => scrollTo('contacto')}
+              <a
+                href="#contacto"
                 className="btn-apple-primary text-base py-3 px-7"
               >
                 Solicitar Cotización
-              </button>
+              </a>
 
-              <button
-                onClick={() => scrollTo('servicios')}
+              <a
+                href="#servicios"
                 className="btn-apple-secondary-dark text-base py-3 px-6"
               >
                 Explorar Servicios →
-              </button>
+              </a>
             </motion.div>
 
             {/* Quick feature highlights */}
@@ -162,6 +158,7 @@ export default function Hero() {
                     src="/central-monitoreo.png"
                     alt="Central de Monitoreo GAMA Security"
                     fill
+                    sizes="(max-width: 1024px) 100vw, 40vw"
                     className="object-cover transition-transform duration-700 hover:scale-105"
                     priority
                   />

@@ -65,10 +65,6 @@ const cardVariants: Variants = {
 }
 
 export default function Servicios() {
-  const scrollToContacto = () => {
-    document.getElementById('contacto')?.scrollIntoView({ behavior: 'smooth' })
-  }
-
   return (
     <section id="servicios" className="relative py-24 sm:py-32 bg-[#0a1628] text-white overflow-hidden">
       
@@ -118,6 +114,7 @@ export default function Servicios() {
                     src={svc.img}
                     alt={svc.title}
                     fill
+                    sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
                     className="object-cover transition-transform duration-700 group-hover:scale-105"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-[#0f2240] via-transparent to-transparent opacity-90" />
@@ -153,12 +150,12 @@ export default function Servicios() {
 
               {/* Card Footer Action */}
               <div className="p-6 pt-0 text-left">
-                <button
-                  onClick={scrollToContacto}
+                <a
+                  href="#contacto"
                   className="apple-link-dark text-sm font-medium pt-2 inline-flex items-center gap-1 text-[#2997ff]"
                 >
                   Cotizar este servicio →
-                </button>
+                </a>
               </div>
             </motion.div>
           ))}

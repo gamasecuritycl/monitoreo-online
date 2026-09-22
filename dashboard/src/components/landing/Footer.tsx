@@ -11,10 +11,6 @@ interface FooterProps {
 }
 
 export default function Footer({ onOpenLegal }: FooterProps) {
-  const scrollTo = (id: string) => {
-    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
-  }
-
   const handleOpenLegal = (pestaña: PestañaLegal) => {
     if (onOpenLegal) {
       onOpenLegal(pestaña)
@@ -111,34 +107,34 @@ export default function Footer({ onOpenLegal }: FooterProps) {
             </h4>
             <ul className="space-y-2">
               <li>
-                <button onClick={() => scrollTo('servicios')} className="hover:text-[#0066cc] transition-colors text-left font-semibold text-[#0066cc] cursor-pointer">
+                <a href="#servicios" className="hover:text-[#0066cc] transition-colors text-left font-semibold text-[#0066cc] cursor-pointer">
                   ★ Alarma Vetti & App CLICK
-                </button>
+                </a>
               </li>
               <li>
-                <button onClick={() => scrollTo('servicios')} className="hover:text-[#0066cc] transition-colors text-left cursor-pointer">
+                <a href="#servicios" className="hover:text-[#0066cc] transition-colors text-left cursor-pointer">
                   Monitoreo Central 24/7
-                </button>
+                </a>
               </li>
               <li>
-                <button onClick={() => scrollTo('servicios')} className="hover:text-[#0066cc] transition-colors text-left cursor-pointer">
+                <a href="#servicios" className="hover:text-[#0066cc] transition-colors text-left cursor-pointer">
                   Teclados DSC PK5501
-                </button>
+                </a>
               </li>
               <li>
-                <button onClick={() => scrollTo('servicios')} className="hover:text-[#0066cc] transition-colors text-left cursor-pointer">
+                <a href="#servicios" className="hover:text-[#0066cc] transition-colors text-left cursor-pointer">
                   Cámaras 4K con IA
-                </button>
+                </a>
               </li>
               <li>
-                <button onClick={() => scrollTo('servicios')} className="hover:text-[#0066cc] transition-colors text-left cursor-pointer">
+                <a href="#servicios" className="hover:text-[#0066cc] transition-colors text-left cursor-pointer">
                   Cercos Eléctricos
-                </button>
+                </a>
               </li>
               <li>
-                <button onClick={() => scrollTo('servicios')} className="hover:text-[#0066cc] transition-colors text-left cursor-pointer">
+                <a href="#servicios" className="hover:text-[#0066cc] transition-colors text-left cursor-pointer">
                   Detección de Incendio
-                </button>
+                </a>
               </li>
             </ul>
           </div>
@@ -150,19 +146,19 @@ export default function Footer({ onOpenLegal }: FooterProps) {
             </h4>
             <ul className="space-y-2">
               <li>
-                <button onClick={() => scrollTo('quienes-somos')} className="hover:text-[#0066cc] transition-colors text-left cursor-pointer">
+                <a href="#quienes-somos" className="hover:text-[#0066cc] transition-colors text-left cursor-pointer">
                   Quiénes Somos (+20 Años)
-                </button>
+                </a>
               </li>
               <li>
-                <button onClick={() => scrollTo('tecnologia')} className="hover:text-[#0066cc] transition-colors text-left cursor-pointer">
+                <a href="#tecnologia" className="hover:text-[#0066cc] transition-colors text-left cursor-pointer">
                   Tecnología y Equipos
-                </button>
+                </a>
               </li>
               <li>
-                <button onClick={() => scrollTo('contacto')} className="hover:text-[#0066cc] transition-colors text-left cursor-pointer">
+                <a href="#contacto" className="hover:text-[#0066cc] transition-colors text-left cursor-pointer">
                   Solicitar Cotización
-                </button>
+                </a>
               </li>
               <li>
                 <a
@@ -194,9 +190,9 @@ export default function Footer({ onOpenLegal }: FooterProps) {
                 </Link>
               </li>
               <li>
-                <button onClick={() => scrollTo('contacto')} className="hover:text-[#0066cc] transition-colors text-left cursor-pointer">
+                <a href="#contacto" className="hover:text-[#0066cc] transition-colors text-left cursor-pointer">
                   Soporte Técnico
-                </button>
+                </a>
               </li>
               <li>
                 <span className="inline-flex items-center gap-1 text-[11px] text-green-700 font-mono">

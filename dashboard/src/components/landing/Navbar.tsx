@@ -23,10 +23,7 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', fn)
   }, [])
 
-  const scrollTo = (id: string) => {
-    setMenuOpen(false)
-    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
-  }
+  const closeMenu = () => setMenuOpen(false)
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 transition-all duration-300">
@@ -45,12 +42,12 @@ export default function Navbar() {
           </div>
 
           <div className="flex items-center gap-5 text-[12px]">
-            <button
-              onClick={() => scrollTo('contacto')}
+            <a
+              href="#contacto"
               className="text-slate-300 hover:text-white transition-colors"
             >
               Atención Clientes
-            </button>
+            </a>
             <span className="text-slate-600">|</span>
             <Link
               href="/operacion"
@@ -77,8 +74,8 @@ export default function Navbar() {
           <div className="flex items-center justify-between h-[52px]">
 
             {/* Octagonal Isolated Logo + Title */}
-            <div
-              onClick={() => scrollTo('inicio')}
+            <a
+              href="#inicio"
               className="flex items-center gap-3 cursor-pointer group"
             >
               <div className="relative w-8 h-8 flex-shrink-0 transition-transform duration-300 group-hover:scale-105">
@@ -99,29 +96,29 @@ export default function Navbar() {
                   Security
                 </span>
               </div>
-            </div>
+            </a>
 
             {/* Desktop Navigation Links */}
             <div className="hidden md:flex items-center gap-6 text-[13px] font-sans">
               {NAV_LINKS.map((link) => (
-                <button
+                <a
                   key={link.id}
-                  onClick={() => scrollTo(link.id)}
+                  href={`#${link.id}`}
                   className="text-slate-300 hover:text-white transition-colors duration-150 font-normal hover:opacity-100"
                 >
                   {link.label}
-                </button>
+                </a>
               ))}
             </div>
 
             {/* Right Side: Action Blue Pill CTA */}
             <div className="hidden sm:flex items-center gap-3">
-              <button
-                onClick={() => scrollTo('contacto')}
+              <a
+                href="#contacto"
                 className="btn-apple-primary text-xs py-1.5 px-4 font-normal"
               >
                 Solicitar Cotización
-              </button>
+              </a>
             </div>
 
             {/* Mobile Hamburger Toggle */}
@@ -153,21 +150,23 @@ export default function Navbar() {
             >
               <div className="px-5 py-4 space-y-3">
                 {NAV_LINKS.map((link) => (
-                  <button
+                  <a
                     key={link.id}
-                    onClick={() => scrollTo(link.id)}
+                    href={`#${link.id}`}
+                    onClick={closeMenu}
                     className="block w-full text-left text-slate-300 hover:text-white py-2 text-sm font-normal border-b border-white/5"
                   >
                     {link.label}
-                  </button>
+                  </a>
                 ))}
                 <div className="pt-2 flex flex-col gap-2">
-                  <button
-                    onClick={() => scrollTo('contacto')}
+                  <a
+                    href="#contacto"
+                    onClick={closeMenu}
                     className="btn-apple-primary w-full justify-center text-sm py-2"
                   >
                     Solicitar Cotización
-                  </button>
+                  </a>
                 </div>
               </div>
             </motion.div>

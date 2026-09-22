@@ -3,10 +3,6 @@
 import { motion } from 'framer-motion'
 
 export default function CTAEmergencia() {
-  const scrollToContacto = () => {
-    document.getElementById('contacto')?.scrollIntoView({ behavior: 'smooth' })
-  }
-
   return (
     <section className="relative py-20 bg-[#050d1a] overflow-hidden">
       
@@ -42,12 +38,12 @@ export default function CTAEmergencia() {
             </p>
 
             <div className="pt-4 flex flex-wrap items-center justify-center gap-4">
-              <button
-                onClick={scrollToContacto}
+              <a
+                href="#contacto"
                 className="btn-apple-primary text-base py-3 px-8 font-medium"
               >
                 Solicitar Cotización Inmediata
-              </button>
+              </a>
 
               <a
                 href="https://wa.me/56991016912"
