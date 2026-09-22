@@ -2,6 +2,7 @@ import type { FaqItem } from '@/lib/content'
 import JsonLd from './JsonLd'
 
 export default function Faq({ items, heading = 'Preguntas frecuentes' }: { items: FaqItem[]; heading?: string }) {
+  if (!items?.length) return null
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'FAQPage',
