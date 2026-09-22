@@ -87,3 +87,35 @@ test('validador rechaza descripción duplicada entre archivos', () => {
 test('directorio vacío no genera errores', () => {
   assert.deepStrictEqual(validateContentDir(makeFixture()), [])
 })
+
+const goodComuna = {
+  name: 'Villa Alemana',
+  title: 'Alarmas y video vigilancia en Villa Alemana',
+  description: 'Sistemas de alarma, cámaras y monitoreo 24/7 para hogares y negocios en Villa Alemana.',
+  keywords: ['alarma villa alemana', 'camaras villa alemana', 'monitoreo seguridad', 'alarmas region', 'seguridad hogar'],
+  hashtags: ['SistemaDeAlarma', 'SeguridadElectronica', 'Monitoreo24h'],
+  faq: [
+    { question: '¿Necesito alarma en Villa Alemana?', answer: 'Sí, protege tu hogar o negocio con monitoreo permanente.' },
+    { question: '¿Cuánto cuesta instalar?', answer: 'Desde $199.900 según el plano; la evaluación inicial es gratuita.' },
+    { question: '¿Hay monitoreo 24/7?', answer: 'Sí, la central monitorea tu propiedad las 24 horas del día.' },
+  ],
+  lead: 'palabra '.repeat(45).trim(),
+  reasonExtra: 'palabra '.repeat(90).trim(),
+  sectors: ['centro', 'el bello', 'villa fresia', 'lonquén', 'la punta'],
+  serviciosDestacados: ['s1', 's2', 's3', 's4', 's5', 's6'],
+}
+
+test('comuna JSON sin h1 pasa el validador', () => {
+  const dir = makeFixture()
+  fs.mkdirSync(path.join(dir, 'comunas', 'rm'), { recursive: true })
+  fs.writeFileSync(path.join(dir, 'comunas', 'rm', 'villa-alemana.json'), JSON.stringify(goodComuna, null, 2))
+  assert.deepStrictEqual(validateContentDir(dir), [])
+})
+
+test('servicio .md sin h1 genera error', () => {
+  const dir = makeFixture()
+  const bad = goodServicio.replace(/^h1: .*$/m, '')
+  fs.writeFileSync(path.join(dir, 'servicios', 'alarma-para-casa.md'), bad)
+  const errs = validateContentDir(dir)
+  assert.ok(errs.some(e => e.includes('h1')))
+})

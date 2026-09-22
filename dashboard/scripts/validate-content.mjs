@@ -22,12 +22,12 @@ export function validateContentDir(contentRoot = ROOT) {
   const descs = new Map()
   const push = (f, msg) => errs.push(`${f}: ${msg}`)
 
-  const checkMeta = (f, d) => {
+  const checkMeta = (f, d, requireH1 = true) => {
     if (!d.title || d.title.length > 60) push(f, `title ausente o >60 (${d.title?.length ?? 0})`)
     if (!d.description || d.description.length > 155) push(f, 'description ausente o >155')
     if (!Array.isArray(d.keywords) || d.keywords.length < 5) push(f, 'keywords <5')
     if (!Array.isArray(d.hashtags) || d.hashtags.length < 3) push(f, 'hashtags <3')
-    if (!d.h1) push(f, 'h1 ausente')
+    if (requireH1 && !d.h1) push(f, 'h1 ausente')
     if (!Array.isArray(d.faq) || d.faq.length < 3) push(f, 'faq <3')
     if (d.title) {
       if (titles.has(d.title)) push(f, `title duplicada con ${titles.get(d.title)}`)
@@ -64,7 +64,7 @@ export function validateContentDir(contentRoot = ROOT) {
       let data
       try { data = JSON.parse(raw) } catch { push(file, 'JSON inválido'); continue }
       data.region = region
-      checkMeta(file, data)
+      checkMeta(file, data, false)
       if (words(data.lead || '') < 40) push(file, 'lead <40 palabras')
       if (words(data.reasonExtra || '') < 80) push(file, 'reasonExtra <80 palabras')
       if (!Array.isArray(data.sectors) || data.sectors.length < 5) push(file, 'sectors <5')
