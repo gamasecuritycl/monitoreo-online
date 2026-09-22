@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
 
 /* ══════════════════════════════════════════════════════════════════════════
    APPLE DESIGN SYSTEM + HIGH-TECH NAVY PALETTE — GAMA SERVICIOS
