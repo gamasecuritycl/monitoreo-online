@@ -1,0 +1,16 @@
+{
+  "name": "Calera de Tango",
+  "title": "Seguridad electrónica en Calera de Tango | GAMA",
+  "description": "Alarmas, cámaras y cercos eléctricos en Calera de Tango, con instalación local, monitoreo 24/7 y respuesta rápida. Evaluación sin compromiso.",
+  "keywords": ["alarma calera de tango", "camaras calera de tango", "seguridad electronica calera de tango", "alarmas san bernardo", "cerco electrico calera de tango"],
+  "hashtags": ["CaleraDeTango", "SeguridadElectrónica", "SistemaDeAlarma", "GamaSecurity"],
+  "lead": "Calera de Tango es comuna chica, campestre y residencial, donde la tranquilidad de cada casa depende de cerrar bien aunque estés fuera todo el día. Instalamos alarmas con app, cámaras de seguridad y cercos eléctricos en el poblado y los sectores rurales, con monitoreo permanente desde la central. Solicita la evaluación gratuita y decide sin compromiso.",
+  "sectors": ["Centro Calera de Tango", "Sector Norte (hacia San Bernardo)", "Límite con Buin", "Límite con Paine", "Límite con San Bernardo"],
+  "reasonExtra": "Asignamos técnicos a Calera de Tango y a sus vecinas, por lo que en urgencias llegamos el mismo día y dejamos instalaciones normales agendadas en menos de 48 horas hábiles. Conocemos los caminos hacia San Bernardo, Buin y Paine, comunas vecinas que recorremos cada semana en el valle, además de las rutas internas de la comuna. Cada alarma en Calera de Tango queda conectada a la central redundante, con verificación humana de señales, aviso inmediato al celular y coordinación con carabineros según tu plan.",
+  "faq": [
+    {"question": "¿Cuánto cuesta una alarma en Calera de Tango?", "answer": "En Calera de Tango los kits de alarma parten desde $199.900 con instalación y configuración incluidas. El precio varía según accesos, sensores y plan de monitoreo; visitamos tu propiedad en el poblado o los sectores rurales sin costo y entregamos la cotización el mismo día."},
+    {"question": "¿Hacen instalación de cámaras en Calera de Tango?", "answer": "Sí. Instalamos cámaras IP y CCTV en casas, negocios y quintas de Calera de Tango, con grabación local o en la nube, visión nocturna y acceso desde tu celular. La visita de diagnóstico es gratuita y solemos completar el trabajo en la misma semana."},
+    {"question": "¿Cuánto demoran en responder una alarma en Calera de Tango?", "answer": "La central verifica la señal en menos de 2 minutos y, según tu plan, coordinamos contacto con carabineros o guardias. Como tenemos técnicos que cubren la comuna y vecinos de San Bernardo y Buin, el traslado local suele quedar bajo los 15 minutos."}
+  ],
+  "serviciosDestacados": ["alarmas-para-casa", "camaras-de-seguridad", "sistema-alarma-inalambrico", "monitoreo-de-alarmas-24-7", "cerco-electrico", "alarma-con-app"]
+}

@@ -1,0 +1,16 @@
+{
+  "name": "La Granja",
+  "title": "Seguridad electrónica en La Granja | GAMA",
+  "description": "Sistemas de alarma, cámaras y cercos eléctricos en La Granja. Instalación local, monitoreo 24/7 y respuesta rápida. Evaluación gratuita.",
+  "keywords": ["alarma la granja", "camaras la granja", "seguridad electronica la granja", "alarmas la florida", "monitoreo alarmas la granja"],
+  "hashtags": ["LaGranja", "SeguridadElectrónica", "SistemaDeAlarma", "GamaSecurity"],
+  "lead": "Viviendas sociales, casas con patio y comercio de pasaje conviven en La Granja y por eso armamos esquemas de seguridad a la medida de cada propiedad. Instalamos alarmas inalámbricas, cámaras con visión nocturna y sensores en toda la comuna, con monitoreo permanente y técnicos propios que llegan rápido. Pide la evaluación gratuita y decide sin compromiso.",
+  "sectors": ["Centro La Granja", "Límite con La Florida", "Límite con La Pintana", "Límite con San Ramón", "Límite con San Miguel", "Límite con El Bosque"],
+  "reasonExtra": "Nuestra cuadrilla recorre La Granja a diario, desde el centro hasta los bordes con La Florida, La Pintana, San Ramón, San Miguel y El Bosque, comunas vecinas que también atendemos cada semana. En urgencias llegamos el mismo día y dejamos instalaciones normales resueltas en menos de 48 horas hábiles. Toda alarma instalada en La Granja queda ligada a nuestra central redundante, con verificación humana de señales, aviso inmediato al celular y contacto con carabineros o guardias cuando tu plan lo incluye.",
+  "faq": [
+    {"question": "¿Cuánto cuesta una alarma en La Granja?", "answer": "En La Granja los kits de alarma parten desde $199.900 e incluyen instalación, configuración y prueba final. El valor depende de accesos, sensores y plan de monitoreo; hacemos la visita técnica sin costo en tu propiedad y entregamos la cotización el mismo día de la evaluación."},
+    {"question": "¿Hacen instalación de cámaras en La Granja?", "answer": "Sí. Instalamos cámaras IP y CCTV en casas, almacenes y sedes vecinales de La Granja, con grabación local o en la nube y acceso desde el celular. Dejamos todo configurado y probado antes de retirarnos, con una explicación práctica de uso."},
+    {"question": "¿Cuánto demoran en verificar una alarma de La Granja?", "answer": "La central revisa cada señal en menos de 2 minutos. Según tu plan contactamos a carabineros o a tus referentes; como contamos con técnicos en La Granja y vecinos de La Florida y La Pintana, el traslado local rara vez supera los 15 minutos."}
+  ],
+  "serviciosDestacados": ["alarmas-para-casa", "camaras-de-seguridad", "alarmas-para-negocios", "monitoreo-de-alarmas-24-7", "control-de-acceso", "sistema-alarma-inalambrico", "alarma-con-app"]
+}

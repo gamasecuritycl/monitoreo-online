@@ -1,0 +1,16 @@
+{
+  "name": "Renca",
+  "title": "Seguridad electrónica en Renca | GAMA",
+  "description": "Alarmas, cámaras y cercos eléctricos en Renca, con instalación local, monitoreo 24/7 y respuesta rápida. Evaluación gratuita a domicilio.",
+  "keywords": ["alarma renca", "camaras renca", "seguridad electronica renca", "alarmas cerro renca", "cerco electrico renca"],
+  "hashtags": ["Renca", "SeguridadElectrónica", "SistemaDeAlarma", "GamaSecurity"],
+  "lead": "Bajo el Cerro Renca, las viviendas y comercios de la comuna cierran cada noche con alarmas que verificamos en minutos. Instalamos sistemas inalámbricos, cámaras con visión nocturna y cercos eléctricos desde el centro hasta los sectores que miran hacia Quinta Normal y Cerro Navia, con monitoreo permanente las 24 horas. Pide tu evaluación gratuita hoy.",
+  "sectors": ["Cerro Renca (entorno)", "Centro Renca", "Límite con Quinta Normal", "Límite con Cerro Navia", "Límite con Santiago"],
+  "reasonExtra": "Nuestros técnicos cubren Renca todos los días y conocen bien los caminos hacia Quinta Normal, Cerro Navia y el borde de Santiago centro, comunas vecinas que visitamos cada semana en nuestras rutas del sector poniente. En urgencias llegamos el mismo día y dejamos instalaciones programadas en menos de 48 horas hábiles. Cada sistema instalado en Renca queda ligado a nuestra central redundante, con verificación humana de señales, notificación inmediata a tu celular y contacto con carabineros según el plan contratado.",
+  "faq": [
+    {"question": "¿Cuánto cuesta una alarma en Renca?", "answer": "En Renca los kits de alarma parten desde $199.900 con instalación y configuración incluidas. El precio cambia según accesos, sensores y plan de monitoreo; la visita a tu propiedad de la comuna es gratuita y te dejamos la cotización escrita el mismo día de la evaluación."},
+    {"question": "¿Hacen instalación de cámaras en Renca?", "answer": "Sí. Instalamos cámaras IP y CCTV en casas, almacenes y comercios de Renca, con grabación local o en la nube y acceso desde tu celular. La visita de diagnóstico es gratuita y solemos agendar la instalación dentro de la misma semana."},
+    {"question": "¿Cuánto demoran en responder una alarma en Renca?", "answer": "La central verifica la señal en menos de 2 minutos y, según tu plan, coordinamos contacto con carabineros o guardias. Como tenemos técnicos en Renca y vecinos de Quinta Normal y Cerro Navia, el traslado local rara vez supera los 15 minutos."}
+  ],
+  "serviciosDestacados": ["alarmas-para-casa", "camaras-de-seguridad", "sistema-alarma-inalambrico", "monitoreo-de-alarmas-24-7", "cerco-electrico", "alarma-con-app"]
+}

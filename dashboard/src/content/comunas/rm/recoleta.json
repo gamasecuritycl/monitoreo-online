@@ -1,0 +1,16 @@
+{
+  "name": "Recoleta",
+  "title": "Seguridad electrónica en Recoleta | GAMA",
+  "description": "Sistemas de alarma, cámaras IP y control de acceso en Recoleta, con instalación propia, monitoreo 24/7 y presupuesto sin cargo.",
+  "keywords": ["alarma recoleta", "camaras recoleta", "seguridad electronica recoleta", "alarmas persa bio bio", "control de acceso recoleta"],
+  "hashtags": ["Recoleta", "SeguridadElectrónica", "SistemaDeAlarma", "GamaSecurity"],
+  "lead": "El comercio del entorno del Persa Bio Bío, los almacenes de la zona norte y las viviendas familiares de Recoleta conviven a pocas cuadras unas de otras. Para cada uno diseñamos un esquema de alarmas, cámaras y control de acceso con monitoreo 24/7 desde la central. Solicita la evaluación gratuita y recibe tu propuesta sin compromiso.",
+  "sectors": ["Entorno Persa Bio Bío", "Centro Recoleta", "Límite con Independencia", "Límite con Conchalí", "Límite con Huechuraba", "Límite con Santiago"],
+  "reasonExtra": "Recorremos Recoleta cada día, desde el persa hasta los accesos hacia Independencia, Conchalí, Huechuraba y Santiago centro, comunas vecinas incluidas en nuestras rutas del sector oriente. En urgencias llegamos el mismo día y dejamos instalaciones normales resueltas en menos de 48 horas hábiles. Toda alarma instalada en Recoleta queda conectada a nuestra central redundante, con verificación humana de señales, aviso inmediato al celular y coordinación con carabineros o guardias según tu plan. También podemos dejar agendada una revisión de cortesía a los treinta días para ajustar todo.",
+  "faq": [
+    {"question": "¿Cuánto cuesta una alarma en Recoleta?", "answer": "Los kits de alarma para local u oficina en Recoleta parten desde $199.900 con instalación incluida. El valor depende de accesos, sensores y plan de monitoreo; hacemos la visita técnica sin costo en cualquier sector de la comuna y cotizamos el mismo día."},
+    {"question": "¿Instalan cámaras en Recoleta?", "answer": "Sí. Instalamos cámaras IP y CCTV en negocios, bodegas, edificios y casas de Recoleta, con grabación local o en la nube, visión nocturna y acceso desde el celular. Dejamos todo configurado y probado antes de retirarnos del lugar."},
+    {"question": "¿Cuánto demoran en responder una alarma en Recoleta?", "answer": "Nuestra central verifica la señal en menos de 2 minutos y según tu plan contactamos a carabineros o a tus referentes. Como contamos con técnicos en Recoleta y vecinos de Independencia y Huechuraba, el traslado local suele quedar bajo los 15 minutos."}
+  ],
+  "serviciosDestacados": ["alarmas-para-negocios", "sistemas-de-alarma-para-empresas", "camaras-de-seguridad", "control-de-acceso", "monitoreo-de-alarmas-24-7", "sistema-alarma-inalambrico", "prevencion-de-robo"]
+}

@@ -1,0 +1,16 @@
+{
+  "name": "Alhué",
+  "title": "Seguridad electrónica en Alhué | GAMA",
+  "description": "Alarmas, cámaras y cercos eléctricos en Alhué, con instalación local, monitoreo 24/7 y respuesta rápida. Evaluación gratuita a domicilio.",
+  "keywords": ["alarma alhue", "camaras alhue", "seguridad electronica alhue", "alarmas melipilla", "cerco electrico alhue"],
+  "hashtags": ["Alhué", "SeguridadElectrónica", "SistemaDeAlarma", "GamaSecurity"],
+  "lead": "Alhué es campo, viñedos y viviendas dispersas donde llegar rápido no es fácil, pero monitorear la señal sí lo es. Instalamos alarmas con batería y conectividad de respaldo, cámaras con visión nocturna y cercos eléctricos en el pueblo y los sectores rurales, vigilados desde la central las 24 horas. Solicita hoy tu evaluación gratuita sin compromiso.",
+  "sectors": ["Centro de Alhué", "Sector Oriente (hacia Melipilla)", "Sector Norte (hacia María Pinto)", "Sector Poniente (límite con la V Región)", "Sector Sur (hacia San Pedro)"],
+  "reasonExtra": "Nuestros técnicos visitan Alhué con programación fija y conocen los caminos hacia Melipilla, María Pinto y San Pedro, comunas vecinas que cubrimos cada semana en el sector poniente de la región. En urgencias llegamos el mismo día y dejamos instalaciones normales agendadas en menos de 48 horas hábiles. Cada alarma instalada en Alhué queda ligada a nuestra central redundante, con verificación humana de señales, aviso inmediato al celular y coordinación con carabineros según tu plan. Además entregamos garantía por escrito, mantención programada y soporte local continuo en todo el territorio de la comuna.",
+  "faq": [
+    {"question": "¿Cuánto cuesta una alarma en Alhué?", "answer": "En Alhué los kits de alarma parten desde $199.900 con instalación y configuración incluidas. El precio varía según accesos, sensores y plan de monitoreo; visitamos tu propiedad en el pueblo o los sectores rurales de la comuna sin costo y cotizamos el mismo día."},
+    {"question": "¿Hacen instalación de cámaras en Alhué?", "answer": "Sí. Instalamos cámaras IP y CCTV en casas, quintas, viñas y negocios de Alhué, con grabación local o en la nube, visión nocturna y acceso desde tu celular. La visita de diagnóstico es gratuita y solemos agendar el trabajo dentro de la misma semana."},
+    {"question": "¿Cuánto demoran en responder una alarma en Alhué?", "answer": "La central verifica la señal en menos de 2 minutos y, según tu plan, coordinamos contacto con carabineros o guardias. Como tenemos técnicos que cubren Alhué y vecinos de Melipilla y María Pinto, el traslado se mantiene dentro de tiempos razonables."}
+  ],
+  "serviciosDestacados": ["alarmas-para-casa", "camaras-de-seguridad", "sistema-alarma-inalambrico", "monitoreo-de-alarmas-24-7", "cerco-electrico", "alarma-con-app"]
+}

@@ -1,0 +1,16 @@
+{
+  "name": "María Pinto",
+  "title": "Seguridad electrónica en María Pinto | GAMA",
+  "description": "Alarmas, cámaras y cercos eléctricos en María Pinto, con instalación local, monitoreo 24/7 y respuesta rápida. Evaluación gratuita a domicilio.",
+  "keywords": ["alarma maria pinto", "camaras maria pinto", "seguridad electronica maria pinto", "alarmas curacavi", "cerco electrico maria pinto"],
+  "hashtags": ["MaríaPinto", "SeguridadElectrónica", "SistemaDeAlarma", "GamaSecurity"],
+  "lead": "En María Pinto, casas de lugar, quintas y pequeños negocios del pueblo comparten caminos tranquilos donde igual entra el robo. Instalamos alarmas con batería de respaldo, cámaras de visión nocturna y cercos eléctricos en el centro y los sectores agrícolas, con monitoreo activo las 24 horas. Agenda tu evaluación gratuita y conoce las opciones sin compromiso.",
+  "sectors": ["Centro María Pinto", "Límite con Curacaví", "Límite con Melipilla", "Límite con Alhué", "Sector Norte (límite con la V Región)"],
+  "reasonExtra": "Nuestros técnicos visitan María Pinto con regularidad y conocen los caminos hacia Curacaví, Melipilla y Alhué, comunas vecinas que atendemos cada semana en el sector poniente de la región. En urgencias llegamos el mismo día y dejamos instalaciones normales resueltas en menos de 48 horas hábiles, aun en los sectores alejados. Cada alarma en María Pinto queda ligada a la central redundante, con verificación humana de señales, aviso al celular y coordinación con carabineros según tu plan. Podemos además dejar agendada una primera revisión gratuita pasados treinta días desde la instalación.",
+  "faq": [
+    {"question": "¿Cuánto cuesta una alarma en María Pinto?", "answer": "En María Pinto los kits de alarma parten desde $199.900 con instalación y configuración incluidas. El precio varía según accesos, sensores y plan de monitoreo; visitamos tu propiedad en el pueblo o los sectores rurales sin costo y entregamos la cotización el mismo día."},
+    {"question": "¿Hacen instalación de cámaras en María Pinto?", "answer": "Sí. Instalamos cámaras IP y CCTV en casas, quintas, negocios y bodegas de María Pinto, con grabación local o en la nube, visión nocturna y acceso desde tu celular. La visita de diagnóstico es gratuita y agendamos el trabajo dentro de la misma semana."},
+    {"question": "¿Cuánto demoran en responder una alarma en María Pinto?", "answer": "La central verifica la señal en menos de 2 minutos y, según tu plan, coordinamos contacto con carabineros o guardias. Como contamos con técnicos que cubren la comuna y vecinos de Curacaví y Melipilla, el traslado se mantiene dentro de tiempos razonables."}
+  ],
+  "serviciosDestacados": ["alarmas-para-casa", "camaras-de-seguridad", "sistema-alarma-inalambrico", "monitoreo-de-alarmas-24-7", "cerco-electrico", "alarma-con-app"]
+}

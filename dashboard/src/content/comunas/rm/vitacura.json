@@ -1,0 +1,16 @@
+{
+  "name": "Vitacura",
+  "title": "Seguridad electrónica en Vitacura | GAMA",
+  "description": "Sistemas de alarma, cámaras IP y control de acceso en Vitacura, con instalación propia, monitoreo 24/7 y presupuesto sin cargo.",
+  "keywords": ["alarma vitacura", "camaras vitacura", "seguridad electronica vitacura", "alarmas sanhattan", "control de acceso vitacura"],
+  "hashtags": ["Vitacura", "SeguridadElectrónica", "SistemaDeAlarma", "GamaSecurity"],
+  "lead": "Torres de Sanhattan, sedes de organismos internacionales y casas del sector oriente comparten en Vitacura un estándar alto de seguridad. Instalamos alarmas redundantes, cámaras IP, cercos eléctricos y control de acceso con monitoreo 24/7, respaldado por técnicos propios en la zona. Solicita la evaluación gratuita y recibe una propuesta técnica a la medida sin compromiso.",
+  "sectors": ["Sanhattan", "Parque Bicentenario", "Naciones Unidas", "Límite con Las Condes", "Límite con Lo Barnechea", "Borde río Mapocho"],
+  "reasonExtra": "Nuestros instaladores cubren Vitacura cada día, desde Sanhattan hasta los accesos hacia Las Condes y Lo Barnechea, comunas vecinas incluidas en nuestras rutas, y cruzando el río Mapocho atendemos también el sector norte de la ciudad. En urgencias llegamos el mismo día y dejamos instalaciones normales en menos de 48 horas hábiles. Toda alarma en Vitacura queda conectada a la central redundante, con verificación humana de señales, notificación inmediata y coordinación con carabineros o guardias. Además coordinamos con la administración del edificio un protocolo de emergencia claro para inquilinos y guardias.",
+  "faq": [
+    {"question": "¿Cuánto cuesta una alarma en Vitacura?", "answer": "Los kits de alarma para oficina y casa en Vitacura parten desde $199.900 con instalación incluida. El valor final depende del número de accesos, sensores y plan de monitoreo; realizamos la visita técnica sin costo y entregamos la cotización el mismo día."},
+    {"question": "¿Instalan cámaras y control de acceso en Vitacura?", "answer": "Sí. Instalamos cámaras IP, CCTV y control de acceso con lectora o torniquete en empresas, edificios y casas de Vitacura, con grabación en la nube, visión nocturna y revisión desde el celular para ti y tu equipo de seguridad."},
+    {"question": "¿Cuánto demoran en responder una alarma en Vitacura?", "answer": "Nuestra central verifica cada señal en menos de 2 minutos y según tu plan contactamos a carabineros o a tu empresa de guardias. Al tener técnicos en Vitacura y vecinos de Las Condes, el traslado dentro de la comuna suele quedar bajo los 15 minutos."}
+  ],
+  "serviciosDestacados": ["alarmas-para-negocios", "sistemas-de-alarma-para-empresas", "camaras-de-seguridad", "control-de-acceso", "monitoreo-de-alarmas-24-7", "sistema-alarma-inalambrico", "prevencion-de-robo"]
+}

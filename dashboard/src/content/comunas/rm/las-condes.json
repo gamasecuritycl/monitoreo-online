@@ -1,0 +1,16 @@
+{
+  "name": "Las Condes",
+  "title": "Seguridad electrónica en Las Condes | GAMA",
+  "description": "Sistemas de alarma, cámaras IP y control de acceso en Las Condes, con instalación propia, monitoreo 24/7 y presupuesto sin cargo.",
+  "keywords": ["alarma las condes", "camaras las condes", "seguridad electronica las condes", "alarmas el golf", "control de acceso las condes"],
+  "hashtags": ["LasCondes", "SeguridadElectrónica", "SistemaDeAlarma", "GamaSecurity"],
+  "lead": "Del Golf al Apoquindo y desde Los Leones hasta Escuela Militar, Las Condes concentra oficinas, sedes corporativas y viviendas de alto valor que exigen seguridad de nivel empresarial. Instalamos alarmas redundantes, cámaras IP, cercos eléctricos y control de acceso con monitoreo 24/7 desde la central. Solicita la evaluación gratuita y recibe tu propuesta técnica sin compromiso.",
+  "sectors": ["El Golf", "Apoquindo", "Los Leones", "Escuela Militar", "Lo Curro", "Manquehue Sur"],
+  "reasonExtra": "Atendemos Las Condes con técnicos propios que conocen cada cuadra del Golf, Apoquindo y el eje de Los Leones, por lo que en urgencias llegamos el mismo día y dejamos instalaciones programadas en menos de 48 horas hábiles. Cubrimos también Vitacura, Lo Barnechea, Providencia y La Reina, comunas vecinas incluidas en nuestras rutas diarias. Todo sistema instalado en Las Condes se conecta a nuestra central redundante, con verificación humana de señales, notificación inmediata y coordinación con carabineros o guardias cuando corresponde.",
+  "faq": [
+    {"question": "¿Cuánto cuesta una alarma en Las Condes?", "answer": "Los kits de alarma para oficina y casa en Las Condes parten desde $199.900 con instalación incluida. El valor final depende del número de accesos, sensores y plan de monitoreo; realizamos la visita técnica sin costo y entregamos la cotización el mismo día."},
+    {"question": "¿Instalan cámaras y control de acceso en Las Condes?", "answer": "Sí. Instalamos cámaras IP, CCTV y control de acceso con lectora o torniquete en empresas, edificios y casas de Las Condes, con grabación en la nube, visión nocturna y revisión desde el celular para ti y tu equipo de seguridad."},
+    {"question": "¿Cuánto demoran en responder una alarma en Las Condes?", "answer": "Nuestra central verifica cada señal en menos de 2 minutos y según tu plan contactamos a carabineros o a tu empresa de guardias. Al tener técnicos en Las Condes y comunas vecinas, el traslado dentro de la comuna suele quedar bajo los 15 minutos."}
+  ],
+  "serviciosDestacados": ["alarmas-para-negocios", "sistemas-de-alarma-para-empresas", "camaras-de-seguridad", "control-de-acceso", "monitoreo-de-alarmas-24-7", "sistema-alarma-inalambrico", "prevencion-de-robo"]
+}

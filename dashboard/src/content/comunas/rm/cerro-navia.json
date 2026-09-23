@@ -1,0 +1,16 @@
+{
+  "name": "Cerro Navia",
+  "title": "Seguridad electrónica en Cerro Navia | GAMA",
+  "description": "Alarmas inalámbricas, cámaras y cerco en Cerro Navia, con central de monitoreo activa las 24 horas y presupuesto sin compromiso.",
+  "keywords": ["alarma cerro navia", "camaras cerro navia", "seguridad electronica cerro navia", "alarmas lo prado", "monitoreo de alarmas cerro navia"],
+  "hashtags": ["CerroNavia", "SeguridadElectrónica", "SistemaDeAlarma", "GamaSecurity"],
+  "lead": "En el cerro que da nombre a la comuna y en sus sectores más poblados instalamos alarmas con sensor de apertura y cámaras con visión nocturna. Nuestro equipo recorre a diario el centro de Cerro Navia, los barrios que miran hacia Quinta Normal y Renca, y el borde con Lo Prado; monitoreamos todo 24/7 y te avisamos al celular. Agenda tu evaluación gratuita hoy.",
+  "sectors": ["Centro Cerro Navia", "El Cerro", "Límite con Lo Prado", "Límite con Quinta Normal", "Límite con Renca", "Límite con Pudahuel"],
+  "reasonExtra": "Nuestros técnicos cubren Cerro Navia a diario, por lo que en urgencias llegamos el mismo día y las instalaciones programadas se resuelven en menos de 48 horas hábiles. Conocemos bien los caminos hacia Lo Prado, Quinta Normal, Renca y Pudahuel, comunas vecinas que visitamos cada semana junto al centro de la comuna. Todos los equipos instalados en Cerro Navia quedan ligados a nuestra central redundante, con verificación humana de la señal, notificación inmediata a tu teléfono y plan de contacto con carabineros o guardias según contrates.",
+  "faq": [
+    {"question": "¿Cuánto cuesta una alarma en Cerro Navia?", "answer": "En Cerro Navia los kits de alarma para casa parten desde $199.900 con instalación y configuración incluidas. El precio varía según accesos, sensores y plan de monitoreo; hacemos la visita y la cotización sin costo y sin compromiso para los vecinos de la comuna."},
+    {"question": "¿Instalan cámaras en Cerro Navia?", "answer": "Sí. Instalamos cámaras IP y CCTV en casas, almacenes y centros comerciales de Cerro Navia, con grabación local o en la nube y visión nocturna. Configuramos el acceso desde tu celular y dejamos todo probado antes de retirarnos del lugar."},
+    {"question": "¿Cuánto demoran en llegar si suena la alarma en Cerro Navia?", "answer": "La central verifica la señal en menos de 2 minutos y según tu plan llamamos a carabineros o a tus contactos. Como tenemos técnicos en Cerro Navia y vecinos de Lo Prado y Quinta Normal, el traslado local rara vez pasa de 15 minutos."}
+  ],
+  "serviciosDestacados": ["alarmas-para-casa", "camaras-de-seguridad", "sistema-alarma-inalambrico", "monitoreo-de-alarmas-24-7", "cerco-electrico", "alarma-con-app"]
+}

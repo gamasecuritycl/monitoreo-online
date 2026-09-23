@@ -1,0 +1,16 @@
+{
+  "name": "San Bernardo",
+  "title": "Seguridad electrónica en San Bernardo | GAMA",
+  "description": "Sistemas de alarma, cámaras IP y control de acceso en San Bernardo, con instalación propia, monitoreo 24/7 y presupuesto sin cargo.",
+  "keywords": ["alarma san bernardo", "camaras san bernardo", "seguridad electronica san bernardo", "alarmas estacion san bernardo", "control de acceso san bernardo"],
+  "hashtags": ["SanBernardo", "SeguridadElectrónica", "SistemaDeAlarma", "GamaSecurity"],
+  "lead": "Capital de la provincia de Maipo, San Bernardo concentra comercio en su plaza, viviendas familiares y bodegas industriales hacia el sur. Instalamos alarmas con monitoreo 24/7, cámaras IP y control de acceso en toda la comuna, desde el centro hasta los límites con Paine y Buin, con técnicos propios que llegan el mismo día. Cotiza sin cargo hoy.",
+  "sectors": ["Plaza de Armas de San Bernardo", "Estación San Bernardo", "Centro San Bernardo", "Límite con Maipú", "Límite con La Pintana", "Límite con Calera de Tango", "Límite con Buin"],
+  "reasonExtra": "Dejamos cuadrillas en San Bernardo todos los días, por lo que en urgencias llegamos el mismo día y resolvemos instalaciones normales en menos de 48 horas hábiles. Conocemos los accesos hacia Maipú, La Pintana, El Bosque, Calera de Tango, Buin y Paine, comunas vecinas incluidas en nuestras rutas del valle. Toda alarma en San Bernardo queda conectada a nuestra central redundante, con verificación humana de señales, aviso inmediato al celular y coordinación con carabineros o guardias. Si tienes sucursales en otras comunas del valle, integramos todas las alarmas en una sola plataforma.",
+  "faq": [
+    {"question": "¿Cuánto cuesta una alarma en San Bernardo?", "answer": "Los kits de alarma para local u oficina en San Bernardo parten desde $199.900 con instalación incluida. El valor final depende de accesos, sensores y plan de monitoreo; la visita técnica en la comuna es gratuita y entregamos la cotización el mismo día."},
+    {"question": "¿Instalan cámaras y control de acceso en San Bernardo?", "answer": "Sí. Instalamos cámaras IP, CCTV y control de acceso con lectora en comercios, empresas y casas de San Bernardo, con grabación en la nube o local y revisión desde el celular. Configuramos y probamos todo en terreno durante la misma jornada."},
+    {"question": "¿Cuánto demoran en responder una alarma en San Bernardo?", "answer": "Nuestra central verifica la señal en menos de 2 minutos y según tu plan contactamos a carabineros o a tu empresa de guardias. Al tener técnicos en San Bernardo y vecinos de Maipú y Buin, el traslado dentro de la comuna suele quedar bajo los 15 minutos."}
+  ],
+  "serviciosDestacados": ["alarmas-para-negocios", "sistemas-de-alarma-para-empresas", "camaras-de-seguridad", "control-de-acceso", "monitoreo-de-alarmas-24-7", "sistema-alarma-inalambrico", "prevencion-de-robo"]
+}

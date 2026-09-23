@@ -1,0 +1,16 @@
+{
+  "name": "La Florida",
+  "title": "Seguridad electrónica en La Florida | GAMA",
+  "description": "Alarmas, cámaras y cercos eléctricos en La Florida, con instalación local, monitoreo 24/7 y respuesta rápida. Evaluación gratuita a domicilio.",
+  "keywords": ["alarma la florida", "camaras la florida", "seguridad electronica la florida", "alarmas avenida la florida", "cerco electrico la florida"],
+  "hashtags": ["LaFlorida", "SeguridadElectrónica", "SistemaDeAlarma", "GamaSecurity"],
+  "lead": "Desde la avenida La Florida hasta el cruce con Departamental, miles de hogares y comercios confían en nosotros para cuidar su patrimonio. Instalamos alarmas con app, cámaras IP y cercos eléctricos en toda la comuna, incluido el sector que sube hacia Peñalolén y el borde con Macul, con monitoreo activo las 24 horas y respuesta coordinada en minutos. Solicita tu evaluación gratuita hoy.",
+  "sectors": ["Centro de La Florida", "Avenida La Florida", "Departamental", "Límite con Peñalolén", "Límite con Macul", "Límite con Puente Alto", "Límite con La Granja"],
+  "reasonExtra": "Trabajamos en La Florida desde hace años y nuestros técnicos conocen la avenida principal, los accesos a Departamental y los caminos hacia Peñalolén, Puente Alto, Macul, La Granja y San Miguel. Por eso en urgencias llegamos el mismo día y dejamos instalaciones programadas en menos de 48 horas hábiles. Cada sistema queda conectado a nuestra central redundante con verificación humana de la señal, notificación inmediata a tu celular y coordinación con carabineros o guardias según tu plan. También podemos dejar una primera revisión agendada a los treinta días, sin costo, para ajustar sensores.",
+  "faq": [
+    {"question": "¿Cuánto cuesta una alarma en La Florida?", "answer": "Los kits de alarma para casa en La Florida parten desde $199.900 e incluyen instalación y configuración. El precio final varía según accesos, sensores y plan de monitoreo; la visita en tu propiedad de La Florida es gratuita y te dejamos la cotización escrita el mismo día."},
+    {"question": "¿Instalan cámaras en La Florida?", "answer": "Sí. Instalamos cámaras IP y CCTV en casas, locales y edificios de La Florida, con grabación local o en la nube y acceso desde tu celular. También integramos las cámaras con la alarma para que veas el video de cada activación en segundos."},
+    {"question": "¿Cuánto demoran en responder una alarma en La Florida?", "answer": "La central verifica la señal en menos de 2 minutos y, según tu plan, coordinamos contacto con carabineros o guardias. Como tenemos técnicos en La Florida y vecinos de Peñalolén y Puente Alto, el traslado dentro de la comuna suele quedar bajo los 15 minutos."}
+  ],
+  "serviciosDestacados": ["alarmas-para-casa", "camaras-de-seguridad", "sistema-alarma-inalambrico", "monitoreo-de-alarmas-24-7", "cerco-electrico", "alarma-con-app"]
+}

@@ -1,0 +1,16 @@
+{
+  "name": "Santiago",
+  "title": "Seguridad electrónica en Santiago | GAMA",
+  "description": "Sistemas de alarma, cámaras IP y monitoreo 24/7 en Santiago. Técnicos propios, instalación rápida y presupuesto sin costo.",
+  "keywords": ["alarma santiago", "camaras santiago", "seguridad electronica santiago", "alarmas barrio italia", "camaras lastarria"],
+  "hashtags": ["Santiago", "SeguridadElectrónica", "SistemaDeAlarma", "GamaSecurity"],
+  "lead": "Sobre la Alameda y alrededor de la Plaza de Armas, cientos de oficinas, locales y departamentos confían en nuestros sistemas para cerrar bien el día. Diseñamos, instalamos y monitoreamos alarmas, cámaras y control de acceso en todo Santiago centro, con respuesta coordinada desde la central 24/7. Solicita una evaluación sin compromiso y protege tu propiedad con GAMA.",
+  "sectors": ["Lastarria", "Bellavista", "Barrio Italia", "Estación Central", "Santa Lucía", "Cívico", "Yungay"],
+  "reasonExtra": "Nuestro equipo opera diariamente dentro de Santiago, por lo que en casos urgentes llegamos el mismo día y dejamos instalaciones programadas resueltas en menos de 48 horas hábiles. Conocemos cada cuadra del centro, desde Lastarria hasta Yungay, y cubrimos además Providencia, Ñuñoa, Estación Central, Recoleta y Cerrillos con técnicos en ruta cada mañana. Todos los sistemas quedan conectados a nuestra central redundante, con verificación humana de señales, notificación a tu celular y coordinación con carabineros cuando el plan lo incluye.",
+  "faq": [
+    {"question": "¿Cuánto cuesta una alarma en Santiago?", "answer": "Los kits de alarma para oficina o departamento en Santiago parten desde $199.900 con instalación y configuración incluidas. El valor final depende de la cantidad de accesos, puntos de detección y el plan de monitoreo elegido; la visita técnica en Santiago es gratuita y sin compromiso."},
+    {"question": "¿Instalan cámaras de seguridad en Santiago?", "answer": "Sí. Instalamos cámaras IP y CCTV en locales de Lastarria, oficinas del sector Cívico y edificios de Santiago centro, con grabación local o en la nube, acceso desde el celular y mantenimiento opcional según el plan que contrates para tu propiedad."},
+    {"question": "¿Cuánto demora la respuesta a una alarma en Santiago?", "answer": "Nuestra central verifica cada señal en menos de 2 minutos y, según tu plan, coordinamos contacto con carabineros o guardias. Desde nuestras unidades en la zona, el traslado dentro de Santiago centro suele quedar por debajo de los 15 minutos, incluso en horario punta."}
+  ],
+  "serviciosDestacados": ["alarmas-para-negocios", "sistemas-de-alarma-para-empresas", "camaras-de-seguridad", "control-de-acceso", "monitoreo-de-alarmas-24-7", "sistema-alarma-inalambrico", "prevencion-de-robo"]
+}

@@ -1,0 +1,16 @@
+{
+  "name": "Peñalolén",
+  "title": "Seguridad electrónica en Peñalolén | GAMA",
+  "description": "Alarmas, cámaras y cercos eléctricos en Peñalolén, con instalación local, monitoreo 24/7 y respuesta rápida. Evaluación gratuita a domicilio.",
+  "keywords": ["alarma penalolen", "camaras penalolen", "seguridad electronica penalolen", "alarmas aycuruca", "cerco electrico penalolen"],
+  "hashtags": ["Peñalolén", "SeguridadElectrónica", "SistemaDeAlarma", "GamaSecurity"],
+  "lead": "Cerros de Aycuruca, pasajes familiares y edificios del sector bajo hacen de Peñalolén un territorio diverso que necesita protección a medida. Instalamos alarmas con batería de respaldo, cámaras con visión nocturna y cercos eléctricos en toda la comuna, desde el centro hasta el borde con La Florida, con monitoreo 24/7 y respuesta coordinada. Agenda tu evaluación gratuita hoy.",
+  "sectors": ["Aycuruca", "Centro Peñalolén", "Límite con La Reina", "Límite con La Florida", "Límite con Macul", "Límite con Puente Alto"],
+  "reasonExtra": "Nuestros técnicos cubren Peñalolén a diario, desde Aycuruca hasta los sectores que miran hacia La Reina y La Florida, comunas vecinas incluidas en nuestras rutas semanales junto con Macul y Puente Alto. En urgencias llegamos el mismo día y dejamos instalaciones programadas en menos de 48 horas hábiles. Cada sistema instalado en Peñalolén queda ligado a nuestra central redundante, con verificación humana de señales, notificación inmediata a tu celular y coordinación con carabineros o guardias según el plan. Además entregamos garantía por escrito, manuales de uso y soporte directo para ampliar el sistema más adelante.",
+  "faq": [
+    {"question": "¿Cuánto cuesta una alarma en Peñalolén?", "answer": "En Peñalolén los kits de alarma parten desde $199.900 con instalación y configuración incluidas. El valor final varía según accesos, sensores y plan de monitoreo; la visita en tu propiedad de la comuna, desde Aycuruca hasta el sector bajo, es gratuita y sin compromiso."},
+    {"question": "¿Instalan cámaras en Peñalolén?", "answer": "Sí. Instalamos cámaras IP y CCTV en casas, edificios y comercios de Peñalolén, con grabación local o en la nube y acceso desde tu celular. La visita de diagnóstico es gratuita y agendamos la instalación dentro de la misma semana en cualquier sector."},
+    {"question": "¿Cuánto demoran en responder una alarma en Peñalolén?", "answer": "La central verifica la señal en menos de 2 minutos y, según tu plan, coordinamos contacto con carabineros o guardias. Como tenemos técnicos en Peñalolén y vecinos de La Reina y La Florida, el traslado dentro de la comuna suele quedar bajo los 15 minutos."}
+  ],
+  "serviciosDestacados": ["alarmas-para-casa", "camaras-de-seguridad", "sistema-alarma-inalambrico", "monitoreo-de-alarmas-24-7", "cerco-electrico", "alarma-con-app"]
+}

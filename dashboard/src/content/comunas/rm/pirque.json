@@ -1,0 +1,16 @@
+{
+  "name": "Pirque",
+  "title": "Seguridad electrónica en Pirque | GAMA",
+  "description": "Alarmas, cámaras y cercos eléctricos en Pirque, con instalación local, monitoreo 24/7 y respuesta rápida. Evaluación gratuita a domicilio.",
+  "keywords": ["alarma pirque", "camaras pirque", "seguridad electronica pirque", "alarmas concha y toro", "cerco electrico pirque"],
+  "hashtags": ["Pirque", "SeguridadElectrónica", "SistemaDeAlarma", "GamaSecurity"],
+  "lead": "Viñas como Concha y Toro, casonas campestres y viviendas del sector rural definen a Pirque, una comuna donde el cerco eléctrico y la alarma trabajan juntos. Instalamos cámaras con visión nocturna, alarmas con batería de respaldo y monitoreo activo 24 horas para cada propiedad, desde el centro hasta los accesos a San José de Maipo. Solicita la evaluación gratuita.",
+  "sectors": ["Centro Pirque", "Entorno Viña Concha y Toro", "Límite con Puente Alto", "Límite con San José de Maipo", "Límite con San Bernardo"],
+  "reasonExtra": "Nuestros técnicos conocen bien Pirque y sus rutas hacia Puente Alto, San José de Maipo y San Bernardo, comunas vecinas que cubrimos cada semana en el valle. Por eso en urgencias llegamos el mismo día y dejamos instalaciones normales resueltas en menos de 48 horas hábiles, incluso en el sector rural. Cada alarma instalada en Pirque queda ligada a nuestra central redundante, con verificación humana de señales, aviso inmediato al celular y coordinación con carabineros o guardias. Sumamos capacitación en la visita, manuales simples y soporte telefónico directo mientras dure el plan contratado.",
+  "faq": [
+    {"question": "¿Cuánto cuesta una alarma en Pirque?", "answer": "Los kits de alarma para casa en Pirque parten desde $199.900 e incluyen instalación y prueba final. El precio varía según accesos, sensores, cercos y plan de monitoreo; la visita a tu propiedad de la comuna es gratuita y sin ningún compromiso de compra."},
+    {"question": "¿Hacen instalación de cámaras en Pirque?", "answer": "Sí. Instalamos cámaras IP y CCTV en casas, viñas, negocios y quintas de Pirque, con grabación local o en la nube, visión nocturna y acceso desde tu celular. La configuración queda lista el mismo día de la visita y te explicamos su uso antes de retirarnos."},
+    {"question": "¿Cuánto demoran en responder una alarma en Pirque?", "answer": "La central verifica la señal en menos de 2 minutos y, según tu plan, coordinamos contacto con carabineros o guardias. Como tenemos técnicos en Pirque y vecinos de Puente Alto y San Bernardo, el traslado local suele mantenerse bajo los 15 minutos."}
+  ],
+  "serviciosDestacados": ["alarmas-para-casa", "camaras-de-seguridad", "sistema-alarma-inalambrico", "monitoreo-de-alarmas-24-7", "cerco-electrico", "alarma-con-app"]
+}

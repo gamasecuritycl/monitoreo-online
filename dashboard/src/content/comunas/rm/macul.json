@@ -1,0 +1,16 @@
+{
+  "name": "Macul",
+  "title": "Seguridad electrónica en Macul | GAMA",
+  "description": "Sistemas de alarma, cámaras IP y control de acceso en Macul, con instalación propia, monitoreo 24/7 y presupuesto sin cargo.",
+  "keywords": ["alarma macul", "camaras macul", "seguridad electronica macul", "alarmas quebrada de macul", "control de acceso macul"],
+  "hashtags": ["Macul", "SeguridadElectrónica", "SistemaDeAlarma", "GamaSecurity"],
+  "lead": "Entre la Quebrada de Macul y el eje comercial de la comuna, casas, colegios y locales necesitan vigilancia confiable todo el año. Instalamos alarmas con monitoreo 24/7, cámaras IP con visión nocturna y control de acceso en todo Macul, con técnicos propios que llegan el mismo día. Cotiza sin cargo y protege tu propiedad hoy con GAMA.",
+  "sectors": ["Centro Macul", "Quebrada de Macul", "Límite con Ñuñoa", "Límite con La Florida", "Límite con Peñalolén", "Límite con San Joaquín", "Límite con San Miguel"],
+  "reasonExtra": "Trabajamos en Macul a diario y conocemos tanto la quebrada como los accesos hacia Ñuñoa, La Florida, Peñalolén, San Joaquín y San Miguel, comunas vecinas incluidas en nuestras rutas. En urgencias llegamos el mismo día y dejamos instalaciones normales resueltas en menos de 48 horas hábiles. Toda alarma instalada en Macul queda conectada a nuestra central redundante, con verificación humana de señales, notificación inmediata al celular y coordinación con carabineros o guardias según tu plan. Si tu negocio crece, ampliamos el sistema con nuevas cámaras y sensores sin volver a instalar todo.",
+  "faq": [
+    {"question": "¿Cuánto cuesta una alarma en Macul?", "answer": "En Macul los kits de alarma parten desde $199.900 con instalación y configuración incluidas. El valor depende de la cantidad de accesos, sensores y del plan de monitoreo; la visita técnica en tu propiedad de Macul es gratuita y te dejamos la cotización el mismo día."},
+    {"question": "¿Instalan cámaras y control de acceso en Macul?", "answer": "Sí. Instalamos cámaras IP, CCTV y control de acceso en negocios, jardines y casas de Macul, con lectora, grabación local o en la nube y revisión desde el celular. Configuramos y probamos todo en terreno durante la misma jornada de instalación."},
+    {"question": "¿Cuánto demoran en responder una alarma en Macul?", "answer": "Nuestra central verifica la señal en menos de 2 minutos y según tu plan contactamos a carabineros o a tu empresa de guardias. Como contamos con técnicos en Macul y vecinos de Ñuñoa y La Florida, el traslado local suele quedar bajo los 15 minutos."}
+  ],
+  "serviciosDestacados": ["alarmas-para-negocios", "sistemas-de-alarma-para-empresas", "camaras-de-seguridad", "control-de-acceso", "monitoreo-de-alarmas-24-7", "sistema-alarma-inalambrico", "prevencion-de-robo"]
+}

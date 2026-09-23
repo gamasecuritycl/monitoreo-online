@@ -1,0 +1,16 @@
+{
+  "name": "San Joaquín",
+  "title": "Seguridad electrónica en San Joaquín | GAMA",
+  "description": "Alarmas, cámaras y control de acceso en San Joaquín, con instalación propia, monitoreo 24/7 y respuesta rápida. Evaluación sin compromiso.",
+  "keywords": ["alarma san joaquin", "camaras san joaquin", "seguridad electronica san joaquin", "alarmas macul", "control de acceso san joaquin"],
+  "hashtags": ["SanJoaquín", "SeguridadElectrónica", "SistemaDeAlarma", "GamaSecurity"],
+  "lead": "San Joaquín es chica pero intensa: locales sobre la avenida principal, casas familiares y sedes universitarias comparten pocas cuadras. Por eso instalamos alarmas con app, cámaras con visión nocturna y control de acceso en toda la comuna, con monitoreo activo las 24 horas y técnicos que llegan rápido. Solicita la evaluación gratuita sin compromiso.",
+  "sectors": ["Centro San Joaquín", "Límite con San Miguel", "Límite con Macul", "Límite con Ñuñoa", "Límite con La Florida"],
+  "reasonExtra": "Nuestros técnicos atienden San Joaquín todos los días y conocen los accesos hacia San Miguel, Macul, Ñuñoa y La Florida, comunas vecinas que recorremos cada semana en nuestras rutas del sector centro-sur. En urgencias llegamos el mismo día y dejamos instalaciones normales agendadas en menos de 48 horas hábiles. Cada alarma instalada en San Joaquín queda ligada a la central redundante, con verificación humana de señales, aviso al celular y coordinación con carabineros según tu plan. También podemos dejar una revisión de cortesía agendada a los treinta días desde la instalación.",
+  "faq": [
+    {"question": "¿Cuánto cuesta una alarma en San Joaquín?", "answer": "En San Joaquín los kits de alarma parten desde $199.900 con instalación y configuración incluidas. El precio varía según accesos, sensores y plan de monitoreo; visitamos tu casa o negocio en la comuna sin costo y te dejamos la cotización el mismo día."},
+    {"question": "¿Hacen instalación de cámaras en San Joaquín?", "answer": "Sí. Instalamos cámaras IP y CCTV en locales, edificios y casas de San Joaquín, con grabación local o en la nube y acceso desde tu celular. La visita de diagnóstico es gratuita y solemos dejar el sistema operativo dentro de la misma semana."},
+    {"question": "¿Cuánto demoran en verificar una alarma de San Joaquín?", "answer": "La central revisa la señal en menos de 2 minutos y según tu plan coordinamos contacto con carabineros o guardias. Como tenemos técnicos en San Joaquín y vecinos de Macul y San Miguel, el traslado local suele quedar por debajo de los 15 minutos."}
+  ],
+  "serviciosDestacados": ["alarmas-para-negocios", "sistemas-de-alarma-para-empresas", "camaras-de-seguridad", "control-de-acceso", "monitoreo-de-alarmas-24-7", "sistema-alarma-inalambrico", "prevencion-de-robo"]
+}

@@ -1,0 +1,16 @@
+{
+  "name": "Independencia",
+  "title": "Seguridad electrónica en Independencia | GAMA",
+  "description": "Alarmas, cámaras y cercos eléctricos en Independencia. Instalación local, monitoreo 24/7 y respuesta rápida. Evaluación gratuita a domicilio.",
+  "keywords": ["alarma independencia", "camaras independencia", "seguridad electronica independencia", "alarmas avenida independencia", "cerco electrico independencia"],
+  "hashtags": ["Independencia", "SeguridadElectrónica", "SistemaDeAlarma", "GamaSecurity"],
+  "lead": "La avenida que le da nombre a la comuna concentra comercio, clínicas y viviendas que necesitan cerrarse bien de noche. En Independencia instalamos alarmas con app, cámaras de seguridad y sensores de presión, con monitoreo permanente y respuesta coordinada desde la central. Cubrimos desde el centro hasta los barrios que lindan con Santiago y Recoleta. Pide hoy tu evaluación gratuita sin compromiso.",
+  "sectors": ["Centro Independencia", "Avenida Independencia", "Límite con Santiago", "Límite con Recoleta", "Límite con Conchalí"],
+  "reasonExtra": "Asignamos técnicos fijos a Independencia y por eso llegamos el mismo día en urgencias y resolvemos las instalaciones normales en menos de 48 horas hábiles. Conocemos a fondo la avenida principal y los accesos hacia Santiago, Recoleta y Conchalí, comunas vecinas que recorremos cada semana junto al resto de la zona norte. Cada equipo instalado en Independencia queda ligado a nuestra central redundante, con verificación humana de la señal, notificación inmediata a tu teléfono y coordinación con carabineros o guardias según el plan contratado.",
+  "faq": [
+    {"question": "¿Cuánto cuesta una alarma en Independencia?", "answer": "Los kits de alarma para casa en Independencia parten desde $199.900 e incluyen instalación, configuración y prueba final. El precio cambia según accesos, sensores y plan de monitoreo; la visita a tu propiedad en Independencia es gratuita y sin ningún compromiso de compra."},
+    {"question": "¿Instalan cámaras en Independencia?", "answer": "Sí. Instalamos cámaras IP y CCTV en locales de la avenida Independencia, edificios y casas de la comuna, con grabación local o en la nube y visión nocturna. Configuramos el acceso desde tu celular y te enseñamos a revisar las grabaciones en el mismo lugar."},
+    {"question": "¿Cuánto demoran en responder si suena la alarma en Independencia?", "answer": "La central verifica la señal en menos de 2 minutos y, según tu plan, llamamos a carabineros o a tus contactos. Como contamos con técnicos en Independencia y cerca de Santiago y Recoleta, el traslado dentro de la comuna suele quedar bajo los 15 minutos."}
+  ],
+  "serviciosDestacados": ["alarmas-para-casa", "camaras-de-seguridad", "alarmas-para-negocios", "monitoreo-de-alarmas-24-7", "control-de-acceso", "sistema-alarma-inalambrico", "alarma-con-app"]
+}

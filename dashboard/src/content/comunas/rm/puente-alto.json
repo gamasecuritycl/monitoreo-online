@@ -1,0 +1,16 @@
+{
+  "name": "Puente Alto",
+  "title": "Seguridad electrónica en Puente Alto | GAMA",
+  "description": "Alarmas, cámaras y cercos eléctricos en Puente Alto, con instalación local, monitoreo 24/7 y respuesta rápida. Evaluación gratuita a domicilio.",
+  "keywords": ["alarma puente alto", "camaras puente alto", "seguridad electronica puente alto", "alarmas patio bonito", "cerco electrico puente alto"],
+  "hashtags": ["PuenteAlto", "SeguridadElectrónica", "SistemaDeAlarma", "GamaSecurity"],
+  "lead": "La comuna más poblada de la región merece seguridad sin pausas: hogares del sector alto, comercio del centro y viviendas del borde con el Cajón del Maipo protegidos con alarmas, cámaras y cercos eléctricos de técnicos locales. Monitoreamos tus señales 24 horas y coordinamos la respuesta en minutos. Solicita hoy la evaluación gratuita sin compromiso.",
+  "sectors": ["Centro de Puente Alto", "Patio Bonito", "Sector Alto (Ruta G-25)", "Sector Bajo (hacia Pirque)", "Límite con La Florida", "Límite con Peñalolén"],
+  "reasonExtra": "Dejamos técnicos en cada cuadrante de Puente Alto, por lo que en urgencias llegamos el mismo día y agendamos instalaciones en menos de 48 horas hábiles. Conocemos los accesos hacia La Florida, Peñalolén, Pirque y San José de Maipo, comunas vecinas incluidas en nuestras rutas diarias, además de la salida al Cajón del Maipo. Cada sistema en Puente Alto queda conectado a nuestra central redundante, con verificación humana de señales, notificación inmediata y coordinación con carabineros o guardias según tu plan.",
+  "faq": [
+    {"question": "¿Cuánto cuesta una alarma en Puente Alto?", "answer": "En Puente Alto los kits de alarma parten desde $199.900 con instalación y configuración incluidas. El precio final depende de accesos, sensores y plan de monitoreo; visitamos tu propiedad en cualquier sector de la comuna sin costo y entregamos la cotización el mismo día."},
+    {"question": "¿Instalan cámaras en Puente Alto?", "answer": "Sí. Instalamos cámaras IP y CCTV en casas, locales y edificios de Puente Alto, con grabación local o en la nube y acceso desde tu celular. La visita de diagnóstico es gratuita y solemos agendar la instalación dentro de la misma semana."},
+    {"question": "¿Cuánto demoran en responder una alarma en Puente Alto?", "answer": "Nuestra central verifica la señal en menos de 2 minutos y según tu plan contactamos a carabineros o a tus referentes. Como contamos con técnicos en Puente Alto y vecinos de La Florida y Pirque, el traslado local suele quedar bajo los 15 minutos."}
+  ],
+  "serviciosDestacados": ["alarmas-para-casa", "camaras-de-seguridad", "sistema-alarma-inalambrico", "monitoreo-de-alarmas-24-7", "cerco-electrico", "alarma-con-app"]
+}

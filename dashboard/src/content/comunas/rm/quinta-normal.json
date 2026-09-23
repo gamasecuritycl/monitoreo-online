@@ -1,0 +1,16 @@
+{
+  "name": "Quinta Normal",
+  "title": "Seguridad electrónica en Quinta Normal | GAMA",
+  "description": "Alarmas, cámaras y cercos eléctricos en Quinta Normal, con instalación local, monitoreo 24/7 y respuesta rápida. Evaluación gratuita a domicilio.",
+  "keywords": ["alarma quinta normal", "camaras quinta normal", "seguridad electronica quinta normal", "alarmas parque quinta normal", "cerco electrico quinta normal"],
+  "hashtags": ["QuintaNormal", "SeguridadElectrónica", "SistemaDeAlarma", "GamaSecurity"],
+  "lead": "Alrededor del Parque Quinta Normal y el Museo de la Memoria, familias y comerciantes cierran cada noche con alarmas que revisamos las 24 horas. Instalamos sistemas inalámbricos, cámaras con visión nocturna y cercos eléctricos en toda la comuna, incluidos los sectores que lindan con Cerrillos y Lo Prado. Agenda tu evaluación gratuita sin compromiso.",
+  "sectors": ["Parque Quinta Normal", "Entorno Museo de la Memoria", "Centro Quinta Normal", "Límite con Cerrillos", "Límite con Lo Prado", "Límite con Cerro Navia", "Límite con Estación Central"],
+  "reasonExtra": "Nuestros técnicos cubren Quinta Normal cada día, desde el parque hasta los límites con Cerrillos, Lo Prado, Cerro Navia, Estación Central y Renca, comunas vecinas recorridas en nuestras rutas semanales. Por eso en urgencias llegamos el mismo día y dejamos instalaciones agendadas en menos de 48 horas hábiles. Cada sistema instalado en Quinta Normal queda ligado a nuestra central redundante, con verificación humana de señales, notificación inmediata a tu celular y contacto con carabineros según tu plan. Dejamos además agendada una revisión de cortesía a los treinta días para confirmar que todo opera sin fallas.",
+  "faq": [
+    {"question": "¿Cuánto cuesta una alarma en Quinta Normal?", "answer": "En Quinta Normal los kits de alarma parten desde $199.900 con instalación y configuración incluidas. El precio varía según accesos, sensores y plan de monitoreo; visitamos tu propiedad en cualquier sector de la comuna sin costo y entregamos la cotización el mismo día."},
+    {"question": "¿Hacen instalación de cámaras en Quinta Normal?", "answer": "Sí. Instalamos cámaras IP y CCTV en casas, locales y edificios de Quinta Normal, con grabación local o en la nube y acceso desde tu celular. La visita de diagnóstico es gratuita y solemos completar la instalación dentro de la misma semana."},
+    {"question": "¿Cuánto demoran en verificar una alarma de Quinta Normal?", "answer": "La central revisa la señal en menos de 2 minutos y según tu plan coordinamos contacto con carabineros o guardias. Como tenemos técnicos en Quinta Normal y vecinos de Cerrillos y Lo Prado, el traslado local suele quedar bajo los 15 minutos."}
+  ],
+  "serviciosDestacados": ["alarmas-para-casa", "camaras-de-seguridad", "sistema-alarma-inalambrico", "monitoreo-de-alarmas-24-7", "cerco-electrico", "alarma-con-app"]
+}

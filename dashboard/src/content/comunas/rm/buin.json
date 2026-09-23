@@ -1,0 +1,16 @@
+{
+  "name": "Buin",
+  "title": "Seguridad electrónica en Buin | GAMA",
+  "description": "Alarmas, cámaras y cercos eléctricos en Buin, con instalación local, monitoreo 24/7 y respuesta rápida. Evaluación gratuita a domicilio.",
+  "keywords": ["alarma buin", "camaras buin", "seguridad electronica buin", "alarmas viña santa rita", "cerco electrico buin"],
+  "hashtags": ["Buin", "SeguridadElectrónica", "SistemaDeAlarma", "GamaSecurity"],
+  "lead": "Viñas, casas campestres y pequeños negocios del centro de Buin comparten caminos extensos y noches largas. Por eso instalamos alarmas con batería de respaldo, cámaras de visión nocturna y cercos eléctricos en toda la comuna, desde el poblado hasta los sectores rurales, con monitoreo activo las 24 horas. Agenda la evaluación gratuita y recibe tu propuesta sin compromiso.",
+  "sectors": ["Centro Buin", "Entorno Viña Santa Rita", "Límite con San Bernardo", "Límite con Calera de Tango", "Límite con Paine", "Límite con Pirque"],
+  "reasonExtra": "Nuestros técnicos cubren Buin a diario y conocen el centro, los caminos a viñas y los accesos hacia San Bernardo, Calera de Tango, Paine y Pirque, comunas vecinas incluidas en nuestras rutas del valle. En urgencias llegamos el mismo día y dejamos instalaciones normales resueltas en menos de 48 horas hábiles. Cada sistema en Buin queda conectado a nuestra central redundante, con verificación humana de señales, notificación inmediata al celular y coordinación con carabineros o guardias. Además puedes pedir por WhatsApp una revisión remota de las cámaras sin desplazar al técnico.",
+  "faq": [
+    {"question": "¿Cuánto cuesta una alarma en Buin?", "answer": "En Buin los kits de alarma parten desde $199.900 con instalación y configuración incluidas. El precio cambia según accesos, sensores y plan de monitoreo; visitamos tu propiedad en el centro o los sectores rurales de la comuna sin costo y cotizamos el mismo día."},
+    {"question": "¿Instalan cámaras en Buin?", "answer": "Sí. Instalamos cámaras IP y CCTV en casas, viñas, negocios y bodegas de Buin, con grabación local o en la nube y acceso desde tu celular. La visita de diagnóstico es gratuita y solemos agendar la instalación dentro de la misma semana."},
+    {"question": "¿Cuánto demoran en responder una alarma en Buin?", "answer": "La central verifica la señal en menos de 2 minutos y, según tu plan, coordinamos contacto con carabineros o guardias. Como tenemos técnicos en Buin y vecinos de San Bernardo y Paine, el traslado dentro de la comuna suele quedar bajo los 15 minutos."}
+  ],
+  "serviciosDestacados": ["alarmas-para-casa", "camaras-de-seguridad", "alarmas-para-negocios", "monitoreo-de-alarmas-24-7", "control-de-acceso", "sistema-alarma-inalambrico", "alarma-con-app"]
+}

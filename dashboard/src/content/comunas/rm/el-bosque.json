@@ -1,0 +1,16 @@
+{
+  "name": "El Bosque",
+  "title": "Seguridad electrónica en El Bosque | GAMA",
+  "description": "Seguridad electrónica para casas y negocios de El Bosque: alarmas, cámaras y control de acceso con monitoreo 24/7. Cotización gratuita.",
+  "keywords": ["alarma el bosque", "camaras el bosque", "seguridad electronica el bosque", "alarmas la granja", "control de acceso el bosque"],
+  "hashtags": ["ElBosque", "SeguridadElectrónica", "SistemaDeAlarma", "GamaSecurity"],
+  "lead": "El Bosque combina viviendas familiares, comercios del centro y terrenos junto a la Base Aérea que requieren distinta protección. Por eso diseñamos esquemas mixtos de alarma, cámaras y sensores para cada propiedad, con instalación por técnicos propios y monitoreo permanente desde la central. Cubrimos toda la comuna y su franja con La Pintana y San Bernardo; pide hoy la evaluación sin costo.",
+  "sectors": ["Centro El Bosque", "Sector Base Aérea", "Límite con La Granja", "Límite con La Pintana", "Límite con San Bernardo", "Límite con Cerrillos"],
+  "reasonExtra": "Nuestra cuadrilla de El Bosque conoce la zona desde el centro comunal hasta el borde con La Granja, La Pintana, San Bernardo y Cerrillos, de modo que atendemos urgencias el mismo día y dejamos instalaciones normales resueltas en menos de 48 horas hábiles. Cada sistema que instalamos en El Bosque se conecta a la central redundante, con verificación humana de la señal, aviso instantáneo a tu celular y contacto coordinado con carabineros o guardias si tu plan lo incluye. Además entregamos garantía y soporte local.",
+  "faq": [
+    {"question": "¿Cuánto cuesta una alarma en El Bosque?", "answer": "En El Bosque los kits de alarma parten desde $199.900 con instalación y configuración incluidas. Ajustamos la cotización a la cantidad de accesos y sensores de tu propiedad y sumamos monitoreo 24/7 si lo necesitas; la visita de diagnóstico en la comuna es totalmente gratuita."},
+    {"question": "¿Instalan cámaras y control de acceso en El Bosque?", "answer": "Sí. Instalamos cámaras IP, CCTV y control de acceso en comercios, bodegas y casas de El Bosque, con lectores de tarjeta o código, grabación local o en la nube y revisión desde el celular. La configuración se realiza en terreno el mismo día de la instalación."},
+    {"question": "¿Cuánto demoran en responder a una alarma en El Bosque?", "answer": "La central verifica la señal en menos de 2 minutos y, según tu plan, llamamos a carabineros o a tus contactos. Al contar con técnicos en El Bosque y vecinos de La Granja y San Bernardo, el traslado local rara vez supera los 15 minutos en cualquier día de la semana."}
+  ],
+  "serviciosDestacados": ["alarmas-para-casa", "camaras-de-seguridad", "alarmas-para-negocios", "monitoreo-de-alarmas-24-7", "control-de-acceso", "sistema-alarma-inalambrico", "alarma-con-app"]
+}

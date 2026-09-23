@@ -1,0 +1,16 @@
+{
+  "name": "Peñaflor",
+  "title": "Seguridad electrónica en Peñaflor | GAMA",
+  "description": "Alarmas, cámaras y cercos eléctricos en Peñaflor, con instalación local, monitoreo 24/7 y respuesta rápida. Evaluación gratuita a domicilio.",
+  "keywords": ["alarma penaflor", "camaras penaflor", "seguridad electronica penaflor", "alarmas autopista del sol", "cerco electrico penaflor"],
+  "hashtags": ["Peñaflor", "SeguridadElectrónica", "SistemaDeAlarma", "GamaSecurity"],
+  "lead": "Peñaflor se extiende sobre el valle del Mapocho, con el pueblo, casas de lugar y negocios que se cierran con llave todos los días. Instalamos alarmas con batería de respaldo, cámaras de visión nocturna y cercos eléctricos en todos sus sectores, con monitoreo activo las 24 horas desde la central. Pide hoy tu evaluación gratuita sin compromiso.",
+  "sectors": ["Centro Peñaflor", "Entorno Autopista del Sol", "Valle del río Mapocho", "Límite con Talagante", "Límite con Padre Hurtado"],
+  "reasonExtra": "Nuestros técnicos cubren Peñaflor con regularidad y conocen el centro, la Autopista del Sol y los caminos hacia Talagante y Padre Hurtado, comunas vecinas incluidas en nuestras rutas del valle. En urgencias llegamos el mismo día y dejamos instalaciones programadas en menos de 48 horas hábiles. Toda alarma en Peñaflor queda conectada a nuestra central redundante, con verificación humana de señales, aviso inmediato al celular y coordinación con carabineros o guardias según tu plan. Siempre puedes pasar por nuestra oficina o escribirnos por WhatsApp para ajustar el plan contratado.",
+  "faq": [
+    {"question": "¿Cuánto cuesta una alarma en Peñaflor?", "answer": "En Peñaflor los kits de alarma parten desde $199.900 con instalación y configuración incluidas. El precio varía según accesos, sensores y plan de monitoreo; visitamos tu propiedad en el pueblo o los sectores rurales sin costo y entregamos la cotización el mismo día."},
+    {"question": "¿Hacen instalación de cámaras en Peñaflor?", "answer": "Sí. Instalamos cámaras IP y CCTV en casas, quintas, negocios y bodegas de Peñaflor, con grabación local o en la nube, visión nocturna y acceso desde tu celular. La visita de diagnóstico es gratuita y agendamos el trabajo dentro de la misma semana."},
+    {"question": "¿Cuánto demoran en verificar una alarma de Peñaflor?", "answer": "La central revisa la señal en menos de 2 minutos y según tu plan coordinamos contacto con carabineros o guardias. Como tenemos técnicos que cubren Peñaflor y vecinos de Talagante y Padre Hurtado, el traslado local suele quedar bajo los 15 minutos."}
+  ],
+  "serviciosDestacados": ["alarmas-para-casa", "camaras-de-seguridad", "sistema-alarma-inalambrico", "monitoreo-de-alarmas-24-7", "cerco-electrico", "alarma-con-app"]
+}

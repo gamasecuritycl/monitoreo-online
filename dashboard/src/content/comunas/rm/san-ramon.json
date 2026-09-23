@@ -1,0 +1,16 @@
+{
+  "name": "San Ramón",
+  "title": "Seguridad electrónica en San Ramón | GAMA",
+  "description": "Alarmas, cámaras y cercos eléctricos en San Ramón, con instalación local, monitoreo 24/7 y respuesta rápida. Evaluación gratuita a domicilio.",
+  "keywords": ["alarma san ramon", "camaras san ramon", "seguridad electronica san ramon", "alarmas la pintana", "cerco electrico san ramon"],
+  "hashtags": ["SanRamón", "SeguridadElectrónica", "SistemaDeAlarma", "GamaSecurity"],
+  "lead": "San Ramón es una comuna a escala humana donde vecinos y comerciantes se conocen y donde cada alarma instalada se nota en la cuadra. Protegemos hogares y negocios con sistemas inalámbricos, cámaras de visión nocturna y cercos eléctricos, monitoreados las 24 horas desde nuestra central. Agenda la evaluación gratuita y conoce las opciones para tu propiedad hoy.",
+  "sectors": ["Centro San Ramón", "Límite con La Pintana", "Límite con La Granja", "Límite con La Florida", "Límite con Peñalolén"],
+  "reasonExtra": "Asignamos técnicos fijos a San Ramón, por lo que en urgencias llegamos el mismo día y dejamos instalaciones normales agendadas en menos de 48 horas hábiles. Conocemos los trayectos hacia La Pintana, La Granja, La Florida y Peñalolén, comunas vecinas recorridas cada semana en nuestras rutas del sector sur. Cada sistema instalado en San Ramón queda ligado a nuestra central redundante, con verificación humana de señales, aviso inmediato al celular y contacto con carabineros según tu plan. Dejamos además un listado de emergencia registrado en la central para agilizar futuros avisos.",
+  "faq": [
+    {"question": "¿Cuánto cuesta una alarma en San Ramón?", "answer": "En San Ramón los kits de alarma parten desde $199.900 con instalación y configuración incluidas. El precio cambia según accesos, sensores y plan de monitoreo; la visita en tu propiedad de la comuna es gratuita y sin ningún compromiso de compra."},
+    {"question": "¿Hacen instalación de cámaras en San Ramón?", "answer": "Sí. Instalamos cámaras IP y CCTV en casas, almacenes y comercios de San Ramón, con grabación local o en la nube y acceso desde tu celular. La visita de diagnóstico es gratuita y solemos completar la instalación dentro de la misma semana."},
+    {"question": "¿Cuánto demoran en verificar una alarma de San Ramón?", "answer": "La central revisa la señal en menos de 2 minutos y, según tu plan, coordinamos contacto con carabineros o guardias. Como tenemos técnicos en San Ramón y vecinos de La Pintana y La Granja, el traslado local rara vez pasa de 15 minutos."}
+  ],
+  "serviciosDestacados": ["alarmas-para-casa", "camaras-de-seguridad", "sistema-alarma-inalambrico", "monitoreo-de-alarmas-24-7", "cerco-electrico", "alarma-con-app"]
+}

@@ -1,0 +1,16 @@
+{
+  "name": "Maipú",
+  "title": "Seguridad electrónica en Maipú | GAMA",
+  "description": "Alarmas, cámaras y cercos eléctricos en Maipú, con instalación local, monitoreo 24/7 y respuesta rápida. Evaluación gratuita a domicilio.",
+  "keywords": ["alarma maipu", "camaras maipu", "seguridad electronica maipu", "alarmas plaza de armas maipu", "cerco electrico maipu"],
+  "hashtags": ["Maipú", "SeguridadElectrónica", "SistemaDeAlarma", "GamaSecurity"],
+  "lead": "La segunda comuna más poblada de la región merece seguridad a la altura de su tamaño: hogares, comercios y bodegas de Maipú protegidos con alarmas, cámaras y cercos eléctricos instalados por técnicos locales. Desde la Plaza de Armas hasta los sectores que lindan con Padre Hurtado y Cerrillos, monitoreamos tus señales 24 horas. Solicita la evaluación sin compromiso.",
+  "sectors": ["Plaza de Armas de Maipú", "Centro Maipú", "Límite con Estación Central", "Límite con Cerrillos", "Límite con Pudahuel", "Límite con Padre Hurtado", "Límite con Santiago"],
+  "reasonExtra": "Maipú es enorme y por eso dejamos técnicos en cada cuadrante de la comuna: en urgencias llegamos el mismo día y agendamos instalaciones en menos de 48 horas hábiles. Conocemos los accesos hacia Estación Central, Cerrillos, Pudahuel, Padre Hurtado y Santiago, comunas vecinas recorridas cada semana. Cada sistema instalado en Maipú queda conectado a nuestra central redundante, con verificación humana de señales, notificación inmediata a tu celular y coordinación con carabineros o guardias según tu plan. Dejamos además registrado el listado de emergencia de tu hogar para acelerar cualquier aviso futuro.",
+  "faq": [
+    {"question": "¿Cuánto cuesta una alarma en Maipú?", "answer": "Los kits de alarma para casa en Maipú parten desde $199.900 e incluyen instalación y configuración. El precio final depende de la cantidad de accesos y del plan de monitoreo; la visita en tu propiedad de Maipú es gratuita y te dejamos la cotización escrita el mismo día."},
+    {"question": "¿Hacen instalación de cámaras en Maipú?", "answer": "Sí. Instalamos cámaras IP y CCTV en casas, locales y bodegas de Maipú, con grabación local o en la nube y acceso desde tu celular. La visita de diagnóstico es gratuita y solemos agendar la instalación dentro de la misma semana en cualquier sector de la comuna."},
+    {"question": "¿Cuánto demoran en responder una alarma en Maipú?", "answer": "Nuestra central verifica la señal en menos de 2 minutos y, según tu plan, coordinamos contacto con carabineros o guardias. Al tener técnicos distribuidos en Maipú y vecinos de Padre Hurtado y Cerrillos, el traslado dentro de la comuna suele quedar bajo los 15 minutos."}
+  ],
+  "serviciosDestacados": ["alarmas-para-casa", "camaras-de-seguridad", "sistema-alarma-inalambrico", "monitoreo-de-alarmas-24-7", "cerco-electrico", "alarma-con-app"]
+}

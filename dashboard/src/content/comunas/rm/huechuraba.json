@@ -1,0 +1,16 @@
+{
+  "name": "Huechuraba",
+  "title": "Seguridad electrónica en Huechuraba | GAMA",
+  "description": "Alarmas con app, cámaras IP y monitoreo 24/7 para Huechuraba. Instalación por técnicos locales y presupuesto sin cargo.",
+  "keywords": ["alarma huechuraba", "camaras huechuraba", "seguridad electronica huechuraba", "alarmas quilicura", "control de acceso huechuraba"],
+  "hashtags": ["Huechuraba", "SeguridadElectrónica", "SistemaDeAlarma", "GamaSecurity"],
+  "lead": "Entre el río Mapocho y los cerros del norte de la ciudad, Huechuraba creció con edificios, casas y centros logísticos que requieren vigilancia seria. Instalamos alarmas, cámaras y cercos eléctricos en toda la comuna, desde el centro hacia Quilicura y Colina, con monitoreo activo las 24 horas y técnicos que llegan el mismo día. Solicita la evaluación gratuita de tu propiedad.",
+  "sectors": ["Centro Huechuraba", "Borde río Mapocho", "Límite con Conchalí", "Límite con Recoleta", "Límite con Quilicura", "Límite con Colina"],
+  "reasonExtra": "Nuestros instaladores cubren Huechuraba a diario y conocen tanto el centro como los sectores altos, por lo que atendemos urgencias el mismo día y dejamos instalaciones programadas en menos de 48 horas hábiles. Trabajamos también en Conchalí, Recoleta, Quilicura y la entrada de Colina, comunas vecinas que visitamos cada semana. Toda alarma instalada en Huechuraba queda conectada a nuestra central redundante con verificación humana de señales, aviso inmediato al celular y, si tu plan lo incluye, coordinación directa con carabineros o empresas de guardias.",
+  "faq": [
+    {"question": "¿Cuánto cuesta una alarma en Huechuraba?", "answer": "En Huechuraba los kits de alarma para casa parten desde $199.900 e incluyen instalación y configuración. El costo varía según accesos, sensores y plan de monitoreo elegido; la visita a tu propiedad en Huechuraba es gratuita y te dejamos la cotización escrita el mismo día."},
+    {"question": "¿Hacen instalación de cámaras en Huechuraba?", "answer": "Sí. Instalamos cámaras IP y CCTV en edificios, casas y bodegas de Huechuraba, con grabación local o en la nube, visión nocturna y acceso desde el celular. También integramos las cámaras con la alarma para que revises el video de cada activación en segundos."},
+    {"question": "¿Cuánto demoran en verificar una señal de Huechuraba?", "answer": "La central verifica cada señal en menos de 2 minutos. Según tu plan contactamos a carabineros o a tus referentes de confianza; como tenemos técnicos en Huechuraba y comunas vecinas, el traslado local se mantiene normalmente bajo los 15 minutos."}
+  ],
+  "serviciosDestacados": ["alarmas-para-negocios", "sistemas-de-alarma-para-empresas", "camaras-de-seguridad", "control-de-acceso", "monitoreo-de-alarmas-24-7", "sistema-alarma-inalambrico", "prevencion-de-robo"]
+}

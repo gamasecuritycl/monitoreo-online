@@ -1,0 +1,16 @@
+{
+  "name": "Tiltil",
+  "title": "Seguridad electrónica en Tiltil | GAMA",
+  "description": "Alarmas, cámaras y cercos eléctricos en Tiltil, con instalación local, monitoreo 24/7 y respuesta rápida. Evaluación gratuita a domicilio.",
+  "keywords": ["alarma tiltil", "camaras tiltil", "seguridad electronica tiltil", "alarmas cuesta la dormida", "cerco electrico tiltil"],
+  "hashtags": ["Tiltil", "SeguridadElectrónica", "SistemaDeAlarma", "GamaSecurity"],
+  "lead": "Asentada junto a la Cuesta La Dormida, Tiltil es una comuna pequeña donde cada instalación de seguridad se planifica con tiempo y materiales resistentes al clima. Instalamos alarmas con batería de respaldo, cámaras con visión nocturna y cercos eléctricos en el centro y los sectores rurales, monitoreados 24 horas. Pide hoy tu evaluación gratuita sin compromiso.",
+  "sectors": ["Centro Tiltil", "Cuesta La Dormida", "Sector Sur (hacia Lampa)", "Sector Sureste (hacia Colina)", "Sector Norte"],
+  "reasonExtra": "Nuestros técnicos viajan a Tiltil con regularidad y conocen el centro, la Cuesta La Dormida y los caminos hacia Colina y Lampa, comunas vecinas que atendemos cada semana junto al resto del sector norte. En urgencias llegamos el mismo día y dejamos instalaciones programadas en menos de 48 horas hábiles. Toda alarma en Tiltil queda conectada a nuestra central redundante, con verificación humana de señales, notificación inmediata a tu celular y coordinación con carabineros según tu plan. Si el clima altera algún componente, reemplazamos piezas en la visita de garantía sin costo adicional.",
+  "faq": [
+    {"question": "¿Cuánto cuesta una alarma en Tiltil?", "answer": "En Tiltil los kits de alarma parten desde $199.900 con instalación y configuración incluidas. El precio cambia según accesos, sensores y plan de monitoreo; visitamos tu propiedad en el centro o los sectores rurales de la comuna sin costo y cotizamos el mismo día."},
+    {"question": "¿Instalan cámaras en Tiltil?", "answer": "Sí. Instalamos cámaras IP y CCTV en casas, negocios y quintas de Tiltil, con grabación local o en la nube y acceso desde tu celular. La visita de diagnóstico es gratuita y solemos completar la instalación dentro de la misma semana."},
+    {"question": "¿Cuánto demoran en verificar una alarma de Tiltil?", "answer": "La central revisa la señal en menos de 2 minutos y según tu plan contactamos a carabineros o a tus referentes. Como contamos con técnicos que cubren Tiltil y vecinos de Colina y Lampa, el traslado local suele quedar bajo los 15 minutos."}
+  ],
+  "serviciosDestacados": ["alarmas-para-casa", "camaras-de-seguridad", "sistema-alarma-inalambrico", "monitoreo-de-alarmas-24-7", "cerco-electrico", "alarma-con-app"]
+}
