@@ -2,7 +2,6 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { getAllArticulos, getArticulo, getServicio } from '@/lib/content'
 import Breadcrumbs from '@/components/seo/Breadcrumbs'
-import Faq from '@/components/seo/Faq'
 import Hashtags from '@/components/seo/Hashtags'
 import JsonLd from '@/components/seo/JsonLd'
 import MarkdownBody from '@/components/seo/MarkdownBody'
@@ -50,6 +49,15 @@ export default async function ArticuloPage({ params }: { params: Promise<{ slug:
     image: `${SITE_URL}/og-blog.png`,
   }
 
+  const faqJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: a.faq.map(i => ({
+      '@type': 'Question', name: i.question,
+      acceptedAnswer: { '@type': 'Answer', text: i.answer },
+    })),
+  }
+
   return (
     <main className="min-h-screen bg-[#050d1a]">
       <JsonLd data={jsonLd} />
@@ -73,7 +81,7 @@ export default async function ArticuloPage({ params }: { params: Promise<{ slug:
             {servicios.map(s => <ServiceCard key={s!.slug} servicio={s!} />)}
           </div>
         </section>
-        <Faq items={a.faq} />
+        <JsonLd data={faqJsonLd} />
       </article>
     </main>
   )
