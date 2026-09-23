@@ -141,7 +141,7 @@ total calma.
 
 **¿Qué alarma es mejor para una casa ya terminada?** La inalámbrica. Al
 no requerir obra civil, se instala en una tarde sin dañar pintura ni
-muros, los sensores se emparejan con la central en el mismo visitante y
+muros, los sensores se emparejan con la central en la misma visita y
 el sistema se puede reubicar si te mudas. Los kits parten desde $219.900
 con tecnología encriptada y supervisión de batería. Solo tiene sentido
 elegir cableada si tu casa está en construcción o remodelación mayor,
