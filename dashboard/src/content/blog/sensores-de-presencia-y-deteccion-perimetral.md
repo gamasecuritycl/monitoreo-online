@@ -1,7 +1,7 @@
 ---
 title: "Sensores de presencia y detección perimetral"
 description: "Sensores de presencia y detección perimetral: tipos PIR y microonda, modelos interior y exterior, inmunidad a mascotas, ubicación e integración."
-keywords: [sensores de presencia, deteccion perimetral, sensor pir, sensor de movimiento, sensor outdoor alarma]
+keywords: [sensores de presencia, deteccion perimetral, sensor pir, sensor de movimiento, sensor exterior alarma]
 hashtags: [SensoresDePresencia, DeteccionPerimetral, SistemaDeAlarma, CercoElectrico]
 h1: "Sensores de presencia y detección perimetral: guía de compra"
 date: "2026-09-03"
@@ -62,7 +62,7 @@ obra ni cableado.
 El exterior exige otra construcción: carcasa estanca IP65 o superior
 resiste lluvia, polvo y sol; el rango de detección se amplía y muchas
 marcas añaden segunda óptica o lente esférico para cubrir paredes
-largas. Los sensores outdoor cuestan entre $49.900 y $89.900 instalados
+largas. Los sensores para exterior cuestan entre $49.900 y $89.900 instalados
 y suelen ir emparejados con otra barrera: contactos magnéticos en
 puertas metálicas, barreras de haz en portones o un cerco eléctrico con
 monitoreo en el mismo panel. La regla es simple: equipo de interior
@@ -137,7 +137,7 @@ las señales etiquetadas.
 | PIR inalámbrico interior instalado | desde $29.900 |
 | Contacto magnético puerta/ventana | $19.900 – $29.900 |
 | Doble tecnología interior | $59.900 – $79.900 |
-| Sensor outdoor estanco IP65 | $49.900 – $89.900 |
+| Sensor exterior estanco IP65 | $49.900 – $89.900 |
 | Reemplazo de batería con prueba | desde $9.900 |
 
 ## Preguntas frecuentes
@@ -171,8 +171,8 @@ más la ampliación que decida la evaluación inicial.
 ## Conclusión
 
 Los sensores son los ojos del sistema: PIR para interiores, microonda o
-doble tecnología donde el ambiente complica, outdoor certificado en el
-perímetro y contactos magnéticos en cada puerta. Sumarle inmunidad a
+doble tecnología donde el ambiente complica, equipo de exterior
+certificado en el perímetro y contactos magnéticos en cada puerta. Sumarle inmunidad a
 mascotas bien instalada y una ubicación pensada sobre el plano elimina
 la mayor parte de las falsas alarmas, y la integración con el panel y el
 monitoreo convierte cada detección en respuesta verificada. Con los

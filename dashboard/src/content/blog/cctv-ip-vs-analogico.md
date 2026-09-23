@@ -79,7 +79,8 @@ una clave maestra.
 
 El analógico remoto depende del grabador: los DVR actuales también
 ofrecen aplicación, pero su experiencia suele ser más lenta, con
-resoluciones reducidas en streaming y menos funciones de análisis. En la
+resoluciones reducidas en la transmisión en directo y menos funciones de
+análisis. En la
 práctica diaria —ver el local desde la casa, confirmar si llegó el
 repartidor, revisar la mañana siguiente— la IP responde más rápido y con
 menos configuración frágil. Un factor que pocos consideran: la nube. La

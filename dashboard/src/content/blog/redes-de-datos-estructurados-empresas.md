@@ -177,7 +177,8 @@ normas de referencia aplicadas desde el diseño. Sobre esa estructura
 convergen sin fricción las cámaras IP, la telefonía, el voceo y los
 sistemas de seguridad, y la empresa gana un activo documentado en lugar
 de un laberinto de cables sin nombre, con documentación que ordena cada
-ampliación futura.
+ampliación futura y un punto de partida claro para cualquier proveedor
+que llegue después.
 
 Para evaluar tu planta actual o proyectar una nueva, agenda un
 levantamiento sin costo con propuesta por punto. Los detalles están en

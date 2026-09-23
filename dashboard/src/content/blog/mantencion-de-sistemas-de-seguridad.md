@@ -171,7 +171,8 @@ tu tipo de instalación y firmar un contrato que detalle alcances,
 respuestas y repuestos. Con esas tres piezas, la alarma que instalaste
 hace tres años sigue detectando igual, las cámaras conservan imagen nítida
 y el cerco mantiene su medición dentro de rango. La lista de verificación
-y el certificado convierten la confianza en documentos.
+y el certificado convierten la confianza en documentos que puedes
+presentar a tu aseguradora cuando te los pidan.
 
 Si quieres revisar tu sistema actual o suscribir un contrato anual,
 agenda una visita técnica sin costo. El detalle de planes y visitas está

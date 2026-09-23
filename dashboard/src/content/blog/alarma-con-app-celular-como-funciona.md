@@ -83,7 +83,7 @@ todos usen la misma clave del teclado, cada persona entra con su usuario
 y su huella o PIN en el celular. Cuando alguien se va de la empresa, se
 revoca su acceso desde la app en segundos, sin cambiar la clave del panel
 ni avisar a media plantilla. Para familias, permite dar permiso al
-cuidador solo en horario diurnal; para comercios, al encargado de la
+cuidador solo en horario diurno; para comercios, al encargado de la
 mañana y al de la tarde por separado. La disciplina de usuarios
 individuales es también la mejor evidencia cuando hay que revisar un
 incidente interno.

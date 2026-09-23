@@ -177,7 +177,8 @@ lenguaje del gasto común, se aprueba en asamblea; acompañado de
 mantención y monitoreo, se sostiene en el tiempo sin degradarse. El
 resultado es un edificio más seguro, una administración con herramientas
 para responder y residentes que encuentran en el sistema una capa
-silenciosa de tranquilidad diaria.
+silenciosa de tranquilidad diaria, sin obras improvisadas ni
+discusiones repetidas en cada asamblea.
 
 Para evaluar el edificio y preparar la propuesta para la asamblea,
 agenda una visita técnica sin costo. Los sistemas de [alarma para
