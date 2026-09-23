@@ -1,0 +1,16 @@
+{
+  "name": "Nogales",
+  "title": "Seguridad electrónica en Nogales | GAMA",
+  "description": "Sistemas de alarma, cámaras y cercos eléctricos en Nogales, con cobertura en el pueblo y sectores rurales. Monitoreo 24/7 y evaluación gratuita.",
+  "keywords": ["alarma nogales", "camaras nogales", "seguridad electronica v region", "cerco electrico nogales", "alarmas petorca"],
+  "hashtags": ["Nogales", "SeguridadElectrónica", "VRegión", "SistemaDeAlarma", "GamaSecurity"],
+  "lead": "Protegemos casas, comercios y predios en Nogales con sistemas de alarma, cámaras de seguridad y cercos eléctricos instalados por técnicos que conocen la comuna y sus alrededores. Nuestra central de monitoreo opera 24 horas y coordina la respuesta en minutos sobre el centro de Nogales, El Melón, Pucalán, El Cobre y La Peña. Solicita una evaluación gratuita para tu propiedad.",
+  "sectors": ["Centro Nogales", "El Melón", "Pucalán", "El Cobre", "La Peña"],
+  "reasonExtra": "Nuestros técnicos tienen ruta fija por Nogales y los distritos de la comuna, por lo que resolvemos urgencias el mismo día y dejamos instalaciones programadas en menos de 48 horas hábiles. La cobertura se extiende a las comunas vecinas de La Calera, La Cruz, Hijuelas y Petorca, con visitas agendadas en cada recorrido por el valle. Todo sistema instalado en Nogales queda conectado a nuestra central redundante, con verificación humana de señales y notificación inmediata a tu celular y a tus contactos de confianza según el plan que elijas.",
+  "faq": [
+    {"question": "¿Cuánto cuesta una alarma en Nogales?", "answer": "Los kits de alarma para casa en Nogales parten desde $199.900 e incluyen instalación y configuración completas. El precio final depende de los accesos, sensores y del plan de monitoreo seleccionado; la evaluación en tu propiedad, en el pueblo o en un sector rural, es gratuita y no te obliga a contratar nada."},
+    {"question": "¿Hacen cercos eléctricos en Nogales?", "answer": "Sí. Instalamos cercos eléctricos en casas, terrenos y bodegas de Nogales, revisando malla, aisladores y alimentación antes de energizar. El trabajo incluye pruebas de funcionamiento y señalización, además de la opción de integrar el cerco con cámaras y sensores para que las alertas lleguen por un solo sistema."},
+    {"question": "¿Cuánto demoran en verificar una alarma en Nogales?", "answer": "La central revisa la señal en menos de 2 minutos y, según tu plan, coordinamos contacto con carabineros o guardias en la comuna. Como compartimos ruta con La Calera, La Cruz y Hijuelas, los tiempos de traslado dentro de Nogales se mantienen ágiles en cualquier horario."}
+  ],
+  "serviciosDestacados": ["cerco-electrico", "alarmas-para-casa", "camaras-de-seguridad", "monitoreo-de-alarmas-24-7", "sensores-de-presencia", "prevencion-de-robo"]
+}

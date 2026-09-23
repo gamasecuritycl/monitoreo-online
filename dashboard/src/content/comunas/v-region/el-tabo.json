@@ -1,0 +1,16 @@
+{
+  "name": "El Tabo",
+  "title": "Seguridad electrónica en El Tabo | GAMA",
+  "description": "Alarmas, cámaras y cercos eléctricos en El Tabo, con cobertura en el centro y sectores de playa. Monitoreo 24/7 y evaluación gratuita.",
+  "keywords": ["alarma el tabo", "camaras el tabo", "seguridad electronica v region", "cerco electrico el tabo", "alarmas cartagena"],
+  "hashtags": ["ElTabo", "SeguridadElectrónica", "VRegión", "SistemaDeAlarma", "GamaSecurity"],
+  "lead": "Protegemos casas, cabañas y locales en El Tabo con sistemas de alarma, cámaras de seguridad y cercos eléctricos instalados por técnicos que conocen la Ruta Quinta y todo el litoral sur de la región. Nuestra central de monitoreo atiende 24 horas y coordina la respuesta en minutos sobre el centro, Las Cruces, El Tabito y la Playa Chépica. Solicita una evaluación sin compromiso para tu propiedad.",
+  "sectors": ["Centro El Tabo", "Las Cruces", "El Tabito", "San Carlos", "Laguna El Peral", "Playa Chépica"],
+  "reasonExtra": "Recorremos El Tabo con frecuencia sobre la Ruta Quinta, por lo que resolvemos urgencias el mismo día y dejamos instalaciones programadas listas en menos de 48 horas hábiles. Extendemos el servicio a las comunas vecinas de Algarrobo, El Quisco, Cartagena y San Antonio, con técnicos repartidos a lo largo del corredor costero. Cada equipo instalado en El Tabo queda conectado a nuestra central redundante, con verificación humana de señales, aviso inmediato a tu celular y a tus contactos de confianza, y coordinación con carabineros cuando tu plan lo contempla.",
+  "faq": [
+    {"question": "¿Cuánto cuesta una alarma en El Tabo?", "answer": "Los kits de alarma para casa en El Tabo parten desde $199.900 e incluyen instalación y configuración por técnicos locales. El precio final varía según la cantidad de accesos, sensores y el plan de monitoreo elegido; la visita de evaluación en tu propiedad del centro o de la playa es gratuita y no te obliga a contratar nada."},
+    {"question": "¿Instalan cámaras en El Tabo?", "answer": "Sí. Instalamos cámaras IP y CCTV en casas, cabañas, comercios y bodegas de El Tabo, con grabación local o en la nube y acceso desde tu celular. Seleccionamos equipos aptos para el clima costero y te mostramos cómo revisar las tomas a distancia antes de partir de vacaciones."},
+    {"question": "¿Cómo es la respuesta ante una alarma en El Tabo?", "answer": "La central verifica la señal en menos de 2 minutos y, según tu plan, coordinamos contacto con carabineros o guardias en la comuna. Al cubrir también Algarrobo, El Quisco y Cartagena con el mismo equipo, mantenemos cobertura activa sobre toda la Ruta Quinta."}
+  ],
+  "serviciosDestacados": ["cerco-electrico", "camaras-de-seguridad", "alarmas-para-casa", "monitoreo-de-alarmas-24-7", "alarma-con-app", "prevencion-de-robo"]
+}

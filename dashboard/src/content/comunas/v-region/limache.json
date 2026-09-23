@@ -1,0 +1,16 @@
+{
+  "name": "Limache",
+  "title": "Seguridad electrónica en Limache | GAMA",
+  "description": "Alarmas, cámaras y cercos eléctricos en Limache, con instalación local y cobertura en los sectores residenciales. Monitoreo 24/7 y evaluación gratuita.",
+  "keywords": ["alarma limache", "camaras limache", "seguridad electronica v region", "cerco electrico limache", "alarmas villa alemana"],
+  "hashtags": ["Limache", "SeguridadElectrónica", "VRegión", "SistemaDeAlarma", "GamaSecurity"],
+  "lead": "Instalamos sistemas de alarma, cámaras de seguridad y cercos eléctricos en Limache para casas, comercios y bodegas de la comuna. Nuestra central de monitoreo opera las 24 horas y coordina la respuesta en minutos sobre el centro de Limache, Los Laureles, Los Leones, Los Perales y el sector de Tránsito Guerra. Pide una evaluación sin compromiso y conoce las opciones para tu propiedad.",
+  "sectors": ["Centro Limache", "Los Laureles", "Los Leones", "Los Perales", "Tránsito Guerra"],
+  "reasonExtra": "Tenemos técnicos con ruta fija por Limache y el corredor que une Quillota con Villa Alemana, por eso atendemos urgencias el mismo día y dejamos instalaciones programadas en menos de 48 horas hábiles. Extendemos el servicio a las comunas vecinas de Quillota, Concón, Olmué y Villa Alemana, con visitas agendadas en cada recorrido. Todo equipo instalado en Limache queda conectado a nuestra central redundante, con verificación humana de señales y notificación inmediata a tu celular y a tus contactos de confianza según el plan que elijas.",
+  "faq": [
+    {"question": "¿Cuánto cuesta una alarma en Limache?", "answer": "Los kits de alarma para casa en Limache parten desde $199.900 e incluyen instalación y configuración por técnicos locales. El precio definitivo depende de la cantidad de accesos, sensores y del plan de monitoreo elegido; la visita de evaluación en tu propiedad, en el centro o en un sector perimetral, es gratuita y sin compromiso."},
+    {"question": "¿Hacen instalación de cámaras en Limache?", "answer": "Sí. Instalamos cámaras IP y CCTV en casas, locales, bodegas y oficinas de Limache, con grabación local o en la nube y acceso desde tu celular. Ajustamos la propuesta a la iluminación del lugar y a la conectividad disponible, para que puedas revisar las tomas y el historial cuando lo necesites."},
+    {"question": "¿Cuánto demoran en atender una alarma en Limache?", "answer": "La central verifica la señal en menos de 2 minutos y, según tu plan, coordinamos contacto con carabineros o guardias en la comuna. Al compartir corredor con Quillota y Villa Alemana, los traslados dentro de Limache suelen ser rápidos a cualquier hora del día."}
+  ],
+  "serviciosDestacados": ["alarmas-para-casa", "camaras-de-seguridad", "monitoreo-de-alarmas-24-7", "control-de-acceso", "cerco-electrico", "prevencion-de-robo"]
+}

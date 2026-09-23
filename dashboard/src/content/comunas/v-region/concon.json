@@ -1,0 +1,16 @@
+{
+  "name": "Concón",
+  "title": "Seguridad electrónica en Concón | GAMA",
+  "description": "Alarmas, cámaras y cercos eléctricos en Concón, con instalación local y monitoreo 24/7. Evaluación gratuita a domicilio.",
+  "keywords": ["alarma concon", "camaras concon", "seguridad electronica v region", "cerco electrico concon", "alarmas quintero"],
+  "hashtags": ["Concón", "SeguridadElectrónica", "VRegión", "SistemaDeAlarma", "GamaSecurity"],
+  "lead": "Concón reúne tres mundos en pocos kilómetros: el borde costero de la caleta San Pedro, la vivienda consolidada del Concón tradicional y el campo del sector de Independencia; en los tres instalamos alarmas, cámaras de seguridad y cercos eléctricos. Nuestra central monitorea las señales 24 horas y coordina la respuesta sobre la llanura aluvial y la cuesta que sube hacia el barrio Montemar. Solicita una evaluación sin compromiso.",
+  "sectors": ["Concón Viejo", "Barrio Montemar", "Villa Independencia", "Lajarilla", "Caleta San Pedro", "La Victoria"],
+  "reasonExtra": "Somos una empresa con sede operativa en la zona, por lo que llegamos a Concón el mismo día en casos urgentes y dejamos instalaciones programadas en menos de 48 horas hábiles. Conocemos la comuna desde la caleta hasta la zona industrial y también las vecinas Quintero, Limache, Quilpué y Viña del Mar, recorridas cada semana en nuestras rutas del litoral. Cada sistema queda conectado a nuestra central redundante, con verificación humana de señales y notificación inmediata a tu celular y a tus contactos de confianza.",
+  "faq": [
+    {"question": "¿Cuánto cuesta una alarma en Concón?", "answer": "Los kits de alarma para casa en Concón parten desde $199.900 e incluyen instalación y configuración completas. El valor final depende de la cantidad de accesos, sensores y del plan de monitoreo que elijas; la visita de evaluación en tu propiedad, ya sea en el borde costero o en el sector de Independencia, es gratuita."},
+    {"question": "¿Hacen instalación de cámaras en Concón?", "answer": "Sí. Instalamos cámaras IP y CCTV en casas, negocios y bodegas de Concón, con grabación local o en la nube y acceso desde tu celular. También damos mantenimiento a sistemas ya instalados en la comuna y en los barrios vecinos de Quintero y Limache."},
+    {"question": "¿Cuánto demoran en responder una alarma en Concón?", "answer": "La central verifica la señal en menos de 2 minutos y, según tu plan, coordinamos contacto con carabineros o guardias. Como tenemos técnicos en Concón y rutas hacia Quintero y Viña del Mar, el traslado dentro de la comuna suele ser breve, incluso en temporada de veraneo."}
+  ],
+  "serviciosDestacados": ["alarmas-para-casa", "camaras-de-seguridad", "cerco-electrico", "monitoreo-de-alarmas-24-7", "sistema-alarma-inalambrico", "prevencion-de-robo"]
+}

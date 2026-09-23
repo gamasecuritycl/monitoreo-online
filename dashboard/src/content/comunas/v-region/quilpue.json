@@ -1,0 +1,16 @@
+{
+  "name": "Quilpué",
+  "title": "Seguridad electrónica en Quilpué | GAMA",
+  "description": "Sistemas de alarma, cámaras y cercos eléctricos en Quilpué. Técnicos locales, monitoreo 24/7 y respuesta rápida. Evalúa gratis.",
+  "keywords": ["alarma quilpue", "camaras quilpue", "seguridad electronica v region", "cerco electrico quilpue", "alarmas villa alemana"],
+  "hashtags": ["Quilpué", "SeguridadElectrónica", "VRegión", "SistemaDeAlarma", "GamaSecurity"],
+  "lead": "Protegemos hogares y negocios en Quilpué, desde la zona urbana que crece junto a Villa Alemana hasta el Valle de Colliguay, con sistemas de alarma, cámaras de seguridad y cercos eléctricos instalados por técnicos del sector. El Camino Marga Marga, heredero del Camino Real a Santiago, marca nuestras rutas diarias y nuestra central de monitoreo opera las 24 horas, verificando cada señal en minutos. Agenda tu evaluación sin costo.",
+  "sectors": ["Centro Quilpué", "Población Argentina", "El Belloto", "Los Pinos", "Valle de Colliguay"],
+  "reasonExtra": "Trabajamos en Quilpué todas las semanas y conocemos la comuna desde la estación El Belloto hasta la aldea de Colliguay, por eso llegamos con hora exacta a cada visita y resolvemos urgencias el mismo día. Nuestras rutas cubren también Villa Alemana, Limache, Viña del Mar y Concón, así que la mantención de tus equipos no espera. Cada instalación queda ligada a nuestra central redundante, con verificación humana de señales, aviso inmediato a tu celular y contacto con carabineros según tu plan.",
+  "faq": [
+    {"question": "¿Cuánto cuesta una alarma en Quilpué?", "answer": "Los kits de alarma en Quilpué parten desde $199.900 e incluyen instalación y configuración por técnicos locales. El precio cambia según accesos, sensores y plan de monitoreo; la visita de evaluación en tu casa, condominio o negocio es gratuita y te deja el presupuesto cerrado antes de decidir."},
+    {"question": "¿Instalan cámaras de seguridad en Quilpué?", "answer": "Sí. Instalamos cámaras IP y CCTV en viviendas, comercios y bodegas de Quilpué, con grabación local o en la nube y acceso desde el celular. Trabajamos tanto en la zona urbana como en sectores rurales como Colliguay, donde reforzamos la conexión para que las imágenes siempre estén disponibles."},
+    {"question": "¿Cuánto demora la respuesta a una alarma en Quilpué?", "answer": "Nuestra central revisa la señal en menos de 2 minutos y, según tu plan, contacta a tus referentes y coordina con carabineros o guardias. Al tener técnicos en Quilpué y rutas hacia Villa Alemana y Limache, el traslado al barrio que corresponda se resuelve con rapidez."}
+  ],
+  "serviciosDestacados": ["alarmas-para-casa", "camaras-de-seguridad", "alarmas-para-negocios", "monitoreo-de-alarmas-24-7", "cerco-electrico", "control-de-acceso"]
+}

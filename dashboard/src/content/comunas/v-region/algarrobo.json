@@ -1,0 +1,16 @@
+{
+  "name": "Algarrobo",
+  "title": "Seguridad electrónica en Algarrobo | GAMA",
+  "description": "Sistemas de alarma, cámaras y cercos eléctricos en Algarrobo, con instalación local y cobertura en la costa. Monitoreo 24/7 y evaluación gratuita.",
+  "keywords": ["alarma algarrobo", "camaras algarrobo", "seguridad electronica v region", "cerco electrico algarrobo", "alarmas el quisco"],
+  "hashtags": ["Algarrobo", "SeguridadElectrónica", "VRegión", "SistemaDeAlarma", "GamaSecurity"],
+  "lead": "Instalamos sistemas de alarma, cámaras de seguridad y cercos eléctricos en Algarrobo para hogares, lugares de veraneo y pequeños negocios de la costa. Nuestra central de monitoreo opera las 24 horas y coordina la respuesta en minutos sobre sectores como Las Cadenas, Los Tubos, El Canelo y la Caleta San Pedro. Reserva una evaluación gratuita y conoce las alternativas disponibles para tu propiedad.",
+  "sectors": ["Centro Las Cadenas", "Caleta San Pedro", "El Canelo", "Los Tubos", "Avenida Carlos Alessandri"],
+  "reasonExtra": "Nuestros técnicos tienen ruta fija en Algarrobo y atienden urgencias el mismo día, con instalaciones programadas resueltas en menos de 48 horas hábiles. Trabajamos también en las comunas vecinas de El Quisco y Casablanca, y subimos habitualmente hacia Valparaíso y Viña del Mar por materiales y repuestos, lo que acorta los plazos de entrega. Cada sistema instalado en Algarrobo queda conectado a nuestra central redundante, con verificación humana de señales y aviso inmediato a tu celular y a tus contactos de confianza.",
+  "faq": [
+    {"question": "¿Cuánto cuesta una alarma en Algarrobo?", "answer": "Los kits de alarma para casa en Algarrobo parten desde $199.900 e incluyen instalación y configuración completas. El valor final depende de la cantidad de accesos, sensores y del plan de monitoreo seleccionado; la evaluación en tu propiedad, ya sea en el centro o en un sector de playa, es gratuita y sin compromiso."},
+    {"question": "¿Hacen cercos eléctricos en Algarrobo?", "answer": "Sí. Instalamos cercos eléctricos en casas, terrenos y negocios de Algarrobo, revisando malla, aisladores y alimentación antes de energizar. El trabajo incluye pruebas de funcionamiento, señalización reglamentaria y, si lo deseas, integración con cámaras y alarma para que todo quede bajo un mismo sistema de control."},
+    {"question": "¿Cuánto demoran en responder una alarma en Algarrobo?", "answer": "La central verifica la señal en menos de 2 minutos y, según tu plan, coordinamos contacto con carabineros o guardias en la comuna. Como cubrimos Algarrobo, El Quisco y Casablanca con el mismo equipo, los traslados dentro del litoral suelen ser rápidos en cualquier horario."}
+  ],
+  "serviciosDestacados": ["cerco-electrico", "camaras-de-seguridad", "alarmas-para-casa", "camaras-ip", "monitoreo-de-alarmas-24-7", "sensores-de-presencia"]
+}

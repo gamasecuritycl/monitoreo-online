@@ -1,0 +1,16 @@
+{
+  "name": "Santo Domingo",
+  "title": "Seguridad electrónica en Santo Domingo | GAMA",
+  "description": "Alarmas, cámaras y cercos eléctricos en Santo Domingo, con cobertura en todo el litoral de la comuna. Monitoreo 24/7 y evaluación gratuita.",
+  "keywords": ["alarma santo domingo", "camaras santo domingo", "seguridad electronica v region", "cerco electrico santo domingo", "alarmas puchuncavi"],
+  "hashtags": ["SantoDomingo", "SeguridadElectrónica", "VRegión", "SistemaDeAlarma", "GamaSecurity"],
+  "lead": "Cuidamos hogares, cabañas y terrenos en Santo Domingo con sistemas de alarma, cámaras de seguridad y cercos eléctricos instalados por técnicos que conocen la zona costera entre Cartagena y Puchuncaví. Nuestra central de monitoreo opera las 24 horas y verifica cada señal en minutos, cubriendo sectores como Rocas de Santo Domingo, El Convento y Bucalemu. Agenda una evaluación sin compromiso para tu propiedad.",
+  "sectors": ["Rocas de Santo Domingo", "El Convento", "Bucalemu", "San Enrique", "San Guillermo", "Horizonte del Mar"],
+  "reasonExtra": "Nuestros técnicos cubren Santo Domingo con ruta habitual sobre la Ruta Quinta, por lo que atendemos urgencias el mismo día y dejamos instalaciones programadas listas en menos de 48 horas hábiles. También operamos en las comunas vecinas de Cartagena, Puchuncaví y Curacaví, lo que nos permite mantener stock local y respuesta rápida en todo el litoral. Cada sistema instalado en Santo Domingo queda conectado a nuestra central redundante, con verificación humana de señales y notificación inmediata a tu celular y a tus contactos de confianza según el plan que elijas.",
+  "faq": [
+    {"question": "¿Cuánto cuesta una alarma en Santo Domingo?", "answer": "Los kits de alarma para casa en Santo Domingo parten desde $199.900 e incluyen instalación y configuración por técnicos locales. El precio definitivo depende de los accesos, sensores y del plan de monitoreo que selecciones; la visita de evaluación en tu propiedad, ya sea en el centro o en un sector costero, es gratuita y sin compromiso."},
+    {"question": "¿Hacen cercos eléctricos en Santo Domingo?", "answer": "Sí. Instalamos cercos eléctricos en casas de playa, terrenos y bodegas de Santo Domingo, con verificación de malla, aisladores y alimentación confiable. El trabajo incluye revisión del perímetro, pruebas de funcionamiento y explicación de uso, además de integración opcional con cámaras y alarma para un solo punto de control."},
+    {"question": "¿Cuánto demoran en atender una alarma en Santo Domingo?", "answer": "La central verifica la señal en menos de 2 minutos y, según tu plan, coordinamos contacto con carabineros o guardias en la comuna. Al tener técnicos con ruta fija por la Ruta Quinta entre Cartagena y Puchuncaví, los traslados dentro de Santo Domingo suelen ser rápidos."}
+  ],
+  "serviciosDestacados": ["cerco-electrico", "camaras-de-seguridad", "alarmas-para-casa", "sensores-de-presencia", "monitoreo-de-alarmas-24-7", "camaras-ip"]
+}

@@ -1,0 +1,16 @@
+{
+  "name": "El Quisco",
+  "title": "Seguridad electrónica en El Quisco | GAMA",
+  "description": "Alarmas, cámaras de seguridad y cercos eléctricos en El Quisco, para casas de playa y propiedades de veraneo. Monitoreo 24/7 y evaluación gratuita.",
+  "keywords": ["alarma el quisco", "camaras el quisco", "seguridad electronica v region", "cerco electrico el quisco", "alarmas algarrobo"],
+  "hashtags": ["ElQuisco", "SeguridadElectrónica", "VRegión", "SistemaDeAlarma", "GamaSecurity"],
+  "lead": "Brindamos seguridad a las casas de playa, cabañas y propiedades de turismo en El Quisco con alarmas, cámaras y cercos eléctricos instalados por un equipo que trabaja todo el año en la costa. Nuestra central de monitoreo funciona 24 horas y verifica señales en minutos, desde el centro de la comuna hasta Punta de Tralca, Isla Negra y El Totoral. Pide una evaluación sin compromiso.",
+  "sectors": ["Centro El Quisco", "Punta de Tralca", "Isla Negra", "El Totoral", "Los Corsarios"],
+  "reasonExtra": "Recorremos El Quisco durante todo el año, tanto en temporada alta como en invierno, por lo que atendemos urgencias el mismo día y dejamos instalaciones resueltas en menos de 48 horas hábiles. Nuestra cobertura se extiende a las comunas vecinas de Algarrobo, Casablanca y El Tabo, con técnicos que conocen cada calle y sector del litoral. Cada sistema instalado en El Quisco queda conectado a nuestra central redundante, con verificación humana de señales y notificación inmediata a tu celular y a tus contactos de confianza según el plan que contrates.",
+  "faq": [
+    {"question": "¿Cuánto cuesta una alarma en El Quisco?", "answer": "Los kits de alarma para casa en El Quisco parten desde $199.900 e incluyen instalación y configuración por técnicos locales. El precio final cambia según los accesos, sensores y el plan de monitoreo que elijas; la visita de evaluación en tu casa de playa o propiedad de veraneo es gratuita y sin compromiso."},
+    {"question": "¿Puedo controlar la alarma desde mi celular estando fuera de temporada?", "answer": "Sí. Los sistemas que instalamos en El Quisco incluyen aplicación móvil para armar y desarmar a distancia, recibir alertas y revisar el estado de los sensores. Ideal para propiedades que pasan meses cerradas: la central sigue monitoreando 24 horas y te avisa ante cualquier señal sospechosa."},
+    {"question": "¿Hacen instalación de cámaras en El Quisco?", "answer": "Instalamos cámaras IP y CCTV en casas, cabañas y negocios de El Quisco, con grabación local o en la nube y acceso desde tu celular. Consideramos la humedad salina y la conectividad de cada sector para recomendar equipos durables y una configuración estable durante todo el año."}
+  ],
+  "serviciosDestacados": ["cerco-electrico", "camaras-de-seguridad", "alarmas-para-casa", "alarma-con-app", "monitoreo-de-alarmas-24-7", "prevencion-de-robo"]
+}

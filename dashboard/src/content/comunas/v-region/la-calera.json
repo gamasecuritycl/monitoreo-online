@@ -1,0 +1,16 @@
+{
+  "name": "La Calera",
+  "title": "Seguridad electrónica en La Calera | GAMA",
+  "description": "Sistemas de alarma, cámaras y cercos eléctricos en La Calera, con instalación local y monitoreo 24/7. Evaluación gratuita sin compromiso.",
+  "keywords": ["alarma la calera", "camaras la calera", "seguridad electronica v region", "cerco electrico la calera", "alarmas nogales"],
+  "hashtags": ["LaCalera", "SeguridadElectrónica", "VRegión", "SistemaDeAlarma", "GamaSecurity"],
+  "lead": "Protegemos hogares, comercios y talleres en La Calera con sistemas de alarma, cámaras de seguridad y cercos eléctricos instalados por técnicos que conocen la comuna. Nuestra central de monitoreo atiende 24 horas y coordina la respuesta en minutos sobre el centro, Artificio, Pachacamita, El Olivo y Las Cabritas. Solicita una evaluación gratuita para tu propiedad.",
+  "sectors": ["Centro La Calera", "Artificio", "Pachacamita", "El Olivo", "Las Cabritas", "Población Huertos Obreros"],
+  "reasonExtra": "La Calera es un cruce obligado en nuestro recorrido del valle, así resolvemos urgencias el mismo día y dejamos instalaciones listas en menos de 48 horas hábiles. Compartimos ruta con las comunas vecinas de Quillota, Nogales, La Cruz e Hijuelas, lo que nos permite llevar equipos y repuestos sin demoras. Todo sistema instalado en La Calera queda conectado a nuestra central redundante, con verificación humana de señales y notificación inmediata a tu celular y a tus contactos de confianza según el plan contratado, más coordinación con carabineros cuando corresponde.",
+  "faq": [
+    {"question": "¿Cuánto cuesta una alarma en La Calera?", "answer": "Los kits de alarma para casa en La Calera parten desde $199.900 e incluyen instalación y configuración completas. El valor final se define según los accesos, sensores y el plan de monitoreo seleccionado; la evaluación en tu propiedad del centro o de los sectores residenciales es gratuita y no implica contrato."},
+    {"question": "¿Protegen comercios y talleres en La Calera?", "answer": "Sí. Diseñamos soluciones para locales, talleres y bodegas de La Calera con alarmas para negocios, cámaras y control de acceso. Evaluamos horarios, puntos ciegos y personal encargado para configurar el sistema de modo que las alertas lleguen a las personas correctas, evitando falsas alarmas fuera del horario de atención."},
+    {"question": "¿Cuánto demoran en atender una alarma en La Calera?", "answer": "La central verifica la señal en menos de 2 minutos y, según tu plan, coordinamos contacto con carabineros o guardias en la comuna. Al estar Quillota, Nogales y La Cruz sobre la misma ruta, los traslados dentro de La Calera se mantienen cortos durante todo el día."}
+  ],
+  "serviciosDestacados": ["alarmas-para-casa", "alarmas-para-negocios", "camaras-de-seguridad", "monitoreo-de-alarmas-24-7", "control-de-acceso", "cerco-electrico"]
+}

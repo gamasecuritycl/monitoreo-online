@@ -1,0 +1,16 @@
+{
+  "name": "Zapallar",
+  "title": "Seguridad electrónica en Zapallar | GAMA",
+  "description": "Sistemas de alarma, cámaras y cercos eléctricos en Zapallar, para residencias y propiedades de la costa. Monitoreo 24/7 y evaluación gratuita.",
+  "keywords": ["alarma zapallar", "camaras zapallar", "seguridad electronica v region", "cerco electrico zapallar", "alarmas papudo"],
+  "hashtags": ["Zapallar", "SeguridadElectrónica", "VRegión", "SistemaDeAlarma", "GamaSecurity"],
+  "lead": "Instalamos alarmas, cámaras de seguridad y cercos eléctricos en Zapallar para residencias, cabañas y propiedades de turismo que exigen discreción y respuesta rápida. Nuestra central de monitoreo funciona las 24 horas y coordina la acción en minutos sobre el centro de Zapallar, Cachagua, La Laguna y Catapilco. Pide una evaluación sin compromiso y conoce qué sistema se ajusta a tu propiedad.",
+  "sectors": ["Zapallar Centro", "Cachagua", "La Laguna", "Blanquillo", "Catapilco", "La Hacienda"],
+  "reasonExtra": "Trabajamos en Zapallar todo el año y conocemos los tiempos reales de traslado entre el centro, Cachagua y Catapilco, así resolvemos urgencias el mismo día y dejamos instalaciones resueltas en menos de 48 horas hábiles. Compartimos ruta con las comunas vecinas de Papudo y La Ligua, lo que nos permite llevar repuestos y equipos sin demoras. Cada sistema instalado en Zapallar queda conectado a nuestra central redundante, con verificación humana de señales, aviso inmediato a tu celular y a tus contactos de confianza, y coordinación con carabineros según tu plan.",
+  "faq": [
+    {"question": "¿Cuánto cuesta una alarma en Zapallar?", "answer": "Los kits de alarma para casa en Zapallar parten desde $199.900 e incluyen instalación y configuración por técnicos locales. El precio final depende de la cantidad de accesos, sensores y del plan de monitoreo elegido; la visita de evaluación en tu propiedad del centro o de Cachagua es gratuita y no implica compromiso de compra."},
+    {"question": "¿Hacen instalación de cámaras en Zapallar?", "answer": "Sí. Instalamos cámaras IP y CCTV en casas, residencias y negocios de Zapallar, con grabación local o en la nube y acceso desde tu celular. Diseñamos la instalación con equipos discretos y resistentes al clima costero, buscando cobertura de los accesos y puntos ciegos sin afectar la estética de la propiedad."},
+    {"question": "¿Cómo funciona el monitoreo en Zapallar?", "answer": "Nuestra central recibe y verifica cada señal en menos de 2 minutos, durante las 24 horas. Si se activa la alarma en tu propiedad de Zapallar, te contactamos de inmediato y, según tu plan, coordinamos con carabineros o guardias, manteniendo informados a tus contactos de confianza."}
+  ],
+  "serviciosDestacados": ["cerco-electrico", "camaras-de-seguridad", "alarmas-para-casa", "alarma-con-app", "monitoreo-de-alarmas-24-7", "control-de-acceso"]
+}

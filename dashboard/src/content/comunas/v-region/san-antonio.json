@@ -1,0 +1,16 @@
+{
+  "name": "San Antonio",
+  "title": "Seguridad electrónica en San Antonio | GAMA",
+  "description": "Protección con alarmas, cámaras y cercos eléctricos en San Antonio, desde el Puerto hasta Llolleo. Monitoreo 24/7 y evaluación gratuita.",
+  "keywords": ["alarma san antonio", "camaras san antonio", "seguridad electronica v region", "cerco electrico san antonio", "alarmas cartagena"],
+  "hashtags": ["SanAntonio", "SeguridadElectrónica", "VRegión", "SistemaDeAlarma", "GamaSecurity"],
+  "lead": "Protegemos el puerto, los cerros y los sectores residenciales de San Antonio con alarmas, cámaras de seguridad y cercos eléctricos instalados por técnicos locales. Nuestra central de monitoreo atiende 24 horas y coordina la respuesta en minutos sobre el eje del Puerto, Llolleo, Lo Gallardo y Barrancas. Solicita una evaluación gratuita para conocer las opciones de seguridad que mejor se ajustan a tu propiedad.",
+  "sectors": ["Puerto San Antonio", "Lo Gallardo", "Llolleo", "Barrancas", "Cuncumén", "La Boca del Río"],
+  "reasonExtra": "Contamos con técnicos desplegados en San Antonio y rutas diarias hacia el puerto y los cerros, así resolvemos urgencias el mismo día y programamos instalaciones en menos de 48 horas hábiles. Extendemos la cobertura a las comunas vecinas de Cartagena, El Tabo, San Pedro y Padre Hurtado, con mantenciones agendadas en cada recorrido. Todo equipo instalado en San Antonio queda conectado a nuestra central redundante, con verificación humana de señales, aviso inmediato a tu celular y a tus contactos de confianza, y coordinación con carabineros cuando tu plan lo contempla.",
+  "faq": [
+    {"question": "¿Cuánto cuesta una alarma en San Antonio?", "answer": "Los kits de alarma para casa en San Antonio parten desde $199.900 e incluyen instalación y configuración completas. El precio final se define según la cantidad de accesos, sensores y el plan de monitoreo elegido; la evaluación en tu propiedad del puerto, Llolleo o los cerros es gratuita y no te obliga a contratar."},
+    {"question": "¿Instalan cámaras en negocios y bodegas?", "answer": "Sí. Instalamos cámaras IP y CCTV en comercios, bodegas, oficinas y casas de San Antonio, con grabación local o en la nube y acceso desde el celular. Diseñamos el proyecto según la iluminación, la humedad del litoral y el tipo de mercadería que manejas para cubrir los puntos críticos."},
+    {"question": "¿Cuánto demoran en verificar una alarma en San Antonio?", "answer": "La central revisa la señal en menos de 2 minutos y, según tu plan, coordinamos contacto con carabineros o guardias en la comuna. Nuestros técnicos trabajan a diario en San Antonio y en las comunas vecinas, por lo que los tiempos de traslado local se mantienen cortos."}
+  ],
+  "serviciosDestacados": ["cerco-electrico", "camaras-de-seguridad", "alarmas-para-negocios", "control-de-acceso", "monitoreo-de-alarmas-24-7", "alarmas-para-casa"]
+}

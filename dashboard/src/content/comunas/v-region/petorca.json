@@ -1,0 +1,16 @@
+{
+  "name": "Petorca",
+  "title": "Seguridad electrónica en Petorca | GAMA",
+  "description": "Alarmas, cámaras y cercos eléctricos en Petorca, con cobertura en el centro y sectores rurales. Monitoreo 24/7 y evaluación gratuita.",
+  "keywords": ["alarma petorca", "camaras petorca", "seguridad electronica v region", "cerco electrico petorca", "alarmas la ligua"],
+  "hashtags": ["Petorca", "SeguridadElectrónica", "VRegión", "SistemaDeAlarma", "GamaSecurity"],
+  "lead": "Protegemos casas, comercios y predios del valle con sistemas de alarma, cámaras de seguridad y cercos eléctricos instalados en Petorca por técnicos que conocen la zona. Nuestra central de monitoreo funciona 24 horas y coordina la respuesta en minutos sobre el centro de la comuna, Hierro Viejo, El Arenal, El Pedernal y Chincolco. Solicita una evaluación gratuita para conocer las opciones disponibles.",
+  "sectors": ["Centro Petorca", "Hierro Viejo", "El Arenal", "El Pedernal", "Chincolco"],
+  "reasonExtra": "Tenemos base operativa en el litoral norte y ruta fija hacia Petorca, por lo que atendemos urgencias el mismo día y dejamos instalaciones programadas listas en menos de 48 horas hábiles. Extendemos el servicio a las comunas vecinas de La Ligua, Cabildo y Zapallar, con mantenciones agendadas en cada giro por el valle. Todo sistema instalado en Petorca queda conectado a nuestra central redundante, con verificación humana de señales y notificación inmediata a tu celular y a tus contactos de confianza según el plan que contrates.",
+  "faq": [
+    {"question": "¿Cuánto cuesta una alarma en Petorca?", "answer": "Los kits de alarma para casa en Petorca parten desde $199.900 e incluyen instalación y configuración completas. El precio definitivo depende de los accesos, sensores y del plan de monitoreo seleccionado; la evaluación en tu propiedad, en el centro o en un sector rural, es gratuita y no te obliga a contratar."},
+    {"question": "¿Hacen instalación de cámaras en Petorca?", "answer": "Sí. Instalamos cámaras IP y CCTV en casas, negocios, bodegas y oficinas de Petorca, con grabación local o en la nube y acceso desde tu celular. Ajustamos la propuesta a la iluminación del lugar y a la conectividad disponible, para que la grabación sea estable y puedas revisar el historial cuando lo necesites."},
+    {"question": "¿Cómo responde la central ante una alarma en Petorca?", "answer": "La central recibe la señal y la verifica en menos de 2 minutos, las 24 horas. Según tu plan, coordinamos contacto con carabineros o guardias en la comuna, y te avisamos a ti y a tus contactos de confianza al instante, manteniendo el seguimiento hasta confirmar la situación."}
+  ],
+  "serviciosDestacados": ["alarmas-para-casa", "camaras-de-seguridad", "cerco-electrico", "monitoreo-de-alarmas-24-7", "camaras-ip", "prevencion-de-robo"]
+}

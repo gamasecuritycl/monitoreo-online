@@ -1,0 +1,16 @@
+{
+  "name": "Hijuelas",
+  "title": "Seguridad electrónica en Hijuelas | GAMA",
+  "description": "Alarmas, cámaras y cercos eléctricos en Hijuelas, con instalación local en el pueblo y los sectores del valle. Monitoreo 24/7 y evaluación gratuita.",
+  "keywords": ["alarma hijuelas", "camaras hijuelas", "seguridad electronica v region", "cerco electrico hijuelas", "alarmas olmue"],
+  "hashtags": ["Hijuelas", "SeguridadElectrónica", "VRegión", "SistemaDeAlarma", "GamaSecurity"],
+  "lead": "Instalamos sistemas de alarma, cámaras de seguridad y cercos eléctricos en Hijuelas para viviendas, farmacias, escuelas y predios agrícolas de la comuna. Nuestra central de monitoreo atiende las 24 horas y coordina la respuesta en minutos sobre el centro de Hijuelas, Cuatro Esquinas, Barracita, Ocoa y Villa Prat. Pide una evaluación sin compromiso para conocer las alternativas.",
+  "sectors": ["Centro Hijuelas", "Cuatro Esquinas", "Barracita", "Ocoa", "Villa Prat", "Rabuco"],
+  "reasonExtra": "Recorremos Hijuelas con frecuencia desde nuestra base del valle, así atendemos urgencias el mismo día y dejamos instalaciones resueltas en menos de 48 horas hábiles. Trabajamos además con las comunas vecinas de La Calera, Nogales, Olmué y Llay-Llay, lo que nos permite escalar soporte rápido si la propiedad está en un límite comunal. Cada sistema instalado en Hijuelas queda conectado a nuestra central redundante, con verificación humana de señales, aviso inmediato a tu celular y a tus contactos de confianza, y coordinación con carabineros cuando tu plan lo contempla.",
+  "faq": [
+    {"question": "¿Cuánto cuesta una alarma en Hijuelas?", "answer": "Los kits de alarma para casa en Hijuelas parten desde $199.900 e incluyen instalación y configuración por técnicos locales. El valor final cambia según la cantidad de accesos, sensores y el plan de monitoreo elegido; la visita de evaluación en tu propiedad, en el centro o en un sector del valle, es gratuita y sin compromiso."},
+    {"question": "¿Instalan cámaras en Hijuelas?", "answer": "Sí. Instalamos cámaras IP y CCTV en casas, comercios, bodegas y oficinas de Hijuelas, con grabación local o en la nube y acceso desde tu celular. Definimos la propuesta según la iluminación, los accesos y la conectividad del lugar para que la grabación sea estable y fácil de revisar."},
+    {"question": "¿Cuánto demoran en responder una alarma en Hijuelas?", "answer": "La central verifica la señal en menos de 2 minutos y, según tu plan, coordinamos contacto con carabineros o guardias en la comuna. Al compartir ruta con La Calera, Nogales y Olmué, los traslados dentro de Hijuelas suelen mantenerse dentro de tiempos cortos."}
+  ],
+  "serviciosDestacados": ["alarmas-para-casa", "cerco-electrico", "camaras-de-seguridad", "monitoreo-de-alarmas-24-7", "alarma-con-app", "prevencion-de-robo"]
+}

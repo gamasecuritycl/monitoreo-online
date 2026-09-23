@@ -1,0 +1,16 @@
+{
+  "name": "Casablanca",
+  "title": "Seguridad electrónica en Casablanca | GAMA",
+  "description": "Alarmas, cámaras y cercos eléctricos en Casablanca, con cobertura rural y casas de playa. Monitoreo 24/7 y evaluación gratuita.",
+  "keywords": ["alarma casablanca", "camaras casablanca", "seguridad electronica v region", "cerco electrico casablanca", "alarmas quillota"],
+  "hashtags": ["Casablanca", "SeguridadElectrónica", "VRegión", "SistemaDeAlarma", "GamaSecurity"],
+  "lead": "Protegemos casas, viñas y predios agrícolas en Casablanca con sistemas de alarma, cámaras de seguridad y cercos eléctricos instalados por técnicos que recorren la comuna cada semana. Nuestra central de monitoreo opera 24 horas y coordina la respuesta en minutos sobre el eje de la Ruta 68 y hacia los sectores de Las Dichas, Tunquén y Quintay. Solicita una evaluación sin compromiso para conocer las opciones disponibles para tu propiedad.",
+  "sectors": ["Centro Casablanca", "Las Dichas", "Tunquén", "Quintay", "Lo Orozco"],
+  "reasonExtra": "Somos una empresa con presencia habitual en el corredor de la Ruta 68, por lo que llegamos a Casablanca el mismo día en casos urgentes y agendamos instalaciones programadas en menos de 48 horas hábiles. Conocemos las comunas vecinas —Valparaíso, Quilpué, Quillota y La Ligua— y llevamos rutas semanales hacia cada una de ellas, lo que agiliza entregas y mantenciones. Cada sistema instalado en Casablanca queda conectado a nuestra central redundante, con verificación humana de señales y notificación inmediata a tu celular y a tus contactos de confianza según el plan que elijas, incluidos los predios alejados del centro.",
+  "faq": [
+    {"question": "¿Cuánto cuesta una alarma en Casablanca?", "answer": "Los kits de alarma para casa en Casablanca parten desde $199.900 e incluyen instalación y configuración por técnicos locales. El precio final depende de la cantidad de accesos, sensores y del plan de monitoreo que elijas; la visita de evaluación en tu propiedad, incluidos los sectores alejados del centro, es gratuita y sin compromiso."},
+    {"question": "¿Hacen instalación de cámaras en Casablanca?", "answer": "Sí. Instalamos cámaras IP y CCTV en casas, viñas, bodegas y locales de Casablanca, con grabación local o en la nube y acceso desde tu celular. Conocemos los desafíos de señal en los sectores rurales y proponemos la solución más estable para cada ubicación, sin sorpresas posteriores en la mantención."},
+    {"question": "¿Cuánto demoran en verificar una alarma en Casablanca?", "answer": "La central revisa la señal en menos de 2 minutos y, según tu plan, coordinamos contacto con carabineros o guardias en la comuna. Como tenemos técnicos con ruta fija por la Ruta 68 hacia Quillota y Valparaíso, el traslado local suele mantenerse dentro de tiempos cortos incluso desde los sectores campestres."}
+  ],
+  "serviciosDestacados": ["alarmas-para-casa", "cerco-electrico", "camaras-de-seguridad", "monitoreo-de-alarmas-24-7", "camaras-ip", "prevencion-de-robo"]
+}

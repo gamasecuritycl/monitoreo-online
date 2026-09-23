@@ -1,0 +1,16 @@
+{
+  "name": "Isla de Pascua",
+  "title": "Seguridad electrónica en Isla de Pascua | GAMA",
+  "description": "Alarmas, cámaras y cercos eléctricos en Isla de Pascua, con instalación local en Hanga Roa y monitoreo 24/7. Evaluación gratuita.",
+  "keywords": ["alarma isla de pascua", "camaras isla de pascua", "seguridad electronica v region", "cerco electrico isla de pascua", "alarmas valparaiso"],
+  "hashtags": ["IslaDePascua", "SeguridadElectrónica", "VRegión", "SistemaDeAlarma", "GamaSecurity"],
+  "lead": "Protegemos hoteles, restaurantes, viviendas y locales en Isla de Pascua con sistemas de alarma, cámaras de seguridad y cercos eléctricos instalados en la comuna. Nuestra central de monitoreo opera las 24 horas y coordina la respuesta en minutos sobre Hanga Roa, Vaihu, Anakena y los accesos de la zona arqueológica de Rano Raraku. Solicita una evaluación sin compromiso para tu propiedad.",
+  "sectors": ["Hanga Roa", "Vaihu", "Anakena", "Rano Kau", "Rano Raraku", "Ahu Tongariki"],
+  "reasonExtra": "Trabajamos en Isla de Pascua con técnicos radicados en la comuna, por lo que atendemos urgencias el mismo día dentro de Hanga Roa y alrededores, y dejamos instalaciones programadas resueltas en menos de 48 horas hábiles. Al no compartir territorio terrestre con otras comunas, nuestra operación se articula desde la base continental de Valparaíso para logística, repuestos y refuerzos, manteniendo la atención directa en la isla. Cada sistema instalado aquí queda conectado a nuestra central redundante, con verificación humana de señales, aviso inmediato a tu celular y a tus contactos de confianza, más coordinación con carabineros según tu plan.",
+  "faq": [
+    {"question": "¿Cuánto cuesta una alarma en Isla de Pascua?", "answer": "Los kits de alarma para casa en Isla de Pascua parten desde $199.900 e incluyen instalación y configuración por técnicos locales. El precio final cambia según la cantidad de accesos, sensores y el plan de monitoreo elegido; la visita de evaluación en tu propiedad de Hanga Roa u otro sector de la isla es gratuita y sin compromiso."},
+    {"question": "¿Instalan cámaras en hoteles y restaurantes?", "answer": "Sí. Instalamos cámaras IP y CCTV en hoteles, restaurantes, locales comerciales y viviendas de la isla, con grabación local o en la nube y acceso desde tu celular. Diseñamos la propuesta según iluminación, humedad y horarios de operación, para cubrir accesos y puntos críticos sin interrumpir la atención a los huéspedes."},
+    {"question": "¿Cómo funciona el monitoreo si estoy en la isla?", "answer": "Nuestra central recibe y verifica cada señal en menos de 2 minutos, las 24 horas, estés donde estés. Si la alarma se activa en tu propiedad de Isla de Pascua, te contactamos al instante y, según tu plan, coordinamos con carabineros o guardias locales, además de avisar a tus contactos de confianza."}
+  ],
+  "serviciosDestacados": ["cerco-electrico", "camaras-de-seguridad", "alarmas-para-casa", "monitoreo-de-alarmas-24-7", "camaras-ip", "control-de-acceso"]
+}

@@ -1,0 +1,16 @@
+{
+  "name": "San Esteban",
+  "title": "Seguridad electrónica en San Esteban | GAMA",
+  "description": "Sistemas de alarma, cámaras y cercos eléctricos en San Esteban, con instalación local y monitoreo 24/7 en el valle. Evaluación gratuita.",
+  "keywords": ["alarma san esteban", "camaras san esteban", "seguridad electronica v region", "cerco electrico san esteban", "alarmas los andes"],
+  "hashtags": ["SanEsteban", "SeguridadElectrónica", "VRegión", "SistemaDeAlarma", "GamaSecurity"],
+  "lead": "Protegemos viviendas, viñas y predios en San Esteban con sistemas de alarma, cámaras de seguridad y cercos eléctricos instalados por técnicos que conocen la comuna. Nuestra central de monitoreo atiende las 24 horas y coordina la respuesta en minutos sobre el centro de San Esteban, Las Juntas, San Francisco, Los Campos de Ahumada y La Florida. Pide una evaluación gratuita para tu propiedad.",
+  "sectors": ["Centro San Esteban", "Las Juntas", "San Francisco", "Campos de Ahumada", "La Florida", "El Carrizo"],
+  "reasonExtra": "Recorremos San Esteban con frecuencia desde nuestra base de Los Andes, así resolvemos urgencias el mismo día y dejamos instalaciones resueltas en menos de 48 horas hábiles. Extendemos el servicio a las comunas vecinas de Los Andes, Santa María y Calle Larga, con visitas coordinadas en cada recorrido por el valle del Aconcagua. Cada sistema instalado en San Esteban queda conectado a nuestra central redundante, con verificación humana de señales y notificación inmediata a tu celular y a tus contactos de confianza según el plan que elijas, más contacto con carabineros cuando corresponde.",
+  "faq": [
+    {"question": "¿Cuánto cuesta una alarma en San Esteban?", "answer": "Los kits de alarma para casa en San Esteban parten desde $199.900 e incluyen instalación y configuración completas. El precio final depende de los accesos, sensores y del plan de monitoreo seleccionado; la evaluación en tu propiedad, en el centro o en un sector alejado, es gratuita y no te obliga a contratar nada."},
+    {"question": "¿Protegen viñas y predios en San Esteban?", "answer": "Sí. Diseñamos soluciones para viñas, bodegas y terrenos de San Esteban combinando cercos eléctricos, cámaras y sensores de presencia. Evaluamos el perímetro, los accesos de maquinaria y la energía disponible para proponer un sistema confiable, fácil de operar y con alertas directas a tu celular."},
+    {"question": "¿Cuánto demoran en verificar una alarma en San Esteban?", "answer": "La central revisa la señal en menos de 2 minutos y, según tu plan, coordinamos contacto con carabineros o guardias en la comuna. Como compartimos ruta con Los Andes y Calle Larga, los tiempos de traslado dentro de San Esteban se mantienen cortos durante todo el año."}
+  ],
+  "serviciosDestacados": ["alarmas-para-casa", "cerco-electrico", "camaras-de-seguridad", "monitoreo-de-alarmas-24-7", "sensores-de-presencia", "prevencion-de-robo"]
+}

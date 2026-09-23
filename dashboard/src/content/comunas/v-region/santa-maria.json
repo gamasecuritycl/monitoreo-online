@@ -1,0 +1,16 @@
+{
+  "name": "Santa María",
+  "title": "Seguridad electrónica en Santa María | GAMA",
+  "description": "Alarmas, cámaras y cercos eléctricos en Santa María, con instalación local y monitoreo 24/7 desde nuestra central. Evaluación gratuita.",
+  "keywords": ["alarma santa maria", "camaras santa maria", "seguridad electronica v region", "cerco electrico santa maria", "alarmas catemu"],
+  "hashtags": ["SantaMaría", "SeguridadElectrónica", "VRegión", "SistemaDeAlarma", "GamaSecurity"],
+  "lead": "Instalamos alarmas, cámaras de seguridad y cercos eléctricos en Santa María para viviendas, locales y viñas del sector. Nuestra central de monitoreo funciona las 24 horas y coordina la respuesta en minutos sobre el centro de Santa María, Jahuel, Tabolango, El Zaino y Santa Filomena. Solicita una evaluación sin compromiso y revisa qué solución se ajusta a tu propiedad.",
+  "sectors": ["Centro Santa María", "Jahuel", "Tabolango", "El Zaino", "Santa Filomena", "San José"],
+  "reasonExtra": "Nuestros técnicos cubren Santa María con ruta fija sobre el valle del Aconcagua, por lo que atendemos urgencias el mismo día y dejamos instalaciones programadas en menos de 48 horas hábiles. La cobertura alcanza las comunas vecinas de Catemu, San Felipe, Llay-Llay y Panquehue, con visitas coordinadas en cada recorrido. Todo sistema instalado en Santa María queda conectado a nuestra central redundante, con verificación humana de señales y notificación inmediata a tu celular y a tus contactos de confianza según el plan contratado.",
+  "faq": [
+    {"question": "¿Cuánto cuesta una alarma en Santa María?", "answer": "Los kits de alarma para casa en Santa María parten desde $199.900 e incluyen instalación y configuración por técnicos locales. El precio final se define según la cantidad de accesos, sensores y el plan de monitoreo elegido; la visita de evaluación en tu propiedad, en el centro o en un sector agrícola, es gratuita y sin compromiso."},
+    {"question": "¿Instalan cámaras en Santa María?", "answer": "Sí. Instalamos cámaras IP y CCTV en casas, comercios, bodegas y oficinas de Santa María, con grabación local o en la nube y acceso desde tu celular. Consideramos iluminación y conectividad de cada ubicación para recomendar equipos que graben de forma estable y fáciles de consultar a distancia."},
+    {"question": "¿Cuánto demoran en responder una alarma en Santa María?", "answer": "La central verifica la señal en menos de 2 minutos y, según tu plan, coordinamos contacto con carabineros o guardias en la comuna. Al compartir corredor con Catemu, San Felipe y Llay-Llay, los traslados dentro de Santa María suelen mantenerse dentro de tiempos cortos."}
+  ],
+  "serviciosDestacados": ["alarmas-para-casa", "camaras-de-seguridad", "cerco-electrico", "monitoreo-de-alarmas-24-7", "camaras-ip", "alarma-con-app"]
+}

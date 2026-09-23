@@ -1,0 +1,16 @@
+{
+  "name": "Viña del Mar",
+  "title": "Seguridad electrónica en Viña del Mar | GAMA",
+  "description": "Sistemas de alarma, cámaras y cercos eléctricos en Viña del Mar para hogares y empresas. Monitoreo 24/7, evaluación gratuita.",
+  "keywords": ["alarma vina del mar", "camaras vinodelmar", "seguridad electronica v region", "alarmas valparaiso", "cerco electrico vina del mar"],
+  "hashtags": ["ViñaDelMar", "SeguridadElectrónica", "VRegión", "SistemaDeAlarma", "GamaSecurity"],
+  "lead": "En Viña del Mar protegemos residencias y comercios desde Reñaca y el eje del Casino hasta Cerro Castillo, el sector Placeres y el barrio Oscuro, con alarmas, cámaras de seguridad y cercos eléctricos instalados por equipos locales. Nuestra central recibe señales las 24 horas y coordina la respuesta a lo largo del borde costero, de la Quinta Vergara a la Caleta Abarca. Pide tu evaluación sin costo.",
+  "sectors": ["Cerro Castillo", "Placeres", "Oscuro", "Barón", "Reñaca", "Quinta Vergara", "Caleta Abarca"],
+  "reasonExtra": "Vivimos en el Gran Valparaíso y llegamos a Viña del Mar el mismo día en casos urgentes, con instalaciones normales agendadas en menos de 48 horas hábiles. Conocemos la ciudad desde el Reloj de Flores hasta Reñaca y también las comunas vecinas de Valparaíso, Concón, Quilpué y Villa Alemana, donde mantenemos rutas semanales. Tu sistema queda ligado a nuestra central redundante, con verificación humana de cada señal, aviso inmediato al celular y contacto con carabineros o guardias según el plan contratado.",
+  "faq": [
+    {"question": "¿Cuánto cuesta una alarma en Viña del Mar?", "answer": "Los kits de alarma para casa en Viña del Mar parten desde $199.900 con instalación y configuración incluidas. El precio varía según accesos, sensores y plan de monitoreo; la evaluación en tu departamento, casa o comercio de la comuna es gratuita y no te obliga a comprar nada."},
+    {"question": "¿Instalan cámaras de seguridad en Viña del Mar?", "answer": "Sí. Instalamos cámaras IP y CCTV en casas, edificios, oficinas y locales de Viña del Mar, con grabación local o en la nube y vista desde tu celular. Hacemos diagnóstico previo de la señal y dejamos el sistema configurado, con garantía y soporte postventa en la misma comuna."},
+    {"question": "¿Cuánto tarda la respuesta a una alarma en Viña?", "answer": "Nuestra central verifica la señal en menos de 2 minutos y, según tu plan, avisa a tus contactos y coordina contacto con carabineros. Al tener técnicos en Viña del Mar y en Valparaíso, podemos trasladarnos al mismo barrio, desde Reñaca hasta el centro, en tiempos muy cortos."}
+  ],
+  "serviciosDestacados": ["sistemas-de-alarma-para-empresas", "control-de-acceso", "alarmas-para-casa", "camaras-de-seguridad", "monitoreo-de-alarmas-24-7", "alarmas-para-negocios"]
+}

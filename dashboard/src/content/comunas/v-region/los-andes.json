@@ -1,0 +1,16 @@
+{
+  "name": "Los Andes",
+  "title": "Seguridad electrónica en Los Andes | GAMA",
+  "description": "Alarmas, cámaras y cercos eléctricos en Los Andes, para hogares, comercios y empresas. Monitoreo 24/7 y evaluación gratuita.",
+  "keywords": ["alarma los andes", "camaras los andes", "seguridad electronica v region", "cerco electrico los andes", "alarmas calle larga"],
+  "hashtags": ["LosAndes", "SeguridadElectrónica", "VRegión", "SistemaDeAlarma", "GamaSecurity"],
+  "lead": "Instalamos sistemas de alarma, cámaras de seguridad y cercos eléctricos en Los Andes para viviendas, comercios, bodegas y empresas de la comuna. Nuestra central de monitoreo funciona las 24 horas y coordina la respuesta en minutos sobre el centro de Los Andes, el Barrio Centenario, el Pucará, Alto Aconcagua y el Primer Crucero. Pide una evaluación sin compromiso para conocer las opciones.",
+  "sectors": ["Centro Los Andes", "Barrio Centenario", "Barrio SILA", "Pucará", "Alto Aconcagua", "Primer Crucero"],
+  "reasonExtra": "Tenemos técnicos con base en el valle del Aconcagua y ruta diaria por Los Andes, así atendemos urgencias el mismo día y dejamos instalaciones programadas resueltas en menos de 48 horas hábiles. Extendemos la cobertura a las comunas vecinas de San Esteban, Calle Larga, Rinconada y San Felipe, con visitas agendadas en cada recorrido. Todo equipo instalado en Los Andes queda conectado a nuestra central redundante, con verificación humana de señales, aviso inmediato a tu celular y a tus contactos de confianza, y coordinación con carabineros cuando tu plan lo contempla.",
+  "faq": [
+    {"question": "¿Cuánto cuesta una alarma en Los Andes?", "answer": "Los kits de alarma para casa en Los Andes parten desde $199.900 e incluyen instalación y configuración por técnicos locales. El precio final varía según la cantidad de accesos, sensores y el plan de monitoreo elegido; la visita de evaluación en tu propiedad, en el centro o en un sector perimetral, es gratuita y sin compromiso."},
+    {"question": "¿Hacen instalación de cámaras en Los Andes?", "answer": "Sí. Instalamos cámaras IP y CCTV en casas, comercios, bodegas, oficinas y empresas de Los Andes, con grabación local o en la nube y acceso desde tu celular. Conocemos la conectividad de cada sector y proponemos la configuración más estable para que el historial quede disponible cuando lo necesites."},
+    {"question": "¿Cuánto demoran en responder una alarma en Los Andes?", "answer": "La central verifica la señal en menos de 2 minutos y, según tu plan, coordinamos contacto con carabineros o guardias en la comuna. Al operar también en Calle Larga, Rinconada y San Felipe, los traslados dentro de Los Andes suelen mantenerse dentro de tiempos cortos."}
+  ],
+  "serviciosDestacados": ["alarmas-para-casa", "alarmas-para-negocios", "camaras-de-seguridad", "monitoreo-de-alarmas-24-7", "control-de-acceso", "prevencion-de-robo"]
+}

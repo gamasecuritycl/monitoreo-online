@@ -1,0 +1,16 @@
+{
+  "name": "Cartagena",
+  "title": "Seguridad electrónica en Cartagena | GAMA",
+  "description": "Sistemas de alarma, cámaras y cercos eléctricos en Cartagena, del centro a los sectores costeros. Monitoreo 24/7 y evaluación sin costo.",
+  "keywords": ["alarma cartagena", "camaras cartagena", "seguridad electronica v region", "cerco electrico cartagena", "alarmas el tabo"],
+  "hashtags": ["Cartagena", "SeguridadElectrónica", "VRegión", "SistemaDeAlarma", "GamaSecurity"],
+  "lead": "Instalamos alarmas, cámaras de seguridad y cercos eléctricos en Cartagena para hogares y negocios que viven de la costa y del comercio local. Nuestra central de monitoreo funciona 24 horas y coordina la respuesta en minutos desde el centro de la comuna hasta Pelancura, Costa Azul y Lo Zárate. Pide una evaluación sin compromiso y revisa las opciones disponibles para tu propiedad.",
+  "sectors": ["Centro Cartagena", "San Sebastián", "Pelancura", "Costa Azul", "Lo Abarca", "Lo Zárate"],
+  "reasonExtra": "Trabajamos en Cartagena todos los días sobre el corredor costero, por eso llegamos con hora exacta a cada visita y resolvemos instalaciones programadas en menos de 48 horas hábiles. Cubrimos además las comunas vecinas de El Tabo, Santo Domingo y San Antonio, con técnicos que recorren la Ruta Quinta y el litoral sur de la región. Cada equipo instalado en Cartagena queda conectado a nuestra central redundante, con verificación humana de señales y aviso inmediato a tu celular y a tus contactos de confianza. En urgencias coordinamos contacto con carabineros según el plan contratado.",
+  "faq": [
+    {"question": "¿Cuánto cuesta una alarma en Cartagena?", "answer": "Los kits de alarma para casa en Cartagena parten desde $199.900 con instalación y configuración incluidas. El valor final varía según la cantidad de accesos, sensores adicionales y el plan de monitoreo elegido; la evaluación en tu propiedad del centro o de los sectores costeros es gratuita y no te obliga a contratar nada."},
+    {"question": "¿Puedo instalar cámaras en mi casa de playa?", "answer": "Sí. Trabajamos con cámaras IP y CCTV resistentas a la humedad salina para casas de playa, cabañas y locales de Cartagena, con grabación local o en la nube y vista desde el celular. Te asesoramos sobre la ubicación más estable para evitar fallas de señal en temporada de verano."},
+    {"question": "¿Cómo funciona el monitoreo 24/7 en Cartagena?", "answer": "Nuestra central recibe y verifica cada señal en menos de 2 minutos, las 24 horas del día. Si la alarma se activa en tu propiedad de Cartagena, te contactamos al instante y, según tu plan, coordinamos con carabineros o guardias, además de avisar a tus contactos de confianza."}
+  ],
+  "serviciosDestacados": ["cerco-electrico", "camaras-de-seguridad", "alarmas-para-casa", "monitoreo-de-alarmas-24-7", "alarma-con-app", "prevencion-de-robo"]
+}

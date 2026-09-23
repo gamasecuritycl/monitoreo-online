@@ -1,0 +1,16 @@
+{
+  "name": "Olmué",
+  "title": "Seguridad electrónica en Olmué | GAMA",
+  "description": "Sistemas de alarma, cámaras y cercos eléctricos en Olmué, con cobertura en el centro y sectores del valle. Monitoreo 24/7 y evaluación gratuita.",
+  "keywords": ["alarma olmue", "camaras olmue", "seguridad electronica v region", "cerco electrico olmue", "alarmas la cruz"],
+  "hashtags": ["Olmué", "SeguridadElectrónica", "VRegión", "SistemaDeAlarma", "GamaSecurity"],
+  "lead": "Protegemos hogares, negocios y casonas de fin de semana en Olmué con alarmas, cámaras de seguridad y cercos eléctricos instalados por técnicos que conocen la comuna. Nuestra central de monitoreo funciona 24 horas y coordina la respuesta en minutos sobre el centro de Olmué, La Dormida, Granizo, Las Palmas y La Vega. Reserva una evaluación gratuita y revisa qué opción conviene para tu propiedad.",
+  "sectors": ["Centro Olmué", "La Dormida", "Granizo", "Las Palmas", "Quebrada de Alvarado", "La Vega"],
+  "reasonExtra": "Nuestros técnicos cubren Olmué con ruta fija sobre el valle, por eso resolvemos urgencias el mismo día y programamos instalaciones en menos de 48 horas hábiles. La cobertura alcanza las comunas vecinas de Quillota, Limache, La Cruz e Hijuelas, con mantenciones agendadas en cada giro. Cada equipo instalado en Olmué queda conectado a nuestra central redundante, con verificación humana de señales, aviso inmediato a tu celular y a tus contactos de confianza según el plan contratado, más contacto con carabineros cuando corresponde.",
+  "faq": [
+    {"question": "¿Cuánto cuesta una alarma en Olmué?", "answer": "Los kits de alarma para casa en Olmué parten desde $199.900 e incluyen instalación y configuración completas. El precio final se define según los accesos, sensores y el plan de monitoreo elegido; la evaluación en tu propiedad, en el centro o en un sector alejado, es gratuita y no implica compromiso de compra."},
+    {"question": "¿Puedo monitorear mi casona aunque no viva ahí?", "answer": "Sí. Los sistemas que instalamos en Olmué incluyen aplicación móvil para armar y desarmar a distancia, recibir alertas y revisar el estado de los sensores. Muchos clientes usan la casa solo los fines de semana: la central monitorea 24 horas y te avisa ante cualquier señal, aunque estés en otra ciudad."},
+    {"question": "¿Cuánto demoran en verificar una alarma en Olmué?", "answer": "La central revisa la señal en menos de 2 minutos y, según tu plan, coordinamos contacto con carabineros o guardias en la comuna. Como compartimos ruta con Quillota, Limache e Hijuelas, los tiempos de traslado dentro de Olmué se mantienen cortos durante todo el año."}
+  ],
+  "serviciosDestacados": ["alarmas-para-casa", "camaras-de-seguridad", "monitoreo-de-alarmas-24-7", "alarma-con-app", "cerco-electrico", "prevencion-de-robo"]
+}

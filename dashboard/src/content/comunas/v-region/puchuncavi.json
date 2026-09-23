@@ -1,0 +1,16 @@
+{
+  "name": "Puchuncaví",
+  "title": "Seguridad electrónica en Puchuncaví | GAMA",
+  "description": "Sistemas de alarma, cámaras y cercos eléctricos en Puchuncaví, desde el pueblo hasta sus caletas. Monitoreo 24/7. Evalúa gratis.",
+  "keywords": ["alarma puchuncavi", "camaras puchuncavi", "seguridad electronica v region", "cerco electrico puchuncavi", "alarmas quintero"],
+  "hashtags": ["Puchuncaví", "SeguridadElectrónica", "VRegión", "SistemaDeAlarma", "GamaSecurity"],
+  "lead": "La comuna de Puchuncaví se compone de una veintena de poblados, desde el pueblo con su municipio hasta las caletas de Horcón, los viñedos de El Rungue y la industria de Las Ventanas; en todos ellos instalamos alarmas, cámaras de seguridad y cercos eléctricos. Nuestra central de monitoreo opera 24 horas y conoce los trayectos largos entre localidades, para responder con rapidez. Pide una evaluación sin costo.",
+  "sectors": ["Puchuncaví Centro", "Las Ventanas", "Horcón", "Maitencillo", "Campiche", "El Rungue"],
+  "reasonExtra": "Las distancias entre las localidades de Puchuncaví son grandes, y por eso planificamos cada visita con anticipación para llegar a Horcón, Campiche o Las Ventanas en el horario acordado; en urgencias llegamos el mismo día. Nuestras rutas cubren también Quintero, La Cruz y Quillota, así que la mantención no depende del calendario de tu sector. Cada sistema queda enlazado a nuestra central redundante, con verificación humana de señales, aviso inmediato al celular y contacto con carabineros según tu plan, en cualquier localidad de la comuna.",
+  "faq": [
+    {"question": "¿Cuánto cuesta una alarma en Puchuncaví?", "answer": "Los kits de alarma en Puchuncaví parten desde $199.900 e incluyen instalación y configuración completas. El precio varía según accesos, sensores y plan de monitoreo; evaluamos gratis en tu propiedad, ya sea en el pueblo o en una localidad como Maitencillo o El Rungue, sin importar la distancia."},
+    {"question": "¿Instalan cámaras en Puchuncaví?", "answer": "Sí. Instalamos cámaras IP y CCTV en casas, negocios, bodegas y fundos de Puchuncaví, con grabación local o en la nube y acceso desde tu celular. En localidades alejadas reforzamos la conexión y, si hace falta, instalamos grabación local para que ningún quede sin respaldo."},
+    {"question": "¿Cuánto demora la respuesta a una alarma en Puchuncaví?", "answer": "La central verifica la señal en menos de 2 minutos y, según tu plan, coordina el aviso a tus contactos y con carabineros o guardias. Con técnicos en Puchuncaví y rutas hacia Quintero y Quillota, podemos cubrir las localidades de la comuna el mismo día."}
+  ],
+  "serviciosDestacados": ["alarmas-para-casa", "camaras-de-seguridad", "cerco-electrico", "monitoreo-de-alarmas-24-7", "prevencion-de-robo", "sistema-alarma-inalambrico"]
+}

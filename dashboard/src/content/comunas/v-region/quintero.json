@@ -1,0 +1,16 @@
+{
+  "name": "Quintero",
+  "title": "Seguridad electrónica en Quintero | GAMA",
+  "description": "Alarmas, cámaras y cercos eléctricos en Quintero, con instalación local y monitoreo 24/7 desde nuestra central. Evalúa gratis.",
+  "keywords": ["alarma quintero", "camaras quintero", "seguridad electronica v region", "cerco electrico quintero", "alarmas concon"],
+  "hashtags": ["Quintero", "SeguridadElectrónica", "VRegión", "SistemaDeAlarma", "GamaSecurity"],
+  "lead": "En Quintero protegemos casas y comercios repartidos entre el centro, la playa de Los Enamorados, la caleta de Loncura y los lotes del Valle Alegre y Dumuño, con alarmas, cámaras de seguridad y cercos eléctricos instalados por técnicos que conocen la zona. Nuestra central de monitoreo recibe señales 24 horas y coordina la respuesta junto al humedal de Mantagua y la Ciudad Abierta. Solicita tu evaluación sin compromiso.",
+  "sectors": ["Quintero Centro", "Valle Alegre", "Dumuño", "Loncura", "Ritoque", "Mantagua"],
+  "reasonExtra": "Llegamos a Quintero el mismo día en casos urgentes porque operamos desde el litoral, no desde Santiago. Conocemos la comuna distrito por distrito, desde el borde costero hasta Valle Alegre, y también las comunas vecinas de Concón, Puchuncaví y Limache, donde mantenemos técnicos disponibles durante la semana. Tu sistema queda conectado a nuestra central redundante, con verificación humana de cada señal, aviso inmediato al celular y contacto con carabineros o guardias según el plan que elijas, durante todo el año.",
+  "faq": [
+    {"question": "¿Cuánto cuesta una alarma en Quintero?", "answer": "Los kits de alarma para casa en Quintero parten desde $199.900 e incluyen instalación y configuración completas. El valor final varía según accesos, sensores y plan de monitoreo, y la evaluación en tu propiedad, ya sea en el centro o en un sector rural como Valle Alegre, es gratuita y sin compromiso."},
+    {"question": "¿Hacen instalación de cámaras en Quintero?", "answer": "Sí. Instalamos cámaras IP y CCTV en casas, negocios y bodegas de Quintero, con grabación local o en la nube y acceso desde tu celular. En sectores con menor cobertura reforzamos la conexión para que puedas ver tus imágenes en cualquier momento desde el teléfono."},
+    {"question": "¿Cuánto demoran en verificar una alarma en Quintero?", "answer": "La central revisa la señal en menos de 2 minutos y, según tu plan, coordinamos contacto con carabineros o guardias en la comuna. Como tenemos técnicos en Quintero y rutas hacia Concón y Puchuncaví, el traslado local dentro de la comuna suele ser rápido."}
+  ],
+  "serviciosDestacados": ["alarmas-para-casa", "camaras-de-seguridad", "cerco-electrico", "monitoreo-de-alarmas-24-7", "sistema-alarma-inalambrico", "prevencion-de-robo"]
+}

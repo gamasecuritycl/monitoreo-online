@@ -1,0 +1,16 @@
+{
+  "name": "Juan Fernández",
+  "title": "Seguridad electrónica en Juan Fernández | GAMA",
+  "description": "Alarmas, cámaras y cercos eléctricos en el archipiélago de Juan Fernández, con soporte local y monitoreo 24/7. Evaluación gratuita.",
+  "keywords": ["alarma juan fernandez", "camaras juan fernandez", "seguridad electronica v region", "cerco electrico juan fernandez", "alarmas quintero"],
+  "hashtags": ["JuanFernández", "SeguridadElectrónica", "VRegión", "SistemaDeAlarma", "GamaSecurity"],
+  "lead": "Instalamos sistemas de alarma, cámaras de seguridad y cercos eléctricos en la comuna de Juan Fernández, cubriendo San Juan Bautista, la Bahía Cumberland, Isla Santa Clara y los terrenos del archipiélago. Nuestra central de monitoreo atiende las 24 horas y verifica cada señal en minutos, donde quiera que esté la propiedad. Reserva una evaluación sin compromiso y revisa las opciones disponibles.",
+  "sectors": ["San Juan Bautista", "Bahía Cumberland", "Isla Santa Clara", "Isla Alejandro Selkirk", "Cerro de los Inocentes", "Fuerte Santa Bárbara"],
+  "reasonExtra": "En Juan Fernández contamos con instaladores radicados en San Juan Bautista, así resolvemos urgencias en la propia comuna y dejamos instalaciones programadas listas en menos de 48 horas hábiles una vez en tierra. La comuna no limita terrestremente con otras: la logística de repuestos y refuerzos se articula desde la base continental de Valparaíso y el puerto de Quintero, manteniendo la operación local en el archipiélago. Cada equipo instalado queda conectado a nuestra central redundante, con verificación humana de señales y notificación inmediata a tu celular y a tus contactos de confianza según el plan contratado.",
+  "faq": [
+    {"question": "¿Cuánto cuesta una alarma en Juan Fernández?", "answer": "Los kits de alarma para casa en Juan Fernández parten desde $199.900 e incluyen instalación y configuración por técnicos de la comuna. El precio final depende de los accesos, sensores y del plan de monitoreo elegido; la evaluación en tu propiedad de San Juan Bautista o alrededores es gratuita y no te obliga a contratar nada."},
+    {"question": "¿Puedo ver las cámaras desde el continente?", "answer": "Sí. Instalamos cámaras IP con acceso remoto desde el celular o computador, de modo que propietarios y encargados pueden revisar la propiedad en el archipiélago aunque estén en el continente. Grabamos en local o en la nube según el caso y te enseñamos a consultar el historial antes de finalizar la instalación."},
+    {"question": "¿Cómo responde la central ante una alarma en Juan Fernández?", "answer": "La central recibe la señal y la verifica en menos de 2 minutos, las 24 horas del día. Según tu plan, coordinamos contacto con carabineros o encargados locales en San Juan Bautista, y te avisamos a ti y a tus contactos de confianza al instante, dando seguimiento hasta confirmar la situación."}
+  ],
+  "serviciosDestacados": ["cerco-electrico", "camaras-de-seguridad", "alarmas-para-casa", "monitoreo-de-alarmas-24-7", "alarma-con-app", "prevencion-de-robo"]
+}

@@ -1,0 +1,16 @@
+{
+  "name": "Catemu",
+  "title": "Seguridad electrónica en Catemu | GAMA",
+  "description": "Sistemas de alarma, cámaras y cercos eléctricos en Catemu, con cobertura en el centro y los sectores del valle. Monitoreo 24/7 y evaluación gratuita.",
+  "keywords": ["alarma catemu", "camaras catemu", "seguridad electronica v region", "cerco electrico catemu", "alarmas putaendo"],
+  "hashtags": ["Catemu", "SeguridadElectrónica", "VRegión", "SistemaDeAlarma", "GamaSecurity"],
+  "lead": "Protegemos hogares, comercios y predios en Catemu con sistemas de alarma, cámaras de seguridad y cercos eléctricos instalados por técnicos que conocen la comuna. Nuestra central de monitoreo atiende 24 horas y coordina la respuesta en minutos sobre el centro de Catemu, el Cerro San José, El Ñilhue, Las Varillas y Los Cerrillos. Reserva una evaluación gratuita para tu propiedad.",
+  "sectors": ["Centro Catemu", "Cerro San José", "El Ñilhue", "Las Varillas", "Los Cerrillos", "El Cobre"],
+  "reasonExtra": "Recorremos Catemu con ruta sobre el valle del Aconcagua, así resolvemos urgencias el mismo día y dejamos instalaciones resueltas en menos de 48 horas hábiles. Compartimos cobertura con las comunas vecinas de Santa María, Putaendo, Llay-Llay y Nogales, lo que nos permite llevar equipos y repuestos en cada giro. Cada sistema instalado en Catemu queda conectado a nuestra central redundante, con verificación humana de señales, aviso inmediato a tu celular y a tus contactos de confianza, y coordinación con carabineros según tu plan.",
+  "faq": [
+    {"question": "¿Cuánto cuesta una alarma en Catemu?", "answer": "Los kits de alarma para casa en Catemu parten desde $199.900 e incluyen instalación y configuración completas. El valor final cambia según los accesos, sensores y el plan de monitoreo seleccionado; la evaluación en tu propiedad, en el centro o en un sector rural, es gratuita y no te obliga a contratar nada."},
+    {"question": "¿Protegen predios y bodegas en Catemu?", "answer": "Sí. Diseñamos soluciones para bodegas, invernaderos y terrenos de Catemu combinando cercos eléctricos, cámaras y sensores de presencia. Evaluamos accesos, perímetro y disponibilidad de energía para proponer un sistema confiable, fácil de operar y con alertas que llegan directo a tu celular."},
+    {"question": "¿Cuánto demoran en verificar una alarma en Catemu?", "answer": "La central revisa la señal en menos de 2 minutos y, según tu plan, coordinamos contacto con carabineros o guardias en la comuna. Como compartimos ruta con Santa María, Putaendo y Llay-Llay, los tiempos de traslado dentro de Catemu se mantienen cortos durante todo el año."}
+  ],
+  "serviciosDestacados": ["alarmas-para-casa", "cerco-electrico", "camaras-de-seguridad", "monitoreo-de-alarmas-24-7", "sensores-de-presencia", "prevencion-de-robo"]
+}

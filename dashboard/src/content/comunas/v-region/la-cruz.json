@@ -1,0 +1,16 @@
+{
+  "name": "La Cruz",
+  "title": "Seguridad electrónica en La Cruz | GAMA",
+  "description": "Alarmas, cámaras y cercos eléctricos en La Cruz, para casas, viñas y negocios del valle. Monitoreo 24/7 y evaluación gratuita.",
+  "keywords": ["alarma la cruz", "camaras la cruz", "seguridad electronica v region", "cerco electrico la cruz", "alarmas hijuelas"],
+  "hashtags": ["LaCruz", "SeguridadElectrónica", "VRegión", "SistemaDeAlarma", "GamaSecurity"],
+  "lead": "Instalamos alarmas, cámaras de seguridad y cercos eléctricos en La Cruz para viviendas, viñas y pequeños comercios de la comuna. Nuestra central de monitoreo funciona las 24 horas y coordina la respuesta en minutos sobre el centro, Pocochay, Lo Rojas, La Palmilla y Charrabata. Reserva una evaluación sin compromiso y revisa las opciones de seguridad disponibles.",
+  "sectors": ["Centro La Cruz", "Pocochay", "Lo Rojas", "La Palmilla", "Charrabata"],
+  "reasonExtra": "Cubrimos La Cruz con ruta sobre el valle de Quillota, por eso atendemos urgencias el mismo día y programamos instalaciones resueltas en menos de 48 horas hábiles. También operamos en las comunas vecinas de Quillota, La Calera, Nogales, Puchuncaví e Hijuelas, con técnicos que recorren cada sector en forma regular. Cada equipo instalado en La Cruz queda conectado a nuestra central redundante, con verificación humana de señales, aviso inmediato a tu celular y a tus contactos de confianza, y contacto con carabineros según tu plan.",
+  "faq": [
+    {"question": "¿Cuánto cuesta una alarma en La Cruz?", "answer": "Los kits de alarma para casa en La Cruz parten desde $199.900 e incluyen instalación y configuración por técnicos locales. El precio definitivo varía según la cantidad de accesos, sensores y el plan de monitoreo elegido; la visita de evaluación en tu propiedad, ya sea en el centro o en un sector agrícola, es gratuita y sin compromiso."},
+    {"question": "¿Instalan cámaras en viñas y predios?", "answer": "Sí. Trabajamos cámaras IP y CCTV en viñas, bodegas y predios de La Cruz, con grabación local o en la nube y acceso desde el celular. Definimos los puntos de cobertura según los accesos y zonas de carga, y te entrenamos para consultar las tomas y el historial desde donde estés."},
+    {"question": "¿Cómo es la respuesta ante una alarma en La Cruz?", "answer": "La central recibe y verifica la señal en menos de 2 minutos y, según tu plan, coordinamos contacto con carabineros o guardias en la comuna. Al compartir corredor con Quillota, La Calera y Nogales, mantenemos cobertura activa sobre todo el valle."}
+  ],
+  "serviciosDestacados": ["alarmas-para-casa", "cerco-electrico", "camaras-de-seguridad", "monitoreo-de-alarmas-24-7", "camaras-ip", "prevencion-de-robo"]
+}

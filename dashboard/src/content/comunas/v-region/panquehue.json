@@ -1,0 +1,16 @@
+{
+  "name": "Panquehue",
+  "title": "Seguridad electrónica en Panquehue | GAMA",
+  "description": "Sistemas de alarma, cámaras y cercos eléctricos en Panquehue, con cobertura en el centro y sectores del valle. Monitoreo 24/7 y evaluación gratuita.",
+  "keywords": ["alarma panquehue", "camaras panquehue", "seguridad electronica v region", "cerco electrico panquehue", "alarmas san felipe"],
+  "hashtags": ["Panquehue", "SeguridadElectrónica", "VRegión", "SistemaDeAlarma", "GamaSecurity"],
+  "lead": "Protegemos casas, comercios y predios en Panquehue con sistemas de alarma, cámaras de seguridad y cercos eléctricos instalados por técnicos del valle del Aconcagua. Nuestra central de monitoreo opera 24 horas y coordina la respuesta en minutos sobre el centro de Panquehue, San Roque, Lo Campo, Llayquen y el sector de La Pirca. Pide una evaluación gratuita para tu propiedad.",
+  "sectors": ["Centro Panquehue", "San Roque", "Lo Campo", "Llayquen", "La Pirca", "Laguna Tricahue"],
+  "reasonExtra": "Trabajamos en Panquehue con ruta habitual entre San Felipe y Santa María, por eso resolvemos urgencias el mismo día y dejamos instalaciones listas en menos de 48 horas hábiles. Extendemos la cobertura a las comunas vecinas de San Felipe, Santa María y Catemu, con mantenciones agendadas en cada giro por la comuna. Cada equipo instalado en Panquehue queda conectado a nuestra central redundante, con verificación humana de señales, aviso inmediato a tu celular y a tus contactos de confianza, y coordinación con carabineros cuando tu plan lo contempla.",
+  "faq": [
+    {"question": "¿Cuánto cuesta una alarma en Panquehue?", "answer": "Los kits de alarma para casa en Panquehue parten desde $199.900 e incluyen instalación y configuración completas. El precio definitivo varía según los accesos, sensores y el plan de monitoreo elegido; la evaluación en tu propiedad, en el centro o en un sector alejado, es gratuita y no implica contrato."},
+    {"question": "¿Hacen instalación de cámaras en Panquehue?", "answer": "Sí. Instalamos cámaras IP y CCTV en casas, negocios, bodegas y oficinas de Panquehue, con grabación local o en la nube y acceso desde tu celular. Definimos los puntos de cobertura según accesos y zonas de mayor riesgo, y te explicamos cómo consultar las tomas y el historial desde cualquier lugar."},
+    {"question": "¿Cuánto demoran en verificar una alarma en Panquehue?", "answer": "La central revisa la señal en menos de 2 minutos y, según tu plan, coordinamos contacto con carabineros o guardias en la comuna. Como compartimos ruta con San Felipe, Santa María y Catemu, los tiempos de traslado dentro de Panquehue se mantienen ágiles a cualquier hora."}
+  ],
+  "serviciosDestacados": ["alarmas-para-casa", "cerco-electrico", "camaras-de-seguridad", "monitoreo-de-alarmas-24-7", "prevencion-de-robo", "control-de-acceso"]
+}

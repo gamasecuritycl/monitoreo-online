@@ -1,0 +1,16 @@
+{
+  "name": "Putaendo",
+  "title": "Seguridad electrónica en Putaendo | GAMA",
+  "description": "Alarmas, cámaras y cercos eléctricos en Putaendo, con cobertura en el pueblo y los sectores rurales del valle. Monitoreo 24/7 y evaluación.",
+  "keywords": ["alarma putaendo", "camaras putaendo", "seguridad electronica v region", "cerco electrico putaendo", "alarmas san felipe"],
+  "hashtags": ["Putaendo", "SeguridadElectrónica", "VRegión", "SistemaDeAlarma", "GamaSecurity"],
+  "lead": "Instalamos sistemas de alarma, cámaras de seguridad y cercos eléctricos en Putaendo para casas, comercios y predios agrícolas de la comuna. Nuestra central de monitoreo funciona 24 horas y coordina la respuesta en minutos sobre el centro de Putaendo, la Población San Antonio, Villa Los Jazmines, la Rinconada de Silva y el sector de Las Coimas. Reserva una evaluación sin compromiso.",
+  "sectors": ["Centro Putaendo", "Población San Antonio", "Villa Los Jazmines", "Rinconada de Silva", "Las Coimas", "Lo Vicuña"],
+  "reasonExtra": "Cubrimos Putaendo con ruta sobre el valle del Aconcagua, por lo que atendemos urgencias el mismo día y dejamos instalaciones programadas en menos de 48 horas hábiles. Trabajamos también con las comunas vecinas de San Felipe, Catemu y Panquehue, llevando equipos y repuestos en cada recorrido. Todo sistema instalado en Putaendo queda conectado a nuestra central redundante, con verificación humana de señales, aviso inmediato a tu celular y a tus contactos de confianza, y coordinación con carabineros cuando tu plan lo contempla.",
+  "faq": [
+    {"question": "¿Cuánto cuesta una alarma en Putaendo?", "answer": "Los kits de alarma para casa en Putaendo parten desde $199.900 e incluyen instalación y configuración por técnicos locales. El precio definitivo varía según la cantidad de accesos, sensores y el plan de monitoreo elegido; la visita de evaluación en tu propiedad, en el pueblo o en un sector rural, es gratuita y sin compromiso."},
+    {"question": "¿Hacen instalación de cámaras en Putaendo?", "answer": "Sí. Instalamos cámaras IP y CCTV en casas, negocios, bodegas y oficinas de Putaendo, con grabación local o en la nube y acceso desde tu celular. Seleccionamos equipos según la iluminación y la conectividad del lugar para que la grabación sea estable y puedas revisar el historial a distancia."},
+    {"question": "¿Cuánto demoran en responder una alarma en Putaendo?", "answer": "La central verifica la señal en menos de 2 minutos y, según tu plan, coordinamos contacto con carabineros o guardias en la comuna. Al compartir corredor con San Felipe, Catemu y Panquehue, los traslados dentro de Putaendo suelen mantenerse dentro de tiempos cortos."}
+  ],
+  "serviciosDestacados": ["alarmas-para-casa", "cerco-electrico", "camaras-de-seguridad", "monitoreo-de-alarmas-24-7", "camaras-ip", "prevencion-de-robo"]
+}

@@ -1,0 +1,16 @@
+{
+  "name": "Quillota",
+  "title": "Seguridad electrónica en Quillota | GAMA",
+  "description": "Alarmas, cámaras y cercos eléctricos en Quillota, para hogares, comercios y el sector agrícola. Monitoreo 24/7 y evaluación gratuita.",
+  "keywords": ["alarma quillota", "camaras quillota", "seguridad electronica v region", "cerco electrico quillota", "alarmas limache"],
+  "hashtags": ["Quillota", "SeguridadElectrónica", "VRegión", "SistemaDeAlarma", "GamaSecurity"],
+  "lead": "Instalamos sistemas de alarma, cámaras de seguridad y cercos eléctricos en Quillota para casas, comercios y viñas del valle. Nuestra central de monitoreo opera las 24 horas y coordina la respuesta en minutos sobre el centro de la comuna, Boco, San Pedro y el sector de Corvi. Pide una evaluación sin compromiso y conoce qué solución calza con tu propiedad.",
+  "sectors": ["Centro Quillota", "Boco", "San Pedro", "Corvi", "Parque Industrial"],
+  "reasonExtra": "Tenemos técnicos con ruta diaria por Quillota, por lo que atendemos urgencias el mismo día y dejamos instalaciones programadas resueltas en menos de 48 horas hábiles. La cobertura alcanza las comunas vecinas de La Calera, La Cruz, Limache, Concón e Hijuelas, con visitas coordinadas en cada giro por el valle. Cada sistema instalado en Quillota queda conectado a nuestra central redundante, con verificación humana de señales, aviso inmediato a tu celular y a tus contactos de confianza, y coordinación con carabineros según el plan que elijas.",
+  "faq": [
+    {"question": "¿Cuánto cuesta una alarma en Quillota?", "answer": "Los kits de alarma para casa en Quillota parten desde $199.900 e incluyen instalación y configuración por técnicos locales. El precio final cambia según la cantidad de accesos, sensores y el plan de monitoreo elegido; la visita de evaluación en tu propiedad, en el centro o en los sectores agrícolas, es gratuita y sin compromiso."},
+    {"question": "¿Hacen instalación de cámaras en Quillota?", "answer": "Sí. Instalamos cámaras IP y CCTV en casas, comercios, bodegas y oficinas de Quillota, con grabación local o en la nube y acceso desde tu celular. Conocemos los puntos de la comuna con mejor conectividad y proponemos la configuración más estable para que la grabación no se interrumpa."},
+    {"question": "¿Cuánto demoran en verificar una alarma en Quillota?", "answer": "La central revisa la señal en menos de 2 minutos y, según tu plan, coordinamos contacto con carabineros o guardias en la comuna. Como compartimos ruta con La Calera, La Cruz y Limache, los traslados dentro de Quillota suelen ser rápidos a cualquier hora."}
+  ],
+  "serviciosDestacados": ["alarmas-para-casa", "camaras-de-seguridad", "monitoreo-de-alarmas-24-7", "control-de-acceso", "cerco-electrico", "prevencion-de-robo"]
+}

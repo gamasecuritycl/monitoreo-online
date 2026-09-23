@@ -1,0 +1,16 @@
+{
+  "name": "Rinconada",
+  "title": "Seguridad electrónica en Rinconada | GAMA",
+  "description": "Alarmas, cámaras y cercos eléctricos en Rinconada La Crustánea, con cobertura en el centro y los sectores del valle. Monitoreo 24/7.",
+  "keywords": ["alarma rinconada", "camaras rinconada", "seguridad electronica v region", "cerco electrico rinconada", "alarmas san esteban"],
+  "hashtags": ["Rinconada", "SeguridadElectrónica", "VRegión", "SistemaDeAlarma", "GamaSecurity"],
+  "lead": "Instalamos alarmas, cámaras de seguridad y cercos eléctricos en Rinconada para hogares, comercios y predios de la comuna. Nuestra central de monitoreo opera las 24 horas y coordina la respuesta en minutos sobre el centro de Rinconada, Auco, Tierras Blancas, Los Villares y Valle Alegre. Solicita una evaluación sin compromiso y conoce qué solución calza con tu propiedad.",
+  "sectors": ["Centro Rinconada", "Auco", "Tierras Blancas", "Los Villares", "Valle Alegre"],
+  "reasonExtra": "Nuestros técnicos cubren Rinconada con ruta diaria entre San Felipe y Los Andes, por eso atendemos urgencias el mismo día y dejamos instalaciones programadas en menos de 48 horas hábiles. La cobertura se extiende a las comunas vecinas de Los Andes, San Felipe y Calle Larga, con mantenciones agendadas en cada giro por el valle. Todo equipo instalado en Rinconada queda conectado a nuestra central redundante, con verificación humana de señales, aviso inmediato a tu celular y a tus contactos de confianza, y coordinación con carabineros según tu plan.",
+  "faq": [
+    {"question": "¿Cuánto cuesta una alarma en Rinconada?", "answer": "Los kits de alarma para casa en Rinconada parten desde $199.900 e incluyen instalación y configuración por técnicos locales. El valor final cambia según la cantidad de accesos, sensores y el plan de monitoreo elegido; la visita de evaluación en tu propiedad, en el centro o en un sector agrícola, es gratuita y sin compromiso."},
+    {"question": "¿Instalan cámaras en Rinconada?", "answer": "Sí. Instalamos cámaras IP y CCTV en casas, locales, bodegas y oficinas de Rinconada, con grabación local o en la nube y acceso desde tu celular. Definimos los puntos de cobertura según accesos e iluminación, y te enseñamos a revisar las tomas y el historial desde donde estés."},
+    {"question": "¿Cuánto demoran en atender una alarma en Rinconada?", "answer": "La central verifica la señal en menos de 2 minutos y, según tu plan, coordinamos contacto con carabineros o guardias en la comuna. Al compartir corredor con Los Andes, San Felipe y Calle Larga, los traslados dentro de Rinconada suelen ser rápidos durante todo el día."}
+  ],
+  "serviciosDestacados": ["alarmas-para-casa", "camaras-de-seguridad", "monitoreo-de-alarmas-24-7", "cerco-electrico", "alarma-con-app", "prevencion-de-robo"]
+}

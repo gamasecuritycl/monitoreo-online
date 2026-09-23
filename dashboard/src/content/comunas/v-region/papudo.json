@@ -1,0 +1,16 @@
+{
+  "name": "Papudo",
+  "title": "Seguridad electrónica en Papudo | GAMA",
+  "description": "Alarmas, cámaras y cercos eléctricos en Papudo, con cobertura en la caleta y sectores residenciales. Monitoreo 24/7 y evaluación gratuita.",
+  "keywords": ["alarma papudo", "camaras papudo", "seguridad electronica v region", "cerco electrico papudo", "alarmas la ligua"],
+  "hashtags": ["Papudo", "SeguridadElectrónica", "VRegión", "SistemaDeAlarma", "GamaSecurity"],
+  "lead": "Cuidamos casas de veraneo, residencias permanentes y la caleta de Papudo con sistemas de alarma, cámaras de seguridad y cercos eléctricos instalados por técnicos del litoral norte. Nuestra central de monitoreo opera 24 horas y verifica señales en minutos, cubriendo el centro de la comuna, Playa Chica, El Lilén y Las Salinas. Reserva una evaluación gratuita y revisa las opciones para tu propiedad.",
+  "sectors": ["Centro Papudo", "Playa Chica", "El Lilén", "Las Salinas", "Quebrada del Francés"],
+  "reasonExtra": "Nuestros técnicos cubren Papudo con ruta sobre la Carretera Panamericana, por lo que atendemos urgencias el mismo día y agendamos instalaciones en menos de 48 horas hábiles. La cobertura se extiende a las comunas vecinas de La Ligua, Zapallar y Petorca, con visitas agendadas en cada recorrido hacia el litoral norte. Todo sistema instalado en Papudo queda conectado a nuestra central redundante, con verificación humana de señales y notificación inmediata a tu celular y a tus contactos de confianza según el plan que elijas.",
+  "faq": [
+    {"question": "¿Cuánto cuesta una alarma en Papudo?", "answer": "Los kits de alarma para casa en Papudo parten desde $199.900 e incluyen instalación y configuración completas. El precio definitivo cambia según los accesos, sensores y el plan de monitoreo seleccionado; la evaluación en tu propiedad, cerca de la caleta o en los sectores residenciales, es gratuita y sin compromiso."},
+    {"question": "¿Puedo revisar las cámaras de mi casa en Papudo desde otra ciudad?", "answer": "Sí. Instalamos cámaras IP con acceso remoto desde el celular o computador, de modo que puedes ver tu propiedad en Papudo aunque estés en otra ciudad o país. Grabamos en local o en la nube según el uso, y te explicamos cómo consultar el historial antes de que terminemos la instalación."},
+    {"question": "¿Cuánto demoran en verificar una alarma en Papudo?", "answer": "La central revisa la señal en menos de 2 minutos y, según tu plan, coordinamos contacto con carabineros o guardias en la comuna. Como compartimos ruta con La Ligua y Zapallar, los tiempos de traslado dentro de Papudo se mantienen cortos durante todo el año."}
+  ],
+  "serviciosDestacados": ["cerco-electrico", "camaras-de-seguridad", "alarmas-para-casa", "monitoreo-de-alarmas-24-7", "camaras-ip", "prevencion-de-robo"]
+}

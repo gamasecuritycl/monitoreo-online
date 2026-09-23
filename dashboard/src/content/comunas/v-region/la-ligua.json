@@ -1,0 +1,16 @@
+{
+  "name": "La Ligua",
+  "title": "Seguridad electrónica en La Ligua | GAMA",
+  "description": "Alarmas, cámaras y cercos eléctricos en La Ligua, desde el centro hasta La Canela y el litoral. Monitoreo 24/7 y evaluación gratuita.",
+  "keywords": ["alarma la ligua", "camaras la ligua", "seguridad electronica v region", "cerco electrico la ligua", "alarmas cabildo"],
+  "hashtags": ["LaLigua", "SeguridadElectrónica", "VRegión", "SistemaDeAlarma", "GamaSecurity"],
+  "lead": "Protegemos hogares, comercios y predios en La Ligua con sistemas de alarma, cámaras de seguridad y cercos eléctricos instalados por técnicos que cubren el litoral norte cada semana. Nuestra central de monitoreo opera 24 horas y coordina la respuesta en minutos sobre el centro, La Canela, Valle Hermoso, Quinquimo y el sector de Pullally. Solicita una evaluación gratuita para tu propiedad.",
+  "sectors": ["Centro La Ligua", "La Canela", "Valle Hermoso", "Quinquimo", "Pullally", "Quebrada del Pobre"],
+  "reasonExtra": "Tenemos técnicos con base en el litoral norte y ruta fija por La Ligua, por lo que atendemos urgencias el mismo día y dejamos instalaciones programadas en menos de 48 horas hábiles. La cobertura alcanza las comunas vecinas de Papudo, Zapallar, Cabildo y Petorca, con visitas coordinadas en cada giro por la Carretera Panamericana. Todo equipo instalado en La Ligua queda conectado a nuestra central redundante, con verificación humana de señales y notificación inmediata a tu celular y a tus contactos de confianza según el plan contratado.",
+  "faq": [
+    {"question": "¿Cuánto cuesta una alarma en La Ligua?", "answer": "Los kits de alarma para casa en La Ligua parten desde $199.900 e incluyen instalación y configuración completas. El valor final se define según los accesos, sensores y el plan de monitoreo elegido; la evaluación en tu propiedad, en el centro o en los sectores agrícolas, es gratuita y sin compromiso de contrato."},
+    {"question": "¿Instalan cámaras y cercos eléctricos en La Ligua?", "answer": "Sí. Trabajamos cámaras IP y CCTV junto con cercos eléctricos en casas, comercios y predios de La Ligua. Revisamos el perímetro, definimos los puntos de grabación y te mostramos cómo usar la app; cuando ambos sistemas se integran, recibes alertas y video desde un solo lugar."},
+    {"question": "¿Cuánto demoran en atender una alarma en La Ligua?", "answer": "La central verifica la señal en menos de 2 minutos y, según tu plan, coordinamos contacto con carabineros o guardias en la comuna. Al compartir ruta con Papudo, Zapallar y Cabildo, los traslados dentro de La Ligua se mantienen ágiles en cualquier horario."}
+  ],
+  "serviciosDestacados": ["alarmas-para-casa", "cerco-electrico", "camaras-de-seguridad", "monitoreo-de-alarmas-24-7", "camaras-ip", "prevencion-de-robo"]
+}
