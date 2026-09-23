@@ -62,7 +62,7 @@ Estos protocolos distinguen un evento real de una falsa alarma por mantenimiento
 o error de armado, y acreditan el incidente para carabineros y la compañía de
 seguros. Cada decisión queda registrada con hora y responsable.
 
-## Planes de monitoreo
+## ¿Cuánto cuesta el monitoreo de alarmas 24/7?
 
 | Plan | Alcance | Precio |
 |---|---|---|
