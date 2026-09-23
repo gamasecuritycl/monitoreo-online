@@ -13,7 +13,7 @@ faq:
     answer: "PoE permite que el mismo cable de red alimente y transmita datos de la cámara, sin necesidad de instalación eléctrica en cada punto. Simplifica la instalación, reduce costos de obra y permite controlar el reinicio de cámaras desde el switch. Recomendamos switches PoE administrables para proyectos medianos y grandes, con respaldo de energía en el rack cuando la criticidad lo exige."
   - question: "¿Puedo integrar cámaras IP con mi alarma?"
     answer: "Sí, integramos cámaras IP con la central de alarma de modo que cada evento active la grabación del punto afectado y el operador verifique el video antes de responder. También puedes ver cámaras y estado de la alarma en una misma aplicación. La integración mejora la verificación de señales y reduce falsas alarmas con evidencia visual inmediata."
-relatedServicios: [camaras-de-seguridad, control-de-acceso, alarmas-para-negocios]
+relatedServicios: [camaras-de-seguridad, redes-de-datos, sistemas-de-alarma-para-empresas]
 ---
 
 Las **cámaras IP** transmiten video digital por red con calidad Full HD o 4K,

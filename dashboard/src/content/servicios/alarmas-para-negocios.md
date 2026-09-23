@@ -13,7 +13,7 @@ faq:
     answer: "Sí, configuramos códigos de usuario individuales para cada encargado, vendedores y personal de aseo. Cada código registra quién armó o desarmó y a qué hora, evitando códigos compartidos. Puedes revocar un código al instante cuando alguien deja de trabajar contigo, y consultar el historial desde la app o desde la central, sin tocar el equipo físico."
   - question: "¿Cuánto demora la instalación en un local comercial?"
     answer: "La instalación en comercios toma entre 3 y 6 horas según la cantidad de accesos, vitrinas y bodegas. Podemos trabajar fuera de tu horario de atención, incluso de noche o los domingos, para que no pierdas ventas. El mismo día queda el sistema operativo, tu equipo capacitado y todo conectado a la central de monitoreo."
-relatedServicios: [monitoreo-de-alarmas-24-7, camaras-de-seguridad, sistema-alarma-inalambrico]
+relatedServicios: [sistemas-de-alarma-para-empresas, monitoreo-de-alarmas-24-7, camaras-de-seguridad]
 ---
 
 Un negocio cerrado sigue expuesto: intentos de forzamiento, accesos nocturnos y

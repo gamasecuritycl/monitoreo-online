@@ -13,7 +13,7 @@ faq:
     answer: "Sí, siempre que se instale con señalización de advertencia visible, respete distancias a vía pública y use equipos certificados que entreguen descarga no letal. En proyectos residenciales e industriales aplican requerimientos de retreat de seguridad. Nuestros técnicos conocen la normativa vigente y dejan la instalación conforme, con documentación y pruebas de funcionamiento para tu respaldo."
   - question: "¿El cerco eléctrico avisa si alguien lo intenta cruzar?"
     answer: "Sí. Cada sección del cerco está supervisada: un corte de alambre, un intento de trepa o un cortocircuito generan alarma inmediata que llega a la central de monitoreo con la zona exacta del evento. El operador verifica, notifica a tus contactos y coordina la respuesta, mientras las cámaras vinculadas comienzan a grabar el punto afectado del perímetro."
-relatedServicios: [camaras-de-seguridad, control-de-acceso, alarmas-para-negocios]
+relatedServicios: [prevencion-de-robo, sensores-de-presencia, camaras-de-seguridad]
 ---
 
 El perímetro es la primera línea de defensa. Un **cerco eléctrico** disuade el

@@ -13,7 +13,7 @@ faq:
     answer: "Las baterías de los sensores inalámbricos duran entre 12 y 24 meses según el uso y el modelo. La central avisa con anticipación cuando una batería está baja, por notificación en la app y en el teclado. El reemplazo es simple y lo incluimos en el plan de mantención programada, sin necesidad de abrir paredes ni cablear nada."
   - question: "¿Puedo llevarme la alarma si me mudo?"
     answer: "Sí, uno de los grandes beneficios del sistema inalámbrico es su portabilidad. Los sensores se desmontan sin dañar la pintura y la central se reinstala en tu nuevo hogar. Ofrecemos servicio de reubicación con un costo reducido para clientes con monitoreo activo, y reconfiguramos las zonas en el lugar para que quede operativa el mismo día de la mudanza."
-relatedServicios: [sistema-alarma-cableada, alarmas-para-casa, alarmas-para-negocios]
+relatedServicios: [sistema-alarma-cableada, alarma-con-app, alarmas-para-casa]
 ---
 
 Instalar una alarma no debería obligarte a romper paredes ni dejar canaletas a

@@ -13,7 +13,7 @@ faq:
     answer: "Sí, todas las instalaciones quedan configuradas con acceso remoto desde la app, con usuarios y permisos individuales. Puedes ver el video en vivo, reproducir grabaciones por fecha y recibir alertas de movimiento en el teléfono, donde quiera que estés. El acceso es cifrado y puedes revocar usuarios al instante si alguien deja de necesitar la visualización de las cámaras."
   - question: "¿Cuánto tiempo guardan las grabaciones?"
     answer: "Depende del almacenamiento elegido: un grabador local con disco de 2 TB conserva entre 15 y 30 días según cantidad de cámaras y actividad. La nube permite guardar clips de eventos durante 30 días o más, sin riesgo de que roben el grabador. Te asesoramos el punto de equilibrio entre capacidad, días de retención y presupuesto en la propuesta técnica."
-relatedServicios: [camaras-ip, alarmas-para-negocios, cerco-electrico]
+relatedServicios: [camaras-ip, sensores-de-presencia, prevencion-de-robo]
 ---
 
 Ver lo que ocurre en tu propiedad en tiempo real y contar con evidencia cuando

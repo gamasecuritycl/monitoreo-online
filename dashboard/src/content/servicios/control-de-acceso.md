@@ -13,7 +13,7 @@ faq:
     answer: "El administrador consulta el registro de auditoría desde la aplicación o el software de control, filtrando por persona, puerta, fecha y hora. Cada apertura, denegación y alarma queda en el historial con usuario y evento. Puedes exportar los reportes para revisión de recursos humanos, investigación de incidentes o cumplimiento de normativas de seguridad interna."
   - question: "¿Se integra la control de acceso con la alarma del edificio?"
     answer: "Sí, integramos ambos sistemas de modo que los códigos de acceso y los usuarios de alarma compartan la misma base. Un ingreso legítimo puede desarmar la zona correspondiente, y una apertura fuera de horario genera alarma hacia la central. Todo queda en una sola plataforma, simplificando la administración y mejorando la verificación de eventos."
-relatedServicios: [citofonia, alarmas-para-negocios, camaras-ip]
+relatedServicios: [sistemas-de-alarma-para-empresas, citofonia, domotica]
 ---
 
 Controlar quién entra a tu edificio, oficina o comuna es tan importante como

@@ -13,7 +13,7 @@ faq:
     answer: "Sí, en los sistemas digitales e IP configuramos el desvío a aplicación móvil: cuando alguien llama, recibes la llamada en tu teléfono, ves la imagen si es videocitofonía y autorizas la apertura de la puerta principal aunque no estés en el departamento. Es ideal para departamentos vacíos, arriendos temporados y residentes que desean controlar accesos desde cualquier lugar."
   - question: "¿Sirve para edificios con varios domicilios?"
     answer: "Por supuesto: la citofonía multi-domicilio es nuestro fuerte. Cada departamento tiene su monitor o su línea digital, el panel exterior muestra o selecciona el domicilio y la portería queda centralizada. Escalamos desde 4 hasta cientos de domicilios con paneles modulares, y lo integramos con control de acceso para que la puerta principal también se abra desde el citofono."
-relatedServicios: [videoportero, control-de-acceso, camaras-ip]
+relatedServicios: [videoportero, control-de-acceso, redes-de-datos]
 ---
 
 La citofonía resuelve lo básico y a la vez lo más delicado: saber quién está en

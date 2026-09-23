@@ -13,7 +13,7 @@ faq:
     answer: "Aplicamos protocolos de verificación: el operador confirma la señal con códigos, contactos pre-registrados y, cuando está disponible, video asociado al punto de alarma. Si la señal viene de una zona sensible, llamamos antes de despachar respuesta. Este filtro reduce los traslados innecesarios y hace que cuando carabineros o guardia acuden, el evento esté debidamente acreditado y verificado."
   - question: "¿El monitoreo funciona en todo Chile?"
     answer: "Sí, nuestra central recibe señales desde cualquier lugar del país con cobertura celular. Instalamos y monitoreamos equipos en la Región Metropolitana y Región de Valparaíso con técnicos propios, y el monitoreo de señales opera sin importar la comuna donde esté tu propiedad. La comunicación es redundante por IP y GPRS para que la señal llegue aunque falle el internet local."
-relatedServicios: [alarmas-para-casa, alarmas-para-negocios, camaras-de-seguridad]
+relatedServicios: [alarmas-para-casa, alarmas-para-negocios, deteccion-de-incendio]
 ---
 
 Una alarma sin central que la reciba es solo una sirena. El **monitoreo de

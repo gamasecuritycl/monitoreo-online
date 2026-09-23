@@ -13,7 +13,7 @@ faq:
     answer: "La línea dedicada aporta alta fiabilidad: no depende de baterías de sensores ni de condiciones de radiofrecuencia, por lo que no hay interferencias ni pérdidas de enlace. Eso la hace preferible en críticos como bodegas, plantas industriales y comercios grandes. Aun así, ambos sistemas se monitorean igual y transmiten por IP y GPRS con redundancia total."
   - question: "¿Qué incluye la mantención del sistema cableado?"
     answer: "La mantención programada verifica integridad de cada línea, prueba sensores y zonas, revisa la batería de respaldo de la central y confirma la transmisión con la central de monitoreo. Recomendamos una revisión semestral o anual según el contrato. Cada visita queda documentada con informe de estado, para que siempre sepas que tu sistema está operativo y listo."
-relatedServicios: [sistema-alarma-inalambrico, alarmas-para-negocios, control-de-acceso]
+relatedServicios: [sistema-alarma-inalambrico, sensores-de-presencia, sistemas-de-alarma-para-empresas]
 ---
 
 Cuando el proyecto lo permite, el cable dedicado sigue siendo el estándar de

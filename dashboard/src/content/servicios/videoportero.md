@@ -13,7 +13,7 @@ faq:
     answer: "Sí, los paneles exteriores incorporan iluminación infrarroja o luz blanca que permite identificar rostros en total oscuridad. Evaluar la imagen nocturna es clave: una cámara sin buena visión nocturna solo muestra siluetas. Instalamos equipos con rango suficiente para la distancia entre el visitante y el panel, y ajustamos el enfoque durante la instalación."
   - question: "¿Cuál conviene: videoportero para casa o multi-apartamento?"
     answer: "Para casa o duplex conviene el sistema de un domicilio con monitor de mesa y apertura de portón. En edificios, el multi-apartamento con panel exterior por puerta y un monitor por departamento escala mejor y permite llamadas a cada unidad. Si además hay portería, integramos la videocitofonía con el puesto de mando y el control de acceso del edificio."
-relatedServicios: [citofonia, control-de-acceso, alarmas-para-casa]
+relatedServicios: [citofonia, control-de-acceso, domotica]
 ---
 
 La primera impresión de tu casa se da en la puerta, y el **videoportero** te
