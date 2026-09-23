@@ -3,7 +3,6 @@
     "controltestmonitoreo.vercel.app"
   ],
   "framework": "nextjs",
-  "installCommand": "npm ci",
   "crons": [
     {
       "path": "/api/cron/keepalive",
