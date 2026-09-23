@@ -1,5 +1,5 @@
 ---
-title: "Domótica | GAMA"
+title: "Domótica"
 description: "Domótica y automatización del hogar: iluminación, persianas, escenas y control por app. Integración con alarmas y cámaras."
 keywords: [domotica, automatizacion del hogar, casa inteligente, escenas inteligentes, control iluminacion automatico]
 hashtags: [Domotica, CasaInteligente, AutomatizacionHogar, IluminacionInteligente, GamaSecurity]

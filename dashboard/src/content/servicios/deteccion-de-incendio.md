@@ -1,5 +1,5 @@
 ---
-title: "Detección de incendio | GAMA"
+title: "Detección de incendio"
 description: "Sistemas de detección de incendio con detectores de humo y temperatura, alarma temprana y conexión 24/7 a nuestra central."
 keywords: [deteccion de incendio, detector de humo, alarma de incendio, detector de temperatura, sistema de deteccion de incendio]
 hashtags: [DeteccionDeIncendio, DetectorDeHumo, AlarmaDeIncendio, PrevencionIncendios, GamaSecurity]

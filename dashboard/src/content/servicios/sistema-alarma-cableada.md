@@ -1,5 +1,5 @@
 ---
-title: "Sistema de alarma cableada | GAMA"
+title: "Sistema de alarma cableada"
 description: "Alarmas cableadas de alta fiabilidad para casas y empresas en construcción. Sensores con línea dedicada e interferencias cero. Cotiza."
 keywords: [sistema alarma cableada, alarma cableada, alarma linea dedicada, alarma obra civil, alarma alta fiabilidad]
 hashtags: [AlarmaCableada, LineaDedicada, ObraCivil, SistemaDeAlarma, GamaSecurity]

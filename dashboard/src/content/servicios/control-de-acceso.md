@@ -1,5 +1,5 @@
 ---
-title: "Control de acceso | GAMA"
+title: "Control de acceso"
 description: "Control de acceso con tarjetas, biométrico y app para edificios, oficinas y comunas. Registro de ingresos y portones automáticos."
 keywords: [control de acceso, control de acceso con tarjeta, control biometrico, control de porton, registro de ingresos]
 hashtags: [ControlDeAcceso, IdentificacionBiometrica, PortonAutomatico, RegistroDeIngresos, GamaSecurity]

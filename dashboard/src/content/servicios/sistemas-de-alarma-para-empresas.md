@@ -1,5 +1,5 @@
 ---
-title: "Sistemas de alarma para empresas | GAMA"
+title: "Sistemas de alarma para empresas"
 description: "Alarmas para empresas multi-sede: zonas por área, usuarios por turno y reportes de armado y desarmado centralizados."
 keywords: [sistema de alarma para empresas, alarma multi sede, alarma para empresa, alarma con reportes, alarma por turnos]
 hashtags: [AlarmaParaEmpresas, MultiSede, ControlDeTurnos, ReportesDeAuditoria, GamaSecurity]

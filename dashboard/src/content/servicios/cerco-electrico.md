@@ -1,5 +1,5 @@
 ---
-title: "Cerco eléctrico | GAMA"
+title: "Cerco eléctrico"
 description: "Cercos eléctricos disuasivos para casas, quintas y plantas industriales, integrados a la central de monitoreo. Instalación certificada."
 keywords: [cerco electrico, cerco electrico perimetral, cerca electrica para casa, seguridad perimetral, cerco alta tension]
 hashtags: [CercoElectrico, SeguridadPerimetral, PerimetroSeguro, Monitoreo24_7, GamaSecurity]

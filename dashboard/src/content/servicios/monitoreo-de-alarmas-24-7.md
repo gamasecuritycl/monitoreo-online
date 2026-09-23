@@ -1,5 +1,5 @@
 ---
-title: "Monitoreo de alarmas 24/7 | GAMA"
+title: "Monitoreo de alarmas 24/7"
 description: "Central de monitoreo de alarmas 24 horas, los 365 días. Verificación humana de señales en menos de 2 minutos en todo Chile."
 keywords: [monitoreo de alarmas 24 7, central de monitoreo, monitoreo 24 horas, verificacion de alarmas, recepcion de señales]
 hashtags: [Monitoreo24_7, CentralDeMonitoreo, VerificacionDeAlarmas, SistemaDeAlarma, GamaSecurity]

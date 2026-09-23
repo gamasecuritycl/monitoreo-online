@@ -1,5 +1,5 @@
 ---
-title: "Citofonía | GAMA"
+title: "Citofonía"
 description: "Sistemas de citofonía y videocitofonía para edificios y casas. Comunicación de áreas comunes y portería profesional."
 keywords: [citofonia, citofono para edificio, citofonia digital, videocitofonia, interfono edificio]
 hashtags: [Citofonia, Videocitofonia, EdificioSeguro, Porteria, GamaSecurity]

@@ -1,5 +1,5 @@
 ---
-title: "Sistemas de voceo | GAMA"
+title: "Sistemas de voceo"
 description: "Sistemas de voceo y música ambiente para colegios, plantas, iglesias y empresas. Altavoces, amplificadores e instalación profesional."
 keywords: [sistemas de voceo, equipo de voceo, altoparlantes 100v, musica ambiente empresa, megafonia]
 hashtags: [SistemasDeVoceo, MegafoniaProfesional, MusicaAmbiente, EvacuacionSegura, GamaSecurity]

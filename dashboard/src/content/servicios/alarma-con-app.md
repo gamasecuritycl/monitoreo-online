@@ -1,5 +1,5 @@
 ---
-title: "Alarma con app para celular | GAMA"
+title: "Alarma con app para celular"
 description: "Alarmas con aplicación para celular: arma, desarma y recibe alertas desde tu teléfono. Compatible con apps como NT CLICK."
 keywords: [alarma con app celular, alarma con aplicacion, alarma inteligente, alarma con wifi, alarma control remoto celular]
 hashtags: [AlarmaConApp, AlarmaInteligente, ControlRemoto, AlertasPush, GamaSecurity]

@@ -1,5 +1,5 @@
 ---
-title: "Mantención de sistemas de seguridad | GAMA"
+title: "Mantención de sistemas de seguridad"
 description: "Mantención preventiva de alarmas, cámaras y cercos eléctricos. Revisión de baterías, firmware y pruebas de señal."
 keywords: [mantencion sistemas seguridad, mantencion de alarmas, mantencion de camaras, servicio preventivo seguridad, contrato de mantencion]
 hashtags: [MantencionDeSeguridad, MantencionPreventiva, AlarmasYCamaras, ContratoDeServicio, GamaSecurity]

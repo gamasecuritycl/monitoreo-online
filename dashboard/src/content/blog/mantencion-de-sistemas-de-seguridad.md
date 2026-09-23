@@ -1,5 +1,5 @@
 ---
-title: "Mantención de sistemas de seguridad"
+title: "Mantención de sistemas de seguridad: guía completa"
 description: "Mantención de sistemas de seguridad: preventiva versus correctiva, lista de verificación, frecuencia recomendada, contratos anuales y señales de falla."
 keywords: [mantencion sistemas seguridad, mantenimiento de alarmas, mantencion de camaras, contrato de mantencion, sensores de falla]
 hashtags: [MantencionDeSeguridad, SistemasDeSeguridad, CamarasDeSeguridad, CercoElectrico]

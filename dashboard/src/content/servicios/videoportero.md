@@ -1,5 +1,5 @@
 ---
-title: "Videoporteros | GAMA"
+title: "Videoporteros"
 description: "Videoporteros y videocitofonía con cámara, apertura remota y visión nocturna. Seguridad en la entrada de tu hogar o edificio."
 keywords: [videoportero, videoportero para casa, videocitofonia, videoportero con camara, portero video]
 hashtags: [Videoportero, Videocitofonia, VisionNocturna, HogarSeguro, GamaSecurity]

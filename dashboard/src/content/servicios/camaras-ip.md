@@ -1,5 +1,5 @@
 ---
-title: "Cámaras IP y video vigilancia | GAMA"
+title: "Cámaras IP y video vigilancia"
 description: "Cámaras IP con acceso remoto desde el celular, grabación en la nube y analítica de video. Ideal para empresas y hogares."
 keywords: [camaras ip, camaras de red, video vigilancia ip, camaras con acceso remoto, camaras poe]
 hashtags: [CamarasIP, VideoVigilancia, AccesoRemoto, NubeSeguridad, GamaSecurity]

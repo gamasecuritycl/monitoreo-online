@@ -1,5 +1,5 @@
 ---
-title: "Alarma para negocios y empresas | GAMA"
+title: "Alarma para negocios y empresas"
 description: "Alarmas para negocios, comercios y empresas con monitoreo 24/7. Protección antirrobo con verificación de señales. Cotiza hoy."
 keywords: [alarma para negocios, alarmas comerciales, alarma para empresa, sistema antirrobo, alarma para retail]
 hashtags: [AlarmaParaNegocios, ProteccionComercial, Monitoreo24_7, Antirrobo, GamaSecurity]

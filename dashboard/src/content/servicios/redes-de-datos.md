@@ -1,5 +1,5 @@
 ---
-title: "Redes de datos | GAMA"
+title: "Redes de datos"
 description: "Redes de datos y cableado estructurado CAT6 y fibra para empresas, edificios y data centers. Certificación y documentación incluida."
 keywords: [redes de datos, cableado estructurado, cableado cat6, fibra optica, certificacion de red]
 hashtags: [RedesDeDatos, CableadoEstructurado, FibraOptica, InfraestructuraTI, GamaSecurity]

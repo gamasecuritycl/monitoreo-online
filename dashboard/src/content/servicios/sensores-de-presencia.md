@@ -1,5 +1,5 @@
 ---
-title: "Sensores de presencia | GAMA"
+title: "Sensores de presencia"
 description: "Sensores de movimiento y presencia para interiores y exteriores. Detección perimetral con inmunidad a mascotas y clima."
 keywords: [sensores de presencia, sensor de movimiento, sensor pir, deteccion perimetral, sensor outdoor]
 hashtags: [SensoresDePresencia, SensorDeMovimiento, DeteccionPerimetral, AlarmasInalambricas, GamaSecurity]

@@ -1,5 +1,5 @@
 ---
-title: "Prevención de robo | GAMA"
+title: "Prevención de robo"
 description: "Prevención de robo con auditoría de seguridad, placas disuasivas, cercos y alarmas para comercios, bodegas y oficinas."
 keywords: [prevencion de robo, seguridad perimetral, auditoria de seguridad, disuadir robo, plan de seguridad empresa]
 hashtags: [PrevencionDeRobo, AuditoriaDeSeguridad, SeguridadComercial, CercoElectrico, GamaSecurity]

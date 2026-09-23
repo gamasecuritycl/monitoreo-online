@@ -1,5 +1,5 @@
 ---
-title: "Sistema de alarma para casa | GAMA"
+title: "Sistema de alarma para casa"
 description: "Sistema de alarma para casa con instalación profesional y monitoreo 24/7 en Chile. Alarms inalámbricas y cableadas. Cotiza sin costo."
 keywords: [alarma para casa, sistema de alarma, alarmas para hogar, alarma inalambrica para casa, alarma casera]
 hashtags: [SistemaDeAlarma, AlarmaParaCasa, SeguridadElectrónica, ProtegeTuHogar, GamaSecurity]

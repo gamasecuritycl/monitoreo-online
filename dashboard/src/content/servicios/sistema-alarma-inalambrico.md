@@ -1,5 +1,5 @@
 ---
-title: "Sistema de alarma inalámbrica | GAMA"
+title: "Sistema de alarma inalámbrica"
 description: "Sistema de alarma inalámbrica sin obra civil: instalación rápida, sensores por radiofrecuencia y transmisión celular. Evaluación gratis."
 keywords: [sistema alarma inalambrica, alarma inalambrica, alarma sin obra civil, alarma radiofrecuencia, alarma para departamento]
 hashtags: [AlarmaInalambrica, SinObraCivil, Radiofrecuencia, SistemaDeAlarma, GamaSecurity]

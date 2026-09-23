@@ -1,5 +1,5 @@
 ---
-title: "Cámaras de seguridad | GAMA"
+title: "Cámaras de seguridad"
 description: "Cámaras de seguridad y CCTV 4K con inteligencia artificial. Diseño, instalación y monitoreo de video para hogares y empresas."
 keywords: [camaras de seguridad, camaras cctv, camaras 4k, camaras con ia, video vigilancia para casa]
 hashtags: [CamarasDeSeguridad, CCTV, VigilanciaInteligente, Camara4K, GamaSecurity]
