@@ -54,7 +54,7 @@ emparejamiento de sensores con la central se hace durante la misma visita.
 
 La cableada dedica una línea física por sensor hasta el panel. Ofrece la
 máxima estabilidad y elimina la dependencia de baterías en campo, pero
-exige tubing, canaletas y perforaciones: entre un 15% y un 30% de recargo
+exige conductos, canaletas y perforaciones: entre un 15% y un 30% de recargo
 sobre el equipo. Rinde cuando la casa está en obra o sufre una
 remodelación mayor, porque el tendido se hace una vez y queda oculto. Si
 tu vivienda ya está terminada y en buen estado, la balanza inclina hacia

@@ -27,7 +27,7 @@ Es una infraestructura de cableado organizada en jerarquía: backbone, pisos y
 puntos de usuario, con rack, patch panel y etiquetado en cada enlace. A
 diferencia de un cableado improvisado, permite trazar fallas en minutos,
 ampliar sin rehacer la obra y mantener el rendimiento máximo de cada
-categoria de cable durante toda su vida útil.
+categoría de cable durante toda su vida útil.
 
 ## Cableado CAT6/6A y fibra
 

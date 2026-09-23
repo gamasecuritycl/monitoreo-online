@@ -52,7 +52,7 @@ falsos que terminan ignorándose.
 
 ## Multiusuario para la familia
 
-Crea usuarios ilimitados con horarios y permisos distintos: el parking del
+Crea usuarios ilimitados con horarios y permisos distintos: la pieza del
 niño puede desarmar solo después de las 16:00, y la nana entra de lunes a
 viernes. El historial muestra quién hizo qué y cuándo, y revocar un usuario
 toma un toque.

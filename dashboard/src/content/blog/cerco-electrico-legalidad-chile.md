@@ -62,7 +62,7 @@ comprometido.
 
 Cuarto, alimentación protegida: el transformador trabaja a las tensiones
 especificadas para el modelo, con gabinetes cerrados y alejados del
-alcance del público. A esto se agrega el mantenimiento de la línea: al
+alcance del público. A esto se agrega el mantenimiento de la línea: con la
 tensión correcta, aisladores íntegros y vegetación despejada que no
 genere pérdidas. Un cerco bien instalado incluye también un módulo que
 reporta fallas —alambre cortado, tensión perdida— hacia la central. El

@@ -56,7 +56,7 @@ diferencia de un SMS, el push viaja por datos o Wi-Fi, llega en segundos
 y puede agrupar el detalle completo: qué sensor se activó, en qué hora y
 con qué código de usuario. Muchos sistemas envían además una captura de
 la cámara asociada, de modo que la notificación responde de inmediato la
-pregunta clave: ¿es una falsa alarma o hay alguien adentro.
+pregunta clave: ¿es una falsa alarma o hay alguien adentro?
 
 El flujo real es doble. La app te informa a ti, y en paralelo el panel
 reporta al centro de monitoreo 24/7, que verifica con video o llamada de
@@ -110,7 +110,7 @@ Antes de instalar, el técnico evalúa la señal en los puntos críticos y
 elige el mejor emplazamiento para el panel. Si la casa es grande o hay
 muros de hormigón que debilitan el Wi-Fi, se recomienda un repetidor o
 ubicar el equipo en un punto central. En departamentos pequeños y casas
-estándar, el equipo de fábrica alcanza. El téléfonico celular del módulo
+estándar, el equipo de fábrica alcanza. El telefónico celular del módulo
 GPRS debe quedar con señal; en zonas de recepción débil se usa antena
 externa. Con esos tres soportes sanos, la app responde en segundos y el
 sistema conserva doble vía de reporte al monitoreo.

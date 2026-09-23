@@ -73,7 +73,7 @@ anónimo.
 ## Videocitofonía y control de acceso integrados
 
 La alarma protege el perímetro, pero el día a día del condominio vive en
-la puerta: visitas, repartimientos y proveedores. La citofonía digital
+la puerta: visitas, repartidores y proveedores. La citofonía digital
 resuelve la identificación —panel exterior con cámara, monitores por
 domicilio y desvío a celular desde $149.900 por sistema— y la
 videocitofonía IP agrega video claro y registro de visitas. Para

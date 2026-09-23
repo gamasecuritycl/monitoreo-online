@@ -115,7 +115,7 @@ buscar a alguien que entienda el sistema ajeno.
 ## Contrato sin claridad: donde se pierden las discusiones
 
 El contrato es la columna vertebral de la relación: define qué recibes,
-cuánto pagan, qué pasa cuando algo falla y cómo salir. Las cláusulas que
+cuánto pagas, qué pasa cuando algo falla y cómo salir. Las cláusulas que
 suelen faltar son las que más duelen después: tiempo de respuesta ante
 una falla, si el precio mensual se congela o se reajusta, qué cubre la
 garantía exactamente, si hay multa por salida anticipada y quién es el

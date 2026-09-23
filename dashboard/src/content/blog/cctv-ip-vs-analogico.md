@@ -107,8 +107,8 @@ cada año.
 | Cámara con IA especializada | desde $169.900 | desde $149.900 |
 | Grabación en la nube | desde $14.900/mes | requiere gateway |
 
-Al total sumamos cableado —similar en instalación nueva—, posible switch
-PoE en IP —desde $89.900— y la mantención: diagnóstico de NVR desde
+Al total sumamos cableado —similar en instalación nueva—, posible
+switch PoE en IP y la mantención: diagnóstico de NVR desde
 $49.900 da igual para ambas tecnologías. Donde el analógico ahorra hoy
 es en reutilizar coaxial existente; donde la IP ahorra mañana es en no
 duplicar cable de fuerza, en soportar analítica y en la nube. La

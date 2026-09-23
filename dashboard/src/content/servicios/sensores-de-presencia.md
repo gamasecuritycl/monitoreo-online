@@ -8,7 +8,7 @@ faq:
   - question: "¿Cuánto cuesta un sensor de presencia instalado?"
     answer: "Un sensor inalámbrico PIR instalado y vinculado a la alarma parte desde $29.900. Los modelos outdoor con inmunidad a mascotas o de doble tecnología se ubican entre $49.900 y $89.900 instalados. El valor final depende del modelo, la distancia de transmisión y si requiere obra para el cableado."
   - question: "¿Mi perro o gato activará la alarma?"
-    answer: "Los sensores con inmunidad a mascotas descartan animales de hasta cierto peso y altura al focalizar la zona de detección y filtrar el calor pequeño. Ajustamos la sensibilidad según el tamaño de tu mascota y evitamos apuntar el sensor a comederos o camas, para que solo una persona real active la zona."
+    answer: "Los sensores con inmunidad a mascotas descartan animales de hasta cierto peso y altura al focalizar la zona de detección y descartar el calor de los cuerpos pequeños. Ajustamos la sensibilidad según el tamaño de tu mascota y evitamos apuntar el sensor a comederos o camas, para que solo una persona real active la zona."
   - question: "¿Puedo instalar sensores en el exterior?"
     answer: "Sí. Los sensores outdoor con carátula estanca IP65 soportan lluvia, polvo y rangos térmicos amplios, y se ubican en patios, quinchos y perímetros. Combinamos detección perimetral exterior con cámaras, de modo que el primer aviso llegue antes de que el intruso llegue a una puerta o ventana."
   - question: "¿Los sensores inalámbricos son confiables?"
@@ -34,7 +34,7 @@ abusando.
 - **PIR (infrarrojo pasivo):** detecta el calor corporal en movimiento; el
   estándar para interiores.
 - **Microonda:** emite ondas y capta el eco; ideal en zonas con corrientes de
-  aire o despidos.
+  aire o vacías.
 - **Doble tecnología:** combina PIR y microonda; activación solo con ambos,
   casi sin falsas alarmas.
 - **Outdoor perimetral:** estanco IP65 para patios y quintas, con rango largo.

@@ -10,7 +10,7 @@ faq:
   - question: "¿Qué es la auditoría de vulnerabilidades de seguridad?"
     answer: "Es una visita técnica en la que revisamos puertas, ventanas, cerraduras, iluminación y puntos ciegos de tu propiedad. El auditor entrega un informe priorizado con las vulnerabilidades críticas, medias y bajas, junto con el costo de cada medida correctiva para que decidas por etapas según tu presupuesto."
   - question: "¿La prevención sola evita que roben mi negocio?"
-    answer: "Ninguna medida es infalible, pero las capas combinadas reducen drásticamente la probabilidad: los ladrones eligen objetivos fáciles. Disuasión visual, detección temprana, monitoreo 24/7 y protocolo de respuesta multiplican el riesgo para el intruso y acorta el tiempo de reacción de carabineros ante cualquier intento."
+    answer: "Ninguna medida es infalible, pero las capas combinadas reducen drásticamente la probabilidad: los ladrones eligen objetivos fáciles. Disuasión visual, detección temprana, monitoreo 24/7 y protocolo de respuesta multiplican el riesgo para el intruso y acortan el tiempo de reacción de carabineros ante cualquier intento."
   - question: "¿En qué comunas hacen prevención de robo?"
     answer: "Atendemos toda la Región Metropolitana y Región de Valparaíso con auditores y técnicos propios. Agendamos la evaluación en menos de 48 horas hábiles y trabajamos con comercios, bodegas, oficinas y viviendas, coordinando las obras fuera de tu horario comercial si lo necesitas."
 relatedServicios: [cerco-electrico, camaras-de-seguridad, alarmas-para-negocios]
@@ -53,7 +53,7 @@ llegar siquiera a activar la alarma.
 ## Zonas calientes
 
 Identificamos los puntos de mayor exposición: techos, patios traseros,
-conectaciones con inmuebles vecinos y accesos de servicio. En esas zonas
+conexiones con inmuebles vecinos y accesos de servicio. En esas zonas
 concentramos sensores de movimiento, cámaras con visión nocturna y refuerzo de
 cerraduras, que es donde la estadística de intentos de robo se concentra.
 

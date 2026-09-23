@@ -6,7 +6,7 @@ hashtags: [SistemasDeVoceo, MegafoniaProfesional, MusicaAmbiente, EvacuacionSegu
 h1: "Sistemas de voceo"
 faq:
   - question: "¿Cuánto cuesta un sistema de voceo para una empresa?"
-    answer: "Un sistema básico de 4 altavoces con amplificador de 120W parte desde $189.900 e incluye instalación. Una planta industrial de 20 altavoces distribuidos en varias zonas se ubica entre $590.000 y $1.200.000. Evaluamos superficie, ruido ambiental y zonas requeridas para dimensionar el equipo sin sobre comprar de más."
+    answer: "Un sistema básico de 4 altavoces con amplificador de 120W parte desde $269.500 e incluye instalación. Una planta industrial de 20 altavoces distribuidos en varias zonas se ubica entre $590.000 y $1.200.000. Evaluamos superficie, ruido ambiental y zonas requeridas para dimensionar el equipo sin sobre comprar de más."
   - question: "¿Para qué sirve el sistema de voceo en una emergencia?"
     answer: "Sirve para emitir avisos de evacuación, mensajes por zona y coordinación de equipos ante una emergencia. Puede trabajarse en conjunto con la detección de incendio: al activarse la alarma, el sistema anuncia la ruta de escape y mantiene la comunicación con los puntos de reunimiento hasta confirmar la salida completa."
   - question: "¿Se puede escuchar música por los mismos altavoces?"

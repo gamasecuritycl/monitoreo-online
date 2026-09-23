@@ -6,7 +6,7 @@ hashtags: [DeteccionDeIncendio, DetectorDeHumo, AlarmaDeIncendio, PrevencionInce
 h1: "Detección de incendio"
 faq:
   - question: "¿Cuánto cuesta instalar un sistema de detección de incendio?"
-    answer: "Un detector de humo instalado parte desde $29.900 y un panel de detección con sirena desde $149.900. Una oficina de 100 m² con varios detectores y salida a la central llega hasta $399.900. Evaluamos tu espacio sin costo y te entregamos una propuesta con precio cerrado antes de instalar."
+    answer: "Un detector de humo instalado parte desde $29.900 y un panel de detección con sirena desde $149.900. Una oficina de 100 m² con varios detectores y salida a la central llega entre $399.900 y $699.900. Evaluamos tu espacio sin costo y te entregamos una propuesta con precio cerrado antes de instalar."
   - question: "¿Es obligatorio tener detección de incendio en Chile?"
     answer: "La normativa exige detección y extinción en edificios de uso público, oficinas con varios trabajadores y establecimientos regulados por la Dirección General de Bomberos. En una casa u oficina pequeña no es obligatoria por ley, pero es la forma más rápida de detectar un incendio en su etapa inicial."
   - question: "¿Qué diferencia hay entre detector de humo y de temperatura?"
@@ -42,7 +42,7 @@ llegada de bomberos al punto correcto del edificio.
 
 ## Normativa en Chile
 
-La DGOT exige sistemas de detección y extinción en edificios de uso público,
+La Dirección General de Bomberos exige sistemas de detección y extinción en edificios de uso público,
 locales comerciales mayores y establecimientos industriales. Trabajamos con
 detectores certificados, señalización de rutas de evacuación y pruebas de
 funcionamiento registradas, de modo que tu instalación quede lista ante una
@@ -65,7 +65,7 @@ reunimiento, para que todos sepan qué hacer mientras llega la ayuda.
 ## Mantención preventiva
 
 Los detectores se prueban con fuente de humo y se revisan baterías, avisos
-obstruidos y estado del panel al menos una vez al año. Recomamos reemplazar
+obstruidos y estado del panel al menos una vez al año. Recomendamos reemplazar
 los detectores de humo cada 10 años y los sensores de temperatura según el
 fabricante, para que el sistema responda cuando realmente se necesita.
 

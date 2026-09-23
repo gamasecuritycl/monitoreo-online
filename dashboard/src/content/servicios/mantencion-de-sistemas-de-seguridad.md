@@ -34,6 +34,7 @@ trazabilidad completa del sistema.
 - **Preventiva:** visitas programadas, costo predecible, cero sorpresas.
 - **Correctiva:** llamada de emergencia cuando el equipo ya falló, con
   reposición de equipos y horas técnicas más caras.
+
 La preventiva cuesta una fracción de una falla durante un robo o un incendio,
 y mantiene vigentes las exigencias de tu aseguradora.
 
