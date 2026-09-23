@@ -2,20 +2,46 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Fragment } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 
-const NAV_LINKS = [
-  { id: 'inicio', label: 'Inicio' },
-  { id: 'servicios', label: 'Servicios' },
-  { id: 'quienes-somos', label: 'Nosotros' },
-  { id: 'tecnologia', label: 'Tecnología' },
-  { id: 'contacto', label: 'Contacto' },
+export interface NavLink {
+  label: string
+  href: string
+}
+
+export interface NavGroup {
+  label: string
+  items: NavLink[]
+}
+
+interface NavbarProps {
+  servicios: NavLink[]
+  comunas: NavGroup[]
+  articulos: NavLink[]
+}
+
+const NAV_LINKS: {
+  id: string
+  label: string
+  href: string
+  menu?: 'servicios' | 'comunas' | 'blog'
+}[] = [
+  { id: 'inicio', label: 'Inicio', href: '/' },
+  { id: 'servicios', label: 'Servicios', href: '/servicios', menu: 'servicios' },
+  { id: 'comunas', label: 'Comunas', href: '/comunas', menu: 'comunas' },
+  { id: 'quienes-somos', label: 'Nosotros', href: '/#quienes-somos' },
+  { id: 'blog', label: 'Blog', href: '/blog', menu: 'blog' },
+  { id: 'contacto', label: 'Contacto', href: '/contacto' },
 ]
 
-export default function Navbar() {
+const PANEL_CLASS =
+  'absolute top-full left-0 mt-2 bg-[#0a1628] border border-[#1e3a5f] rounded-xl p-4 grid grid-cols-2 gap-2 max-h-80 overflow-y-auto z-50 w-max min-w-[22rem]'
+
+export default function Navbar({ servicios, comunas, articulos }: NavbarProps) {
   const [scrolled, setScrolled] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [openMenu, setOpenMenu] = useState<string | null>(null)
 
   useEffect(() => {
     const fn = () => setScrolled(window.scrollY > 20)
@@ -25,9 +51,82 @@ export default function Navbar() {
 
   const closeMenu = () => setMenuOpen(false)
 
+  const renderPanel = (menu: string) => {
+    if (menu === 'servicios') {
+      return (
+        <div className={PANEL_CLASS}>
+          {servicios.map(s => (
+            <Link
+              key={s.href}
+              href={s.href}
+              onClick={() => setOpenMenu(null)}
+              className="text-slate-300 hover:text-[#2997ff] text-[13px] transition-colors"
+            >
+              {s.label}
+            </Link>
+          ))}
+        </div>
+      )
+    }
+    if (menu === 'comunas') {
+      return (
+        <div className={`${PANEL_CLASS} min-w-[26rem]`}>
+          <Link
+            href="/comunas"
+            onClick={() => setOpenMenu(null)}
+            className="col-span-2 text-[#2997ff] font-semibold text-[13px] border-b border-[#1e3a5f] pb-2 mb-1"
+          >
+            Ver todas las comunas →
+          </Link>
+          {comunas.map(group => (
+            <Fragment key={group.label}>
+              <span className="col-span-2 text-[11px] uppercase tracking-wide text-slate-500 font-semibold pt-2">
+                {group.label}
+              </span>
+              {group.items.map(c => (
+                <Link
+                  key={c.href}
+                  href={c.href}
+                  onClick={() => setOpenMenu(null)}
+                  className="text-slate-300 hover:text-[#2997ff] text-[13px] transition-colors"
+                >
+                  {c.label}
+                </Link>
+              ))}
+            </Fragment>
+          ))}
+        </div>
+      )
+    }
+    if (menu === 'blog') {
+      return (
+        <div className={PANEL_CLASS}>
+          <Link
+            href="/blog"
+            onClick={() => setOpenMenu(null)}
+            className="col-span-2 text-[#2997ff] font-semibold text-[13px] border-b border-[#1e3a5f] pb-2 mb-1"
+          >
+            Ver el blog →
+          </Link>
+          {articulos.map(a => (
+            <Link
+              key={a.href}
+              href={a.href}
+              onClick={() => setOpenMenu(null)}
+              className="text-slate-300 hover:text-[#2997ff] text-[13px] transition-colors"
+            >
+              {a.label}
+            </Link>
+          ))}
+        </div>
+      )
+    }
+    return null
+  }
+
   return (
     <header className="fixed top-0 left-0 right-0 z-50 transition-all duration-300">
-      
+
       {/* ── Tier 1: Global Utility Nav (44px height) ── */}
       <div className="bg-[#050d1a] border-b border-[#1e3a5f]/40 h-11 text-xs text-slate-400 font-sans">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center justify-between">
@@ -42,12 +141,12 @@ export default function Navbar() {
           </div>
 
           <div className="flex items-center gap-5 text-[12px]">
-            <a
-              href="#contacto"
+            <Link
+              href="/contacto"
               className="text-slate-300 hover:text-white transition-colors"
             >
               Atención Clientes
-            </a>
+            </Link>
             <span className="text-slate-600">|</span>
             <Link
               href="/operacion"
@@ -74,8 +173,8 @@ export default function Navbar() {
           <div className="flex items-center justify-between h-[52px]">
 
             {/* Octagonal Isolated Logo + Title */}
-            <a
-              href="#inicio"
+            <Link
+              href="/"
               className="flex items-center gap-3 cursor-pointer group"
             >
               <div className="relative w-8 h-8 flex-shrink-0 transition-transform duration-300 group-hover:scale-105">
@@ -96,29 +195,42 @@ export default function Navbar() {
                   Security
                 </span>
               </div>
-            </a>
+            </Link>
 
             {/* Desktop Navigation Links */}
             <div className="hidden md:flex items-center gap-6 text-[13px] font-sans">
               {NAV_LINKS.map((link) => (
-                <a
+                <div
                   key={link.id}
-                  href={`#${link.id}`}
-                  className="text-slate-300 hover:text-white transition-colors duration-150 font-normal hover:opacity-100"
+                  className="relative"
+                  onMouseEnter={() => setOpenMenu(link.menu ?? null)}
+                  onMouseLeave={() => setOpenMenu(null)}
                 >
-                  {link.label}
-                </a>
+                  <Link
+                    href={link.href}
+                    onClick={() =>
+                      setOpenMenu(prev =>
+                        link.menu && prev === link.menu ? null : link.menu ?? null
+                      )
+                    }
+                    className="text-slate-300 hover:text-white transition-colors duration-150 font-normal hover:opacity-100"
+                  >
+                    {link.label}
+                    {link.menu ? ' ▾' : ''}
+                  </Link>
+                  {link.menu && openMenu === link.menu && renderPanel(link.menu)}
+                </div>
               ))}
             </div>
 
             {/* Right Side: Action Blue Pill CTA */}
             <div className="hidden sm:flex items-center gap-3">
-              <a
-                href="#contacto"
+              <Link
+                href="/contacto"
                 className="btn-apple-primary text-xs py-1.5 px-4 font-normal"
               >
                 Solicitar Cotización
-              </a>
+              </Link>
             </div>
 
             {/* Mobile Hamburger Toggle */}
@@ -150,23 +262,23 @@ export default function Navbar() {
             >
               <div className="px-5 py-4 space-y-3">
                 {NAV_LINKS.map((link) => (
-                  <a
+                  <Link
                     key={link.id}
-                    href={`#${link.id}`}
+                    href={link.href}
                     onClick={closeMenu}
                     className="block w-full text-left text-slate-300 hover:text-white py-2 text-sm font-normal border-b border-white/5"
                   >
                     {link.label}
-                  </a>
+                  </Link>
                 ))}
                 <div className="pt-2 flex flex-col gap-2">
-                  <a
-                    href="#contacto"
+                  <Link
+                    href="/contacto"
                     onClick={closeMenu}
                     className="btn-apple-primary w-full justify-center text-sm py-2"
                   >
                     Solicitar Cotización
-                  </a>
+                  </Link>
                 </div>
               </div>
             </motion.div>

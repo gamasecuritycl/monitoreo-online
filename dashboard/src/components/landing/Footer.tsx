@@ -3,14 +3,22 @@
 import React from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ShieldCheck, Lock, Cookie, Scale, Users, FileText } from 'lucide-react'
+import { ShieldCheck, Lock } from 'lucide-react'
 import { PestañaLegal } from './ModalLegalPublico'
+
+export interface FooterLink {
+  label: string
+  href: string
+}
 
 interface FooterProps {
   onOpenLegal?: (pestaña: PestañaLegal) => void
+  servicios: FooterLink[]
+  comunas: FooterLink[]
+  articulos: FooterLink[]
 }
 
-export default function Footer({ onOpenLegal }: FooterProps) {
+export default function Footer({ onOpenLegal, servicios, comunas, articulos }: FooterProps) {
   const handleOpenLegal = (pestaña: PestañaLegal) => {
     if (onOpenLegal) {
       onOpenLegal(pestaña)
@@ -34,8 +42,8 @@ export default function Footer({ onOpenLegal }: FooterProps) {
           </p>
         </div>
 
-        {/* ── Tier 2: Categorized Navigation Grid (5 Columnas) ── */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-8 text-left">
+        {/* ── Tier 2: Categorized Navigation Grid (6 Columnas) ── */}
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-8 text-left">
           
           {/* Column 1: Brand & Direct Contact */}
           <div className="space-y-4 col-span-2 md:col-span-1">
@@ -57,6 +65,15 @@ export default function Footer({ onOpenLegal }: FooterProps) {
             <div className="space-y-2.5 pt-1 text-slate-600">
               <div className="font-medium text-[#1d1d1f]">
                 Atención Inmediata 24/7:
+              </div>
+              <div>
+                Teléfono:{' '}
+                <a
+                  href="tel:+56991016912"
+                  className="text-[#0066cc] font-semibold hover:underline"
+                >
+                  +56 9 9101 6912
+                </a>
               </div>
               <div>
                 <a
@@ -87,6 +104,10 @@ export default function Footer({ onOpenLegal }: FooterProps) {
                 </a>
               </div>
               <div>
+                Dirección:{' '}
+                <span className="text-slate-700">Av. Valparaíso 351, Villa Alemana</span>
+              </div>
+              <div>
                 Sitio Web:{' '}
                 <a
                   href="https://www.gamasecurity.cl"
@@ -97,83 +118,90 @@ export default function Footer({ onOpenLegal }: FooterProps) {
                   www.gamasecurity.cl
                 </a>
               </div>
+              <div className="pt-1">
+                <Link
+                  href="/contacto"
+                  className="text-[#0066cc] font-semibold hover:underline"
+                >
+                  Solicitar Cotización →
+                </Link>
+              </div>
             </div>
           </div>
 
-          {/* Column 2: Productos y Servicios */}
+          {/* Column 2: Servicios (reales desde el loader) */}
           <div className="space-y-3">
             <h4 className="font-semibold text-[#1d1d1f] text-xs tracking-tight uppercase">
-              Productos y Servicios
+              Servicios
             </h4>
             <ul className="space-y-2">
+              {servicios.map(s => (
+                <li key={s.href}>
+                  <Link
+                    href={s.href}
+                    className="hover:text-[#0066cc] transition-colors text-left block"
+                  >
+                    {s.label}
+                  </Link>
+                </li>
+              ))}
               <li>
-                <a href="#servicios" className="hover:text-[#0066cc] transition-colors text-left font-semibold text-[#0066cc] cursor-pointer">
-                  ★ Alarma Vetti & App CLICK
-                </a>
-              </li>
-              <li>
-                <a href="#servicios" className="hover:text-[#0066cc] transition-colors text-left cursor-pointer">
-                  Monitoreo Central 24/7
-                </a>
-              </li>
-              <li>
-                <a href="#servicios" className="hover:text-[#0066cc] transition-colors text-left cursor-pointer">
-                  Teclados DSC PK5501
-                </a>
-              </li>
-              <li>
-                <a href="#servicios" className="hover:text-[#0066cc] transition-colors text-left cursor-pointer">
-                  Cámaras 4K con IA
-                </a>
-              </li>
-              <li>
-                <a href="#servicios" className="hover:text-[#0066cc] transition-colors text-left cursor-pointer">
-                  Cercos Eléctricos
-                </a>
-              </li>
-              <li>
-                <a href="#servicios" className="hover:text-[#0066cc] transition-colors text-left cursor-pointer">
-                  Detección de Incendio
-                </a>
+                <Link href="/servicios" className="hover:text-[#0066cc] font-semibold block">
+                  Ver todos los servicios →
+                </Link>
               </li>
             </ul>
           </div>
 
-          {/* Column 3: Empresa */}
+          {/* Column 3: Comunas (top RM + V Región) */}
           <div className="space-y-3">
             <h4 className="font-semibold text-[#1d1d1f] text-xs tracking-tight uppercase">
-              Empresa
+              Comunas
             </h4>
             <ul className="space-y-2">
+              {comunas.map(c => (
+                <li key={c.href}>
+                  <Link
+                    href={c.href}
+                    className="hover:text-[#0066cc] transition-colors text-left block"
+                  >
+                    {c.label}
+                  </Link>
+                </li>
+              ))}
               <li>
-                <a href="#quienes-somos" className="hover:text-[#0066cc] transition-colors text-left cursor-pointer">
-                  Quiénes Somos (+20 Años)
-                </a>
-              </li>
-              <li>
-                <a href="#tecnologia" className="hover:text-[#0066cc] transition-colors text-left cursor-pointer">
-                  Tecnología y Equipos
-                </a>
-              </li>
-              <li>
-                <a href="#contacto" className="hover:text-[#0066cc] transition-colors text-left cursor-pointer">
-                  Solicitar Cotización
-                </a>
-              </li>
-              <li>
-                <a
-                  href="https://apps.apple.com/ar/app/nt-click/id1440514183"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:text-[#0066cc] transition-colors text-left block"
-                >
-                  App NT CLICK (iOS Store)
-                </a>
+                <Link href="/comunas" className="hover:text-[#0066cc] font-semibold block">
+                  Ver todas las comunas →
+                </Link>
               </li>
             </ul>
           </div>
 
-          {/* Column 4: Plataforma & CRA */}
+          {/* Column 4: Blog (recientes) */}
+          <div className="space-y-3">
+            <h4 className="font-semibold text-[#1d1d1f] text-xs tracking-tight uppercase">
+              Blog
+            </h4>
+            <ul className="space-y-2">
+              {articulos.map(a => (
+                <li key={a.href}>
+                  <Link
+                    href={a.href}
+                    className="hover:text-[#0066cc] transition-colors text-left block"
+                  >
+                    {a.label}
+                  </Link>
+                </li>
+              ))}
+              <li>
+                <Link href="/blog" className="hover:text-[#0066cc] font-semibold block">
+                  Ver el blog →
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          {/* Column 5: Plataforma & CRA */}
           <div className="space-y-3">
             <h4 className="font-semibold text-[#1d1d1f] text-xs tracking-tight uppercase">
               Plataforma
@@ -190,8 +218,18 @@ export default function Footer({ onOpenLegal }: FooterProps) {
                 </Link>
               </li>
               <li>
-                <a href="#contacto" className="hover:text-[#0066cc] transition-colors text-left cursor-pointer">
+                <Link href="/contacto" className="hover:text-[#0066cc] transition-colors text-left block">
                   Soporte Técnico
+                </Link>
+              </li>
+              <li>
+                <a
+                  href="https://apps.apple.com/ar/app/nt-click/id1440514183"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-[#0066cc] transition-colors text-left block"
+                >
+                  App NT CLICK (iOS Store)
                 </a>
               </li>
               <li>
@@ -202,7 +240,7 @@ export default function Footer({ onOpenLegal }: FooterProps) {
             </ul>
           </div>
 
-          {/* Column 5: Cumplimiento & Legal (Ley N° 21.719) */}
+          {/* Column 6: Cumplimiento & Legal (Ley N° 21.719) */}
           <div className="space-y-3">
             <h4 className="font-semibold text-[#1d1d1f] text-xs tracking-tight uppercase flex items-center gap-1.5">
               <ShieldCheck className="w-3.5 h-3.5 text-[#0066cc]" />

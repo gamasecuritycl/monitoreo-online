@@ -2,11 +2,21 @@
 
 import React, { useState } from 'react'
 import Contacto from './Contacto'
-import Footer from './Footer'
+import Footer, { type FooterLink } from './Footer'
 import CookieConsentBanner from './CookieConsentBanner'
 import ModalLegalPublico, { PestañaLegal } from './ModalLegalPublico'
 
-export default function LandingInteractiveLayer() {
+interface LandingInteractiveLayerProps {
+  footerServicios: FooterLink[]
+  footerComunas: FooterLink[]
+  footerArticulos: FooterLink[]
+}
+
+export default function LandingInteractiveLayer({
+  footerServicios,
+  footerComunas,
+  footerArticulos,
+}: LandingInteractiveLayerProps) {
   const [modalLegalOpen, setModalLegalOpen] = useState(false)
   const [pestañaLegalActiva, setPestañaLegalActiva] = useState<PestañaLegal>('privacidad')
 
@@ -18,7 +28,12 @@ export default function LandingInteractiveLayer() {
   return (
     <>
       <Contacto onOpenLegal={handleOpenLegal} />
-      <Footer onOpenLegal={handleOpenLegal} />
+      <Footer
+        onOpenLegal={handleOpenLegal}
+        servicios={footerServicios}
+        comunas={footerComunas}
+        articulos={footerArticulos}
+      />
       <CookieConsentBanner onOpenLegal={handleOpenLegal} />
       <ModalLegalPublico
         isOpen={modalLegalOpen}
