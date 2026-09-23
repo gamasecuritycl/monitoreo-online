@@ -66,7 +66,7 @@ cambio de impedancia en la zona. Por eso históricamente se ha elegido en
 bancos, bodegas industriales y proyectos donde la prioridad absoluta es la
 estabilidad a largo plazo.
 
-El costo de esa solidez es la obra civil. El tendido exige tubing, canaletas o
+El costo de esa solidez es la obra civil. El tendido exige conductos, canaletas o
 paso dentro de muros, planificación de zonas antes de cerrar paredes y, en
 edificios en régimen, permisos para pasar por áreas comunes. Una instalación
 bien hecha dura décadas sin recambios de batería, pero rehacerla o agregar un
@@ -87,7 +87,7 @@ La siguiente tabla resume las diferencias prácticas entre ambos sistemas:
 | Fiabilidad | alta con supervisión | muy alta |
 
 En términos de dinero, la inalámbrica parte más económica porque el kit no
-incluye cable, tubing ni mano de obra de tendido: un sistema para casa típico
+incluye cable, conductos ni mano de obra de tendido: un sistema para casa típico
 queda por debajo de los $250.000 con instalación. La cableada parte desde
 $259.900 y escala entre un 15% y un 30% según metros de recorrido y complejidad
 de la obra. El plan de monitoreo 24/7, en cambio, es equivalente en ambos
@@ -112,7 +112,7 @@ muros y tú no quieres entregar la propiedad con taladros y canaletas. Los
 sensores se desmontan sin dañar la pintura y el sistema se reubica contigo.
 
 **Casa nueva en obra:** cableada. Mientras las paredes están abiertas, pasar
-el tubing es barato y el cableado queda invisible. Ahorras la mantención de
+los conductos es barato y el cableado queda invisible. Ahorras la mantención de
 baterías y obtienes la máxima estabilidad desde el día uno.
 
 **Negocio con estructura existente:** inalámbrica. Un local en arriendo o con

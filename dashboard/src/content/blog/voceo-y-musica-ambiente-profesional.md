@@ -12,7 +12,7 @@ faq:
   - question: "¿Se puede modular el volumen por sector?"
     answer: "Sí, esa es justamente la ventaja de la zonificación. Cada sector —sala de ventas, bodega, patio, pasillos— queda en un canal independiente con su propio control de volumen y su fuente de audio. Puedes subir la música en la sala de venta y bajarla en oficinas, o cerrar una zona por completo cuando no hay personal, sin afectar a las demás áreas del sistema."
   - question: "¿Cuánto cuesta instalar voceo en una empresa?"
-    answer: "Un amplificador de 120 watt con dos zonas está entre $149.900 y $249.900, y un sistema básico de cuatro altavoces instalado parte desde $189.900. Para una oficina de diez altavoces, el rango va de $349.900 a $590.000. Una planta industrial multi-zona con veinte altavoces queda entre $590.000 y $1.200.000, según altura, ruido ambiental y cantidad de sectores."
+    answer: "Un amplificador de 120 watt con dos zonas está entre $149.900 y $249.900, y un sistema básico de cuatro altavoces instalado parte desde $269.500. Para una oficina de diez altavoces, el rango va de $349.900 a $590.000. Una planta industrial multi-zona con veinte altavoces queda entre $590.000 y $1.200.000, según altura, ruido ambiental y cantidad de sectores."
 relatedServicios: [sistemas-de-voceo, redes-de-datos, citofonia]
 ---
 
@@ -159,7 +159,7 @@ sistema ni pedirle a nadie que mueva un equipo físico.
 
 **¿Cuánto cuesta instalar voceo en una empresa?** Un amplificador de
 120 watt con dos zonas está entre $149.900 y $249.900, y un sistema
-básico de cuatro altavoces instalado parte desde $189.900. Para una
+básico de cuatro altavoces instalado parte desde $269.500. Para una
 oficina de diez altavoces, el rango va de $349.900 a $590.000. Una planta
 industrial multi-zona con veinte altavoces queda entre $590.000 y
 $1.200.000, según altura, ruido ambiental y sectores. La visita técnica y
