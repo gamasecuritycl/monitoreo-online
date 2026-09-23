@@ -48,7 +48,7 @@ export default async function ComunaPage({ params }: { params: Promise<{ region:
     address: {
       '@type': 'PostalAddress',
       streetAddress: 'Av. Valparaíso 351',
-      addressLocality: 'Villa Alemana',
+      addressLocality: c.name,
       addressRegion: regionLabel,
       addressCountry: 'CL',
     },
