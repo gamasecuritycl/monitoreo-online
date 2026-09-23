@@ -66,7 +66,7 @@ export const metadata: Metadata = {
 
 const localBusinessJsonLd = {
   '@context': 'https://schema.org',
-  '@type': 'SecurityService',
+  '@type': 'Organization',
   '@id': `${SITE_URL}/#organizacion`,
   name: 'GAMA SECURITY',
   alternateName: 'Gama Seguridad SpA',
@@ -78,10 +78,6 @@ const localBusinessJsonLd = {
   telephone: '+56991016912',
   email: 'contacto@gamasecurity.cl',
   taxID: '78.297.009-7',
-  areaServed: {
-    '@type': 'Country',
-    name: 'Chile',
-  },
   address: {
     '@type': 'PostalAddress',
     streetAddress: 'Av. Valparaíso 351',
