@@ -1,0 +1,16 @@
+{
+  "name": "Villa Alemana",
+  "title": "Seguridad electrónica en Villa Alemana | GAMA",
+  "description": "Sistemas de alarma, cámaras y cercos eléctricos en Villa Alemana. Instalación local, monitoreo 24/7 y respuesta rápida. Evaluación gratuita.",
+  "keywords": ["alarma villa alemana", "camaras villa alemana", "seguridad electronica v region", "cerco electrico villa alemana", "alarmas quilpue"],
+  "hashtags": ["VillaAlemana", "SeguridadElectrónica", "VRegión", "SistemaDeAlarma", "GamaSecurity"],
+  "lead": "Protegemos hogares y empresas en Villa Alemana con sistemas de alarma, cámaras de seguridad y cercos eléctricos instalados por técnicos locales. Nuestra central de monitoreo opera 24 horas y coordina la respuesta en minutos para todo el sector de la comuna, desde el centro hasta Quilpué y el eje de la Ruta 68. Solicita una evaluación sin compromiso y conoce las opciones disponibles para tu propiedad.",
+  "sectors": ["Centro Villa Alemana", "Las Palmas", "Quilpué sector norte", "Villa Alemana Sur", "Ruta 68 sector industrial", "Los Aromos", "El Melón"],
+  "reasonExtra": "Somos una empresa con sede operativa en la zona, por lo que llegamos a Villa Alemana el mismo día en casos urgentes y agendamos instalaciones programadas en menos de 48 horas hábiles. Conocemos las comunas vecinas —Quilpué, Limache, Quillota y Olmué— y mantenemos técnicos disponibles en todo el eje Marga Marga. Cada sistema instalado en Villa Alemana queda conectado a nuestra central redundante, con verificación humana de señales y notificación inmediata a tu celular y a tus contactos de confianza según el plan que elijas.",
+  "faq": [
+    {"question": "¿Cuánto cuesta una alarma en Villa Alemana?", "answer": "Los kits de alarma para casa en Villa Alemana parten desde $199.900 e incluyen instalación y configuración. El precio final depende de la cantidad de accesos y del plan de monitoreo; la evaluación en tu propiedad es gratuita."},
+    {"question": "¿Hacen instalación de cámaras en Villa Alemana?", "answer": "Sí. Instalamos cámaras IP y CCTV en casas, negocios y bodegas de Villa Alemana y comunas vecinas, con grabación local o en la nube y acceso desde tu celular."},
+    {"question": "¿Cuánto demoran en responder una alarma en Villa Alemana?", "answer": "Nuestra central verifica la señal en menos de 2 minutos y, según tu plan, coordinamos contacto con carabineros o guardias en la comuna. El tiempo de traslado local suele ser inferior a 15 minutos."}
+  ],
+  "serviciosDestacados": ["alarmas-para-casa", "camaras-de-seguridad", "cerco-electrico", "monitoreo-de-alarmas-24-7", "control-de-acceso", "prevencion-de-robo"]
+}
