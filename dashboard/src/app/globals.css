@@ -454,3 +454,119 @@ body {
   color: #1e293b !important;
 }
 
+/* ══════════════════════════════════════════════════════════════════════════
+   SALES-GAMA FLOATING WIDGETS (ChatWidget + WhatsAppFloating)
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.sg-widget-trigger {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #003366, #0055aa);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 32px rgba(0,51,102,0.3);
+  z-index: 9998;
+}
+.sg-tooltip {
+  position: absolute;
+  right: 80px;
+  bottom: 50%;
+  transform: translateY(50%);
+  background: #1e3a5f;
+  color: #fff;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+  white-space: nowrap;
+}
+.sg-widget-trigger:hover .sg-tooltip { opacity: 1; }
+
+.sg-widget-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 9998;
+}
+
+.sg-widget-panel {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 380px;
+  max-width: calc(100vw - 48px);
+  height: 600px;
+  max-height: calc(100vh - 48px);
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 9999;
+}
+@media (max-width: 480px) {
+  .sg-widget-panel {
+    bottom: 0;
+    right: 0;
+    width: 100vw;
+    height: 100vh;
+    border-radius: 0;
+  }
+}
+
+.whatsapp-floating {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 9997;
+  display: flex;
+  align-items: center;
+  animation: fadeInScale 0.4s ease-out 1s forwards;
+  opacity: 0;
+  transform: scale(0);
+}
+@keyframes fadeInScale {
+  to { opacity: 1; transform: scale(1); }
+}
+.whatsapp-floating button {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #25D366;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 20px rgba(37,211,102,0.4);
+  transition: all 0.3s ease;
+}
+.whatsapp-floating button:hover {
+  box-shadow: 0 6px 28px rgba(37,211,102,0.6);
+  transform: scale(1.1);
+}
+.whatsapp-floating button:active { transform: scale(0.95); }
+.whatsapp-floating .animate-ping {
+  animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+@keyframes ping {
+  0% { transform: scale(1); opacity: 0.75; }
+  75%, 100% { transform: scale(2); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .whatsapp-floating { animation: none; opacity: 1; transform: scale(1); }
+  .whatsapp-floating .animate-ping { animation: none; }
+}
+
