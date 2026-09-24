@@ -688,3 +688,461 @@
 
 [CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
 [SYNC] Contenido idéntico al último sincronizado.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Contenido idéntico al último sincronizado.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Contenido idéntico al último sincronizado.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Contenido idéntico al último sincronizado.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Contenido idéntico al último sincronizado.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Contenido idéntico al último sincronizado.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Contenido idéntico al último sincronizado.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Contenido idéntico al último sincronizado.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Contenido idéntico al último sincronizado.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Contenido idéntico al último sincronizado.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Contenido idéntico al último sincronizado.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Contenido idéntico al último sincronizado.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Contenido idéntico al último sincronizado.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Subiendo a Supabase: 466 abonados, 914 con autorizados...
+[19:41:28] [SUPABASE] Clientes actualizados exitosamente (466 cuentas).
+[19:41:30] [SUPABASE] Personas autorizadas actualizadas exitosamente (914 cuentas).
+[LOCAL JSON] Archivo actualizado: C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
+[LOCAL JSON] Archivo actualizado: C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
+[SYNC SUCCESS] Sincronización completada exitosamente a las 19:41:30!
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Subiendo a Supabase: 466 abonados, 914 con autorizados...
+[19:41:42] [SUPABASE] Clientes actualizados exitosamente (466 cuentas).
+[19:41:43] [SUPABASE] Personas autorizadas actualizadas exitosamente (914 cuentas).
+[LOCAL JSON] Archivo actualizado: C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
+[LOCAL JSON] Archivo actualizado: C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
+[SYNC SUCCESS] Sincronización completada exitosamente a las 19:41:43!
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Contenido idéntico al último sincronizado.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Contenido idéntico al último sincronizado.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Contenido idéntico al último sincronizado.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Contenido idéntico al último sincronizado.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Contenido idéntico al último sincronizado.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Contenido idéntico al último sincronizado.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Contenido idéntico al último sincronizado.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Subiendo a Supabase: 466 abonados, 914 con autorizados...
+[19:43:11] [SUPABASE] Clientes actualizados exitosamente (466 cuentas).
+[19:43:12] [SUPABASE] Personas autorizadas actualizadas exitosamente (914 cuentas).
+[LOCAL JSON] Archivo actualizado: C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
+[LOCAL JSON] Archivo actualizado: C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
+[SYNC SUCCESS] Sincronización completada exitosamente a las 19:43:12!
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Subiendo a Supabase: 466 abonados, 914 con autorizados...
+[19:43:24] [SUPABASE] Clientes actualizados exitosamente (466 cuentas).
+[19:43:25] [SUPABASE] Personas autorizadas actualizadas exitosamente (914 cuentas).
+[LOCAL JSON] Archivo actualizado: C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
+[LOCAL JSON] Archivo actualizado: C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
+[SYNC SUCCESS] Sincronización completada exitosamente a las 19:43:25!
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Contenido idéntico al último sincronizado.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Contenido idéntico al último sincronizado.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Contenido idéntico al último sincronizado.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Contenido idéntico al último sincronizado.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Contenido idéntico al último sincronizado.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Contenido idéntico al último sincronizado.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Contenido idéntico al último sincronizado.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Contenido idéntico al último sincronizado.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Contenido idéntico al último sincronizado.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Contenido idéntico al último sincronizado.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Contenido idéntico al último sincronizado.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASES DE DATOS\GENERAL.mdb
+[SYNC] Contenido idéntico al último sincronizado.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Contenido idéntico al último sincronizado.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Contenido idéntico al último sincronizado.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Contenido idéntico al último sincronizado.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASES DE DATOS\GENERAL.mdb
+[SYNC] Subiendo a Supabase: 466 abonados, 914 con autorizados...
+[19:46:22] [SUPABASE] Clientes actualizados exitosamente (466 cuentas).
+[19:46:23] [SUPABASE] Personas autorizadas actualizadas exitosamente (914 cuentas).
+[LOCAL JSON] Archivo actualizado: C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
+[LOCAL JSON] Archivo actualizado: C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
+[SYNC SUCCESS] Sincronización completada exitosamente a las 19:46:23!
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Subiendo a Supabase: 466 abonados, 914 con autorizados...
+[19:46:36] [SUPABASE] Clientes actualizados exitosamente (466 cuentas).
+[19:46:38] [SUPABASE] Personas autorizadas actualizadas exitosamente (914 cuentas).
+[LOCAL JSON] Archivo actualizado: C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
+[LOCAL JSON] Archivo actualizado: C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
+[SYNC SUCCESS] Sincronización completada exitosamente a las 19:46:38!
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Contenido idéntico al último sincronizado.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Contenido idéntico al último sincronizado.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASES DE DATOS\GENERAL.mdb
+[SYNC] Contenido idéntico al último sincronizado.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Contenido idéntico al último sincronizado.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Contenido idéntico al último sincronizado.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Subiendo a Supabase: 466 abonados, 914 con autorizados...
+[19:47:59] [SUPABASE] Clientes actualizados exitosamente (466 cuentas).
+[19:48:01] [SUPABASE] Personas autorizadas actualizadas exitosamente (914 cuentas).
+[LOCAL JSON] Archivo actualizado: C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
+[LOCAL JSON] Archivo actualizado: C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
+[SYNC SUCCESS] Sincronización completada exitosamente a las 19:48:01!
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Subiendo a Supabase: 466 abonados, 914 con autorizados...
+[19:48:14] [SUPABASE] Clientes actualizados exitosamente (466 cuentas).
+[19:48:16] [SUPABASE] Personas autorizadas actualizadas exitosamente (914 cuentas).
+[LOCAL JSON] Archivo actualizado: C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
+[LOCAL JSON] Archivo actualizado: C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
+[SYNC SUCCESS] Sincronización completada exitosamente a las 19:48:16!
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASES DE DATOS\GENERAL.mdb
+[SYNC] Subiendo a Supabase: 466 abonados, 914 con autorizados...
+[19:48:28] [SUPABASE] Clientes actualizados exitosamente (466 cuentas).
+[19:48:30] [SUPABASE] Personas autorizadas actualizadas exitosamente (914 cuentas).
+[LOCAL JSON] Archivo actualizado: C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
+[LOCAL JSON] Archivo actualizado: C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
+[SYNC SUCCESS] Sincronización completada exitosamente a las 19:48:30!
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Subiendo a Supabase: 466 abonados, 914 con autorizados...
+[19:48:51] [SUPABASE] Clientes actualizados exitosamente (466 cuentas).
+[19:48:54] [SUPABASE] Personas autorizadas actualizadas exitosamente (914 cuentas).
+[LOCAL JSON] Archivo actualizado: C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
+[LOCAL JSON] Archivo actualizado: C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
+[SYNC SUCCESS] Sincronización completada exitosamente a las 19:48:54!
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Contenido idéntico al último sincronizado.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Contenido idéntico al último sincronizado.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Contenido idéntico al último sincronizado.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Contenido idéntico al último sincronizado.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Contenido idéntico al último sincronizado.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Contenido idéntico al último sincronizado.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Contenido idéntico al último sincronizado.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Contenido idéntico al último sincronizado.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Contenido idéntico al último sincronizado.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Contenido idéntico al último sincronizado.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Contenido idéntico al último sincronizado.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Contenido idéntico al último sincronizado.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Contenido idéntico al último sincronizado.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Contenido idéntico al último sincronizado.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Contenido idéntico al último sincronizado.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Contenido idéntico al último sincronizado.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Subiendo a Supabase: 466 abonados, 914 con autorizados...
+[19:51:59] [SUPABASE] Clientes actualizados exitosamente (466 cuentas).
+[19:52:01] [SUPABASE] Personas autorizadas actualizadas exitosamente (914 cuentas).
+[LOCAL JSON] Archivo actualizado: C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
+[LOCAL JSON] Archivo actualizado: C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
+[SYNC SUCCESS] Sincronización completada exitosamente a las 19:52:01!
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Subiendo a Supabase: 466 abonados, 914 con autorizados...
+[19:52:13] [SUPABASE] Clientes actualizados exitosamente (466 cuentas).
+[19:52:14] [SUPABASE] Personas autorizadas actualizadas exitosamente (914 cuentas).
+[LOCAL JSON] Archivo actualizado: C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
+[LOCAL JSON] Archivo actualizado: C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
+[SYNC SUCCESS] Sincronización completada exitosamente a las 19:52:14!
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Subiendo a Supabase: 466 abonados, 914 con autorizados...
+[19:52:27] [SUPABASE] Clientes actualizados exitosamente (466 cuentas).
+[19:52:29] [SUPABASE] Personas autorizadas actualizadas exitosamente (914 cuentas).
+[LOCAL JSON] Archivo actualizado: C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
+[LOCAL JSON] Archivo actualizado: C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
+[SYNC SUCCESS] Sincronización completada exitosamente a las 19:52:29!
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASES DE DATOS\GENERAL.mdb
+[SYNC] Subiendo a Supabase: 466 abonados, 914 con autorizados...
+[19:52:42] [SUPABASE] Clientes actualizados exitosamente (466 cuentas).
+[19:52:43] [SUPABASE] Personas autorizadas actualizadas exitosamente (914 cuentas).
+[LOCAL JSON] Archivo actualizado: C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
+[LOCAL JSON] Archivo actualizado: C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
+[SYNC SUCCESS] Sincronización completada exitosamente a las 19:52:43!
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Subiendo a Supabase: 466 abonados, 914 con autorizados...
+[19:52:56] [SUPABASE] Clientes actualizados exitosamente (466 cuentas).
+[19:53:01] [SUPABASE] Personas autorizadas actualizadas exitosamente (914 cuentas).
+[LOCAL JSON] Archivo actualizado: C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
+[LOCAL JSON] Archivo actualizado: C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
+[SYNC SUCCESS] Sincronización completada exitosamente a las 19:53:01!
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Subiendo a Supabase: 466 abonados, 914 con autorizados...
+[19:53:14] [SUPABASE] Clientes actualizados exitosamente (466 cuentas).
+[19:53:15] [SUPABASE] Personas autorizadas actualizadas exitosamente (914 cuentas).
+[LOCAL JSON] Archivo actualizado: C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
+[LOCAL JSON] Archivo actualizado: C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
+[SYNC SUCCESS] Sincronización completada exitosamente a las 19:53:15!
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Contenido idéntico al último sincronizado.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Contenido idéntico al último sincronizado.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Contenido idéntico al último sincronizado.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Contenido idéntico al último sincronizado.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Contenido idéntico al último sincronizado.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Contenido idéntico al último sincronizado.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Contenido idéntico al último sincronizado.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Subiendo a Supabase: 466 abonados, 914 con autorizados...
+[19:54:45] [SUPABASE] Clientes actualizados exitosamente (466 cuentas).
+[19:54:47] [SUPABASE] Personas autorizadas actualizadas exitosamente (914 cuentas).
+[LOCAL JSON] Archivo actualizado: C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
+[LOCAL JSON] Archivo actualizado: C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
+[SYNC SUCCESS] Sincronización completada exitosamente a las 19:54:47!
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASES DE DATOS\GENERAL.mdb
+[SYNC] Subiendo a Supabase: 466 abonados, 914 con autorizados...
+[19:55:05] [SUPABASE] Clientes actualizados exitosamente (466 cuentas).
+[19:55:06] [SUPABASE] Personas autorizadas actualizadas exitosamente (914 cuentas).
+[LOCAL JSON] Archivo actualizado: C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
+[LOCAL JSON] Archivo actualizado: C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
+[SYNC SUCCESS] Sincronización completada exitosamente a las 19:55:06!
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Contenido idéntico al último sincronizado.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Contenido idéntico al último sincronizado.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Subiendo a Supabase: 466 abonados, 914 con autorizados...
+[19:55:43] [SUPABASE] Clientes actualizados exitosamente (466 cuentas).
+[19:55:45] [SUPABASE] Personas autorizadas actualizadas exitosamente (914 cuentas).
+[LOCAL JSON] Archivo actualizado: C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
+[LOCAL JSON] Archivo actualizado: C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
+[SYNC SUCCESS] Sincronización completada exitosamente a las 19:55:45!
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASES DE DATOS\GENERAL.mdb
+[SYNC] Subiendo a Supabase: 466 abonados, 914 con autorizados...
+[19:55:59] [SUPABASE] Clientes actualizados exitosamente (466 cuentas).
+[19:56:01] [SUPABASE] Personas autorizadas actualizadas exitosamente (914 cuentas).
+[LOCAL JSON] Archivo actualizado: C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
+[LOCAL JSON] Archivo actualizado: C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
+[SYNC SUCCESS] Sincronización completada exitosamente a las 19:56:01!
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASES DE DATOS\GENERAL.mdb
+[SYNC] Subiendo a Supabase: 466 abonados, 914 con autorizados...
+[19:56:19] [SUPABASE] Clientes actualizados exitosamente (466 cuentas).
+[19:56:21] [SUPABASE] Personas autorizadas actualizadas exitosamente (914 cuentas).
+[LOCAL JSON] Archivo actualizado: C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
+[LOCAL JSON] Archivo actualizado: C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
+[SYNC SUCCESS] Sincronización completada exitosamente a las 19:56:21!
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASES DE DATOS\GENERAL.mdb
+[SYNC] Contenido idéntico al último sincronizado.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASES DE DATOS\GENERAL.mdb
+[SYNC] Subiendo a Supabase: 466 abonados, 914 con autorizados...
+[19:56:46] [SUPABASE] Clientes actualizados exitosamente (466 cuentas).
+[19:56:48] [SUPABASE] Personas autorizadas actualizadas exitosamente (914 cuentas).
+[LOCAL JSON] Archivo actualizado: C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
+[LOCAL JSON] Archivo actualizado: C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
+[SYNC SUCCESS] Sincronización completada exitosamente a las 19:56:48!
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Subiendo a Supabase: 466 abonados, 914 con autorizados...
+[19:57:01] [SUPABASE] Clientes actualizados exitosamente (466 cuentas).
+[19:57:02] [SUPABASE] Personas autorizadas actualizadas exitosamente (914 cuentas).
+[LOCAL JSON] Archivo actualizado: C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
+[LOCAL JSON] Archivo actualizado: C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
+[SYNC SUCCESS] Sincronización completada exitosamente a las 19:57:02!
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Subiendo a Supabase: 466 abonados, 914 con autorizados...
+[19:57:15] [SUPABASE] Clientes actualizados exitosamente (466 cuentas).
+[19:57:17] [SUPABASE] Personas autorizadas actualizadas exitosamente (914 cuentas).
+[LOCAL JSON] Archivo actualizado: C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
+[LOCAL JSON] Archivo actualizado: C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
+[SYNC SUCCESS] Sincronización completada exitosamente a las 19:57:17!
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Subiendo a Supabase: 466 abonados, 914 con autorizados...
+[19:57:28] [SUPABASE] Clientes actualizados exitosamente (466 cuentas).
+[19:57:30] [SUPABASE] Personas autorizadas actualizadas exitosamente (914 cuentas).
+[LOCAL JSON] Archivo actualizado: C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
+[LOCAL JSON] Archivo actualizado: C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
+[SYNC SUCCESS] Sincronización completada exitosamente a las 19:57:30!
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Contenido idéntico al último sincronizado.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Contenido idéntico al último sincronizado.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Contenido idéntico al último sincronizado.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASES DE DATOS\GENERAL.mdb
+[SYNC] Subiendo a Supabase: 466 abonados, 914 con autorizados...
+[19:58:21] [SUPABASE] Clientes actualizados exitosamente (466 cuentas).
+[19:58:24] [SUPABASE] Personas autorizadas actualizadas exitosamente (914 cuentas).
+[LOCAL JSON] Archivo actualizado: C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
+[LOCAL JSON] Archivo actualizado: C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
+[SYNC SUCCESS] Sincronización completada exitosamente a las 19:58:24!
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASES DE DATOS\GENERAL.mdb
+[SYNC] Subiendo a Supabase: 466 abonados, 914 con autorizados...
+[19:58:43] [SUPABASE] Clientes actualizados exitosamente (466 cuentas).
+[19:58:45] [SUPABASE] Personas autorizadas actualizadas exitosamente (914 cuentas).
+[LOCAL JSON] Archivo actualizado: C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
+[LOCAL JSON] Archivo actualizado: C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
+[SYNC SUCCESS] Sincronización completada exitosamente a las 19:58:45!
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASES DE DATOS\GENERAL.mdb
+[SYNC] Subiendo a Supabase: 466 abonados, 914 con autorizados...
+[19:58:59] [SUPABASE] Clientes actualizados exitosamente (466 cuentas).
+[19:59:01] [SUPABASE] Personas autorizadas actualizadas exitosamente (914 cuentas).
+[LOCAL JSON] Archivo actualizado: C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
+[LOCAL JSON] Archivo actualizado: C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
+[SYNC SUCCESS] Sincronización completada exitosamente a las 19:59:01!
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Contenido idéntico al último sincronizado.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASES DE DATOS\GENERAL.mdb
+[SYNC] Subiendo a Supabase: 466 abonados, 914 con autorizados...
+[19:59:28] [SUPABASE] Clientes actualizados exitosamente (466 cuentas).
+[19:59:31] [SUPABASE] Personas autorizadas actualizadas exitosamente (914 cuentas).
+[LOCAL JSON] Archivo actualizado: C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
+[LOCAL JSON] Archivo actualizado: C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
+[SYNC SUCCESS] Sincronización completada exitosamente a las 19:59:31!
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASES DE DATOS\GENERAL.mdb
+[SYNC] Subiendo a Supabase: 466 abonados, 914 con autorizados...
+[19:59:53] [SUPABASE] Clientes actualizados exitosamente (466 cuentas).
+[20:00:02] [SUPABASE] Personas autorizadas actualizadas exitosamente (914 cuentas).
+[LOCAL JSON] Archivo actualizado: C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
+[LOCAL JSON] Archivo actualizado: C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
+[SYNC SUCCESS] Sincronización completada exitosamente a las 20:00:02!
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Contenido idéntico al último sincronizado.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Subiendo a Supabase: 466 abonados, 914 con autorizados...
+[20:00:33] [SUPABASE] Clientes actualizados exitosamente (466 cuentas).
+[20:00:35] [SUPABASE] Personas autorizadas actualizadas exitosamente (914 cuentas).
+[LOCAL JSON] Archivo actualizado: C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
+[LOCAL JSON] Archivo actualizado: C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
+[SYNC SUCCESS] Sincronización completada exitosamente a las 20:00:35!

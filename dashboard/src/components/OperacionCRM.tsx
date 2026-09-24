@@ -26,6 +26,7 @@ import NotificacionesWhatsAppModal from './NotificacionesWhatsAppModal'
 import MercadoPublicoModule, { LicitacionChileCompra } from './operacion/MercadoPublicoModule'
 import { BotConfigModal } from '@/components/SalesGama/Modal/BotConfigModal'
 import { BotLeadsModal } from '@/components/SalesGama/Modal/BotLeadsModal'
+import { OperacionesBotHub } from '@/components/SalesGama/OperacionesBotHub'
 
 import {
   Shield,
@@ -347,7 +348,7 @@ export function normalizeCuentaCode(cta: any): string {
 }
 
 export default function OperacionCRM() {
-  const [moduloActivo, setModuloActivo] = useState<'ficha360' | 'autonomia' | 'presupuestos' | 'mercadopublico' | 'facturacion' | 'serv_tecnico' | 'kpis' | 'config' | 'marketing' | 'compras' | 'contratos' | 'ley21719' | null>(null)
+  const [moduloActivo, setModuloActivo] = useState<'ficha360' | 'autonomia' | 'salesbot' | 'presupuestos' | 'mercadopublico' | 'facturacion' | 'serv_tecnico' | 'kpis' | 'config' | 'marketing' | 'compras' | 'contratos' | 'ley21719' | null>(null)
   const [sidebarAbierto, setSidebarAbierto] = useState<boolean>(false)
 
   // ── ESTADOS SALES-GAMA AI MODALS ──
@@ -3104,6 +3105,7 @@ export default function OperacionCRM() {
         moduloActivoLabel={
           !moduloActivo ? 'Menú Principal' :
           moduloActivo === 'ficha360' ? 'Ficha 360° Cliente' :
+          moduloActivo === 'salesbot' ? 'Sales-Bot IA & Leads' :
           moduloActivo === 'presupuestos' ? 'Presupuestos Comerciales' :
           moduloActivo === 'mercadopublico' ? 'Mercado Público & Licitaciones' :
           moduloActivo === 'marketing' ? 'Marketing B2B' :
@@ -3302,6 +3304,7 @@ export default function OperacionCRM() {
                   <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                   {
                     moduloActivo === 'ficha360' ? 'Ficha 360° Cliente' :
+                    moduloActivo === 'salesbot' ? 'Sales-Bot IA & Leads' :
                     moduloActivo === 'presupuestos' ? 'Presupuestos Comerciales' :
                     moduloActivo === 'mercadopublico' ? 'Mercado Público & Licitaciones' :
                     moduloActivo === 'marketing' ? 'Marketing B2B' :
@@ -4226,6 +4229,13 @@ export default function OperacionCRM() {
                   ))}
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* ── MÓDULO SALES-BOT IA & LEADS ── */}
+          {moduloActivo === 'salesbot' && (
+            <div className="flex-1 bg-[#050d1a] rounded-2xl p-4 sm:p-6 flex flex-col gap-6 border border-slate-800 shadow-sm overflow-y-auto">
+              <OperacionesBotHub />
             </div>
           )}
 
