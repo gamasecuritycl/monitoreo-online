@@ -1,5 +1,5 @@
 {
-  "installCommand": "cd dashboard && PUPPETEER_SKIP_DOWNLOAD=true PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true npm ci --no-audit --no-fund",
+  "installCommand": "cd dashboard && PUPPETEER_SKIP_DOWNLOAD=true PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true npm install --legacy-peer-deps --no-audit --no-fund",
   "buildCommand": "cd dashboard && npm run build",
   "outputDirectory": "dashboard/.next",
   "framework": "nextjs",

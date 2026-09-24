@@ -7,15 +7,15 @@ import CookieConsentBanner from './CookieConsentBanner'
 import ModalLegalPublico, { PestañaLegal } from './ModalLegalPublico'
 
 interface LandingInteractiveLayerProps {
-  footerServicios: FooterLink[]
-  footerComunas: FooterLink[]
-  footerArticulos: FooterLink[]
+  footerServicios?: FooterLink[]
+  footerComunas?: FooterLink[]
+  footerArticulos?: FooterLink[]
 }
 
 export default function LandingInteractiveLayer({
-  footerServicios,
-  footerComunas,
-  footerArticulos,
+  footerServicios = [],
+  footerComunas = [],
+  footerArticulos = [],
 }: LandingInteractiveLayerProps) {
   const [modalLegalOpen, setModalLegalOpen] = useState(false)
   const [pestañaLegalActiva, setPestañaLegalActiva] = useState<PestañaLegal>('privacidad')

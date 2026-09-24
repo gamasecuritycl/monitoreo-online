@@ -8,9 +8,12 @@
     "validate:content": "node scripts/validate-content.mjs",
     "start": "next start",
     "deploy": "vercel --prod --yes",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@mediapipe/tasks-vision": "^1.0.0",
     "@open-wa/wa-automate": "^4.76.0",
     "@supabase/supabase-js": "^2.110.7",
@@ -45,6 +48,8 @@
     "eslint-config-next": "16.2.9",
     "jiti": "^1.21.0",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vite": "^8.3.0",
+    "vitest": "^5.0.1"
   }
 }

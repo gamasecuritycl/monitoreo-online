@@ -9,7 +9,7 @@ import Tecnologia from '@/components/landing/Tecnologia'
 import Testimonios from '@/components/landing/Testimonios'
 import CTAEmergencia from '@/components/landing/CTAEmergencia'
 import LandingInteractiveLayer from '@/components/landing/LandingInteractiveLayer'
-import WhatsAppFloating from '@/components/landing/WhatsAppFloating'
+import ChatWidget from '@/components/SalesGama/ChatWidget'
 import ServiceCard from '@/components/seo/ServiceCard'
 import ComunaCard from '@/components/seo/ComunaCard'
 import ArticleCard from '@/components/seo/ArticleCard'
@@ -125,17 +125,6 @@ export default function Home() {
   ]
   const navArticulos = articulos.map(a => ({ label: a.title, href: `/blog/${a.slug}` }))
 
-  const footerServicios = servicios
-    .slice(0, 10)
-    .map(s => ({ label: s.title, href: `/servicios/${s.slug}` }))
-  const footerComunas = [...rmComunas.slice(0, 5), ...vrComunas.slice(0, 5)].map(c => ({
-    label: `Seguridad en ${c.name}`,
-    href: `/comunas/${c.region}/${c.slug}`,
-  }))
-  const footerArticulos = articulos
-    .slice(0, 5)
-    .map(a => ({ label: a.title, href: `/blog/${a.slug}` }))
-
   return (
     <main className="min-h-screen bg-[#050d1a] relative">
       <script
@@ -222,12 +211,8 @@ export default function Home() {
         ]} />
       </div>
 
-      <LandingInteractiveLayer
-        footerServicios={footerServicios}
-        footerComunas={footerComunas}
-        footerArticulos={footerArticulos}
-      />
-      <WhatsAppFloating />
+      <LandingInteractiveLayer />
+      <ChatWidget />
     </main>
   )
 }

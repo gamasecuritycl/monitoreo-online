@@ -1,0 +1,71 @@
+{
+  "version": 1,
+  "categorias": ["Alarmas Hogar", "Alarmas Negocio", "Cámaras", "Monitoreo", "Accesorios"],
+  "items": [
+    {
+      "id": "alarma-hogar-basica",
+      "nombre": "Alarma Hogar Básica",
+      "descripcion": "Kit 3 sensores + sirena + panel táctil",
+      "precio": 189990,
+      "categoria": "Alarmas Hogar",
+      "palabras_clave": ["básica", "económica", "departamento", "casa"],
+      "incluye": ["3 sensores magnéticos", "Sirena exterior", "Panel táctil", "Instalación"],
+      "no_incluye": ["Cámaras", "App móvil premium"],
+      "faq": [
+        { "q": "¿Incluye monitoreo 24/7?", "a": "No, es solo alarma local. Monitoreo se contrata aparte." }
+      ]
+    },
+    {
+      "id": "alarma-negocio-completa",
+      "nombre": "Alarma Negocio Completa",
+      "descripcion": "Kit cámaras + sensores + monitoreo 24/7",
+      "precio": 599990,
+      "categoria": "Alarmas Negocio",
+      "palabras_clave": ["negocio", "empresa", "comercio", "tienda"],
+      "incluye": ["4 cámaras 4K", "8 sensores", "Monitoreo 24/7", "App empresarial"],
+      "no_incluye": ["Cercos eléctricos"],
+      "faq": [
+        { "q": "¿Incluye monitoreo 24/7?", "a": "Sí, nuestra central opera 24/7 con respuesta <2 min." }
+      ]
+    },
+    {
+      "id": "camara-4k-ia",
+      "nombre": "Cámara 4K IA",
+      "descripcion": "Cámara IP con detección de movimiento IA",
+      "precio": 89990,
+      "categoria": "Cámaras",
+      "palabras_clave": ["cámara", "cctv", "video", "4k"],
+      "incluye": ["Sensor IA", "Visión nocturna", "App móvil", "Almacenamiento en nube"],
+      "no_incluye": ["Instalación profesional"],
+      "faq": [
+        { "q": "¿Graba en alta definición?", "a": "Sí, resolución 4K Ultra HD." }
+      ]
+    },
+    {
+      "id": "monitoreo-247",
+      "nombre": "Plan Monitoreo 24/7",
+      "descripcion": "Suscripción mensual a central de monitoreo",
+      "precio": 19990,
+      "categoria": "Monitoreo",
+      "palabras_clave": ["monitoreo", "central", "24/7", "suscripción", "mensual"],
+      "incluye": ["Verificación humana <2 min", "App push", "Alertas SMS", "Reportes mensuales"],
+      "no_incluye": ["Hardware de alarmas"],
+      "faq": [
+        { "q": "¿Funciona los 365 días?", "a": "Sí, 365 días al año, 24 horas." }
+      ]
+    },
+    {
+      "id": "cerca-electrico",
+      "nombre": "Cerca Eléctrica",
+      "descripcion": "Perímetro de alta seguridad con detección de intrusión",
+      "precio": 349990,
+      "categoria": "Accesorios",
+      "palabras_clave": ["cerco", "perímetro", "seguridad exterior", "intrusión"],
+      "incluye": ["400m de cable", "Panel de control", "Sirena", "Instalación"],
+      "no_incluye": ["Cámaras adicionales"],
+      "faq": [
+        { "q": "¿Cubre el perímetro completo?", "a": "Sí, cercamos hasta 400 metros lineales." }
+      ]
+    }
+  ]
+}
