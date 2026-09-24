@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 
-type AvatarState = "idle" | "thinking" | "talking";
+export type AvatarState = "idle" | "thinking" | "talking";
+export type AvatarVariant = "desk" | "compact" | "bubble";
 
 interface SalesGamaAvatarProps {
   state?: AvatarState;
+  variant?: AvatarVariant;
   size?: number;
   className?: string;
   onAnimationEnd?: () => void;
@@ -13,6 +15,7 @@ interface SalesGamaAvatarProps {
 
 export function SalesGamaAvatar({
   state = "idle",
+  variant = "compact",
   size = 120,
   className = "",
   onAnimationEnd,
@@ -23,282 +26,318 @@ export function SalesGamaAvatar({
     setInternalState(state);
   }, [state]);
 
-  useEffect(() => {
-    if (internalState === "thinking" || internalState === "talking") {
-      const timer = setTimeout(() => {
-        setInternalState("idle");
-        onAnimationEnd?.();
-      }, internalState === "thinking" ? 3000 : 2000);
-      return () => clearTimeout(timer);
-    }
-  }, [internalState, onAnimationEnd]);
+  const isTyping = internalState === "thinking" || internalState === "talking";
 
-  const strokeWidth = Math.max(1, size / 120);
-
-  return (
-    <div className={`sales-gama-avatar ${className}`} style={{ width: size, height: size }}>
-      <svg
-        viewBox="0 0 120 120"
-        width="100%"
-        height="100%"
-        xmlns="http://www.w3.org/2000/svg"
+  // Si es la vista de escritorio completa (encabezado del chat interactivo)
+  if (variant === "desk") {
+    return (
+      <div
+        className={`sg-android-desk-container relative overflow-hidden rounded-2xl bg-gradient-to-b from-[#091528] via-[#06101e] to-[#040b15] border border-[#1b3558] p-2 shadow-2xl ${className}`}
+        style={{ width: "100%", height: "140px" }}
         role="img"
-        aria-label={`SALES-GAMA android avatar - ${internalState}`}
+        aria-label={`Androide GAMA Especialista en Ventas - ${internalState}`}
       >
-        <defs>
-          <style>
-            {`
-              .android-skin { fill: #e8eef5; stroke: #1e3a5f; stroke-width: ${strokeWidth}; }
-              .android-metal { fill: #c8d4e3; stroke: #1e3a5f; stroke-width: ${strokeWidth * 0.8}; }
-              .android-dark-metal { fill: #8a9bb8; stroke: #1e3a5f; stroke-width: ${strokeWidth}; }
-              .android-glass { fill: rgba(30, 58, 95, 0.15); stroke: #1e3a5f; stroke-width: ${strokeWidth * 0.5}; }
-              .android-accent { fill: #0055aa; }
-              .android-gold { fill: #ffd700; }
-              .eye-glow { fill: #00aaff; filter: drop-shadow(0 0 4px #00aaff); }
-              .eye-pupil { fill: #0a1628; }
-              .mouth-line { fill: none; stroke: #00aaff; stroke-width: ${strokeWidth * 1.5}; stroke-linecap: round; }
-              .mouth-talk { animation: mouthTalk 0.15s ease-in-out infinite alternate; transform-origin: center 60px; transform-box: fill-box; }
-              .panel-line { stroke: #00aaff; stroke-width: ${strokeWidth * 0.4}; fill: none; opacity: 0.6; }
-              .panel-line-active { animation: panelPulse 1.5s ease-in-out infinite; }
-              .circuit { stroke: #ffd700; stroke-width: ${strokeWidth * 0.3}; fill: none; opacity: 0.4; }
-              .circuit-active { animation: circuitFlow 2s linear infinite; }
-              .processing-ring { fill: none; stroke: #00aaff; stroke-width: ${strokeWidth * 0.8}; stroke-dasharray: 8 4; transform-origin: center; transform-box: fill-box; }
-              .thinking .processing-ring { animation: spinRing 1s linear infinite; }
-              .talking .processing-ring { animation: pulseRing 0.5s ease-in-out infinite; }
+        <svg
+          viewBox="0 0 400 160"
+          className="w-full h-full"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <defs>
+            <linearGradient id="screenGlow" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor="#00e5ff" stopOpacity="0.45" />
+              <stop offset="100%" stopColor="#0a2540" stopOpacity="0.8" />
+            </linearGradient>
+            <linearGradient id="poloGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#0f2648" />
+              <stop offset="50%" stopColor="#0a1d37" />
+              <stop offset="100%" stopColor="#061326" />
+            </linearGradient>
+            <linearGradient id="metalChrome" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#b0c4de" />
+              <stop offset="50%" stopColor="#e8f0fe" />
+              <stop offset="100%" stopColor="#8ba4c4" />
+            </linearGradient>
+            <filter id="cyanGlow" x="-20%" y="-20%" width="140%" height="140%">
+              <feGaussianBlur stdDeviation="3" result="blur" />
+              <feComposite in="SourceGraphic" in2="blur" operator="over" />
+            </filter>
+            <style>
+              {`
+                @keyframes handTypeLeft {
+                  0%, 100% { transform: translateY(0px) rotate(0deg); }
+                  25% { transform: translateY(-4px) rotate(-2deg); }
+                  50% { transform: translateY(1px) rotate(1deg); }
+                  75% { transform: translateY(-3px) rotate(-1deg); }
+                }
+                @keyframes handTypeRight {
+                  0%, 100% { transform: translateY(0px) rotate(0deg); }
+                  25% { transform: translateY(1px) rotate(1deg); }
+                  50% { transform: translateY(-4px) rotate(2deg); }
+                  75% { transform: translateY(-1px) rotate(0deg); }
+                }
+                @keyframes screenPulse {
+                  0%, 100% { opacity: 0.85; filter: drop-shadow(0 0 6px rgba(0, 229, 255, 0.4)); }
+                  50% { opacity: 1; filter: drop-shadow(0 0 14px rgba(0, 229, 255, 0.8)); }
+                }
+                @keyframes codeLineMove {
+                  0% { stroke-dashoffset: 60; opacity: 0.4; }
+                  50% { opacity: 0.9; }
+                  100% { stroke-dashoffset: 0; opacity: 0.4; }
+                }
+                @keyframes bodyBreathing {
+                  0%, 100% { transform: translateY(0); }
+                  50% { transform: translateY(-2px); }
+                }
+                .android-body {
+                  animation: bodyBreathing 3s ease-in-out infinite;
+                }
+                .typing-left {
+                  animation: ${isTyping ? "handTypeLeft 0.18s ease-in-out infinite" : "none"};
+                  transform-origin: 175px 125px;
+                }
+                .typing-right {
+                  animation: ${isTyping ? "handTypeRight 0.18s ease-in-out infinite 0.09s" : "none"};
+                  transform-origin: 225px 125px;
+                }
+                .screen-active {
+                  animation: ${isTyping ? "screenPulse 0.8s ease-in-out infinite" : "none"};
+                }
+                .code-lines {
+                  animation: ${isTyping ? "codeLineMove 1.2s linear infinite" : "none"};
+                  stroke-dasharray: 6 3;
+                }
+              `}
+            </style>
+          </defs>
 
-              @keyframes mouthTalk {
-                0% { transform: scaleY(0.3) translateY(0); }
-                100% { transform: scaleY(1) translateY(-2px); }
-              }
-              @keyframes panelPulse {
-                0%, 100% { opacity: 0.4; stroke-width: ${strokeWidth * 0.4}; }
-                50% { opacity: 1; stroke-width: ${strokeWidth * 0.8}; }
-              }
-              @keyframes circuitFlow {
-                0% { stroke-dashoffset: 0; }
-                100% { stroke-dashoffset: 20; }
-              }
-              @keyframes spinRing {
-                0% { transform: rotate(0deg); }
-                100% { transform: rotate(360deg); }
-              }
-              @keyframes pulseRing {
-                0%, 100% { stroke-width: ${strokeWidth * 0.8}; opacity: 0.6; }
-                50% { stroke-width: ${strokeWidth * 1.5}; opacity: 1; }
-              }
-              @keyframes blink {
-                0%, 45%, 55%, 100% { transform: scaleY(1); }
-                50% { transform: scaleY(0.1); }
-              }
-              @keyframes idleFloat {
-                0%, 100% { transform: translateY(0) rotate(0deg); }
-                50% { transform: translateY(-3px) rotate(0.5deg); }
-              }
-            `}
-          </style>
-        </defs>
+          {/* ── Fondo Oficina de Monitoreo Central ── */}
+          <rect x="0" y="0" width="400" height="160" fill="none" />
+          <line x1="0" y1="130" x2="400" y2="130" stroke="#12253f" strokeWidth="1.5" />
+          {/* Luces sutiles de fondo (servidores) */}
+          <circle cx="20" cy="30" r="2" fill="#00e5ff" opacity="0.6" />
+          <circle cx="28" cy="30" r="2" fill="#25d366" opacity="0.8" />
+          <circle cx="380" cy="30" r="2" fill="#00e5ff" opacity="0.7" />
 
-        <g className={internalState} transform="translate(60, 60)">
-          {/* Outer processing ring */}
-          <circle
-            className="processing-ring"
-            r="52"
-            stroke-dasharray="12 6"
-          />
+          {/* ── Androide de Medio Cuerpo ── */}
+          <g className="android-body">
+            {/* Cabeza metálica 3D */}
+            <g transform="translate(200, 48)">
+              {/* Cuello hidráulico */}
+              <rect x="-10" y="24" width="20" height="16" rx="3" fill="#627d98" stroke="#102a43" strokeWidth="1" />
+              <line x1="-8" y1="28" x2="8" y2="28" stroke="#00e5ff" strokeWidth="1" opacity="0.8" />
+              <line x1="-8" y1="34" x2="8" y2="34" stroke="#00e5ff" strokeWidth="1" opacity="0.8" />
 
-          {/* Head - realistic android shape */}
-          <g className="android-head">
-            {/* Head silhouette */}
-            <ellipse
-              className="android-skin"
-              cx="0" cy="-8"
-              rx="38" ry="42"
-            />
+              {/* Casco / Cráneo estilo androide */}
+              <path
+                d="M -24 -15 C -24 -36, 24 -36, 24 -15 C 25 8, 18 25, 0 26 C -18 25, -25 8, -24 -15 Z"
+                fill="url(#metalChrome)"
+                stroke="#1e3a5f"
+                strokeWidth="1.5"
+              />
+              {/* Placas laterales del cráneo */}
+              <path d="M -23 -12 C -20 5, -15 18, -6 23" fill="none" stroke="#486581" strokeWidth="1.2" />
+              <path d="M 23 -12 C 20 5, 15 18, 6 23" fill="none" stroke="#486581" strokeWidth="1.2" />
 
-            {/* Forehead panel */}
-            <path
-              className={`panel-line ${internalState === "thinking" || internalState === "talking" ? "panel-line-active" : ""}`}
-              d="M-25 -42 Q0 -48 25 -42"
-            />
+              {/* Orejas / Sensores laterales */}
+              <rect x="-27" y="-6" width="4" height="14" rx="2" fill="#334e68" stroke="#00e5ff" strokeWidth="0.8" />
+              <rect x="23" y="-6" width="4" height="14" rx="2" fill="#334e68" stroke="#00e5ff" strokeWidth="0.8" />
 
-            {/* Top head detail */}
-            <ellipse
-              className="android-dark-metal"
-              cx="0" cy="-42"
-              rx="8" ry="3"
-            />
-
-            {/* Eyes - realistic android eyes with glow */}
-            <g className="eyes">
-              {/* Left eye socket */}
-              <ellipse className="android-dark-metal" cx="-18" cy="-10" rx="14" ry="12" />
-              <ellipse className="android-glass" cx="-18" cy="-10" rx="12" ry="10" />
-              <ellipse className="eye-glow" cx="-18" cy="-10" rx="8" ry="7">
-                <animate
-                  attributeName="opacity"
-                  values="1;0.3;1"
-                  dur="4s"
-                  repeatCount="indefinite"
-                  begin={internalState === "idle" ? "0s" : "0s"}
-                />
-              </ellipse>
-              <ellipse className="eye-pupil" cx="-18" cy="-10" rx="4" ry="5">
-                <animateTransform
-                  attributeName="transform"
-                  type="scale"
-                  values="1,1;1,0.1;1,1"
-                  dur="4s"
-                  repeatCount="indefinite"
-                  begin="0s"
-                />
-              </ellipse>
-
-              {/* Right eye socket */}
-              <ellipse className="android-dark-metal" cx="18" cy="-10" rx="14" ry="12" />
-              <ellipse className="android-glass" cx="18" cy="-10" rx="12" ry="10" />
-              <ellipse className="eye-glow" cx="18" cy="-10" rx="8" ry="7">
-                <animate
-                  attributeName="opacity"
-                  values="1;0.3;1"
-                  dur="4s"
-                  repeatCount="indefinite"
-                  begin="0.1s"
-                />
-              </ellipse>
-              <ellipse className="eye-pupil" cx="18" cy="-10" rx="4" ry="5">
-                <animateTransform
-                  attributeName="transform"
-                  type="scale"
-                  values="1,1;1,0.1;1,1"
-                  dur="4s"
-                  repeatCount="indefinite"
-                  begin="0.1s"
-                />
-              </ellipse>
-            </g>
-
-            {/* Nose bridge / sensor array */}
-            <g className="nose-sensor">
-              <path className="panel-line" d="M-2 -2 L0 -8 L2 -2" />
-              <circle className="android-accent" cx="0" cy="-5" r="1.5" />
-            </g>
-
-            {/* Mouth / speaker grille */}
-            <g className={`mouth ${internalState === "talking" ? "mouth-talk" : ""}`}>
-              <rect className="android-dark-metal" x="-20" y="22" width="40" height="8" rx="3" ry="3" />
-              <g transform="translate(0, 26)">
-                {Array.from({ length: 12 }).map((_, i) => (
-                  <line
-                    key={i}
-                    className="android-accent"
-                    x1={-18 + i * 3}
-                    y1="0"
-                    x2={-18 + i * 3}
-                    y2={internalState === "talking" ? "4" : "1"}
-                    strokeWidth={1.5}
-                    strokeLinecap="round"
-                  >
-                    {internalState === "talking" && (
-                      <animate
-                        attributeName="y2"
-                        values="1;4;1"
-                        dur="0.15s"
-                        repeatCount="indefinite"
-                        begin={`${i * 0.03}s`}
-                      />
-                    )}
-                  </line>
-                ))}
+              {/* Visor / Ojos cibernéticos brillantes */}
+              <path
+                d="M -17 -4 Q -10 -9, 0 -9 Q 10 -9, 17 -4 Q 10 2, 0 2 Q -10 2, -17 -4 Z"
+                fill="#051221"
+                stroke="#102a43"
+                strokeWidth="1"
+              />
+              <g className={isTyping ? "animate-pulse" : ""}>
+                <circle cx="-8" cy="-4" r="3.2" fill="#00e5ff" filter="url(#cyanGlow)" />
+                <circle cx="-8" cy="-4" r="1.4" fill="#ffffff" />
+                <circle cx="8" cy="-4" r="3.2" fill="#00e5ff" filter="url(#cyanGlow)" />
+                <circle cx="8" cy="-4" r="1.4" fill="#ffffff" />
               </g>
+
+              {/* Rejilla de voz / audio */}
+              <line x1="-6" y1="12" x2="6" y2="12" stroke="#00e5ff" strokeWidth="1.2" strokeLinecap="round" opacity="0.85" />
+              <line x1="-4" y1="15" x2="4" y2="15" stroke="#00e5ff" strokeWidth="0.9" strokeLinecap="round" opacity="0.6" />
             </g>
 
-            {/* Cheek panels / audio sensors */}
-            <g className="cheek-panels">
-              <ellipse className="android-metal" cx="-36" cy="8" rx="6" ry="5" />
-              <ellipse className="android-metal" cx="36" cy="8" rx="6" ry="5" />
-              <circle className="android-accent" cx="-36" cy="8" r="2" />
-              <circle className="android-accent" cx="36" cy="8" r="2" />
-            </g>
-
-            {/* Forehead circuit patterns */}
-            <g className={`circuit ${internalState === "thinking" ? "circuit-active" : ""}`}>
-              <path d="M-30 -35 Q-20 -40 -10 -35" strokeDasharray="4 2" />
-              <path d="M10 -35 Q20 -40 30 -35" strokeDasharray="4 2" />
-              <circle cx="-20" cy="-35" r="2" fill="#ffd700" />
-              <circle cx="20" cy="-35" r="2" fill="#ffd700" />
-            </g>
-          </g>
-
-          {/* Neck - mechanical */}
-          <g className="android-neck">
-            <rect className="android-dark-metal" x="-14" y="32" width="28" height="12" rx="3" ry="3" />
-            <rect className="android-metal" x="-10" y="34" width="20" height="8" rx="2" ry="2" />
-            {/* Neck rings */}
-            <line className="panel-line" x1="-12" y1="36" x2="12" y2="36" />
-            <line className="panel-line" x1="-10" y1="40" x2="10" y2="40" />
-          </g>
-
-          {/* Shoulders / upper torso */}
-          <g className="android-shoulders">
-            {/* Left shoulder */}
-            <ellipse className="android-skin" cx="-42" cy="48" rx="22" ry="14" />
-            <ellipse className="android-metal" cx="-42" cy="48" rx="18" ry="10" />
-            <path className="panel-line" d="M-55 40 Q-50 45 -48 52" />
-            <path className={`circuit ${internalState === "thinking" ? "circuit-active" : ""}`} d="M-58 42 L-50 50" strokeDasharray="3 2" />
-
-            {/* Right shoulder */}
-            <ellipse className="android-skin" cx="42" cy="48" rx="22" ry="14" />
-            <ellipse className="android-metal" cx="42" cy="48" rx="18" ry="10" />
-            <path className="panel-line" d="M55 40 Q50 45 48 52" />
-            <path className={`circuit ${internalState === "thinking" ? "circuit-active" : ""}`} d="M58 42 L50 50" strokeDasharray="3 2" />
-
-            {/* Chest plate */}
+            {/* Torso con POLERA AZUL MARINO DE GAMA */}
             <path
-              className="android-metal"
-              d="M-30 50 Q-20 45 0 45 Q20 45 30 50 L30 68 L-30 68 Z"
+              d="M 152 86 C 165 80, 185 78, 200 78 C 215 78, 235 80, 248 86 L 260 135 L 140 135 Z"
+              fill="url(#poloGradient)"
+              stroke="#061326"
+              strokeWidth="1.5"
             />
-            <path className="panel-line" d="M-20 52 Q0 48 20 52" />
-            <circle className="android-gold" cx="0" cy="54" r="6" />
-            <text
-              x="0" y="58"
-              className="android-gold"
-              text-anchor="middle"
-              font-family="Arial Black, sans-serif"
-              font-weight="900"
-              font-size="8"
-              fill="#ffd700"
-            >
-              GAMA
+            {/* Cuello de la polera */}
+            <path
+              d="M 184 80 L 200 95 L 216 80 L 208 78 L 200 86 L 192 78 Z"
+              fill="#061326"
+              stroke="#1b3558"
+              strokeWidth="0.8"
+            />
+
+            {/* ESCUDO OFICIAL DE GAMA EN EL PECHO */}
+            <g transform="translate(186, 92)">
+              <rect x="-1" y="-1" width="30" height="30" rx="4" fill="#0a1d37" opacity="0.3" />
+              <image
+                href="/logo-gama-servicios.png"
+                x="0"
+                y="0"
+                width="28"
+                height="28"
+                preserveAspectRatio="xMidYMid meet"
+              />
+            </g>
+
+            {/* Brazos / Hombros del androide */}
+            <path d="M 152 86 Q 140 100, 150 125" fill="none" stroke="#0a1d37" strokeWidth="16" strokeLinecap="round" />
+            <path d="M 248 86 Q 260 100, 250 125" fill="none" stroke="#0a1d37" strokeWidth="16" strokeLinecap="round" />
+            {/* Articulaciones cromadas de los codos */}
+            <circle cx="145" cy="115" r="5" fill="#8ba4c4" stroke="#102a43" strokeWidth="1" />
+            <circle cx="255" cy="115" r="5" fill="#8ba4c4" stroke="#102a43" strokeWidth="1" />
+          </g>
+
+          {/* ── Estación de Trabajo: Escritorio, Computador y Manos ── */}
+          {/* Superficie del escritorio con borde iluminado */}
+          <rect x="70" y="128" width="260" height="28" rx="4" fill="#0c1e38" stroke="#1e3a5f" strokeWidth="1.5" />
+          <line x1="72" y1="130" x2="328" y2="130" stroke="#00e5ff" strokeWidth="1.2" opacity="0.7" />
+
+          {/* Teclado en el escritorio */}
+          <rect x="155" y="133" width="90" height="18" rx="2" fill="#06101e" stroke="#1e3a5f" strokeWidth="1" />
+          {/* Teclas simuladas con luces */}
+          <g opacity="0.75">
+            <line x1="160" y1="137" x2="240" y2="137" stroke="#486581" strokeWidth="1.5" strokeDasharray="3 2" />
+            <line x1="160" y1="141" x2="240" y2="141" stroke="#486581" strokeWidth="1.5" strokeDasharray="3 2" />
+            <line x1="170" y1="146" x2="230" y2="146" stroke="#00e5ff" strokeWidth="1.5" opacity="0.8" />
+          </g>
+
+          {/* Laptop / Monitor de trabajo */}
+          <g transform="translate(140, 92)">
+            {/* Pantalla posterior del laptop mirando al usuario */}
+            <rect
+              x="20"
+              y="5"
+              width="80"
+              height="36"
+              rx="3"
+              fill="url(#screenGlow)"
+              stroke="#00e5ff"
+              strokeWidth="1.2"
+              className="screen-active"
+            />
+            {/* Líneas de datos / código en el monitor */}
+            <line x1="28" y1="15" x2="92" y2="15" stroke="#ffffff" strokeWidth="1.5" className="code-lines" />
+            <line x1="28" y1="21" x2="84" y2="21" stroke="#00e5ff" strokeWidth="1.5" className="code-lines" />
+            <line x1="28" y1="27" x2="90" y2="27" stroke="#00e5ff" strokeWidth="1.5" className="code-lines" />
+            <line x1="28" y1="33" x2="68" y2="33" stroke="#25d366" strokeWidth="1.5" className="code-lines" />
+            {/* Base del laptop */}
+            <rect x="14" y="41" width="92" height="3" rx="1.5" fill="#486581" />
+          </g>
+
+          {/* Manos y dedos del androide escribiendo en el teclado */}
+          <g className="typing-left">
+            {/* Antebrazo izquierdo hacia teclado */}
+            <line x1="150" y1="120" x2="175" y2="137" stroke="#b0c4de" strokeWidth="5" strokeLinecap="round" />
+            {/* Mano y dedos metálicos */}
+            <circle cx="175" cy="137" r="3.5" fill="#e8f0fe" stroke="#102a43" strokeWidth="0.8" />
+            <line x1="175" y1="137" x2="181" y2="140" stroke="#00e5ff" strokeWidth="1.5" strokeLinecap="round" />
+            <line x1="174" y1="138" x2="180" y2="143" stroke="#00e5ff" strokeWidth="1.5" strokeLinecap="round" />
+          </g>
+
+          <g className="typing-right">
+            {/* Antebrazo derecho hacia teclado */}
+            <line x1="250" y1="120" x2="225" y2="137" stroke="#b0c4de" strokeWidth="5" strokeLinecap="round" />
+            {/* Mano y dedos metálicos */}
+            <circle cx="225" cy="137" r="3.5" fill="#e8f0fe" stroke="#102a43" strokeWidth="0.8" />
+            <line x1="225" y1="137" x2="219" y2="140" stroke="#00e5ff" strokeWidth="1.5" strokeLinecap="round" />
+            <line x1="226" y1="138" x2="220" y2="143" stroke="#00e5ff" strokeWidth="1.5" strokeLinecap="round" />
+          </g>
+
+          {/* Badge de estado en vivo */}
+          <g transform="translate(310, 18)">
+            <rect x="0" y="0" width="75" height="18" rx="9" fill="#000000" fillOpacity="0.4" stroke="#1b3558" strokeWidth="1" />
+            <circle cx="10" cy="9" r="3.5" fill={isTyping ? "#00e5ff" : "#25d366"} className={isTyping ? "animate-ping" : ""} />
+            <circle cx="10" cy="9" r="3" fill={isTyping ? "#00e5ff" : "#25d366"} />
+            <text x="20" y="12.5" fill="#e2e8f0" fontSize="9" fontFamily="system-ui, sans-serif" fontWeight="600">
+              {isTyping ? "ESCRIBIENDO..." : "EN LÍNEA 24/7"}
             </text>
           </g>
+        </svg>
+      </div>
+    );
+  }
 
-          {/* Idle floating animation */}
-          <animateTransform
-            attributeName="transform"
-            type="translate"
-            values="0,0; 0,-2; 0,0"
-            dur="4s"
-            repeatCount="indefinite"
-            begin="0s"
-            additive="sum"
-          />
-        </g>
+  // Si es la vista compacta o burbuja
+  return (
+    <div
+      className={`sales-gama-avatar relative flex items-center justify-center rounded-full bg-gradient-to-tr from-[#0a1d37] to-[#12284b] border border-[#2997ff]/40 shadow-lg ${className}`}
+      style={{ width: size, height: size }}
+      role="img"
+      aria-label={`Androide GAMA - ${internalState}`}
+    >
+      <svg
+        viewBox="0 0 100 100"
+        width="82%"
+        height="82%"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <defs>
+          <filter id="eyeGlowSmall" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="2" result="blur" />
+            <feComposite in="SourceGraphic" in2="blur" operator="over" />
+          </filter>
+        </defs>
+
+        {/* Cabeza del androide */}
+        <path
+          d="M 22 36 C 22 12, 78 12, 78 36 C 79 60, 70 82, 50 83 C 30 82, 21 60, 22 36 Z"
+          fill="#dce5f0"
+          stroke="#1b3558"
+          strokeWidth="2.5"
+        />
+
+        {/* Visor negro estilizado */}
+        <path
+          d="M 28 42 Q 50 36, 72 42 Q 50 50, 28 42 Z"
+          fill="#051221"
+          stroke="#102a43"
+          strokeWidth="1.5"
+        />
+
+        {/* Ojos con brillo reactivo */}
+        <circle cx="39" cy="43" r="4" fill="#00e5ff" filter="url(#eyeGlowSmall)" />
+        <circle cx="39" cy="43" r="1.8" fill="#ffffff" />
+        <circle cx="61" cy="43" r="4" fill="#00e5ff" filter="url(#eyeGlowSmall)" />
+        <circle cx="61" cy="43" r="1.8" fill="#ffffff" />
+
+        {/* Rejilla de comunicación vocal */}
+        <line
+          x1="42"
+          y1="64"
+          x2="58"
+          y2="64"
+          stroke="#00e5ff"
+          strokeWidth="2"
+          strokeLinecap="round"
+          className={internalState === "talking" ? "animate-pulse" : ""}
+        />
+        <line x1="45" y1="69" x2="55" y2="69" stroke="#00e5ff" strokeWidth="1.5" strokeLinecap="round" opacity="0.7" />
+
+        {/* Pequeño logo en la barbilla/base */}
+        <circle cx="50" cy="76" r="3" fill="#00e5ff" opacity="0.9" />
       </svg>
 
-      <style>{`
-        .sales-gama-avatar {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          filter: drop-shadow(0 4px 12px rgba(0, 51, 102, 0.2));
-        }
-        .sales-gama-avatar:hover {
-          filter: drop-shadow(0 8px 24px rgba(0, 85, 170, 0.4));
-        }
-        .sales-gama-avatar svg {
-          transition: filter 0.3s ease;
-        }
-      `}</style>
+      {/* Indicador de estado */}
+      <span
+        className={`absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-2 border-[#050d1a] ${
+          isTyping ? "bg-[#00e5ff] animate-ping" : "bg-green-400"
+        }`}
+      />
+      <span
+        className={`absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-2 border-[#050d1a] ${
+          isTyping ? "bg-[#00e5ff]" : "bg-green-400"
+        }`}
+      />
     </div>
   );
 }

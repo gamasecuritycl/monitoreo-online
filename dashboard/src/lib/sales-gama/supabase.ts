@@ -110,6 +110,19 @@ export async function getLeadWithMessages(leadId: string): Promise<{ lead: Lead;
   };
 }
 
+export async function updateLeadStatus(leadId: string, estado: 'nuevo' | 'caliente' | 'cerrado' | 'derivado'): Promise<boolean> {
+  const { error } = await supabaseAdmin
+    .from('leads_sales_gama')
+    .update({ estado, last_activity: new Date().toISOString() })
+    .eq('id', leadId);
+
+  if (error) {
+    console.error('Error updating lead status:', error);
+    return false;
+  }
+  return true;
+}
+
 export async function listLeads(
   filters: LeadFilters = {},
   pagination: PaginationParams = {}
@@ -180,14 +193,33 @@ export async function getConfig(): Promise<Config | null> {
   const rawPrompt = configMap.get('prompt');
   const rawPrecios = configMap.get('precios');
 
+  const defaultPrecios = {
+    version: 2,
+    categorias: ["Monitoreo 24/7", "Alarmas Inteligentes", "Alarmas Cableadas", "Cámaras CCTV", "Cercos Eléctricos", "Promociones"],
+    items: [
+      {
+        id: "monitoreo-247-uf",
+        nombre: "Plan Monitoreo de Alarmas 24/7",
+        descripcion: "Monitoreo continuo 24/7 los 365 días con verificación humana de señales en < 2 min. El equipo es 100% tuyo.",
+        precio: 35000,
+        precio_uf: "0,9 UF + IVA mensual",
+        categoria: "Monitoreo 24/7",
+        palabras_clave: ["monitoreo", "central", "24/7", "uf", "plan"],
+        incluye: ["Verificación < 2 min", "App móvil", "Aviso telefónico prioritario", "Equipo propio"],
+        no_incluye: ["Hardware inicial"],
+        faq: [{ q: "¿Cuál es el valor mensual?", a: "0,9 UF + IVA mensual fijo sin cobros sorpresa." }]
+      }
+    ]
+  };
+
   const configObj = (rawConfig as Record<string, unknown>) || {};
   const prompt = (typeof rawPrompt === 'string' ? (() => { try { return JSON.parse(rawPrompt); } catch { return rawPrompt; } })() : rawPrompt) as string || (configObj.prompt as string) || '';
-  const precios = (typeof rawPrecios === 'string' ? (() => { try { return JSON.parse(rawPrecios); } catch { return rawPrecios; } })() : rawPrecios) as PreciosData || (configObj.precios as PreciosData) || { version: 1, categorias: [], items: [] };
+  const precios = (typeof rawPrecios === 'string' ? (() => { try { return JSON.parse(rawPrecios); } catch { return rawPrecios; } })() : rawPrecios) as PreciosData || (configObj.precios as PreciosData) || defaultPrecios;
   const botConfig = (configObj.botConfig || configObj) as BotConfig || {
-    rateLimit: 20,
+    rateLimit: 100,
     timeoutMin: 30,
     despedida: '¡Gracias por contactar a GAMA Seguridad! Te esperamos.',
-    waUrl: 'https://wa.me/56912345678',
+    waUrl: 'https://wa.me/56991016912',
     model: 'gemini-1.5-flash',
     temperature: 0.7,
     topP: 0.9,

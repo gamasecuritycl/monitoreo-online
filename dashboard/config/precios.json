@@ -1,70 +1,128 @@
 {
-  "version": 1,
-  "categorias": ["Alarmas Hogar", "Alarmas Negocio", "Cámaras", "Monitoreo", "Accesorios"],
+  "version": 2,
+  "categorias": ["Monitoreo 24/7", "Alarmas Inteligentes", "Alarmas Cableadas", "Cámaras CCTV", "Cercos Eléctricos", "Promociones"],
   "items": [
     {
-      "id": "alarma-hogar-basica",
-      "nombre": "Alarma Hogar Básica",
-      "descripcion": "Kit 3 sensores + sirena + panel táctil",
-      "precio": 189990,
-      "categoria": "Alarmas Hogar",
-      "palabras_clave": ["básica", "económica", "departamento", "casa"],
-      "incluye": ["3 sensores magnéticos", "Sirena exterior", "Panel táctil", "Instalación"],
-      "no_incluye": ["Cámaras", "App móvil premium"],
+      "id": "monitoreo-247-uf",
+      "nombre": "Plan Monitoreo de Alarmas 24/7",
+      "descripcion": "Monitoreo continuo 24/7 los 365 días con verificación humana de señales en menos de 2 minutos. El equipo es 100% tuyo (sin arriendos forzados).",
+      "precio": 35000,
+      "precio_uf": "0,9 UF + IVA mensual",
+      "categoria": "Monitoreo 24/7",
+      "palabras_clave": ["monitoreo", "central", "24/7", "mensualidad", "uf", "plan", "cuota"],
+      "incluye": [
+        "Verificación de señales en < 2 minutos",
+        "Recepción de alertas de intrusión, pánico, sabotaje y corte de energía",
+        "Aviso telefónico inmediato a lista de contactos prioritarios",
+        "App móvil para supervisión y reportes de aperturas y cierres",
+        "Equipo en propiedad del cliente (sin comodato engañoso)"
+      ],
+      "no_incluye": ["Hardware inicial de alarma ni sensores"],
       "faq": [
-        { "q": "¿Incluye monitoreo 24/7?", "a": "No, es solo alarma local. Monitoreo se contrata aparte." }
+        { "q": "¿Cuál es el valor mensual?", "a": "El plan parte desde 0,9 UF + IVA mensual. Es tarifa fija sin cobros sorpresa." },
+        { "q": "¿El equipo es mío?", "a": "Sí, en GAMA el equipamiento queda a tu nombre, no es en arriendo." }
       ]
     },
     {
-      "id": "alarma-negocio-completa",
-      "nombre": "Alarma Negocio Completa",
-      "descripcion": "Kit cámaras + sensores + monitoreo 24/7",
-      "precio": 599990,
-      "categoria": "Alarmas Negocio",
-      "palabras_clave": ["negocio", "empresa", "comercio", "tienda"],
-      "incluye": ["4 cámaras 4K", "8 sensores", "Monitoreo 24/7", "App empresarial"],
-      "no_incluye": ["Cercos eléctricos"],
+      "id": "kit-vetti-inteligente",
+      "nombre": "Kit Alarma Inteligente Vetti con App NT CLICK",
+      "descripcion": "Sistema de alarma inalámbrico de última generación. Instalación limpia sin cables ni rotura de muros, control total desde el celular.",
+      "precio": 199900,
+      "precio_uf": "Desde $199.900 instalada",
+      "categoria": "Alarmas Inteligentes",
+      "palabras_clave": ["vetti", "alarma inalambrica", "app", "nt click", "casa", "hogar", "departamento"],
+      "incluye": [
+        "Central Vetti inalámbrica de alta velocidad",
+        "Sensores magnéticos de puertas/ventanas",
+        "Detector de movimiento PIR antimascotas",
+        "Sirena de alta potencia disuasiva",
+        "Control total por App móvil NT CLICK (armar/desarmar remoto)",
+        "Batería de respaldo en caso de corte eléctrico",
+        "Instalación profesional y configuración incluida"
+      ],
+      "no_incluye": ["Monitoreo mensual (se contrata por 0,9 UF + IVA)"],
       "faq": [
-        { "q": "¿Incluye monitoreo 24/7?", "a": "Sí, nuestra central opera 24/7 con respuesta <2 min." }
+        { "q": "¿Sirve si tengo mascotas?", "a": "Sí, los sensores PIR Vetti son antimascotas e ignoran animales domésticos." }
       ]
     },
     {
-      "id": "camara-4k-ia",
-      "nombre": "Cámara 4K IA",
-      "descripcion": "Cámara IP con detección de movimiento IA",
-      "precio": 89990,
-      "categoria": "Cámaras",
-      "palabras_clave": ["cámara", "cctv", "video", "4k"],
-      "incluye": ["Sensor IA", "Visión nocturna", "App móvil", "Almacenamiento en nube"],
-      "no_incluye": ["Instalación profesional"],
+      "id": "kit-dsc-powerseries",
+      "nombre": "Kit Alarma Cableada DSC PowerSeries (Teclado PK5501)",
+      "descripcion": "Máxima robustez industrial y residencial para casas grandes, locales comerciales y bodegas. Alta durabilidad y resistencia.",
+      "precio": 249900,
+      "precio_uf": "Desde $249.900 instalada",
+      "categoria": "Alarmas Cableadas",
+      "palabras_clave": ["dsc", "cableada", "pk5501", "powerseries", "empresa", "bodega", "local"],
+      "incluye": [
+        "Panel central DSC PowerSeries PC1832",
+        "Teclado LED / LCD PK5501",
+        "Sensores de movimiento y contactos magnéticos cableados",
+        "Sirena exterior con gabinete blindado",
+        "Batería de respaldo redundante",
+        "Instalación técnica certificada"
+      ],
+      "no_incluye": ["Canalización compleja de obra civil mayor"],
       "faq": [
-        { "q": "¿Graba en alta definición?", "a": "Sí, resolución 4K Ultra HD." }
+        { "q": "¿Por qué elegir DSC?", "a": "Es la marca estándar de seguridad de mayor durabilidad física y confiabilidad a largo plazo." }
       ]
     },
     {
-      "id": "monitoreo-247",
-      "nombre": "Plan Monitoreo 24/7",
-      "descripcion": "Suscripción mensual a central de monitoreo",
-      "precio": 19990,
-      "categoria": "Monitoreo",
-      "palabras_clave": ["monitoreo", "central", "24/7", "suscripción", "mensual"],
-      "incluye": ["Verificación humana <2 min", "App push", "Alertas SMS", "Reportes mensuales"],
-      "no_incluye": ["Hardware de alarmas"],
+      "id": "kit-camaras-4k-ia",
+      "nombre": "Sistema CCTV Cámaras 4K con IA",
+      "descripcion": "Circuito cerrado de televisión de ultra alta definición con inteligencia artificial para detección precisa de personas y vehículos.",
+      "precio": 289900,
+      "precio_uf": "Desde $289.900 instalado",
+      "categoria": "Cámaras CCTV",
+      "palabras_clave": ["camara", "camaras", "cctv", "video", "4k", "ia", "dvr", "nvr"],
+      "incluye": [
+        "Cámaras de seguridad resolución 4K con visión nocturna infrarroja",
+        "Grabador digital con disco duro para almacenamiento local continuo",
+        "Inteligencia Artificial para filtro de falsas alarmas (diferencia ramas de intrusos)",
+        "Visualización en vivo y grabaciones desde el celular",
+        "Instalación profesional y conexionado"
+      ],
+      "no_incluye": ["Monitor de visualización dedicado"],
       "faq": [
-        { "q": "¿Funciona los 365 días?", "a": "Sí, 365 días al año, 24 horas." }
+        { "q": "¿Puedo ver las cámaras en vivo?", "a": "Sí, desde la aplicación móvil en tu teléfono desde cualquier parte del mundo." }
       ]
     },
     {
-      "id": "cerca-electrico",
-      "nombre": "Cerca Eléctrica",
-      "descripcion": "Perímetro de alta seguridad con detección de intrusión",
+      "id": "cerco-electrico-sec",
+      "nombre": "Cerco Eléctrico Certificado SEC",
+      "descripcion": "Barrera perimetral de alta seguridad con pulsos de alto voltaje no letales y detección inmediata ante cortes o manipulación.",
       "precio": 349990,
-      "categoria": "Accesorios",
-      "palabras_clave": ["cerco", "perímetro", "seguridad exterior", "intrusión"],
-      "incluye": ["400m de cable", "Panel de control", "Sirena", "Instalación"],
-      "no_incluye": ["Cámaras adicionales"],
+      "precio_uf": "Según metros lineales",
+      "categoria": "Cercos Eléctricos",
+      "palabras_clave": ["cerco", "electrico", "perimetro", "muro", "pandereta", "reja", "sec"],
+      "incluye": [
+        "Energizador homologado y certificado SEC",
+        "Líneas de alambre galvanizado de alta resistencia",
+        "Aisladores reforzados contra intemperie y rayos UV",
+        "Sirena local de alerta perimetral",
+        "Letreros de advertencia reglamentarios",
+        "Declaración y certificación de la instalación"
+      ],
+      "no_incluye": ["Pintura o reparación de muros existentes"],
       "faq": [
-        { "q": "¿Cubre el perímetro completo?", "a": "Sí, cercamos hasta 400 metros lineales." }
+        { "q": "¿Está certificado ante la SEC?", "a": "Sí, todas las instalaciones de cerco eléctrico GAMA cumplen con la normativa SEC vigente." }
+      ]
+    },
+    {
+      "id": "evaluacion-tecnica-gratis",
+      "nombre": "Evaluación Técnica en Terreno $0",
+      "descripcion": "Visita técnica presencial sin costo ni compromiso en tu casa, empresa o comunidad en la RM o Región de Valparaíso.",
+      "precio": 0,
+      "precio_uf": "Gratis ($0)",
+      "categoria": "Promociones",
+      "palabras_clave": ["visita", "evaluacion", "gratis", "costo", "terreno", "presupuesto"],
+      "incluye": [
+        "Levantamiento de puntos vulnerables de la propiedad",
+        "Recomendación exacta de cantidad y ubicación de sensores",
+        "Presupuesto cerrado por escrito en menos de 24 horas"
+      ],
+      "no_incluye": ["Ejecución de trabajos en la misma visita de evaluación"],
+      "faq": [
+        { "q": "¿Tiene algún costo si no contrato?", "a": "No, la evaluación en terreno es 100% gratuita y sin ningún compromiso." }
       ]
     }
   ]

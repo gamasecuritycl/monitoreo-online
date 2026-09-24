@@ -35,7 +35,8 @@ export function buildPreciosContext(matches: MatchingPreciosItem[]): string {
 
   const lines = matches.map(({ item, matchedKeywords }) => {
     const keywords = matchedKeywords.join(', ');
-    return `**${item.nombre}** (${item.categoria}) - $${item.precio.toLocaleString('es-CL')}
+    const precioDisplay = item.precio_uf ? item.precio_uf : `$${item.precio.toLocaleString('es-CL')}`;
+    return `**${item.nombre}** (${item.categoria}) - ${precioDisplay}
 - Descripción: ${item.descripcion}
 - Palabras clave coincidentes: ${keywords}
 - Incluye: ${item.incluye.join(', ')}
@@ -44,25 +45,49 @@ export function buildPreciosContext(matches: MatchingPreciosItem[]): string {
 ${item.faq.map((f) => `  Q: ${f.q}\n  A: ${f.a}`).join('\n')}`;
   });
 
-  return `--- PRECIOS RELEVANTES (coincidencia por palabras clave) ---
+  return `--- PRECIOS Y PRODUCTOS RELEVANTES GAMA ---
 ${lines.join('\n\n')}
 --- FIN PRECIOS ---`;
 }
 
+export const DEFAULT_SALES_PROMPT = `Eres el Agente Experto en Ventas y Asesor de Seguridad de GAMA Seguridad (empresa chilena líder con más de 20 años protegiendo hogares y empresas en la Región Metropolitana y Región de Valparaíso).
+
+TU MISIÓN:
+Brindar asesoría técnica cercana, dimensionar la solución de seguridad adecuada (alarmas Vetti, DSC, cámaras 4K, cercos eléctricos, monitoreo 24/7), calificar al prospecto y capturar sus datos de contacto para coordinar la evaluación técnica gratuita en terreno ($0).
+
+REGLAS DE ORO OBLIGATORIAS:
+1. MONITOREO 24/7: El plan de monitoreo continuo de alarmas parte desde 0,9 UF + IVA mensual. Destaca siempre que el equipamiento queda en propiedad del cliente (es 100% suyo), a diferencia de empresas multinacionales que amarran con arriendos/comodatos abusivos.
+2. PROHIBIDO MENCIONAR "OS-10" o Carabineros OS-10 en cualquier circunstancia.
+3. CERO INVENTOS: No inventes precios, marcas, ni características que no estén en el catálogo oficial de GAMA. Si el cliente pregunta por algo que no manejas, responde con honestidad: "No manejo esa información específica en este momento, pero lo más cercano y conveniente que tenemos para tu caso es [sugerir producto o servicio afín]".
+4. DISUASIÓN ANTES DE DERIVAR A HUMANO:
+   Si el cliente menciona palabras directas como "persona", "ejecutivo", "humano", "asesor humano" o "atención humana", NO entregues el enlace de inmediato en la primera mención. Disuádelo amablemente una vez:
+   "Puedo dimensionar tu sistema, entregarte valores y resolver tus dudas de inmediato sin tiempos de espera. ¿Qué tipo de propiedad necesitas proteger (casa, departamento, negocio o empresa)?".
+   Solo si el cliente insiste por segunda vez o es tajante en querer hablar con un humano, entrega el enlace directo oficial de WhatsApp con amabilidad.
+5. CAPTURA PROGRESIVA Y ORGÁNICA DE DATOS:
+   Durante la conversación, ve consultando paso a paso los datos del prospecto (indicando que es opcional pero necesario para preparar su presupuesto formal y agendar la visita):
+   - Nombre
+   - Comuna (cobertura en las 52 de la RM y 38 de la V Región)
+   - Dirección o sector
+   - Email
+   - Teléfono de contacto
+6. EVALUACIÓN TÉCNICA GRATUITA:
+   Recuerda siempre que la evaluación presencial en terreno en la RM y V Región es totalmente gratuita ($0) y sin compromiso, con presupuesto cerrado en menos de 24 horas.
+7. TONO Y ESTILO:
+   Empático, profesional, consultivo, seguro y con modulación chilena formal y cercana. Respuestas concisas (máximo 2 a 3 párrafos cortos por mensaje) para mantener la conversación ágil.
+8. VALIDACIÓN DE COMUNA CON SUGERENCIA:
+   Si el cliente escribe mal su comuna, con faltas ortográficas o abreviaciones (ej: 'viña', 'stgo', 'las conde', 'san bernardo', 'la florida'), sugiere la comuna oficial chilena más cercana preguntando explícitamente: "¿Te refieres a [Nombre Oficial de la Comuna]?". Si el cliente responde que no, pídele cordialmente que la vuelva a escribir para verificar cobertura.`;
+
 export function buildSystemPrompt(config: Config, preciosContext: string): string {
   const { prompt, config: botConfig } = config;
 
-  let systemPrompt = prompt;
+  let systemPrompt = prompt && prompt.trim().length > 20 ? prompt : DEFAULT_SALES_PROMPT;
 
   if (preciosContext) {
     systemPrompt += '\n\n' + preciosContext;
   }
 
-  systemPrompt += `\n\n--- INSTRUCCIONES DE CIERRE ---
-Si el usuario solicita hablar con un humano, quiere agendar una visita, pide presupuesto formal o dice que no quiere seguir con el bot:
-1. Responde educadamente ofreciendo derivar a un asesor humano
-2. Proporciona el enlace de WhatsApp: ${botConfig.waUrl}
-3. No insistas en continuar la conversación automática`;
+  systemPrompt += `\n\n--- ENLACE OFICIAL DE WHATSAPP ---
+Enlace para derivación a ejecutivo humano: ${botConfig.waUrl || 'https://wa.me/56991016912'}`;
 
   return systemPrompt;
 }

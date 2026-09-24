@@ -7,6 +7,7 @@ export interface Lead {
   comuna?: string;
   telefono?: string;
   estado: 'nuevo' | 'caliente' | 'cerrado' | 'derivado';
+  resumen?: string;
   ip_hash?: string;
   user_agent?: string;
   created_at: string;
@@ -42,6 +43,7 @@ export interface PreciosItem {
   nombre: string;
   descripcion: string;
   precio: number;
+  precio_uf?: string;
   categoria: string;
   palabras_clave: string[];
   incluye: string[];

@@ -7,15 +7,16 @@ const PreciosItemSchema = z.object({
   id: z.string().min(1, 'ID es requerido'),
   nombre: z.string().min(1, 'Nombre es requerido'),
   descripcion: z.string().min(1, 'Descripción es requerida'),
-  precio: z.number().positive('El precio debe ser mayor a 0'),
+  precio: z.number().min(0, 'El precio debe ser igual o mayor a 0'),
+  precio_uf: z.string().optional(),
   categoria: z.string().min(1, 'Categoría es requerida'),
   palabras_clave: z.array(z.string()).min(1, 'Debe tener al menos una palabra clave'),
   incluye: z.array(z.string()).min(1, 'Debe incluir al menos un elemento'),
-  no_incluye: z.array(z.string()).min(1, 'Debe especificar al menos un elemento no incluido'),
+  no_incluye: z.array(z.string()),
   faq: z.array(z.object({
     q: z.string().min(1, 'Pregunta es requerida'),
     a: z.string().min(1, 'Respuesta es requerida'),
-  })).min(1, 'Debe tener al menos una FAQ'),
+  })),
 });
 
 export const PreciosSchema: z.ZodType<PreciosData> = z.object({
@@ -54,7 +55,7 @@ export const ChatMessageSchema = z.object({
 export const ChatRequestSchema = z.object({
   sessionId: z.string().uuid('Session ID debe ser un UUID válido'),
   message: z.string().min(1, 'Mensaje es requerido').max(4000, 'Mensaje no puede exceder 4000 caracteres'),
-  history: z.array(ChatMessageSchema).max(20, 'Historial no puede exceder 20 mensajes'),
+  history: z.array(ChatMessageSchema).max(100, 'Historial no puede exceder 100 mensajes'),
 });
 
 export const ConfigSchema = z.object({

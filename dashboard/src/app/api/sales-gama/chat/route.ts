@@ -7,6 +7,76 @@ import type { ChatMessage } from '@/lib/sales-gama/types';
 
 export const runtime = 'edge';
 
+const COMUNAS_CHILE = [
+  "santiago", "cerrillos", "cerro navia", "conchali", "el bosque", "estacion central",
+  "huechuraba", "independencia", "la cisterna", "la florida", "la granja", "la pintana",
+  "la reina", "las condes", "lo barnechea", "lo espejo", "lo prado", "macul", "maipu",
+  "ñuñoa", "pedro aguirre cerda", "peñalolen", "providencia", "pudahuel", "quilicura",
+  "quinta normal", "recoleta", "renca", "san joaquin", "san miguel", "san ramon",
+  "vitacura", "puente alto", "pirque", "san jose de maipo", "colina", "lampa",
+  "tiltil", "san bernardo", "buin", "calera de tango", "paine", "melipilla",
+  "alhue", "curacavi", "maria pinto", "san pedro", "talagante", "el monte",
+  "isla de maipo", "padre hurtado", "peñaflor",
+  "valparaiso", "viña del mar", "vina del mar", "concon", "quilpue", "villa alemana",
+  "casablanca", "juan fernandez", "quillota", "la calera", "hijuelas", "la cruz",
+  "nogales", "san antonio", "algarrobo", "cartagena", "el quisco", "el tabo",
+  "santo domingo", "san felipe", "catemu", "llaillay", "panquehue", "putaendo",
+  "santa maria", "los andes", "calle larga", "rinconada", "san esteban", "la ligua",
+  "cabildo", "papudo", "petorca", "zapallar", "limache", "olmue"
+];
+
+function extractLeadData(text: string) {
+  const extracted: {
+    telefono?: string;
+    email?: string;
+    nombre?: string;
+    comuna?: string;
+    direccion?: string;
+  } = {};
+
+  // Email
+  const emailMatch = text.match(/\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/);
+  if (emailMatch) {
+    extracted.email = emailMatch[0].trim();
+  }
+
+  // Teléfono chileno (+569..., 912345678, etc.)
+  const phoneMatch = text.match(/(?:\+?56\s*9|9)\s*([0-9]{4})\s*([0-9]{4})\b/) || text.match(/\b([2-9]\d{7,8})\b/);
+  if (phoneMatch) {
+    let clean = phoneMatch[0].replace(/\D/g, '');
+    if (clean.length === 8) clean = '9' + clean;
+    if (clean.length === 9) clean = '56' + clean;
+    if (clean.startsWith('569') && clean.length === 11) {
+      extracted.telefono = `+${clean}`;
+    } else if (clean.length >= 8) {
+      extracted.telefono = `+56${clean.replace(/^56/, '')}`;
+    }
+  }
+
+  // Comuna
+  const lower = text.toLowerCase();
+  for (const c of COMUNAS_CHILE) {
+    if (new RegExp(`\\b${c}\\b`, 'i').test(lower)) {
+      extracted.comuna = c.charAt(0).toUpperCase() + c.slice(1);
+      break;
+    }
+  }
+
+  // Nombre
+  const nameMatch = text.match(/(?:me llamo|mi nombre es|soy)\s+([A-Za-zÁÉÍÓÚáéíóúñÑ]{3,18}(?:\s+[A-Za-zÁÉÍÓÚáéíóúñÑ]{3,18})?)/i);
+  if (nameMatch) {
+    extracted.nombre = nameMatch[1].trim();
+  }
+
+  // Dirección
+  const dirMatch = text.match(/(?:vivo en|la direcci[oó]n es|calle|pasaje|avenida)\s+([A-Za-z0-9ÁÉÍÓÚáéíóúñÑ\s#°,-]{6,40})/i);
+  if (dirMatch) {
+    extracted.direccion = dirMatch[1].trim();
+  }
+
+  return extracted;
+}
+
 export async function POST(req: NextRequest) {
   try {
     const headersList = await headers();
@@ -35,7 +105,7 @@ export async function POST(req: NextRequest) {
     const headerCount = rateLimitHeader ? parseInt(rateLimitHeader, 10) : 0;
 
     const rateLimitResult = checkRateLimit(sessionId, ipHash);
-    const headerExceeded = headerCount > 0 && headerCount >= 20;
+    const headerExceeded = headerCount > 0 && headerCount >= 100;
 
     if (!rateLimitResult.allowed || headerExceeded) {
       const status = getRateLimitStatus(sessionId, ipHash);
@@ -57,7 +127,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Session not found' }, { status: 404 });
     }
 
-    await upsertLead(sessionId, { last_activity: new Date().toISOString() });
+    // Extracción inteligente de datos de contacto
+    const extracted = extractLeadData(message);
+    const leadUpdates: Record<string, unknown> = { last_activity: new Date().toISOString() };
+    if (extracted.nombre && !lead.nombre) leadUpdates.nombre = extracted.nombre;
+    if (extracted.telefono && !lead.telefono) {
+      leadUpdates.telefono = extracted.telefono;
+      leadUpdates.estado = 'caliente';
+    }
+    if (extracted.comuna && !lead.comuna) leadUpdates.comuna = extracted.comuna;
+    if (extracted.direccion && !lead.direccion) leadUpdates.direccion = extracted.direccion;
+    if (extracted.email && !lead.email) leadUpdates.email = extracted.email;
+
+    await upsertLead(sessionId, leadUpdates);
 
     const stream = await getAssistantResponse(sessionId, message, history || []);
 
