@@ -57,9 +57,9 @@ export default function Hero() {
               variants={fadeUp}
               className="apple-hero-display text-white"
             >
-              Monitoreo 24/7.
+              Monitoreo 24/7 y Alarmas.
               <br />
-              <span className="text-[#2997ff]">Protección absoluta.</span>
+              <span className="text-[#2997ff]">Seguridad electrónica en Chile.</span>
             </motion.h1>
 
             {/* Subheadline Tagline */}
@@ -70,9 +70,9 @@ export default function Hero() {
               variants={fadeUp}
               className="apple-lead text-slate-300 max-w-xl"
             >
-              Empresa líder con más de 20 años de trayectoria en monitoreo electrónico,
-              instalación de cámaras 4K con IA, cercos eléctricos y alarmas de alta precisión.
-              Respuesta inmediata verificada por nuestra central operativa.
+              Empresa líder con más de 20 años protegiendo hogares y empresas en Chile.
+              Alarmas inteligentes Vetti con App NT CLICK, teclados DSC, cámaras 4K con IA y
+              cercos eléctricos certificados. Respuesta verificada en menos de 2 minutos.
             </motion.p>
 
             {/* Action Buttons */}
@@ -87,14 +87,16 @@ export default function Hero() {
                 href="#contacto"
                 className="btn-apple-primary text-base py-3 px-7"
               >
-                Solicitar Cotización
+                Solicitar Cotización Gratis
               </a>
 
               <a
-                href="#servicios"
+                href="https://wa.me/56991016912"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="btn-apple-secondary-dark text-base py-3 px-6"
               >
-                Explorar Servicios →
+                WhatsApp Directo 24/7 →
               </a>
             </motion.div>
 

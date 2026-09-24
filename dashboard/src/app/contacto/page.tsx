@@ -8,11 +8,34 @@ import ContactForm from './ContactForm'
 const SITE_URL = 'https://www.gamasecurity.cl'
 
 export const metadata: Metadata = {
-  title: 'Contacto',
+  title: 'Contacto y Cotización de Alarmas 24/7 en Chile',
   description:
-    'Contacta a GAMA SECURITY: cotiza sistemas de alarma, cámaras y monitoreo 24/7 en Chile. WhatsApp +56 9 9101 6912, evaluación sin costo.',
+    'Contacta a GAMA SECURITY: cotiza sistemas de alarma inteligente, cámaras de seguridad CCTV y monitoreo 24/7 en Chile. WhatsApp +56 9 9101 6912. Evaluación en terreno gratis.',
   alternates: { canonical: '/contacto' },
-  openGraph: { images: ['/og-gama.png'] },
+  openGraph: {
+    type: 'website',
+    locale: 'es_CL',
+    url: `${SITE_URL}/contacto`,
+    siteName: 'GAMA SECURITY',
+    title: 'Contacto y Cotización de Alarmas 24/7 — GAMA SECURITY Chile',
+    description:
+      'Cotiza sistemas de alarma, cámaras de seguridad y monitoreo 24/7 en Chile. WhatsApp +56 9 9101 6912. Evaluación gratuita.',
+    images: [
+      {
+        url: '/og-gama.png',
+        width: 1200,
+        height: 630,
+        alt: 'Contacto GAMA SECURITY Central 24/7',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Contacto y Cotización de Alarmas 24/7 — GAMA SECURITY',
+    description:
+      'Cotiza sistemas de alarma, cámaras y monitoreo 24/7 en Chile. Evaluación gratuita.',
+    images: ['/og-gama.png'],
+  },
 }
 
 const WA = 'https://wa.me/56991016912'

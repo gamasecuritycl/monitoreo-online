@@ -5,12 +5,37 @@ import ArticleCard from '@/components/seo/ArticleCard'
 import Hashtags from '@/components/seo/Hashtags'
 import JsonLd from '@/components/seo/JsonLd'
 
+const SITE_URL = 'https://www.gamasecurity.cl'
+
 export const metadata: Metadata = {
-  title: 'Blog de seguridad electrónica',
+  title: 'Blog de Seguridad Electrónica: Precios, Guías y Comparativas 2026',
   description:
-    'Guías sobre alarmas, cámaras, cercos eléctricos y monitoreo 24/7: precios, comparativas y consejos para proteger tu hogar o negocio en Chile.',
+    'Guías expertas sobre alarmas para casas, cámaras CCTV, cercos eléctricos y monitoreo 24/7 en Chile. Precios reales, comparativas y consejos de seguridad.',
   alternates: { canonical: '/blog' },
-  openGraph: { images: ['/og-blog.png'] },
+  openGraph: {
+    type: 'website',
+    locale: 'es_CL',
+    url: `${SITE_URL}/blog`,
+    siteName: 'GAMA SECURITY',
+    title: 'Blog de Seguridad Electrónica en Chile — GAMA SECURITY',
+    description:
+      'Guías sobre alarmas, cámaras, cercos eléctricos y monitoreo 24/7 en Chile: precios y consejos de expertos.',
+    images: [
+      {
+        url: '/og-blog.png',
+        width: 1200,
+        height: 630,
+        alt: 'Blog de Seguridad Electrónica GAMA SECURITY',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Blog de Seguridad Electrónica — GAMA SECURITY Chile',
+    description:
+      'Guías, comparativas y precios de alarmas y monitoreo 24/7 en Chile.',
+    images: ['/og-blog.png'],
+  },
 }
 
 export default function BlogIndex() {

@@ -5,12 +5,37 @@ import ComunaCard from '@/components/seo/ComunaCard'
 import Hashtags from '@/components/seo/Hashtags'
 import JsonLd from '@/components/seo/JsonLd'
 
+const SITE_URL = 'https://www.gamasecurity.cl'
+
 export const metadata: Metadata = {
-  title: 'Comunas donde instalamos seguridad electrónica',
+  title: 'Cobertura de Alarmas y Seguridad Electrónica por Comuna en Chile',
   description:
-    'Instalación de alarmas, cámaras y cercos eléctricos en 90 comunas de la Región Metropolitana y Región de Valparaíso. Encuentra tu comuna y cotiza.',
+    'Instalación y monitoreo de alarmas, cámaras CCTV y cercos eléctricos en 90 comunas de la Región Metropolitana y Región de Valparaíso. Encuentra tu comuna y cotiza.',
   alternates: { canonical: '/comunas' },
-  openGraph: { images: ['/og-comuna.png'] },
+  openGraph: {
+    type: 'website',
+    locale: 'es_CL',
+    url: `${SITE_URL}/comunas`,
+    siteName: 'GAMA SECURITY',
+    title: 'Cobertura de Alarmas y Seguridad en 90 Comunas — GAMA SECURITY Chile',
+    description:
+      'Instalación de alarmas, cámaras y cercos eléctricos en RM y Región de Valparaíso. Cotiza en tu comuna.',
+    images: [
+      {
+        url: '/og-comuna.png',
+        width: 1200,
+        height: 630,
+        alt: 'Cobertura por Comuna GAMA SECURITY',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Cobertura de Alarmas y Seguridad en 90 Comunas — GAMA SECURITY',
+    description:
+      'Instalación y monitoreo de alarmas en 90 comunas de Chile. Evaluación gratis.',
+    images: ['/og-comuna.png'],
+  },
 }
 
 export default function ComunasIndex() {

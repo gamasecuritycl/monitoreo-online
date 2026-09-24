@@ -2,10 +2,10 @@
   "name": "GAMA SECURITY 24/7",
   "short_name": "GAMA SECURITY",
   "description": "Monitoreo electrónico 24/7, alarmas Vetti y seguridad integrada — GAMA SECURITY Chile",
-  "start_url": "/tecnico",
+  "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#000080",
+  "background_color": "#050d1a",
+  "theme_color": "#050d1a",
   "orientation": "portrait",
   "icons": [
     {

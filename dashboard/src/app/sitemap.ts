@@ -7,32 +7,32 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date()
 
   const staticRoutes: MetadataRoute.Sitemap = [
-    { url: SITE_URL, lastModified: now, changeFrequency: 'weekly', priority: 1 },
+    { url: SITE_URL, lastModified: now, changeFrequency: 'daily', priority: 1.0 },
     { url: `${SITE_URL}/servicios`, lastModified: now, changeFrequency: 'weekly', priority: 0.9 },
     { url: `${SITE_URL}/comunas`, lastModified: now, changeFrequency: 'weekly', priority: 0.9 },
-    { url: `${SITE_URL}/blog`, lastModified: now, changeFrequency: 'daily', priority: 0.8 },
-    { url: `${SITE_URL}/contacto`, lastModified: now, changeFrequency: 'monthly', priority: 0.7 },
+    { url: `${SITE_URL}/blog`, lastModified: now, changeFrequency: 'daily', priority: 0.9 },
+    { url: `${SITE_URL}/contacto`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
   ]
 
   const servicios: MetadataRoute.Sitemap = getAllServicios().map(s => ({
     url: `${SITE_URL}/servicios/${s.slug}`,
     lastModified: now,
-    changeFrequency: 'monthly',
-    priority: 0.8,
+    changeFrequency: 'weekly',
+    priority: 0.85,
   }))
 
   const comunas: MetadataRoute.Sitemap = getAllComunas().map(c => ({
     url: `${SITE_URL}/comunas/${c.region}/${c.slug}`,
     lastModified: now,
     changeFrequency: 'monthly',
-    priority: 0.7,
+    priority: 0.8,
   }))
 
   const articulos: MetadataRoute.Sitemap = getAllArticulos().map(a => ({
     url: `${SITE_URL}/blog/${a.slug}`,
     lastModified: new Date(a.date),
-    changeFrequency: 'yearly',
-    priority: 0.6,
+    changeFrequency: 'monthly',
+    priority: 0.75,
   }))
 
   return [...staticRoutes, ...servicios, ...comunas, ...articulos]

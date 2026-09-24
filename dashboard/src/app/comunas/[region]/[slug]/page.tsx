@@ -19,13 +19,34 @@ export async function generateMetadata({ params }: { params: Promise<{ region: s
   const { region, slug } = await params
   const c = getComuna(region, slug)
   if (!c) return {}
+  const canonicalUrl = `${SITE_URL}/comunas/${region}/${slug}`
   return {
     title: c.title,
     description: c.description,
     keywords: c.keywords,
     alternates: { canonical: `/comunas/${region}/${slug}` },
-    openGraph: { title: c.title, description: c.description, images: ['/og-comuna.png'] },
-    twitter: { card: 'summary_large_image', title: c.title, description: c.description },
+    openGraph: {
+      type: 'website',
+      locale: 'es_CL',
+      url: canonicalUrl,
+      siteName: 'GAMA SECURITY',
+      title: c.title,
+      description: c.description,
+      images: [
+        {
+          url: '/og-comuna.png',
+          width: 1200,
+          height: 630,
+          alt: `Sistemas de Seguridad y Alarmas en ${c.name} — GAMA SECURITY`,
+        },
+      ],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: c.title,
+      description: c.description,
+      images: ['/og-comuna.png'],
+    },
   }
 }
 
@@ -40,21 +61,42 @@ export default async function ComunaPage({ params }: { params: Promise<{ region:
 
   const jsonLd = {
     '@context': 'https://schema.org',
-    '@type': 'LocalBusiness',
-    name: 'GAMA SECURITY',
-    url: SITE_URL,
+    '@type': ['SecurityService', 'LocalBusiness'],
+    '@id': `${SITE_URL}/comunas/${region}/${slug}#localbusiness`,
+    name: `GAMA SECURITY — Sistemas de Seguridad y Alarmas en ${c.name}`,
+    url: `${SITE_URL}/comunas/${region}/${slug}`,
     telephone: '+56991016912',
     image: `${SITE_URL}/og-comuna.png`,
+    priceRange: '$$',
+    currenciesAccepted: 'CLP',
     address: {
       '@type': 'PostalAddress',
       streetAddress: 'Av. Valparaíso 351',
-      addressLocality: c.name,
-      addressRegion: regionLabel,
+      addressLocality: 'Villa Alemana',
+      addressRegion: 'Región de Valparaíso',
+      postalCode: '6500000',
       addressCountry: 'CL',
     },
-    areaServed: { '@type': 'City', name: c.name },
-    openingHours: 'Mo-Fr 09:00-18:00',
-    priceRange: '$$',
+    areaServed: {
+      '@type': 'AdministrativeArea',
+      name: c.name,
+    },
+    openingHoursSpecification: [
+      {
+        '@type': 'OpeningHoursSpecification',
+        dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
+        opens: '09:00',
+        closes: '18:00',
+        description: 'Atención Comercial y Asistencia en Terreno',
+      },
+      {
+        '@type': 'OpeningHoursSpecification',
+        dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
+        opens: '00:00',
+        closes: '23:59',
+        description: 'Central de Monitoreo 24/7 Redundante',
+      },
+    ],
   }
 
   return (
@@ -72,7 +114,7 @@ export default async function ComunaPage({ params }: { params: Promise<{ region:
           </h1>
           <p className="text-slate-300 apple-lead">{c.lead}</p>
           <div className="flex flex-wrap gap-3">
-            <a href={WA} target="_blank" rel="noopener noreferrer" className="btn-apple-primary text-sm py-2 px-5">Cotizar en {c.name}</a>
+            <a href={WA} target="_blank" rel="noopener noreferrer" className="btn-apple-primary text-sm py-2 px-5">Cotizar en {c.name} por WhatsApp</a>
             <a href="tel:+56991016912" className="btn-apple-secondary-dark text-sm py-2 px-5">Llamar +56 9 9101 6912</a>
           </div>
         </header>
@@ -102,6 +144,22 @@ export default async function ComunaPage({ params }: { params: Promise<{ region:
 
         <Hashtags tags={c.hashtags} />
         <Faq items={c.faq} />
+
+        {/* ── Conversión Directa Comuna ── */}
+        <div className="apple-card-dark p-8 text-center space-y-4 border border-[#2997ff]/40 bg-gradient-to-b from-[#0f2240] to-[#0a1628] rounded-2xl">
+          <h3 className="text-2xl font-bold text-white">¿Vives o tienes tu empresa en {c.name}?</h3>
+          <p className="text-slate-300 max-w-xl mx-auto text-sm leading-relaxed">
+            Nuestros técnicos están en ruta en {c.name}. Agenda hoy una visita técnica y evaluación de seguridad sin costo ni compromiso.
+          </p>
+          <div className="flex flex-wrap justify-center gap-4 pt-2">
+            <a href={WA} target="_blank" rel="noopener noreferrer" className="btn-apple-primary text-sm py-2.5 px-6">
+              Cotizar en {c.name} por WhatsApp →
+            </a>
+            <a href="/contacto" className="btn-apple-secondary-dark text-sm py-2.5 px-6">
+              Solicitar Visita Técnica Gratuita
+            </a>
+          </div>
+        </div>
       </article>
     </main>
   )

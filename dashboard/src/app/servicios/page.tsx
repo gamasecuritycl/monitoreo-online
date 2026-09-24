@@ -5,12 +5,37 @@ import ServiceCard from '@/components/seo/ServiceCard'
 import Hashtags from '@/components/seo/Hashtags'
 import JsonLd from '@/components/seo/JsonLd'
 
+const SITE_URL = 'https://www.gamasecurity.cl'
+
 export const metadata: Metadata = {
-  title: 'Servicios de seguridad electrónica y corrientes débiles',
+  title: 'Servicios de Seguridad Electrónica y Monitoreo de Alarmas 24/7',
   description:
-    'Alarmas para casa y negocios, monitoreo 24/7, cámaras de seguridad, cercos eléctricos, control de acceso, citofonía. Instalación profesional en Chile.',
+    'Alarmas para casas y empresas, monitoreo 24/7, cámaras CCTV con IA, cercos eléctricos certificados y control de acceso. Instalación profesional en Chile.',
   alternates: { canonical: '/servicios' },
-  openGraph: { images: ['/og-servicio.png'] },
+  openGraph: {
+    type: 'website',
+    locale: 'es_CL',
+    url: `${SITE_URL}/servicios`,
+    siteName: 'GAMA SECURITY',
+    title: 'Servicios de Seguridad Electrónica y Monitoreo 24/7 — GAMA SECURITY Chile',
+    description:
+      'Alarmas para casas y empresas, monitoreo 24/7, cámaras CCTV, cercos eléctricos y control de acceso en Chile.',
+    images: [
+      {
+        url: '/og-servicio.png',
+        width: 1200,
+        height: 630,
+        alt: 'Servicios de Seguridad Electrónica GAMA SECURITY',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Servicios de Seguridad Electrónica y Monitoreo 24/7 — GAMA SECURITY',
+    description:
+      'Alarmas, monitoreo 24/7, cámaras CCTV con IA y cercos eléctricos en Chile.',
+    images: ['/og-servicio.png'],
+  },
 }
 
 export default function ServiciosIndex() {

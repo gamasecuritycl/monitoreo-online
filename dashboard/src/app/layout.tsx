@@ -1,4 +1,4 @@
-import type { Metadata } from "next"
+import type { Metadata, Viewport } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
 
@@ -6,17 +6,53 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "sw
 
 const SITE_URL = "https://www.gamasecurity.cl"
 
+export const viewport: Viewport = {
+  themeColor: "#050d1a",
+  colorScheme: "dark",
+  width: "device-width",
+  initialScale: 1,
+}
+
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "GAMA SECURITY — Monitoreo Electrónico y Alarmas Vetti 24/7 en Chile",
-    template: "%s | GAMA SECURITY",
+    default: "GAMA SECURITY — Monitoreo de Alarmas 24/7 y Seguridad Electrónica en Chile",
+    template: "%s | GAMA SECURITY Chile",
   },
   description:
-    "Empresa líder en monitoreo electrónico 24/7, Alarma Inteligente Vetti con App NT CLICK, teclados DSC PK5501, cámaras 4K y cercos eléctricos. Más de 20 años protegiendo a Chile.",
-  keywords: ["seguridad", "monitoreo", "alarmas", "cctv", "control de acceso", "Chile", "Santiago"],
+    "Empresa líder en monitoreo de alarmas 24/7 en Chile. Alarmas inteligentes Vetti con App NT CLICK, teclados DSC, cámaras 4K con IA y cercos eléctricos. Respuesta inmediata en < 2 min. Evaluación técnica gratis.",
+  keywords: [
+    "monitoreo de alarmas",
+    "alarmas para casas",
+    "alarmas para empresas",
+    "seguridad electrónica Chile",
+    "cámaras de seguridad CCTV",
+    "cercos eléctricos certificados",
+    "alarma Vetti Chile",
+    "central de monitoreo 24/7",
+    "alarmas Santiago",
+    "alarmas Valparaíso",
+    "GAMA Security",
+  ],
   manifest: "/manifest.json",
   applicationName: "GAMA SECURITY",
+  authors: [{ name: "GAMA SECURITY", url: SITE_URL }],
+  creator: "GAMA SECURITY",
+  publisher: "GAMA SECURITY",
+  category: "security",
+  classification: "Sistemas de Seguridad Electrónica y Monitoreo de Alarmas 24/7",
+  robots: {
+    index: true,
+    follow: true,
+    nocache: false,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
   icons: {
     icon: [
       { url: "/favicon.ico" },
@@ -33,23 +69,23 @@ export const metadata: Metadata = {
     locale: "es_CL",
     url: SITE_URL,
     siteName: "GAMA SECURITY",
-    title: "GAMA SECURITY — Monitoreo 24/7 y Alarmas Vetti en Chile",
+    title: "GAMA SECURITY — Monitoreo 24/7 y Alarmas Inteligentes en Chile",
     description:
-      "Monitoreo electrónico 24/7, Alarma Vetti con App NT CLICK, cámaras 4K IA y cercos eléctricos. +20 años protegiendo hogares y empresas en Chile.",
+      "Monitoreo electrónico 24/7, Alarmas Vetti con App NT CLICK, cámaras 4K IA y cercos eléctricos. +20 años protegiendo hogares y empresas en Chile.",
     images: [
       {
         url: "/og-gama.png",
         width: 1200,
         height: 630,
-        alt: "GAMA SECURITY — Central de Monitoreo 24/7",
+        alt: "GAMA SECURITY — Central de Monitoreo de Alarmas 24/7 en Chile",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "GAMA SECURITY — Monitoreo 24/7 y Alarmas Vetti",
+    title: "GAMA SECURITY — Monitoreo 24/7 y Alarmas Inteligentes",
     description:
-      "Monitoreo 24/7, Alarmas Vetti, cámaras 4K y cercos eléctricos. +20 años en Chile.",
+      "Monitoreo 24/7, Alarmas Vetti, cámaras 4K y cercos eléctricos en Chile. Evaluación técnica gratuita.",
     images: ["/og-gama.png"],
   },
 }
@@ -62,12 +98,10 @@ export default function RootLayout({
   return (
     <html lang="es" className={`scroll-smooth font-sans ${inter.variable}`}>
       <head>
-        <link rel="icon" href="/favicon.ico" sizes="any" />
-        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-        <link rel="manifest" href="/manifest.json" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="GAMA SECURITY" />
+        <meta name="format-detection" content="telephone=yes" />
       </head>
       <body className="antialiased font-sans">
         <a

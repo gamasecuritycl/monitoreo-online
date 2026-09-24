@@ -6,9 +6,20 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: '*',
         allow: '/',
-        disallow: ['/operacion', '/app', '/portal', '/tecnico', '/areaclientes', '/actualizar', '/live/', '/api/'],
+        disallow: [
+          '/operacion',
+          '/operaciones',
+          '/app',
+          '/portal',
+          '/tecnico',
+          '/areaclientes',
+          '/actualizar',
+          '/live/',
+          '/api/',
+        ],
       },
     ],
     sitemap: 'https://www.gamasecurity.cl/sitemap.xml',
+    host: 'https://www.gamasecurity.cl',
   }
 }
