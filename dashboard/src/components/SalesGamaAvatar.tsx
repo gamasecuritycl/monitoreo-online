@@ -247,7 +247,7 @@ export function SalesGamaAvatar({
         </g>
       </svg>
 
-      <style jsx>{`
+      <style>{`
         .sales-gama-avatar {
           display: inline-flex;
           align-items: center;

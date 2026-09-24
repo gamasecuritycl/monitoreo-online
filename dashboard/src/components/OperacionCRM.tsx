@@ -3040,7 +3040,7 @@ export default function OperacionCRM() {
     <div className="min-h-screen bg-[#EAEFF5] text-slate-800 font-sans flex flex-col select-none p-4 sm:p-6 lg:p-8 gap-6 sm:gap-7 antialiased">
       
       {/* Estilos CSS para Impresión PDF Limpia (@media print) */}
-      <style jsx global>{`
+      <style global>{`
         @media print {
           body * {
             visibility: hidden !important;

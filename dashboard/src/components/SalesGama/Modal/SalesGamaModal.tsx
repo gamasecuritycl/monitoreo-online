@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import { useSalesGama } from "@/hooks/useSalesGama";
 import { ChatWidget } from "@/components/SalesGama/ChatWidget";
 import type { PreciosData } from "@/lib/sales-gama/types";
@@ -69,128 +68,98 @@ export function SalesGamaModal() {
         <span>SALES-GAMA</span>
       </button>
 
-      <AnimatePresence>
-        {isOpen && (
-          <>
-            <motion.div className="sg-modal-backdrop" onClick={() => setIsOpen(false)} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} />
-            <motion.div className="sg-modal" initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}>
-              <header className="sg-modal-header">
-                <h2>SALES-GAMA</h2>
-                <button onClick={() => setIsOpen(false)} aria-label="Cerrar">✕</button>
-              </header>
+      {isOpen && (
+        <>
+          <div className="sg-modal-backdrop" onClick={() => setIsOpen(false)} />
+          <div className="sg-modal">
+            <header className="sg-modal-header">
+              <h2>SALES-GAMA</h2>
+              <button onClick={() => setIsOpen(false)} aria-label="Cerrar">✕</button>
+            </header>
 
-              {/* Tabs */}
-              <nav className="sg-modal-tabs" role="tablist">
-                {tabs.map((t) => (
-                  <button
-                    key={t.id}
-                    role="tab"
-                    aria-selected={activeTab === t.id}
-                    className={`sg-tab ${activeTab === t.id ? "active" : ""}`}
-                    onClick={() => setActiveTab(t.id)}
-                  >
-                    {t.icon} {t.label}
-                  </button>
-                ))}
-              </nav>
+            <nav className="sg-modal-tabs" role="tablist">
+              {tabs.map((t) => (
+                <button
+                  key={t.id}
+                  role="tab"
+                  aria-selected={activeTab === t.id}
+                  className={`sg-tab ${activeTab === t.id ? "active" : ""}`}
+                  onClick={() => setActiveTab(t.id)}
+                >
+                  {t.icon} {t.label}
+                </button>
+              ))}
+            </nav>
 
-              {/* Notification */}
-              {notification && (
-                <div className={`sg-notification ${notification.type}`} role="alert">
-                  {notification.message}
+            {notification && (
+              <div className={`sg-notification ${notification.type}`} role="alert">
+                {notification.message}
+              </div>
+            )}
+
+            <div className="sg-modal-content" role="tabpanel">
+              {activeTab === "prompt" && (
+                <div>
+                  <label htmlFor="prompt-textarea">System Prompt</label>
+                  <textarea id="prompt-textarea" value={prompt} onChange={(e) => setPrompt(e.target.value)} rows={12} placeholder="Escribe el prompt del sistema..." />
+                  <div className="sg-tab-actions">
+                    <span>{(prompt.length / 8000 * 100).toFixed(0)}%</span>
+                    <button onClick={savePrompt}>Guardar</button>
+                  </div>
                 </div>
               )}
-
-              {/* Content */}
-              <div className="sg-modal-content" role="tabpanel">
-                <AnimatePresence mode="wait">
-                  {activeTab === "prompt" && (
-                    <motion.div key="prompt" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                      <label htmlFor="prompt-textarea">System Prompt</label>
-                      <textarea
-                        id="prompt-textarea"
-                        value={prompt}
-                        onChange={(e) => setPrompt(e.target.value)}
-                        rows={12}
-                        placeholder="Escribe el prompt del sistema..."
-                      />
-                      <div className="sg-tab-actions">
-                        <span>{(prompt.length / 8000 * 100).toFixed(0)}%</span>
-                        <button onClick={savePrompt}>Guardar</button>
+              {activeTab === "precios" && (
+                <div>
+                  <label htmlFor="precios-editor">Precios (JSON)</label>
+                  <textarea id="precios-editor" value={JSON.stringify(precios, null, 2)} onChange={(e) => { try { setPrecios(JSON.parse(e.target.value)); } catch {} }} rows={12} placeholder='{"categorias": [...], "items": [...]}' />
+                  <div className="sg-tab-actions">
+                    <button onClick={savePrecios}>Guardar</button>
+                    <button onClick={restoreDefaults}>Restaurar</button>
+                  </div>
+                </div>
+              )}
+              {activeTab === "leads" && (
+                <div className="sg-leads-list">
+                  {leads.length === 0 ? (
+                    <p>No hay leads aún.</p>
+                  ) : (
+                    leads.map((lead) => (
+                      <div key={lead.id} className="sg-lead-card">
+                        <strong>{lead.nombre}</strong> — {lead.email}<br />
+                        <span>{lead.comuna}</span> — {lead.telefono}<br />
+                        <span className="sg-lead-status">{lead.estado}</span><br />
+                        <small>{new Date(lead.created_at).toLocaleString("es-CL")}</small>
                       </div>
-                    </motion.div>
+                    ))
                   )}
+                </div>
+              )}
+              {activeTab === "config" && (
+                <div>
+                  <label>Rate Limit (msg/sesión)</label>
+                  <input type="number" defaultValue={hookConfig?.rateLimit ?? 30} min={1} max={100} />
+                  <label>Timeout inactividad (min)</label>
+                  <input type="number" defaultValue={hookConfig?.timeoutMin ?? 5} min={1} max={60} />
+                  <label>Mensaje despedida</label>
+                  <textarea defaultValue={hookConfig?.despedida || ""} rows={2} />
+                  <label>URL WhatsApp</label>
+                  <input type="url" defaultValue={hookConfig?.waUrl || "https://wa.me/56991016912"} />
+                  <div className="sg-tab-actions">
+                    <button onClick={() => notify("success", "Config guardada")}>Guardar</button>
+                  </div>
+                </div>
+              )}
+            </div>
 
-                  {activeTab === "precios" && (
-                    <motion.div key="precios" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                      <label htmlFor="precios-editor">Precios (JSON)</label>
-                      <textarea
-                        id="precios-editor"
-                        value={JSON.stringify(precios, null, 2)}
-                        onChange={(e) => {
-                          try { setPrecios(JSON.parse(e.target.value)); } catch {}
-                        }}
-                        rows={12}
-                        placeholder='{"categorias": [...], "items": [...]}'
-                      />
-                      <div className="sg-tab-actions">
-                        <button onClick={savePrecios}>Guardar</button>
-                        <button onClick={restoreDefaults}>Restaurar</button>
-                      </div>
-                    </motion.div>
-                  )}
+            <div className="sg-modal-preview">
+              <h3>Vista previa chat</h3>
+              <ChatWidget />
+            </div>
+          </div>
+        </>
+      )}
 
-                  {activeTab === "leads" && (
-                    <motion.div key="leads" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                      <div className="sg-leads-list">
-                        {leads.length === 0 ? (
-                          <p>No hay leads aún.</p>
-                        ) : (
-                          leads.map((lead) => (
-                            <div key={lead.id} className="sg-lead-card">
-                              <strong>{lead.nombre}</strong> — {lead.email}
-                              <br />
-                              <span>{lead.comuna}</span> — {lead.telefono}
-                              <br />
-                              <span className="sg-lead-status">{lead.estado}</span>
-                              <br />
-                              <small>{new Date(lead.created_at).toLocaleString("es-CL")}</small>
-                            </div>
-                          ))
-                        )}
-                      </div>
-                    </motion.div>
-                  )}
-
-                  {activeTab === "config" && (
-                    <motion.div key="config" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                      <label>Rate Limit (msg/sesión)</label>
-                      <input type="number" defaultValue={hookConfig?.rateLimit ?? 30} min={1} max={100} />
-                      <label>Timeout inactividad (min)</label>
-                      <input type="number" defaultValue={hookConfig?.timeoutMin ?? 5} min={1} max={60} />
-                      <label>Mensaje despedida</label>
-                      <textarea defaultValue={hookConfig?.despedida || ""} rows={2} />
-                      <label>URL WhatsApp</label>
-                      <input type="url" defaultValue={hookConfig?.waUrl || "https://wa.me/56991016912"} />
-                      <div className="sg-tab-actions">
-                        <button onClick={() => notify("success", "Config guardada")}>Guardar</button>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-
-              {/* Chat preview */}
-              <div className="sg-modal-preview">
-                <h3>Vista previa chat</h3>
-                <ChatWidget />
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
-
-      <style jsx>{`
+      <style>{`
         .sg-modal-trigger { padding: 10px 20px; border-radius: 8px; background: #003366; color: #fff; border: none; cursor: pointer; font-weight: 600; }
         .sg-modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 10000; }
         .sg-modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 900px; height: 90vh; background: #fff; border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); z-index: 10001; display: flex; flex-direction: column; overflow: hidden; }

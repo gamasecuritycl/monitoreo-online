@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { motion } from "framer-motion";
 import { SalesGamaAvatar } from "@/components/SalesGamaAvatar";
 import { useSalesGama } from "@/hooks/useSalesGama";
 import type { ChatMessage } from "@/lib/sales-gama/types";
@@ -141,25 +140,21 @@ export function ChatWidget() {
 
   if (!isOpen) {
     return (
-      <motion.button
+      <button
         className="sg-widget-trigger"
         onClick={() => setIsOpen(true)}
         aria-label="Abrir chat SALES-GAMA"
-        initial={{ scale: 0, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
       >
         <SalesGamaAvatar state="idle" size={56} />
         <span className="sg-tooltip">¿Necesitas ayuda?</span>
-      </motion.button>
+      </button>
     );
   }
 
   return (
     <>
-      <motion.div className="sg-widget-backdrop" onClick={() => setIsOpen(false)} aria-hidden="true" />
-      <motion.div
+      <div className="sg-widget-backdrop" onClick={() => setIsOpen(false)} aria-hidden="true" />
+      <div
         ref={panelRef}
         className="sg-widget-panel"
         role="dialog"
@@ -246,9 +241,9 @@ export function ChatWidget() {
           <span>Powered by SALES-GAMA</span>
           <span>Msj: {history.filter(m => m.role === 'user').length}/{(config?.rateLimit ?? 30)}</span>
         </div>
-      </motion.div>
+      </div>
 
-      <style jsx>{`
+      <style>{`
         .sg-widget-trigger { position: fixed; bottom: 24px; right: 24px; width: 64px; height: 64px; border-radius: 50%; background: linear-gradient(135deg, #003366, #0055aa); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 32px rgba(0,51,102,0.3); z-index: 9998; }
         .sg-tooltip { position: absolute; right: 80px; bottom: 50%; transform: translateY(50%); background: #1e3a5f; color: #fff; padding: 6px 12px; border-radius: 6px; font-size: 13px; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
         .sg-widget-trigger:hover .sg-tooltip { opacity: 1; }
