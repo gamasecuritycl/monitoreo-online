@@ -1,6 +1,6 @@
 {
   "installCommand": "cd dashboard && PUPPETEER_SKIP_DOWNLOAD=true PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true npm install --legacy-peer-deps --no-audit --no-fund",
-  "buildCommand": "cd dashboard && npm run build",
+  "buildCommand": "cd dashboard && NODE_OPTIONS='--max-old-space-size=4096' npm run build",
   "outputDirectory": "dashboard/.next",
   "framework": "nextjs",
   "crons": [
