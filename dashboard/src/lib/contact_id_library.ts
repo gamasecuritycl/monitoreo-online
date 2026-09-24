@@ -225,46 +225,169 @@ const CONTACT_ID_MAP: Record<string, CidInfo> = {
   '620': { descripcion: 'SALIDA MODO PROGRAMACION', categoria: 'SISTEMA', color: 'GRIS' },
   '621': { descripcion: 'PRUEBA EXCEPTION', categoria: 'AUTOTEST', color: 'GRIS' },
 
-  // ── SIA Codes adicionales ────────────────────────────────────────
-  // Formato SIA: 2 letras + número
-  'BA': { descripcion: 'ALARMA DE ROBO (SIA)', categoria: 'ROBO', color: 'ROJO' },
-  'BR': { descripcion: 'RESTABLECIMIENTO ROBO (SIA)', categoria: 'RESTABLECIMIENTO', color: 'AMARILLO' },
-  'FA': { descripcion: 'ALARMA DE FUEGO (SIA)', categoria: 'FUEGO', color: 'ROJO' },
-  'FR': { descripcion: 'RESTABLECIMIENTO FUEGO (SIA)', categoria: 'RESTABLECIMIENTO', color: 'AMARILLO' },
-  'PA': { descripcion: 'ALARMA DE PANICO (SIA)', categoria: 'PANICO', color: 'ROJO' },
-  'PR': { descripcion: 'RESTABLECIMIENTO PANICO (SIA)', categoria: 'RESTABLECIMIENTO', color: 'AMARILLO' },
-  'TA': { descripcion: 'TAMPER (SIA)', categoria: 'SABOTAJE', color: 'ROJO' },
-  'TR': { descripcion: 'RESTABLECIMIENTO TAMPER (SIA)', categoria: 'RESTABLECIMIENTO', color: 'AMARILLO' },
-  'GA': { descripcion: 'ALARMA DE GAS (SIA)', categoria: 'GAS', color: 'ROJO' },
-  'GR': { descripcion: 'RESTABLECIMIENTO GAS (SIA)', categoria: 'RESTABLECIMIENTO', color: 'AMARILLO' },
-  'CA': { descripcion: 'CANCELACION DE ALARMA (SIA)', categoria: 'SISTEMA', color: 'GRIS' },
-  'CL': { descripcion: 'CIERRE / ARMADO (SIA)', categoria: 'APERTURA', color: 'BLANCO' },
-  'OP': { descripcion: 'APERTURA / DESARMADO (SIA)', categoria: 'APERTURA', color: 'BLANCO' },
-  'YX': { descripcion: 'FALLA DE COMUNICACION (SIA)', categoria: 'COMUNICACION', color: 'AMARILLO' },
-  'AT': { descripcion: 'FALLA DE CORRIENTE ALTERNA (SIA)', categoria: 'FALLA AC', color: 'VERDE' },
-  'AR': { descripcion: 'RESTABLEC. CORRIENTE ALTERNA (SIA)', categoria: 'RESTABLECIMIENTO', color: 'AMARILLO' },
-  'LB': { descripcion: 'BATERIA BAJA (SIA)', categoria: 'BATERIA', color: 'AMARILLO' },
-  'LR': { descripcion: 'RESTABLECIMIENTO BATERIA (SIA)', categoria: 'RESTABLECIMIENTO', color: 'AMARILLO' },
+  // ── SIA STANDARD CODES (DC-03 / DC-05) ───────────────────────────
+  // Holdup / Asalto (Atraco / Coacción)
+  'HA': { descripcion: 'ALARMA DE ASALTO', categoria: 'ASALTO', color: 'ROJO' },
+  'HH': { descripcion: 'RESTABLECIMIENTO ASALTO', categoria: 'RESTABLECIMIENTO', color: 'AMARILLO' },
+  'HR': { descripcion: 'RESTABLECIMIENTO ASALTO', categoria: 'RESTABLECIMIENTO', color: 'AMARILLO' },
+  'HJ': { descripcion: 'FALLA ZONA DE ASALTO', categoria: 'FALLA', color: 'AMARILLO' },
+  'HK': { descripcion: 'RESTABLEC. FALLA ASALTO', categoria: 'RESTABLECIMIENTO', color: 'AMARILLO' },
+  'HT': { descripcion: 'ASALTO SILENCIOSO', categoria: 'ASALTO', color: 'ROJO' },
+  'HP': { descripcion: 'ALARMA DE ASALTO VERIFICADA', categoria: 'ASALTO', color: 'ROJO' },
+
+  // Médico / Auxilio
+  'MA': { descripcion: 'EMERGENCIA MEDICA', categoria: 'MEDICA', color: 'ROJO' },
+  'MH': { descripcion: 'RESTABLECIMIENTO MEDICO', categoria: 'RESTABLECIMIENTO', color: 'AMARILLO' },
+  'MR': { descripcion: 'RESTABLECIMIENTO MEDICO', categoria: 'RESTABLECIMIENTO', color: 'AMARILLO' },
+  'MJ': { descripcion: 'FALLA ZONA MEDICA', categoria: 'FALLA', color: 'AMARILLO' },
+  'MK': { descripcion: 'RESTABLEC. FALLA MEDICA', categoria: 'RESTABLECIMIENTO', color: 'AMARILLO' },
+  'MB': { descripcion: 'ANULACION ZONA MEDICA', categoria: 'BYPASS', color: 'VIOLETA' },
+  'QA': { descripcion: 'EMERGENCIA AUXILIO', categoria: 'MEDICA', color: 'ROJO' },
+  'QH': { descripcion: 'RESTABLECIMIENTO AUXILIO', categoria: 'RESTABLECIMIENTO', color: 'AMARILLO' },
+  'QR': { descripcion: 'RESTABLECIMIENTO AUXILIO', categoria: 'RESTABLECIMIENTO', color: 'AMARILLO' },
+
+  // Robo / Intrusión
+  'BA': { descripcion: 'ALARMA DE ROBO', categoria: 'ROBO', color: 'ROJO' },
+  'BH': { descripcion: 'RESTABLECIMIENTO ROBO', categoria: 'RESTABLECIMIENTO', color: 'AMARILLO' },
+  'BR': { descripcion: 'RESTABLECIMIENTO ROBO', categoria: 'RESTABLECIMIENTO', color: 'AMARILLO' },
+  'BC': { descripcion: 'CANCELACION DE ALARMA', categoria: 'SISTEMA', color: 'GRIS' },
+  'BV': { descripcion: 'ROBO VERIFICADO', categoria: 'ROBO', color: 'ROJO' },
+  'BB': { descripcion: 'ANULACION DE ZONA (BYPASS)', categoria: 'BYPASS', color: 'VIOLETA' },
+  'BU': { descripcion: 'DESANULACION DE ZONA', categoria: 'RESTABLECIMIENTO', color: 'AMARILLO' },
+  'BJ': { descripcion: 'FALLA ZONA DE ROBO', categoria: 'FALLA', color: 'AMARILLO' },
+  'BK': { descripcion: 'RESTABLEC. FALLA ROBO', categoria: 'RESTABLECIMIENTO', color: 'AMARILLO' },
+  'BM': { descripcion: 'SUPERVISION ROBO', categoria: 'SUPERVISION', color: 'AMARILLO' },
+  'BT': { descripcion: 'ALARMA ROBO RETARDADA', categoria: 'ROBO', color: 'ROJO' },
+  'BZ': { descripcion: 'ALARMA ROBO PERIMETRAL', categoria: 'ROBO', color: 'ROJO' },
+
+  // Pánico
+  'PA': { descripcion: 'ALARMA DE PANICO', categoria: 'PANICO', color: 'ROJO' },
+  'PH': { descripcion: 'RESTABLECIMIENTO PANICO', categoria: 'RESTABLECIMIENTO', color: 'AMARILLO' },
+  'PR': { descripcion: 'RESTABLECIMIENTO PANICO', categoria: 'RESTABLECIMIENTO', color: 'AMARILLO' },
+  'PJ': { descripcion: 'FALLA ZONA DE PANICO', categoria: 'FALLA', color: 'AMARILLO' },
+  'PK': { descripcion: 'RESTABLEC. FALLA PANICO', categoria: 'RESTABLECIMIENTO', color: 'AMARILLO' },
+  'PB': { descripcion: 'BYPASS ZONA PANICO', categoria: 'BYPASS', color: 'VIOLETA' },
+
+  // Fuego / Humo
+  'FA': { descripcion: 'ALARMA DE FUEGO', categoria: 'FUEGO', color: 'ROJO' },
+  'FH': { descripcion: 'RESTABLECIMIENTO FUEGO', categoria: 'RESTABLECIMIENTO', color: 'AMARILLO' },
+  'FR': { descripcion: 'RESTABLECIMIENTO FUEGO', categoria: 'RESTABLECIMIENTO', color: 'AMARILLO' },
+  'FS': { descripcion: 'FLUJO DE AGUA (SPRINKLER)', categoria: 'FUEGO', color: 'ROJO' },
+  'FJ': { descripcion: 'FALLA ZONA DE FUEGO', categoria: 'FALLA', color: 'AMARILLO' },
+  'FK': { descripcion: 'RESTABLEC. FALLA FUEGO', categoria: 'RESTABLECIMIENTO', color: 'AMARILLO' },
+  'FB': { descripcion: 'BYPASS DE FUEGO', categoria: 'BYPASS', color: 'VIOLETA' },
+  'FU': { descripcion: 'DESANULACION BYPASS FUEGO', categoria: 'RESTABLECIMIENTO', color: 'AMARILLO' },
+  'KA': { descripcion: 'ALARMA SENSOR DE CALOR', categoria: 'FUEGO', color: 'ROJO' },
+  'KH': { descripcion: 'RESTABLECIMIENTO CALOR', categoria: 'RESTABLECIMIENTO', color: 'AMARILLO' },
+  'SA': { descripcion: 'ALARMA SENSOR DE HUMO', categoria: 'FUEGO', color: 'ROJO' },
+  'SH': { descripcion: 'RESTABLECIMIENTO HUMO', categoria: 'RESTABLECIMIENTO', color: 'AMARILLO' },
+
+  // Tamper / Sabotaje
+  'TA': { descripcion: 'TAMPER / SABOTAJE', categoria: 'SABOTAJE', color: 'ROJO' },
+  'TH': { descripcion: 'RESTABLECIMIENTO TAMPER', categoria: 'RESTABLECIMIENTO', color: 'AMARILLO' },
+  'TR': { descripcion: 'RESTABLECIMIENTO TAMPER', categoria: 'RESTABLECIMIENTO', color: 'AMARILLO' },
+  'TB': { descripcion: 'BYPASS DE TAMPER', categoria: 'BYPASS', color: 'VIOLETA' },
+  'TU': { descripcion: 'DESANULACION TAMPER', categoria: 'RESTABLECIMIENTO', color: 'AMARILLO' },
+  'TJ': { descripcion: 'FALLA ZONA TAMPER', categoria: 'FALLA', color: 'AMARILLO' },
+  'TK': { descripcion: 'RESTABLEC. FALLA TAMPER', categoria: 'RESTABLECIMIENTO', color: 'AMARILLO' },
+
+  // Gas / Agua / Condiciones Técnicas
+  'GA': { descripcion: 'ALARMA DE GAS', categoria: 'GAS', color: 'ROJO' },
+  'GH': { descripcion: 'RESTABLECIMIENTO GAS', categoria: 'RESTABLECIMIENTO', color: 'AMARILLO' },
+  'GR': { descripcion: 'RESTABLECIMIENTO GAS', categoria: 'RESTABLECIMIENTO', color: 'AMARILLO' },
+  'WA': { descripcion: 'ALARMA DE INUNDACION', categoria: 'AGUA', color: 'ROJO' },
+  'WH': { descripcion: 'RESTABLECIMIENTO AGUA', categoria: 'RESTABLECIMIENTO', color: 'AMARILLO' },
+  'WR': { descripcion: 'RESTABLECIMIENTO AGUA', categoria: 'RESTABLECIMIENTO', color: 'AMARILLO' },
+  'ZA': { descripcion: 'ALARMA CONGELAMIENTO', categoria: 'TEMPERATURA', color: 'AMARILLO' },
+  'ZH': { descripcion: 'RESTABLEC. CONGELAMIENTO', categoria: 'RESTABLECIMIENTO', color: 'AMARILLO' },
+
+  // Falla Eléctrica / Batería
+  'AT': { descripcion: 'FALLA DE CORRIENTE ALTERNA (AC)', categoria: 'FALLA AC', color: 'VERDE' },
+  'AR': { descripcion: 'RESTABLEC. CORRIENTE AC', categoria: 'RESTABLECIMIENTO', color: 'AMARILLO' },
+  'AH': { descripcion: 'RESTABLEC. CORRIENTE AC', categoria: 'RESTABLECIMIENTO', color: 'AMARILLO' },
+  'YT': { descripcion: 'BATERIA BAJA DEL SISTEMA', categoria: 'BATERIA', color: 'AMARILLO' },
+  'YR': { descripcion: 'RESTABLECIMIENTO BATERIA', categoria: 'RESTABLECIMIENTO', color: 'AMARILLO' },
+  'YH': { descripcion: 'RESTABLECIMIENTO BATERIA', categoria: 'RESTABLECIMIENTO', color: 'AMARILLO' },
+  'LB': { descripcion: 'BATERIA BAJA', categoria: 'BATERIA', color: 'AMARILLO' },
+  'LR': { descripcion: 'RESTABLECIMIENTO BATERIA', categoria: 'RESTABLECIMIENTO', color: 'AMARILLO' },
+  'XT': { descripcion: 'BATERIA TRANSMISOR BAJA', categoria: 'BATERIA', color: 'AMARILLO' },
+  'XR': { descripcion: 'RESTABLEC. BATERIA TRANSMISOR', categoria: 'RESTABLECIMIENTO', color: 'AMARILLO' },
+  'YP': { descripcion: 'FALLA FUENTE DE PODER', categoria: 'FALLA', color: 'AMARILLO' },
+  'YQ': { descripcion: 'RESTABLEC. FUENTE DE PODER', categoria: 'RESTABLECIMIENTO', color: 'AMARILLO' },
+
+  // Cierres / Aperturas (Armado / Desarmado)
+  'CL': { descripcion: 'CIERRE', categoria: 'APERTURA', color: 'BLANCO' },
+  'CP': { descripcion: 'CIERRE PROGRAMADO', categoria: 'APERTURA', color: 'BLANCO' },
+  'CA': { descripcion: 'CIERRE AUTOMATICO', categoria: 'APERTURA', color: 'BLANCO' },
+  'CG': { descripcion: 'CIERRE DE GRUPO', categoria: 'APERTURA', color: 'BLANCO' },
+  'CR': { descripcion: 'CIERRE RECIENTE', categoria: 'APERTURA', color: 'BLANCO' },
+  'CF': { descripcion: 'CIERRE FORZADO', categoria: 'APERTURA', color: 'BLANCO' },
+  'CD': { descripcion: 'FALLA AL CERRAR', categoria: 'FALLA', color: 'AMARILLO' },
+  'NF': { descripcion: 'ARMADO FORZADO', categoria: 'APERTURA', color: 'BLANCO' },
+  'NL': { descripcion: 'NO CIERRA EN HORARIO', categoria: 'FALLA', color: 'AMARILLO' },
+
+  'OP': { descripcion: 'APERTURA', categoria: 'APERTURA', color: 'CELESTE' },
+  'OA': { descripcion: 'APERTURA AUTOMATICA', categoria: 'APERTURA', color: 'CELESTE' },
+  'OG': { descripcion: 'APERTURA DE GRUPO', categoria: 'APERTURA', color: 'CELESTE' },
+  'OR': { descripcion: 'DESARME TRAS ALARMA', categoria: 'APERTURA', color: 'CELESTE' },
+  'OQ': { descripcion: 'APERTURA FUERA DE HORARIO', categoria: 'APERTURA', color: 'CELESTE' },
+  'OD': { descripcion: 'NO ABRE EN HORARIO', categoria: 'FALLA', color: 'AMARILLO' },
+  'OT': { descripcion: 'NO ABRE EN HORARIO', categoria: 'FALLA', color: 'AMARILLO' },
+
+  // Control de Acceso
+  'DG': { descripcion: 'ACCESO CONCEDIDO', categoria: 'ACCESO', color: 'BLANCO' },
+  'DD': { descripcion: 'ACCESO DENEGADO', categoria: 'ACCESO', color: 'AMARILLO' },
+  'DK': { descripcion: 'ACCESO BLOQUEADO', categoria: 'ACCESO', color: 'AMARILLO' },
+
+  // Comunicaciones / Transmisiones
+  'YX': { descripcion: 'FALLA DE COMUNICACION', categoria: 'COMUNICACION', color: 'AMARILLO' },
+  'YK': { descripcion: 'RESTABLECIMIENTO COMUNICACION', categoria: 'RESTABLECIMIENTO', color: 'AMARILLO' },
+  'YC': { descripcion: 'FALLA COMUNICADOR', categoria: 'COMUNICACION', color: 'AMARILLO' },
+  'YS': { descripcion: 'RESTABLECIMIENTO LINEA COM.', categoria: 'RESTABLECIMIENTO', color: 'AMARILLO' },
+  'LT': { descripcion: 'FALLA LINEA TELEFONICA', categoria: 'COMUNICACION', color: 'AMARILLO' },
+  'XQ': { descripcion: 'INTERFERENCIA RF (JAMMING)', categoria: 'SABOTAJE', color: 'ROJO' },
+  'XH': { descripcion: 'RESTABLECIMIENTO INTERF. RF', categoria: 'RESTABLECIMIENTO', color: 'AMARILLO' },
+
+  // Pruebas y Reportes Periódicos
+  'RP': { descripcion: 'TRANSMISION PERIODICA', categoria: 'AUTOTEST', color: 'GRIS' },
+  'TX': { descripcion: 'REPORTE DE TEST', categoria: 'AUTOTEST', color: 'GRIS' },
+  'RX': { descripcion: 'PRUEBA PERIODICA SISTEMA', categoria: 'AUTOTEST', color: 'GRIS' },
+  'RY': { descripcion: 'PRUEBA CON CONDICION ANORMAL', categoria: 'AUTOTEST', color: 'AMARILLO' },
+  'TS': { descripcion: 'TEST DEL SISTEMA', categoria: 'AUTOTEST', color: 'GRIS' },
+  'TE': { descripcion: 'FIN DE MODO TEST', categoria: 'AUTOTEST', color: 'GRIS' },
+  'TW': { descripcion: 'WALK TEST', categoria: 'AUTOTEST', color: 'GRIS' },
+
+  // Módulos de Expansión
+  'ET': { descripcion: 'FALLA MODULO EXPANSION', categoria: 'FALLA', color: 'AMARILLO' },
+  'ER': { descripcion: 'RESTABLECIMIENTO MODULO EXP.', categoria: 'RESTABLECIMIENTO', color: 'AMARILLO' },
+  'EM': { descripcion: 'FALLA MEMORIA DE SISTEMA', categoria: 'FALLA', color: 'AMARILLO' },
 }
 
 /**
  * Parsea un código de evento Contact ID / SIA y retorna su descripción y color.
  * Formatos soportados:
- *   - "E530"  → E (evento) + 530 (código CID)
- *   - "R530"  → R (restauración) + 530 (código CID)
- *   - "E1301" → E + 130 + 1 (zona)
- *   - "BA"    → Código SIA de 2 letras
+ *   - "E122"  → Contact ID Pánico Silencioso / Asalto
+ *   - "HA"    → SIA Holdup / Asalto
+ *   - "HA01"  → SIA Holdup con zona 01
+ *   - "BH"    → SIA Burglary Restoral / Restablecimiento de Robo
+ *   - "MA"    → SIA Medical Alarm / Emergencia Médica
+ *   - "MH"    → SIA Medical Restoral / Restablecimiento Médico
+ *   - "CL"    → SIA Closing / Cierre
+ *   - "OP"    → SIA Opening / Apertura
+ *   - "RP"    → SIA Periodic Report / Autotest
  * 
- * @param eventoStr El string del evento crudo (ej: "E530", "R301", "BA")
+ * @param eventoStr El string del evento crudo (ej: "HA", "BH", "MA", "MH", "E530", "R301")
  * @returns La info del código si se encuentra, o null si no se reconoce
  */
 export function lookupContactId(eventoStr: string): CidInfo | null {
   if (!eventoStr) return null
   
-  const upper = eventoStr.toUpperCase().trim()
+  // Limpiar caracteres envolventes comunes (/HA, *HA*, [HA], " HA ")
+  const clean = eventoStr.toUpperCase().trim().replace(/^[/\\*\[\]]+/, '').replace(/[/\\*\[\]]+$/, '').trim()
+  if (!clean) return null
   
   // 1. Formato Contact ID: E/R seguido de 3 o 4 dígitos
-  const matchCID = upper.match(/^([ER])(\d{3})(\d?)$/)
+  const matchCID = clean.match(/^([ER])(\d{3})(\d?)$/)
   if (matchCID) {
     const tipo = matchCID[1]   // E o R
     const codigo = matchCID[2] // 3 dígitos
@@ -288,8 +411,9 @@ export function lookupContactId(eventoStr: string): CidInfo | null {
     }
   }
   
-  // 2. Formato SIA de 2 letras (BA, FA, PA, etc.)
-  const matchSIA = upper.match(/^([A-Z]{2})(\d*)$/)
+  // 2. Formato SIA de 2 letras (HA, BH, MA, MH, BA, FA, PA, CL, OP, etc.)
+  // Permite 2 letras solas ("HA", "BH") o con zona/usuario adjunto ("HA01", "HA 01", "HA/01", "HA-01")
+  const matchSIA = clean.match(/^([A-Z]{2})(?:[\s/_-]?(\d+))?$/)
   if (matchSIA) {
     const codeSia = matchSIA[1]
     const info = CONTACT_ID_MAP[codeSia]
@@ -297,7 +421,7 @@ export function lookupContactId(eventoStr: string): CidInfo | null {
   }
 
   // 3. Solo número de 3 dígitos (sin prefijo E/R)
-  const matchNumero = upper.match(/^(\d{3})$/)
+  const matchNumero = clean.match(/^(\d{3})$/)
   if (matchNumero) {
     const info = CONTACT_ID_MAP[matchNumero[1]]
     if (info) return info
@@ -307,17 +431,17 @@ export function lookupContactId(eventoStr: string): CidInfo | null {
 }
 
 /**
- * Retorna true si el string parece un código Contact ID o SIA desconocido.
+ * Retorna true si el string parece un código Contact ID o SIA.
  * Útil para decidir si consultar la librería.
  */
 export function esCodigoCID(eventoStr: string): boolean {
   if (!eventoStr) return false
-  const upper = eventoStr.toUpperCase().trim()
+  const clean = eventoStr.toUpperCase().trim().replace(/^[/\\*\[\]]+/, '').replace(/[/\\*\[\]]+$/, '').trim()
   // E/R + 3-4 dígitos
-  if (/^[ER]\d{3,4}$/.test(upper)) return true
+  if (/^[ER]\d{3,4}$/.test(clean)) return true
   // Solo 3 dígitos
-  if (/^\d{3}$/.test(upper)) return true
-  // 2 letras mayúsculas (SIA)
-  if (/^[A-Z]{2}\d*$/.test(upper) && upper.length <= 4) return true
+  if (/^\d{3}$/.test(clean)) return true
+  // 2 letras mayúsculas SIA (con o sin número de zona/usuario)
+  if (/^[A-Z]{2}(?:[\s/_-]?\d+)?$/.test(clean) && clean.length <= 6) return true
   return false
 }

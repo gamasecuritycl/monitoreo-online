@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import { supabase, type EventoMonitoreo } from '@/lib/supabase'
+import { lookupContactId } from '@/lib/contact_id_library'
 import * as XLSX from 'xlsx'
 import { jsPDF } from 'jspdf'
 
@@ -350,7 +351,8 @@ export default function BuscadorUniversalModal({
       FECHA_HORA: e.fecha_hora,
       CUENTA: e.cuenta,
       ABONADO: e.nombre_abonado || clientesMap[e.cuenta]?.nombre || '---',
-      EVENTO: e.evento,
+      EVENTO: lookupContactId(e.evento)?.descripcion || e.evento,
+      CODIGO_RAW: e.evento,
       ZONA: e.zona || '--',
       USUARIO: e.usuario || '--',
     }))
@@ -394,7 +396,8 @@ export default function BuscadorUniversalModal({
       doc.text(String(e.fecha_hora || '').substring(0, 19), 14, y)
       doc.text(String(e.cuenta || ''), 55, y)
       doc.text(String(e.nombre_abonado || clientesMap[e.cuenta]?.nombre || '').substring(0, 28), 75, y)
-      doc.text(String(e.evento || '').substring(0, 26), 135, y)
+      const descEv = lookupContactId(e.evento)?.descripcion || e.evento
+      doc.text(String(descEv || '').substring(0, 26), 135, y)
       doc.text(`${e.zona || '-'}/${e.usuario || '-'}`, 185, y)
       y += 5.5
     })
@@ -711,7 +714,9 @@ export default function BuscadorUniversalModal({
                           <td className="p-2 whitespace-nowrap font-bold text-gray-800">{ev.fecha_hora}</td>
                           <td className="p-2 text-center font-black text-blue-900 bg-blue-50">{ev.cuenta}</td>
                           <td className="p-2 font-sans font-bold text-gray-900">{ev.nombre_abonado || clientesMap[ev.cuenta]?.nombre || '---'}</td>
-                          <td className="p-2 font-sans font-bold text-slate-900">{ev.evento}</td>
+                          <td className="p-2 font-sans font-bold text-slate-900" title={lookupContactId(ev.evento)?.descripcion ? `Código original: ${ev.evento}` : undefined}>
+                            {lookupContactId(ev.evento)?.descripcion || ev.evento}
+                          </td>
                           <td className="p-2 text-center font-bold text-amber-800">{ev.zona || '--'}</td>
                           <td className="p-2 text-center font-bold text-emerald-800">{ev.usuario || '--'}</td>
                         </tr>

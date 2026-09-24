@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react'
 import { supabase, type EventoMonitoreo } from '@/lib/supabase'
+import { lookupContactId } from '@/lib/contact_id_library'
 import clientesDataRaw from '@/lib/clientes_general.json'
 
 const clientesMap = clientesDataRaw as Record<string, Record<string, string>>
@@ -192,8 +193,10 @@ export default function PortalAbonado() {
     }
 
     const ultimoEventoRelevante = eventosCliente.find(e => {
-      const ev = (e.evento || '').toUpperCase()
-      return ev.includes('CIERRE') || ev.includes('APERTURA') || ev.includes('ARME') || ev.includes('DESARME') || ev.includes('OPEN') || ev.includes('CLOSE')
+      const cid = lookupContactId(e.evento)
+      const ev = (cid?.descripcion || e.evento || '').toUpperCase()
+      const raw = (e.evento || '').toUpperCase().trim()
+      return ev.includes('CIERRE') || ev.includes('APERTURA') || ev.includes('ARME') || ev.includes('DESARME') || ev.includes('OPEN') || ev.includes('CLOSE') || ['CL', 'CP', 'CA', 'CG', 'OP', 'OA', 'OG'].includes(raw)
     })
 
     if (!ultimoEventoRelevante) {
@@ -201,8 +204,10 @@ export default function PortalAbonado() {
       return { armado: true, texto: 'SISTEMA PROTEGIDO', color: 'emerald', icono: '🛡️', ultimoEvento: ultimo }
     }
 
-    const ev = (ultimoEventoRelevante.evento || '').toUpperCase()
-    const esArmado = ev.includes('CIERRE') || ev.includes('ARME') || ev.includes('CLOSE')
+    const cidUltimo = lookupContactId(ultimoEventoRelevante.evento)
+    const ev = (cidUltimo?.descripcion || ultimoEventoRelevante.evento || '').toUpperCase()
+    const rawUltimo = (ultimoEventoRelevante.evento || '').toUpperCase().trim()
+    const esArmado = ev.includes('CIERRE') || ev.includes('ARME') || ev.includes('CLOSE') || ['CL', 'CP', 'CA', 'CG'].includes(rawUltimo)
 
     return {
       armado: esArmado,
@@ -501,10 +506,13 @@ export default function PortalAbonado() {
 
             <div className="bg-[#0f172a] border border-slate-800 rounded-2xl overflow-hidden divide-y divide-slate-800">
               {eventosCliente.map((ev) => {
-                const evUpper = (ev.evento || '').toUpperCase()
-                const esAlarma = evUpper.includes('ALARMA') || evUpper.includes('ROBO') || evUpper.includes('PANICO')
-                const esCierre = evUpper.includes('CIERRE') || evUpper.includes('ARME')
-                const esApertura = evUpper.includes('APERTURA') || evUpper.includes('DESARME')
+                const cid = lookupContactId(ev.evento)
+                const descEv = cid?.descripcion || ev.evento
+                const evUpper = descEv.toUpperCase()
+                const raw = (ev.evento || '').toUpperCase().trim()
+                const esAlarma = (evUpper.includes('ALARMA') || evUpper.includes('ROBO') || evUpper.includes('PANICO') || evUpper.includes('ASALTO') || evUpper.includes('MEDICA') || ['HA', 'MA', 'PA', 'FA', 'BA'].includes(raw)) && !evUpper.includes('RESTABLEC')
+                const esCierre = evUpper.includes('CIERRE') || evUpper.includes('ARME') || ['CL', 'CP', 'CA', 'CG'].includes(raw)
+                const esApertura = evUpper.includes('APERTURA') || evUpper.includes('DESARME') || ['OP', 'OA', 'OG'].includes(raw)
 
                 return (
                   <div key={ev.id} className="p-3.5 flex items-center justify-between gap-3 hover:bg-slate-800/40 transition">
@@ -521,8 +529,8 @@ export default function PortalAbonado() {
                         {esAlarma ? '🚨' : esCierre ? '🔒' : esApertura ? '🔓' : '📡'}
                       </div>
                       <div>
-                        <div className="text-xs font-bold text-white leading-tight">
-                          {ev.evento}
+                        <div className="text-xs font-bold text-white leading-tight" title={cid?.descripcion ? `Código original: ${ev.evento}` : undefined}>
+                          {descEv}
                         </div>
                         <div className="text-[10px] text-slate-400 font-mono mt-0.5">
                           {ev.zona ? `Zona: ${ev.zona} · ` : ''}{ev.usuario ? `Usuario: ${ev.usuario}` : ''}

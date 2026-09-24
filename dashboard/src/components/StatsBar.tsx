@@ -1,6 +1,7 @@
 'use client'
 
 import type { EventoMonitoreo } from '@/lib/supabase'
+import { lookupContactId } from '@/lib/contact_id_library'
 
 interface StatsBarProps {
   eventos: EventoMonitoreo[]
@@ -8,10 +9,46 @@ interface StatsBarProps {
 
 export default function StatsBar({ eventos }: StatsBarProps) {
   const total = eventos.length
-  const alertas = eventos.filter(e => ['ALARMA DE ROBO', 'PANICO', 'INCENDIO'].includes(e.evento)).length
-  const cierres = eventos.filter(e => ['CIERRE', 'CIERRE ESPECIAL'].includes(e.evento)).length
-  const aperturas = eventos.filter(e => e.evento === 'APERTURA').length
-  const autotests = eventos.filter(e => e.evento === 'AUTOTEST').length
+
+  const getDesc = (e: EventoMonitoreo) => {
+    const cid = lookupContactId(e.evento)
+    return (cid?.descripcion || e.evento || '').toUpperCase().trim()
+  }
+
+  const alertas = eventos.filter(e => {
+    const desc = getDesc(e)
+    const raw = (e.evento || '').toUpperCase().trim()
+    return (
+      desc.includes('ROBO') ||
+      desc.includes('PANICO') ||
+      desc.includes('PÁNICO') ||
+      desc.includes('ASALTO') ||
+      desc.includes('ATRACO') ||
+      desc.includes('INCENDIO') ||
+      desc.includes('FUEGO') ||
+      desc.includes('MEDICA') ||
+      desc.includes('MÉDICA') ||
+      ['HA', 'MA', 'PA', 'FA', 'BA'].includes(raw)
+    ) && !desc.includes('RESTABLEC')
+  }).length
+
+  const cierres = eventos.filter(e => {
+    const desc = getDesc(e)
+    const raw = (e.evento || '').toUpperCase().trim()
+    return desc.includes('CIERRE') || ['CL', 'CP', 'CA', 'CG'].includes(raw)
+  }).length
+
+  const aperturas = eventos.filter(e => {
+    const desc = getDesc(e)
+    const raw = (e.evento || '').toUpperCase().trim()
+    return desc.includes('APERTURA') || ['OP', 'OA', 'OG'].includes(raw)
+  }).length
+
+  const autotests = eventos.filter(e => {
+    const desc = getDesc(e)
+    const raw = (e.evento || '').toUpperCase().trim()
+    return desc.includes('AUTOTEST') || desc.includes('TRANSMISION PERIODICA') || ['RP', 'TX', 'RX'].includes(raw)
+  }).length
 
   const stats = [
     { label: 'Total Eventos', value: total, color: 'text-slate-200', icon: '📊' },

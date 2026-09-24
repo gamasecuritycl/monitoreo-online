@@ -70,40 +70,93 @@ export function getSenalLegible(
 function getScorpionStyleFallback(evento: string): { bg: string; text: string } {
   const upper = (evento || '').toUpperCase().trim()
 
-  // 1. Emergencia, Pánico, Fuego -> Rojo (#FF0000)
-  if (upper.includes('PANICO') || upper.includes('FUEGO') || upper.includes('INCENDIO') || upper.includes('EMERGENCIA') || upper.includes('MEDICA')) {
-    return { bg: '#FF0000', text: '#FFFFFF' }
-  }
-  // 2. Todos los Restablecimientos -> Amarillo (#FFFF00)
-  if (upper.includes('RESTABLEC') || upper.includes('RESTAURACION') || upper.includes('RETORNO') || upper.includes('RESTABLECIMIENTO')) {
+  // 1. Todos los Restablecimientos -> Amarillo (#FFFF00)
+  if (
+    upper.includes('RESTABLEC') ||
+    upper.includes('RESTAURACION') ||
+    upper.includes('RETORNO') ||
+    upper.includes('RESTABLECIMIENTO') ||
+    ['BH', 'BR', 'MH', 'MR', 'HH', 'HR', 'PH', 'PR', 'FH', 'FR', 'AR', 'AH', 'YR', 'YH', 'LR', 'TR', 'TH', 'BU', 'FU', 'TU', 'YK', 'YS', 'ER'].includes(upper)
+  ) {
     return { bg: '#FFFF00', text: '#000000' }
   }
+
+  // 2. Emergencia, Asalto, Pánico, Fuego, Médica -> Rojo (#FF0000) con letras blancas
+  if (
+    upper.includes('ASALTO') ||
+    upper.includes('ATRACO') ||
+    upper.includes('PANICO') ||
+    upper.includes('PÁNICO') ||
+    upper.includes('FUEGO') ||
+    upper.includes('INCENDIO') ||
+    upper.includes('EMERGENCIA') ||
+    upper.includes('MEDICA') ||
+    upper.includes('MÉDICA') ||
+    upper.includes('AUXILIO') ||
+    ['HA', 'MA', 'PA', 'FA', 'HT', 'HP', 'QA', 'FS', 'KA', 'SA'].includes(upper)
+  ) {
+    return { bg: '#FF0000', text: '#FFFFFF' }
+  }
+
   // 3. Cortes de luz / Fallas de energía -> Verde (#00FF00)
-  if (upper.includes('FALLA AC') || upper.includes('FALLA DE ENERGIA') || upper.includes('CORTE DE LUZ') || upper.includes('AC FALLA') || upper.includes('E301') || upper.includes('E302')) {
+  if (
+    upper.includes('FALLA AC') ||
+    upper.includes('FALLA DE ENERGIA') ||
+    upper.includes('CORTE DE LUZ') ||
+    upper.includes('AC FALLA') ||
+    upper.includes('E301') ||
+    upper.includes('E302') ||
+    ['AT'].includes(upper)
+  ) {
     return { bg: '#00FF00', text: '#000000' }
   }
+
   // 4. Sabotajes de zona y Alarmas de robo -> Rosado (#FFC0CB)
-  if (upper.includes('ROBO') || upper.includes('ALARMA') || upper.includes('INTRUSION') || upper.includes('SABOTAJE') || upper.includes('TAMPER')) {
+  if (
+    upper.includes('ROBO') ||
+    upper.includes('ALARMA') ||
+    upper.includes('INTRUSION') ||
+    upper.includes('INTRUSIÓN') ||
+    upper.includes('SABOTAJE') ||
+    upper.includes('TAMPER') ||
+    ['BA', 'TA', 'BV', 'BT', 'BZ'].includes(upper)
+  ) {
     return { bg: '#FFC0CB', text: '#000000' }
   }
+
   // 5. Falla de Cobertura Inalámbrica -> Color Pastel Lavanda/Lila Suave (#E8D5F5) - Sin alarma ni emergencia
   if (upper.includes('COBERTURA') || upper.includes('ELEM. INALAM') || upper.includes('E530')) {
     return { bg: '#E8D5F5', text: '#000000' }
   }
+
   // 6. Anulaciones y Bypass -> Violeta (#EE82EE)
-  if (upper.includes('BYPASS') || upper.includes('ANULA') || upper.includes('INHIBI') || upper.includes('SWINGER') || upper.includes('E570')) {
+  if (
+    upper.includes('BYPASS') ||
+    upper.includes('ANULA') ||
+    upper.includes('INHIBI') ||
+    upper.includes('SWINGER') ||
+    upper.includes('E570') ||
+    ['BB', 'FB', 'TB', 'MB', 'PB'].includes(upper)
+  ) {
     return { bg: '#EE82EE', text: '#000000' }
   }
+
   // 7. Aperturas -> Celeste / Cyan (#00FFFF) igual a PC Scorpion
-  if (upper.includes('APERTURA')) {
+  if (upper.includes('APERTURA') || ['OP', 'OA', 'OG', 'OR', 'OQ'].includes(upper)) {
     return { bg: '#00FFFF', text: '#000000' }
   }
+
   // 8. Autotests -> Gris / Plateado (#E0E0E0) igual a PC Scorpion
-  if (upper.includes('AUTOTEST')) {
+  if (
+    upper.includes('AUTOTEST') ||
+    upper.includes('TRANSMISION PERIODICA') ||
+    ['RP', 'TX', 'RX', 'TS', 'TE', 'TW'].includes(upper)
+  ) {
     return { bg: '#E0E0E0', text: '#000000' }
   }
+
   // 9. Cierres -> Blanco (#FFFFFF)
-  if (upper.includes('CIERRE')) {
+  if (upper.includes('CIERRE') || ['CL', 'CP', 'CA', 'CG', 'CR', 'CF'].includes(upper)) {
     return { bg: '#FFFFFF', text: '#000000' }
   }
 
@@ -123,26 +176,49 @@ function getEventoStyle(
   const upperLegible = (senalLegible || '').toUpperCase().trim()
 
   // 1. Reglas prioritarias nativas de Scorpion
+  // Primero: Restablecimientos SIEMPRE en amarillo (#FFFF00)
+  if (
+    upperLegible.includes('RESTABLEC') ||
+    upperLegible.includes('RESTAURACION') ||
+    upperLegible.includes('RETORNO') ||
+    ['BH', 'BR', 'MH', 'MR', 'HH', 'HR', 'PH', 'PR', 'FH', 'FR', 'AR', 'AH', 'YR', 'YH', 'LR', 'TR', 'TH', 'BU', 'FU', 'TU', 'YK', 'YS', 'ER'].includes(upperRaw)
+  ) {
+    return { bg: '#FFFF00', text: '#000000' }
+  }
+
+  // Emergencias Críticas: Asalto, Pánico, Fuego, Médica -> ROJO (#FF0000) con texto blanco
+  if (
+    upperLegible.includes('ASALTO') ||
+    upperLegible.includes('ATRACO') ||
+    upperLegible.includes('PANICO') ||
+    upperLegible.includes('PÁNICO') ||
+    upperLegible.includes('FUEGO') ||
+    upperLegible.includes('INCENDIO') ||
+    upperLegible.includes('MEDICA') ||
+    upperLegible.includes('MÉDICA') ||
+    upperLegible.includes('AUXILIO') ||
+    ['HA', 'MA', 'PA', 'FA', 'HT', 'HP', 'QA', 'FS', 'KA', 'SA'].includes(upperRaw)
+  ) {
+    return { bg: '#FF0000', text: '#FFFFFF' }
+  }
+
   if (upperLegible.includes('COBERTURA') || upperLegible.includes('ELEM. INALAM') || upperRaw.includes('E530') || upperRaw === '530') return { bg: '#E8D5F5', text: '#000000' } // Lila pastel suave
-  if (upperLegible.includes('APERTURA')) return { bg: '#00FFFF', text: '#000000' } // Celeste
-  if (upperLegible.includes('AUTOTEST')) return { bg: '#E0E0E0', text: '#000000' } // Gris
-  if (upperLegible.includes('CIERRE'))   return { bg: '#FFFFFF', text: '#000000' } // Blanco
-  if (upperLegible.includes('RESTABLEC') || upperLegible.includes('RESTAURACION')) return { bg: '#FFFF00', text: '#000000' } // Amarillo
-  if (upperLegible.includes('FALLA AC') || upperLegible.includes('FALLA DE ENERGIA') || upperLegible.includes('CORTE DE LUZ')) return { bg: '#00FF00', text: '#000000' } // Verde
-  if (upperLegible.includes('ROBO') || upperLegible.includes('INTRUSION') || upperLegible.includes('SABOTAJE') || upperLegible.includes('TAMPER')) return { bg: '#FFC0CB', text: '#000000' } // Rosado
-  if (upperLegible.includes('BYPASS') || upperLegible.includes('SWINGER') || upperLegible.includes('ANULA')) return { bg: '#EE82EE', text: '#000000' } // Violeta
+  if (upperLegible.includes('APERTURA') || ['OP', 'OA', 'OG', 'OR', 'OQ'].includes(upperRaw)) return { bg: '#00FFFF', text: '#000000' } // Celeste
+  if (upperLegible.includes('AUTOTEST') || upperLegible.includes('TRANSMISION PERIODICA') || ['RP', 'TX', 'RX', 'TS', 'TE', 'TW'].includes(upperRaw)) return { bg: '#E0E0E0', text: '#000000' } // Gris
+  if (upperLegible.includes('CIERRE') || ['CL', 'CP', 'CA', 'CG', 'CR', 'CF'].includes(upperRaw)) return { bg: '#FFFFFF', text: '#000000' } // Blanco
+  if (upperLegible.includes('FALLA AC') || upperLegible.includes('FALLA DE ENERGIA') || upperLegible.includes('CORTE DE LUZ') || ['AT'].includes(upperRaw)) return { bg: '#00FF00', text: '#000000' } // Verde
+  if (upperLegible.includes('ROBO') || upperLegible.includes('INTRUSION') || upperLegible.includes('INTRUSIÓN') || upperLegible.includes('SABOTAJE') || upperLegible.includes('TAMPER') || ['BA', 'TA', 'BV', 'BT', 'BZ'].includes(upperRaw)) return { bg: '#FFC0CB', text: '#000000' } // Rosado
+  if (upperLegible.includes('BYPASS') || upperLegible.includes('SWINGER') || upperLegible.includes('ANULA') || ['BB', 'FB', 'TB', 'MB', 'PB'].includes(upperRaw)) return { bg: '#EE82EE', text: '#000000' } // Violeta
 
   // 2. Buscar en CODIGOS.MDB de Scorpion
-  if (codigosMap) {
-    if (codigosMap[upperRaw]) {
-      const colorNombre = codigosMap[upperRaw].color
-      if (COLOR_ACCESS_TO_CSS[colorNombre]) {
-        return COLOR_ACCESS_TO_CSS[colorNombre]
-      }
+  if (codigosMap && codigosMap[upperRaw]) {
+    const colorNombre = codigosMap[upperRaw].color
+    if (COLOR_ACCESS_TO_CSS[colorNombre]) {
+      return COLOR_ACCESS_TO_CSS[colorNombre]
     }
   }
 
-  // 3. Buscar en Diccionario Contact ID SIA DC-05
+  // 3. Buscar en Diccionario Contact ID / SIA DC-05
   const cid = lookupContactId(upperRaw)
   if (cid && COLOR_ACCESS_TO_CSS[cid.color]) {
     return COLOR_ACCESS_TO_CSS[cid.color]

@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react'
 import * as XLSX from 'xlsx'
 import { supabase, type EventoMonitoreo } from '@/lib/supabase'
+import { lookupContactId } from '@/lib/contact_id_library'
 import clientesDataRaw from '@/lib/clientes_general.json'
 import { obtenerConfigMail, guardarConfigMail, enviarReporteHistoricoMail, CORREOS_GAMA_PREDEFINIDOS } from '@/lib/notificacionesMail'
 
@@ -257,7 +258,8 @@ export default function ReportesModal({
         'Fecha y Hora': String(ev.fecha_hora || '').replace('T', ' ').substring(0, 19),
         'Cuenta': cuentaActiva,
         'Abonado': clienteSeleccionado?.nombre || cuentaActiva,
-        'Evento': ev.evento || 'SEÑAL',
+        'Evento': lookupContactId(ev.evento)?.descripcion || ev.evento || 'SEÑAL',
+        'Código Original': ev.evento || '',
         'Zona': ev.zona || '',
         'Usuario': ev.usuario || ''
       }))
@@ -624,7 +626,7 @@ export default function ReportesModal({
         fecha,
         hora,
         e.cuenta,
-        e.evento || 'SEÑAL SIN IDENTIFICAR',
+        lookupContactId(e.evento)?.descripcion || e.evento || 'SEÑAL SIN IDENTIFICAR',
         e.zona || '---',
         descZona || '',
         e.usuario || '---',
@@ -1490,8 +1492,8 @@ export default function ReportesModal({
                               <td className="py-1 px-2 text-center font-bold text-gray-800 border-r border-gray-200">{fecha}</td>
                               <td className="py-1 px-2 text-center font-bold text-blue-900 border-r border-gray-200">{hora}</td>
                               <td className="py-1 px-2 border-r border-gray-200 font-bold">
-                                <span className={`inline-block px-1.5 py-0.5 rounded-xs text-[10px] ${badgeStyle}`}>
-                                  {e.evento || 'SEÑAL'}
+                                <span className={`inline-block px-1.5 py-0.5 rounded-xs text-[10px] ${badgeStyle}`} title={lookupContactId(e.evento)?.descripcion ? `Código: ${e.evento}` : undefined}>
+                                  {lookupContactId(e.evento)?.descripcion || e.evento || 'SEÑAL'}
                                 </span>
                               </td>
                               <td className="py-1 px-2 border-r border-gray-200">

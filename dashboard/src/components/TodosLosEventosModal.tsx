@@ -127,19 +127,42 @@ function deduplicarEventos(lista: Evento[]): Evento[] {
 }
 
 function formatTrama(cuenta: string, eventoText: string, zona: string, usuario: string) {
-  const upperEv = (eventoText || '').toUpperCase()
+  const upperEv = (eventoText || '').toUpperCase().trim()
   // Extraer código de Contact ID (ej. E130, R401)
   const match = upperEv.match(/[ER]\d{3}/)
-  let code = match ? match[0] : 'E130'
+  let code = match ? match[0] : ''
   
-  if (!match) {
-    if (upperEv.includes('APERTURA')) code = 'E401'
+  if (!code) {
+    const siaToCid: Record<string, string> = {
+      'HA': 'E122', 'HH': 'R122', 'HR': 'R122', 'HT': 'E122',
+      'MA': 'E100', 'MH': 'R100', 'MR': 'R100', 'QA': 'E100',
+      'BA': 'E130', 'BH': 'R130', 'BR': 'R130', 'BC': 'E406', 'BV': 'E130', 'BB': 'E570',
+      'PA': 'E120', 'PH': 'R120', 'PR': 'R120',
+      'FA': 'E110', 'FH': 'R110', 'FR': 'R110', 'FS': 'E113', 'KA': 'E114',
+      'TA': 'E137', 'TH': 'R137', 'TR': 'R137',
+      'AT': 'E301', 'AR': 'R301', 'AH': 'R301',
+      'YT': 'E302', 'YR': 'R302', 'YH': 'R302', 'LB': 'E302', 'LR': 'R302',
+      'CL': 'R401', 'CP': 'R401', 'CA': 'R401', 'CG': 'R401',
+      'OP': 'E401', 'OA': 'E401', 'OG': 'E401', 'OR': 'E401',
+      'RP': 'E602', 'TX': 'E602', 'RX': 'E602',
+      'WA': 'E154', 'WH': 'R154', 'WR': 'R154',
+      'GA': 'E151', 'GH': 'R151', 'GR': 'R151',
+      'YX': 'E354', 'YK': 'R354',
+    }
+    const cleanSia = upperEv.replace(/^[/\\*]+/, '').slice(0, 2)
+    if (siaToCid[cleanSia]) {
+      code = siaToCid[cleanSia]
+    } else if (upperEv.includes('ASALTO') || upperEv.includes('ATRACO')) code = upperEv.includes('REST') ? 'R122' : 'E122'
+    else if (upperEv.includes('MEDIC') || upperEv.includes('AUXILIO')) code = upperEv.includes('REST') ? 'R100' : 'E100'
+    else if (upperEv.includes('APERTURA')) code = 'E401'
     else if (upperEv.includes('CIERRE')) code = 'R401'
     else if (upperEv.includes('AUTOTEST') || upperEv.includes('TEST')) code = 'E602'
-    else if (upperEv.includes('PANICO')) code = 'E120'
-    else if (upperEv.includes('FUEGO') || upperEv.includes('INCENDIO')) code = 'E110'
-    else if (upperEv.includes('FALLA') || upperEv.includes('CORTE')) code = 'E300'
+    else if (upperEv.includes('PANICO')) code = upperEv.includes('REST') ? 'R120' : 'E120'
+    else if (upperEv.includes('FUEGO') || upperEv.includes('INCENDIO')) code = upperEv.includes('REST') ? 'R110' : 'E110'
+    else if (upperEv.includes('FALLA AC') || upperEv.includes('CORTE')) code = upperEv.includes('REST') ? 'R301' : 'E301'
+    else if (upperEv.includes('BATERIA')) code = upperEv.includes('REST') ? 'R302' : 'E302'
     else if (upperEv.includes('RESTABLEC') || upperEv.includes('REST') || upperEv.includes('RESTAUR')) code = 'R130'
+    else code = 'E130'
   }
 
   const cleanCuenta = (cuenta || '').trim().padStart(4, '0')
@@ -152,26 +175,51 @@ function formatTrama(cuenta: string, eventoText: string, zona: string, usuario: 
 }
 
 function getRowStyle(eventoTexto: string) {
-  const upper = (eventoTexto || '').toUpperCase()
+  const upper = (eventoTexto || '').toUpperCase().trim()
 
-  // 1. Aperturas / Cierres -> Fondo blanco o celeste
-  if (upper.includes('APERTURA') || upper.includes('CIERRE') || upper.includes('DESARMADO') || upper.includes('ARMADO')) {
+  // 1. Restablecimientos -> Fondo amarillo (#FFFF00)
+  if (
+    upper.includes('RESTABLEC') ||
+    upper.includes('RESTAURACION') ||
+    upper.includes('RETORNO') ||
+    upper.includes('REST') ||
+    ['BH', 'BR', 'MH', 'MR', 'HH', 'HR', 'PH', 'PR', 'FH', 'FR', 'AR', 'AH', 'YR', 'YH', 'LR', 'TR', 'TH', 'BU'].includes(upper)
+  ) {
+    return { bg: '#ffff00', text: '#000000' }
+  }
+
+  // 2. Asalto, Médica, Pánico, Fuego crítico -> Fondo ROJO (#FF0000)
+  if (
+    upper.includes('ASALTO') ||
+    upper.includes('ATRACO') ||
+    upper.includes('PANICO') ||
+    upper.includes('PÁNICO') ||
+    upper.includes('FUEGO') ||
+    upper.includes('INCENDIO') ||
+    upper.includes('MEDICA') ||
+    upper.includes('MÉDICA') ||
+    upper.includes('AUXILIO') ||
+    ['HA', 'MA', 'PA', 'FA'].includes(upper)
+  ) {
+    return { bg: '#ff0000', text: '#ffffff' }
+  }
+
+  // 3. Aperturas / Cierres -> Fondo blanco o celeste
+  if (upper.includes('APERTURA') || upper.includes('CIERRE') || upper.includes('DESARMADO') || upper.includes('ARMADO') || ['CL', 'CP', 'CA', 'CG', 'OP', 'OA', 'OG'].includes(upper)) {
     const hash = (eventoTexto || '').split('').reduce((a, c) => a + c.charCodeAt(0), 0)
     return hash % 2 === 0
       ? { bg: '#FFFFFF', text: '#000000' }
       : { bg: '#E0F0FF', text: '#000000' }
   }
-  // 2. Fuego / Incendio Falla -> Fondo verde
-  if ((upper.includes('FUEGO') || upper.includes('INCENDIO') || upper.includes('HUMO')) && upper.includes('FALLA')) {
-    return { bg: '#00ff00', text: '#000000' }
-  }
-  // 3. Fuego / Incendio Restablecimiento -> Fondo amarillo
-  if ((upper.includes('FUEGO') || upper.includes('INCENDIO') || upper.includes('HUMO')) && (upper.includes('RESTABLEC') || upper.includes('REST') || upper.includes('RESTAUR'))) {
-    return { bg: '#ffff00', text: '#000000' }
-  }
-  // 4. Sabotaje / Robo / Pánico -> Fondo rosado/rojo
-  if (upper.includes('PANICO') || upper.includes('ROBO') || upper.includes('INTRUSION')) {
+
+  // 4. Sabotaje / Robo / Intrusión -> Fondo rosado (#ffc0cb)
+  if (upper.includes('ROBO') || upper.includes('INTRUSION') || upper.includes('INTRUSIÓN') || upper.includes('SABOTAJE') || upper.includes('TAMPER') || ['BA', 'TA'].includes(upper)) {
     return { bg: '#ffc0cb', text: '#000000' }
+  }
+
+  // 5. Fallas de energía AC -> Verde (#00ff00)
+  if (upper.includes('FALLA AC') || upper.includes('CORTE DE LUZ') || upper.includes('FALLA DE ENERGIA') || upper === 'AT') {
+    return { bg: '#00ff00', text: '#000000' }
   }
   
   return null

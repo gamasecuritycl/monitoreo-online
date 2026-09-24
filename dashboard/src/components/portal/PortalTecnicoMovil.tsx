@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
+import { lookupContactId } from '@/lib/contact_id_library'
 import jsPDF from 'jspdf'
 
 export interface OrdenTrabajo {
@@ -1884,7 +1885,9 @@ export default function PortalTecnicoMovil() {
                           {eventosPruebasLive.map((ev, idx) => (
                             <div key={ev.id || idx} className="bg-[#0b0804] border border-amber-900/60 rounded-xl p-2 text-xs flex justify-between items-center shadow-sm">
                               <div className="space-y-0.5 min-w-0 pr-2">
-                                <div className="font-bold text-amber-200 text-[11px] truncate">{ev.evento}</div>
+                                <div className="font-bold text-amber-200 text-[11px] truncate" title={lookupContactId(ev.evento)?.descripcion ? `Código: ${ev.evento}` : undefined}>
+                                  {lookupContactId(ev.evento)?.descripcion || ev.evento}
+                                </div>
                                 <div className="text-[9px] text-amber-400/70 font-mono">Zona: {ev.zona || 'S/Z'} | Usr: {ev.usuario || 'SYS'}</div>
                               </div>
                               <span className="text-[10px] font-mono text-slate-400 shrink-0">
@@ -2122,7 +2125,9 @@ export default function PortalTecnicoMovil() {
                       <span className="text-[10px] text-slate-500 font-mono">{hora}</span>
                     </div>
                     <div className="text-xs font-bold text-white flex justify-between">
-                      <span>{ev.evento}</span>
+                      <span title={lookupContactId(ev.evento)?.descripcion ? `Código: ${ev.evento}` : undefined}>
+                        {lookupContactId(ev.evento)?.descripcion || ev.evento}
+                      </span>
                       <span className="text-[11px] text-slate-400">ZN: {ev.zona || '--'}</span>
                     </div>
                   </div>

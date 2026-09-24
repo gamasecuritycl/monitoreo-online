@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
+import { lookupContactId } from '@/lib/contact_id_library'
 import AIOverlay from './AIOverlay'
 
 interface EventoMonitoreo {
@@ -470,7 +471,7 @@ export default function VideoVerificacionModal({ onClose, evento, esCierre, clie
                 NVR / DAHUA LIVE STREAM | {clientName} (#{cuentaActiva})
               </h2>
               <p className="text-[11px] text-gray-400 font-mono">
-                EVENTO: <span className="text-yellow-400">{evento.evento}</span> | ZONA: {evento.zona} | HORA: {evento.fecha_hora}
+                EVENTO: <span className="text-yellow-400 font-bold">{lookupContactId(evento.evento)?.descripcion || evento.evento}</span>{lookupContactId(evento.evento)?.descripcion && lookupContactId(evento.evento)?.descripcion !== evento.evento ? ` (${evento.evento})` : ''} | ZONA: {evento.zona} | HORA: {evento.fecha_hora}
               </p>
             </div>
           </div>

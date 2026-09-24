@@ -777,13 +777,27 @@ export default function ScorpionDashboard() {
         }
 
         // ── Notificación push del navegador para alarmas críticas ──
-        const eventoUpper = (newEvent.evento || '').toUpperCase()
+        const eventoUpper = (newEvent.evento || '').toUpperCase().trim()
         const cidInfo = lookupContactId(eventoUpper)
-        const esAlarmaCritica = eventoUpper.includes('ALARMA') || eventoUpper.includes('PÁNICO') || eventoUpper.includes('PANICO') || eventoUpper.includes('INCENDIO')
+        const eventoLegible = cidInfo ? cidInfo.descripcion : (newEvent.evento || '')
+        const eventoLegibleUpper = eventoLegible.toUpperCase()
+
+        const esAlarmaCritica = 
+          eventoLegibleUpper.includes('ALARMA') || 
+          eventoLegibleUpper.includes('PÁNICO') || 
+          eventoLegibleUpper.includes('PANICO') || 
+          eventoLegibleUpper.includes('ASALTO') || 
+          eventoLegibleUpper.includes('ATRACO') || 
+          eventoLegibleUpper.includes('MEDICA') || 
+          eventoLegibleUpper.includes('MÉDICA') || 
+          eventoLegibleUpper.includes('INCENDIO') || 
+          eventoLegibleUpper.includes('FUEGO') || 
+          ['HA', 'MA', 'PA', 'FA'].includes(eventoUpper)
+
         if (esAlarmaCritica && typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
           try {
             const notif = new Notification('🚨 ALARMA CRÍTICA — GAMA SEGURIDAD', {
-              body: `Cuenta: ${newEvent.cuenta} | ${newEvent.nombre_abonado}\nEvento: ${newEvent.evento}\nHora: ${new Date(newEvent.fecha_hora).toLocaleTimeString('es-CL')}`,
+              body: `Cuenta: ${newEvent.cuenta} | ${newEvent.nombre_abonado}\nEvento: ${eventoLegible}\nHora: ${new Date(newEvent.fecha_hora).toLocaleTimeString('es-CL')}`,
               icon: '/favicon.ico',
               requireInteraction: true,
               tag: `alarma-${newEvent.cuenta}`,
@@ -793,13 +807,13 @@ export default function ScorpionDashboard() {
         }
 
         // Rastreo de estado armado/cerrado por cuenta
-        const esCierre = eventoUpper.includes('CIERRE') || eventoUpper === 'CLOSE' || eventoUpper.includes('ARME')
-        const esApertura = eventoUpper.includes('APERTURA') || eventoUpper === 'OPEN' || eventoUpper.includes('DESARME')
+        const esCierre = eventoLegibleUpper.includes('CIERRE') || eventoUpper === 'CLOSE' || eventoLegibleUpper.includes('ARME') || ['CL', 'CP', 'CA', 'CG'].includes(eventoUpper)
+        const esApertura = eventoLegibleUpper.includes('APERTURA') || eventoUpper === 'OPEN' || eventoLegibleUpper.includes('DESARME') || ['OP', 'OA', 'OG'].includes(eventoUpper)
         if (esCierre) { const next = { ...armadoMapRef.current, [newEvent.cuenta]: true }; armadoMapRef.current = next; setArmadoMap(next) }
         if (esApertura) { const next = { ...armadoMapRef.current, [newEvent.cuenta]: false }; armadoMapRef.current = next; setArmadoMap(next) }
 
         // Auto-apertura de videoverificación: ROBO + sistema armado + cliente con cámara registrada
-        const esRobo = eventoUpper.includes('ALARMA') && (eventoUpper.includes('ROBO') || eventoUpper.includes('INTRUSIÓN') || eventoUpper.includes('INTRUSION') || eventoUpper.includes('PERIMETRAL'))
+        const esRobo = (eventoLegibleUpper.includes('ROBO') || eventoLegibleUpper.includes('INTRUSIÓN') || eventoLegibleUpper.includes('INTRUSION') || eventoLegibleUpper.includes('PERIMETRAL') || ['BA', 'BV'].includes(eventoUpper)) && (eventoLegibleUpper.includes('ALARMA') || ['BA', 'BV'].includes(eventoUpper))
         if (esRobo && armadoMapRef.current[newEvent.cuenta] === true) {
           ;(async () => {
             try {
