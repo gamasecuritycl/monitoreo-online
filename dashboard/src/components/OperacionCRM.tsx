@@ -24,6 +24,8 @@ import WhatsAppNotificationToast from './WhatsAppNotificationToast'
 import WhatsAppPlantillasModal, { PlantillaAbonadoData } from './operacion/WhatsAppPlantillasModal'
 import NotificacionesWhatsAppModal from './NotificacionesWhatsAppModal'
 import MercadoPublicoModule, { LicitacionChileCompra } from './operacion/MercadoPublicoModule'
+import { BotConfigModal } from '@/components/SalesGama/Modal/BotConfigModal'
+import { BotLeadsModal } from '@/components/SalesGama/Modal/BotLeadsModal'
 
 import {
   Shield,
@@ -347,6 +349,10 @@ export function normalizeCuentaCode(cta: any): string {
 export default function OperacionCRM() {
   const [moduloActivo, setModuloActivo] = useState<'ficha360' | 'autonomia' | 'presupuestos' | 'mercadopublico' | 'facturacion' | 'serv_tecnico' | 'kpis' | 'config' | 'marketing' | 'compras' | 'contratos' | 'ley21719' | null>(null)
   const [sidebarAbierto, setSidebarAbierto] = useState<boolean>(false)
+
+  // ── ESTADOS SALES-GAMA AI MODALS ──
+  const [modalBotConfigOpen, setModalBotConfigOpen] = useState(false)
+  const [modalBotLeadsOpen, setModalBotLeadsOpen] = useState(false)
 
   // ── ESTADOS APPLE HIG / LINEAR (COMMAND PALETTE & SLIDE-OVER DRAWER) ──
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
@@ -2890,6 +2896,30 @@ export default function OperacionCRM() {
       tag: '24/7 Activo'
     },
     {
+      id: 'bot_config',
+      titulo: 'Configuración Sales-Bot',
+      categoria: 'INTELIGENCIA ARTIFICIAL',
+      descripcion: 'Prompt de ventas, CRUD de catálogo en UF/CLP, temperatura y parámetros comerciales del asesor IA.',
+      icono: Sparkles,
+      gradient: 'from-blue-600 to-indigo-600',
+      borderColor: 'hover:border-blue-400',
+      glowColor: 'group-hover:shadow-blue-500/25',
+      badgeColor: 'bg-blue-500/10 text-blue-300 border-blue-500/20',
+      tag: 'Ajustes & Catálogo'
+    },
+    {
+      id: 'bot_leads',
+      titulo: 'Leads - Bot',
+      categoria: 'COMERCIAL & VENTAS',
+      descripcion: 'Prospectos calientes 🔥 capturados en tiempo real por SALES-GAMA, WhatsApp 1-clic y transcripciones.',
+      icono: Target,
+      gradient: 'from-amber-500 to-orange-600',
+      borderColor: 'hover:border-amber-400',
+      glowColor: 'group-hover:shadow-amber-500/25',
+      badgeColor: 'bg-amber-500/10 text-amber-300 border-amber-500/20',
+      tag: '🔥 Leads Activos'
+    },
+    {
       id: 'marketing',
       titulo: 'Marketing B2B',
       categoria: 'COMERCIAL',
@@ -3190,7 +3220,17 @@ export default function OperacionCRM() {
                     onDragLeave={(e) => handleDragLeave(e, mod.id)}
                     onDrop={(e) => handleDrop(e, mod.id)}
                     onDragEnd={() => { setDraggedItemId(null); setDragOverItemId(null); }}
-                    onClick={() => setModuloActivo(mod.id as any)}
+                    onClick={() => {
+                      if (mod.id === 'bot_config') {
+                        setModalBotConfigOpen(true);
+                        return;
+                      }
+                      if (mod.id === 'bot_leads') {
+                        setModalBotLeadsOpen(true);
+                        return;
+                      }
+                      setModuloActivo(mod.id as any);
+                    }}
                     className={`group relative text-left rounded-3xl bg-white border p-6 flex flex-col justify-between transition-all duration-200 cursor-grab active:cursor-grabbing min-h-[220px] overflow-hidden select-none ${
                       isDragging
                         ? 'opacity-30 scale-95 border-dashed border-indigo-500 bg-indigo-50/50'
@@ -7929,6 +7969,16 @@ export default function OperacionCRM() {
           if (cta) setCuentaSeleccionada(cta)
           setModalWhatsAppActivo(true)
         }}
+      />
+
+      {/* ── MODALES SALES-GAMA AI ── */}
+      <BotConfigModal
+        isOpen={modalBotConfigOpen}
+        onClose={() => setModalBotConfigOpen(false)}
+      />
+      <BotLeadsModal
+        isOpen={modalBotLeadsOpen}
+        onClose={() => setModalBotLeadsOpen(false)}
       />
 
     </div>

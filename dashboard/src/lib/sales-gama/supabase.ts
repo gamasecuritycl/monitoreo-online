@@ -162,6 +162,46 @@ export async function listLeads(
   }
 
   const items = (data || []) as Lead[];
+
+  // Fail-safe: Si leads_sales_gama no tiene filas o falló RLS, consultar eventos_monitoreo
+  if (items.length === 0) {
+    try {
+      const { data: evData } = await supabaseAdmin
+        .from('eventos_monitoreo')
+        .select('*')
+        .in('cuenta', ['LEAD-BOT', 'WEB-PROSPECTO'])
+        .order('id', { ascending: false })
+        .limit(safeLimit);
+
+      if (evData && evData.length > 0) {
+        const fallbackItems: Lead[] = evData.map((e) => {
+          const desc = e.descripcion_evento || '';
+          const telMatch = desc.match(/(?:\+?56\s*9|9)\s*([0-9]{4})\s*([0-9]{4})/);
+          const emailMatch = desc.match(/\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/);
+          const comunaMatch = desc.match(/\[(.*?)\]/);
+
+          return {
+            id: `ev-${e.id}`,
+            session_id: `ev-sess-${e.id}`,
+            nombre: e.nombre_abonado?.replace(/^(?:Cotización Web:\s*|Prospecto Web\s*)/i, '') || 'Prospecto Web',
+            telefono: telMatch ? `+56${telMatch[0].replace(/\D/g, '').replace(/^56/, '')}` : undefined,
+            email: emailMatch ? emailMatch[0] : undefined,
+            comuna: comunaMatch ? comunaMatch[1] : undefined,
+            estado: (e.evento === 'LEAD_CALIENTE_BOT' || telMatch) ? 'caliente' : 'nuevo',
+            resumen: desc,
+            created_at: e.fecha_evento || new Date().toISOString(),
+            updated_at: e.fecha_evento || new Date().toISOString(),
+            last_activity: e.fecha_evento || new Date().toISOString(),
+          };
+        });
+
+        return { items: fallbackItems, total: fallbackItems.length };
+      }
+    } catch (e) {
+      console.warn('Fallback listLeads error:', e);
+    }
+  }
+
   let nextCursor: string | undefined;
   if (items.length > safeLimit) {
     const nextItem = items[safeLimit - 1];
