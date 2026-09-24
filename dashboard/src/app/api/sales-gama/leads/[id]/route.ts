@@ -3,7 +3,7 @@ import { getLeadWithMessages, updateLeadStatus } from "@/lib/sales-gama/supabase
 import { z } from "zod";
 
 const ParamsSchema = z.object({
-  id: z.string().uuid(),
+  id: z.string().min(1),
 });
 
 const UpdateStatusSchema = z.object({

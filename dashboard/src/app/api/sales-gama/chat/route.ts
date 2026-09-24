@@ -1,27 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { headers } from 'next/headers';
-import { getLeadBySession, upsertLead, appendMessage, hashIp, supabaseAdmin } from '@/lib/sales-gama/supabase';
-import { checkRateLimit, getRateLimitStatus } from '@/lib/sales-gama/rate-limit';
 import { getAssistantResponse } from '@/lib/sales-gama/assistant';
+import { checkRateLimit, getRateLimitStatus } from '@/lib/sales-gama/rate-limit';
+import { hashIp, upsertLead, appendMessage, getLeadBySession, supabaseAdmin } from '@/lib/sales-gama/supabase';
 import type { ChatMessage, Lead } from '@/lib/sales-gama/types';
-import { supabase } from '@/lib/supabase';
+
+export const runtime = 'nodejs';
 
 const COMUNAS_CHILE = [
-  "santiago", "cerrillos", "cerro navia", "conchali", "el bosque", "estacion central",
-  "huechuraba", "independencia", "la cisterna", "la florida", "la granja", "la pintana",
-  "la reina", "las condes", "lo barnechea", "lo espejo", "lo prado", "macul", "maipu",
-  "ñuñoa", "pedro aguirre cerda", "peñalolen", "providencia", "pudahuel", "quilicura",
-  "quinta normal", "recoleta", "renca", "san joaquin", "san miguel", "san ramon",
-  "vitacura", "puente alto", "pirque", "san jose de maipo", "colina", "lampa",
-  "tiltil", "san bernardo", "buin", "calera de tango", "paine", "melipilla",
-  "alhue", "curacavi", "maria pinto", "san pedro", "talagante", "el monte",
-  "isla de maipo", "padre hurtado", "peñaflor",
-  "valparaiso", "viña del mar", "vina del mar", "concon", "quilpue", "villa alemana",
+  "valparaiso", "vina del mar", "viña del mar", "quilpue", "quilpué", "villa alemana", "concon", "concón",
+  "santiago", "providencia", "las condes", "vitacura", "lo barnechea", "la reina", "nunoa", "ñuñoa",
+  "macul", "penalolen", "peñalolén", "la florida", "la granja", "el bosque", "san bernardo", "puente alto",
+  "maipu", "maipú", "estacion central", "estación central", "pudahuel", "quilicura", "recoleta", "independencia",
+  "conchali", "conchalí", "huechuraba", "san miguel", "san joaquin", "san joaquín", "cerrillos", "lo prado",
+  "cerro navia", "renca", "quinta normal", "pedro aguirre cerda", "lo espejo", "la cisterna", "san ramon", "san ramón",
   "casablanca", "juan fernandez", "quillota", "la calera", "hijuelas", "la cruz",
   "nogales", "san antonio", "algarrobo", "cartagena", "el quisco", "el tabo",
   "santo domingo", "san felipe", "catemu", "llaillay", "panquehue", "putaendo",
   "santa maria", "los andes", "calle larga", "rinconada", "san esteban", "la ligua",
-  "cabildo", "papudo", "petorca", "zapallar", "limache", "olmue"
+  "cabildo", "papudo", "petorca", "zapallar", "limache", "olmue", "olmué"
 ];
 
 function extractLeadData(text: string) {
@@ -39,8 +36,8 @@ function extractLeadData(text: string) {
     extracted.email = emailMatch[0].trim();
   }
 
-  // Teléfono chileno (+569..., 912345678, etc.)
-  const phoneMatch = text.match(/(?:\+?56\s*9|9)\s*([0-9]{4})\s*([0-9]{4})\b/) || text.match(/\b([2-9]\d{7,8})\b/);
+  // Teléfono chileno (ej: +56912345678, 912345678, 9 1234 5678, 56912345678)
+  const phoneMatch = text.match(/(?:\+?56\s*9|9)\s*([0-9\s-]{8,12})\b/) || text.match(/\b([2-9][0-9\s-]{7,9})\b/);
   if (phoneMatch) {
     let clean = phoneMatch[0].replace(/\D/g, '');
     if (clean.length === 8) clean = '9' + clean;
@@ -52,23 +49,28 @@ function extractLeadData(text: string) {
     }
   }
 
-  // Comuna
-  const lower = text.toLowerCase();
+  // Comuna (normalizada)
+  const lower = text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
   for (const c of COMUNAS_CHILE) {
-    if (new RegExp(`\\b${c}\\b`, 'i').test(lower)) {
+    const cNorm = c.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    if (new RegExp(`\\b${cNorm}\\b`, 'i').test(lower)) {
       extracted.comuna = c.charAt(0).toUpperCase() + c.slice(1);
       break;
     }
   }
 
-  // Nombre
-  const nameMatch = text.match(/(?:me llamo|mi nombre es|soy)\s+([A-Za-zÁÉÍÓÚáéíóúñÑ]{3,18}(?:\s+[A-Za-zÁÉÍÓÚáéíóúñÑ]{3,18})?)/i);
+  // Nombre (con patrones comunes)
+  const nameMatch = text.match(/(?:me llamo|mi nombre es|soy|habla|atenta(?:mente)?)\s+([A-Za-zÁÉÍÓÚáéíóúñÑ]{2,20}(?:\s+[A-Za-zÁÉÍÓÚáéíóúñÑ]{2,20})?)/i)
+    || text.match(/^([A-Za-zÁÉÍÓÚáéíóúñÑ]{3,15}\s+[A-Za-zÁÉÍÓÚáéíóúñÑ]{3,15})(?:,|\.|$)/);
   if (nameMatch) {
-    extracted.nombre = nameMatch[1].trim();
+    const candidate = nameMatch[1].trim();
+    if (!candidate.toLowerCase().includes('alarma') && !candidate.toLowerCase().includes('camara') && !candidate.toLowerCase().includes('hola')) {
+      extracted.nombre = candidate;
+    }
   }
 
   // Dirección
-  const dirMatch = text.match(/(?:vivo en|la direcci[oó]n es|calle|pasaje|avenida)\s+([A-Za-z0-9ÁÉÍÓÚáéíóúñÑ\s#°,-]{6,40})/i);
+  const dirMatch = text.match(/(?:vivo en|la direcci[oó]n es|calle|pasaje|avenida|avda\.?|pasaje)\s+([A-Za-z0-9ÁÉÍÓÚáéíóúñÑ\s#°,-]{6,45})/i);
   if (dirMatch) {
     extracted.direccion = dirMatch[1].trim();
   }
@@ -115,7 +117,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Obtener lead de Supabase o crear objeto en memoria para fail-safe
+    // Obtener lead de Supabase o crear objeto en memoria
     let lead: Lead | null = await getLeadBySession(sessionId).catch(() => null);
     if (!lead) {
       lead = {
@@ -126,17 +128,19 @@ export async function POST(req: NextRequest) {
         updated_at: new Date().toISOString(),
         last_activity: new Date().toISOString(),
       };
-      // Intentar persistir en Supabase
-      try {
-        await upsertLead(sessionId, { estado: 'nuevo' });
-      } catch {}
     }
 
     // Extracción inteligente de datos de contacto
     const extracted = extractLeadData(message);
-    const leadUpdates: Record<string, unknown> = { last_activity: new Date().toISOString() };
-    if (extracted.nombre && !lead.nombre) leadUpdates.nombre = extracted.nombre;
-    if (extracted.telefono && !lead.telefono) {
+    const leadUpdates: Partial<Lead> = {
+      last_activity: new Date().toISOString(),
+      resumen: message.substring(0, 200),
+    };
+
+    if (extracted.nombre && (!lead.nombre || lead.nombre === 'Prospecto Web Bot')) {
+      leadUpdates.nombre = extracted.nombre;
+    }
+    if (extracted.telefono) {
       leadUpdates.telefono = extracted.telefono;
       leadUpdates.estado = 'caliente';
     }
@@ -144,20 +148,13 @@ export async function POST(req: NextRequest) {
     if (extracted.direccion && !lead.direccion) leadUpdates.direccion = extracted.direccion;
     if (extracted.email && !lead.email) leadUpdates.email = extracted.email;
 
+    // Persistir de forma garantizada e indestructible
     try {
-      await upsertLead(sessionId, leadUpdates);
-    } catch {}
-
-    // Respaldo de lead en eventos_monitoreo (100% libre de RLS)
-    try {
-      await supabase.from('eventos_monitoreo').insert({
-        cuenta: 'LEAD-BOT',
-        nombre_abonado: extracted.nombre || lead.nombre || 'Prospecto Web Bot',
-        evento: extracted.telefono ? 'LEAD_CALIENTE_BOT' : 'MENSAJE_SALES_BOT',
-        descripcion_evento: `[${extracted.comuna || 'Comuna pendiente'}] "${message}". Tel: ${extracted.telefono || 'Sin fono'}. Email: ${extracted.email || 'Sin mail'}`.substring(0, 250),
-        fecha_evento: new Date().toISOString()
-      });
-    } catch {}
+      const updatedLead = await upsertLead(sessionId, leadUpdates);
+      if (updatedLead) lead = updatedLead;
+    } catch (errLead) {
+      console.warn('Upsert lead error in chat:', errLead);
+    }
 
     const stream = await getAssistantResponse(sessionId, message, history || []);
 
@@ -188,8 +185,7 @@ export async function POST(req: NextRequest) {
                   tokensIn = parsed.tokensIn || 0;
                   tokensOut = parsed.tokensOut || 0;
                 }
-              } catch {
-              }
+              } catch {}
             }
 
             controller.enqueue(value);
@@ -199,7 +195,10 @@ export async function POST(req: NextRequest) {
             try {
               await appendMessage(lead.id, 'user', message);
               await appendMessage(lead.id, 'assistant', fullResponse, tokensIn, tokensOut);
-              await upsertLead(sessionId, { last_activity: new Date().toISOString() });
+              await upsertLead(sessionId, {
+                last_activity: new Date().toISOString(),
+                resumen: `Último mensaje: "${message.substring(0, 80)}"`,
+              });
             } catch {}
           }
         } catch (error) {

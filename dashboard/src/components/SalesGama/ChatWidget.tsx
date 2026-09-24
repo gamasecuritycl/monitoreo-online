@@ -97,6 +97,7 @@ function formatMessageText(text: string): string {
 export function ChatWidget() {
   const [isOpen, setIsOpen] = useState(false);
   const [inputValue, setInputValue] = useState("");
+  const [showDesk, setShowDesk] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
@@ -224,21 +225,40 @@ export function ChatWidget() {
               </span>
             </div>
           </div>
-          <button className="sg-close-btn" onClick={() => setIsOpen(false)} aria-label="Cerrar chat">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-          </button>
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => setShowDesk(!showDesk)}
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-cyan-400 hover:bg-[#102a43] transition-colors"
+              title={showDesk ? "Ocultar avatar 3D para mayor espacio" : "Mostrar avatar 3D"}
+              aria-label="Alternar vista de avatar"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                {showDesk ? (
+                  <path d="M18 15l-6-6-6 6" />
+                ) : (
+                  <path d="M6 9l6 6 6-6" />
+                )}
+              </svg>
+            </button>
+            <button className="sg-close-btn" onClick={() => setIsOpen(false)} aria-label="Cerrar chat">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+          </div>
         </header>
 
-        {/* ── Androide 3D en Escritorio simulando escribir en teclado ── */}
-        <div className="px-3 pt-2 pb-1 bg-[#050d1a] border-b border-[#102a43]">
-          <SalesGamaAvatar
-            variant="desk"
-            state={isGenerating ? "thinking" : "idle"}
-          />
-        </div>
+        {/* ── Androide 3D en Escritorio simulando escribir en teclado (colapsable) ── */}
+        {showDesk && (
+          <div className="px-3 pt-2 pb-1 bg-[#050d1a] border-b border-[#102a43] transition-all duration-200">
+            <SalesGamaAvatar
+              variant="desk"
+              state={isGenerating ? "thinking" : "idle"}
+            />
+          </div>
+        )}
 
         {/* Listado de mensajes */}
         <div className="sg-widget-messages flex-1 overflow-y-auto" role="log" aria-live="polite">

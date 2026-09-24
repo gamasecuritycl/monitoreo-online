@@ -246,15 +246,24 @@ export async function POST(req: Request) {
 
     // ── 3. GUARDAR EN EVENTOS_MONITOREO PARA QUE APAREZCA EN /OPERACIONES ──
     try {
+      const payloadMeta = {
+        nombre: name,
+        email,
+        telefono: cleanPhone,
+        servicio: serviceLabel,
+        mensaje: message || 'S/M',
+        origen: 'LANDING_WEB'
+      };
       await supabase.from('eventos_monitoreo').insert({
         cuenta: 'WEB-PROSPECTO',
-        nombre_abonado: `Cotización Web: ${name}`,
+        nombre_abonado: JSON.stringify(payloadMeta),
         evento: 'PROSPECTO_WEB_LANDING',
-        descripcion_evento: `Solicitud Web de ${name} (${email}, Tel: ${cleanPhone}). Servicio: ${serviceLabel}. Mensaje: ${message || 'S/M'}`.substring(0, 250),
-        fecha_evento: now.toISOString()
-      })
+        zona: (serviceLabel || 'Web').substring(0, 50),
+        usuario: (cleanPhone || email || 'Web').substring(0, 30),
+        fecha_hora: now.toISOString()
+      });
     } catch (errSupabase) {
-      console.warn('Advertencia registrando evento de prospecto en Supabase:', errSupabase)
+      console.warn('Advertencia registrando evento de prospecto en Supabase:', errSupabase);
     }
 
     // ── REGISTRO DE AUDITORÍA FORENSE LEY 21.719 (CONSENTIMIENTO PROSPECTO) ──

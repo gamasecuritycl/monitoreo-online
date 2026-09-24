@@ -78,18 +78,14 @@ export async function PUT(req: NextRequest) {
 
     const validatedPrecios = result.data;
 
-    const fileWriteSuccess = await writePreciosFile(validatedPrecios);
-    if (!fileWriteSuccess) {
-      return NextResponse.json(
-        { error: 'Failed to write precios.json file' },
-        { status: 500 }
-      );
-    }
+    // Guardar en sistema de archivos local si está disponible (no crítico en Vercel)
+    await writePreciosFile(validatedPrecios).catch(() => false);
 
+    // Guardar en Supabase / eventos_monitoreo dual-storage
     const dbWriteSuccess = await setConfig('precios', validatedPrecios);
     if (!dbWriteSuccess) {
       return NextResponse.json(
-        { error: 'Failed to update precios in database' },
+        { error: 'No se pudo guardar el catálogo en la base de datos' },
         { status: 500 }
       );
     }

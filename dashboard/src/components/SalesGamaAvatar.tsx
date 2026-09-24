@@ -32,8 +32,7 @@ export function SalesGamaAvatar({
   if (variant === "desk") {
     return (
       <div
-        className={`sg-android-desk-container relative overflow-hidden rounded-2xl bg-gradient-to-b from-[#091528] via-[#06101e] to-[#040b15] border border-[#1b3558] p-2 shadow-2xl ${className}`}
-        style={{ width: "100%", height: "140px" }}
+        className={`sg-android-desk-container relative overflow-hidden rounded-xl bg-gradient-to-b from-[#091528] via-[#06101e] to-[#040b15] border border-[#1b3558] p-1.5 sm:p-2 shadow-2xl h-[105px] sm:h-[135px] w-full ${className}`}
         role="img"
         aria-label={`Androide GAMA Especialista en Ventas - ${internalState}`}
       >

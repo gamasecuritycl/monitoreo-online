@@ -6,7 +6,7 @@ export default function WhatsAppFloating() {
   }
 
   return (
-    <div className="whatsapp-floating fixed bottom-6 right-6 z-50 flex items-center group">
+    <div className="whatsapp-floating fixed bottom-20 right-4 sm:bottom-24 sm:right-6 z-40 flex items-center group">
       {/* Tooltip badge */}
       <span className="hidden sm:inline-block mr-3 px-3 py-1.5 rounded-full bg-[#0a1628]/90 backdrop-blur-md border border-[#1e3a5f] text-white text-xs font-sans shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
         ¿Consultas? Atención en vivo por WhatsApp
