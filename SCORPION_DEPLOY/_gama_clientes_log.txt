@@ -1,0 +1,110 @@
+=================================================================
+  GAMA SECURITY - Sincronizador Activo de Clientes & Expedientes
+  Inicio: 2026-09-24 19:06:37
+=================================================================
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Subiendo a Supabase: 466 abonados, 914 con autorizados...
+[19:06:39] [SUPABASE] Clientes actualizados exitosamente (466 cuentas).
+[19:06:42] [SUPABASE] Personas autorizadas actualizadas exitosamente (914 cuentas).
+[LOCAL JSON] Archivo actualizado: c:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
+[LOCAL JSON] Archivo actualizado: C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
+[SYNC SUCCESS] Sincronización completada exitosamente a las 19:06:43!
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Subiendo a Supabase: 466 abonados, 914 con autorizados...
+[19:06:56] [SUPABASE] Clientes actualizados exitosamente (466 cuentas).
+[19:06:59] [SUPABASE] Personas autorizadas actualizadas exitosamente (914 cuentas).
+[LOCAL JSON] Archivo actualizado: c:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
+[LOCAL JSON] Archivo actualizado: C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
+[SYNC SUCCESS] Sincronización completada exitosamente a las 19:06:59!
+=================================================================
+  GAMA SECURITY - Sincronizador Activo de Clientes & Expedientes
+  Inicio: 2026-09-24 19:07:57
+=================================================================
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Subiendo a Supabase: 466 abonados, 914 con autorizados...
+[19:08:01] [SUPABASE] Clientes actualizados exitosamente (466 cuentas).
+[19:08:02] [SUPABASE] Personas autorizadas actualizadas exitosamente (914 cuentas).
+[LOCAL JSON] Archivo actualizado: C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
+[LOCAL JSON] Archivo actualizado: C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
+[SYNC SUCCESS] Sincronización completada exitosamente a las 19:08:03!
+=================================================================
+  GAMA SECURITY - Sincronizador Activo de Clientes & Expedientes
+  Inicio: 2026-09-24 19:10:43
+=================================================================
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+=================================================================
+  GAMA SECURITY - Sincronizador Activo de Clientes & Expedientes
+  Inicio: 2026-09-24 19:12:09
+=================================================================
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Subiendo a Supabase: 466 abonados, 914 con autorizados...
+[19:12:12] [SUPABASE] Clientes actualizados exitosamente (466 cuentas).
+[19:12:14] [SUPABASE] Personas autorizadas actualizadas exitosamente (914 cuentas).
+[LOCAL JSON] Archivo actualizado: C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
+[LOCAL JSON] Archivo actualizado: C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
+[SYNC SUCCESS] Sincronización completada exitosamente a las 19:12:14!
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Contenido idéntico al último sincronizado.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASES DE DATOS\GENERAL.mdb
+[SYNC] Subiendo a Supabase: 466 abonados, 914 con autorizados...
+[19:12:37] [SUPABASE] Clientes actualizados exitosamente (466 cuentas).
+[19:12:39] [SUPABASE] Personas autorizadas actualizadas exitosamente (914 cuentas).
+[LOCAL JSON] Archivo actualizado: C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
+[LOCAL JSON] Archivo actualizado: C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
+[SYNC SUCCESS] Sincronización completada exitosamente a las 19:12:39!
+=================================================================
+  GAMA SECURITY - Sincronizador Activo de Clientes & Expedientes
+  Inicio: 2026-09-24 19:13:06
+=================================================================
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Subiendo a Supabase: 466 abonados, 914 con autorizados...
+[19:13:08] [SUPABASE] Clientes actualizados exitosamente (466 cuentas).
+[19:13:09] [SUPABASE] Personas autorizadas actualizadas exitosamente (914 cuentas).
+[LOCAL JSON] Archivo actualizado: C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
+[LOCAL JSON] Archivo actualizado: C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
+[SYNC SUCCESS] Sincronización completada exitosamente a las 19:13:10!
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Contenido idéntico al último sincronizado.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Contenido idéntico al último sincronizado.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Contenido idéntico al último sincronizado.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Contenido idéntico al último sincronizado.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Contenido idéntico al último sincronizado.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASES DE DATOS\GENERAL.mdb
+[SYNC] Contenido idéntico al último sincronizado.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Contenido idéntico al último sincronizado.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Contenido idéntico al último sincronizado.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[SYNC] Contenido idéntico al último sincronizado.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASES DE DATOS\GENERAL.mdb
+[SYNC] Subiendo a Supabase: 466 abonados, 914 con autorizados...
+[19:14:58] [SUPABASE] Clientes actualizados exitosamente (466 cuentas).
+[19:14:59] [SUPABASE] Personas autorizadas actualizadas exitosamente (914 cuentas).
+[LOCAL JSON] Archivo actualizado: C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
+[LOCAL JSON] Archivo actualizado: C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
+[SYNC SUCCESS] Sincronización completada exitosamente a las 19:14:59!
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb

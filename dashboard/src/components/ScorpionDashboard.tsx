@@ -420,6 +420,7 @@ export default function ScorpionDashboard() {
           .from('eventos_monitoreo')
           .select('*')
           .eq('cuenta', 'CLIENTES')
+          .order('id', { ascending: false })
           .limit(1)
         if (data && data.length > 0) {
           const rawJson = data[0].nombre_abonado

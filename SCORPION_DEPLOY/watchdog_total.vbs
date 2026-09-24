@@ -144,7 +144,7 @@ End Function
 ' === INICIAR SERVICIOS ===
 Sub StartSincronizador()
     On Error Resume Next
-    If ProcessExists("pythonw.exe", "sincronizador") Or ProcessExists("python.exe", "sincronizador") Then
+    If ProcessExists("pythonw.exe", "sincronizador.py") Or ProcessExists("python.exe", "sincronizador.py") Then
         LogMsg("Sincronizador ya esta en ejecucion (omitido intento duplicado)")
         Exit Sub
     End If
@@ -209,6 +209,21 @@ Sub StartEditorRemoto()
     On Error Goto 0
 End Sub
 
+Sub StartSincronizadorClientes()
+    On Error Resume Next
+    Dim sincCliFile
+    sincCliFile = ScriptDir & "\sincronizador_clientes.py"
+    If Not FSO.FileExists(sincCliFile) Then Exit Sub
+    If ProcessExists("pythonw.exe", "sincronizador_clientes") Or ProcessExists("python.exe", "sincronizador_clientes") Then
+        LogMsg("Sincronizador Clientes ya esta en ejecucion (omitido intento duplicado)")
+        Exit Sub
+    End If
+    LogMsg("Iniciando Sincronizador de Clientes (vigilante de GENERAL.mdb)...")
+    WshShell.Run """" & PythonPath & """ """ & sincCliFile & """", 0, False
+    If Err.Number <> 0 Then LogMsg("ERROR Sincronizador Clientes: " & Err.Description)
+    On Error Goto 0
+End Sub
+
 Sub KillProcess(procName, cmdFilter)
     On Error Resume Next
     Dim col, it
@@ -228,6 +243,7 @@ Call StartSincronizador()
 Call StartWhatsApp()
 Call StartBridge()
 Call StartEditorRemoto()
+Call StartSincronizadorClientes()
 
 ' === VARIABLES DE CONTROL ===
 Dim sincLastRestart, sincRestartCount
@@ -238,21 +254,21 @@ sincRestartCount = 0
 Do While True
     ' ── SINCRONIZADOR: verificar proceso + heartbeat ──
     Dim sincProcAlive
-    sincProcAlive = ProcessExists("pythonw.exe", "sincronizador") Or ProcessExists("python.exe", "sincronizador")
+    sincProcAlive = ProcessExists("pythonw.exe", "sincronizador.py") Or ProcessExists("python.exe", "sincronizador.py")
     
     If Not sincProcAlive Then
         ' Proceso muerto → reiniciar
         Call LogMsg("SINCRONIZADOR: Proceso MUERTO. Reiniciando...")
-        Call KillProcess("pythonw.exe", "sincronizador")
-        Call KillProcess("python.exe", "sincronizador")
+        Call KillProcess("pythonw.exe", "sincronizador.py")
+        Call KillProcess("python.exe", "sincronizador.py")
         Call StartSincronizador()
         sincRestartCount = sincRestartCount + 1
         sincLastRestart = Now
     ElseIf Not HeartbeatFresh(ScriptDir & "\_sincronizador_heartbeat.txt", 90) Then
         ' Proceso vivo PERO sin heartbeat fresco en 90s → colgado, reiniciar
         Call LogMsg("SINCRONIZADOR: COLGADO (sin heartbeat >90s). Reiniciando...")
-        Call KillProcess("pythonw.exe", "sincronizador")
-        Call KillProcess("python.exe", "sincronizador")
+        Call KillProcess("pythonw.exe", "sincronizador.py")
+        Call KillProcess("python.exe", "sincronizador.py")
         WScript.Sleep 3000
         Call StartSincronizador()
         sincRestartCount = sincRestartCount + 1
@@ -264,6 +280,14 @@ Do While True
         If Not (ProcessExists("pythonw.exe", "editor_remoto") Or ProcessExists("python.exe", "editor_remoto")) Then
             Call LogMsg("EDITOR REMOTO: Proceso MUERTO. Reiniciando...")
             Call StartEditorRemoto()
+        End If
+    End If
+
+    ' ── SINCRONIZADOR CLIENTES: vigilar GENERAL.mdb ──
+    If FSO.FileExists(ScriptDir & "\sincronizador_clientes.py") Then
+        If Not (ProcessExists("pythonw.exe", "sincronizador_clientes") Or ProcessExists("python.exe", "sincronizador_clientes")) Then
+            Call LogMsg("SINCRONIZADOR CLIENTES: Proceso detenido. Reiniciando...")
+            Call StartSincronizadorClientes()
         End If
     End If
 
