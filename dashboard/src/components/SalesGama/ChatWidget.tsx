@@ -43,6 +43,14 @@ function ChatMessageBubble({ msg }: { msg: ChatMessage }) {
   );
 }
 
+// Keywords que disparan derivación a humano
+const HUMAN_KEYWORDS = ["humano", "ejecutivo", "persona", "agente", "operador", "atención", "asesor", "hablar con alguien"];
+
+function wantsHuman(message: string): boolean {
+  const lower = message.toLowerCase();
+  return HUMAN_KEYWORDS.some((kw) => lower.includes(kw));
+}
+
 export function ChatWidget() {
   const [isOpen, setIsOpen] = useState(false);
   const [inputValue, setInputValue] = useState("");
@@ -61,9 +69,10 @@ export function ChatWidget() {
     endSession,
     config,
     sessionId,
+    addMessage,
   } = useSalesGama({
     onChunk: () => {},
-    onDone: () => {},
+    onDone: (fullText) => addMessage({ role: "assistant", content: fullText }),
     onError: () => {},
     onSessionEnd: () => setIsOpen(false),
   });
@@ -111,6 +120,14 @@ export function ChatWidget() {
     if (!text) return;
     setInputValue("");
     send(text);
+
+    // Auto-derivar a WhatsApp si pide humano
+    if (wantsHuman(text)) {
+      setTimeout(() => {
+        const farewell = config?.despedida || "Te conecto con un ejecutivo. ¡Gracias por contactarnos!";
+        addMessage({ role: "assistant", content: `${farewell}\n\n👉 <a href="${WA_URL}" target="_blank" rel="noopener" style="color:#0055aa;text-decoration:underline;">Click aquí para ir a WhatsApp</a>` });
+      }, 500);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -120,20 +137,15 @@ export function ChatWidget() {
       if (text) {
         send(text);
         setInputValue("");
+
+        if (wantsHuman(text)) {
+          setTimeout(() => {
+            const farewell = config?.despedida || "Te conecto con un ejecutivo. ¡Gracias por contactarnos!";
+            addMessage({ role: "assistant", content: `${farewell}\n\n👉 <a href="${WA_URL}" target="_blank" rel="noopener" style="color:#0055aa;text-decoration:underline;">Click aquí para ir a WhatsApp</a>` });
+          }, 500);
+        }
       }
     }
-  };
-
-  const handleHumanHandoff = () => {
-    const summary = history
-      .filter((m) => m.role !== "system")
-      .map((m) => `${m.role === "user" ? "Cliente" : "Bot"}: ${m.content}`)
-      .join("\n");
-    const text = encodeURIComponent(
-      `Hola SALES-GAMA, quiero hablar con un humano.\n\nResumen:\n${summary}`
-    );
-    window.open(`${WA_URL}?text=${text}`, "_blank");
-    endSession(sessionId || "");
   };
 
   const waUrl = config?.waUrl || WA_URL;
@@ -203,16 +215,6 @@ export function ChatWidget() {
           </div>
         )}
 
-        <button className="sg-human-btn" onClick={handleHumanHandoff} disabled={isLoading}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-            <circle cx="9" cy="7" r="4" />
-            <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-          </svg>
-          Hablar con humano
-        </button>
-
         <form onSubmit={handleSubmit} className="sg-input-form">
           <textarea
             ref={textareaRef}
@@ -236,11 +238,6 @@ export function ChatWidget() {
             </svg>
           </button>
         </form>
-
-        <div className="sg-footer">
-          <span>Powered by SALES-GAMA</span>
-          <span>Msj: {history.filter(m => m.role === 'user').length}/{(config?.rateLimit ?? 30)}</span>
-        </div>
       </div>
     </>
   );
