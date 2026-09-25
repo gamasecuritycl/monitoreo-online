@@ -169,9 +169,9 @@ export default function Hero() {
                     <span className="text-[10px] uppercase font-mono text-[#2997ff] tracking-wider font-semibold">
                       CENTRAL DE OPERACIONES REDUNDANTE
                     </span>
-                    <h3 className="text-sm font-semibold text-white">
+                    <p className="text-sm font-semibold text-white">
                       Recepción de eventos en tiempo real
-                    </h3>
+                    </p>
                   </div>
                 </div>
 

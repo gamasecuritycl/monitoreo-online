@@ -131,9 +131,9 @@ export default function Footer({ onOpenLegal, servicios, comunas, articulos }: F
 
           {/* Column 2: Servicios (reales desde el loader) */}
           <div className="space-y-3">
-            <h4 className="font-semibold text-[#1d1d1f] text-xs tracking-tight uppercase">
+            <p className="font-semibold text-[#1d1d1f] text-xs tracking-tight uppercase">
               Servicios
-            </h4>
+            </p>
             <ul className="space-y-2">
               {servicios.map(s => (
                 <li key={s.href}>
@@ -155,9 +155,9 @@ export default function Footer({ onOpenLegal, servicios, comunas, articulos }: F
 
           {/* Column 3: Comunas (top RM + V Región) */}
           <div className="space-y-3">
-            <h4 className="font-semibold text-[#1d1d1f] text-xs tracking-tight uppercase">
+            <p className="font-semibold text-[#1d1d1f] text-xs tracking-tight uppercase">
               Comunas
-            </h4>
+            </p>
             <ul className="space-y-2">
               {comunas.map(c => (
                 <li key={c.href}>
@@ -179,9 +179,9 @@ export default function Footer({ onOpenLegal, servicios, comunas, articulos }: F
 
           {/* Column 4: Blog (recientes) */}
           <div className="space-y-3">
-            <h4 className="font-semibold text-[#1d1d1f] text-xs tracking-tight uppercase">
+            <p className="font-semibold text-[#1d1d1f] text-xs tracking-tight uppercase">
               Blog
-            </h4>
+            </p>
             <ul className="space-y-2">
               {articulos.map(a => (
                 <li key={a.href}>
@@ -203,9 +203,9 @@ export default function Footer({ onOpenLegal, servicios, comunas, articulos }: F
 
           {/* Column 5: Plataforma & CRA */}
           <div className="space-y-3">
-            <h4 className="font-semibold text-[#1d1d1f] text-xs tracking-tight uppercase">
+            <p className="font-semibold text-[#1d1d1f] text-xs tracking-tight uppercase">
               Plataforma
-            </h4>
+            </p>
             <ul className="space-y-2">
               <li>
                 <Link href="/operacion" className="text-[#0066cc] font-semibold hover:underline">
@@ -242,10 +242,10 @@ export default function Footer({ onOpenLegal, servicios, comunas, articulos }: F
 
           {/* Column 6: Cumplimiento & Legal (Ley N° 21.719) */}
           <div className="space-y-3">
-            <h4 className="font-semibold text-[#1d1d1f] text-xs tracking-tight uppercase flex items-center gap-1.5">
+            <p className="font-semibold text-[#1d1d1f] text-xs tracking-tight uppercase flex items-center gap-1.5">
               <ShieldCheck className="w-3.5 h-3.5 text-[#0066cc]" />
               <span>Privacidad & Legal</span>
-            </h4>
+            </p>
             <ul className="space-y-2">
               <li>
                 <button

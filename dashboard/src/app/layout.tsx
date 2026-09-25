@@ -16,11 +16,11 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "GAMA SECURITY — Monitoreo de Alarmas 24/7 y Seguridad Electrónica en Chile",
+    default: "GAMA SECURITY — Monitoreo de Alarmas 24/7 en Chile",
     template: "%s | GAMA SECURITY Chile",
   },
   description:
-    "Empresa líder en monitoreo de alarmas 24/7 en Chile. Alarmas inteligentes Vetti con App NT CLICK, teclados DSC, cámaras 4K con IA y cercos eléctricos. Respuesta inmediata en < 2 min. Evaluación técnica gratis.",
+    "Líder en monitoreo de alarmas 24/7 en Chile. Alarmas inteligentes Vetti con App, cámaras 4K con IA y cercos eléctricos. Evaluación técnica sin costo.",
   keywords: [
     "monitoreo de alarmas",
     "alarmas para casas",

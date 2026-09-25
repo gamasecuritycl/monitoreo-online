@@ -20,9 +20,9 @@ const SITE_URL = 'https://www.gamasecurity.cl'
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: 'GAMA SECURITY — Monitoreo de Alarmas 24/7 y Alarmas Vetti en Chile',
+  title: 'GAMA SECURITY — Monitoreo de Alarmas 24/7 en Chile',
   description:
-    'Líder en monitoreo de alarmas 24/7 en Chile. Kits de Alarma Inteligente Vetti con App NT CLICK, teclados DSC, cámaras 4K con IA y cercos eléctricos. Respuesta < 2 min. Evaluación técnica sin costo.',
+    'Líder en monitoreo de alarmas 24/7 en Chile. Alarmas inteligentes Vetti con App, cámaras 4K con IA y cercos eléctricos. Evaluación técnica sin costo.',
   keywords: [
     'monitoreo de alarmas 24/7',
     'alarmas para casas chile',
@@ -45,9 +45,9 @@ export const metadata: Metadata = {
     locale: 'es_CL',
     url: SITE_URL,
     siteName: 'GAMA SECURITY',
-    title: 'GAMA SECURITY — Monitoreo de Alarmas 24/7 y Alarmas Vetti en Chile',
+    title: 'GAMA SECURITY — Monitoreo de Alarmas 24/7 en Chile',
     description:
-      'Monitoreo electrónico 24/7, Alarma Vetti con App NT CLICK, cámaras 4K IA y cercos eléctricos. +20 años protegiendo hogares y empresas en Chile. Evaluación técnica gratis.',
+      'Líder en monitoreo de alarmas 24/7 en Chile. Alarmas inteligentes Vetti con App, cámaras 4K con IA y cercos eléctricos. Evaluación técnica sin costo.',
     images: [
       {
         url: '/og-gama.png',

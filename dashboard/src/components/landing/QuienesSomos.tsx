@@ -145,9 +145,9 @@ export default function QuienesSomos() {
             transition={{ duration: 0.6 }}
             className="lg:col-span-6 text-left"
           >
-            <h4 className="text-xs font-semibold text-[#7a7a7a] uppercase tracking-widest mb-8">
+            <h3 className="text-xs font-semibold text-[#7a7a7a] uppercase tracking-widest mb-8">
               HISTORIA Y TRAYECTORIA
-            </h4>
+            </h3>
 
             <div className="relative pl-6 space-y-8 border-l-2 border-slate-300">
               {TIMELINE.map((item) => (
