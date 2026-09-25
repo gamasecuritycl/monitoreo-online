@@ -104,6 +104,13 @@ export function ChatWidget() {
   const panelRef = useRef<HTMLDivElement>(null);
   const isComposingRef = useRef(false);
 
+  // Por defecto, colapsar el avatar de escritorio en pantallas móviles para ahorrar espacio vertical
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.innerWidth <= 640) {
+      setShowDesk(false);
+    }
+  }, []);
+
   const {
     history,
     isLoading,
@@ -127,37 +134,82 @@ export function ChatWidget() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [history, isGenerating]);
 
+  // Bloqueo estricto del scroll de la página de fondo y ajuste dinámico en móviles (evita pérdida del cuadro de texto por teclado virtual)
   useEffect(() => {
-    if (isOpen) {
-      previousFocusRef.current = document.activeElement as HTMLElement;
-      const handleTab = (e: KeyboardEvent) => {
-        if (e.key !== "Tab") return;
-        const focusable = panelRef.current?.querySelectorAll<HTMLElement>(
-          'button, textarea, a, [href], input, [tabindex]:not([tabindex="-1"])'
-        );
-        if (!focusable || focusable.length === 0) return;
-        const first = focusable[0];
-        const last = focusable[focusable.length - 1];
-        if (e.shiftKey && document.activeElement === first) {
-          e.preventDefault();
-          last.focus();
-        } else if (!e.shiftKey && document.activeElement === last) {
-          e.preventDefault();
-          first.focus();
+    if (!isOpen) return;
+
+    const prevBodyOverflow = document.body.style.overflow;
+    const prevHtmlOverflow = document.documentElement.style.overflow;
+    const prevTouchAction = document.body.style.touchAction;
+
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+    document.body.style.touchAction = "none";
+
+    const updateMobileLayout = () => {
+      if (typeof window !== "undefined" && window.innerWidth <= 640 && panelRef.current) {
+        if (window.visualViewport) {
+          const height = window.visualViewport.height;
+          const top = window.visualViewport.offsetTop;
+          panelRef.current.style.height = `${height}px`;
+          panelRef.current.style.top = `${top}px`;
+        } else {
+          panelRef.current.style.height = `${window.innerHeight}px`;
+          panelRef.current.style.top = "0px";
         }
-      };
-      const handleEscape = (e: KeyboardEvent) => {
-        if (e.key === "Escape") setIsOpen(false);
-      };
-      document.addEventListener("keydown", handleTab);
-      document.addEventListener("keydown", handleEscape);
-      setTimeout(() => textareaRef.current?.focus(), 100);
-      return () => {
-        document.removeEventListener("keydown", handleTab);
-        document.removeEventListener("keydown", handleEscape);
-        previousFocusRef.current?.focus();
-      };
-    }
+      } else if (panelRef.current) {
+        panelRef.current.style.height = "";
+        panelRef.current.style.top = "";
+      }
+    };
+
+    updateMobileLayout();
+    window.visualViewport?.addEventListener("resize", updateMobileLayout);
+    window.visualViewport?.addEventListener("scroll", updateMobileLayout);
+    window.addEventListener("resize", updateMobileLayout);
+
+    previousFocusRef.current = document.activeElement as HTMLElement;
+    const handleTab = (e: KeyboardEvent) => {
+      if (e.key !== "Tab") return;
+      const focusable = panelRef.current?.querySelectorAll<HTMLElement>(
+        'button, textarea, a, [href], input, [tabindex]:not([tabindex="-1"])'
+      );
+      if (!focusable || focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIsOpen(false);
+    };
+    document.addEventListener("keydown", handleTab);
+    document.addEventListener("keydown", handleEscape);
+    setTimeout(() => textareaRef.current?.focus(), 150);
+
+    return () => {
+      document.body.style.overflow = prevBodyOverflow;
+      document.documentElement.style.overflow = prevHtmlOverflow;
+      document.body.style.touchAction = prevTouchAction;
+
+      window.visualViewport?.removeEventListener("resize", updateMobileLayout);
+      window.visualViewport?.removeEventListener("scroll", updateMobileLayout);
+      window.removeEventListener("resize", updateMobileLayout);
+
+      document.removeEventListener("keydown", handleTab);
+      document.removeEventListener("keydown", handleEscape);
+      previousFocusRef.current?.focus();
+
+      if (panelRef.current) {
+        panelRef.current.style.height = "";
+        panelRef.current.style.top = "";
+      }
+    };
   }, [isOpen]);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -188,25 +240,30 @@ export function ChatWidget() {
     [send, isGenerating, rateLimited]
   );
 
-  if (!isOpen) {
-    return (
+  return (
+    <>
+      {/* Botón flotante para abrir el asistente */}
       <button
-        className="sg-widget-trigger"
+        type="button"
+        className={`sg-widget-trigger ${isOpen ? "hidden-trigger" : ""}`}
         onClick={() => setIsOpen(true)}
         aria-label="Abrir asesor de ventas GAMA"
       >
         <SalesGamaAvatar state="idle" size={56} />
         <span className="sg-tooltip">Asesor de Ventas GAMA</span>
       </button>
-    );
-  }
 
-  return (
-    <>
-      <div className="sg-widget-backdrop" onClick={() => setIsOpen(false)} aria-hidden="true" />
+      {/* Fondo oscuro para oscurecer y aislar la página */}
+      <div
+        className={`sg-widget-backdrop ${isOpen ? "open" : ""}`}
+        onClick={() => setIsOpen(false)}
+        aria-hidden="true"
+      />
+
+      {/* Panel principal del Chat (pre-renderizado en el DOM para apertura instantánea a 0ms) */}
       <div
         ref={panelRef}
-        className="sg-widget-panel flex flex-col"
+        className={`sg-widget-panel flex flex-col ${isOpen ? "open" : ""}`}
         role="dialog"
         aria-modal="true"
         aria-label="Asesor de Ventas GAMA"
@@ -313,6 +370,11 @@ export function ChatWidget() {
             ref={textareaRef}
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
+            onFocus={() => {
+              setTimeout(() => {
+                messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+              }, 200);
+            }}
             onKeyDown={handleKeyDown}
             onCompositionStart={() => { isComposingRef.current = true; }}
             onCompositionEnd={(e) => {

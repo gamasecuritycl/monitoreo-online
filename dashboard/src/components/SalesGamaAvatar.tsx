@@ -32,7 +32,7 @@ export function SalesGamaAvatar({
   if (variant === "desk") {
     return (
       <div
-        className={`sg-android-desk-container relative overflow-hidden rounded-xl bg-gradient-to-b from-[#091528] via-[#06101e] to-[#040b15] border border-[#1b3558] p-1.5 sm:p-2 shadow-2xl h-[105px] sm:h-[135px] w-full ${className}`}
+        className={`sg-android-desk-container relative overflow-hidden rounded-xl bg-gradient-to-b from-[#091528] via-[#06101e] to-[#040b15] border border-[#1b3558] p-1.5 sm:p-2 shadow-2xl h-[115px] sm:h-[135px] w-full ${className}`}
         role="img"
         aria-label={`Androide GAMA Especialista en Ventas - ${internalState}`}
       >
@@ -43,221 +43,333 @@ export function SalesGamaAvatar({
         >
           <defs>
             <linearGradient id="screenGlow" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#00e5ff" stopOpacity="0.45" />
-              <stop offset="100%" stopColor="#0a2540" stopOpacity="0.8" />
+              <stop offset="0%" stopColor="#00e5ff" stopOpacity="0.35" />
+              <stop offset="100%" stopColor="#0a2540" stopOpacity="0.85" />
+            </linearGradient>
+            <linearGradient id="radarGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#002b4d" stopOpacity="0.9" />
+              <stop offset="100%" stopColor="#031122" stopOpacity="0.95" />
             </linearGradient>
             <linearGradient id="poloGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#0f2648" />
-              <stop offset="50%" stopColor="#0a1d37" />
-              <stop offset="100%" stopColor="#061326" />
+              <stop offset="0%" stopColor="#132f57" />
+              <stop offset="50%" stopColor="#0b1d38" />
+              <stop offset="100%" stopColor="#061224" />
             </linearGradient>
             <linearGradient id="metalChrome" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#b0c4de" />
-              <stop offset="50%" stopColor="#e8f0fe" />
-              <stop offset="100%" stopColor="#8ba4c4" />
+              <stop offset="0%" stopColor="#a3b8cc" />
+              <stop offset="35%" stopColor="#e2ecf7" />
+              <stop offset="70%" stopColor="#8ba4c4" />
+              <stop offset="100%" stopColor="#486581" />
+            </linearGradient>
+            <linearGradient id="armArmor" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#1e3a5f" />
+              <stop offset="50%" stopColor="#0f2648" />
+              <stop offset="100%" stopColor="#061326" />
+            </linearGradient>
+            <linearGradient id="pistonChrome" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor="#ffffff" />
+              <stop offset="50%" stopColor="#829ab1" />
+              <stop offset="100%" stopColor="#334e68" />
             </linearGradient>
             <filter id="cyanGlow" x="-20%" y="-20%" width="140%" height="140%">
-              <feGaussianBlur stdDeviation="3" result="blur" />
+              <feGaussianBlur stdDeviation="2.5" result="blur" />
               <feComposite in="SourceGraphic" in2="blur" operator="over" />
             </filter>
             <style>
               {`
                 @keyframes handTypeLeft {
                   0%, 100% { transform: translateY(0px) rotate(0deg); }
-                  25% { transform: translateY(-4px) rotate(-2deg); }
-                  50% { transform: translateY(1px) rotate(1deg); }
-                  75% { transform: translateY(-3px) rotate(-1deg); }
+                  25% { transform: translateY(-3px) rotate(-1.5deg); }
+                  50% { transform: translateY(1.5px) rotate(1deg); }
+                  75% { transform: translateY(-2px) rotate(-0.5deg); }
                 }
                 @keyframes handTypeRight {
                   0%, 100% { transform: translateY(0px) rotate(0deg); }
-                  25% { transform: translateY(1px) rotate(1deg); }
-                  50% { transform: translateY(-4px) rotate(2deg); }
+                  25% { transform: translateY(1.5px) rotate(1deg); }
+                  50% { transform: translateY(-3px) rotate(1.5deg); }
                   75% { transform: translateY(-1px) rotate(0deg); }
                 }
-                @keyframes screenPulse {
-                  0%, 100% { opacity: 0.85; filter: drop-shadow(0 0 6px rgba(0, 229, 255, 0.4)); }
-                  50% { opacity: 1; filter: drop-shadow(0 0 14px rgba(0, 229, 255, 0.8)); }
+                @keyframes waveLivePulse {
+                  0% { stroke-dashoffset: 80; }
+                  100% { stroke-dashoffset: 0; }
                 }
-                @keyframes codeLineMove {
-                  0% { stroke-dashoffset: 60; opacity: 0.4; }
-                  50% { opacity: 0.9; }
-                  100% { stroke-dashoffset: 0; opacity: 0.4; }
+                @keyframes radarSweep {
+                  0% { transform: rotate(0deg); }
+                  100% { transform: rotate(360deg); }
                 }
                 @keyframes bodyBreathing {
                   0%, 100% { transform: translateY(0); }
-                  50% { transform: translateY(-2px); }
+                  50% { transform: translateY(-1.5px); }
                 }
                 .android-body {
-                  animation: bodyBreathing 3s ease-in-out infinite;
+                  animation: bodyBreathing 3.5s ease-in-out infinite;
                 }
                 .typing-left {
-                  animation: ${isTyping ? "handTypeLeft 0.18s ease-in-out infinite" : "none"};
-                  transform-origin: 175px 125px;
+                  animation: ${isTyping ? "handTypeLeft 0.16s ease-in-out infinite" : "none"};
+                  transform-origin: 170px 135px;
                 }
                 .typing-right {
-                  animation: ${isTyping ? "handTypeRight 0.18s ease-in-out infinite 0.09s" : "none"};
-                  transform-origin: 225px 125px;
+                  animation: ${isTyping ? "handTypeRight 0.16s ease-in-out infinite 0.08s" : "none"};
+                  transform-origin: 230px 135px;
                 }
-                .screen-active {
-                  animation: ${isTyping ? "screenPulse 0.8s ease-in-out infinite" : "none"};
+                .radar-line {
+                  animation: radarSweep 4s linear infinite;
+                  transform-origin: 320px 105px;
                 }
-                .code-lines {
-                  animation: ${isTyping ? "codeLineMove 1.2s linear infinite" : "none"};
-                  stroke-dasharray: 6 3;
+                .signal-pulse {
+                  animation: waveLivePulse 2s linear infinite;
+                  stroke-dasharray: 40 10;
                 }
               `}
             </style>
           </defs>
 
-          {/* ── Fondo Oficina de Monitoreo Central ── */}
+          {/* ── Fondo Oficina Central de Monitoreo ── */}
           <rect x="0" y="0" width="400" height="160" fill="none" />
           <line x1="0" y1="130" x2="400" y2="130" stroke="#12253f" strokeWidth="1.5" />
-          {/* Luces sutiles de fondo (servidores) */}
-          <circle cx="20" cy="30" r="2" fill="#00e5ff" opacity="0.6" />
-          <circle cx="28" cy="30" r="2" fill="#25d366" opacity="0.8" />
-          <circle cx="380" cy="30" r="2" fill="#00e5ff" opacity="0.7" />
+          {/* Servidores de fondo */}
+          <circle cx="20" cy="25" r="2" fill="#00e5ff" opacity="0.6" />
+          <circle cx="28" cy="25" r="2" fill="#25d366" opacity="0.8" />
+          <circle cx="380" cy="25" r="2" fill="#00e5ff" opacity="0.7" />
 
-          {/* ── Androide de Medio Cuerpo ── */}
+          {/* ── Pantalla Lateral Izquierda (Monitor SIA / CID Live Alarms) ── */}
+          <g transform="translate(30, 72)">
+            {/* Marco de pantalla inclinada */}
+            <polygon points="5,0 95,0 90,54 0,54" fill="#071324" stroke="#1e3a5f" strokeWidth="1.2" />
+            <polygon points="8,3 92,3 88,51 3,51" fill="url(#screenGlow)" stroke="#00e5ff" strokeWidth="0.8" opacity="0.9" />
+            
+            {/* Header del monitor */}
+            <rect x="7" y="6" width="80" height="9" fill="#050e1a" opacity="0.8" rx="2" />
+            <circle cx="12" cy="10.5" r="2" fill="#25d366" className="animate-pulse" />
+            <text x="18" y="13.5" fill="#a0c4e8" fontSize="6.5" fontFamily="system-ui, sans-serif" fontWeight="700">
+              SIA / CID 24/7
+            </text>
+
+            {/* Gráfica de ondas de alarma en vivo */}
+            <path
+              d="M 6 30 L 25 30 L 32 18 L 40 42 L 48 24 L 56 34 L 64 30 L 86 30"
+              fill="none"
+              stroke="#00e5ff"
+              strokeWidth="1.3"
+              strokeLinecap="round"
+              className="signal-pulse"
+            />
+            {/* Indicador de estado */}
+            <text x="8" y="47" fill="#627d98" fontSize="5.5" fontFamily="monospace">
+              STATUS: MONITOREADO
+            </text>
+            <circle cx="78" cy="45" r="2" fill="#00e5ff" />
+          </g>
+
+          {/* ── Pantalla Lateral Derecha (Monitor CCTV Radar 4K) ── */}
+          <g transform="translate(275, 72)">
+            {/* Marco de pantalla inclinada */}
+            <polygon points="0,0 90,0 95,54 5,54" fill="#071324" stroke="#1e3a5f" strokeWidth="1.2" />
+            <polygon points="3,3 87,3 92,51 8,51" fill="url(#radarGlow)" stroke="#00e5ff" strokeWidth="0.8" opacity="0.9" />
+            
+            {/* Header del monitor */}
+            <rect x="8" y="6" width="80" height="9" fill="#050e1a" opacity="0.8" rx="2" />
+            <circle cx="14" cy="10.5" r="2" fill="#00e5ff" className="animate-pulse" />
+            <text x="20" y="13.5" fill="#a0c4e8" fontSize="6.5" fontFamily="system-ui, sans-serif" fontWeight="700">
+              RADAR CCTV 4K
+            </text>
+
+            {/* Radar con círculos concéntricos y barrido */}
+            <circle cx="45" cy="33" r="14" fill="none" stroke="#1b3a5b" strokeWidth="0.8" />
+            <circle cx="45" cy="33" r="8" fill="none" stroke="#1b3a5b" strokeWidth="0.8" />
+            <line x1="45" y1="18" x2="45" y2="48" stroke="#1b3a5b" strokeWidth="0.6" />
+            <line x1="30" y1="33" x2="60" y2="33" stroke="#1b3a5b" strokeWidth="0.6" />
+            {/* Línea de barrido animada */}
+            <line x1="45" y1="33" x2="57" y2="23" stroke="#00e5ff" strokeWidth="1.2" strokeLinecap="round" className="radar-line" />
+            
+            <text x="12" y="47" fill="#627d98" fontSize="5.5" fontFamily="monospace">
+              ZONA SEGURA OK
+            </text>
+            <circle cx="78" cy="45" r="2" fill="#25d366" />
+          </g>
+
+          {/* ── Androide Operador Central (Cuerpo y Brazos Robustos) ── */}
           <g className="android-body">
             {/* Cabeza metálica 3D */}
-            <g transform="translate(200, 48)">
-              {/* Cuello hidráulico */}
-              <rect x="-10" y="24" width="20" height="16" rx="3" fill="#627d98" stroke="#102a43" strokeWidth="1" />
-              <line x1="-8" y1="28" x2="8" y2="28" stroke="#00e5ff" strokeWidth="1" opacity="0.8" />
-              <line x1="-8" y1="34" x2="8" y2="34" stroke="#00e5ff" strokeWidth="1" opacity="0.8" />
+            <g transform="translate(200, 44)">
+              {/* Cuello hidráulico reforzado */}
+              <rect x="-12" y="24" width="24" height="18" rx="3" fill="#486581" stroke="#102a43" strokeWidth="1.2" />
+              <line x1="-10" y1="28" x2="10" y2="28" stroke="#00e5ff" strokeWidth="1.2" opacity="0.85" />
+              <line x1="-10" y1="34" x2="10" y2="34" stroke="#00e5ff" strokeWidth="1.2" opacity="0.85" />
 
               {/* Casco / Cráneo estilo androide */}
               <path
-                d="M -24 -15 C -24 -36, 24 -36, 24 -15 C 25 8, 18 25, 0 26 C -18 25, -25 8, -24 -15 Z"
+                d="M -25 -16 C -25 -38, 25 -38, 25 -16 C 26 8, 19 26, 0 27 C -19 26, -26 8, -25 -16 Z"
                 fill="url(#metalChrome)"
                 stroke="#1e3a5f"
-                strokeWidth="1.5"
+                strokeWidth="1.8"
               />
               {/* Placas laterales del cráneo */}
-              <path d="M -23 -12 C -20 5, -15 18, -6 23" fill="none" stroke="#486581" strokeWidth="1.2" />
-              <path d="M 23 -12 C 20 5, 15 18, 6 23" fill="none" stroke="#486581" strokeWidth="1.2" />
+              <path d="M -24 -12 C -21 5, -16 18, -7 24" fill="none" stroke="#334e68" strokeWidth="1.5" />
+              <path d="M 24 -12 C 21 5, 16 18, 7 24" fill="none" stroke="#334e68" strokeWidth="1.5" />
 
-              {/* Orejas / Sensores laterales */}
-              <rect x="-27" y="-6" width="4" height="14" rx="2" fill="#334e68" stroke="#00e5ff" strokeWidth="0.8" />
-              <rect x="23" y="-6" width="4" height="14" rx="2" fill="#334e68" stroke="#00e5ff" strokeWidth="0.8" />
+              {/* Orejas / Sensores laterales cromados */}
+              <rect x="-29" y="-6" width="5" height="15" rx="2" fill="#243b53" stroke="#00e5ff" strokeWidth="1" />
+              <rect x="24" y="-6" width="5" height="15" rx="2" fill="#243b53" stroke="#00e5ff" strokeWidth="1" />
 
               {/* Visor / Ojos cibernéticos brillantes */}
               <path
-                d="M -17 -4 Q -10 -9, 0 -9 Q 10 -9, 17 -4 Q 10 2, 0 2 Q -10 2, -17 -4 Z"
+                d="M -18 -4 Q -10 -10, 0 -10 Q 10 -10, 18 -4 Q 10 3, 0 3 Q -10 3, -18 -4 Z"
                 fill="#051221"
                 stroke="#102a43"
-                strokeWidth="1"
+                strokeWidth="1.2"
               />
               <g className={isTyping ? "animate-pulse" : ""}>
-                <circle cx="-8" cy="-4" r="3.2" fill="#00e5ff" filter="url(#cyanGlow)" />
-                <circle cx="-8" cy="-4" r="1.4" fill="#ffffff" />
-                <circle cx="8" cy="-4" r="3.2" fill="#00e5ff" filter="url(#cyanGlow)" />
-                <circle cx="8" cy="-4" r="1.4" fill="#ffffff" />
+                <circle cx="-9" cy="-4" r="3.5" fill="#00e5ff" filter="url(#cyanGlow)" />
+                <circle cx="-9" cy="-4" r="1.5" fill="#ffffff" />
+                <circle cx="9" cy="-4" r="3.5" fill="#00e5ff" filter="url(#cyanGlow)" />
+                <circle cx="9" cy="-4" r="1.5" fill="#ffffff" />
               </g>
 
-              {/* Rejilla de voz / audio */}
-              <line x1="-6" y1="12" x2="6" y2="12" stroke="#00e5ff" strokeWidth="1.2" strokeLinecap="round" opacity="0.85" />
-              <line x1="-4" y1="15" x2="4" y2="15" stroke="#00e5ff" strokeWidth="0.9" strokeLinecap="round" opacity="0.6" />
+              {/* Rejilla vocal */}
+              <line x1="-7" y1="13" x2="7" y2="13" stroke="#00e5ff" strokeWidth="1.4" strokeLinecap="round" opacity="0.9" />
+              <line x1="-5" y1="16" x2="5" y2="16" stroke="#00e5ff" strokeWidth="1" strokeLinecap="round" opacity="0.7" />
             </g>
 
-            {/* Torso con POLERA AZUL MARINO DE GAMA */}
+            {/* Torso con POLERA AZUL MARINO DE GAMA (TOTALMENTE VISIBLE) */}
             <path
-              d="M 152 86 C 165 80, 185 78, 200 78 C 215 78, 235 80, 248 86 L 260 135 L 140 135 Z"
+              d="M 146 84 C 162 78, 184 76, 200 76 C 216 76, 238 78, 254 84 L 268 135 L 132 135 Z"
               fill="url(#poloGradient)"
-              stroke="#061326"
-              strokeWidth="1.5"
+              stroke="#07152b"
+              strokeWidth="2"
             />
-            {/* Cuello de la polera */}
+            {/* Cuello de la polera con botones corporativos */}
             <path
-              d="M 184 80 L 200 95 L 216 80 L 208 78 L 200 86 L 192 78 Z"
-              fill="#061326"
+              d="M 182 78 L 200 96 L 218 78 L 209 76 L 200 85 L 191 76 Z"
+              fill="#061224"
               stroke="#1b3558"
-              strokeWidth="0.8"
+              strokeWidth="1"
             />
+            <circle cx="200" cy="89" r="1" fill="#8ba4c4" />
+            <circle cx="200" cy="93" r="1" fill="#8ba4c4" />
 
-            {/* ESCUDO OFICIAL DE GAMA EN EL PECHO */}
-            <g transform="translate(186, 92)">
-              <rect x="-1" y="-1" width="30" height="30" rx="4" fill="#0a1d37" opacity="0.3" />
-              <image
-                href="/logo-gama-servicios.png"
+            {/* ESCUDO OFICIAL DE GAMA EN EL PECHO (DESTACADO, SIN NINGUNA PANTALLA DELANTE) */}
+            <g transform="translate(183, 93)">
+              {/* Placa base del escudo con bisel iluminado */}
+              <rect
                 x="0"
                 y="0"
+                width="34"
+                height="32"
+                rx="6"
+                fill="#040e1c"
+                stroke="#00e5ff"
+                strokeWidth="1.2"
+                filter="url(#cyanGlow)"
+              />
+              <rect
+                x="1.5"
+                y="1.5"
+                width="31"
+                height="29"
+                rx="5"
+                fill="#071a33"
+                stroke="#2997ff"
+                strokeWidth="0.8"
+              />
+              {/* Logo Oficial GAMA */}
+              <image
+                href="/logo-gama.png"
+                x="3"
+                y="3"
                 width="28"
-                height="28"
+                height="26"
                 preserveAspectRatio="xMidYMid meet"
               />
             </g>
 
-            {/* Brazos / Hombros del androide */}
-            <path d="M 152 86 Q 140 100, 150 125" fill="none" stroke="#0a1d37" strokeWidth="16" strokeLinecap="round" />
-            <path d="M 248 86 Q 260 100, 250 125" fill="none" stroke="#0a1d37" strokeWidth="16" strokeLinecap="round" />
-            {/* Articulaciones cromadas de los codos */}
-            <circle cx="145" cy="115" r="5" fill="#8ba4c4" stroke="#102a43" strokeWidth="1" />
-            <circle cx="255" cy="115" r="5" fill="#8ba4c4" stroke="#102a43" strokeWidth="1" />
+            {/* ── BRAZOS ROBÓTICOS ROBUSTOS Y MUSCULARES ── */}
+            {/* HOMBRO IZQUIERDO Y BÍCEPS BLINDADO */}
+            <g>
+              {/* Hombrera cibernética */}
+              <path
+                d="M 148 84 Q 132 90, 134 108 L 148 110 Z"
+                fill="url(#armArmor)"
+                stroke="#1e3a5f"
+                strokeWidth="1.5"
+              />
+              {/* Placa de titanio exterior del bíceps (gruesa, 18px de ancho) */}
+              <rect x="132" y="94" width="18" height="24" rx="4" fill="url(#metalChrome)" stroke="#102a43" strokeWidth="1.2" />
+              {/* Servocable de datos */}
+              <line x1="141" y1="94" x2="141" y2="118" stroke="#00e5ff" strokeWidth="1.5" opacity="0.8" />
+              {/* Codo articulado cromado con núcleo iluminado */}
+              <circle cx="140" cy="120" r="7" fill="url(#pistonChrome)" stroke="#102a43" strokeWidth="1.5" />
+              <circle cx="140" cy="120" r="3" fill="#00e5ff" filter="url(#cyanGlow)" />
+            </g>
+
+            {/* HOMBRO DERECHO Y BÍCEPS BLINDADO */}
+            <g>
+              {/* Hombrera cibernética */}
+              <path
+                d="M 252 84 Q 268 90, 266 108 L 252 110 Z"
+                fill="url(#armArmor)"
+                stroke="#1e3a5f"
+                strokeWidth="1.5"
+              />
+              {/* Placa de titanio exterior del bíceps (gruesa, 18px de ancho) */}
+              <rect x="250" y="94" width="18" height="24" rx="4" fill="url(#metalChrome)" stroke="#102a43" strokeWidth="1.2" />
+              {/* Servocable de datos */}
+              <line x1="259" y1="94" x2="259" y2="118" stroke="#00e5ff" strokeWidth="1.5" opacity="0.8" />
+              {/* Codo articulado cromado con núcleo iluminado */}
+              <circle cx="260" cy="120" r="7" fill="url(#pistonChrome)" stroke="#102a43" strokeWidth="1.5" />
+              <circle cx="260" cy="120" r="3" fill="#00e5ff" filter="url(#cyanGlow)" />
+            </g>
           </g>
 
-          {/* ── Estación de Trabajo: Escritorio, Computador y Manos ── */}
-          {/* Superficie del escritorio con borde iluminado */}
-          <rect x="70" y="128" width="260" height="28" rx="4" fill="#0c1e38" stroke="#1e3a5f" strokeWidth="1.5" />
-          <line x1="72" y1="130" x2="328" y2="130" stroke="#00e5ff" strokeWidth="1.2" opacity="0.7" />
+          {/* ── Consola de Escritorio y Teclado Central (Bajo el Pecho) ── */}
+          {/* Superficie de la mesa de control */}
+          <rect x="50" y="128" width="300" height="28" rx="5" fill="#0c1e38" stroke="#1e3a5f" strokeWidth="1.5" />
+          <line x1="52" y1="130" x2="348" y2="130" stroke="#00e5ff" strokeWidth="1.5" opacity="0.8" />
 
-          {/* Teclado en el escritorio */}
-          <rect x="155" y="133" width="90" height="18" rx="2" fill="#06101e" stroke="#1e3a5f" strokeWidth="1" />
-          {/* Teclas simuladas con luces */}
-          <g opacity="0.75">
-            <line x1="160" y1="137" x2="240" y2="137" stroke="#486581" strokeWidth="1.5" strokeDasharray="3 2" />
-            <line x1="160" y1="141" x2="240" y2="141" stroke="#486581" strokeWidth="1.5" strokeDasharray="3 2" />
-            <line x1="170" y1="146" x2="230" y2="146" stroke="#00e5ff" strokeWidth="1.5" opacity="0.8" />
+          {/* Teclado iluminado interactivo */}
+          <rect x="150" y="132" width="100" height="20" rx="3" fill="#050e1a" stroke="#00e5ff" strokeWidth="1" />
+          {/* Teclas retroiluminadas */}
+          <g opacity="0.85">
+            <line x1="156" y1="137" x2="244" y2="137" stroke="#486581" strokeWidth="1.8" strokeDasharray="4 2" />
+            <line x1="156" y1="142" x2="244" y2="142" stroke="#486581" strokeWidth="1.8" strokeDasharray="4 2" />
+            <line x1="168" y1="147" x2="232" y2="147" stroke="#00e5ff" strokeWidth="2" strokeLinecap="round" />
           </g>
 
-          {/* Laptop / Monitor de trabajo */}
-          <g transform="translate(140, 92)">
-            {/* Pantalla posterior del laptop mirando al usuario */}
-            <rect
-              x="20"
-              y="5"
-              width="80"
-              height="36"
-              rx="3"
-              fill="url(#screenGlow)"
-              stroke="#00e5ff"
-              strokeWidth="1.2"
-              className="screen-active"
-            />
-            {/* Líneas de datos / código en el monitor */}
-            <line x1="28" y1="15" x2="92" y2="15" stroke="#ffffff" strokeWidth="1.5" className="code-lines" />
-            <line x1="28" y1="21" x2="84" y2="21" stroke="#00e5ff" strokeWidth="1.5" className="code-lines" />
-            <line x1="28" y1="27" x2="90" y2="27" stroke="#00e5ff" strokeWidth="1.5" className="code-lines" />
-            <line x1="28" y1="33" x2="68" y2="33" stroke="#25d366" strokeWidth="1.5" className="code-lines" />
-            {/* Base del laptop */}
-            <rect x="14" y="41" width="92" height="3" rx="1.5" fill="#486581" />
-          </g>
-
-          {/* Manos y dedos del androide escribiendo en el teclado */}
+          {/* ── ANTEBRAZOS Y MANOS MECÁNICAS ROBUSTAS ESCRIBIENDO EN EL TECLADO ── */}
+          {/* Antebrazo izquierdo robusto (pistón hidráulico + blindaje) */}
           <g className="typing-left">
-            {/* Antebrazo izquierdo hacia teclado */}
-            <line x1="150" y1="120" x2="175" y2="137" stroke="#b0c4de" strokeWidth="5" strokeLinecap="round" />
-            {/* Mano y dedos metálicos */}
-            <circle cx="175" cy="137" r="3.5" fill="#e8f0fe" stroke="#102a43" strokeWidth="0.8" />
-            <line x1="175" y1="137" x2="181" y2="140" stroke="#00e5ff" strokeWidth="1.5" strokeLinecap="round" />
-            <line x1="174" y1="138" x2="180" y2="143" stroke="#00e5ff" strokeWidth="1.5" strokeLinecap="round" />
+            {/* Pistón hidráulico exterior */}
+            <line x1="140" y1="120" x2="168" y2="138" stroke="#102a43" strokeWidth="13" strokeLinecap="round" />
+            <line x1="140" y1="120" x2="168" y2="138" stroke="url(#metalChrome)" strokeWidth="9" strokeLinecap="round" />
+            <line x1="144" y1="122" x2="165" y2="136" stroke="#00e5ff" strokeWidth="2" strokeLinecap="round" opacity="0.9" />
+            {/* Articulación de muñeca */}
+            <circle cx="168" cy="138" r="4.5" fill="#334e68" stroke="#102a43" strokeWidth="1" />
+            {/* Mano robótica y dedos articulados */}
+            <rect x="166" y="136" width="9" height="7" rx="2" fill="url(#metalChrome)" stroke="#102a43" strokeWidth="0.8" />
+            <circle cx="177" cy="140" r="1.6" fill="#00e5ff" />
+            <circle cx="176" cy="144" r="1.6" fill="#00e5ff" />
           </g>
 
+          {/* Antebrazo derecho robusto (pistón hidráulico + blindaje) */}
           <g className="typing-right">
-            {/* Antebrazo derecho hacia teclado */}
-            <line x1="250" y1="120" x2="225" y2="137" stroke="#b0c4de" strokeWidth="5" strokeLinecap="round" />
-            {/* Mano y dedos metálicos */}
-            <circle cx="225" cy="137" r="3.5" fill="#e8f0fe" stroke="#102a43" strokeWidth="0.8" />
-            <line x1="225" y1="137" x2="219" y2="140" stroke="#00e5ff" strokeWidth="1.5" strokeLinecap="round" />
-            <line x1="226" y1="138" x2="220" y2="143" stroke="#00e5ff" strokeWidth="1.5" strokeLinecap="round" />
+            {/* Pistón hidráulico exterior */}
+            <line x1="260" y1="120" x2="232" y2="138" stroke="#102a43" strokeWidth="13" strokeLinecap="round" />
+            <line x1="260" y1="120" x2="232" y2="138" stroke="url(#metalChrome)" strokeWidth="9" strokeLinecap="round" />
+            <line x1="256" y1="122" x2="235" y2="136" stroke="#00e5ff" strokeWidth="2" strokeLinecap="round" opacity="0.9" />
+            {/* Articulación de muñeca */}
+            <circle cx="232" cy="138" r="4.5" fill="#334e68" stroke="#102a43" strokeWidth="1" />
+            {/* Mano robótica y dedos articulados */}
+            <rect x="225" y="136" width="9" height="7" rx="2" fill="url(#metalChrome)" stroke="#102a43" strokeWidth="0.8" />
+            <circle cx="223" cy="140" r="1.6" fill="#00e5ff" />
+            <circle cx="224" cy="144" r="1.6" fill="#00e5ff" />
           </g>
 
-          {/* Badge de estado en vivo */}
-          <g transform="translate(310, 18)">
-            <rect x="0" y="0" width="75" height="18" rx="9" fill="#000000" fillOpacity="0.4" stroke="#1b3558" strokeWidth="1" />
-            <circle cx="10" cy="9" r="3.5" fill={isTyping ? "#00e5ff" : "#25d366"} className={isTyping ? "animate-ping" : ""} />
-            <circle cx="10" cy="9" r="3" fill={isTyping ? "#00e5ff" : "#25d366"} />
-            <text x="20" y="12.5" fill="#e2e8f0" fontSize="9" fontFamily="system-ui, sans-serif" fontWeight="600">
+          {/* Badge de estado en vivo superior derecho */}
+          <g transform="translate(305, 14)">
+            <rect x="0" y="0" width="82" height="19" rx="9.5" fill="#000000" fillOpacity="0.6" stroke="#1b3558" strokeWidth="1.2" />
+            <circle cx="11" cy="9.5" r="3.8" fill={isTyping ? "#00e5ff" : "#25d366"} className={isTyping ? "animate-ping" : ""} />
+            <circle cx="11" cy="9.5" r="3.2" fill={isTyping ? "#00e5ff" : "#25d366"} />
+            <text x="21" y="13" fill="#e2e8f0" fontSize="8.5" fontFamily="system-ui, sans-serif" fontWeight="700">
               {isTyping ? "ESCRIBIENDO..." : "EN LÍNEA 24/7"}
             </text>
           </g>
