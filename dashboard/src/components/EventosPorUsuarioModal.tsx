@@ -27,6 +27,7 @@ export default function EventosPorUsuarioModal({ onClose, eventoInicial }: Event
   const [clientesMap, setClientesMap] = useState<Record<string, Record<string, string>>>(clientesGeneralFallback)
   
   // Lista de días disponibles para el abonado activo
+  // Lista de días disponibles para el abonado activo
   const [diasDisponibles, setDiasDisponibles] = useState<string[]>([])
   const [diaSeleccionado, setDiaSeleccionado] = useState<string>('')
   
@@ -39,6 +40,9 @@ export default function EventosPorUsuarioModal({ onClose, eventoInicial }: Event
   const getDiaLocal = (iso: string): string => {
     try {
       const d = new Date(iso)
+      if (isNaN(d.getTime())) {
+        return iso.split('T')[0] || ''
+      }
       const anio = d.getFullYear().toString().padStart(4, '0')
       const mes = (d.getMonth() + 1).toString().padStart(2, '0')
       const dia = d.getDate().toString().padStart(2, '0')
@@ -99,18 +103,23 @@ export default function EventosPorUsuarioModal({ onClose, eventoInicial }: Event
             }
           })
           
+          // Siempre incluir la fecha de HOY en la lista de días
+          const hoy = getDiaLocal(new Date().toISOString())
+          diasSet.add(hoy)
+          
           const listaDias = Array.from(diasSet).sort((a, b) => b.localeCompare(a)) // Orden descendente
           setDiasDisponibles(listaDias)
           
-          // Seleccionar por defecto HOY si existe, si no el día más reciente con eventos
-          const hoy = getDiaLocal(new Date().toISOString())
-          if (listaDias.includes(hoy)) {
+          // Seleccionar por defecto HOY si tiene eventos, si no el día más reciente con eventos reales
+          const eventosHoy = eventosLimpios.filter(ev => ev.fecha_hora && getDiaLocal(ev.fecha_hora) === hoy)
+          if (eventosHoy.length > 0) {
             setDiaSeleccionado(hoy)
           } else if (listaDias.length > 0) {
-            setDiaSeleccionado(listaDias[0])
+            // Si hoy no tiene eventos pero hay días anteriores, seleccionar el día más reciente con eventos
+            const diasConEventos = listaDias.filter(d => d !== hoy)
+            setDiaSeleccionado(diasConEventos.length > 0 ? diasConEventos[0] : hoy)
           } else {
-            setDiaSeleccionado('')
-            setEventosMostrados([])
+            setDiaSeleccionado(hoy)
           }
         }
       } catch (err) {
@@ -122,7 +131,44 @@ export default function EventosPorUsuarioModal({ onClose, eventoInicial }: Event
     fetchHistoricoAbonado()
   }, [cuentaActiva])
 
-  // 3. Filtrar eventos del abonado según el día seleccionado
+  // 3. Suscripción en tiempo real a nuevos eventos de esta cuenta activa
+  useEffect(() => {
+    if (!cuentaActiva) return
+
+    const channel = supabase
+      .channel(`rt_eventos_modal_${cuentaActiva}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'eventos_monitoreo',
+          filter: `cuenta=eq.${cuentaActiva}`
+        },
+        (payload) => {
+          const nuevo = payload.new as EventoMonitoreo
+          if (!nuevo || !nuevo.fecha_hora) return
+          setTodosEventosAbonado(prev => {
+            const combinados = deduplicarEventos([nuevo, ...prev])
+            return combinados
+          })
+          const dNuevo = getDiaLocal(nuevo.fecha_hora)
+          setDiasDisponibles(prev => {
+            if (!prev.includes(dNuevo)) {
+              return [dNuevo, ...prev].sort((a, b) => b.localeCompare(a))
+            }
+            return prev
+          })
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [cuentaActiva])
+
+  // 4. Filtrar eventos del abonado según el día seleccionado
   useEffect(() => {
     if (!diaSeleccionado) {
       setEventosMostrados([])
@@ -193,6 +239,58 @@ export default function EventosPorUsuarioModal({ onClose, eventoInicial }: Event
     }
   }
 
+  // Formateo limpio de Zona y Usuario
+  const formatZona = (zn?: string) => {
+    if (!zn || zn === 'None' || zn.trim() === '' || zn === '----') return '--'
+    const clean = zn.trim()
+    if (clean === 'U/C' || clean === 'TEC') return clean
+    if (/^\d+$/.test(clean)) return clean.padStart(2, '0')
+    return clean
+  }
+
+  const formatUsuario = (us?: string) => {
+    if (!us || us === 'None' || us.trim() === '' || us === '----') return '--'
+    const clean = us.trim()
+    if (/^\d+$/.test(clean)) return clean.padStart(2, '0')
+    return clean
+  }
+
+  // Contar eventos por día para informar en el selector
+  const conteoPorDia = todosEventosAbonado.reduce<Record<string, number>>((acc, ev) => {
+    if (ev.fecha_hora) {
+      const d = getDiaLocal(ev.fecha_hora)
+      acc[d] = (acc[d] || 0) + 1
+    }
+    return acc
+  }, {})
+
+  const hoyStr = getDiaLocal(new Date().toISOString())
+
+  // Último evento registrado para calcular salud de comunicación
+  const ultimoEvento = todosEventosAbonado.length > 0 ? todosEventosAbonado[0] : null
+
+  const getEstadoComunicacion = () => {
+    if (!ultimoEvento || !ultimoEvento.fecha_hora) {
+      return { estado: 'SIN_HISTORIAL', label: 'SIN SEÑALES', color: 'text-gray-400', bg: 'bg-black' }
+    }
+    const fechaUltimo = new Date(ultimoEvento.fecha_hora)
+    const ahora = new Date()
+    const diffHoras = (ahora.getTime() - fechaUltimo.getTime()) / (1000 * 60 * 60)
+    
+    if (diffHoras <= 26) {
+      return { estado: 'ONLINE', label: 'EN LÍNEA (ACTIVO)', color: 'text-green-400', bg: 'bg-black' }
+    }
+    const dias = Math.floor(diffHoras / 24)
+    return { 
+      estado: 'OFFLINE', 
+      label: `SIN SEÑAL HACE ${dias} DÍA${dias > 1 ? 'S' : ''}`, 
+      color: 'text-red-400', 
+      bg: 'bg-black' 
+    }
+  }
+
+  const estadoCom = getEstadoComunicacion()
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 font-mono p-2 overflow-y-auto"
@@ -200,13 +298,13 @@ export default function EventosPorUsuarioModal({ onClose, eventoInicial }: Event
     >
       {/* 
         VENTANA RETRO PIXEL-PERFECT COMPACTA E INTELIGENTE
-        PC: Ancho 950px, Alto 520px fijos.
+        PC: Ancho 980px, Alto 530px fijos.
         Móvil: Stacking vertical y scroll fluido de formulario para visualización óptima en celulares.
       */}
       <div
         ref={modalRef}
         tabIndex={-1}
-        className="w-full md:w-[950px] h-[92vh] md:h-[520px] bg-[#d4d0c8] text-black border-2 border-t-white border-l-white border-b-[#808080] border-r-[#808080] p-1 shadow-[4px_4px_12px_rgba(0,0,0,0.6)] focus:outline-none flex flex-col justify-between select-none"
+        className="w-full md:w-[980px] h-[92vh] md:h-[530px] bg-[#d4d0c8] text-black border-2 border-t-white border-l-white border-b-[#808080] border-r-[#808080] p-1 shadow-[4px_4px_12px_rgba(0,0,0,0.6)] focus:outline-none flex flex-col justify-between select-none"
         style={{ fontSize: '11px' }}
       >
         {/* Barra de Título */}
@@ -226,13 +324,13 @@ export default function EventosPorUsuarioModal({ onClose, eventoInicial }: Event
         {/* CONTENEDOR PRINCIPAL */}
         <div className="flex-1 p-2 flex flex-col gap-2.5 overflow-y-auto md:overflow-hidden">
           
-          {/* CABECERA: TÍTULO EN AZUL + VISORES NEGROS */}
+          {/* CABECERA: TÍTULO EN AZUL + VISORES NEGROS + ESTADO */}
           <div className="h-auto md:h-14 flex flex-col md:flex-row items-start md:items-center justify-between shrink-0 bg-[#d4d0c8] border-b border-gray-400 pb-1.5 gap-2 md:gap-0">
             <div className="text-[#000080] font-black text-[18px] md:text-[22px] italic tracking-widest pl-1 uppercase">
               EVENTOS POR USUARIO
             </div>
             
-            {/* Visores Negros con Letras Verdes */}
+            {/* Visores Negros con Letras Verdes y Estado de Enlace */}
             <div className="flex flex-wrap gap-2 items-center w-full md:w-auto">
               <div className="flex items-center gap-1">
                 <span className="font-bold text-[9px] text-gray-700">CUENTA:</span>
@@ -242,9 +340,13 @@ export default function EventosPorUsuarioModal({ onClose, eventoInicial }: Event
               </div>
               <div className="flex-1 md:flex-none flex items-center gap-1">
                 <span className="font-bold text-[9px] text-gray-700">NOMBRE:</span>
-                <div className="w-full md:w-[320px] h-6 bg-black border border-gray-500 flex items-center pl-2 font-bold text-green-400 text-[10px] font-mono truncate">
+                <div className="w-full md:w-[260px] h-6 bg-black border border-gray-500 flex items-center pl-2 font-bold text-green-400 text-[10px] font-mono truncate">
                   {clienteActivo.nombre || '----------------------------------------'}
                 </div>
+              </div>
+              <div className={`px-2 py-0.5 border border-gray-600 font-bold text-[9px] font-mono flex items-center gap-1 shrink-0 ${estadoCom.bg} ${estadoCom.color}`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${estadoCom.estado === 'ONLINE' ? 'bg-green-400 animate-pulse' : 'bg-red-500'}`} />
+                {estadoCom.label}
               </div>
             </div>
           </div>
@@ -254,8 +356,11 @@ export default function EventosPorUsuarioModal({ onClose, eventoInicial }: Event
             
             {/* Lado Izquierdo: Grilla de Eventos (PC: w-[520px]) */}
             <div className="w-full md:w-[520px] flex flex-col shrink-0 overflow-hidden border border-gray-500 bg-white min-h-[200px] md:min-h-0">
-              <div className="bg-[#b0b0b0] text-black text-center font-bold py-1 border-b border-gray-500 uppercase tracking-wider text-[10px]">
-                DIA: {diaSeleccionado || '------'}
+              <div className="bg-[#b0b0b0] text-black text-center font-bold py-1 border-b border-gray-500 uppercase tracking-wider text-[10px] flex justify-between px-2 items-center">
+                <span>DIA: {diaSeleccionado || '------'} {diaSeleccionado === hoyStr ? '(HOY)' : ''}</span>
+                <span className="text-[9px] font-normal text-gray-800">
+                  {eventosMostrados.length} señal{eventosMostrados.length !== 1 ? 'es' : ''}
+                </span>
               </div>
               
               <div ref={eventosScrollRef} className="flex-1 overflow-y-auto">
@@ -279,13 +384,26 @@ export default function EventosPorUsuarioModal({ onClose, eventoInicial }: Event
                         <td className="p-1 border-r border-gray-300 text-center text-blue-900">{getHoraSolo(ev.fecha_hora)}</td>
                         <td className="p-1 border-r border-gray-300 truncate max-w-[150px] sm:max-w-[250px] uppercase">{ev.evento}</td>
                         <td className="p-1 border-r border-gray-300 text-center text-gray-600">01</td>
-                        <td className="p-1 border-r border-gray-300 text-center text-red-600">{ev.zona && ev.zona !== 'None' ? ev.zona.padStart(2, '0') : '00'}</td>
-                        <td className="p-1 text-center text-green-700">{ev.usuario && ev.usuario !== 'None' ? ev.usuario.padStart(2, '0') : '00'}</td>
+                        <td className="p-1 border-r border-gray-300 text-center text-red-600">{formatZona(ev.zona)}</td>
+                        <td className="p-1 text-center text-green-700">{formatUsuario(ev.usuario)}</td>
                       </tr>
                     ))}
                     {!loading && eventosMostrados.length === 0 && (
                       <tr>
-                        <td colSpan={5} className="p-4 text-center text-gray-400 italic">Sin actividad</td>
+                        <td colSpan={5} className="p-6 text-center font-mono">
+                          <div className="text-amber-800 font-bold text-xs mb-1">
+                            Sin señales registradas para el día {diaSeleccionado} {diaSeleccionado === hoyStr ? '(Hoy)' : ''}
+                          </div>
+                          {ultimoEvento && ultimoEvento.fecha_hora ? (
+                            <div className="text-[10px] text-gray-600 mt-1">
+                              Último evento recibido: <span className="font-bold text-blue-900">{ultimoEvento.evento}</span> el {new Date(ultimoEvento.fecha_hora).toLocaleDateString('es-CL')} a las {getHoraSolo(ultimoEvento.fecha_hora)}
+                            </div>
+                          ) : (
+                            <div className="text-[10px] text-gray-500 italic mt-1">
+                              Esta cuenta no registra eventos en el historial reciente
+                            </div>
+                          )}
+                        </td>
                       </tr>
                     )}
                   </tbody>
@@ -293,23 +411,32 @@ export default function EventosPorUsuarioModal({ onClose, eventoInicial }: Event
               </div>
             </div>
 
-            {/* Centro: Selector de Día (PC: w-[120px], Móvil: Adaptable) */}
-            <div className="w-full md:w-[120px] flex flex-col shrink-0 bg-[#d4d0c8] min-h-[90px] md:min-h-0">
-              <div className="text-[10px] font-bold text-gray-700 mb-1">
-                Seleccione Dia:
+            {/* Centro: Selector de Día (PC: w-[140px], Móvil: Adaptable) */}
+            <div className="w-full md:w-[140px] flex flex-col shrink-0 bg-[#d4d0c8] min-h-[90px] md:min-h-0">
+              <div className="text-[10px] font-bold text-gray-700 mb-1 flex justify-between items-center">
+                <span>Seleccione Dia:</span>
               </div>
               <div className="flex-1 bg-white border border-t-gray-700 border-l-gray-700 border-b-white border-r-white overflow-y-auto max-h-[100px] md:max-h-none">
-                {diasDisponibles.map((dia) => (
-                  <div
-                    key={dia}
-                    onClick={() => setDiaSeleccionado(dia)}
-                    className={`px-1.5 py-1 text-[10px] font-bold font-mono cursor-pointer border-b border-gray-200 select-none ${
-                      diaSeleccionado === dia ? 'bg-[#000080] text-white' : 'hover:bg-gray-100 text-black'
-                    }`}
-                  >
-                    📅 {dia}
-                  </div>
-                ))}
+                {diasDisponibles.map((dia) => {
+                  const cant = conteoPorDia[dia] || 0
+                  const esHoy = dia === hoyStr
+                  return (
+                    <div
+                      key={dia}
+                      onClick={() => setDiaSeleccionado(dia)}
+                      className={`px-1.5 py-1 text-[10px] font-bold font-mono cursor-pointer border-b border-gray-200 select-none flex justify-between items-center ${
+                        diaSeleccionado === dia ? 'bg-[#000080] text-white' : 'hover:bg-gray-100 text-black'
+                      }`}
+                    >
+                      <span className="truncate">📅 {dia} {esHoy ? '*' : ''}</span>
+                      <span className={`text-[9px] px-1 rounded font-normal ${
+                        diaSeleccionado === dia ? 'bg-blue-900 text-blue-200' : cant > 0 ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-500'
+                      }`}>
+                        {cant}
+                      </span>
+                    </div>
+                  )
+                })}
                 {diasDisponibles.length === 0 && (
                   <div className="p-2 text-center text-gray-400 italic text-[9px]">Sin fechas</div>
                 )}
