@@ -1,7 +1,8 @@
 'use client'
 
 import React, { useState, useEffect, useRef } from 'react'
-import { supabase } from '@/lib/supabase'
+import { supabase, deduplicarEventos } from '@/lib/supabase'
+
 import { lookupContactId } from '@/lib/contact_id_library'
 import jsPDF from 'jspdf'
 
@@ -892,7 +893,7 @@ export default function PortalTecnicoMovil() {
 
       if (data) {
         const clienteEvs = data.filter(e => !esEventoInternoOHeartbeat(e.cuenta, e.evento))
-        setEventosAlarma(clienteEvs.slice(0, 50))
+        setEventosAlarma(deduplicarEventos(clienteEvs).slice(0, 50))
       }
     } catch (err) {
       console.error('Error cargando eventos:', err)
@@ -916,7 +917,7 @@ export default function PortalTecnicoMovil() {
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'eventos_monitoreo' }, payload => {
           const newEv = payload.new as EventoAlarma
           if (newEv && !esEventoInternoOHeartbeat(newEv.cuenta, newEv.evento)) {
-            setEventosAlarma(prev => [newEv, ...prev.filter(e => e.id !== newEv.id)].slice(0, 50))
+            setEventosAlarma(prev => deduplicarEventos([newEv, ...prev]).slice(0, 50))
           }
         })
         .subscribe()

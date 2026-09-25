@@ -35,7 +35,8 @@ import {
   FileSearch,
   Check
 } from 'lucide-react'
-import { supabase, type EventoMonitoreo } from '@/lib/supabase'
+import { supabase, deduplicarEventos, type EventoMonitoreo } from '@/lib/supabase'
+
 import clientesDataRaw from '@/lib/clientes_general.json'
 import personasAutorizadasRaw from '@/lib/personas_autorizadas.json'
 
@@ -233,7 +234,7 @@ export default function AreaClientesPortal() {
           .limit(20)
 
         if (!error && data) {
-          setEventosSupabase(data)
+          setEventosSupabase(deduplicarEventos(data))
         }
       } catch (err) {
         console.error('Error cargando eventos Supabase:', err)
@@ -248,7 +249,7 @@ export default function AreaClientesPortal() {
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'eventos_monitoreo', filter: `cuenta=eq.${cuentaActiva}` },
         (payload) => {
-          setEventosSupabase((prev) => [payload.new as EventoMonitoreo, ...prev.slice(0, 19)])
+          setEventosSupabase((prev) => deduplicarEventos([payload.new as EventoMonitoreo, ...prev]).slice(0, 20))
         }
       )
       .subscribe()

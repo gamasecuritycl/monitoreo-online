@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react'
 import type { EventoMonitoreo } from '@/lib/supabase'
-import { supabase } from '@/lib/supabase'
+import { supabase, deduplicarEventos } from '@/lib/supabase'
+
 
 // Base de datos de fallback de clientes
 import clientesDataRaw from '@/lib/clientes_general.json'
@@ -87,11 +88,12 @@ export default function EventosPorUsuarioModal({ onClose, eventoInicial }: Event
           .limit(1000)
 
         if (data && !error) {
-          setTodosEventosAbonado(data)
+          const eventosLimpios = deduplicarEventos(data)
+          setTodosEventosAbonado(eventosLimpios)
           
           // Agrupar fechas únicas en formato YYYY-MM-DD (robusto)
           const diasSet = new Set<string>()
-          data.forEach((ev: EventoMonitoreo) => {
+          eventosLimpios.forEach((ev: EventoMonitoreo) => {
             if (ev.fecha_hora) {
               diasSet.add(getDiaLocal(ev.fecha_hora))
             }
@@ -129,8 +131,9 @@ export default function EventosPorUsuarioModal({ onClose, eventoInicial }: Event
     const filtrados = todosEventosAbonado.filter(ev => {
       return ev.fecha_hora && getDiaLocal(ev.fecha_hora) === diaSeleccionado
     })
+    const filtradosLimpios = deduplicarEventos(filtrados)
     // Orden cronológico ascendente por timestamp: el más reciente SIEMPRE abajo
-    const ordenAsc = [...filtrados].sort((a, b) => {
+    const ordenAsc = [...filtradosLimpios].sort((a, b) => {
       return new Date(a.fecha_hora).getTime() - new Date(b.fecha_hora).getTime()
     })
     setEventosMostrados(ordenAsc)

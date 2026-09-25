@@ -71,3 +71,38 @@ export async function getWhatsAppServerUrl(): Promise<string> {
   }
   return 'http://localhost:3015'
 }
+
+/**
+ * Deduplica eventos idénticos emitidos en paralelo por las dos fuentes de Scorpion (MySQL + MDB)
+ * o por ráfagas repetidas del panel de alarma.
+ */
+export function deduplicarEventos<T extends Partial<EventoMonitoreo>>(lista: T[]): T[] {
+  const vistos = new Map<string, T>()
+  for (const ev of lista) {
+    if (!ev.fecha_hora) continue
+    if ((ev.evento || '').toUpperCase().trim() === 'PREMIUM') continue
+
+    const ts = new Date(ev.fecha_hora).getTime()
+    // Ventana de 35 segundos para descartar duplicados paralelos
+    const timeBucket = Math.round(ts / 35000)
+    const c = (ev.cuenta || '').trim().toUpperCase()
+    const e = (ev.evento || '').trim().toUpperCase()
+    const z = (ev.zona || '').trim().toUpperCase()
+    const u = (ev.usuario || '').trim().toUpperCase()
+    const key = `${c}_${e}_${z}_${u}_${timeBucket}`
+
+    const existing = vistos.get(key)
+    if (!existing) {
+      vistos.set(key, ev)
+    } else {
+      // Si uno tiene un nombre más completo que "ABONADO C...", preferir el completo
+      const nomExist = (existing.nombre_abonado || '').trim().toUpperCase()
+      const nomNuevo = (ev.nombre_abonado || '').trim().toUpperCase()
+      if (nomExist.startsWith('ABONADO ') && !nomNuevo.startsWith('ABONADO ') && nomNuevo.length > 0) {
+        vistos.set(key, ev)
+      }
+    }
+  }
+  return Array.from(vistos.values())
+}
+

@@ -1,8 +1,9 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { supabase } from '@/lib/supabase'
+import { supabase, deduplicarEventos } from '@/lib/supabase'
 import clientesDataRaw from '@/lib/clientes_general.json'
+
 import { esAbonadoInactivo } from '@/lib/inactivos_filter'
 
 const clientesGeneralFallback = clientesDataRaw as Record<string, Record<string, string>>
@@ -71,7 +72,7 @@ export default function ControlTestModal({ onClose, clientesMap = {} }: Props) {
 
       if (eventosError) throw eventosError
 
-      const testEvents = (eventosData || []) as EventoMonitoreo[]
+      const testEvents = deduplicarEventos((eventosData || []) as any) as EventoMonitoreo[]
 
       // 3. Procesar solo para clientes activos y que tengan test en las últimas 36 horas
       const targetMap = Object.keys(clientesMap).length > 0 ? clientesMap : clientesGeneralFallback

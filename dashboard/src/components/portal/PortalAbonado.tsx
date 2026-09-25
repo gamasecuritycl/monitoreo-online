@@ -1,7 +1,8 @@
 'use client'
 
 import React, { useState, useEffect, useMemo } from 'react'
-import { supabase, type EventoMonitoreo } from '@/lib/supabase'
+import { supabase, deduplicarEventos, type EventoMonitoreo } from '@/lib/supabase'
+
 import { lookupContactId } from '@/lib/contact_id_library'
 import clientesDataRaw from '@/lib/clientes_general.json'
 
@@ -79,7 +80,7 @@ export default function PortalAbonado() {
           .limit(100)
 
         if (!cancel && evs) {
-          setEventosCliente(evs)
+          setEventosCliente(deduplicarEventos(evs))
         }
 
         // 2. Cargar Zonas desde la fila especial ZONAS
@@ -150,7 +151,7 @@ export default function PortalAbonado() {
           filter: `cuenta=eq.${cuentaAutenticada}`
         },
         (payload) => {
-          setEventosCliente(prev => [payload.new as EventoMonitoreo, ...prev])
+          setEventosCliente(prev => deduplicarEventos([payload.new as EventoMonitoreo, ...prev]))
         }
       )
       .subscribe()
