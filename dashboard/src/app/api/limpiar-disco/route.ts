@@ -1,17 +1,40 @@
 import { NextResponse } from 'next/server'
 import { Client } from 'pg'
 
-export async function GET() {
-  const connectionString = "postgresql://postgres:yr43d8lek%25fr$6!xDzlMuqVf@db.onxwyrwmpjxtwlmjrosr.supabase.co:5432/postgres"
+import dns from 'node:dns'
+try { dns.setDefaultResultOrder('ipv6first') } catch {}
 
-  const client = new Client({
-    connectionString,
-    ssl: { rejectUnauthorized: false }
-  })
+export async function GET() {
+  const hosts = [
+    '2600:1f1e:dbb:f602:6a4f:3993:b9a4:9c39',
+    'db.onxwyrwmpjxtwlmjrosr.supabase.co'
+  ]
+  let client: Client | null = null
+  let lastErr = ''
+
+  for (const h of hosts) {
+    try {
+      client = new Client({
+        host: h,
+        port: 5432,
+        user: 'postgres',
+        password: 'yr43d8lek%fr$6!xDzlMuqVf',
+        database: 'postgres',
+        ssl: { rejectUnauthorized: false }
+      })
+      await client.connect()
+      break
+    } catch (err: any) {
+      lastErr = `${h}: ${err.message}`
+      client = null
+    }
+  }
+
+  if (!client) {
+    return NextResponse.json({ success: false, error: lastErr }, { status: 500 })
+  }
 
   try {
-    await client.connect()
-
     // 1. Contar filas antes
     const preCount = await client.query(`
       SELECT cuenta, count(*), pg_size_pretty(sum(length(coalesce(nombre_abonado, ''))::bigint)) as size

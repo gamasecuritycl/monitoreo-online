@@ -29701,3 +29701,348 @@
 [PA MDB WARN] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
 [EXTRACT DB ERROR] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
 [SYNC ERROR] No se pudieron extraer datos del MDB.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[PA MDB WARN] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[EXTRACT DB ERROR] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[SYNC ERROR] No se pudieron extraer datos del MDB.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[PA MDB WARN] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[EXTRACT DB ERROR] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[SYNC ERROR] No se pudieron extraer datos del MDB.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[PA MDB WARN] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[EXTRACT DB ERROR] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[SYNC ERROR] No se pudieron extraer datos del MDB.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[PA MDB WARN] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[EXTRACT DB ERROR] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[SYNC ERROR] No se pudieron extraer datos del MDB.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[PA MDB WARN] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[EXTRACT DB ERROR] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[SYNC ERROR] No se pudieron extraer datos del MDB.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[PA MDB WARN] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[EXTRACT DB ERROR] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[SYNC ERROR] No se pudieron extraer datos del MDB.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[PA MDB WARN] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[EXTRACT DB ERROR] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[SYNC ERROR] No se pudieron extraer datos del MDB.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[PA MDB WARN] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[EXTRACT DB ERROR] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[SYNC ERROR] No se pudieron extraer datos del MDB.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[PA MDB WARN] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[EXTRACT DB ERROR] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[SYNC ERROR] No se pudieron extraer datos del MDB.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[PA MDB WARN] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[EXTRACT DB ERROR] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[SYNC ERROR] No se pudieron extraer datos del MDB.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[PA MDB WARN] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[EXTRACT DB ERROR] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[SYNC ERROR] No se pudieron extraer datos del MDB.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[PA MDB WARN] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[EXTRACT DB ERROR] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[SYNC ERROR] No se pudieron extraer datos del MDB.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[PA MDB WARN] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[EXTRACT DB ERROR] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[SYNC ERROR] No se pudieron extraer datos del MDB.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASES DE DATOS\GENERAL.mdb
+[PA MDB WARN] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[EXTRACT DB ERROR] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[SYNC ERROR] No se pudieron extraer datos del MDB.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[PA MDB WARN] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[EXTRACT DB ERROR] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[SYNC ERROR] No se pudieron extraer datos del MDB.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[PA MDB WARN] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[EXTRACT DB ERROR] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[SYNC ERROR] No se pudieron extraer datos del MDB.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[PA MDB WARN] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[EXTRACT DB ERROR] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[SYNC ERROR] No se pudieron extraer datos del MDB.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[PA MDB WARN] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[EXTRACT DB ERROR] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[SYNC ERROR] No se pudieron extraer datos del MDB.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASES DE DATOS\GENERAL.mdb
+[PA MDB WARN] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[EXTRACT DB ERROR] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[SYNC ERROR] No se pudieron extraer datos del MDB.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[PA MDB WARN] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[EXTRACT DB ERROR] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[SYNC ERROR] No se pudieron extraer datos del MDB.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[PA MDB WARN] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[EXTRACT DB ERROR] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[SYNC ERROR] No se pudieron extraer datos del MDB.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[PA MDB WARN] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[EXTRACT DB ERROR] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[SYNC ERROR] No se pudieron extraer datos del MDB.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASES DE DATOS\GENERAL.mdb
+[PA MDB WARN] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[EXTRACT DB ERROR] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[SYNC ERROR] No se pudieron extraer datos del MDB.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[PA MDB WARN] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[EXTRACT DB ERROR] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[SYNC ERROR] No se pudieron extraer datos del MDB.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[PA MDB WARN] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[EXTRACT DB ERROR] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[SYNC ERROR] No se pudieron extraer datos del MDB.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[PA MDB WARN] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[EXTRACT DB ERROR] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[SYNC ERROR] No se pudieron extraer datos del MDB.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[PA MDB WARN] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[EXTRACT DB ERROR] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[SYNC ERROR] No se pudieron extraer datos del MDB.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[PA MDB WARN] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[EXTRACT DB ERROR] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[SYNC ERROR] No se pudieron extraer datos del MDB.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[PA MDB WARN] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[EXTRACT DB ERROR] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[SYNC ERROR] No se pudieron extraer datos del MDB.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[PA MDB WARN] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[EXTRACT DB ERROR] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[SYNC ERROR] No se pudieron extraer datos del MDB.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASES DE DATOS\GENERAL.mdb
+[PA MDB WARN] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[EXTRACT DB ERROR] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[SYNC ERROR] No se pudieron extraer datos del MDB.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASES DE DATOS\GENERAL.mdb
+[PA MDB WARN] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[EXTRACT DB ERROR] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[SYNC ERROR] No se pudieron extraer datos del MDB.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[PA MDB WARN] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[EXTRACT DB ERROR] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[SYNC ERROR] No se pudieron extraer datos del MDB.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASES DE DATOS\GENERAL.mdb
+[PA MDB WARN] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[EXTRACT DB ERROR] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[SYNC ERROR] No se pudieron extraer datos del MDB.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[PA MDB WARN] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[EXTRACT DB ERROR] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[SYNC ERROR] No se pudieron extraer datos del MDB.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[PA MDB WARN] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[EXTRACT DB ERROR] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[SYNC ERROR] No se pudieron extraer datos del MDB.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[PA MDB WARN] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[EXTRACT DB ERROR] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[SYNC ERROR] No se pudieron extraer datos del MDB.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[PA MDB WARN] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[EXTRACT DB ERROR] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[SYNC ERROR] No se pudieron extraer datos del MDB.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[PA MDB WARN] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[EXTRACT DB ERROR] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[SYNC ERROR] No se pudieron extraer datos del MDB.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[PA MDB WARN] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[EXTRACT DB ERROR] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[SYNC ERROR] No se pudieron extraer datos del MDB.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASES DE DATOS\GENERAL.mdb
+[PA MDB WARN] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[EXTRACT DB ERROR] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[SYNC ERROR] No se pudieron extraer datos del MDB.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASES DE DATOS\GENERAL.mdb
+[PA MDB WARN] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[EXTRACT DB ERROR] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[SYNC ERROR] No se pudieron extraer datos del MDB.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[PA MDB WARN] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[EXTRACT DB ERROR] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[SYNC ERROR] No se pudieron extraer datos del MDB.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[PA MDB WARN] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[EXTRACT DB ERROR] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[SYNC ERROR] No se pudieron extraer datos del MDB.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[PA MDB WARN] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[EXTRACT DB ERROR] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[SYNC ERROR] No se pudieron extraer datos del MDB.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASES DE DATOS\GENERAL.mdb
+[PA MDB WARN] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[EXTRACT DB ERROR] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[SYNC ERROR] No se pudieron extraer datos del MDB.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[PA MDB WARN] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[EXTRACT DB ERROR] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[SYNC ERROR] No se pudieron extraer datos del MDB.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[PA MDB WARN] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[EXTRACT DB ERROR] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[SYNC ERROR] No se pudieron extraer datos del MDB.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[PA MDB WARN] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[EXTRACT DB ERROR] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[SYNC ERROR] No se pudieron extraer datos del MDB.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[PA MDB WARN] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[EXTRACT DB ERROR] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[SYNC ERROR] No se pudieron extraer datos del MDB.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[PA MDB WARN] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[EXTRACT DB ERROR] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[SYNC ERROR] No se pudieron extraer datos del MDB.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[PA MDB WARN] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[EXTRACT DB ERROR] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[SYNC ERROR] No se pudieron extraer datos del MDB.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[PA MDB WARN] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[EXTRACT DB ERROR] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[SYNC ERROR] No se pudieron extraer datos del MDB.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASES DE DATOS\GENERAL.mdb
+[PA MDB WARN] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[EXTRACT DB ERROR] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[SYNC ERROR] No se pudieron extraer datos del MDB.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASES DE DATOS\GENERAL.mdb
+[PA MDB WARN] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[EXTRACT DB ERROR] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[SYNC ERROR] No se pudieron extraer datos del MDB.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[PA MDB WARN] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[EXTRACT DB ERROR] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[SYNC ERROR] No se pudieron extraer datos del MDB.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[PA MDB WARN] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[EXTRACT DB ERROR] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[SYNC ERROR] No se pudieron extraer datos del MDB.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[PA MDB WARN] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[EXTRACT DB ERROR] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[SYNC ERROR] No se pudieron extraer datos del MDB.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[PA MDB WARN] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[EXTRACT DB ERROR] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[SYNC ERROR] No se pudieron extraer datos del MDB.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[PA MDB WARN] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[EXTRACT DB ERROR] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[SYNC ERROR] No se pudieron extraer datos del MDB.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[PA MDB WARN] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[EXTRACT DB ERROR] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[SYNC ERROR] No se pudieron extraer datos del MDB.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[PA MDB WARN] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[EXTRACT DB ERROR] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[SYNC ERROR] No se pudieron extraer datos del MDB.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[PA MDB WARN] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[EXTRACT DB ERROR] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[SYNC ERROR] No se pudieron extraer datos del MDB.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASES DE DATOS\GENERAL.mdb
+[PA MDB WARN] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[EXTRACT DB ERROR] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[SYNC ERROR] No se pudieron extraer datos del MDB.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[PA MDB WARN] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[EXTRACT DB ERROR] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[SYNC ERROR] No se pudieron extraer datos del MDB.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASES DE DATOS\GENERAL.mdb
+[PA MDB WARN] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[EXTRACT DB ERROR] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[SYNC ERROR] No se pudieron extraer datos del MDB.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASES DE DATOS\GENERAL.mdb
+[PA MDB WARN] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[EXTRACT DB ERROR] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[SYNC ERROR] No se pudieron extraer datos del MDB.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASES DE DATOS\GENERAL.mdb
+[PA MDB WARN] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[EXTRACT DB ERROR] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[SYNC ERROR] No se pudieron extraer datos del MDB.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[PA MDB WARN] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[EXTRACT DB ERROR] ('08004', '[08004] [Microsoft][Controlador ODBC Microsoft Access] Demasiadas tareas de cliente. (-1036) (SQLDriverConnect)')
+[SYNC ERROR] No se pudieron extraer datos del MDB.
