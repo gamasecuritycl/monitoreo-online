@@ -206,10 +206,10 @@ def parse_trama_alarma(trama):
     if not trama: return None
     trama_clean = str(trama).strip().rstrip('\x14').rstrip('\r').rstrip('\n')
     
-    # 1. Contact ID
-    m_cid = re.search(r'18([A-Z0-9]{4})([ER])(\d{3})(\d{2})(\d{3})', trama_clean)
+    # 1. Contact ID (admite hex mayúsculas y minúsculas: c7cc, C7CC, etc.)
+    m_cid = re.search(r'18([a-zA-Z0-9]{4})([ERer])(\d{3})(\d{2})(\d{3})', trama_clean)
     if m_cid:
-        cuenta = m_cid.group(1).upper()
+        cuenta = m_cid.group(1).upper().strip()
         tipo = m_cid.group(2).upper()
         code = m_cid.group(3)
         zn_us = m_cid.group(5)
@@ -250,10 +250,10 @@ def parse_trama_alarma(trama):
             'usuario': usuario
         }
 
-    # 2. Formato SIA
-    m_sia = re.search(r'\[#([A-Z0-9]{4})\|N[^/]*?/(.*?)\]', trama_clean)
+    # 2. Formato SIA (admite hex mayúsculas y minúsculas)
+    m_sia = re.search(r'\[#([a-zA-Z0-9]{4})\|N[^/]*?/(.*?)\]', trama_clean, re.IGNORECASE)
     if m_sia:
-        cuenta = m_sia.group(1).upper()
+        cuenta = m_sia.group(1).upper().strip()
         payload = m_sia.group(2)
         subcodes = payload.split('/')
         first_sub = subcodes[0]
@@ -621,11 +621,11 @@ def sincronizar_desde_mdb(cache):
             for row in rows:
                 dia     = get_val(row, ['DIA'], 0)
                 hora    = get_val(row, ['HORA'], 1)
-                cuenta  = get_val(row, ['CUENTA'], 2)
-                nombre  = get_val(row, ['NOMBRE', 'ABONADO', 'NOMBRE_ABONADO'], 3)
-                evento  = get_val(row, ['EVENTO'], 4)
-                zona    = get_val(row, ['ZONA'], 6)
-                usuario = get_val(row, ['USUARIO'], 7)
+                cuenta  = get_val(row, ['CUENTA'], 2).upper().strip()
+                nombre  = get_val(row, ['NOMBRE', 'ABONADO', 'NOMBRE_ABONADO'], 3).strip()
+                evento  = get_val(row, ['EVENTO'], 4).strip()
+                zona    = get_val(row, ['ZONA'], 6).strip()
+                usuario = get_val(row, ['USUARIO'], 7).strip()
 
                 if not cuenta or not evento:
                     continue
@@ -641,9 +641,11 @@ def sincronizar_desde_mdb(cache):
                         continue
                 except Exception: pass
 
-                # Nombre resuelto si viene vacío
+                # Nombre resuelto si viene vacío (insensible a mayúsculas/minúsculas)
                 if not nombre:
                     nombre = CLIENTES_LOCAL_MAP.get(cuenta, {}).get('nombre', '') if isinstance(CLIENTES_LOCAL_MAP.get(cuenta), dict) else str(CLIENTES_LOCAL_MAP.get(cuenta) or '')
+                    if not nombre:
+                        nombre = CLIENTES_LOCAL_MAP.get(cuenta.lower(), {}).get('nombre', '') if isinstance(CLIENTES_LOCAL_MAP.get(cuenta.lower()), dict) else str(CLIENTES_LOCAL_MAP.get(cuenta.lower()) or '')
                     if not nombre:
                         nombre = f"ABONADO {cuenta}"
 

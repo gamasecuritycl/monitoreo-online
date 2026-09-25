@@ -83,11 +83,13 @@ export default function EventosPorUsuarioModal({ onClose, eventoInicial }: Event
       if (!cuentaActiva) return
       setLoading(true)
       try {
-        // Consultar los últimos 1000 eventos de esta cuenta en Supabase
+        // Consultar los últimos 1000 eventos de esta cuenta en Supabase (insensible a mayúsculas/minúsculas)
+        const ctaUpper = cuentaActiva.toUpperCase().trim()
+        const ctaLower = cuentaActiva.toLowerCase().trim()
         const { data, error } = await supabase
           .from('eventos_monitoreo')
           .select('*')
-          .eq('cuenta', cuentaActiva)
+          .or(`cuenta.eq.${ctaUpper},cuenta.eq.${ctaLower}`)
           .order('fecha_hora', { ascending: false })
           .limit(1000)
 
@@ -131,23 +133,26 @@ export default function EventosPorUsuarioModal({ onClose, eventoInicial }: Event
     fetchHistoricoAbonado()
   }, [cuentaActiva])
 
-  // 3. Suscripción en tiempo real a nuevos eventos de esta cuenta activa
+  // 3. Suscripción en tiempo real a nuevos eventos de esta cuenta activa (insensible a mayúsculas/minúsculas)
   useEffect(() => {
     if (!cuentaActiva) return
 
+    const ctaUpper = cuentaActiva.toUpperCase().trim()
     const channel = supabase
-      .channel(`rt_eventos_modal_${cuentaActiva}`)
+      .channel(`rt_eventos_modal_${ctaUpper}`)
       .on(
         'postgres_changes',
         {
           event: 'INSERT',
           schema: 'public',
-          table: 'eventos_monitoreo',
-          filter: `cuenta=eq.${cuentaActiva}`
+          table: 'eventos_monitoreo'
         },
         (payload) => {
           const nuevo = payload.new as EventoMonitoreo
           if (!nuevo || !nuevo.fecha_hora) return
+          // Validación robusta para cualquier abonado sin importar mayúsculas o minúsculas
+          if ((nuevo.cuenta || '').toUpperCase().trim() !== ctaUpper) return
+
           setTodosEventosAbonado(prev => {
             const combinados = deduplicarEventos([nuevo, ...prev])
             return combinados
@@ -206,11 +211,18 @@ export default function EventosPorUsuarioModal({ onClose, eventoInicial }: Event
     }, 100)
   }, [])
 
-  // Buscar cliente activo en la base de datos
-  const clienteActivo = clientesMap[cuentaActiva] || clientesGeneralFallback[cuentaActiva] || {
-    cuenta: cuentaActiva,
-    nombre: eventoInicial?.nombre_abonado || 'SIN NOMBRE REGISTRADO'
-  }
+  // Buscar cliente activo en la base de datos (tolerante a mayúsculas/minúsculas)
+  const ctaUpper = cuentaActiva.toUpperCase().trim()
+  const ctaLower = cuentaActiva.toLowerCase().trim()
+  const clienteActivo = clientesMap[ctaUpper] || 
+    clientesMap[ctaLower] || 
+    clientesMap[cuentaActiva] || 
+    clientesGeneralFallback[ctaUpper] || 
+    clientesGeneralFallback[ctaLower] || 
+    clientesGeneralFallback[cuentaActiva] || {
+      cuenta: cuentaActiva,
+      nombre: eventoInicial?.nombre_abonado || 'SIN NOMBRE REGISTRADO'
+    }
 
   // Lista de clientes filtrada para el buscador lateral
   const listaClientesBusqueda = Object.values(clientesMap).map(c => ({

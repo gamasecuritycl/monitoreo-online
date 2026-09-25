@@ -226,10 +226,12 @@ export default function AreaClientesPortal() {
 
     const fetchEventos = async () => {
       try {
+        const ctaUpper = cuentaActiva.toUpperCase().trim()
+        const ctaLower = cuentaActiva.toLowerCase().trim()
         const { data, error } = await supabase
           .from('eventos_monitoreo')
           .select('*')
-          .eq('cuenta', cuentaActiva)
+          .or(`cuenta.eq.${ctaUpper},cuenta.eq.${ctaLower}`)
           .order('fecha_hora', { ascending: false })
           .limit(20)
 

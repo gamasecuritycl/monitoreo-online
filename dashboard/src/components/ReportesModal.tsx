@@ -449,11 +449,13 @@ export default function ReportesModal({
       const desdeIso = `${fechaDesde}T${horaDesde}:00`
       const hastaIso = `${fechaHasta}T${horaHasta}:59`
 
-      // 1. Consultar señales de esta cuenta en Supabase
+      // 1. Consultar señales de esta cuenta en Supabase (insensible a mayúsculas/minúsculas)
+      const ctaUpper = cta.toUpperCase().trim()
+      const ctaLower = cta.toLowerCase().trim()
       const { data, error } = await supabase
         .from('eventos_monitoreo')
         .select('*')
-        .eq('cuenta', cta)
+        .or(`cuenta.eq.${ctaUpper},cuenta.eq.${ctaLower}`)
         .gte('fecha_hora', desdeIso)
         .lte('fecha_hora', hastaIso)
         .order('fecha_hora', { ascending: true }) // Cronológico: el más antiguo arriba, más reciente al final

@@ -71,11 +71,13 @@ export default function PortalAbonado() {
     const loadData = async () => {
       setCargando(true)
       try {
-        // 1. Cargar últimos eventos del cliente desde Supabase
+        // 1. Cargar últimos eventos del cliente desde Supabase (insensible a mayúsculas/minúsculas)
+        const ctaUpper = cuentaAutenticada.toUpperCase().trim()
+        const ctaLower = cuentaAutenticada.toLowerCase().trim()
         const { data: evs } = await supabase
           .from('eventos_monitoreo')
           .select('*')
-          .eq('cuenta', cuentaAutenticada)
+          .or(`cuenta.eq.${ctaUpper},cuenta.eq.${ctaLower}`)
           .order('id', { ascending: false })
           .limit(100)
 
