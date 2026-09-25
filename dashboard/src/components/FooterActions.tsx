@@ -6,6 +6,7 @@
 // ════════════════════════════════════════════════════════════════════════════
 
 import { useState } from 'react'
+import { Operator, UserAttributes, ensureUserAttributes } from '@/types/operator'
 
 interface FooterActionsProps {
   onModalOpen: (modalId: string) => void
@@ -14,6 +15,8 @@ interface FooterActionsProps {
   operadorRol?: string
   horaLocal?: string
   autoOperadorActivo?: boolean
+  usuarioActivo?: Operator
+  atributos?: UserAttributes
 }
 
 interface BotonRetro {
@@ -201,13 +204,57 @@ export default function FooterActions({
   operadorNombre,
   operadorRol,
   horaLocal,
-  autoOperadorActivo
+  autoOperadorActivo,
+  usuarioActivo,
+  atributos,
 }: FooterActionsProps) {
   const [isOpen, setIsOpen] = useState(false)
   const esAdmin = Boolean(
     operadorRol?.toLowerCase().includes('admin') ||
-    operadorNombre?.toLowerCase() === 'admin'
+    operadorNombre?.toLowerCase() === 'admin' ||
+    usuarioActivo?.rol === 'Administrador'
   )
+
+  const attrs: UserAttributes = atributos || (usuarioActivo ? ensureUserAttributes(usuarioActivo) : ensureUserAttributes({ rol: (operadorRol as any) || 'Operador', nombre: operadorNombre }))
+
+  const isActionAllowed = (id: string): boolean => {
+    if (esAdmin) return true
+
+    switch (id) {
+      case 'operador-automatico':
+        return attrs.verConfiguracion
+      case 'bitacora':
+        return attrs.verMonitoreoEnVivo || attrs.verReportes
+      case 'entrega-turno':
+        return attrs.verMonitoreoEnVivo
+      case 'aperturas-cierres':
+        return attrs.verMonitoreoEnVivo || attrs.verCRM || attrs.verReportes
+      case 'key-shift':
+        return true // Todos los operadores pueden cambiar turno / bloquear estación
+      case 'pencil-notebook':
+        return attrs.verMonitoreoEnVivo || attrs.verCRM
+      case 'zones-tree':
+        return attrs.editarZonificacion
+      case 'line-chart':
+        return attrs.verTelemetriaTecnica || attrs.verReportes
+      case 'bar-chart':
+        return attrs.verCRM
+      case 'todos-los-eventos':
+        return attrs.verMonitoreoEnVivo
+      case 'checklist':
+        return attrs.verMonitoreoEnVivo
+      case 'home':
+        return attrs.verMonitoreoEnVivo
+      case 'search':
+        return attrs.verMonitoreoEnVivo || attrs.verCRM
+      case 'archive':
+        return attrs.verReportes || attrs.verConfiguracion
+      case 'notificaciones-whatsapp':
+        return attrs.enviarMensajesWhatsApp
+      default:
+        return true
+    }
+  }
 
   return (
     <>
@@ -228,13 +275,13 @@ export default function FooterActions({
           </div>
         </div>
 
-        {/* VERSIÓN DE ESCRITORIO (PC): Fila de botones centrada */}
+        {/* VERSIÓN DE ESCRITORIO (PC): Fila de botones centrada filtrada por permisos */}
         <div className="hidden md:flex items-center justify-center gap-1.5 mx-auto">
-          {/* Botón AUTO-OPERADOR IA (Solo visible para Administrador) */}
-          {esAdmin && (
+          {/* Botón AUTO-OPERADOR IA (Solo visible para Administrador o Configuración) */}
+          {isActionAllowed('operador-automatico') && (
             <button
               onClick={() => onModalOpen('operador-automatico')}
-              title={`Control Maestro de Operador Automático (Solo Administrador) - Actualmente ${autoOperadorActivo ? 'EN SERVICIO' : 'MANUAL'}`}
+              title={`Control Maestro de Operador Automático - Actualmente ${autoOperadorActivo ? 'EN SERVICIO' : 'MANUAL'}`}
               className={`h-10 px-2.5 flex items-center justify-center gap-1.5 cursor-pointer select-none border-2 shadow-sm transition-all ${
                 autoOperadorActivo
                   ? 'bg-[#002244] border-t-[#0055aa] border-l-[#0055aa] border-b-black border-r-black text-cyan-300 hover:bg-[#002f5e]'
@@ -257,33 +304,41 @@ export default function FooterActions({
           )}
 
           {/* Botón BITÁCORA */}
-          <button
-            onClick={() => onModalOpen('bitacora')}
-            title="Bitácora de Eventos"
-            className="h-10 bg-[#d4d0c8] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 flex items-center justify-center cursor-pointer select-none hover:bg-gray-200 active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white shadow-sm px-2.5"
-          >
-            <span className="text-[12.5px] md:text-[13px] font-black text-[#000080] tracking-wider whitespace-nowrap">BITÁCORA</span>
-          </button>
-          {/* Botón ENTREGA DE TURNO */}
-          <button
-            onClick={() => onModalOpen('entrega-turno')}
-            title="Ingresar Novedades de Entrega de Turno"
-            className="h-10 bg-[#d4d0c8] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 flex items-center justify-center cursor-pointer select-none hover:bg-gray-200 active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white shadow-sm px-2.5"
-          >
-            <span className="text-[11.5px] md:text-[12px] font-black text-amber-900 tracking-wider whitespace-nowrap">📝 ENTREGA TURNO</span>
-          </button>
-          {/* Botón APERTURAS & CIERRES */}
-          <button
-            onClick={() => onModalOpen('aperturas-cierres')}
-            title="Control de Aperturas y Cierres por Partición (Semáforo)"
-            className="h-10 bg-[#d4d0c8] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 flex items-center justify-center cursor-pointer select-none hover:bg-gray-200 active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white shadow-sm px-2.5"
-          >
-            <span className="text-[11.5px] md:text-[12px] font-black text-emerald-800 tracking-wider whitespace-nowrap flex items-center gap-1">
-              🔑 APERTURAS / CIERRES
-            </span>
-          </button>
+          {isActionAllowed('bitacora') && (
+            <button
+              onClick={() => onModalOpen('bitacora')}
+              title="Bitácora de Eventos"
+              className="h-10 bg-[#d4d0c8] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 flex items-center justify-center cursor-pointer select-none hover:bg-gray-200 active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white shadow-sm px-2.5"
+            >
+              <span className="text-[12.5px] md:text-[13px] font-black text-[#000080] tracking-wider whitespace-nowrap">BITÁCORA</span>
+            </button>
+          )}
 
-          {BOTONES_RETRO.map((btn) => (
+          {/* Botón ENTREGA DE TURNO */}
+          {isActionAllowed('entrega-turno') && (
+            <button
+              onClick={() => onModalOpen('entrega-turno')}
+              title="Ingresar Novedades de Entrega de Turno"
+              className="h-10 bg-[#d4d0c8] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 flex items-center justify-center cursor-pointer select-none hover:bg-gray-200 active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white shadow-sm px-2.5"
+            >
+              <span className="text-[11.5px] md:text-[12px] font-black text-amber-900 tracking-wider whitespace-nowrap">📝 ENTREGA TURNO</span>
+            </button>
+          )}
+
+          {/* Botón APERTURAS & CIERRES */}
+          {isActionAllowed('aperturas-cierres') && (
+            <button
+              onClick={() => onModalOpen('aperturas-cierres')}
+              title="Control de Aperturas y Cierres por Partición (Semáforo)"
+              className="h-10 bg-[#d4d0c8] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 flex items-center justify-center cursor-pointer select-none hover:bg-gray-200 active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white shadow-sm px-2.5"
+            >
+              <span className="text-[11.5px] md:text-[12px] font-black text-emerald-800 tracking-wider whitespace-nowrap flex items-center gap-1">
+                🔑 APERTURAS / CIERRES
+              </span>
+            </button>
+          )}
+
+          {BOTONES_RETRO.filter(btn => isActionAllowed(btn.id)).map((btn) => (
             <button
               key={btn.id}
               onClick={() => onModalOpen(btn.id)}
@@ -360,10 +415,10 @@ export default function FooterActions({
               </button>
             </div>
 
-            {/* Listado de Botones en Vertical */}
+            {/* Listado de Botones en Vertical (Filtrados por Permisos) */}
             <div className="flex-1 p-2 overflow-y-auto flex flex-col gap-1.5 bg-[#d4d0c8]">
-              {/* AUTO-OPERADOR primero (Solo Admin) */}
-              {esAdmin && (
+              {/* AUTO-OPERADOR primero (Solo Admin / Configuración) */}
+              {isActionAllowed('operador-automatico') && (
                 <div
                   onClick={() => { onModalOpen('operador-automatico'); setIsOpen(false) }}
                   className={`flex items-center gap-3 p-2 border cursor-pointer rounded-sm select-none transition-all ${
@@ -381,20 +436,43 @@ export default function FooterActions({
                       <span className={`w-2 h-2 rounded-full ${autoOperadorActivo ? 'bg-emerald-500 animate-pulse' : 'bg-gray-400'}`} />
                     </span>
                     <span className="text-[9px] font-mono font-bold">
-                      {autoOperadorActivo ? 'ESTADO: ACTIVO 24/7' : 'ESTADO: MODO MANUAL'} (Solo Admin)
+                      {autoOperadorActivo ? 'ESTADO: ACTIVO 24/7' : 'ESTADO: MODO MANUAL'}
                     </span>
                   </div>
                 </div>
               )}
 
               {/* BITÁCORA */}
-              <div
-                onClick={() => { onModalOpen('bitacora'); setIsOpen(false) }}
-                className="flex items-center gap-3 p-2 bg-[#000080] hover:bg-[#0000a0] border border-[#4444cc] cursor-pointer rounded-sm select-none transition-all"
-              >
-                <span className="font-bold text-white text-[13px] tracking-wider">📋 BITÁCORA</span>
-              </div>
-              {BOTONES_RETRO.map((btn) => (
+              {isActionAllowed('bitacora') && (
+                <div
+                  onClick={() => { onModalOpen('bitacora'); setIsOpen(false) }}
+                  className="flex items-center gap-3 p-2 bg-[#000080] hover:bg-[#0000a0] border border-[#4444cc] cursor-pointer rounded-sm select-none transition-all"
+                >
+                  <span className="font-bold text-white text-[13px] tracking-wider">📋 BITÁCORA</span>
+                </div>
+              )}
+
+              {/* ENTREGA DE TURNO */}
+              {isActionAllowed('entrega-turno') && (
+                <div
+                  onClick={() => { onModalOpen('entrega-turno'); setIsOpen(false) }}
+                  className="flex items-center gap-3 p-2 bg-[#d4d0c8] hover:bg-white border border-gray-400 cursor-pointer rounded-sm select-none transition-all"
+                >
+                  <span className="font-bold text-amber-900 text-[12px] tracking-wider">📝 ENTREGA TURNO</span>
+                </div>
+              )}
+
+              {/* APERTURAS & CIERRES */}
+              {isActionAllowed('aperturas-cierres') && (
+                <div
+                  onClick={() => { onModalOpen('aperturas-cierres'); setIsOpen(false) }}
+                  className="flex items-center gap-3 p-2 bg-[#d4d0c8] hover:bg-white border border-gray-400 cursor-pointer rounded-sm select-none transition-all"
+                >
+                  <span className="font-bold text-emerald-800 text-[12px] tracking-wider">🔑 APERTURAS / CIERRES</span>
+                </div>
+              )}
+
+              {BOTONES_RETRO.filter(btn => isActionAllowed(btn.id)).map((btn) => (
                 <div
                   key={btn.id}
                   onClick={() => {

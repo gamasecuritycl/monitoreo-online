@@ -1424,12 +1424,16 @@ export default function ScorpionDashboard() {
           },
         ].filter(item => {
           const attrs = ensureUserAttributes(usuarioActivo)
-          if (item.id === 'menu-operadores') return attrs.verConfiguracion || usuarioActivo.rol === 'Administrador'
-          if (item.id === 'menu-usuarios') return true
+          const esAdmin = usuarioActivo.rol === 'Administrador' || usuarioActivo.nombre?.toLowerCase() === 'admin'
+          if (esAdmin) return true
+          if (item.id === 'menu-operadores') return attrs.verConfiguracion
+          if (item.id === 'menu-usuarios') return attrs.verCRM || attrs.verMonitoreoEnVivo
+          if (item.id === 'menu-marcador') return attrs.controlTestSimulador || attrs.verTelemetriaTecnica
           if (item.id === 'menu-serv-tecnico') return attrs.verTelemetriaTecnica
           if (item.id === 'menu-tablas') return attrs.verCRM
           if (item.id === 'menu-reportes') return attrs.verReportes
           if (item.id === 'menu-notificaciones') return attrs.enviarMensajesWhatsApp
+          if (item.id === 'menu-eventos') return attrs.verMonitoreoEnVivo
           return true
         }).map((item, idx) => (
           <div key={idx} className="relative">
@@ -1465,12 +1469,44 @@ export default function ScorpionDashboard() {
                 className="win-xp-menu-container absolute top-full left-0 mt-0.5 z-[999] min-w-[310px] select-none flex flex-col gap-0.5"
                 onClick={(e) => e.stopPropagation()}
               >
-                {item.items.map((sub, sIdx) => (
+                {item.items.filter(sub => {
+                  const attrs = ensureUserAttributes(usuarioActivo)
+                  const esAdmin = usuarioActivo.rol === 'Administrador' || usuarioActivo.nombre?.toLowerCase() === 'admin'
+                  if (esAdmin) return true
+                  if (sub.modal === 'configuracion') return attrs.verConfiguracion
+                  if (sub.modal === 'archive') return attrs.verConfiguracion || attrs.verReportes
+                  if (sub.modal === 'crm') return attrs.verCRM
+                  if (sub.modal === 'horarios') return attrs.verCRM || attrs.verMonitoreoEnVivo
+                  if (sub.modal === 'book') return attrs.verCRM
+                  if (sub.modal === 'search') return attrs.verCRM || attrs.verMonitoreoEnVivo
+                  if (sub.modal === 'servicio-tecnico') return attrs.verTelemetriaTecnica
+                  if (sub.modal === 'predictor-ia') return attrs.verTelemetriaTecnica
+                  if (sub.modal === 'control-test') return attrs.controlTestSimulador || attrs.verTelemetriaTecnica
+                  if (sub.modal === 'health-telemetry') return attrs.verTelemetriaTecnica
+                  if (sub.modal === 'simulador') return attrs.controlTestSimulador
+                  if (sub.modal === 'notificaciones-whatsapp') return attrs.enviarMensajesWhatsApp
+                  if (sub.modal === 'notificaciones-mail') return attrs.enviarMensajesWhatsApp || attrs.verReportes
+                  if (sub.modal === 'reportes') return attrs.verReportes
+                  if (sub.modal === 'aperturas-cierres') return attrs.verReportes || attrs.verMonitoreoEnVivo
+                  if (sub.modal === 'todos-los-eventos') return attrs.verMonitoreoEnVivo
+                  if (sub.modal === 'bitacora') return attrs.verMonitoreoEnVivo || attrs.verReportes
+                  if (sub.modal === 'video-verificacion') return attrs.verMonitoreoEnVivo || attrs.verTelemetriaTecnica
+                  if (sub.modal === 'camara-grid') return attrs.verMonitoreoEnVivo || attrs.verTelemetriaTecnica
+                  return true
+                }).map((sub, sIdx) => (
                   <button
                     key={sIdx}
                     className="win-xp-menu-btn"
                     onClick={() => {
-                      setModalActivo(sub.modal)
+                      if ((sub as any).action === 'logout') {
+                        setSesionIniciada(false)
+                        setModalActivo(null)
+                        setMenuDropdownAbierto(null)
+                        return
+                      }
+                      if (sub.modal) {
+                        setModalActivo(sub.modal)
+                      }
                       setMenuDropdownAbierto(null)
                     }}
                   >
@@ -2166,6 +2202,7 @@ export default function ScorpionDashboard() {
 
       {/* Footer */}
       <FooterActions
+        usuarioActivo={usuarioActivo}
         unreadWhatsAppCount={unreadWhatsAppCount}
         operadorNombre={usuarioActivo.nombre}
         operadorRol={usuarioActivo.rol}
