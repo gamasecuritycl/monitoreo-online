@@ -285,23 +285,9 @@ async function guardarConfigSupabase(cuenta, nombre_abonado, evento) {
 }
 
 async function saveSessionToSupabase() {
-  try {
-    if (!fs.existsSync(SESSION_DIR)) return
-    const files = fs.readdirSync(SESSION_DIR)
-    const sessionData = {}
-    files.forEach(file => {
-      if (file.endsWith('.json')) {
-        try {
-          sessionData[file] = JSON.parse(fs.readFileSync(path.join(SESSION_DIR, file), 'utf-8'))
-        } catch {}
-      }
-    })
-    if (Object.keys(sessionData).length === 0) return
-    await guardarConfigSupabase('CONFIG_WHATSAPP_SESSION', JSON.stringify(sessionData), 'CONFIG_SESSION')
-    log(`💾 Sesión sincronizada a Supabase (${Object.keys(sessionData).length} archivos)`)
-  } catch (err) {
-    log(`Error sincronizando sesión: ${err.message}`, 'WARN')
-  }
+  // Deshabilitado: La sesion se mantiene persistente en disco local (SESSION_DIR).
+  // Subir 1.2MB continuos por cada creds.update a Supabase consume gigabytes de disco.
+  return
 }
 
 function hasRegisteredSession() {
