@@ -244,26 +244,22 @@ export async function POST(req: Request) {
       console.error('Error enviando confirmación al cliente:', errCliente)
     }
 
-    // ── 3. GUARDAR EN EVENTOS_MONITOREO PARA QUE APAREZCA EN /OPERACIONES ──
+    // ── 3. GUARDAR PROSPECTO EN LEADS_SALES_GAMA (NUNCA EN EVENTOS_MONITOREO) ──
     try {
-      const payloadMeta = {
+      await supabase.from('leads_sales_gama').insert({
+        session_id: `web-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
         nombre: name,
         email,
         telefono: cleanPhone,
-        servicio: serviceLabel,
-        mensaje: message || 'S/M',
-        origen: 'LANDING_WEB'
-      };
-      await supabase.from('eventos_monitoreo').insert({
-        cuenta: 'WEB-PROSPECTO',
-        nombre_abonado: JSON.stringify(payloadMeta),
-        evento: 'PROSPECTO_WEB_LANDING',
-        zona: (serviceLabel || 'Web').substring(0, 50),
-        usuario: (cleanPhone || email || 'Web').substring(0, 30),
-        fecha_hora: now.toISOString()
+        comuna: serviceLabel,
+        estado: 'nuevo',
+        resumen: `Cotización Web Landing: ${serviceLabel}. Mensaje: ${message || 'S/M'}`,
+        created_at: now.toISOString(),
+        updated_at: now.toISOString(),
+        last_activity: now.toISOString(),
       });
     } catch (errSupabase) {
-      console.warn('Advertencia registrando evento de prospecto en Supabase:', errSupabase);
+      console.warn('Advertencia registrando lead en leads_sales_gama:', errSupabase);
     }
 
     // ── REGISTRO DE AUDITORÍA FORENSE LEY 21.719 (CONSENTIMIENTO PROSPECTO) ──

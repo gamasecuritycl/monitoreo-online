@@ -15,7 +15,8 @@ export async function upsertLead(sessionId: string, partialLead: Partial<Lead>):
 
   let savedLead: Lead | null = null;
 
-  // 1. Intentar guardar en la tabla especializada leads_sales_gama
+  // 1. Guardar exclusivamente en la tabla especializada leads_sales_gama
+  // NUNCA escribir en eventos_monitoreo (reservada 100% para alarmas reales de la central)
   try {
     const { data, error } = await supabaseAdmin
       .from('leads_sales_gama')
@@ -30,42 +31,11 @@ export async function upsertLead(sessionId: string, partialLead: Partial<Lead>):
     console.warn('Upsert leads_sales_gama notice:', err);
   }
 
-  // 2. Si no pudimos guardar o como persistencia universal indestructible: eventos_monitoreo
-  // eventos_monitoreo NO tiene RLS y admite INSERT y SELECT directos
-  try {
-    const leadMeta = {
-      session_id: sessionId,
-      nombre: partialLead.nombre || savedLead?.nombre || 'Prospecto Web Bot',
-      telefono: partialLead.telefono || savedLead?.telefono,
-      email: partialLead.email || savedLead?.email,
-      comuna: partialLead.comuna || savedLead?.comuna,
-      direccion: partialLead.direccion || savedLead?.direccion,
-      estado: partialLead.estado || savedLead?.estado || 'nuevo',
-      resumen: partialLead.resumen || savedLead?.resumen,
-      created_at: payload.created_at,
-      updated_at: now,
-    };
-
-    const isHot = Boolean(leadMeta.telefono || leadMeta.estado === 'caliente');
-    const displayNombre = leadMeta.nombre + (leadMeta.telefono ? ` (${leadMeta.telefono})` : '');
-
-    await supabaseAdmin.from('eventos_monitoreo').insert({
-      cuenta: 'LEAD-BOT',
-      evento: isHot ? 'LEAD_CALIENTE_BOT' : 'LEAD_SALES_BOT',
-      nombre_abonado: JSON.stringify(leadMeta),
-      zona: (leadMeta.comuna || 'Chile').substring(0, 50),
-      usuario: (leadMeta.telefono || leadMeta.email || 'Web Chat').substring(0, 30),
-      fecha_hora: now,
-    });
-  } catch (errEv) {
-    console.warn('Dual-storage eventos_monitoreo notice:', errEv);
-  }
-
   if (savedLead) return savedLead;
 
-  // Objeto sintético garantizado si solo guardó en eventos_monitoreo
+  // Objeto sintético en memoria si hay retraso de red
   return {
-    id: `ev-lead-${sessionId}`,
+    id: `lead-${sessionId}`,
     session_id: sessionId,
     nombre: partialLead.nombre || 'Prospecto Web Bot',
     telefono: partialLead.telefono,
@@ -127,7 +97,6 @@ export async function appendMessage(
 }
 
 export async function getLeadBySession(sessionId: string): Promise<Lead | null> {
-  // 1. Intentar tabla nativa
   try {
     const { data, error } = await supabaseAdmin
       .from('leads_sales_gama')
@@ -140,157 +109,44 @@ export async function getLeadBySession(sessionId: string): Promise<Lead | null> 
     }
   } catch {}
 
-  // 2. Intentar eventos_monitoreo
-  try {
-    const { data: evData } = await supabaseAdmin
-      .from('eventos_monitoreo')
-      .select('*')
-      .eq('cuenta', 'LEAD-BOT')
-      .order('id', { ascending: false })
-      .limit(30);
-
-    if (evData) {
-      for (const row of evData) {
-        if (!row.nombre_abonado) continue;
-        try {
-          const parsed = JSON.parse(row.nombre_abonado);
-          if (parsed && parsed.session_id === sessionId) {
-            return {
-              id: `ev-${row.id}`,
-              session_id: sessionId,
-              nombre: parsed.nombre || 'Prospecto Web',
-              telefono: parsed.telefono || (row.usuario !== 'Web Chat' ? row.usuario : undefined),
-              email: parsed.email,
-              comuna: parsed.comuna || row.zona,
-              direccion: parsed.direccion,
-              estado: parsed.estado || (row.evento === 'LEAD_CALIENTE_BOT' ? 'caliente' : 'nuevo'),
-              resumen: parsed.resumen,
-              created_at: parsed.created_at || row.fecha_hora,
-              updated_at: parsed.updated_at || row.fecha_hora,
-              last_activity: row.fecha_hora,
-            } as Lead;
-          }
-        } catch {}
-      }
-    }
-  } catch {}
-
   return null;
 }
 
 export async function getLeadWithMessages(leadId: string): Promise<{ lead: Lead; messages: LeadMessage[] } | null> {
-  // 1. Intentar en tabla nativa si es UUID
-  if (!leadId.startsWith('ev-')) {
-    try {
-      const { data: lead, error: leadError } = await supabaseAdmin
-        .from('leads_sales_gama')
-        .select('*')
-        .eq('id', leadId)
-        .single();
-
-      if (!leadError && lead) {
-        const { data: messages } = await supabaseAdmin
-          .from('lead_messages')
-          .select('*')
-          .eq('lead_id', leadId)
-          .order('created_at', { ascending: true });
-
-        return {
-          lead: lead as Lead,
-          messages: (messages || []) as LeadMessage[],
-        };
-      }
-    } catch {}
-  }
-
-  // 2. Resolver desde eventos_monitoreo
   try {
-    const numericId = parseInt(leadId.replace(/^ev-(?:lead-)?/, ''), 10);
-    const query = supabaseAdmin.from('eventos_monitoreo').select('*');
-    const { data: evRows } = !isNaN(numericId)
-      ? await query.eq('id', numericId)
-      : await query.eq('cuenta', 'LEAD-BOT').order('id', { ascending: false }).limit(50);
+    const { data: lead, error: leadError } = await supabaseAdmin
+      .from('leads_sales_gama')
+      .select('*')
+      .eq('id', leadId)
+      .single();
 
-    const matchRow = evRows && evRows.length > 0 ? evRows[0] : null;
-    if (matchRow) {
-      let meta: Record<string, unknown> = {};
-      try {
-        meta = JSON.parse(matchRow.nombre_abonado || '{}');
-      } catch {
-        meta = { nombre: matchRow.nombre_abonado };
-      }
+    if (!leadError && lead) {
+      const { data: messages } = await supabaseAdmin
+        .from('lead_messages')
+        .select('*')
+        .eq('lead_id', leadId)
+        .order('created_at', { ascending: true });
 
-      const lead: Lead = {
-        id: leadId,
-        session_id: (meta.session_id as string) || `sess-${matchRow.id}`,
-        nombre: (meta.nombre as string) || matchRow.nombre_abonado || 'Prospecto Web',
-        telefono: (meta.telefono as string) || (matchRow.usuario !== 'Web Chat' ? matchRow.usuario : undefined),
-        email: meta.email as string | undefined,
-        comuna: (meta.comuna as string) || matchRow.zona,
-        direccion: meta.direccion as string | undefined,
-        estado: (meta.estado as any) || (matchRow.evento === 'LEAD_CALIENTE_BOT' ? 'caliente' : 'nuevo'),
-        resumen: (meta.resumen as string) || (meta.mensaje as string) || 'Contacto capturado por Sales-Bot',
-        created_at: (meta.created_at as string) || matchRow.fecha_hora,
-        updated_at: matchRow.fecha_hora,
-        last_activity: matchRow.fecha_hora,
+      return {
+        lead: lead as Lead,
+        messages: (messages || []) as LeadMessage[],
       };
-
-      const messages: LeadMessage[] = [
-        {
-          id: 1,
-          lead_id: leadId,
-          role: 'assistant',
-          content: '¡Hola! Soy tu Asesor Experto de GAMA Seguridad. ¿Qué tipo de propiedad necesitas proteger?',
-          created_at: lead.created_at,
-          metadata: {},
-        },
-        {
-          id: 2,
-          lead_id: leadId,
-          role: 'user',
-          content: lead.resumen || `Datos de contacto: ${lead.nombre}, ${lead.telefono || ''}, ${lead.email || ''}, ${lead.comuna || ''}`,
-          created_at: lead.last_activity,
-          metadata: {},
-        },
-      ];
-
-      return { lead, messages };
     }
-  } catch (err) {
-    console.warn('getLeadWithMessages fallback error:', err);
-  }
+  } catch {}
 
   return null;
 }
 
 export async function updateLeadStatus(leadId: string, estado: 'nuevo' | 'caliente' | 'cerrado' | 'derivado'): Promise<boolean> {
-  let updated = false;
-
-  // 1. Intentar actualizar tabla nativa
-  if (!leadId.startsWith('ev-')) {
-    try {
-      const { error } = await supabaseAdmin
-        .from('leads_sales_gama')
-        .update({ estado, last_activity: new Date().toISOString() })
-        .eq('id', leadId);
-      if (!error) updated = true;
-    } catch {}
-  }
-
-  // 2. Registrar cambio en eventos_monitoreo
   try {
-    await supabaseAdmin.from('eventos_monitoreo').insert({
-      cuenta: 'LEAD-BOT',
-      evento: `ESTADO_${estado.toUpperCase()}`,
-      nombre_abonado: JSON.stringify({ leadId, estado, fecha: new Date().toISOString() }),
-      zona: estado,
-      usuario: 'OPERADOR',
-      fecha_hora: new Date().toISOString(),
-    });
-    updated = true;
-  } catch {}
-
-  return updated;
+    const { error } = await supabaseAdmin
+      .from('leads_sales_gama')
+      .update({ estado, last_activity: new Date().toISOString() })
+      .eq('id', leadId);
+    return !error;
+  } catch {
+    return false;
+  }
 }
 
 export async function listLeads(
@@ -300,10 +156,6 @@ export async function listLeads(
   const { cursor, limit = 50 } = pagination;
   const safeLimit = Math.min(limit, 100);
 
-  let nativeItems: Lead[] = [];
-  let nativeTotal = 0;
-
-  // 1. Intentar tabla especializada
   try {
     let query = supabaseAdmin
       .from('leads_sales_gama')
@@ -322,112 +174,21 @@ export async function listLeads(
 
     const { data, count, error } = await query;
     if (!error && data && data.length > 0) {
-      nativeItems = data as Lead[];
-      nativeTotal = count || data.length;
-    }
-  } catch {}
-
-  // 2. Si hay leads nativos, retornarlos
-  if (nativeItems.length > 0) {
-    let nextCursor: string | undefined;
-    if (nativeItems.length > safeLimit) {
-      const nextItem = nativeItems[safeLimit - 1];
-      nextCursor = nextItem.last_activity;
-      nativeItems.pop();
-    }
-    return {
-      items: nativeItems.slice(0, safeLimit),
-      nextCursor,
-      total: nativeTotal,
-    };
-  }
-
-  // 3. Fail-safe resiliente: Leer eventos_monitoreo con cuentas LEAD-BOT y WEB-PROSPECTO
-  try {
-    const { data: evData, error: evError } = await supabaseAdmin
-      .from('eventos_monitoreo')
-      .select('*')
-      .in('cuenta', ['LEAD-BOT', 'WEB-PROSPECTO'])
-      .order('id', { ascending: false })
-      .limit(100);
-
-    if (!evError && evData && evData.length > 0) {
-      const seenSessions = new Set<string>();
-      const seenPhones = new Set<string>();
-      const fallbackItems: Lead[] = [];
-
-      for (const e of evData) {
-        let meta: Record<string, unknown> = {};
-        const rawJson = e.nombre_abonado || '';
-
-        if (rawJson.startsWith('{')) {
-          try {
-            meta = JSON.parse(rawJson);
-          } catch {}
-        }
-
-        const sid = (meta.session_id as string) || `sess-${e.id}`;
-        const nombre = (meta.nombre as string) || e.nombre_abonado?.replace(/^(?:Cotización Web:\s*|Prospecto Web\s*)/i, '') || 'Prospecto Web Bot';
-        const rawPhone = (meta.telefono as string) || (e.usuario && e.usuario !== 'Web Chat' && !e.usuario.includes('@') ? e.usuario : undefined);
-        const email = (meta.email as string) || (e.usuario?.includes('@') ? e.usuario : undefined);
-        const comuna = (meta.comuna as string) || (e.zona && e.zona !== 'Chile' && e.zona !== '----' ? e.zona : undefined);
-        const direccion = (meta.direccion as string) || undefined;
-        const estado: 'nuevo' | 'caliente' | 'cerrado' | 'derivado' =
-          (meta.estado as any) || (e.evento === 'LEAD_CALIENTE_BOT' || rawPhone ? 'caliente' : 'nuevo');
-        const resumen = (meta.resumen as string) || (meta.mensaje as string) || (meta.servicio ? `Interés: ${meta.servicio}` : undefined) || 'Prospecto registrado vía Asesor Web';
-
-        // Normalizar teléfono
-        let phoneFormatted = rawPhone;
-        if (rawPhone) {
-          const digits = rawPhone.replace(/\D/g, '');
-          if (digits.length >= 8) {
-            phoneFormatted = digits.startsWith('56') ? `+${digits}` : `+56${digits}`;
-          }
-        }
-
-        // Deduplicación inteligente para no repetir la misma persona si chateó varias veces
-        const dedupKey = phoneFormatted || email || sid;
-        if (seenSessions.has(dedupKey)) continue;
-        seenSessions.add(dedupKey);
-
-        const item: Lead = {
-          id: `ev-${e.id}`,
-          session_id: sid,
-          nombre,
-          telefono: phoneFormatted,
-          email,
-          comuna,
-          direccion,
-          estado,
-          resumen,
-          created_at: (meta.created_at as string) || e.fecha_hora || new Date().toISOString(),
-          updated_at: e.fecha_hora || new Date().toISOString(),
-          last_activity: e.fecha_hora || new Date().toISOString(),
-        };
-
-        // Filtros en memoria
-        if (filters.estado && item.estado !== filters.estado) continue;
-        if (filters.comuna && (!item.comuna || !item.comuna.toLowerCase().includes(filters.comuna.toLowerCase()))) continue;
-        if (filters.search) {
-          const s = filters.search.toLowerCase();
-          const matches =
-            (item.nombre && item.nombre.toLowerCase().includes(s)) ||
-            (item.email && item.email.toLowerCase().includes(s)) ||
-            (item.telefono && item.telefono.toLowerCase().includes(s)) ||
-            (item.comuna && item.comuna.toLowerCase().includes(s));
-          if (!matches) continue;
-        }
-
-        fallbackItems.push(item);
+      let nextCursor: string | undefined;
+      const items = [...data] as Lead[];
+      if (items.length > safeLimit) {
+        const nextItem = items[safeLimit - 1];
+        nextCursor = nextItem.last_activity;
+        items.pop();
       }
-
       return {
-        items: fallbackItems.slice(0, safeLimit),
-        total: fallbackItems.length,
+        items: items.slice(0, safeLimit),
+        nextCursor,
+        total: count || items.length,
       };
     }
-  } catch (errFallback) {
-    console.error('Fallback listLeads error:', errFallback);
+  } catch (err) {
+    console.warn('listLeads error:', err);
   }
 
   return { items: [], total: 0 };
@@ -480,7 +241,7 @@ export async function getConfig(): Promise<Config | null> {
   let loadedPrecios: PreciosData | null = null;
   let loadedBotConfig: BotConfig | null = null;
 
-  // 1. Intentar leer de config_sales_gama
+  // 1. Leer de config_sales_gama
   try {
     const { data, error } = await supabaseAdmin
       .from('config_sales_gama')
@@ -507,30 +268,8 @@ export async function getConfig(): Promise<Config | null> {
         loadedBotConfig = rawConfig as BotConfig;
       }
     }
-  } catch {}
-
-  // 2. Si faltó algún valor, consultar eventos_monitoreo con cuenta CFG-SALES-BOT
-  if (!loadedPrompt || !loadedPrecios || !loadedBotConfig) {
-    try {
-      const { data: evRows } = await supabaseAdmin
-        .from('eventos_monitoreo')
-        .select('*')
-        .eq('cuenta', 'CFG-SALES-BOT')
-        .order('id', { ascending: false })
-        .limit(30);
-
-      if (evRows) {
-        for (const row of evRows) {
-          if (!row.nombre_abonado) continue;
-          try {
-            const parsed = JSON.parse(row.nombre_abonado);
-            if (row.evento === 'prompt' && !loadedPrompt) loadedPrompt = parsed;
-            if (row.evento === 'precios' && !loadedPrecios) loadedPrecios = parsed;
-            if (row.evento === 'config' && !loadedBotConfig) loadedBotConfig = parsed;
-          } catch {}
-        }
-      }
-    } catch {}
+  } catch (err) {
+    console.warn('getConfig error:', err);
   }
 
   return {
@@ -541,40 +280,15 @@ export async function getConfig(): Promise<Config | null> {
 }
 
 export async function setConfig(key: 'prompt' | 'precios' | 'config', value: unknown): Promise<boolean> {
-  let anySuccess = false;
-
-  // 1. Intentar tabla nativa
   try {
     const { error } = await supabaseAdmin
       .from('config_sales_gama')
       .upsert({ key, value, updated_at: new Date().toISOString() }, { onConflict: 'key' });
-    if (!error) {
-      anySuccess = true;
-    }
-  } catch {}
-
-  // 2. Guardar en eventos_monitoreo (100% libre de RLS, universal)
-  try {
-    const payloadStr = JSON.stringify(value);
-    const { error: evError } = await supabaseAdmin
-      .from('eventos_monitoreo')
-      .insert({
-        cuenta: 'CFG-SALES-BOT',
-        evento: key,
-        nombre_abonado: payloadStr,
-        zona: 'CONFIG',
-        usuario: 'ADMIN',
-        fecha_hora: new Date().toISOString(),
-      });
-
-    if (!evError) {
-      anySuccess = true;
-    }
+    return !error;
   } catch (err) {
-    console.warn('Dual-storage setConfig error:', err);
+    console.warn('setConfig error:', err);
+    return false;
   }
-
-  return anySuccess;
 }
 
 export async function hashIp(ip: string): Promise<string> {
