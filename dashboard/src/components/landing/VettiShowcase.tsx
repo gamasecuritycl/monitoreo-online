@@ -77,11 +77,11 @@ export default function VettiShowcase() {
               {/* Product Hero Image */}
               <div className="relative h-72 rounded-2xl overflow-hidden bg-[#0a1628] mb-5">
                 <Image
-                  src="/vetti-click-app.png"
+                  src="/vetti-click-app.webp"
                   alt="Alarma Inteligente Vetti y Aplicación CLICK"
-                  fill
-                  sizes="(max-width: 1024px) 100vw, 50vw"
-                  className="object-cover"
+                  width={800}
+                  height={520}
+                  className="w-full h-full object-cover"
                   priority
                 />
               </div>

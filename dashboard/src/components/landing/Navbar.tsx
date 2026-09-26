@@ -179,7 +179,7 @@ export default function Navbar({ servicios, comunas, articulos }: NavbarProps) {
             >
               <div className="relative w-8 h-8 flex-shrink-0 transition-transform duration-300 group-hover:scale-105">
                 <Image
-                  src="/logo-gama.png"
+                  src="/logo-gama.webp"
                   alt="GAMA Security Logo"
                   width={32}
                   height={32}

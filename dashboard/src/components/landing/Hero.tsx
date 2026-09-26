@@ -138,7 +138,7 @@ export default function Hero() {
                   <div className="flex items-center gap-3">
                     <div className="relative w-7 h-7">
                       <Image
-                        src="/logo-gama.png"
+                        src="/logo-gama.webp"
                         alt="GAMA Security Logo"
                         width={28}
                         height={28}
@@ -157,11 +157,11 @@ export default function Hero() {
                 {/* Hero Feature Image */}
                 <div className="relative h-64 rounded-2xl overflow-hidden mb-5 bg-[#050d1a]">
                   <Image
-                    src="/central-monitoreo.png"
+                    src="/central-monitoreo.webp"
                     alt="Central de Monitoreo GAMA Security"
-                    fill
-                    sizes="(max-width: 1024px) 100vw, 40vw"
-                    className="object-cover transition-transform duration-700 hover:scale-105"
+                    width={800}
+                    height={500}
+                    className="w-full h-full object-cover transition-transform duration-700 hover:scale-105"
                     priority
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-[#0a1628] via-transparent to-transparent opacity-80" />

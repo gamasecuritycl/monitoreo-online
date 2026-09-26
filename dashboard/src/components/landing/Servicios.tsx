@@ -8,7 +8,7 @@ const SERVICES = [
     id: 'monitoreo',
     title: 'Monitoreo Central 24/7',
     desc: 'Operación continua las 24 horas, los 365 días del año. Recepción y verificación de señales en tiempo real mediante nuestra central de operaciones redundante.',
-    img: '/central-monitoreo.png',
+    img: '/central-monitoreo.webp',
     tag: '< 2 min respuesta',
     features: ['Conexión IP / GPRS redundante', 'Operadores calificados Nivel Enterprise', 'Verificación inmediata de eventos'],
   },
@@ -16,7 +16,7 @@ const SERVICES = [
     id: 'camaras',
     title: 'Cámaras 4K con IA',
     desc: 'Sistemas CCTV de alta resolución con analítica de inteligencia artificial, detección de intrusión perimetral y acceso remoto directo.',
-    img: '/camaras-cctv.png',
+    img: '/camaras-cctv.webp',
     tag: 'IA · 4K UHD',
     features: ['Visualización en vivo 24/7', 'Analítica de video inteligente', 'Grabación local + respaldo cloud'],
   },
@@ -24,7 +24,7 @@ const SERVICES = [
     id: 'cercos',
     title: 'Cercos Eléctricos',
     desc: 'Protección perimetral disuasiva de alta tensión para instalaciones residenciales e industriales, integrados con la central de monitoreo.',
-    img: '/cerco-electrico.png',
+    img: '/cerco-electrico.webp',
     tag: '10.000V Disuasivo',
     features: ['Certificación electromagnética', 'Respuesta integrada ante corte', 'Mantención periódica programada'],
   },
@@ -32,7 +32,7 @@ const SERVICES = [
     id: 'alarmas',
     title: 'Sistemas de Alarma DSC',
     desc: 'Detección perimetral e interior de alta precisión con teclados LED DSC Power Series y sensores de movimiento conectados a nuestro centro operativo.',
-    img: '/dsc-power.png',
+    img: '/dsc-power.webp',
     tag: 'DSC Power Series',
     features: ['Teclado LED DSC Power Series', 'Sensores de movimiento e impacto', 'Notificación inmediata en celular'],
   },
@@ -40,7 +40,7 @@ const SERVICES = [
     id: 'prevencion',
     title: 'Prevención de Robo',
     desc: 'Protocolos preventivos y auditoría de seguridad integral para recintos comerciales, empresariales y parques industriales con placas disuasivas GAMA Security.',
-    img: '/prevencion-robo.png',
+    img: '/prevencion-robo.webp',
     tag: 'Empresas & Pymes',
     features: ['Placas disuasivas GAMA Security', 'Evaluación de vulnerabilidades', 'Planes de respuesta rápida'],
   },
@@ -48,7 +48,7 @@ const SERVICES = [
     id: 'incendio',
     title: 'Detección de Incendio',
     desc: 'Sistemas automáticos de detección de humo, temperatura y gas con alerta temprana conectada a la central y coordinación de emergencia.',
-    img: '/deteccion-incendio.png',
+    img: '/deteccion-incendio.webp',
     tag: 'Alerta Temprana',
     features: ['Sensores térmicos y fotoeléctricos', 'Protocolo automático de emergencia', 'Conexión 24 horas'],
   },
@@ -113,9 +113,9 @@ export default function Servicios() {
                   <Image
                     src={svc.img}
                     alt={svc.title}
-                    fill
-                    sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                    className="object-cover transition-transform duration-700 group-hover:scale-105"
+                    width={600}
+                    height={380}
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-[#0f2240] via-transparent to-transparent opacity-90" />
                   

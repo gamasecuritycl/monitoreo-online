@@ -50,7 +50,7 @@ export default function Footer({ onOpenLegal, servicios, comunas, articulos }: F
             <div className="flex items-center gap-2.5">
               <div className="relative w-7 h-7">
                 <Image
-                  src="/logo-gama.png"
+                  src="/logo-gama.webp"
                   alt="GAMA Security"
                   width={28}
                   height={28}
