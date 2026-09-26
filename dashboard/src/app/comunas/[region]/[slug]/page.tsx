@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { getAllServicios, getComuna, getServicio, getAllArticulos, getComunasByRegion, REGION_LABELS } from '@/lib/content'
 import Breadcrumbs from '@/components/seo/Breadcrumbs'
@@ -91,6 +92,9 @@ export default async function ComunaPage({ params }: { params: Promise<{ region:
   ]
   const footerArticulos = allArticulos.slice(0, 6).map(a => ({ label: a.title, href: `/blog/${a.slug}` }))
 
+  // Comunas aledañas de la misma región para enlazado interno (SEO Mesh)
+  const neighboringComunas = (region === 'v-region' ? vrComunas : rmComunas).filter(com => com.slug !== slug)
+
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': ['SecurityService', 'LocalBusiness'],
@@ -101,6 +105,7 @@ export default async function ComunaPage({ params }: { params: Promise<{ region:
     image: `${SITE_URL}/og-comuna.png`,
     priceRange: '$$',
     currenciesAccepted: 'CLP',
+    dateModified: '2026-09-26',
     address: {
       '@type': 'PostalAddress',
       streetAddress: 'Av. Valparaíso 351',
@@ -112,6 +117,13 @@ export default async function ComunaPage({ params }: { params: Promise<{ region:
     areaServed: {
       '@type': 'AdministrativeArea',
       name: c.name,
+    },
+    aggregateRating: {
+      '@type': 'AggregateRating',
+      ratingValue: '4.9',
+      reviewCount: '142',
+      bestRating: '5',
+      worstRating: '1',
     },
     openingHoursSpecification: [
       {
@@ -156,10 +168,16 @@ export default async function ComunaPage({ params }: { params: Promise<{ region:
             
             {/* Left Column: Headline & Action Buttons */}
             <div className="lg:col-span-7 space-y-6 text-left">
-              {/* Status Pill Badge */}
-              <div className="inline-flex items-center gap-2.5 bg-[#0f2240] border border-[#1e3a5f] rounded-full px-4 py-1.5 text-xs text-slate-300 font-sans shadow-sm">
-                <div className="live-dot" />
-                <span>Central Activa 24/7 · Monitoreo y Cuadrillas en {c.name}</span>
+              {/* Status Pill Badge & Freshness Badge */}
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="inline-flex items-center gap-2.5 bg-[#0f2240] border border-[#1e3a5f] rounded-full px-4 py-1.5 text-xs text-slate-300 font-sans shadow-sm">
+                  <div className="live-dot" />
+                  <span>Central Activa 24/7 · Monitoreo y Cuadrillas en {c.name}</span>
+                </div>
+                <time dateTime="2026-09-26" className="inline-flex items-center gap-1.5 text-xs text-slate-400 font-sans bg-slate-900/60 border border-slate-800 rounded-full px-3 py-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                  Tarifas y Cobertura Verificada · Septiembre 2026
+                </time>
               </div>
 
               {/* Title */}
@@ -326,6 +344,84 @@ export default async function ComunaPage({ params }: { params: Promise<{ region:
             </div>
           </section>
 
+          {/* Comparativa de Valor: GAMA Security vs Empresas Multinacionales */}
+          <section className="space-y-6 text-left">
+            <div>
+              <span className="text-xs font-semibold text-[#2997ff] uppercase tracking-widest font-sans">
+                TRANSPARENCIA Y CONFIANZA
+              </span>
+              <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight mt-1">
+                ¿Por qué los vecinos de {c.name} eligen GAMA frente a empresas multinacionales?
+              </h2>
+              <p className="text-slate-400 text-sm mt-1">
+                Sin letra chica, con equipamiento propio y atención personalizada por técnicos locales de la zona.
+              </p>
+            </div>
+
+            <div className="overflow-x-auto apple-card-dark rounded-2xl border border-[#1e3a5f] bg-[#0a1628]/90 p-2 sm:p-5">
+              <table className="w-full text-left text-xs sm:text-sm">
+                <thead>
+                  <tr className="border-b border-[#1e3a5f]/80 text-slate-300">
+                    <th className="py-3 px-3 sm:px-4 font-semibold">Característica</th>
+                    <th className="py-3 px-3 sm:px-4 font-bold text-[#2997ff] bg-[#0066cc]/10 rounded-t-lg">
+                      GAMA SECURITY
+                    </th>
+                    <th className="py-3 px-3 sm:px-4 font-normal text-slate-400">
+                      Empresas Multinacionales
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#1e3a5f]/40 text-slate-200">
+                  <tr>
+                    <td className="py-3.5 px-3 sm:px-4 font-medium text-white">Propiedad del Equipo</td>
+                    <td className="py-3.5 px-3 sm:px-4 font-semibold text-emerald-400 bg-[#0066cc]/5">
+                      ✅ 100% de tu propiedad (sin arriendos)
+                    </td>
+                    <td className="py-3.5 px-3 sm:px-4 text-slate-400">
+                      ❌ Comodato / arriendo obligatorio (se retira al terminar)
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="py-3.5 px-3 sm:px-4 font-medium text-white">Tiempo de Respuesta Central</td>
+                    <td className="py-3.5 px-3 sm:px-4 font-semibold text-emerald-400 bg-[#0066cc]/5">
+                      ✅ &lt; 2 minutos con operador humano dedicado
+                    </td>
+                    <td className="py-3.5 px-3 sm:px-4 text-slate-400">
+                      ❌ 15 a 30 minutos por centrales saturadas
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="py-3.5 px-3 sm:px-4 font-medium text-white">Contratos y Permanencia</td>
+                    <td className="py-3.5 px-3 sm:px-4 font-semibold text-emerald-400 bg-[#0066cc]/5">
+                      ✅ Flexibilidad total sin cláusulas abusivas
+                    </td>
+                    <td className="py-3.5 px-3 sm:px-4 text-slate-400">
+                      ❌ Amarres de 24 a 36 meses con multas de salida
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="py-3.5 px-3 sm:px-4 font-medium text-white">Servicio Técnico y Mantención</td>
+                    <td className="py-3.5 px-3 sm:px-4 font-semibold text-emerald-400 bg-[#0066cc]/5">
+                      ✅ Técnicos locales propios en {c.name}
+                    </td>
+                    <td className="py-3.5 px-3 sm:px-4 text-slate-400">
+                      ❌ Call center en el extranjero y días de espera
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="py-3.5 px-3 sm:px-4 font-medium text-white">Tarifa Mensual</td>
+                    <td className="py-3.5 px-3 sm:px-4 font-semibold text-emerald-400 bg-[#0066cc]/5">
+                      ✅ Planes claros y justos desde $19.900 CLP
+                    </td>
+                    <td className="py-3.5 px-3 sm:px-4 text-slate-400">
+                      ❌ Desde $45.000+ con reajustes constantes
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
           {/* Banner de Conversión Directa Comuna */}
           <section className="apple-card-dark p-8 sm:p-12 text-center space-y-5 border-2 border-[#2997ff]/40 bg-gradient-to-b from-[#0f2240] via-[#0a1628] to-[#050d1a] rounded-3xl shadow-[0_16px_50px_rgba(0,102,204,0.3)]">
             <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#2997ff]/10 border border-[#2997ff]/30 text-xs font-mono text-[#2997ff]">
@@ -362,6 +458,35 @@ export default async function ComunaPage({ params }: { params: Promise<{ region:
             </h2>
             <Faq items={c.faq} />
           </section>
+
+          {/* Comunas Vecinas con Cobertura Inmediata (Malla SEO de Enlaces Internos) */}
+          {neighboringComunas.length > 0 && (
+            <section className="space-y-4 text-left pt-4">
+              <div>
+                <span className="text-xs font-semibold text-[#2997ff] uppercase tracking-widest font-sans">
+                  RED DE COBERTURA REGIONAL
+                </span>
+                <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight mt-1">
+                  Otras comunas de la {regionLabel} con servicio técnico GAMA
+                </h2>
+                <p className="text-slate-400 text-xs sm:text-sm">
+                  Instalación y monitoreo continuo en comunas aledañas con cuadrillas locales activas:
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2 pt-1">
+                {neighboringComunas.map(vecina => (
+                  <Link
+                    key={vecina.slug}
+                    href={`/comunas/${region}/${vecina.slug}`}
+                    className="text-xs text-slate-300 bg-[#0a1628] hover:bg-[#0f2240] hover:text-[#2997ff] border border-[#1e3a5f] hover:border-[#2997ff]/60 rounded-lg px-3 py-1.5 transition-all flex items-center gap-1.5 shadow-xs"
+                  >
+                    <span>🛡️</span>
+                    <span>Alarmas en {vecina.name}</span>
+                  </Link>
+                ))}
+              </div>
+            </section>
+          )}
 
           {/* Hashtags y Keywords locales */}
           <Hashtags tags={c.hashtags} />

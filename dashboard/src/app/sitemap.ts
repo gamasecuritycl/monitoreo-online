@@ -24,8 +24,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const comunas: MetadataRoute.Sitemap = getAllComunas().map(c => ({
     url: `${SITE_URL}/comunas/${c.region}/${c.slug}`,
     lastModified: now,
-    changeFrequency: 'monthly',
-    priority: 0.8,
+    changeFrequency: 'weekly',
+    priority: 0.9,
   }))
 
   const articulos: MetadataRoute.Sitemap = getAllArticulos().map(a => ({
