@@ -233,6 +233,33 @@ export async function getConfig(): Promise<Config | null> {
     categorias: ["Monitoreo 24/7", "Alarmas Inteligentes", "Alarmas Cableadas", "Cámaras CCTV", "Cercos Eléctricos", "Promociones"],
     items: [
       {
+        id: "pack-vetti-smart-promo",
+        nombre: "Promoción Exclusiva Pack VETTI Smart",
+        descripcion: "Sistema de alarma inalámbrica de alta tecnología con App NT CLICK y monitoreo 24/7. Equipos propios sin arriendo.",
+        precio: 0,
+        precio_uf: "Instalación $0 bonificada / Monitoreo desde 0,9 UF + IVA mensual",
+        categoria: "Promociones",
+        palabras_clave: ["vetti", "pack", "promocion", "promo", "oferta", "smart", "nt click", "alarma", "kit", "casa", "departamento", "negocio", "valores", "detalles"],
+        incluye: [
+          "Central Inteligente Vetti (WiFi + 4G GSM anti-corte)",
+          "1 Sensor de movimiento PIR antimascotas (hasta 25 kg)",
+          "1 Contacto magnético de puerta/ventana",
+          "2 Controles remotos con botón de pánico SOS",
+          "Sirena disuasiva 110 dB",
+          "Batería de respaldo autónoma",
+          "App NT CLICK en tu smartphone",
+          "Instalación $0 bonificada",
+          "Monitoreo 24/7 desde 0,9 UF + IVA mensual",
+          "Equipos 100% de tu propiedad (sin comodato)"
+        ],
+        no_incluye: ["Arriendos de equipos engañosos"],
+        faq: [
+          { q: "¿Qué incluye la promoción?", a: "Incluye todo el kit Vetti Smart con central WiFi/4G, sensores, controles, sirena, App NT CLICK e instalación $0 bonificada con el servicio de monitoreo 24/7 desde 0,9 UF/mes." },
+          { q: "¿Los equipos son míos?", a: "Sí, el equipamiento queda 100% en tu propiedad, sin arriendos eternos." },
+          { q: "¿Cuánto cuesta el monitoreo?", a: "Desde 0,9 UF + IVA mensual (~$35.000 CLP aprox)." }
+        ]
+      },
+      {
         id: "monitoreo-247-uf",
         nombre: "Plan Monitoreo de Alarmas 24/7",
         descripcion: "Monitoreo continuo 24/7 los 365 días con verificación humana de señales en < 2 min. El equipo es 100% tuyo.",
