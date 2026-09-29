@@ -1,7 +1,7 @@
 ---
-title: "Sistema de alarma para condominios"
-description: "Sistema de alarma para condominios: zonas comunes y privadas, armado por administración, videocitofonía, presupuesto de consorcio y normativa."
-keywords: [alarma condominio, alarma para edificio, seguridad en condominios, alarma zonas comunes, sistema de alarma edificio]
+title: "Seguridad para Condominios y Edificios [Guía 2026]"
+description: "Sistemas de alarma para condominios en Chile: áreas comunes, control de acceso, videocitofonía, monitoreo 24/7 y Ley de Copropiedad Inmobiliaria 2026."
+keywords: [sistemas de seguridad para condominios, alarma condominio, alarma para edificio, seguridad en condominios, alarmas para condominios, citofonia y control de acceso]
 hashtags: [AlarmaCondominio, Condominios, ControlDeAcceso, Citofonia]
 h1: "Sistema de alarma para condominios: guía para administración"
 date: "2026-09-07"

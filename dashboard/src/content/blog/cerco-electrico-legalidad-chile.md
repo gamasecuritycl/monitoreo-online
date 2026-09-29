@@ -1,7 +1,7 @@
 ---
-title: "Cerco eléctrico en Chile: ¿es legal?"
-description: "¿Es legal el cerco eléctrico en Chile? Normativa, requisitos de instalación, comparación con rejas, integración con monitoreo y mantención."
-keywords: [cerco electrico legal chile, cerco electrico, cerco electrico para casa, seguridad perimetral, cerco electrico precio]
+title: "¿Es Legal el Cerco Eléctrico en Chile? [Normativa SEC 2026]"
+description: "¿Se puede poner cerco eléctrico en una casa en Chile? Conoce la normativa SEC, requisitos legales, valores por metro, multas y conexión a monitoreo 24/7."
+keywords: [se puede poner cerco electrico en casa, puedo poner cerco electrico en mi casa, cerco electrico legal chile, cerco electrico chile, cerco electrico para casa, seguridad perimetral, cerco electrico precio]
 hashtags: [CercoElectrico, SeguridadPerimetral, PrevencionDeRobo, SeguridadElectronica]
 h1: "Cerco eléctrico en Chile: ¿es legal? Todo lo que debes saber"
 date: "2026-09-21"

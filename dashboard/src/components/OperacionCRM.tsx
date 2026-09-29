@@ -24,6 +24,7 @@ import WhatsAppNotificationToast from './WhatsAppNotificationToast'
 import WhatsAppPlantillasModal, { PlantillaAbonadoData } from './operacion/WhatsAppPlantillasModal'
 import NotificacionesWhatsAppModal from './NotificacionesWhatsAppModal'
 import MercadoPublicoModule, { LicitacionChileCompra } from './operacion/MercadoPublicoModule'
+import LandingMarketingModule from './operacion/LandingMarketingModule'
 import { BotConfigModal } from '@/components/SalesGama/Modal/BotConfigModal'
 import { BotLeadsModal } from '@/components/SalesGama/Modal/BotLeadsModal'
 import { OperacionesBotHub } from '@/components/SalesGama/OperacionesBotHub'
@@ -348,7 +349,7 @@ export function normalizeCuentaCode(cta: any): string {
 }
 
 export default function OperacionCRM() {
-  const [moduloActivo, setModuloActivo] = useState<'ficha360' | 'autonomia' | 'salesbot' | 'presupuestos' | 'mercadopublico' | 'facturacion' | 'serv_tecnico' | 'kpis' | 'config' | 'marketing' | 'compras' | 'contratos' | 'ley21719' | null>(null)
+  const [moduloActivo, setModuloActivo] = useState<'ficha360' | 'autonomia' | 'salesbot' | 'presupuestos' | 'mercadopublico' | 'facturacion' | 'serv_tecnico' | 'kpis' | 'config' | 'marketing' | 'landing_marketing' | 'compras' | 'contratos' | 'ley21719' | null>(null)
   const [sidebarAbierto, setSidebarAbierto] = useState<boolean>(false)
 
   // ── ESTADOS SALES-GAMA AI MODALS ──
@@ -2921,6 +2922,18 @@ export default function OperacionCRM() {
       tag: '🔥 Leads Activos'
     },
     {
+      id: 'landing_marketing',
+      titulo: 'Landing Marketing',
+      categoria: 'MARKETING & VENTAS',
+      descripcion: 'Control integral de la web: Hero Carrusel con fotos, Popup Promocional con ofertas y Chatbot IA.',
+      icono: Sparkles,
+      gradient: 'from-amber-500 via-rose-500 to-indigo-600',
+      borderColor: 'hover:border-rose-400',
+      glowColor: 'group-hover:shadow-rose-500/25',
+      badgeColor: 'bg-rose-500/10 text-rose-300 border-rose-500/20',
+      tag: 'Banners & Popups'
+    },
+    {
       id: 'marketing',
       titulo: 'Marketing B2B',
       categoria: 'COMERCIAL',
@@ -3108,6 +3121,7 @@ export default function OperacionCRM() {
           moduloActivo === 'salesbot' ? 'Sales-Bot IA & Leads' :
           moduloActivo === 'presupuestos' ? 'Presupuestos Comerciales' :
           moduloActivo === 'mercadopublico' ? 'Mercado Público & Licitaciones' :
+          moduloActivo === 'landing_marketing' ? 'Landing Marketing' :
           moduloActivo === 'marketing' ? 'Marketing B2B' :
           moduloActivo === 'facturacion' ? 'Cobranza & Abonos' :
           moduloActivo === 'serv_tecnico' ? 'Servicios Técnicos' :
@@ -3307,6 +3321,7 @@ export default function OperacionCRM() {
                     moduloActivo === 'salesbot' ? 'Sales-Bot IA & Leads' :
                     moduloActivo === 'presupuestos' ? 'Presupuestos Comerciales' :
                     moduloActivo === 'mercadopublico' ? 'Mercado Público & Licitaciones' :
+                    moduloActivo === 'landing_marketing' ? 'Landing Marketing' :
                     moduloActivo === 'marketing' ? 'Marketing B2B' :
                     moduloActivo === 'facturacion' ? 'Cobranza & Abonos' :
                     moduloActivo === 'serv_tecnico' ? 'Servicios Técnicos' :
@@ -5697,6 +5712,11 @@ export default function OperacionCRM() {
               )}
 
             </div>
+          )}
+
+          {/* ── MÓDULO LANDING MARKETING: HERO CARRUSEL & POPUP PROMOCIONAL & CHATBOT ── */}
+          {moduloActivo === 'landing_marketing' && (
+            <LandingMarketingModule />
           )}
 
           {/* ── MÓDULO 8: MARKETING Y VENTAS: CAPTACIÓN DE LEADS Y COLD EMAIL OUTREACH VÍA RESEND ── */}

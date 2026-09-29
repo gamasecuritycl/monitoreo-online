@@ -100,6 +100,13 @@ export default function CommandPaletteModal({
       subtitulo: 'Centro de cumplimiento normativo APDP, certificados y contratos descargables',
       categoria: 'Comando',
       accion: () => { onNavigateModule('ley21719'); onClose() }
+    },
+    {
+      id: 'cmd-landing-marketing',
+      titulo: 'Ir a Landing Marketing & Web',
+      subtitulo: 'Gestión de Carrusel Hero con fotos, Popup Promocional y Chatbot IA',
+      categoria: 'Comando',
+      accion: () => { onNavigateModule('landing_marketing'); onClose() }
     }
   ]
 

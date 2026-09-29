@@ -128,6 +128,51 @@ export function ChatWidget() {
     onSessionEnd: () => setIsOpen(false),
   });
 
+  const [showCallout, setShowCallout] = useState(false);
+  const [calloutText, setCalloutText] = useState('👋 ¿Dudas con precios o cobertura? Pregúntame al instante sin compromiso.');
+  const [quickChips, setQuickChips] = useState<string[]>([
+    '📦 ¿Qué incluye el Pack Vetti?',
+    '💰 Valores de Monitoreo 24/7',
+    '📍 ¿Tienen cobertura en mi comuna?',
+    '🛡️ ¿El equipo queda a mi nombre?',
+  ]);
+
+  // Cargar configuración de marketing para el chatbot
+  useEffect(() => {
+    fetch('/api/landing-marketing')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.chatbot) {
+          if (data.chatbot.calloutTexto) setCalloutText(data.chatbot.calloutTexto);
+          if (Array.isArray(data.chatbot.chipsIniciales) && data.chatbot.chipsIniciales.length > 0) {
+            setQuickChips(data.chatbot.chipsIniciales);
+          }
+          if (data.chatbot.calloutActivo) {
+            const delay = (data.chatbot.calloutDelaySeconds || 4) * 1000;
+            const t = setTimeout(() => setShowCallout(true), delay);
+            return () => clearTimeout(t);
+          }
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  // Evento global para abrir el bot desde cualquier botón de la web
+  useEffect(() => {
+    const handleGlobalOpen = (e: any) => {
+      setIsOpen(true);
+      setShowCallout(false);
+      const initial = e?.detail?.initialMessage;
+      if (initial && typeof initial === 'string') {
+        setTimeout(() => {
+          send(initial);
+        }, 300);
+      }
+    };
+    window.addEventListener('open-sales-gama', handleGlobalOpen as EventListener);
+    return () => window.removeEventListener('open-sales-gama', handleGlobalOpen as EventListener);
+  }, [send]);
+
   const isGenerating = isStreaming || isLoading;
 
   useEffect(() => {
@@ -242,11 +287,41 @@ export function ChatWidget() {
 
   return (
     <>
+      {/* Burbuja emergente de bienvenida activa */}
+      {!isOpen && showCallout && (
+        <div className="fixed bottom-24 right-5 z-40 max-w-xs bg-gradient-to-br from-[#0c182c] to-[#070e1b] border border-blue-400/50 rounded-2xl p-3.5 shadow-2xl shadow-blue-950/90 text-white text-xs animate-in fade-in slide-in-from-bottom-2 duration-300">
+          <button
+            onClick={() => setShowCallout(false)}
+            className="absolute -top-2 -left-2 w-5 h-5 rounded-full bg-slate-800 text-slate-300 hover:text-white flex items-center justify-center text-[10px] border border-slate-600 shadow cursor-pointer"
+            title="Cerrar saludo"
+          >
+            ✕
+          </button>
+          <div className="flex items-start gap-2.5">
+            <span className="text-base select-none">👋</span>
+            <div className="space-y-1">
+              <p className="font-semibold text-slate-100 leading-snug">
+                {calloutText}
+              </p>
+              <button
+                onClick={() => { setIsOpen(true); setShowCallout(false); }}
+                className="text-[11px] font-bold text-[#2997ff] hover:underline flex items-center gap-1 cursor-pointer pt-0.5"
+              >
+                <span>Consultar ahora</span>
+                <span>→</span>
+              </button>
+            </div>
+          </div>
+          {/* Triángulo indicador apuntando hacia el avatar */}
+          <div className="absolute -bottom-1.5 right-7 w-3 h-3 bg-[#070e1b] border-r border-b border-blue-400/50 rotate-45" />
+        </div>
+      )}
+
       {/* Botón flotante para abrir el asistente */}
       <button
         type="button"
         className={`sg-widget-trigger ${isOpen ? "hidden-trigger" : ""}`}
-        onClick={() => setIsOpen(true)}
+        onClick={() => { setIsOpen(true); setShowCallout(false); }}
         aria-label="Abrir asesor de ventas GAMA"
       >
         <SalesGamaAvatar state="idle" size={56} />
@@ -320,12 +395,32 @@ export function ChatWidget() {
         {/* Listado de mensajes */}
         <div className="sg-widget-messages flex-1 overflow-y-auto" role="log" aria-live="polite">
           {history.length === 0 && (
-            <div className="p-4 rounded-xl bg-[#091528] border border-[#1b3558] text-xs text-slate-300 space-y-2 mb-3">
+            <div className="p-4 rounded-xl bg-[#091528] border border-[#1b3558] text-xs text-slate-300 space-y-3 mb-3">
               <p className="font-semibold text-white">¡Hola! Soy tu Asesor Experto de GAMA Seguridad.</p>
               <p>
                 Puedo entregarte presupuestos exactos de alarmas inteligentes Vetti, sistemas DSC, cámaras 4K y nuestro plan de monitoreo 24/7 desde <strong>0,9 UF + IVA mensual</strong>.
               </p>
               <p className="text-slate-400">¿Qué tipo de propiedad necesitas proteger (casa, departamento, empresa o parcela)?</p>
+
+              {quickChips.length > 0 && (
+                <div className="pt-2 border-t border-[#1b3558]/80">
+                  <span className="text-[10px] font-extrabold text-[#2997ff] uppercase tracking-wider block mb-2 font-mono">
+                    💡 Opciones rápidas en 1 clic:
+                  </span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                    {quickChips.map((chip, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => handleQuickReply(chip.replace(/^[^\s]+\s/, ''))}
+                        className="p-2 rounded-lg bg-[#0e213b] hover:bg-[#15325b] border border-[#234675] text-blue-100 hover:text-white text-[11px] font-medium transition-all text-left flex items-center gap-1.5 cursor-pointer active:scale-95 shadow-sm"
+                      >
+                        {chip}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

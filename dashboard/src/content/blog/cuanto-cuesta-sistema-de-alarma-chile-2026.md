@@ -1,7 +1,7 @@
 ---
-title: "¿Cuánto cuesta un sistema de alarma en Chile? 2026"
-description: "Precios reales de sistemas de alarma en Chile 2026: kit, instalación y monitoreo mensual. Tabla resumen y factores que suben el costo."
-keywords: [precio sistema de alarma, costo alarma para casa, cuanto cuesta una alarma, precio alarma inalambrica, costo monitoreo de alarma]
+title: "¿Cuánto Cuesta una Alarma en Chile? Precios Reales [2026]"
+description: "Precios reales de alarmas para casa en Chile 2026: kits, costo de monitoreo 24/7 desde 0,9 UF, equipos propios sin comodato y comparativa con Verisure/ADT."
+keywords: [cuanto cuesta un sistema de alarma para casa, precio sistema de alarma chile, costo alarma para casa, cuanto cuesta una alarma, precio alarma inalambrica, costo monitoreo de alarma, valor alarmas para casas]
 hashtags: [SistemaDeAlarma, PrecioAlarmas, MonitoreoDeAlarmas, SeguridadElectronica]
 h1: "¿Cuánto cuesta un sistema de alarma en Chile? Precios 2026"
 date: "2026-09-16"

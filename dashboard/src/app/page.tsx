@@ -1,7 +1,8 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import Navbar from '@/components/landing/Navbar'
-import Hero from '@/components/landing/Hero'
+import HeroCarousel from '@/components/landing/HeroCarousel'
+import PromoPopupModal from '@/components/landing/PromoPopupModal'
 import Servicios from '@/components/landing/Servicios'
 import VettiShowcase from '@/components/landing/VettiShowcase'
 import QuienesSomos from '@/components/landing/QuienesSomos'
@@ -210,7 +211,7 @@ export default function Home() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessJsonLd) }}
       />
       <Navbar servicios={navServicios} comunas={navComunas} articulos={navArticulos} />
-      <Hero />
+      <HeroCarousel />
       <Servicios />
       <VettiShowcase />
       <QuienesSomos />
@@ -294,6 +295,7 @@ export default function Home() {
         footerComunas={footerComunas}
         footerArticulos={footerArticulos}
       />
+      <PromoPopupModal />
       <ChatWidget />
     </main>
   )
