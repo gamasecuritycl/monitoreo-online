@@ -278,3 +278,99 @@ export async function getAssistantResponse(
     },
   });
 }
+
+/**
+ * Retorna la respuesta completa del asistente de ventas como texto plano (string).
+ * Ideal para WhatsApp Webhooks, APIs REST y canales sin streaming SSE.
+ */
+export async function generateSalesResponseText(
+  userMessage: string,
+  history: ChatMessage[] = []
+): Promise<string> {
+  const config = await getConfig().catch(() => null) || {
+    prompt: DEFAULT_SALES_PROMPT,
+    precios: { version: 2, categorias: [], items: [] },
+    config: {
+      rateLimit: 100,
+      timeoutMin: 30,
+      despedida: '¡Gracias por contactar a GAMA Seguridad!',
+      waUrl: 'https://wa.me/56991016912',
+      model: 'gemini-2.5-flash',
+      temperature: 0.7,
+      topP: 0.9,
+      topK: 40,
+    }
+  };
+
+  const { config: botConfig, precios } = config;
+  const preciosMatches = matchPrecios(userMessage, precios);
+  const preciosContext = buildPreciosContext(preciosMatches);
+  const systemPrompt = buildSystemPrompt(config, preciosContext);
+
+  const apiKey = process.env.GEMINI_API_KEY;
+
+  if (apiKey && apiKey.trim().length > 5) {
+    try {
+      const genAI = new GoogleGenerativeAI(apiKey);
+      const model = genAI.getGenerativeModel({
+        model: 'gemini-2.5-flash',
+        systemInstruction: systemPrompt,
+      });
+
+      const contents: { role: 'user' | 'model'; parts: { text: string }[] }[] = [];
+      let lastRole = '';
+
+      for (const m of history.slice(-6)) {
+        const role = m.role === 'assistant' ? 'model' : 'user';
+        if (role !== lastRole) {
+          contents.push({ role, parts: [{ text: m.content }] });
+          lastRole = role;
+        }
+      }
+
+      if (lastRole === 'user') {
+        contents[contents.length - 1].parts[0].text += `\n${userMessage}`;
+      } else {
+        contents.push({ role: 'user', parts: [{ text: userMessage }] });
+      }
+
+      const result = await model.generateContent({
+        contents,
+        generationConfig: {
+          temperature: botConfig.temperature || 0.7,
+        },
+      });
+
+      const responseText = result.response.text();
+      if (responseText && responseText.trim().length > 0) {
+        return responseText.trim();
+      }
+    } catch (sdkErr) {
+      console.warn('generateSalesResponseText SDK error, testing REST fallback:', sdkErr);
+      try {
+        const restRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            system_instruction: { parts: [{ text: systemPrompt }] },
+            contents: [{ parts: [{ text: userMessage }] }],
+            generationConfig: { temperature: 0.7 }
+          })
+        });
+
+        if (restRes.ok) {
+          const restData = await restRes.json();
+          const texto = restData?.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (texto && texto.trim().length > 0) {
+            return texto.trim();
+          }
+        }
+      } catch (restErr) {
+        console.warn('generateSalesResponseText REST fallback failed:', restErr);
+      }
+    }
+  }
+
+  // Fallback inteligente garantizado para Chile / GAMA Seguridad
+  return generateSmartFallback(userMessage, history);
+}
