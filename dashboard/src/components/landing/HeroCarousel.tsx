@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, MessageSquare, Shield, Clock, Award, PhoneCall, Sparkles, ArrowRight } from 'lucide-react';
@@ -25,8 +25,6 @@ export default function HeroCarousel({ slides: propSlides }: HeroCarouselProps) 
   );
 
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [isPaused, setIsPaused] = useState(false);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Cargar configuración en vivo desde la API si no vino precargada
   useEffect(() => {
@@ -57,17 +55,15 @@ export default function HeroCarousel({ slides: propSlides }: HeroCarouselProps) 
     setCurrentIndex((prev) => (prev - 1 + totalSlides) % totalSlides);
   }, [totalSlides]);
 
-  // Autoplay cada 7 segundos
+  // Autoplay automático continuo cada 5 segundos
   useEffect(() => {
-    if (isPaused || totalSlides <= 1) return;
-    timerRef.current = setInterval(() => {
-      nextSlide();
-    }, 7000);
+    if (totalSlides <= 1) return;
+    const interval = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % totalSlides);
+    }, 5000);
 
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
-  }, [nextSlide, isPaused, totalSlides]);
+    return () => clearInterval(interval);
+  }, [totalSlides, currentIndex]);
 
   const handleAction = (tipo: 'whatsapp' | 'chatbot' | 'link', url?: string, contextText?: string) => {
     if (tipo === 'chatbot') {
@@ -94,16 +90,14 @@ export default function HeroCarousel({ slides: propSlides }: HeroCarouselProps) 
   return (
     <section
       id="inicio"
-      className="relative min-h-[90vh] lg:min-h-screen flex flex-col justify-between pt-28 pb-12 overflow-hidden bg-[#050d1a]"
-      onMouseEnter={() => setIsPaused(true)}
-      onMouseLeave={() => setIsPaused(false)}
+      className="relative min-h-[90vh] lg:min-h-screen flex flex-col justify-between pt-36 sm:pt-40 lg:pt-44 pb-14 overflow-hidden bg-[#050d1a]"
     >
       {/* ── AMBIENT BACKGROUND GLOW ── */}
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[900px] h-[500px] bg-[#0066cc]/15 blur-[160px] rounded-full pointer-events-none" />
       <div className="absolute top-1/3 right-10 w-[600px] h-[450px] bg-[#dc2626]/10 blur-[150px] rounded-full pointer-events-none" />
 
       {/* ── SLIDE CONTENT & IMAGERY ── */}
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full my-auto py-8">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full flex-1 flex flex-col justify-center py-4">
         <AnimatePresence mode="wait">
           <motion.div
             key={currentSlide.id || currentIndex}
@@ -114,7 +108,7 @@ export default function HeroCarousel({ slides: propSlides }: HeroCarouselProps) 
             className="grid lg:grid-cols-12 gap-8 lg:gap-12 items-center"
           >
             {/* ── COLUMNA IZQUIERDA: TEXTOS & LLAMADOS A LA ACCIÓN ── */}
-            <div className="lg:col-span-7 space-y-6 sm:space-y-8 text-left">
+            <div className="lg:col-span-7 space-y-5 sm:space-y-6 text-left">
               {/* Badge Dinámico */}
               <div className="inline-flex items-center gap-2.5 bg-[#0b172c]/90 backdrop-blur-md border border-[#2997ff]/40 shadow-lg shadow-blue-950/50 rounded-full px-4 py-1.5 text-xs text-blue-200 font-sans">
                 <span className="relative flex h-2 w-2">
@@ -126,7 +120,7 @@ export default function HeroCarousel({ slides: propSlides }: HeroCarouselProps) 
 
               {/* Título Principal */}
               <div className="space-y-2">
-                <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black text-white tracking-tight leading-[1.08] font-sans">
+                <h1 className="text-2xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-[1.12] font-sans">
                   {currentSlide.titulo}{' '}
                   <span className="bg-gradient-to-r from-[#2997ff] via-[#60a5fa] to-[#38bdf8] bg-clip-text text-transparent block sm:inline">
                     {currentSlide.tituloHighlight}
@@ -135,7 +129,7 @@ export default function HeroCarousel({ slides: propSlides }: HeroCarouselProps) 
               </div>
 
               {/* Bajada Comercial */}
-              <p className="text-sm sm:text-base lg:text-lg text-slate-300 max-w-xl leading-relaxed font-sans">
+              <p className="text-sm sm:text-base text-slate-300 max-w-xl leading-relaxed font-sans">
                 {currentSlide.bajada}
               </p>
 
