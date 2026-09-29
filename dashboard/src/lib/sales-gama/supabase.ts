@@ -5,9 +5,12 @@ export const supabaseAdmin = supabase;
 
 export async function upsertLead(sessionId: string, partialLead: Partial<Lead>): Promise<Lead | null> {
   const now = new Date().toISOString();
+  // Extraer 'resumen' para evitar error de columna inexistente en PostgreSQL
+  const { resumen, ...dbFields } = partialLead;
+
   const payload: Partial<Lead> = {
     session_id: sessionId,
-    ...partialLead,
+    ...dbFields,
     updated_at: now,
     last_activity: now,
     created_at: partialLead.created_at || now,
@@ -26,6 +29,9 @@ export async function upsertLead(sessionId: string, partialLead: Partial<Lead>):
 
     if (!error && data) {
       savedLead = data as Lead;
+      if (resumen) savedLead.resumen = resumen;
+    } else if (error) {
+      console.warn('Upsert leads_sales_gama error:', error.message);
     }
   } catch (err) {
     console.warn('Upsert leads_sales_gama notice:', err);
@@ -181,6 +187,33 @@ export async function listLeads(
         nextCursor = nextItem.last_activity;
         items.pop();
       }
+      // Enriquecer items con el último mensaje del usuario para la columna Resumen / Interés
+      const leadIds = items.map((l) => l.id);
+      if (leadIds.length > 0) {
+        try {
+          const { data: messages } = await supabaseAdmin
+            .from('lead_messages')
+            .select('lead_id, content, role, created_at')
+            .in('lead_id', leadIds)
+            .eq('role', 'user')
+            .order('created_at', { ascending: false });
+
+          if (messages && messages.length > 0) {
+            const msgMap = new Map<string, string>();
+            for (const m of messages) {
+              if (!msgMap.has(m.lead_id)) {
+                msgMap.set(m.lead_id, m.content);
+              }
+            }
+            items.forEach((l) => {
+              if (msgMap.has(l.id)) {
+                l.resumen = msgMap.get(l.id);
+              }
+            });
+          }
+        } catch {}
+      }
+
       return {
         items: items.slice(0, safeLimit),
         nextCursor,

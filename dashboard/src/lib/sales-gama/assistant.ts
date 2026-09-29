@@ -53,13 +53,11 @@ REGLAS DE ORO OBLIGATORIAS:
    Si el cliente menciona palabras directas como "persona", "ejecutivo", "humano", "asesor humano" o "atención humana", NO entregues el enlace de inmediato en la primera mención. Disuádelo amablemente una vez:
    "Puedo dimensionar tu sistema, entregarte valores y resolver tus dudas de inmediato sin tiempos de espera. ¿Qué tipo de propiedad necesitas proteger (casa, departamento, negocio o empresa)?".
    Solo si el cliente insiste por segunda vez o es tajante en querer hablar con un humano, entrega el enlace directo oficial de WhatsApp con amabilidad: https://wa.me/56991016912.
-5. CAPTURA PROGRESIVA Y ORGÁNICA DE DATOS:
-   Durante la conversación, ve consultando paso a paso los datos del prospecto (indicando que es opcional pero necesario para preparar su presupuesto formal y agendar la visita):
-   - Nombre
-   - Comuna (cobertura en las 52 de la RM y 38 de la V Región)
-   - Dirección o sector
-   - Email
-   - Teléfono de contacto
+5. CAPTURA PROACTIVA Y ESTRATÉGICA DE CONTACTO (WHATSAPP):
+   No te limites a responder pasivamente. En el 2do o 3er mensaje, o apenas el cliente pregunte por precios, kits o factibilidad, ofrécele un valor concreto a cambio de su WhatsApp o email:
+   - "Para prepararte la cotización formal en PDF con la bonificación de instalación incluida y ficha técnica, ¿a qué número de WhatsApp o correo te la comparto?"
+   - "Para agendar tu evaluación presencial en terreno sin costo ($0) y confirmar cobertura, ¿cuál es tu nombre y número de WhatsApp?"
+   - Cuando el cliente te dé su comuna o tipo de propiedad, entrega el dato de precio de referencia y remata siempre pidiendo su WhatsApp para enviarle la propuesta detallada.
 6. EVALUACIÓN TÉCNICA GRATUITA:
    Recuerda siempre que la evaluación presencial en terreno en la RM y V Región es totalmente gratuita ($0) y sin compromiso, con presupuesto cerrado en menos de 24 horas.
 7. TONO Y ESTILO:
@@ -87,7 +85,7 @@ function generateSmartFallback(userMessage: string, history: ChatMessage[]): str
   const msg = userMessage.toLowerCase().trim();
 
   if (msg.includes('hola') || msg.includes('buenas') || msg === 'hola') {
-    return '¡Hola! Qué gusto saludarte. Soy tu Asesor de Seguridad de **GAMA Seguridad**.\n\nPuedo cotizarte de inmediato alarmas inteligentes con App, cámaras 4K y nuestro plan de monitoreo 24/7 desde **0,9 UF + IVA mensual** (el equipo queda 100% en tu propiedad).\n\nPara asesorarte con precisión, ¿qué tipo de propiedad necesitas proteger (casa, departamento, empresa o parcela)?';
+    return '¡Hola! Qué gusto saludarte. Soy tu Asesor de Seguridad de **GAMA Seguridad**.\n\nPuedo cotizarte de inmediato alarmas inteligentes con App, cámaras 4K y nuestro plan de monitoreo 24/7 desde **0,9 UF + IVA mensual** (el equipo queda 100% en tu propiedad).\n\nPara asesorarte con precisión y enviarte la propuesta formal en PDF, ¿qué tipo de propiedad necesitas proteger (casa, departamento, empresa o parcela) y en qué comuna te ubicas?';
   }
 
   if (msg.includes('humano') || msg.includes('ejecutivo') || msg.includes('persona') || msg.includes('asesor')) {
@@ -100,7 +98,7 @@ function generateSmartFallback(userMessage: string, history: ChatMessage[]): str
   }
 
   if (msg.includes('precio') || msg.includes('cuanto') || msg.includes('valor') || msg.includes('uf') || msg.includes('costo')) {
-    return 'En **GAMA Seguridad**, nuestro plan de **Monitoreo Continuo 24/7** parte desde **0,9 UF + IVA mensual** (~$35.000 CLP).\n\n✅ Lo más importante: a diferencia de multinacionales, **el equipo es 100% tuyo** (sin arriendos engañosos).\n✅ Incluye verificación en menos de 2 minutos y App móvil.\n\n¿En qué comuna o sector se encuentra tu propiedad para confirmar factibilidad técnica?';
+    return 'En **GAMA Seguridad**, nuestro plan de **Monitoreo Continuo 24/7** parte desde **0,9 UF + IVA mensual** (~$35.000 CLP).\n\n✅ Lo más importante: a diferencia de multinacionales, **el equipo es 100% tuyo** (sin arriendos ni amarres).\n✅ Incluye verificación en menos de 2 minutos y App móvil.\n\nPara enviarte el presupuesto formal con la bonificación de instalación, ¿a qué número de WhatsApp o correo te lo hago llegar?';
   }
 
   if (msg.includes('viña') || msg.includes('stgo') || msg.includes('conde') || msg.includes('florida')) {
@@ -108,10 +106,10 @@ function generateSmartFallback(userMessage: string, history: ChatMessage[]): str
     if (msg.includes('viña')) sugerida = 'Viña del Mar';
     else if (msg.includes('conde')) sugerida = 'Las Condes';
     else if (msg.includes('florida')) sugerida = 'La Florida';
-    return `Tenemos cobertura técnica completa en la zona. ¿Te refieres a **${sugerida}**?`;
+    return `Tenemos cobertura técnica completa en la zona. ¿Te refieres a **${sugerida}**?\n\nIndícanos tu número de WhatsApp para confirmar factibilidad técnica inmediata.`;
   }
 
-  return 'Excelente consulta. En GAMA Seguridad contamos con tecnología de punta (alarmas Vetti con App móvil, DSC y cámaras 4K con IA) y monitoreo 24/7 desde **0,9 UF + IVA mensual**.\n\nAdemás, realizamos una **evaluación técnica gratuita en terreno ($0)** en toda la Región Metropolitana y V Región.\n\n¿Cuál es tu nombre y comuna para coordinar los detalles de tu cotización?';
+  return 'Excelente consulta. En GAMA Seguridad contamos con tecnología de punta (alarmas Vetti con App móvil, DSC y cámaras 4K con IA) y monitoreo 24/7 desde **0,9 UF + IVA mensual**.\n\nAdemás, realizamos una **evaluación técnica gratuita en terreno ($0)** en toda la Región Metropolitana y V Región.\n\n¿A qué número de WhatsApp te puedo enviar la ficha técnica y cotización formal?';
 }
 
 export async function getAssistantResponse(

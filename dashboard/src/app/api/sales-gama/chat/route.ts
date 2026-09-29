@@ -59,13 +59,23 @@ function extractLeadData(text: string) {
     }
   }
 
-  // Nombre (con patrones comunes)
-  const nameMatch = text.match(/(?:me llamo|mi nombre es|soy|habla|atenta(?:mente)?)\s+([A-Za-zÁÉÍÓÚáéíóúñÑ]{2,20}(?:\s+[A-Za-zÁÉÍÓÚáéíóúñÑ]{2,20})?)/i)
-    || text.match(/^([A-Za-zÁÉÍÓÚáéíóúñÑ]{3,15}\s+[A-Za-zÁÉÍÓÚáéíóúñÑ]{3,15})(?:,|\.|$)/);
-  if (nameMatch) {
-    const candidate = nameMatch[1].trim();
-    if (!candidate.toLowerCase().includes('alarma') && !candidate.toLowerCase().includes('camara') && !candidate.toLowerCase().includes('hola')) {
+  // Nombre (con patrones comunes y respuestas directas)
+  const STOPWORDS = new Set(['hola', 'buenas', 'buenos', 'dias', 'tardes', 'noches', 'si', 'no', 'ok', 'vale', 'precio', 'precios', 'kit', 'alarma', 'alarmas', 'camara', 'camaras', 'cuanto', 'costo', 'cotizacion', 'monitoreo', 'gracias', 'por favor', 'favor', 'informacion', 'info', 'ayuda', 'consulta']);
+  const explicitName = text.match(/(?:me llamo|mi nombre es|soy|habla|atenta(?:mente)?)\s+([A-Za-zÁÉÍÓÚáéíóúñÑ]{2,20}(?:\s+[A-Za-zÁÉÍÓÚáéíóúñÑ]{2,20})?)/i);
+  if (explicitName) {
+    const candidate = explicitName[1].trim();
+    if (!STOPWORDS.has(candidate.toLowerCase())) {
       extracted.nombre = candidate;
+    }
+  } else {
+    // Si el usuario responde directamente con su nombre (1 a 3 palabras)
+    const trimmed = text.trim();
+    const words = trimmed.split(/\s+/);
+    if (words.length >= 1 && words.length <= 3 && /^[A-Za-zÁÉÍÓÚáéíóúñÑ\s]+$/.test(trimmed)) {
+      const isStop = words.some(w => STOPWORDS.has(w.toLowerCase()));
+      if (!isStop && trimmed.length >= 3 && trimmed.length <= 35) {
+        extracted.nombre = words.map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+      }
     }
   }
 
@@ -94,6 +104,7 @@ export async function POST(req: NextRequest) {
 
     const forwardedFor = headersList.get('x-forwarded-for');
     const realIp = headersList.get('x-real-ip');
+    const userAgent = headersList.get('user-agent') || 'unknown';
     const ipHash = await hashIp(forwardedFor?.split(',')[0]?.trim() || realIp || 'unknown');
 
     const rateLimitHeader = headersList.get('x-sg-count');
@@ -133,6 +144,8 @@ export async function POST(req: NextRequest) {
     // Extracción inteligente de datos de contacto
     const extracted = extractLeadData(message);
     const leadUpdates: Partial<Lead> = {
+      ip_hash: ipHash,
+      user_agent: userAgent,
       last_activity: new Date().toISOString(),
       resumen: message.substring(0, 200),
     };
