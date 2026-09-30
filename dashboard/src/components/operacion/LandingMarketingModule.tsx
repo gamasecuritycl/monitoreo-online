@@ -23,7 +23,10 @@ import {
   Zap,
   Globe,
   Loader2,
-  Upload
+  Upload,
+  PhoneCall,
+  ShieldCheck,
+  X
 } from 'lucide-react'
 import {
   LandingMarketingConfig,
@@ -179,6 +182,7 @@ export default function LandingMarketingModule() {
   const [isSaving, setIsSaving] = useState<boolean>(false)
   const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [selectedSlideIndex, setSelectedSlideIndex] = useState<number>(0)
+  const [modalPreviewOpen, setModalPreviewOpen] = useState<boolean>(false)
 
   // Cargar configuración desde la API
   useEffect(() => {
@@ -188,8 +192,12 @@ export default function LandingMarketingModule() {
         const res = await fetch('/api/landing-marketing')
         if (res.ok) {
           const data = await res.json()
-          if (data && data.config) {
-            setConfig(data.config)
+          if (data) {
+            if (data.config) {
+              setConfig(data.config)
+            } else if (data.popup) {
+              setConfig(data)
+            }
           }
         }
       } catch (err) {
@@ -500,6 +508,15 @@ export default function LandingMarketingModule() {
               </p>
             </div>
             <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setModalPreviewOpen(true)}
+                className="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-md shadow-blue-900/20 transition-all cursor-pointer active:scale-95"
+              >
+                <Eye className="w-4 h-4" />
+                <span>Ver Modal en Pantalla Completa</span>
+              </button>
+
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
                   type="checkbox"
@@ -745,6 +762,14 @@ export default function LandingMarketingModule() {
                     <div className="w-full py-2 px-3 rounded-xl bg-slate-800 border border-slate-700 text-slate-200 font-bold text-xs text-center flex items-center justify-center gap-2">
                       <span>{config.popup.btnBotTexto}</span>
                     </div>
+                    <button
+                      type="button"
+                      onClick={() => setModalPreviewOpen(true)}
+                      className="w-full mt-1 py-2 px-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs text-center flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                      <span>Abrir Modal Completo Interactivo</span>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -1199,6 +1224,86 @@ export default function LandingMarketingModule() {
                   Elimina el roce del usuario. La gente que no quiere hablar con un ejecutivo prefiere interactuar con un asesor bot inteligente para cotizar precios y ver planes sin presión.
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* MODAL POP-UP PREVIEW FLOTANTE COMPLETO */}
+      {modalPreviewOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div
+            onClick={() => setModalPreviewOpen(false)}
+            className="fixed inset-0 bg-[#020611]/80 backdrop-blur-md"
+          />
+          <div className="relative w-full max-w-lg sm:max-w-xl bg-gradient-to-b from-[#0b172c] to-[#070e1b] border border-blue-500/30 rounded-3xl shadow-2xl shadow-blue-950/80 overflow-hidden z-10 p-5 sm:p-7 text-left font-sans animate-in fade-in zoom-in-95 duration-200">
+            <button
+              onClick={() => setModalPreviewOpen(false)}
+              className="absolute top-4 right-4 z-20 w-9 h-9 rounded-full bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center transition-all cursor-pointer border border-slate-600/50 shadow-md active:scale-90"
+              title="Cerrar vista previa"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {/* Badge de Promoción */}
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-600/20 text-red-400 border border-red-500/30 text-[11px] font-bold tracking-wider uppercase mb-3">
+              <Sparkles className="w-3.5 h-3.5 text-red-400" />
+              <span>{config.popup.badge || 'OFERTA DESTACADA'}</span>
+            </div>
+
+            {/* Imagen del Afiche */}
+            <div className="relative w-full aspect-[16/10] sm:aspect-[16/9] rounded-2xl overflow-hidden border border-blue-900/50 bg-[#050d1a] mb-4 group shadow-inner">
+              <img
+                src={config.popup.imagenUrl || '/ads/vetti_ad_oficial_master.png'}
+                alt={config.popup.titulo}
+                className="w-full h-full object-contain p-1"
+                onError={(e) => {
+                  const target = e.currentTarget;
+                  target.src = '/ads/vetti_ad_oficial_master.png';
+                }}
+              />
+            </div>
+
+            {/* Título & Subtítulo */}
+            <div className="space-y-1.5 mb-5">
+              <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight leading-snug">
+                {config.popup.titulo}
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                {config.popup.subtitulo}
+              </p>
+            </div>
+
+            {/* Botones de Acción */}
+            <div className="grid sm:grid-cols-2 gap-3 pt-1">
+              <button
+                type="button"
+                onClick={() => {
+                  const text = encodeURIComponent(
+                    config.popup.btnWhatsappMensaje ||
+                      'Hola GAMA Seguridad, vi la promoción en la web y deseo cotizar con instalación bonificada.'
+                  );
+                  window.open(`https://wa.me/56991016912?text=${text}`, '_blank');
+                }}
+                className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm py-3 px-4 rounded-xl shadow-lg shadow-emerald-900/30 flex items-center justify-center gap-2 cursor-pointer border border-emerald-400/40"
+              >
+                <PhoneCall className="w-4 h-4 text-emerald-100" />
+                <span>{config.popup.btnWhatsappTexto || 'Aprovechar por WhatsApp'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setModalPreviewOpen(false)}
+                className="w-full bg-[#1e40af] hover:bg-[#2563eb] text-white font-bold text-xs sm:text-sm py-3 px-4 rounded-xl shadow-lg shadow-blue-900/30 flex items-center justify-center gap-2 cursor-pointer border border-blue-400/40"
+              >
+                <MessageSquare className="w-4 h-4 text-blue-200" />
+                <span>{config.popup.btnBotTexto || 'Preguntar al Asesor Bot'}</span>
+              </button>
+            </div>
+
+            {/* Micro Nota de Confianza */}
+            <div className="flex items-center justify-center gap-2 text-[11px] text-slate-400 mt-4 font-mono text-center">
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+              <span>GAMA Security · Evaluación Técnica a costo $0 sin compromiso (Vista Previa)</span>
             </div>
           </div>
         </div>

@@ -22,19 +22,38 @@ export default function PromoPopupModal({ initialConfig }: PromoPopupModalProps)
     fetch('/api/landing-marketing')
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (isMounted && data?.popup) {
-          setConfig(data.popup);
+        if (isMounted) {
+          const popupConfig = data?.config?.popup || data?.popup;
+          if (popupConfig) {
+            setConfig(popupConfig);
+          }
         }
       })
       .catch(() => {});
 
+    // Escuchar evento personalizado para abrir en vivo (ej: desde panel /operacion)
+    const handleForceOpen = () => {
+      setIsOpen(true);
+    };
+    window.addEventListener('open-promo-popup', handleForceOpen);
+
     return () => {
       isMounted = false;
+      window.removeEventListener('open-promo-popup', handleForceOpen);
     };
   }, []);
 
   useEffect(() => {
     if (!config.activo) return;
+
+    // Si tiene parámetro URL de prueba (?promo=1 o ?test_popup=1), abrir de inmediato
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.has('promo') || urlParams.has('test_popup') || urlParams.has('preview')) {
+        setIsOpen(true);
+        return;
+      }
+    }
 
     // Verificar si ya fue cerrado en esta sesión de navegación
     const hasSeenPopup = sessionStorage.getItem('gama_promo_popup_seen');
