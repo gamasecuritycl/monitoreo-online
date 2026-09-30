@@ -56,13 +56,51 @@ export async function POST(req: NextRequest) {
     const BCC_EMAIL = 'tetoromoreno@gamasecurity.cl';
 
     const results: { email: string; ok: boolean; id?: string; error?: string }[] = [];
+    const attachments: any[] = [];
+    let cidCounter = 1;
 
-    // Inyectar imagen al HTML si se especificó y no está ya presente
+    // 1. Limpiar tags img malformados sin src (ej: <img "Texto"...>) generados por la IA
     let finalHtml = html;
-    if (imagenUrl && imagenUrl.trim().length > 0 && !finalHtml.includes(imagenUrl)) {
+    finalHtml = finalHtml.replace(/<img\s+"[^"]*"[^>]*>/gi, '');
+    finalHtml = finalHtml.replace(/<img(?![^>]*\bsrc\s*=)[^>]*>/gi, '');
+
+    // 2. Procesar imagenUrl si viene como base64 o data URI
+    let bannerCid: string | null = null;
+    let processedImageUrl = imagenUrl ? imagenUrl.trim() : '';
+
+    if (processedImageUrl && processedImageUrl.startsWith('data:image/')) {
+      const match = processedImageUrl.match(/^data:(image\/[a-zA-Z0-9+.-]+);base64,(.+)$/);
+      if (match) {
+        const mime = match[1];
+        const base64Data = match[2];
+        const ext = mime.split('/')[1] || 'png';
+        bannerCid = `flyer_promo_${cidCounter++}`;
+        attachments.push({
+          filename: `flyer_gama.${ext}`,
+          content: Buffer.from(base64Data, 'base64'),
+          content_id: bannerCid,
+        });
+        processedImageUrl = `cid:${bannerCid}`;
+      }
+    }
+
+    // 3. Reemplazar cualquier data: URL que haya quedado dentro del HTML (e.g. pegada directamente)
+    finalHtml = finalHtml.replace(/data:(image\/[a-zA-Z0-9+.-]+);base64,([A-Za-z0-9+/=]+)/g, (_fullMatch, mime, b64) => {
+      const ext = mime.split('/')[1] || 'png';
+      const cid = `inline_img_${cidCounter++}`;
+      attachments.push({
+        filename: `img_${cid}.${ext}`,
+        content: Buffer.from(b64, 'base64'),
+        content_id: cid,
+      });
+      return `cid:${cid}`;
+    });
+
+    // 4. Inyectar imagen banner si se especificó y no está en el HTML
+    if (processedImageUrl && !finalHtml.includes(processedImageUrl)) {
       const bannerHtml = `
       <div style="text-align: center; margin: 20px 0;">
-        <img src="${imagenUrl}" alt="Flyer GAMA Seguridad" style="max-width: 100%; width: 540px; height: auto; border-radius: 12px; border: 1px solid #e2e8f0; display: inline-block;" />
+        <img src="${processedImageUrl}" alt="Afiche GAMA Seguridad" style="max-width: 100%; width: 540px; height: auto; border-radius: 12px; border: 1px solid #e2e8f0; display: inline-block;" />
       </div>`;
       if (finalHtml.includes('{{IMAGEN_BANNER}}')) {
         finalHtml = finalHtml.replace('{{IMAGEN_BANNER}}', bannerHtml);
@@ -74,6 +112,9 @@ export async function POST(req: NextRequest) {
     } else {
       finalHtml = finalHtml.replace('{{IMAGEN_BANNER}}', '');
     }
+
+    // 5. Convertir cualquier ruta relativa (/ads/ o /uploads/) a URL absoluta pública https://www.gamasecurity.cl
+    finalHtml = finalHtml.replace(/src=["']\/(ads\/[^"']+|uploads\/[^"']+|[^"']+\.(png|jpg|jpeg|webp))["']/gi, 'src="https://www.gamasecurity.cl/$1"');
 
     // Enviar individualmente para personalización, control anti-spam y evitar exponer las casillas entre sí
     for (let i = 0; i < validEmails.length; i++) {
@@ -87,6 +128,10 @@ export async function POST(req: NextRequest) {
           subject: asunto,
           html: finalHtml,
         };
+
+        if (attachments.length > 0) {
+          sendPayload.attachments = attachments;
+        }
 
         // Enviar copia oculta a tetoromoreno@gamasecurity.cl solo en el primer correo o si es un envío individual
         // para no saturar su bandeja con 500 copias idénticas en envíos masivos

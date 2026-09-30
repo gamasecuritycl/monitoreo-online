@@ -40,7 +40,7 @@ REGLAS DE DISEÑO Y ANTI-SPAM OBLIGATORIAS:
 1. Usa una paleta corporativa: Fondo general #f4f6f9, contenedor central blanco #ffffff con borde sutil #e2e8f0 y esquinas redondeadas.
 2. Cabecera membretada con fondo azul marino institucional (#002b66), logo o texto 'GAMA SEGURIDAD' en blanco bold, y subtítulo 'CENTRAL DE MONITOREO 24/7 · CHILE'.
 3. Tipografía: Arial, Helvetica, sans-serif, tamaño 14px-16px, color de texto principal #1e293b, interlineado 1.6.
-4. Si se incluye una imagen o flyer publicitario, inserta el tag {{IMAGEN_BANNER}} en el lugar más destacado para que el sistema inyecte la imagen con ancho máximo de 560px, bordes redondeados y centrada.
+4. Si se incluye una imagen o flyer publicitario, inserta estrictamente el tag {{IMAGEN_BANNER}} en el lugar más destacado para que el sistema inyecte la imagen con ancho máximo de 560px, bordes redondeados y centrada. NUNCA inventes tags <img "titulo"...> sin el atributo src=. Usa siempre {{IMAGEN_BANNER}}.
 5. Botón de llamado a la acción (CTA): Botón centrado, llamativo (verde esmeralda #10b981 para ventas o azul #2563eb para comunicados), texto en blanco bold, bordes redondeados y padding 14px 28px.
 6. Pie de firma oficial obligatorio:
    - Gama Seguridad SpA · Santiago & Región de Valparaíso
@@ -73,17 +73,21 @@ CTA Sugerido:
 Texto: ${ctaTexto || (tipo === 'promocion' ? 'Aprovechar Promoción por WhatsApp' : 'Contactar a Central GAMA')}
 Enlace: ${ctaUrl || 'https://wa.me/56991016912'}
 
-${imagenUrl ? 'Se incluirá afiche/imagen publicitaria: Sí (insertar {{IMAGEN_BANNER}} donde corresponda)' : 'Sin imagen inicial'}`;
+${imagenUrl ? 'Se incluirá afiche/imagen publicitaria: Sí (insertar {{IMAGEN_BANNER}} en el cuerpo)' : 'Sin imagen inicial'}`;
 
         const result = await model.generateContent(userPrompt);
 
         const textOutput = result.response.text();
         if (textOutput) {
           const parsed = JSON.parse(textOutput);
+          let cleanHtml = parsed.html || '';
+          cleanHtml = cleanHtml.replace(/<img\s+"[^"]*"[^>]*>/gi, '');
+          cleanHtml = cleanHtml.replace(/<img(?![^>]*\bsrc\s*=)[^>]*>/gi, '');
+
           aiResult = {
             asunto: parsed.asunto || 'Comunicado Oficial — GAMA Seguridad',
             preheader: parsed.preheader || 'Información importante de GAMA Seguridad',
-            html: parsed.html || '',
+            html: cleanHtml,
           };
         }
       } catch (geminiErr) {
@@ -167,6 +171,10 @@ ${imagenUrl ? 'Se incluirá afiche/imagen publicitaria: Sí (insertar {{IMAGEN_B
     } else {
       aiResult.html = aiResult.html.replace('{{IMAGEN_BANNER}}', '');
     }
+
+    // Limpieza final de seguridad contra etiquetas malformadas
+    aiResult.html = aiResult.html.replace(/<img\s+"[^"]*"[^>]*>/gi, '');
+    aiResult.html = aiResult.html.replace(/<img(?![^>]*\bsrc\s*=)[^>]*>/gi, '');
 
     return NextResponse.json({
       success: true,
