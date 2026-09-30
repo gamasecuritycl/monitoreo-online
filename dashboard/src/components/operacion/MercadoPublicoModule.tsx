@@ -160,9 +160,9 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
     setErrorIA('')
     setPostulacionGuardada(false)
     
-    // Sugerir monto neto al 89% del monto estimado para ganar puntaje económico
-    const montoBase = lic.MontoEstimado > 0 ? lic.MontoEstimado : 35000000
-    const sugeridoNeto = Math.round((montoBase * 0.89) / 1.19)
+    // Sugerir monto neto al 89% del monto estimado solo si está informado
+    const montoBase = lic.MontoEstimado > 0 ? lic.MontoEstimado : 0
+    const sugeridoNeto = montoBase > 0 ? Math.round((montoBase * 0.89) / 1.19) : 0
     setPostulacionNeto(sugeridoNeto)
 
     // Cargar checklist guardado si existe
@@ -400,11 +400,11 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
               </span>
               {ticketApi ? (
                 <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
-                  <CheckCircle2 className="w-3 h-3" /> Ticket Configurado
+                  <CheckCircle2 className="w-3 h-3" /> Ticket API Activo
                 </span>
               ) : (
                 <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1">
-                  <AlertCircle className="w-3 h-3" /> Modo Demostrativo
+                  <Key className="w-3 h-3" /> Requiere Ticket API
                 </span>
               )}
 
@@ -594,10 +594,102 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
           <p className="text-xs text-slate-500 mt-1">Conectando con base de datos oficial de ChileCompra</p>
         </div>
       ) : licitacionesFiltradas.length === 0 ? (
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-12 text-center">
-          <Building2 className="w-12 h-12 text-slate-600 mx-auto mb-3" />
-          <p className="text-base font-bold text-slate-300">No se encontraron licitaciones con ese criterio</p>
-          <p className="text-xs text-slate-500 mt-1">Intenta seleccionar &quot;Todas las Licitaciones&quot; o &quot;Todas las Regiones&quot;.</p>
+        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-8 sm:p-12 text-center max-w-3xl mx-auto space-y-5 shadow-2xl">
+          {!ticketApi || modoApi === 'requiere_ticket' ? (
+            <>
+              <div className="w-16 h-16 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-indigo-400 mx-auto">
+                <Key className="w-8 h-8" />
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-lg font-black text-white">
+                  Conexión Oficial a Mercado Público (ChileCompra)
+                </h3>
+                <p className="text-xs text-slate-400 max-w-xl mx-auto leading-relaxed">
+                  Para consultar las licitaciones públicas de seguridad <strong>100% reales en tiempo real</strong> directamente desde los servidores de ChileCompra (sin datos inventados ni simulaciones), ingresa tu Ticket de API gratuito de Mercado Público.
+                </p>
+              </div>
+
+              {/* Guía de 3 pasos */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-left pt-2">
+                <div className="bg-slate-950/80 p-3.5 rounded-2xl border border-slate-800 space-y-1">
+                  <span className="text-[10px] font-black uppercase text-indigo-400 block font-mono">Paso 1</span>
+                  <strong className="text-xs font-bold text-white block">Inicia Sesión</strong>
+                  <p className="text-[11px] text-slate-400">Ingresa a tu cuenta de proveedor en <a href="https://www.mercadopublico.cl" target="_blank" rel="noopener noreferrer" className="text-indigo-400 underline">mercadopublico.cl</a></p>
+                </div>
+                <div className="bg-slate-950/80 p-3.5 rounded-2xl border border-slate-800 space-y-1">
+                  <span className="text-[10px] font-black uppercase text-indigo-400 block font-mono">Paso 2</span>
+                  <strong className="text-xs font-bold text-white block">Obtén tu Ticket</strong>
+                  <p className="text-[11px] text-slate-400">Ve a <strong>Mi Cuenta / Administración de Usuario</strong> y entra a <strong>API ChileCompra</strong>.</p>
+                </div>
+                <div className="bg-slate-950/80 p-3.5 rounded-2xl border border-slate-800 space-y-1">
+                  <span className="text-[10px] font-black uppercase text-indigo-400 block font-mono">Paso 3</span>
+                  <strong className="text-xs font-bold text-white block">Actívalo Aquí</strong>
+                  <p className="text-[11px] text-slate-400">Haz clic en el botón de abajo, pega tu Ticket y quedará sincronizado en el panel.</p>
+                </div>
+              </div>
+
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setModalTicketAbierto(true)
+                    setResultadoPrueba(null)
+                  }}
+                  className="px-6 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs uppercase tracking-wider transition shadow-lg shadow-indigo-600/30 cursor-pointer inline-flex items-center gap-2"
+                >
+                  <Key className="w-4 h-4" />
+                  <span>Configurar Ticket API de Mercado Público</span>
+                </button>
+              </div>
+            </>
+          ) : modoApi === 'ticket_invalido' || errorApi ? (
+            <>
+              <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 mx-auto">
+                <AlertCircle className="w-8 h-8" />
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-lg font-black text-white">
+                  Ticket de ChileCompra No Válido o Expirado
+                </h3>
+                <p className="text-xs text-amber-300 max-w-lg mx-auto leading-relaxed">
+                  {errorApi || 'ChileCompra rechazó el ticket actual. Por favor verifica o actualiza tu Ticket API.'}
+                </p>
+              </div>
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setModalTicketAbierto(true)
+                    setResultadoPrueba(null)
+                  }}
+                  className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs uppercase tracking-wider transition cursor-pointer inline-flex items-center gap-2"
+                >
+                  <Key className="w-4 h-4" />
+                  <span>Actualizar Ticket API</span>
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <Building2 className="w-12 h-12 text-slate-600 mx-auto" />
+              <div className="space-y-1">
+                <h3 className="text-base font-bold text-white">
+                  No se encontraron licitaciones activas
+                </h3>
+                <p className="text-xs text-slate-400 max-w-md mx-auto">
+                  Actualmente no hay licitaciones públicas de seguridad privada o CCTV publicadas en ChileCompra con los filtros seleccionados.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={fetchLicitaciones}
+                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition inline-flex items-center gap-1.5 cursor-pointer"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+                <span>Actualizar Radar</span>
+              </button>
+            </>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -682,20 +774,26 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
                     )}
                   </div>
 
-                  {/* Chips Clave de Licitación (Visita Técnica, Garantías y Ponderaciones) */}
+                  {/* Chips Clave Reales de Licitación */}
                   <div className="flex items-center gap-1.5 flex-wrap mb-3 pt-1">
-                    <span className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30 flex items-center gap-1">
-                      <Calendar className="w-3 h-3 text-amber-400" />
-                      Visita: Obligatoria
-                    </span>
-                    <span className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 flex items-center gap-1">
-                      <Shield className="w-3 h-3 text-indigo-400" />
-                      Garantía: ~5% (${Math.round((lic.MontoEstimado || 35000000) * 0.05 / 1000000 * 10) / 10}M)
-                    </span>
+                    {lic.Tipo && (
+                      <span className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-slate-800 text-slate-300 border border-slate-700">
+                        {lic.Tipo}
+                      </span>
+                    )}
                     <span className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
-                      <Scale className="w-3 h-3 text-emerald-400" />
-                      Pauta: 45% Econ / 25% Téc
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                      {lic.Estado}
                     </span>
+                    {lic.MontoEstimado > 0 ? (
+                      <span className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 font-mono">
+                        ${Math.round(lic.MontoEstimado / 1000000 * 10) / 10}M CLP
+                      </span>
+                    ) : (
+                      <span className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-slate-800/80 text-slate-400 border border-slate-700">
+                        Monto en bases
+                      </span>
+                    )}
                   </div>
 
                   {/* Descripción */}
@@ -710,7 +808,9 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
                     <div>
                       <span className="text-[10px] text-slate-500 block">Monto Estimado</span>
                       <span className="font-bold font-mono text-emerald-400 text-xs sm:text-sm">
-                        ${Math.round(lic.MontoEstimado).toLocaleString('es-CL')} {lic.Moneda}
+                        {lic.MontoEstimado > 0 
+                          ? `$${Math.round(lic.MontoEstimado).toLocaleString('es-CL')} ${lic.Moneda}`
+                          : 'Consultar en bases'}
                       </span>
                     </div>
                     <div className="text-right">
@@ -856,7 +956,9 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
                     <div className="bg-slate-950/80 p-3.5 rounded-2xl border border-slate-800">
                       <span className="text-[10px] uppercase font-bold text-slate-500 block">Monto Estimado</span>
                       <strong className="text-base font-black font-mono text-emerald-400 block mt-0.5">
-                        ${Math.round(licitacionModal.MontoEstimado).toLocaleString('es-CL')} {licitacionModal.Moneda}
+                        {licitacionModal.MontoEstimado > 0 
+                          ? `$${Math.round(licitacionModal.MontoEstimado).toLocaleString('es-CL')} ${licitacionModal.Moneda}`
+                          : 'A consultar en bases'}
                       </strong>
                     </div>
                     <div className="bg-slate-950/80 p-3.5 rounded-2xl border border-slate-800">
@@ -873,7 +975,7 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
                     <div className="bg-slate-950/80 p-3.5 rounded-2xl border border-slate-800">
                       <span className="text-[10px] uppercase font-bold text-slate-500 block">Organismo / RUT</span>
                       <strong className="text-xs font-bold text-white block mt-0.5 truncate">{licitacionModal.Organismo}</strong>
-                      <span className="text-[10px] text-slate-400 font-mono">RUT: {licitacionModal.RutComprador || '60.000.000-0'}</span>
+                      <span className="text-[10px] text-slate-400 font-mono">RUT: {licitacionModal.RutComprador || 'Consultar bases'}</span>
                     </div>
                   </div>
 
@@ -882,41 +984,45 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
                     <MapPin className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
                     <div>
                       <strong className="font-bold text-white block">Lugar de Ejecución / Recinto</strong>
-                      <span className="text-slate-300">{licitacionModal.DireccionUnidad || 'Dirección de dependencias del organismo convocante'} ({licitacionModal.Region || 'Chile'})</span>
+                      <span className="text-slate-300">{licitacionModal.DireccionUnidad || 'Dependencias del organismo convocante'} ({licitacionModal.Region || 'Chile'})</span>
                     </div>
                   </div>
 
                   {/* Descripción / Requerimiento Técnico */}
                   <div className="bg-slate-950/80 p-4 rounded-2xl border border-slate-800 space-y-2">
                     <span className="text-[10px] uppercase font-bold text-indigo-400 block tracking-wider">
-                      Resumen del Requerimiento Oficial de Bases Técnicas
+                      Descripción Oficial del Proceso
                     </span>
                     <p className="text-slate-300 leading-relaxed font-medium">
                       {licitacionModal.Descripcion}
                     </p>
                   </div>
 
-                  {/* Calendario de Etapas */}
+                  {/* Calendario y Enlace Oficial */}
                   <div className="bg-slate-950/80 p-4 rounded-2xl border border-slate-800 space-y-3">
                     <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">
-                      Calendario de Hitos Oficiales
+                      Hitos del Proceso en ChileCompra
                     </span>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px]">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-[11px]">
                       <div className="bg-slate-900 p-2.5 rounded-xl border border-slate-800">
-                        <span className="text-slate-500 block text-[10px]">1. Consultas</span>
-                        <span className="font-bold text-slate-200">Abiertas en Portal</span>
+                        <span className="text-slate-500 block text-[10px]">Estado Oficial</span>
+                        <span className="font-bold text-emerald-400">{licitacionModal.Estado}</span>
                       </div>
                       <div className="bg-slate-900 p-2.5 rounded-xl border border-slate-800">
-                        <span className="text-slate-500 block text-[10px]">2. Visita Técnica</span>
-                        <span className="font-bold text-amber-300">Obligatoria en Terreno</span>
+                        <span className="text-slate-500 block text-[10px]">Cierre de Ofertas</span>
+                        <span className="font-bold text-red-400">{licitacionModal.FechaCierre ? new Date(licitacionModal.FechaCierre).toLocaleDateString('es-CL') : 'Ver bases'}</span>
                       </div>
                       <div className="bg-slate-900 p-2.5 rounded-xl border border-slate-800">
-                        <span className="text-slate-500 block text-[10px]">3. Cierre Ofertas</span>
-                        <span className="font-bold text-red-400">{licitacionModal.FechaCierre ? new Date(licitacionModal.FechaCierre).toLocaleDateString('es-CL') : 'Programado'}</span>
-                      </div>
-                      <div className="bg-slate-900 p-2.5 rounded-xl border border-slate-800">
-                        <span className="text-slate-500 block text-[10px]">4. Apertura</span>
-                        <span className="font-bold text-emerald-400">Electrónica 24 hrs post</span>
+                        <span className="text-slate-500 block text-[10px]">Ficha en Portal</span>
+                        <a 
+                          href={licitacionModal.EnlaceMercadoPublico}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-bold text-indigo-400 hover:underline flex items-center gap-1"
+                        >
+                          <span>mercadopublico.cl</span>
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
                       </div>
                     </div>
                   </div>
@@ -926,40 +1032,60 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
               {/* ── PESTAÑA 2: VISITA TÉCNICA ── */}
               {tabModal === 'visita' && (
                 <div className="space-y-4">
-                  <div className="bg-amber-950/40 border border-amber-500/50 rounded-2xl p-4 flex items-start gap-3">
-                    <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
-                    <div>
-                      <strong className="text-amber-200 font-bold block">Condición Crítica: Visita a Terreno Obligatoria</strong>
-                      <p className="text-amber-300/90 text-xs mt-1 leading-relaxed">
-                        Para licitaciones de seguridad privada, CCTV, alarmas y control de acceso, la visita a terreno es de carácter <strong>OBLIGATORIO</strong>. La no concurrencia o la falta del <em>Certificado de Visita Técnica</em> emitido y firmado por el organismo comprador dejará la oferta <strong>automáticamente INADMISIBLE</strong>.
+                  {licitacionModal.VisitaTerreno ? (
+                    <>
+                      <div className="bg-amber-950/40 border border-amber-500/50 rounded-2xl p-4 flex items-start gap-3">
+                        <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+                        <div>
+                          <strong className="text-amber-200 font-bold block">
+                            Condición de Terreno: {licitacionModal.VisitaTerreno.Tipo || 'Informada en Bases'}
+                          </strong>
+                          <p className="text-amber-300/90 text-xs mt-1 leading-relaxed">
+                            {licitacionModal.VisitaTerreno.Observacion || 'Revisar certificado y requerimientos de asistencia en bases.'}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                        <div className="bg-slate-950/80 p-4 rounded-2xl border border-slate-800 space-y-2">
+                          <span className="text-[10px] uppercase font-bold text-slate-500 block">Fecha y Hora</span>
+                          <strong className="text-sm font-black text-white block flex items-center gap-1.5">
+                            <Calendar className="w-4 h-4 text-indigo-400" />
+                            {licitacionModal.VisitaTerreno.Fecha ? new Date(licitacionModal.VisitaTerreno.Fecha).toLocaleString('es-CL') : 'Ver bases'}
+                          </strong>
+                        </div>
+                        <div className="bg-slate-950/80 p-4 rounded-2xl border border-slate-800 space-y-2">
+                          <span className="text-[10px] uppercase font-bold text-slate-500 block">Lugar</span>
+                          <strong className="text-sm font-bold text-white block truncate flex items-center gap-1.5">
+                            <MapPin className="w-4 h-4 text-red-400 shrink-0" />
+                            {licitacionModal.VisitaTerreno.Lugar || licitacionModal.DireccionUnidad}
+                          </strong>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="bg-slate-950/80 border border-slate-800 rounded-2xl p-6 text-center space-y-3">
+                      <Calendar className="w-8 h-8 text-indigo-400 mx-auto" />
+                      <h4 className="text-sm font-bold text-white">Condiciones de Visita a Terreno</h4>
+                      <p className="text-xs text-slate-400 max-w-md mx-auto leading-relaxed">
+                        Cada organismo comprador especifica en sus <strong>Bases Técnicas y Administrativas</strong> si la visita a terreno es obligatoria o facultativa y en qué fecha se llevará a cabo.
                       </p>
+                      <a
+                        href={licitacionModal.EnlaceMercadoPublico}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl text-xs transition"
+                      >
+                        <span>Consultar Bases Oficiales en Mercado Público</span>
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </a>
                     </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                    <div className="bg-slate-950/80 p-4 rounded-2xl border border-slate-800 space-y-2">
-                      <span className="text-[10px] uppercase font-bold text-slate-500 block">Fecha y Hora Programada</span>
-                      <strong className="text-sm font-black text-white block flex items-center gap-1.5">
-                        <Calendar className="w-4 h-4 text-indigo-400" />
-                        5 días hábiles previos al cierre (10:30 hrs)
-                      </strong>
-                      <span className="text-[11px] text-slate-400">Puntualidad estricta. Tolerancia máxima: 10 minutos.</span>
-                    </div>
-
-                    <div className="bg-slate-950/80 p-4 rounded-2xl border border-slate-800 space-y-2">
-                      <span className="text-[10px] uppercase font-bold text-slate-500 block">Lugar de Presentación</span>
-                      <strong className="text-sm font-bold text-white block truncate flex items-center gap-1.5">
-                        <MapPin className="w-4 h-4 text-red-400 shrink-0" />
-                        {licitacionModal.DireccionUnidad || licitacionModal.Organismo}
-                      </strong>
-                      <span className="text-[11px] text-slate-400">Presentarse con Cédula de Identidad y EPP reglamentarios.</span>
-                    </div>
-                  </div>
+                  )}
 
                   {/* Checklist de la Visita */}
                   <div className="bg-slate-950/80 p-4 rounded-2xl border border-slate-800 space-y-3">
                     <span className="text-[10px] uppercase font-bold text-indigo-400 block tracking-wider">
-                      Protocolo de Visita Técnica para Operaciones Gama
+                      Control Interno Gama Seguridad
                     </span>
                     <div className="space-y-2 text-xs">
                       <label className="flex items-center gap-2.5 p-2.5 bg-slate-900/60 rounded-xl border border-slate-800 cursor-pointer">
@@ -969,13 +1095,8 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
                           onChange={(e) => setChecklist(c => ({ ...c, visitaTerreno: e.target.checked }))}
                           className="w-4 h-4 accent-indigo-600 rounded"
                         />
-                        <span className="text-slate-200">Visita técnica agendada / asistida por técnico Gama con firma de certificado</span>
+                        <span className="text-slate-200">Visita técnica coordinada o asistida por personal técnico Gama</span>
                       </label>
-                      <div className="text-[11px] text-slate-400 pl-2 space-y-1">
-                        <p>✓ Inspección de puntos de enlace, ductación existente y acometida eléctrica para CCTV.</p>
-                        <p>✓ Verificación de cobertura perimetral y zonas ciegas para detección de intrusión.</p>
-                        <p>✓ Solicitud de timbre y firma del Certificado Oficial de Visita emitido por la contraparte.</p>
-                      </div>
                     </div>
                   </div>
                 </div>
@@ -984,140 +1105,119 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
               {/* ── PESTAÑA 3: GARANTÍAS ── */}
               {tabModal === 'garantias' && (
                 <div className="space-y-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {/* Garantía de Seriedad de la Oferta */}
-                    <div className="bg-slate-950/80 p-5 rounded-2xl border border-indigo-500/30 space-y-3">
-                      <div className="flex items-center gap-2 text-indigo-400 font-bold">
-                        <Shield className="w-5 h-5" />
-                        <h4 className="text-sm text-white">1. Garantía de Seriedad de la Oferta</h4>
-                      </div>
-                      <p className="text-slate-400 text-[11px] leading-relaxed">
-                        Asegura que el oferente mantendrá su propuesta hasta la adjudicación.
-                      </p>
-                      <div className="bg-slate-900 p-3 rounded-xl border border-slate-800 space-y-1.5 text-[11px]">
-                        <div className="flex justify-between">
-                          <span className="text-slate-500">Monto Exigido:</span>
-                          <span className="font-mono font-bold text-emerald-400">
-                            ${Math.round(licitacionModal.MontoEstimado * 0.05).toLocaleString('es-CL')} CLP (~5%)
-                          </span>
+                  {licitacionModal.Garantias ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {/* Garantía de Seriedad de la Oferta */}
+                      <div className="bg-slate-950/80 p-5 rounded-2xl border border-indigo-500/30 space-y-3">
+                        <div className="flex items-center gap-2 text-indigo-400 font-bold">
+                          <Shield className="w-5 h-5" />
+                          <h4 className="text-sm text-white">1. Garantía de Seriedad de la Oferta</h4>
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-500">Vigencia Requerida:</span>
-                          <span className="font-bold text-slate-200">60 días corridos post-cierre</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-500">Instrumento:</span>
-                          <span className="font-bold text-cyan-400">Póliza de Seguro Electrónica</span>
+                        <div className="bg-slate-900 p-3 rounded-xl border border-slate-800 space-y-1.5 text-[11px]">
+                          <div className="flex justify-between">
+                            <span className="text-slate-500">Requerida:</span>
+                            <span className="font-bold text-slate-200">{licitacionModal.Garantias.SeriedadOferta?.Requerida ? 'Sí' : 'No'}</span>
+                          </div>
+                          {licitacionModal.Garantias.SeriedadOferta?.MontoClp ? (
+                            <div className="flex justify-between">
+                              <span className="text-slate-500">Monto:</span>
+                              <span className="font-mono font-bold text-emerald-400">
+                                ${Math.round(licitacionModal.Garantias.SeriedadOferta.MontoClp).toLocaleString('es-CL')} CLP
+                              </span>
+                            </div>
+                          ) : null}
                         </div>
                       </div>
-                      <div className="p-2.5 bg-slate-900/60 rounded-xl border border-slate-800 text-[10px] text-slate-400 space-y-1">
-                        <span className="font-bold text-slate-300 block">Glosa Exigida:</span>
-                        <p className="font-mono italic text-indigo-300">&quot;Para garantizar la seriedad de la oferta en licitación {licitacionModal.CodigoExterno}&quot;</p>
-                      </div>
-                    </div>
 
-                    {/* Garantía de Fiel Cumplimiento */}
-                    <div className="bg-slate-950/80 p-5 rounded-2xl border border-emerald-500/30 space-y-3">
-                      <div className="flex items-center gap-2 text-emerald-400 font-bold">
-                        <ShieldCheck className="w-5 h-5" />
-                        <h4 className="text-sm text-white">2. Garantía de Fiel Cumplimiento de Contrato</h4>
-                      </div>
-                      <p className="text-slate-400 text-[11px] leading-relaxed">
-                        Se entrega una vez adjudicada la licitación, previo a la suscripción del contrato.
-                      </p>
-                      <div className="bg-slate-900 p-3 rounded-xl border border-slate-800 space-y-1.5 text-[11px]">
-                        <div className="flex justify-between">
-                          <span className="text-slate-500">Porcentaje:</span>
-                          <span className="font-mono font-bold text-emerald-400">10% del Valor Contratado</span>
+                      {/* Garantía de Fiel Cumplimiento */}
+                      <div className="bg-slate-950/80 p-5 rounded-2xl border border-emerald-500/30 space-y-3">
+                        <div className="flex items-center gap-2 text-emerald-400 font-bold">
+                          <ShieldCheck className="w-5 h-5" />
+                          <h4 className="text-sm text-white">2. Garantía de Fiel Cumplimiento de Contrato</h4>
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-500">Monto Estimado:</span>
-                          <span className="font-mono font-bold text-emerald-400">
-                            ${Math.round(licitacionModal.MontoEstimado * 0.10).toLocaleString('es-CL')} CLP
-                          </span>
+                        <div className="bg-slate-900 p-3 rounded-xl border border-slate-800 space-y-1.5 text-[11px]">
+                          <div className="flex justify-between">
+                            <span className="text-slate-500">Requerida:</span>
+                            <span className="font-bold text-slate-200">{licitacionModal.Garantias.FielCumplimiento?.Requerida ? 'Sí' : 'No'}</span>
+                          </div>
+                          {licitacionModal.Garantias.FielCumplimiento?.Porcentaje ? (
+                            <div className="flex justify-between">
+                              <span className="text-slate-500">Porcentaje:</span>
+                              <span className="font-mono font-bold text-emerald-400">
+                                {licitacionModal.Garantias.FielCumplimiento.Porcentaje}% del valor contratado
+                              </span>
+                            </div>
+                          ) : null}
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-500">Vigencia:</span>
-                          <span className="font-bold text-slate-200">Duración del contrato + 60 días</span>
-                        </div>
-                      </div>
-                      <div className="p-2.5 bg-slate-900/60 rounded-xl border border-slate-800 text-[10px] text-slate-400 space-y-1">
-                        <span className="font-bold text-slate-300 block">Emisión:</span>
-                        <p className="text-slate-300">Gama Seguridad tramita pólizas digitales vía corredora asociada en 24 horas.</p>
                       </div>
                     </div>
-                  </div>
+                  ) : (
+                    <div className="bg-slate-950/80 border border-slate-800 rounded-2xl p-6 text-center space-y-3">
+                      <Shield className="w-8 h-8 text-indigo-400 mx-auto" />
+                      <h4 className="text-sm font-bold text-white">Requerimientos de Boletas o Pólizas de Garantía</h4>
+                      <p className="text-xs text-slate-400 max-w-md mx-auto leading-relaxed">
+                        Los montos, vigencias y tipos de garantías (Seriedad de la Oferta y Fiel Cumplimiento de Contrato) están estipulados en las bases administrativas de este proceso.
+                      </p>
+                      <a
+                        href={licitacionModal.EnlaceMercadoPublico}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl text-xs transition"
+                      >
+                        <span>Ver Requisitos de Garantía en Mercado Público</span>
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </a>
+                    </div>
+                  )}
                 </div>
               )}
 
               {/* ── PESTAÑA 4: PONDERACIONES & EVALUACIÓN ── */}
               {tabModal === 'ponderaciones' && (
                 <div className="space-y-4">
-                  <div className="bg-slate-950/80 p-4 rounded-2xl border border-slate-800 space-y-1">
-                    <h4 className="text-sm font-bold text-white flex items-center gap-2">
-                      <Scale className="w-4 h-4 text-indigo-400" />
-                      Pauta Oficial de Evaluación y Criterios de Adjudicación (100%)
-                    </h4>
-                    <p className="text-slate-400 text-[11px]">
-                      Ponderación típica estandarizada de ChileCompra para contratos de televigilancia, CCTV y seguridad privada:
-                    </p>
-                  </div>
-
-                  <div className="space-y-3">
-                    {[
-                      {
-                        titulo: '1. Oferta Económica (Precio Ofertado)',
-                        porcentaje: 45,
-                        color: 'bg-emerald-500',
-                        formula: 'Puntaje = (Precio Mínimo Ofertado / Precio Oferta Gama) * 45 puntos',
-                        consejo: 'Ajustar al 89% del presupuesto para obtener 43-45 puntos sin destruir margen.'
-                      },
-                      {
-                        titulo: '2. Calidad Técnica, Metodología & SLA 24/7',
-                        porcentaje: 25,
-                        color: 'bg-blue-500',
-                        formula: 'Evaluación de tiempos de respuesta (<4 hrs), enlace de central y planes de contingencia',
-                        consejo: 'Adjuntar certificado de enlace de central de monitoreo y protocolos de respuesta móvil.'
-                      },
-                      {
-                        titulo: '3. Experiencia del Oferente & Acreditación OS-10',
-                        porcentaje: 15,
-                        color: 'bg-purple-500',
-                        formula: 'Contratos similares vigentes en el Estado + acreditación de dotación técnica',
-                        consejo: 'Adjuntar certificados de recepción conforme de municipalidades u hospitales clientes.'
-                      },
-                      {
-                        titulo: '4. Condiciones de Empleo y Remuneraciones',
-                        porcentaje: 10,
-                        color: 'bg-amber-500',
-                        formula: 'Remuneraciones por sobre el ingreso mínimo + póliza de seguro complementario',
-                        consejo: 'Declarar tramo de sueldos técnicos superiores al promedio de la industria.'
-                      },
-                      {
-                        titulo: '5. Cumplimiento de Requisitos Formales',
-                        porcentaje: 5,
-                        color: 'bg-cyan-500',
-                        formula: 'Presentación completa y correcta de antecedentes en el acto de apertura',
-                        consejo: 'Subir todos los anexos 24 horas antes para no perder estos 5 puntos vitales.'
-                      },
-                    ].map((crit, idx) => (
-                      <div key={idx} className="bg-slate-950/70 p-3.5 rounded-2xl border border-slate-800 space-y-2">
-                        <div className="flex items-center justify-between">
-                          <strong className="text-white text-xs">{crit.titulo}</strong>
-                          <span className="font-mono font-black text-xs text-indigo-300 bg-indigo-950 px-2 py-0.5 rounded-md">
-                            {crit.porcentaje}%
-                          </span>
+                  {licitacionModal.Ponderaciones ? (
+                    <div className="bg-slate-950/80 p-4 rounded-2xl border border-slate-800 space-y-3">
+                      <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                        <Scale className="w-4 h-4 text-indigo-400" />
+                        Pauta Oficial de Evaluación
+                      </h4>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                        <div className="bg-slate-900 p-3 rounded-xl border border-slate-800">
+                          <span className="text-slate-500 block text-[10px]">Oferta Económica</span>
+                          <span className="text-base font-bold text-emerald-400">{licitacionModal.Ponderaciones.Economica}%</span>
                         </div>
-                        <div className="w-full h-2 rounded-full bg-slate-800 overflow-hidden">
-                          <div className={`h-full ${crit.color}`} style={{ width: `${crit.porcentaje}%` }} />
+                        <div className="bg-slate-900 p-3 rounded-xl border border-slate-800">
+                          <span className="text-slate-500 block text-[10px]">Propuesta Técnica</span>
+                          <span className="text-base font-bold text-blue-400">{licitacionModal.Ponderaciones.Tecnica}%</span>
                         </div>
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between text-[11px] text-slate-400 gap-1 pt-1">
-                          <span>Fórmula: {crit.formula}</span>
-                          <span className="text-indigo-300 font-semibold">💡 {crit.consejo}</span>
+                        <div className="bg-slate-900 p-3 rounded-xl border border-slate-800">
+                          <span className="text-slate-500 block text-[10px]">Experiencia Oferente</span>
+                          <span className="text-base font-bold text-purple-400">{licitacionModal.Ponderaciones.Experiencia}%</span>
+                        </div>
+                        <div className="bg-slate-900 p-3 rounded-xl border border-slate-800">
+                          <span className="text-slate-500 block text-[10px]">Condiciones Laborales</span>
+                          <span className="text-base font-bold text-amber-400">{licitacionModal.Ponderaciones.Remuneraciones}%</span>
                         </div>
                       </div>
-                    ))}
-                  </div>
+                    </div>
+                  ) : (
+                    <div className="bg-slate-950/80 border border-slate-800 rounded-2xl p-6 text-center space-y-3">
+                      <Scale className="w-8 h-8 text-indigo-400 mx-auto" />
+                      <h4 className="text-sm font-bold text-white">Criterios de Evaluación y Ponderaciones</h4>
+                      <p className="text-xs text-slate-400 max-w-md mx-auto leading-relaxed">
+                        Cada organismo convocante publica su propia pauta de evaluación (precio, calidad técnica, certificaciones y cumplimiento formal) en las bases oficiales.
+                      </p>
+                      <a
+                        href={licitacionModal.EnlaceMercadoPublico}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl text-xs transition"
+                      >
+                        <span>Ver Criterios de Evaluación en Mercado Público</span>
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </a>
+                    </div>
+                  )}
                 </div>
               )}
 

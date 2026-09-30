@@ -223,7 +223,7 @@ function generarInformeExpertoGama(detalleChileCompra: any, licitacionBasica: an
   const organismo = licitacionBasica?.Organismo || detalleChileCompra?.Comprador?.NombreOrganismo || 'Organismo del Estado'
   const region = licitacionBasica?.Region || 'Chile'
   const comuna = licitacionBasica?.Comuna || ''
-  const monto = licitacionBasica?.MontoEstimado || 35000000
+  const monto = licitacionBasica?.MontoEstimado || 0
   const tipo = licitacionBasica?.Tipo || 'Licitación Pública'
   const fechaCierre = licitacionBasica?.FechaCierre || ''
   const contacto = licitacionBasica?.Contacto || detalleChileCompra?.Comprador?.NombreUsuario || 'Encargado de Compras Públicas'
@@ -246,7 +246,7 @@ function generarInformeExpertoGama(detalleChileCompra: any, licitacionBasica: an
   const docs = detalleChileCompra?.Documentos?.Listado || []
   const docsNombres = docs.length > 0 
     ? docs.map((d: any) => d.Nombre || d.NombreDocumento || 'Bases Técnicas')
-    : ['Bases Administrativas Generales.pdf', 'Bases Técnicas del Servicio de Seguridad.pdf', 'Anexo Formato Oferta Económica.pdf', 'Pauta de Evaluación y Criterios.pdf']
+    : ['Consultar bases y anexos adjuntos directamente en la ficha oficial de Mercado Público']
 
   // Evaluación de Viabilidad
   const esVRegion = region.toLowerCase().includes('valparaíso') || region.toLowerCase().includes('valparaiso')
