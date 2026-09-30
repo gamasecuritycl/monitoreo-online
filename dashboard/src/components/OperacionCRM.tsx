@@ -2935,6 +2935,18 @@ export default function OperacionCRM() {
       tag: 'Banners & Popups'
     },
     {
+      id: 'gestion_mails',
+      titulo: 'Gestión de Mails IA',
+      categoria: 'COMERCIAL & MARKETING',
+      descripcion: 'Redacción con IA Gemini 2.5, plantillas oficiales anti-spam, inserción de flyers y envíos masivos.',
+      icono: Mail,
+      gradient: 'from-blue-600 via-indigo-600 to-violet-600',
+      borderColor: 'hover:border-indigo-400',
+      glowColor: 'group-hover:shadow-indigo-500/25',
+      badgeColor: 'bg-indigo-500/10 text-indigo-300 border-indigo-500/20',
+      tag: 'Mail Studio IA'
+    },
+    {
       id: 'marketing',
       titulo: 'Marketing B2B',
       categoria: 'COMERCIAL',
