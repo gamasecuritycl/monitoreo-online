@@ -52,7 +52,16 @@ export function BotConfigModal({ isOpen, onClose }: BotConfigModalProps) {
         const data = await resConfig.json();
         if (data.prompt) setPrompt(data.prompt);
         else setPrompt(DEFAULT_SALES_PROMPT);
-        if (data.config) setBotConfig(data.config);
+        if (data.config) {
+          setBotConfig((prev) => ({
+            ...prev,
+            ...data.config,
+            model: data.config.model || prev.model || 'gemini-2.0-flash',
+            temperature: typeof data.config.temperature === 'number' ? data.config.temperature : prev.temperature,
+            waUrl: data.config.waUrl || prev.waUrl,
+            rateLimit: data.config.rateLimit || prev.rateLimit,
+          }));
+        }
       } else {
         setPrompt(DEFAULT_SALES_PROMPT);
       }
@@ -92,7 +101,10 @@ export function BotConfigModal({ isOpen, onClose }: BotConfigModalProps) {
       if (res1.ok && res2.ok) {
         notify("success", "¡Prompt y parámetros del Sales-Bot guardados exitosamente!");
       } else {
-        notify("error", "Error al guardar configuración en Supabase.");
+        const err1 = !res1.ok ? await res1.json().catch(() => null) : null;
+        const err2 = !res2.ok ? await res2.json().catch(() => null) : null;
+        const msg = err1?.error || err2?.error || "Error al guardar configuración en Supabase.";
+        notify("error", msg);
       }
     } catch {
       notify("error", "Error de red al guardar.");

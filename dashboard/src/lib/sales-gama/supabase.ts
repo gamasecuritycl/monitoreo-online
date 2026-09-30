@@ -341,9 +341,27 @@ export async function getConfig(): Promise<Config | null> {
 
 export async function setConfig(key: 'prompt' | 'precios' | 'config', value: unknown): Promise<boolean> {
   try {
+    let finalValue = value;
+
+    if (key === 'config') {
+      const { data: current } = await supabaseAdmin
+        .from('config_sales_gama')
+        .select('value')
+        .eq('key', 'config')
+        .single();
+
+      const existing = current?.value && typeof current.value === 'object' ? current.value : {};
+      const incoming = typeof value === 'object' && value !== null ? value : {};
+
+      finalValue = {
+        ...existing,
+        ...incoming,
+      };
+    }
+
     const { error } = await supabaseAdmin
       .from('config_sales_gama')
-      .upsert({ key, value, updated_at: new Date().toISOString() }, { onConflict: 'key' });
+      .upsert({ key, value: finalValue, updated_at: new Date().toISOString() }, { onConflict: 'key' });
     return !error;
   } catch (err) {
     console.warn('setConfig error:', err);
