@@ -70,6 +70,8 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
   const [errorApi, setErrorApi] = useState<string>('')
   const [probandoTicket, setProbandoTicket] = useState(false)
   const [resultadoPrueba, setResultadoPrueba] = useState<{ ok: boolean; msg: string } | null>(null)
+  const [buscandoDirecto, setBuscandoDirecto] = useState(false)
+  const [mensajeBusquedaDirecta, setMensajeBusquedaDirecta] = useState('')
   
   // Modal de Licitación 360° & Postulación
   const [licitacionModal, setLicitacionModal] = useState<LicitacionChileCompra | null>(null)
@@ -129,8 +131,6 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
     try {
       const params = new URLSearchParams()
       if (ticketApi) params.append('ticket', ticketApi)
-      if (filtroRubro !== 'todos') params.append('rubro', filtroRubro)
-      if (filtroRegion !== 'todas') params.append('region', filtroRegion)
 
       const res = await fetch(`/api/mercado-publico?${params.toString()}`)
       const data = await res.json()
@@ -150,7 +150,38 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
 
   useEffect(() => {
     fetchLicitaciones()
-  }, [ticketApi, filtroRubro, filtroRegion])
+  }, [ticketApi])
+
+  // Búsqueda directa por código oficial en ChileCompra
+  const handleBuscarDirecto = async (codigoOTexto?: string) => {
+    const q = (codigoOTexto !== undefined ? codigoOTexto : busqueda).trim()
+    if (!q) return
+
+    setBuscandoDirecto(true)
+    setMensajeBusquedaDirecta('')
+    try {
+      const res = await fetch(`/api/mercado-publico?codigo=${encodeURIComponent(q)}`)
+      const data = await res.json()
+      if (data.success && data.licitaciones && data.licitaciones.length > 0) {
+        const item = data.licitaciones[0]
+        setLicitaciones(prev => {
+          const filtradas = prev.filter(x => x.CodigoExterno.toUpperCase() !== item.CodigoExterno.toUpperCase())
+          return [item, ...filtradas]
+        })
+        setFiltroRubro('todos')
+        setFiltroRegion('todas')
+        setFiltroEstado('todas')
+        setBusqueda(item.CodigoExterno)
+        setMensajeBusquedaDirecta(`✅ Licitación oficial ${item.CodigoExterno} cargada exitosamente desde ChileCompra.`)
+      } else {
+        setMensajeBusquedaDirecta(`ℹ️ No se encontró ninguna licitación en ChileCompra con el código "${q}". Mostrando coincidencias de texto.`)
+      }
+    } catch {
+      setMensajeBusquedaDirecta(`⚠️ Error al consultar ChileCompra directamente por "${q}".`)
+    } finally {
+      setBuscandoDirecto(false)
+    }
+  }
 
   // Abrir Modal de Licitación 360°
   const abrirModalLicitacion = (lic: LicitacionChileCompra, tabInicial: 'ficha' | 'visita' | 'garantias' | 'ponderaciones' | 'postulacion' | 'ia' = 'ficha') => {
@@ -325,13 +356,22 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
   // Filtrado local estricto por rubro, región, estado, búsqueda y ordenamiento por fecha de cierre más pronta
   const licitacionesFiltradas = licitaciones
     .filter(l => {
-      // 1. Filtro estricto por Rubro
+      const q = busqueda.trim().toLowerCase()
+
+      // 1. Si el usuario escribió un código específico en el buscador (ej: 407-135-LE26)
+      const coincideCodigo = q && l.CodigoExterno.toLowerCase().includes(q)
+      if (coincideCodigo) {
+        // La coincidencia por código oficial TIENE PRIORIDAD TOTAL: nunca se oculta por rubro o región
+        return true
+      }
+
+      // 2. Filtro estricto por Rubro
       if (filtroRubro === 'cctv' && !l.Rubro.includes('CCTV')) return false
       if (filtroRubro === 'monitoreo' && !l.Rubro.includes('Monitoreo')) return false
       if (filtroRubro === 'guardias' && !l.Rubro.includes('Guardias')) return false
       if (filtroRubro === 'acceso' && !l.Rubro.includes('Acceso')) return false
 
-      // 2. Filtro por Región
+      // 3. Filtro por Región
       if (filtroRegion !== 'todas') {
         const reg = (l.Region || '').toLowerCase()
         const com = (l.Comuna || '').toLowerCase()
@@ -339,7 +379,7 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
         if (!reg.includes(f) && !com.includes(f)) return false
       }
 
-      // 3. Filtro por Estado
+      // 4. Filtro por Estado
       if (filtroEstado !== 'todas') {
         const est = (l.Estado || '').toLowerCase()
         if (filtroEstado === 'publicada' && est !== 'publicada' && l.CodigoEstado !== 5) return false
@@ -347,14 +387,14 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
         if (filtroEstado === 'adjudicada' && est !== 'adjudicada' && l.CodigoEstado !== 8) return false
       }
 
-      // 4. Filtro por búsqueda de texto
-      if (!busqueda.trim()) return true
-      const q = busqueda.toLowerCase()
+      // 5. Filtro por búsqueda de texto
+      if (!q) return true
       return (
         l.Nombre.toLowerCase().includes(q) ||
         l.Organismo.toLowerCase().includes(q) ||
         (l.Region && l.Region.toLowerCase().includes(q)) ||
         (l.Comuna && l.Comuna.toLowerCase().includes(q)) ||
+        (l.Rubro && l.Rubro.toLowerCase().includes(q)) ||
         l.CodigoExterno.toLowerCase().includes(q) ||
         l.Descripcion.toLowerCase().includes(q)
       )
@@ -573,17 +613,103 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
             </select>
           </div>
 
-          <div className="relative">
-            <Search className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+          <div className="relative flex items-center">
+            <Search className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="text"
               value={busqueda}
-              onChange={(e) => setBusqueda(e.target.value)}
-              placeholder="Buscar por organismo, código..."
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+              onChange={(e) => {
+                setBusqueda(e.target.value)
+                setMensajeBusquedaDirecta('')
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  handleBuscarDirecto()
+                }
+              }}
+              placeholder="Buscar por código, organismo, palabra..."
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-20 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition"
             />
+            {busqueda && (
+              <button
+                type="button"
+                onClick={() => {
+                  setBusqueda('')
+                  setMensajeBusquedaDirecta('')
+                }}
+                className="absolute right-14 text-slate-500 hover:text-slate-300 p-1 cursor-pointer text-xs"
+                title="Limpiar búsqueda"
+              >
+                ✕
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => handleBuscarDirecto()}
+              disabled={buscandoDirecto || !busqueda.trim()}
+              className="absolute right-1 px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-[10px] font-bold text-white transition cursor-pointer flex items-center gap-1"
+              title="Buscar código oficial en ChileCompra"
+            >
+              {buscandoDirecto ? (
+                <RefreshCw className="w-3 h-3 animate-spin" />
+              ) : (
+                'Buscar'
+              )}
+            </button>
           </div>
         </div>
+
+        {/* Notificación de búsqueda directa si existe */}
+        {mensajeBusquedaDirecta && (
+          <div className="text-xs px-3 py-1.5 rounded-xl bg-slate-950 border border-indigo-500/40 text-indigo-300 flex items-center justify-between">
+            <span>{mensajeBusquedaDirecta}</span>
+            <button onClick={() => setMensajeBusquedaDirecta('')} className="text-slate-400 hover:text-white text-xs cursor-pointer">✕</button>
+          </div>
+        )}
+
+        {/* Chips de filtros activos */}
+        {(filtroRubro !== 'todos' || filtroRegion !== 'todas' || filtroEstado !== 'todas' || busqueda) && (
+          <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-slate-800/60 text-xs">
+            <span className="text-[11px] text-slate-500 font-medium">Filtros activos:</span>
+            {filtroRubro !== 'todos' && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-indigo-950/80 text-indigo-300 border border-indigo-700/60 text-[11px] font-semibold">
+                Rubro: {filtroRubro.toUpperCase()}
+                <button onClick={() => setFiltroRubro('todos')} className="hover:text-white cursor-pointer ml-0.5">✕</button>
+              </span>
+            )}
+            {filtroRegion !== 'todas' && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-cyan-950/80 text-cyan-300 border border-cyan-700/60 text-[11px] font-semibold">
+                Región: {filtroRegion}
+                <button onClick={() => setFiltroRegion('todas')} className="hover:text-white cursor-pointer ml-0.5">✕</button>
+              </span>
+            )}
+            {filtroEstado !== 'todas' && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-emerald-950/80 text-emerald-300 border border-emerald-700/60 text-[11px] font-semibold">
+                Estado: {filtroEstado}
+                <button onClick={() => setFiltroEstado('todas')} className="hover:text-white cursor-pointer ml-0.5">✕</button>
+              </span>
+            )}
+            {busqueda && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-purple-950/80 text-purple-300 border border-purple-700/60 text-[11px] font-semibold">
+                Búsqueda: &ldquo;{busqueda}&rdquo;
+                <button onClick={() => setBusqueda('')} className="hover:text-white cursor-pointer ml-0.5">✕</button>
+              </span>
+            )}
+            <button
+              onClick={() => {
+                setFiltroRubro('todos')
+                setFiltroRegion('todas')
+                setFiltroEstado('todas')
+                setBusqueda('')
+                setMensajeBusquedaDirecta('')
+              }}
+              className="text-[11px] text-amber-400 hover:text-amber-300 underline font-bold ml-1.5 cursor-pointer"
+            >
+              Restablecer todo
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Listado de Licitaciones */}
@@ -674,20 +800,40 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
               <Building2 className="w-12 h-12 text-slate-600 mx-auto" />
               <div className="space-y-1">
                 <h3 className="text-base font-bold text-white">
-                  No se encontraron licitaciones activas
+                  No se encontraron licitaciones con los filtros actuales
                 </h3>
                 <p className="text-xs text-slate-400 max-w-md mx-auto">
-                  Actualmente no hay licitaciones públicas de seguridad privada o CCTV publicadas en ChileCompra con los filtros seleccionados.
+                  {busqueda
+                    ? `No hay licitaciones en el radar local que coincidan con "${busqueda}".`
+                    : 'Actualmente no hay licitaciones públicas con los filtros de región, rubro o estado seleccionados.'}
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={fetchLicitaciones}
-                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition inline-flex items-center gap-1.5 cursor-pointer"
-              >
-                <RefreshCw className="w-3.5 h-3.5" />
-                <span>Actualizar Radar</span>
-              </button>
+              <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
+                {busqueda && (
+                  <button
+                    type="button"
+                    onClick={() => handleBuscarDirecto()}
+                    disabled={buscandoDirecto}
+                    className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition inline-flex items-center gap-1.5 cursor-pointer shadow-lg shadow-indigo-600/30"
+                  >
+                    {buscandoDirecto ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Search className="w-3.5 h-3.5" />}
+                    <span>Buscar &ldquo;{busqueda}&rdquo; directamente en ChileCompra</span>
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFiltroRubro('todos')
+                    setFiltroRegion('todas')
+                    setFiltroEstado('todas')
+                    setBusqueda('')
+                    setMensajeBusquedaDirecta('')
+                  }}
+                  className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 text-xs font-bold transition inline-flex items-center gap-1.5 cursor-pointer"
+                >
+                  <span>Ver todas las licitaciones oficiales ({licitaciones.length})</span>
+                </button>
+              </div>
             </>
           )}
         </div>

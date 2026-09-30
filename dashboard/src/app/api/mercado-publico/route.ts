@@ -247,38 +247,45 @@ export async function GET(request: Request) {
 }
 
 /**
- * Enriquecimiento en Lote:
- * Consulta la ficha completa de ChileCompra para las licitaciones principales
- * para obtener Comprador.NombreOrganismo, RegionUnidad y ComunaUnidad de forma fidedigna.
+ * Enriquecimiento en Lote en Paralelo:
+ * Consulta la ficha completa de ChileCompra para todas las licitaciones de seguridad
+ * en bloques concurrentes para obtener Comprador.NombreOrganismo, RegionUnidad, ComunaUnidad
+ * y Fechas de forma fidedigna sin demorar la respuesta.
  */
 async function enriquecerLicitacionesConDetalle(licitaciones: any[], ticket: string): Promise<any[]> {
-  const LIMITE_DETALLES = 12
-  const candidatas = licitaciones.slice(0, LIMITE_DETALLES)
-  const restantes = licitaciones.slice(LIMITE_DETALLES)
+  const BATCH_SIZE = 15
+  const MAX_A_ENRIQUECER = 80
+  const aEnriquecer = licitaciones.slice(0, MAX_A_ENRIQUECER)
+  const restantes = licitaciones.slice(MAX_A_ENRIQUECER)
 
-  const enriquecidas = await Promise.all(
-    candidatas.map(async (lic) => {
-      try {
-        const controller = new AbortController()
-        const timeoutId = setTimeout(() => controller.abort(), 6000)
+  const enriquecidas: any[] = []
+  for (let i = 0; i < aEnriquecer.length; i += BATCH_SIZE) {
+    const chunk = aEnriquecer.slice(i, i + BATCH_SIZE)
+    const resChunk = await Promise.all(
+      chunk.map(async (lic) => {
+        try {
+          const controller = new AbortController()
+          const timeoutId = setTimeout(() => controller.abort(), 6000)
 
-        const url = `https://api.mercadopublico.cl/servicios/v1/publico/licitaciones.json?codigo=${encodeURIComponent(lic.CodigoExterno)}&ticket=${encodeURIComponent(ticket)}`
-        const res = await fetch(url, { 
-          signal: controller.signal,
-          headers: { 'User-Agent': 'GamaSecurity-DetailFetcher/2.0' }
-        })
-        clearTimeout(timeoutId)
+          const url = `https://api.mercadopublico.cl/servicios/v1/publico/licitaciones.json?codigo=${encodeURIComponent(lic.CodigoExterno)}&ticket=${encodeURIComponent(ticket)}`
+          const res = await fetch(url, { 
+            signal: controller.signal,
+            headers: { 'User-Agent': 'GamaSecurity-DetailFetcher/2.0' }
+          })
+          clearTimeout(timeoutId)
 
-        if (res.ok) {
-          const data = await res.json().catch(() => null)
-          if (data && Array.isArray(data.Listado) && data.Listado.length > 0) {
-            return normalizarLicitacionReal(data.Listado[0])
+          if (res.ok) {
+            const data = await res.json().catch(() => null)
+            if (data && Array.isArray(data.Listado) && data.Listado.length > 0) {
+              return normalizarLicitacionReal(data.Listado[0])
+            }
           }
-        }
-      } catch {}
-      return normalizarLicitacionReal(lic)
-    })
-  )
+        } catch {}
+        return normalizarLicitacionReal(lic)
+      })
+    )
+    enriquecidas.push(...resChunk)
+  }
 
   const normales = restantes.map(normalizarLicitacionReal)
   return [...enriquecidas, ...normales]
@@ -286,7 +293,7 @@ async function enriquecerLicitacionesConDetalle(licitaciones: any[], ticket: str
 
 /**
  * Filtro Estricto de Seguridad Privada:
- * Elimina falsos positivos de compras médicas, aseo, señalética vial, etc.
+ * Elimina falsos positivos de compras médicas, aseo, señalética vial, cámaras fotográficas, etc.
  * Solo deja compras legítimas de los rubros que Gama Seguridad atiende.
  */
 function esLicitacionSeguridadReal(nombre: string): boolean {
@@ -298,21 +305,74 @@ function esLicitacionSeguridadReal(nombre: string): boolean {
     'FARMACOVIGILANCIA',
     'SEGURIDAD VIAL',
     'BARRERAS DE CONTENCIÓN',
-    'BARRERAS METALICAS VIALES',
+    'BARRERAS CONTENCIÓN',
+    'BARRERAS METALICAS',
+    'BARRERAS METÁLICAS',
+    'DOBLE ONDA',
     'TACHAS REFLECTANTES',
     'DEMARCACIÓN',
-    'SEÑALÉTICA VIAL',
+    'DEMARCACION',
+    'SEÑALÉTICA',
+    'SENALETICA',
     'MASCARILLAS',
     'EPP MÉDICO',
+    'EPP MEDICO',
     'GUANTES DE CIRUGÍA',
     'ROPA QUIRÚRGICA',
     'SEGURIDAD BIOLÓGICA',
     'VACUNAS',
-    'EXTINTORES Y RED HÚMEDA EXCLUSIVO',
+    'EXTINTORES Y RED HÚMEDA',
     'ASEO Y LIMPIEZA',
     'TRANSPORTE ESCOLAR',
     'RECOLECCIÓN DE BASURA',
-    'PAVIMENTACIÓN'
+    'PAVIMENTACIÓN',
+    // Exclusiones de falsos positivos de "cámara"
+    'CÁMARA SANITARIA',
+    'CAMARA SANITARIA',
+    'CÁMARAS SANITARIAS',
+    'CAMARAS SANITARIAS',
+    'LIMPIEZA DE CÁMARA',
+    'LIMPIEZA CAMARA',
+    'CÁMARA DESGRASADORA',
+    'CAMARA DESGRASADORA',
+    'CÁMARAS DESGRASADORAS',
+    'DESGRASADORA',
+    'CÁMARA FRÍA',
+    'CAMARA FRIA',
+    'CÁMARAS FRÍAS',
+    'CAMARAS FRIAS',
+    'CÁMARA FRIGORÍFICA',
+    'CAMARA FRIGORIFICA',
+    'CÁMARAS FRIGORÍFICAS',
+    'CÁMARA MORTUORIA',
+    'CAMARA MORTUORIA',
+    'CÁMARAS MORTUORIAS',
+    'CAMARAS MORTUORIAS',
+    'CÁMARA HIPERBÁRICA',
+    'CAMARA HIPERBARICA',
+    'AEROCAMARA',
+    'AEROCÁMARA',
+    'CÁMARA RETINAL',
+    'CAMARA RETINAL',
+    'TOMÓGRAFO',
+    'TOMOGRAFO',
+    'OFTALMOLOG',
+    'ORQUESTA DE CÁMARA',
+    'ORQUESTA CAMARA',
+    'ORQUESTA CÁMARA',
+    'CÁMARAS SUBMARINAS',
+    'CAMARAS SUBMARINAS',
+    'PISCICULTURA',
+    'CÁMARA DE REJAS',
+    'PLANTA PEAS',
+    'AGUAS SERVIDAS',
+    'ALCANTARILLADO',
+    'CANON EOS',
+    'EOS R5',
+    'NIKON',
+    'SONY ALPHA',
+    'LENTES FOTOGRÁFICOS',
+    'OFICINAS DVRM'
   ]
 
   for (const exclusion of TERMINOS_EXCLUSION) {
@@ -322,33 +382,86 @@ function esLicitacionSeguridadReal(nombre: string): boolean {
   // 2. Coincidencia con rubros de seguridad privada y tecnología
   const TERMINOS_INCLUSION = [
     'CCTV',
-    'CÁMARA',
-    'CAMARA',
     'TELEVIGILANCIA',
     'VIDEOVIGILANCIA',
+    'CIRCUITO CERRADO',
     'CENTRAL DE MONITOREO',
+    'SALA DE MONITOREO',
     'MONITOREO DE ALARMAS',
+    'SISTEMA DE MONITOREO',
+    'MONITOREO Y ALARMA',
+    'MONITOREO DE CÁMARAS',
+    'MONITOREO DE CAMARAS',
+    'MONITOREO 24/7',
     'ALARMA DE INTRUSIÓN',
+    'ALARMAS DE INTRUSION',
     'ALARMAS DE ROBO',
+    'ALARMA DE ROBO',
     'ALARMA COMUNITARIA',
+    'ALARMAS COMUNITARIAS',
+    'SISTEMA DE ALARMAS',
+    'SISTEMAS DE ALARMAS',
+    'INSTALACIÓN DE ALARMAS',
+    'INSTALACION DE ALARMAS',
+    'MANTENCIÓN DE ALARMAS',
     'CONTROL DE ACCESO',
     'TORNIQUETE',
+    'TORNIQUETES',
     'LECTOR BIOMÉTRICO',
+    'LECTOR BIOMETRICO',
     'LECTOR FACIAL',
     'BARRERA VEHICULAR',
     'BARRERAS VEHICULARES',
+    'PÓRTICOS Y CÁMARAS',
+    'PORTICOS Y CAMARAS',
     'GUARDIA DE SEGURIDAD',
     'GUARDIAS DE SEGURIDAD',
+    'SERVICIO DE GUARDIAS',
+    'SERVICIOS DE GUARDIAS',
+    'SERVICIO GUARDIA',
     'SEGURIDAD PRIVADA',
     'VIGILANCIA PRIVADA',
+    'VIGILANCIA Y SEGURIDAD',
     'OS-10',
     'OS10',
     'RONDÍN',
     'RONDIN',
-    'DVR',
+    'RONDINES',
+    'VIGILANTE PRIVADO',
+    'VIGILANTES PRIVADOS',
     'NVR',
     'CERCO ELÉCTRICO',
-    'CONCERTINA'
+    'CERCO ELECTRICO',
+    'CONCERTINA',
+    'CÁMARAS DE SEGURIDAD',
+    'CAMARAS DE SEGURIDAD',
+    'CÁMARA DE SEGURIDAD',
+    'CAMARA DE SEGURIDAD',
+    'CÁMARAS IP',
+    'CAMARAS IP',
+    'CÁMARAS CORPORALES',
+    'CAMARAS CORPORALES',
+    'BODYCAM',
+    'CÁMARAS DE TELEVIGILANCIA',
+    'CAMARAS DE TELEVIGILANCIA',
+    'CÁMARAS DE VIGILANCIA',
+    'CAMARAS DE VIGILANCIA',
+    'CÁMARAS BARRIALES',
+    'CAMARAS BARRIALES',
+    'CÁMARAS IA',
+    'CAMARAS IA',
+    'CENTRAL DE CÁMARAS',
+    'SALA DE CÁMARAS',
+    'PUNTOS DE CÁMARAS',
+    'PUNTOS DE CAMARAS',
+    'RECAMBIO DE CÁMARAS',
+    'RECAMBIO DE CAMARAS',
+    'SISTEMA DE CÁMARAS',
+    'SISTEMA DE CAMARAS',
+    'SISTEMAS DE CÁMARAS',
+    'SISTEMAS DE CAMARAS',
+    'TRANSMISION DE DATOS CAMARAS',
+    'TRANSMISIÓN DE DATOS CÁMARAS'
   ]
 
   return TERMINOS_INCLUSION.some(inclusion => n.includes(inclusion))
@@ -363,31 +476,32 @@ function normalizarLicitacionReal(lic: any) {
   const rubro = clasificarRubro(nombre)
   
   const organismo = 
-    lic.Comprador?.NombreOrganismo || 
+    lic.Comprador?.NombreOrganismo?.trim() || 
     lic.Organismo || 
     extraerOrganismoDeTexto(nombre) || 
     'Organismo Público (Ver en ChileCompra)'
 
   const region = 
-    lic.Comprador?.RegionUnidad || 
+    lic.Comprador?.RegionUnidad?.trim() || 
     lic.Region || 
     extraerRegionDeTexto(nombre + ' ' + organismo) || 
     'Chile'
 
   const comuna = 
-    lic.Comprador?.ComunaUnidad || 
+    lic.Comprador?.ComunaUnidad?.trim() || 
     lic.Comuna || 
     extraerComunaDeTexto(nombre + ' ' + organismo) || 
     ''
 
   const direccion = 
-    lic.Comprador?.DireccionUnidad || 
+    lic.Comprador?.DireccionUnidad?.trim() || 
     lic.DireccionUnidad || 
     (comuna ? `${comuna}, ${region}` : region)
 
   const rut = lic.Comprador?.RutUsuario || lic.RutComprador || ''
-  const contacto = lic.Comprador?.NombreUsuario || lic.Contacto || 'Encargado de Compras Públicas'
-  const monto = typeof lic.MontoEstimado === 'number' && lic.MontoEstimado > 0 ? lic.MontoEstimado : 0
+  const contacto = lic.Comprador?.NombreUsuario?.trim() || lic.Contacto || 'Encargado de Compras Públicas'
+  const monto = typeof lic.MontoEstimado === 'number' && lic.MontoEstimado > 0 ? lic.MontoEstimado : (lic.ValorTiempoRenovacion || 0)
+  const fechaCierre = lic.Fechas?.FechaCierre || lic.FechaCierre || ''
 
   return {
     CodigoExterno: lic.CodigoExterno,
@@ -399,7 +513,7 @@ function normalizarLicitacionReal(lic: any) {
     Comuna: comuna,
     RutComprador: rut,
     DireccionUnidad: direccion,
-    FechaCierre: lic.FechaCierre || '',
+    FechaCierre: fechaCierre,
     MontoEstimado: monto,
     Moneda: lic.Moneda || 'CLP',
     Rubro: rubro,
@@ -436,7 +550,7 @@ function extraerOrganismoDeTexto(texto: string): string | null {
   if (t.includes('FUNDACIÓN INTEGRA') || t.includes('FUNDACION INTEGRA')) return 'FUNDACIÓN INTEGRA'
   if (t.includes('JUNJI')) return 'JUNTA NACIONAL DE JARDINES INFANTILES (JUNJI)'
   if (t.includes('CARABINEROS')) return 'CARABINEROS DE CHILE'
-  if (t.includes('HOSPITAL')) return 'HOSPITAL PÚBLICO'
+  if (t.includes('HOSPITAL') || t.includes('HGGB')) return 'HOSPITAL PÚBLICO'
   if (t.includes('MUNICIPALIDAD') || t.includes('MUNICIPIO')) return 'ILUSTRE MUNICIPALIDAD'
   if (t.includes('GENDARMERÍA') || t.includes('GENDARMERIA')) return 'GENDARMERÍA DE CHILE'
   if (t.includes('ARMADA')) return 'ARMADA DE CHILE'
@@ -446,19 +560,34 @@ function extraerOrganismoDeTexto(texto: string): string | null {
 
 function extraerRegionDeTexto(texto: string): string | null {
   const t = texto.toUpperCase()
-  if (t.includes('VALPARAÍSO') || t.includes('VALPARAISO') || t.includes('VIÑA') || t.includes('QUILPUÉ') || t.includes('VILLA ALEMANA')) return 'Región de Valparaíso'
-  if (t.includes('SANTIAGO') || t.includes('METROPOLITANA') || t.includes('PROVIDENCIA') || t.includes('LAS CONDES') || t.includes('MAIPÚ')) return 'Región Metropolitana'
-  if (t.includes('BIOBÍO') || t.includes('CONCEPCIÓN') || t.includes('CONCEPCION')) return 'Región del Biobío'
-  if (t.includes('ANTOFAGASTA')) return 'Región de Antofagasta'
-  if (t.includes('COQUIMBO') || t.includes('LA SERENA')) return 'Región de Coquimbo'
-  if (t.includes('MAULE') || t.includes('TALCA')) return 'Región del Maule'
-  if (t.includes('O\'HIGGINS') || t.includes('RANCAGUA')) return 'Región de O\'Higgins'
+  if (t.includes('VALPARAÍSO') || t.includes('VALPARAISO') || t.includes('VIÑA') || t.includes('QUILPUÉ') || t.includes('VILLA ALEMANA') || t.includes('QUILLOTA') || t.includes('SAN ANTONIO') || t.includes('CONCÓN') || t.includes('EL TABO') || t.includes('NOGALES')) return 'Región de Valparaíso'
+  if (t.includes('SANTIAGO') || t.includes('METROPOLITANA') || t.includes('PROVIDENCIA') || t.includes('LAS CONDES') || t.includes('MAIPÚ') || t.includes('CONCHALÍ') || t.includes('PUENTE ALTO')) return 'Región Metropolitana'
+  if (t.includes('BIOBÍO') || t.includes('BIOBIO') || t.includes('CONCEPCIÓN') || t.includes('CONCEPCION') || t.includes('TALCAHUANO') || t.includes('CHIGUAYANTE') || t.includes('CORONEL') || t.includes('LOS ÁNGELES') || t.includes('LOS ANGELES') || t.includes('HGGB') || t.includes('GRANT BENAVENTE')) return 'Región del Biobío'
+  if (t.includes('ÑUBLE') || t.includes('NUBLE') || t.includes('CHILLÁN') || t.includes('CHILLAN')) return 'Región de Ñuble'
+  if (t.includes('ANTOFAGASTA') || t.includes('CALAMA') || t.includes('MARIA ELENA')) return 'Región de Antofagasta'
+  if (t.includes('COQUIMBO') || t.includes('LA SERENA') || t.includes('TIERRAS BLANCAS')) return 'Región de Coquimbo'
+  if (t.includes('MAULE') || t.includes('TALCA') || t.includes('CURICÓ') || t.includes('LINARES')) return 'Región del Maule'
+  if (t.includes('O\'HIGGINS') || t.includes('OHIGGINS') || t.includes('RANCAGUA')) return 'Región de O\'Higgins'
+  if (t.includes('ARAUCANÍA') || t.includes('ARAUCANIA') || t.includes('TEMUCO')) return 'Región de La Araucanía'
+  if (t.includes('LOS RÍOS') || t.includes('LOS RIOS') || t.includes('VALDIVIA')) return 'Región de Los Ríos'
+  if (t.includes('LOS LAGOS') || t.includes('PUERTO MONTT') || t.includes('OSORNO') || t.includes('CHILOÉ') || t.includes('ANCUD')) return 'Región de Los Lagos'
+  if (t.includes('TARAPACÁ') || t.includes('TARAPACA') || t.includes('IQUIQUE') || t.includes('CAMIÑA')) return 'Región de Tarapacá'
+  if (t.includes('ATACAMA') || t.includes('COPIAPÓ') || t.includes('COPIAPO')) return 'Región de Atacama'
+  if (t.includes('ARICA') || t.includes('PARINACOTA')) return 'Región de Arica y Parinacota'
+  if (t.includes('AYSÉN') || t.includes('AYSEN') || t.includes('COYHAIQUE')) return 'Región de Aysén'
+  if (t.includes('MAGALLANES') || t.includes('PUNTA ARENAS')) return 'Región de Magallanes'
   return null
 }
 
 function extraerComunaDeTexto(texto: string): string | null {
   const t = texto.toUpperCase()
-  const COMUNAS = ['QUILPUÉ', 'VIÑA DEL MAR', 'VALPARAÍSO', 'VILLA ALEMANA', 'CONCÓN', 'SANTIAGO', 'PROVIDENCIA', 'CONCEPCIÓN', 'ANTOFAGASTA', 'LA SERENA', 'TALCA', 'RANCAGUA']
+  const COMUNAS = [
+    'CONCEPCIÓN', 'CONCEPCION', 'TALCAHUANO', 'CHIGUAYANTE', 'CORONEL', 'CHILLÁN', 'CHILLAN',
+    'QUILPUÉ', 'VIÑA DEL MAR', 'VALPARAÍSO', 'VILLA ALEMANA', 'CONCÓN', 'EL TABO', 'NOGALES',
+    'SANTIAGO', 'PROVIDENCIA', 'CONCHALÍ', 'PUENTE ALTO', 'LAS CONDES', 'MAIPÚ',
+    'ANTOFAGASTA', 'CALAMA', 'MARIA ELENA', 'LA SERENA', 'COQUIMBO', 'TALCA', 'TEMUCO', 'RANCAGUA',
+    'ANCUD', 'CAMIÑA'
+  ]
   for (const c of COMUNAS) {
     if (t.includes(c)) return c
   }
