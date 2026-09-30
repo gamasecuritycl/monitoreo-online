@@ -3,6 +3,7 @@ import { headers } from 'next/headers';
 import { getAssistantResponse } from '@/lib/sales-gama/assistant';
 import { checkRateLimit, getRateLimitStatus } from '@/lib/sales-gama/rate-limit';
 import { hashIp, upsertLead, appendMessage, getLeadBySession, supabaseAdmin } from '@/lib/sales-gama/supabase';
+import { notificarLeadCalienteWhatsApp } from '@/lib/sales-gama/notifyLead';
 import type { ChatMessage, Lead } from '@/lib/sales-gama/types';
 
 export const runtime = 'nodejs';
@@ -153,6 +154,8 @@ export async function POST(req: NextRequest) {
     if (extracted.nombre && (!lead.nombre || lead.nombre === 'Prospecto Web Bot')) {
       leadUpdates.nombre = extracted.nombre;
     }
+    const esNuevoTelefono = Boolean(extracted.telefono && (!lead.telefono || lead.telefono !== extracted.telefono));
+
     if (extracted.telefono) {
       leadUpdates.telefono = extracted.telefono;
       leadUpdates.estado = 'caliente';
@@ -167,6 +170,19 @@ export async function POST(req: NextRequest) {
       if (updatedLead) lead = updatedLead;
     } catch (errLead) {
       console.warn('Upsert lead error in chat:', errLead);
+    }
+
+    // Notificación instantánea a Tomás por WhatsApp (+56 9 9101 6912)
+    if (esNuevoTelefono && extracted.telefono) {
+      notificarLeadCalienteWhatsApp({
+        nombre: leadUpdates.nombre || lead.nombre,
+        telefono: extracted.telefono,
+        email: leadUpdates.email || lead.email,
+        comuna: leadUpdates.comuna || lead.comuna,
+        direccion: leadUpdates.direccion || lead.direccion,
+        ultimoMensaje: message,
+        sessionId,
+      }).catch((e) => console.warn('[Alerta Lead WhatsApp Error]', e));
     }
 
     const stream = await getAssistantResponse(sessionId, message, history || []);

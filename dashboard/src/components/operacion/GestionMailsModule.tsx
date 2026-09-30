@@ -21,8 +21,14 @@ import {
   Clock,
   ArrowRight,
   ShieldCheck,
-  FileCheck
+  FileCheck,
+  BarChart3,
+  MousePointerClick,
+  ExternalLink,
+  X,
+  ChevronRight
 } from 'lucide-react';
+import { compressImageToWebP } from '@/lib/imageCompression';
 
 interface CampanaLog {
   id: string;
@@ -34,6 +40,13 @@ interface CampanaLog {
   remitente: string;
   reply_to: string;
   fecha: string;
+  aperturas?: number;
+  aperturas_unicas?: number;
+  lectores?: { email: string; fecha: string }[];
+  clics?: number;
+  clics_unicos?: number;
+  clickers?: { email: string; url: string; fecha: string }[];
+  rebotes?: number;
 }
 
 const TEMPLATES_SUGERIDOS = [
@@ -100,6 +113,7 @@ export default function GestionMailsModule() {
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
   const [historial, setHistorial] = useState<CampanaLog[]>([]);
+  const [selectedCampanaDetalle, setSelectedCampanaDetalle] = useState<CampanaLog | null>(null);
   
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -184,8 +198,10 @@ export default function GestionMailsModule() {
     setStatusMessage(null);
 
     try {
+      // Compresión automática a WebP ultraligero
+      const fileToUpload = await compressImageToWebP(file, { maxWidth: 1200, maxHeight: 1200, quality: 0.85 });
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append('file', fileToUpload);
 
       const res = await fetch('/api/landing-marketing/upload', {
         method: 'POST',
@@ -535,14 +551,43 @@ export default function GestionMailsModule() {
 
               {/* Prompt */}
               <div>
-                <label className="block text-[11px] font-black text-slate-700 uppercase tracking-wider mb-1.5">
-                  ¿Qué deseas comunicar u ofrecer en este correo?
-                </label>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-[11px] font-black text-slate-700 uppercase tracking-wider">
+                    ¿Qué deseas comunicar u ofrecer en este correo?
+                  </label>
+                  <span className="text-[10px] text-slate-400 font-mono">Variables dinámicas:</span>
+                </div>
+
+                {/* Chips de personalización dinámica */}
+                <div className="flex flex-wrap items-center gap-1.5 mb-2 p-1.5 bg-slate-50 border border-slate-200 rounded-xl">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1 pl-1">
+                    <Sparkles className="w-3 h-3 text-amber-500" /> Tags:
+                  </span>
+                  {[
+                    { tag: '{{NOMBRE}}', desc: 'Nombre del contacto' },
+                    { tag: '{{COMUNA}}', desc: 'Comuna o sector' },
+                    { tag: '{{CUENTA}}', desc: 'N° de cuenta o contrato' },
+                    { tag: '{{EMPRESA}}', desc: 'Razón social o empresa' },
+                    { tag: '{{EMAIL}}', desc: 'Correo electrónico' },
+                  ].map((item) => (
+                    <button
+                      key={item.tag}
+                      type="button"
+                      title={`Insertar ${item.desc}`}
+                      onClick={() => setPromptIA((prev) => `${prev} ${item.tag} `)}
+                      className="px-2 py-0.5 rounded-lg bg-white hover:bg-blue-50 text-blue-700 hover:text-blue-800 border border-slate-200 hover:border-blue-300 text-[10px] font-mono font-bold transition-all cursor-pointer shadow-2xs active:scale-95 flex items-center gap-1"
+                    >
+                      <span className="text-blue-500 font-black">+</span>
+                      <span>{item.tag}</span>
+                    </button>
+                  ))}
+                </div>
+
                 <textarea
                   rows={3}
                   value={promptIA}
                   onChange={(e) => setPromptIA(e.target.value)}
-                  placeholder="Ej: Escribe un correo promocionando el Pack VETTI Smart con instalación $0 para casas en Santiago y respuesta en menos de 2 minutos."
+                  placeholder="Ej: Escribe un correo para {{NOMBRE}} promocionando el Pack VETTI Smart con instalación $0 para su propiedad en {{COMUNA}}..."
                   className="w-full text-xs font-semibold px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white resize-none"
                 />
               </div>
@@ -826,20 +871,83 @@ export default function GestionMailsModule() {
 
       {/* ── PESTAÑA: HISTORIAL DE ENVÍOS ── */}
       {activeTab === 'historial' && (
-        <div className="space-y-4">
-          <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 flex justify-between items-center">
+        <div className="space-y-5">
+          <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 flex flex-col sm:flex-row justify-between sm:items-center gap-2">
             <div>
-              <h3 className="text-sm font-black text-slate-900">
-                Historial de Campañas y Correos Enviados
+              <h3 className="text-sm font-black text-slate-900 flex items-center gap-2">
+                <BarChart3 className="w-4 h-4 text-blue-600" />
+                Historial de Campañas & Métricas de Lectura
               </h3>
               <p className="text-xs text-slate-500">
-                Registro de comunicaciones oficiales despachadas vía Resend desde contacto@gamasecurity.cl
+                Tracking en tiempo real de aperturas de correo (Open Rate) y clics en enlaces (CTR) vía Resend y GAMA Pixel.
               </p>
             </div>
-            <span className="text-xs font-bold text-slate-600">
+            <span className="text-xs font-bold text-slate-600 bg-white border border-slate-200 px-3 py-1 rounded-lg self-start sm:self-auto">
               Total: {historial.length} envíos
             </span>
           </div>
+
+          {/* Tarjetas KPI de Resumen */}
+          {historial.length > 0 && (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex items-center gap-3.5">
+                <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
+                  <Mail className="w-5 h-5" />
+                </div>
+                <div>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                    Total Entregados
+                  </span>
+                  <span className="text-xl font-black text-slate-900">
+                    {historial.reduce((acc, h) => acc + (h.entregados || 0), 0)}
+                  </span>
+                  <span className="text-[10px] text-slate-500 block">En {historial.length} campañas despachadas</span>
+                </div>
+              </div>
+
+              <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex items-center gap-3.5">
+                <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
+                  <Eye className="w-5 h-5" />
+                </div>
+                <div>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                    Aperturas Únicas
+                  </span>
+                  <span className="text-xl font-black text-emerald-600">
+                    {historial.reduce((acc, h) => acc + (h.aperturas_unicas || h.aperturas || 0), 0)}
+                  </span>
+                  <span className="text-[10px] text-slate-500 block">
+                    {(() => {
+                      const total = historial.reduce((acc, h) => acc + (h.entregados || 0), 0);
+                      const opens = historial.reduce((acc, h) => acc + (h.aperturas_unicas || h.aperturas || 0), 0);
+                      return total > 0 ? `${Math.round((opens / total) * 100)}% Open Rate promedio` : '0% Open Rate';
+                    })()}
+                  </span>
+                </div>
+              </div>
+
+              <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex items-center gap-3.5">
+                <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold">
+                  <MousePointerClick className="w-5 h-5" />
+                </div>
+                <div>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                    Clics en Enlaces
+                  </span>
+                  <span className="text-xl font-black text-purple-600">
+                    {historial.reduce((acc, h) => acc + (h.clics_unicos || h.clics || 0), 0)}
+                  </span>
+                  <span className="text-[10px] text-slate-500 block">
+                    {(() => {
+                      const total = historial.reduce((acc, h) => acc + (h.entregados || 0), 0);
+                      const clicks = historial.reduce((acc, h) => acc + (h.clics_unicos || h.clics || 0), 0);
+                      return total > 0 ? `${Math.round((clicks / total) * 100)}% CTR promedio` : '0% CTR';
+                    })()}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
 
           {historial.length === 0 ? (
             <div className="p-12 text-center text-slate-400 border border-dashed border-slate-300 rounded-2xl">
@@ -847,45 +955,194 @@ export default function GestionMailsModule() {
               <p className="text-xs font-semibold">Aún no se han despachado campañas de correo desde este panel.</p>
             </div>
           ) : (
-            <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-slate-100 text-slate-700 font-black uppercase text-[10px] tracking-wider border-b border-slate-200">
-                  <tr>
-                    <th className="p-3.5">Fecha</th>
-                    <th className="p-3.5">Asunto de la Campaña</th>
-                    <th className="p-3.5 text-center">Destinatarios</th>
-                    <th className="p-3.5 text-center">Entregados</th>
-                    <th className="p-3.5">Reply-To</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-200 font-medium text-slate-800">
-                  {historial.map((item) => (
-                    <tr key={item.id} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="p-3.5 font-mono text-[11px] text-slate-500 whitespace-nowrap">
-                        {new Date(item.fecha).toLocaleString('es-CL')}
-                      </td>
-                      <td className="p-3.5 font-bold text-slate-900">
-                        {item.asunto}
-                      </td>
-                      <td className="p-3.5 text-center font-mono">
-                        <span className="px-2 py-0.5 rounded-full bg-slate-100 border border-slate-300 text-slate-700 font-bold">
-                          {item.total_destinatarios}
-                        </span>
-                      </td>
-                      <td className="p-3.5 text-center">
-                        <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold text-[11px]">
-                          ✓ {item.entregados} OK
-                        </span>
-                      </td>
-                      <td className="p-3.5 font-mono text-[11px] text-slate-500">
-                        {item.reply_to}
-                      </td>
+            <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-xs bg-white">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-100 text-slate-700 font-black uppercase text-[10px] tracking-wider border-b border-slate-200">
+                    <tr>
+                      <th className="p-3.5">Fecha</th>
+                      <th className="p-3.5">Asunto de la Campaña</th>
+                      <th className="p-3.5 text-center">Envíos</th>
+                      <th className="p-3.5 text-center">Aperturas</th>
+                      <th className="p-3.5 text-center">Clics</th>
+                      <th className="p-3.5 text-right">Reporte</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200 font-medium text-slate-800">
+                    {historial.map((item) => {
+                      const entregados = item.entregados || 0;
+                      const aperturas = item.aperturas_unicas ?? item.aperturas ?? 0;
+                      const clics = item.clics_unicos ?? item.clics ?? 0;
+                      const openRate = entregados > 0 ? Math.round((aperturas / entregados) * 100) : 0;
+                      const ctrRate = entregados > 0 ? Math.round((clics / entregados) * 100) : 0;
+
+                      return (
+                        <tr key={item.id} className="hover:bg-slate-50/80 transition-colors">
+                          <td className="p-3.5 font-mono text-[11px] text-slate-500 whitespace-nowrap">
+                            {new Date(item.fecha).toLocaleString('es-CL')}
+                          </td>
+                          <td className="p-3.5 font-bold text-slate-900 max-w-xs truncate" title={item.asunto}>
+                            {item.asunto}
+                          </td>
+                          <td className="p-3.5 text-center">
+                            <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold text-[11px] whitespace-nowrap">
+                              ✓ {entregados} / {item.total_destinatarios}
+                            </span>
+                          </td>
+                          <td className="p-3.5 text-center">
+                            <span className={`px-2.5 py-0.5 rounded-full font-bold text-[11px] inline-flex items-center gap-1 ${
+                              aperturas > 0 ? 'bg-blue-100 text-blue-800' : 'bg-slate-100 text-slate-500'
+                            }`}>
+                              <Eye className="w-3 h-3" />
+                              {aperturas} ({openRate}%)
+                            </span>
+                          </td>
+                          <td className="p-3.5 text-center">
+                            <span className={`px-2.5 py-0.5 rounded-full font-bold text-[11px] inline-flex items-center gap-1 ${
+                              clics > 0 ? 'bg-purple-100 text-purple-800' : 'bg-slate-100 text-slate-500'
+                            }`}>
+                              <MousePointerClick className="w-3 h-3" />
+                              {clics} ({ctrRate}%)
+                            </span>
+                          </td>
+                          <td className="p-3.5 text-right whitespace-nowrap">
+                            <button
+                              type="button"
+                              onClick={() => setSelectedCampanaDetalle(item)}
+                              className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-blue-600 hover:text-white text-slate-700 font-bold text-[11px] transition-all cursor-pointer inline-flex items-center gap-1"
+                            >
+                              <span>Ver Lectores</span>
+                              <ChevronRight className="w-3 h-3" />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* ── MODAL DETALLE DE LECTORES & CLICS ── */}
+      {selectedCampanaDetalle && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-2xl w-full max-h-[85vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            {/* Cabecera */}
+            <div className="p-5 border-b border-slate-200 flex justify-between items-start bg-slate-50">
+              <div className="space-y-1">
+                <span className="text-[10px] font-black uppercase text-blue-600 tracking-wider font-mono">
+                  Reporte de Lectura en Tiempo Real
+                </span>
+                <h3 className="text-base font-black text-slate-900">
+                  {selectedCampanaDetalle.asunto}
+                </h3>
+                <p className="text-xs text-slate-500 font-mono">
+                  Despachado: {new Date(selectedCampanaDetalle.fecha).toLocaleString('es-CL')} • Reply-To: {selectedCampanaDetalle.reply_to}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedCampanaDetalle(null)}
+                className="w-8 h-8 rounded-full bg-slate-200 hover:bg-slate-300 text-slate-700 flex items-center justify-center transition-all cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Resumen rápido */}
+            <div className="grid grid-cols-3 gap-2 p-4 bg-slate-100/60 border-b border-slate-200 text-center">
+              <div className="bg-white p-2.5 rounded-xl border border-slate-200">
+                <span className="text-[10px] font-bold text-slate-400 block uppercase">Entregados</span>
+                <span className="text-sm font-black text-slate-900">{selectedCampanaDetalle.entregados}</span>
+              </div>
+              <div className="bg-white p-2.5 rounded-xl border border-slate-200">
+                <span className="text-[10px] font-bold text-emerald-600 block uppercase">Aperturas Únicas</span>
+                <span className="text-sm font-black text-emerald-600">
+                  {selectedCampanaDetalle.aperturas_unicas ?? selectedCampanaDetalle.aperturas ?? 0}
+                </span>
+              </div>
+              <div className="bg-white p-2.5 rounded-xl border border-slate-200">
+                <span className="text-[10px] font-bold text-purple-600 block uppercase">Clics Únicos</span>
+                <span className="text-sm font-black text-purple-600">
+                  {selectedCampanaDetalle.clics_unicos ?? selectedCampanaDetalle.clics ?? 0}
+                </span>
+              </div>
+            </div>
+
+            {/* Contenido scrolleable: Lista de Lectores & Clics */}
+            <div className="p-5 overflow-y-auto space-y-5 text-xs">
+              {/* Sección Lectores */}
+              <div>
+                <h4 className="font-black text-slate-900 mb-2 flex items-center gap-1.5 uppercase text-[11px] tracking-wider">
+                  <Eye className="w-4 h-4 text-emerald-600" />
+                  Lectores que abrieron el correo ({(selectedCampanaDetalle.lectores || []).length})
+                </h4>
+                {selectedCampanaDetalle.lectores && selectedCampanaDetalle.lectores.length > 0 ? (
+                  <div className="border border-slate-200 rounded-xl overflow-hidden divide-y divide-slate-100">
+                    {selectedCampanaDetalle.lectores.map((lec, idx) => (
+                      <div key={idx} className="p-2.5 flex items-center justify-between hover:bg-slate-50">
+                        <span className="font-semibold text-slate-900 font-mono text-[11px]">
+                          {lec.email}
+                        </span>
+                        <span className="text-[10px] text-slate-400 font-mono">
+                          {new Date(lec.fecha).toLocaleString('es-CL')}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-slate-400 italic bg-slate-50 p-3 rounded-xl border border-slate-200">
+                    Aún no se registran aperturas de esta campaña o los destinatarios tienen desactivada la carga automática de imágenes en su cliente de correo.
+                  </p>
+                )}
+              </div>
+
+              {/* Sección Clics */}
+              <div>
+                <h4 className="font-black text-slate-900 mb-2 flex items-center gap-1.5 uppercase text-[11px] tracking-wider">
+                  <MousePointerClick className="w-4 h-4 text-purple-600" />
+                  Clics en enlaces / botones CTA ({(selectedCampanaDetalle.clickers || []).length})
+                </h4>
+                {selectedCampanaDetalle.clickers && selectedCampanaDetalle.clickers.length > 0 ? (
+                  <div className="border border-slate-200 rounded-xl overflow-hidden divide-y divide-slate-100">
+                    {selectedCampanaDetalle.clickers.map((clk, idx) => (
+                      <div key={idx} className="p-2.5 space-y-1 hover:bg-slate-50">
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-slate-900 font-mono text-[11px]">
+                            {clk.email}
+                          </span>
+                          <span className="text-[10px] text-slate-400 font-mono">
+                            {new Date(clk.fecha).toLocaleString('es-CL')}
+                          </span>
+                        </div>
+                        <div className="text-[10px] text-slate-500 font-mono truncate" title={clk.url}>
+                          Enlace: {clk.url}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-slate-400 italic bg-slate-50 p-3 rounded-xl border border-slate-200">
+                    Aún no se registran clics en enlaces o botones de esta campaña.
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="p-4 border-t border-slate-200 bg-slate-50 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setSelectedCampanaDetalle(null)}
+                className="px-4 py-2 rounded-xl bg-slate-900 text-white font-bold text-xs hover:bg-slate-800 transition-all cursor-pointer"
+              >
+                Cerrar Reporte
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

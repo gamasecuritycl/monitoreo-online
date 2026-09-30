@@ -116,17 +116,97 @@ export async function POST(req: NextRequest) {
     // 5. Convertir cualquier ruta relativa (/ads/ o /uploads/) a URL absoluta pública https://www.gamasecurity.cl
     finalHtml = finalHtml.replace(/src=["']\/(ads\/[^"']+|uploads\/[^"']+|[^"']+\.(png|jpg|jpeg|webp))["']/gi, 'src="https://www.gamasecurity.cl/$1"');
 
+    const campanaId = `camp_${Date.now()}`;
+
+    // Obtener metadatos de clientes para personalización dinámica ({{NOMBRE}}, {{COMUNA}}, {{CUENTA}}, {{EMPRESA}})
+    const metaMap = new Map<string, { nombre?: string; comuna?: string; cuenta?: string; empresa?: string }>();
+    try {
+      const [cuentasRes, leadsRes] = await Promise.all([
+        supabase.from('cuentas').select('email, nombre_titular, direccion, comuna, cuenta, alias_centro_costo').not('email', 'is', null),
+        supabase.from('leads_sales_gama').select('email, nombre, comuna, direccion').not('email', 'is', null),
+      ]);
+
+      if (cuentasRes.data) {
+        for (const c of cuentasRes.data) {
+          if (c.email) {
+            metaMap.set(c.email.trim().toLowerCase(), {
+              nombre: c.nombre_titular?.trim(),
+              comuna: c.comuna?.trim(),
+              cuenta: c.cuenta ? String(c.cuenta).trim() : undefined,
+              empresa: c.alias_centro_costo?.trim() || 'GAMA Seguridad',
+            });
+          }
+        }
+      }
+
+      if (leadsRes.data) {
+        for (const l of leadsRes.data) {
+          if (l.email) {
+            const key = l.email.trim().toLowerCase();
+            if (!metaMap.has(key)) {
+              metaMap.set(key, {
+                nombre: l.nombre?.trim(),
+                comuna: l.comuna?.trim(),
+                empresa: 'GAMA Seguridad',
+              });
+            }
+          }
+        }
+      }
+    } catch (metaErr) {
+      console.warn('[Cargar Metadatos Mails]', metaErr);
+    }
+
     // Enviar individualmente para personalización, control anti-spam y evitar exponer las casillas entre sí
     for (let i = 0; i < validEmails.length; i++) {
       const toEmail = validEmails[i];
+      const meta = metaMap.get(toEmail);
+
+      // Reemplazo dinámico de variables para este destinatario
+      const nombreCli = meta?.nombre && meta.nombre !== 'Prospecto Web Bot' ? meta.nombre : 'Estimado(a) Cliente';
+      const comunaCli = meta?.comuna ? meta.comuna : 'su sector';
+      const cuentaCli = meta?.cuenta ? `Cuenta #${meta.cuenta}` : '';
+      const empresaCli = meta?.empresa ? meta.empresa : 'GAMA Seguridad';
+
+      let personalizedHtml = finalHtml
+        .replace(/\{\{NOMBRE\}\}/gi, nombreCli)
+        .replace(/\{\{NOMBRE_CLIENTE\}\}/gi, nombreCli)
+        .replace(/\{\{COMUNA\}\}/gi, comunaCli)
+        .replace(/\{\{CUENTA\}\}/gi, cuentaCli)
+        .replace(/\{\{EMAIL\}\}/gi, toEmail)
+        .replace(/\{\{EMPRESA\}\}/gi, empresaCli);
+
+      let personalizedSubject = asunto
+        .replace(/\{\{NOMBRE\}\}/gi, nombreCli)
+        .replace(/\{\{NOMBRE_CLIENTE\}\}/gi, nombreCli)
+        .replace(/\{\{COMUNA\}\}/gi, comunaCli)
+        .replace(/\{\{CUENTA\}\}/gi, cuentaCli);
+
+      // Wrap de enlaces para Click Tracking
+      personalizedHtml = personalizedHtml.replace(
+        /href=["'](https?:\/\/[^"']+)["']/gi,
+        (_match, originalUrl) => {
+          if (originalUrl.includes('/api/gestion-mails/track')) return `href="${originalUrl}"`;
+          const clickUrl = `https://www.gamasecurity.cl/api/gestion-mails/track/click?c=${campanaId}&e=${encodeURIComponent(toEmail)}&url=${encodeURIComponent(originalUrl)}`;
+          return `href="${clickUrl}"`;
+        }
+      );
+
+      // Inyectar pixel de apertura 1x1 transparente
+      const trackingPixel = `<img src="https://www.gamasecurity.cl/api/gestion-mails/track/open?c=${campanaId}&e=${encodeURIComponent(toEmail)}" width="1" height="1" style="display:none !important;width:1px !important;height:1px !important;max-height:0 !important;overflow:hidden !important;opacity:0 !important;" alt="" />`;
+      if (personalizedHtml.includes('</body>')) {
+        personalizedHtml = personalizedHtml.replace('</body>', `${trackingPixel}</body>`);
+      } else {
+        personalizedHtml += trackingPixel;
+      }
 
       try {
         const sendPayload: any = {
           from: FROM_EMAIL,
           to: toEmail,
           reply_to: REPLY_TO_EMAIL,
-          subject: asunto,
-          html: finalHtml,
+          subject: personalizedSubject,
+          html: personalizedHtml,
         };
 
         if (attachments.length > 0) {
@@ -165,15 +245,23 @@ export async function POST(req: NextRequest) {
     try {
       const now = new Date().toISOString();
       const campanaLog = {
-        id: `campana-${Date.now()}`,
+        id: campanaId,
         nombre: nombreCampana || asunto,
         asunto,
         total_destinatarios: validEmails.length,
         entregados: exitoCount,
         fallidos: falloCount,
+        aperturas: 0,
+        aperturas_unicas: 0,
+        lectores: [],
+        clics: 0,
+        clics_unicos: 0,
+        clickers: [],
+        rebotes: 0,
         remitente: FROM_EMAIL,
         reply_to: REPLY_TO_EMAIL,
         fecha: now,
+        results: results.slice(0, 50),
       };
 
       const { data: current } = await supabase

@@ -28,6 +28,7 @@ import {
   ShieldCheck,
   X
 } from 'lucide-react'
+import { compressImageToWebP } from '@/lib/imageCompression'
 import {
   LandingMarketingConfig,
   DEFAULT_LANDING_MARKETING_CONFIG,
@@ -69,8 +70,10 @@ function ImageUploadField({
     setUploadError(null)
 
     try {
+      // Compresión automática a formato WebP ultraligero antes de enviar
+      const fileToUpload = await compressImageToWebP(file, { maxWidth: 1600, maxHeight: 1200, quality: 0.85 })
       const formData = new FormData()
-      formData.append('file', file)
+      formData.append('file', fileToUpload)
 
       const res = await fetch('/api/landing-marketing/upload', {
         method: 'POST',

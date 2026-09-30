@@ -48,6 +48,7 @@ REGLAS DE DISEÑO Y ANTI-SPAM OBLIGATORIAS:
    - Enlace oficial: www.gamasecurity.cl
    - Nota de respuesta: 'Puedes responder directamente a este correo si deseas contactar a un ejecutivo.'
    - Mensaje legal anti-spam: 'Recibes este correo informativo como cliente o contacto de interés de GAMA Seguridad. Si no deseas recibir más avisos, responde indicando BAJA.'
+7. Variables de personalización disponibles: Puedes usar libremente {{NOMBRE}} (ej: 'Estimado(a) {{NOMBRE}},'), {{COMUNA}} ('en tu sector de {{COMUNA}}'), o {{CUENTA}}. El servidor las reemplaza automáticamente con los datos reales de cada cliente.
 
 FORMATO DE RESPUESTA JSON ESTRICTO:
 {
