@@ -39,17 +39,18 @@ def add_shadow(img, offset=(6, 12), blur=10, opacity=140):
     comp.paste(img, (20, 20), img)
     return comp
 
-# Standard product size for 4-in-a-row layout
-p_central = add_shadow(central_raw.resize((190, 210), Image.Resampling.LANCZOS))
-p_presencia = add_shadow(presencia_raw.resize((200, 210), Image.Resampling.LANCZOS))
-p_apertura = add_shadow(apertura_raw.resize((140, 210), Image.Resampling.LANCZOS))
-p_control = add_shadow(control_raw.resize((170, 205), Image.Resampling.LANCZOS))
+# Standard product size for 4-in-a-row layout (proportional to real hardware)
+p_central = add_shadow(central_raw.resize((140, 215), Image.Resampling.LANCZOS))
+p_presencia = add_shadow(presencia_raw.resize((175, 210), Image.Resampling.LANCZOS))
+p_apertura = add_shadow(apertura_raw.resize((115, 215), Image.Resampling.LANCZOS))
+# Exclusively ONE 4-button remote control, perfectly proportional
+p_control = add_shadow(control_raw.resize((82, 215), Image.Resampling.LANCZOS))
 
 # Hero size for single-focus ads
-hero_p = add_shadow(presencia_raw.resize((270, 280), Image.Resampling.LANCZOS), offset=(10, 16), blur=14)
-hero_c = add_shadow(control_raw.resize((230, 275), Image.Resampling.LANCZOS), offset=(10, 16), blur=14)
-hero_a = add_shadow(apertura_raw.resize((180, 280), Image.Resampling.LANCZOS), offset=(10, 16), blur=14)
-hero_cnt = add_shadow(central_raw.resize((260, 280), Image.Resampling.LANCZOS), offset=(10, 16), blur=14)
+hero_p = add_shadow(presencia_raw.resize((240, 285), Image.Resampling.LANCZOS), offset=(10, 16), blur=14)
+hero_c = add_shadow(control_raw.resize((115, 290), Image.Resampling.LANCZOS), offset=(10, 16), blur=14)
+hero_a = add_shadow(apertura_raw.resize((150, 285), Image.Resampling.LANCZOS), offset=(10, 16), blur=14)
+hero_cnt = add_shadow(central_raw.resize((190, 290), Image.Resampling.LANCZOS), offset=(10, 16), blur=14)
 
 ADS_DEFINITIONS = [
     {

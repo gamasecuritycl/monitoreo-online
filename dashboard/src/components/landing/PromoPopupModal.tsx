@@ -117,6 +117,7 @@ export default function PromoPopupModal({ initialConfig }: PromoPopupModalProps)
                 src={config.imagenUrl || '/ads/vetti_ad_oficial_master.png'}
                 alt={config.titulo}
                 fill
+                unoptimized={typeof config.imagenUrl === 'string' && config.imagenUrl.startsWith('data:')}
                 className="object-contain p-1 group-hover:scale-105 transition-transform duration-500"
                 sizes="(max-width: 640px) 100vw, 550px"
               />

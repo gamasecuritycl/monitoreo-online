@@ -22,7 +22,8 @@ import {
   Tag,
   Zap,
   Globe,
-  Loader2
+  Loader2,
+  Upload
 } from 'lucide-react'
 import {
   LandingMarketingConfig,
@@ -41,6 +42,135 @@ const PRESET_IMAGES = [
   { label: 'Cerco Eléctrico Certificado', url: '/cerco-electrico.webp' },
   { label: 'App NT Click Control', url: '/vetti-click-app.webp' },
 ]
+
+function ImageUploadField({
+  value,
+  onChange,
+  label = 'Fotografía / Flyer',
+  helperText = 'Sube una foto desde tu PC. Se adaptará automáticamente a la resolución del proyecto.',
+}: {
+  value: string
+  onChange: (url: string) => void
+  label?: string
+  helperText?: string
+}) {
+  const fileInputRef = React.useRef<HTMLInputElement | null>(null)
+  const [isUploading, setIsUploading] = useState(false)
+  const [uploadError, setUploadError] = useState<string | null>(null)
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setIsUploading(true)
+    setUploadError(null)
+
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+
+      const res = await fetch('/api/landing-marketing/upload', {
+        method: 'POST',
+        body: formData,
+      })
+
+      const data = await res.json()
+      if (res.ok && data.url) {
+        onChange(data.url)
+      } else {
+        setUploadError(data.error || 'Error al subir la imagen')
+      }
+    } catch (err: any) {
+      setUploadError(err.message || 'Error de conexión al subir la imagen')
+    } finally {
+      setIsUploading(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <label className="block text-xs font-black text-slate-700 uppercase tracking-wider">
+          {label}
+        </label>
+        <span className="text-[11px] text-slate-400 font-mono">PNG, JPG, WEBP</span>
+      </div>
+
+      {/* Botón de subida y campo manual */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+        <input
+          type="file"
+          ref={fileInputRef}
+          onChange={handleFileChange}
+          accept="image/*"
+          className="hidden"
+        />
+
+        <button
+          type="button"
+          disabled={isUploading}
+          onClick={() => fileInputRef.current?.click()}
+          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-bold transition-all shadow-sm hover:shadow active:scale-95 disabled:opacity-50 cursor-pointer flex-shrink-0"
+        >
+          {isUploading ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span>Subiendo...</span>
+            </>
+          ) : (
+            <>
+              <Upload className="w-4 h-4" />
+              <span>Subir desde mi PC</span>
+            </>
+          )}
+        </button>
+
+        <div className="flex-1 relative">
+          <input
+            type="text"
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder="/ads/vetti_ad_oficial_master.png o URL externa"
+            className="w-full text-xs font-semibold px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono"
+          />
+        </div>
+      </div>
+
+      {uploadError && (
+        <p className="text-xs font-semibold text-rose-600">{uploadError}</p>
+      )}
+
+      {/* Miniatura actual */}
+      {value && (
+        <div className="flex items-center gap-3 p-2.5 rounded-xl bg-slate-50 border border-slate-200">
+          <div className="w-12 h-12 rounded-lg bg-slate-900 overflow-hidden relative border border-slate-300 flex-shrink-0 flex items-center justify-center">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={value}
+              alt="Vista previa"
+              className="w-full h-full object-contain"
+              onError={(e) => {
+                const target = e.currentTarget;
+                target.style.display = 'none';
+              }}
+            />
+          </div>
+          <div className="flex-1 min-w-0">
+            <span className="text-[11px] font-bold text-slate-700 block truncate">
+              Imagen lista para publicar
+            </span>
+            <span className="text-[10px] text-slate-500 font-mono block truncate">
+              {value.startsWith('data:') ? 'Fotografía subida desde PC (lista en memoria)' : value}
+            </span>
+          </div>
+        </div>
+      )}
+
+      <p className="text-[11px] text-slate-500">{helperText}</p>
+    </div>
+  )
+}
 
 export default function LandingMarketingModule() {
   const [activeTab, setActiveTab] = useState<'hero' | 'popup' | 'chatbot'>('popup')
@@ -471,24 +601,17 @@ export default function LandingMarketingModule() {
               </div>
 
               {/* Imagen del Flyer */}
-              <div>
-                <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1.5">
-                  Ruta o URL del Flyer de la Promoción
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={config.popup.imagenUrl}
-                    onChange={(e) =>
-                      setConfig((prev) => ({
-                        ...prev,
-                        popup: { ...prev.popup, imagenUrl: e.target.value },
-                      }))
-                    }
-                    placeholder="/ads/vetti_ad_oficial_master.png o URL externa"
-                    className="flex-1 text-xs font-semibold px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono"
-                  />
-                </div>
+              <ImageUploadField
+                label="Fotografía / Flyer del Pop-up"
+                helperText="Sube una foto desde tu PC. Se adaptará automáticamente y se guardará en la carpeta del proyecto."
+                value={config.popup.imagenUrl}
+                onChange={(url) =>
+                  setConfig((prev) => ({
+                    ...prev,
+                    popup: { ...prev.popup, imagenUrl: url },
+                  }))
+                }
+              />
                 {/* Galería de imágenes rápidas */}
                 <div className="mt-2.5">
                   <p className="text-[11px] font-bold text-slate-500 mb-1.5">
@@ -516,7 +639,6 @@ export default function LandingMarketingModule() {
                     ))}
                   </div>
                 </div>
-              </div>
 
               {/* Botones de Acción */}
               <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
@@ -597,7 +719,8 @@ export default function LandingMarketingModule() {
                       alt="Flyer Promocional"
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       onError={(e) => {
-                        ;(e.target as HTMLImageElement).src = '/ads/vetti_ad_oficial_master.png'
+                        const target = e.currentTarget;
+                        target.src = '/ads/vetti_ad_oficial_master.png';
                       }}
                     />
                     <div className="absolute top-2.5 left-2.5 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-rose-600 text-white shadow-md">
@@ -787,19 +910,14 @@ export default function LandingMarketingModule() {
                 </div>
 
                 {/* Imagen del Slide */}
-                <div>
-                  <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1.5">
-                    URL de la Imagen de Fondo / Creativo
-                  </label>
-                  <input
-                    type="text"
-                    value={currentSlide.imagenUrl}
-                    onChange={(e) =>
-                      updateSlide(selectedSlideIndex, { imagenUrl: e.target.value })
-                    }
-                    placeholder="/ads/vetti_ad_oficial_master.png o URL externa"
-                    className="w-full text-xs font-semibold px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono"
-                  />
+                <ImageUploadField
+                  label="Fotografía / Banner del Slide"
+                  helperText="Sube una foto desde tu PC. Se adaptará automáticamente al carrusel y se guardará en la carpeta del proyecto."
+                  value={currentSlide.imagenUrl}
+                  onChange={(url) =>
+                    updateSlide(selectedSlideIndex, { imagenUrl: url })
+                  }
+                />
 
                   {/* Preset Buttons */}
                   <div className="mt-2 flex flex-wrap gap-1.5">
@@ -820,7 +938,6 @@ export default function LandingMarketingModule() {
                       </button>
                     ))}
                   </div>
-                </div>
 
                 {/* Botón Primario */}
                 <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
@@ -896,7 +1013,8 @@ export default function LandingMarketingModule() {
                       alt="Slide Preview"
                       className="w-full h-full object-cover opacity-60"
                       onError={(e) => {
-                        ;(e.target as HTMLImageElement).src = '/ads/vetti_ad_oficial_master.png'
+                        const target = e.currentTarget;
+                        target.src = '/ads/vetti_ad_oficial_master.png';
                       }}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-[#050d1a] via-[#050d1a]/50 to-transparent p-4 flex flex-col justify-end">

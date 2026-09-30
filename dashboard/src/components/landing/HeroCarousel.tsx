@@ -191,6 +191,7 @@ export default function HeroCarousel({ slides: propSlides }: HeroCarouselProps) 
                   src={currentSlide.imagenUrl}
                   alt={currentSlide.titulo}
                   fill
+                  unoptimized={typeof currentSlide.imagenUrl === 'string' && currentSlide.imagenUrl.startsWith('data:')}
                   className="object-contain p-2 sm:p-4 group-hover:scale-105 transition-transform duration-700 ease-out"
                   priority
                   sizes="(max-width: 768px) 100vw, 460px"
