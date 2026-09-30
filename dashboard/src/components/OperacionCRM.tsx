@@ -25,6 +25,7 @@ import WhatsAppPlantillasModal, { PlantillaAbonadoData } from './operacion/Whats
 import NotificacionesWhatsAppModal from './NotificacionesWhatsAppModal'
 import MercadoPublicoModule, { LicitacionChileCompra } from './operacion/MercadoPublicoModule'
 import LandingMarketingModule from './operacion/LandingMarketingModule'
+import GestionMailsModule from './operacion/GestionMailsModule'
 import { BotConfigModal } from '@/components/SalesGama/Modal/BotConfigModal'
 import { BotLeadsModal } from '@/components/SalesGama/Modal/BotLeadsModal'
 import { OperacionesBotHub } from '@/components/SalesGama/OperacionesBotHub'
@@ -349,7 +350,7 @@ export function normalizeCuentaCode(cta: any): string {
 }
 
 export default function OperacionCRM() {
-  const [moduloActivo, setModuloActivo] = useState<'ficha360' | 'autonomia' | 'salesbot' | 'presupuestos' | 'mercadopublico' | 'facturacion' | 'serv_tecnico' | 'kpis' | 'config' | 'marketing' | 'landing_marketing' | 'compras' | 'contratos' | 'ley21719' | null>(null)
+  const [moduloActivo, setModuloActivo] = useState<'ficha360' | 'autonomia' | 'salesbot' | 'presupuestos' | 'mercadopublico' | 'facturacion' | 'serv_tecnico' | 'kpis' | 'config' | 'marketing' | 'landing_marketing' | 'gestion_mails' | 'compras' | 'contratos' | 'ley21719' | null>(null)
   const [sidebarAbierto, setSidebarAbierto] = useState<boolean>(false)
 
   // ── ESTADOS SALES-GAMA AI MODALS ──
@@ -3122,6 +3123,7 @@ export default function OperacionCRM() {
           moduloActivo === 'presupuestos' ? 'Presupuestos Comerciales' :
           moduloActivo === 'mercadopublico' ? 'Mercado Público & Licitaciones' :
           moduloActivo === 'landing_marketing' ? 'Landing Marketing' :
+          moduloActivo === 'gestion_mails' ? 'Gestión de Mails IA' :
           moduloActivo === 'marketing' ? 'Marketing B2B' :
           moduloActivo === 'facturacion' ? 'Cobranza & Abonos' :
           moduloActivo === 'serv_tecnico' ? 'Servicios Técnicos' :
@@ -3322,6 +3324,7 @@ export default function OperacionCRM() {
                     moduloActivo === 'presupuestos' ? 'Presupuestos Comerciales' :
                     moduloActivo === 'mercadopublico' ? 'Mercado Público & Licitaciones' :
                     moduloActivo === 'landing_marketing' ? 'Landing Marketing' :
+                    moduloActivo === 'gestion_mails' ? 'Gestión de Mails IA' :
                     moduloActivo === 'marketing' ? 'Marketing B2B' :
                     moduloActivo === 'facturacion' ? 'Cobranza & Abonos' :
                     moduloActivo === 'serv_tecnico' ? 'Servicios Técnicos' :
@@ -5717,6 +5720,11 @@ export default function OperacionCRM() {
           {/* ── MÓDULO LANDING MARKETING: HERO CARRUSEL & POPUP PROMOCIONAL & CHATBOT ── */}
           {moduloActivo === 'landing_marketing' && (
             <LandingMarketingModule />
+          )}
+
+          {/* ── MÓDULO GESTIÓN DE MAILS IA: CAMPAÑAS, COMUNICADOS Y PROMOCIONES ── */}
+          {moduloActivo === 'gestion_mails' && (
+            <GestionMailsModule />
           )}
 
           {/* ── MÓDULO 8: MARKETING Y VENTAS: CAPTACIÓN DE LEADS Y COLD EMAIL OUTREACH VÍA RESEND ── */}

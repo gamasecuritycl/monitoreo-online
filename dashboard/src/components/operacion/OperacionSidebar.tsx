@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { User, FileText, FileCheck, Megaphone, DollarSign, Receipt, Wrench, BarChart3, Settings, Bot, Layers, X, ShieldCheck, Building2, Sparkles } from 'lucide-react'
+import { User, FileText, FileCheck, Megaphone, DollarSign, Receipt, Wrench, BarChart3, Settings, Bot, Layers, X, ShieldCheck, Building2, Sparkles, Mail } from 'lucide-react'
 
 interface OperacionSidebarProps {
   moduloActivo: string
@@ -39,6 +39,7 @@ export default function OperacionSidebar({
         { id: 'presupuestos', label: 'Presupuestos Comerciales', icon: FileText },
         { id: 'salesbot', label: 'Sales-Bot IA & Leads', icon: Bot },
         { id: 'landing_marketing', label: 'Landing Marketing', icon: Sparkles },
+        { id: 'gestion_mails', label: 'Gestión de Mails IA', icon: Mail },
         { id: 'mercadopublico', label: 'Mercado Público & Licitaciones', icon: Building2 },
         { id: 'contratos', label: 'Contratos & Firma Digital', icon: FileCheck },
         { id: 'marketing', label: 'Marketing B2B', icon: Megaphone },

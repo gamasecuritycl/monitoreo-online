@@ -107,6 +107,13 @@ export default function CommandPaletteModal({
       subtitulo: 'Gestión de Carrusel Hero con fotos, Popup Promocional y Chatbot IA',
       categoria: 'Comando',
       accion: () => { onNavigateModule('landing_marketing'); onClose() }
+    },
+    {
+      id: 'cmd-gestion-mails',
+      titulo: 'Ir a Gestión de Mails IA',
+      subtitulo: 'Redactor con Gemini, remitente contacto@gamasecurity.cl y respuestas a tu correo',
+      categoria: 'Comando',
+      accion: () => { onNavigateModule('gestion_mails'); onClose() }
     }
   ]
 
