@@ -23,7 +23,7 @@ PERFIL DE LA EMPRESA:
 - Capacidad técnica: Central de monitoreo propia, vehículos de respuesta, técnicos certificados
 `
 
-function construirPromptAnalisis(licitacionJson: any, licitacionBasica: any): string {
+function construirPromptAnalisis(licitacionJson: any, licitacionBasica: any, documentoAdjunto?: any): string {
   const nombre = licitacionBasica?.Nombre || licitacionJson?.Nombre || 'Licitación'
   const organismo = licitacionBasica?.Organismo || licitacionJson?.Comprador?.NombreOrganismo || 'Organismo del Estado'
   const region = licitacionBasica?.Region || ''
@@ -50,10 +50,17 @@ function construirPromptAnalisis(licitacionJson: any, licitacionBasica: any): st
   let docsTexto = ''
   const docs = licitacionJson?.Documentos?.Listado
   if (Array.isArray(docs) && docs.length > 0) {
-    docsTexto = '\n\nDOCUMENTOS ADJUNTOS EN EL PORTAL:\n'
+    docsTexto = '\n\nDOCUMENTOS REGISTRADOS EN CHILECOMPRA:\n'
     docs.forEach((doc: any) => {
       docsTexto += `- ${doc.Nombre || doc.NombreDocumento || 'Documento'}\n`
     })
+  }
+
+  let docUsuarioTexto = ''
+  if (documentoAdjunto?.texto && documentoAdjunto.texto.trim()) {
+    docUsuarioTexto = `\n\n--- DOCUMENTO ADJUNTO SUBIDO POR EL USUARIO (BASES ADMINISTRATIVAS / TÉCNICAS / ANEXOS) ---\nArchivo: ${documentoAdjunto.nombre || 'Bases de Licitación'}\nContenido Extraído:\n${documentoAdjunto.texto.slice(0, 35000)}\n--- FIN DEL DOCUMENTO ADJUNTO ---\n`
+  } else if (documentoAdjunto?.nombre) {
+    docUsuarioTexto = `\n\n--- DOCUMENTO ADJUNTO CARGADO EN MEMORIA: "${documentoAdjunto.nombre}". Audita exhaustivamente este archivo binario adjunto para extraer multas, penalizaciones, garantías requeridas, ponderaciones porcentuales y requisitos OS-10 específicos. ---\n`
   }
 
   return `${PERFIL_GAMA_SEGURIDAD}
@@ -73,6 +80,7 @@ Fecha Cierre de Ofertas: ${fechaCierre}
 Descripción General: ${descripcion}
 ${itemsTexto}
 ${docsTexto}
+${docUsuarioTexto}
 
 ---
 
@@ -126,7 +134,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Body JSON inválido' }, { status: 400 })
   }
 
-  const { codigo, ticket, licitacion_basica, gemini_key } = body
+  const { codigo, ticket, licitacion_basica, gemini_key, documento_adjunto } = body
 
   if (!codigo) {
     return NextResponse.json({ error: 'Falta el código de licitación.' }, { status: 400 })
@@ -159,16 +167,32 @@ export async function POST(req: NextRequest) {
 
   if (apiKey) {
     try {
-      const prompt = construirPromptAnalisis(detalleChileCompra, licitacion_basica)
+      const prompt = construirPromptAnalisis(detalleChileCompra, licitacion_basica, documento_adjunto)
+      const parts: any[] = [{ text: prompt }]
+
+      // Procesamiento 100% en memoria de documentos adjuntos (PDF / Imagen / Texto)
+      if (documento_adjunto?.base64) {
+        let rawBase64 = String(documento_adjunto.base64)
+        if (rawBase64.includes(';base64,')) {
+          rawBase64 = rawBase64.split(';base64,')[1]
+        }
+        parts.push({
+          inline_data: {
+            mime_type: documento_adjunto.tipo || 'application/pdf',
+            data: rawBase64
+          }
+        })
+      }
+
       const geminiRes = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
+            contents: [{ parts }],
             generationConfig: {
-              temperature: 0.3,
+              temperature: 0.25,
               maxOutputTokens: 8192,
             },
           }),
@@ -190,6 +214,7 @@ export async function POST(req: NextRequest) {
             motor: 'gemini_2.5_flash',
             codigo_licitacion: codigo,
             detalle_obtenido: Boolean(detalleChileCompra),
+            documento_procesado_en_memoria: documento_adjunto ? (documento_adjunto.nombre || 'Documento adjunto') : null,
             items_analizados: Array.isArray(detalleChileCompra?.Items?.Listado) ? detalleChileCompra.Items.Listado.length : 0,
             informe: informeParsed
           })
@@ -201,13 +226,14 @@ export async function POST(req: NextRequest) {
   }
 
   // 3. Motor Experto Especializado Gama Seguridad (Garantía 100% disponibilidad)
-  const informeExperto = generarInformeExpertoGama(detalleChileCompra, licitacion_basica)
+  const informeExperto = generarInformeExpertoGama(detalleChileCompra, licitacion_basica, documento_adjunto)
 
   return NextResponse.json({
     success: true,
     motor: 'gama_expert_engine',
     codigo_licitacion: codigo,
     detalle_obtenido: Boolean(detalleChileCompra),
+    documento_procesado_en_memoria: documento_adjunto ? (documento_adjunto.nombre || 'Documento adjunto') : null,
     items_analizados: Array.isArray(detalleChileCompra?.Items?.Listado) ? detalleChileCompra.Items.Listado.length : 0,
     informe: informeExperto
   })
@@ -218,7 +244,7 @@ export async function POST(req: NextRequest) {
  * Genera un informe estructurado completo y realista alineado a Gama Seguridad
  * procesando los ítems técnicos, montos, plazos y requerimientos de ChileCompra.
  */
-function generarInformeExpertoGama(detalleChileCompra: any, licitacionBasica: any) {
+function generarInformeExpertoGama(detalleChileCompra: any, licitacionBasica: any, documentoAdjunto?: any) {
   const nombre = licitacionBasica?.Nombre || detalleChileCompra?.Nombre || 'Licitación Pública de Seguridad'
   const organismo = licitacionBasica?.Organismo || detalleChileCompra?.Comprador?.NombreOrganismo || 'Organismo del Estado'
   const region = licitacionBasica?.Region || 'Chile'
@@ -247,6 +273,10 @@ function generarInformeExpertoGama(detalleChileCompra: any, licitacionBasica: an
   const docsNombres = docs.length > 0 
     ? docs.map((d: any) => d.Nombre || d.NombreDocumento || 'Bases Técnicas')
     : ['Consultar bases y anexos adjuntos directamente en la ficha oficial de Mercado Público']
+
+  if (documentoAdjunto?.nombre) {
+    docsNombres.unshift(`📄 Bases / Anexo Auditado en Memoria: ${documentoAdjunto.nombre}`)
+  }
 
   // Evaluación de Viabilidad
   const esVRegion = region.toLowerCase().includes('valparaíso') || region.toLowerCase().includes('valparaiso')

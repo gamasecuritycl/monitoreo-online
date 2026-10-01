@@ -6,7 +6,8 @@ import {
   RefreshCw, AlertCircle, CheckCircle2, Clock, 
   Sparkles, Check, X, MapPin, ArrowUpDown, Filter, Copy,
   Brain, Download, ChevronDown, ChevronUp, ShieldCheck, AlertTriangle, TrendingUp,
-  Calendar, Scale, Shield, CheckSquare, Save, DollarSign, Calculator
+  Calendar, Scale, Shield, CheckSquare, Save, DollarSign, Calculator,
+  Paperclip, Upload, FileUp, Trash2, FileCheck
 } from 'lucide-react'
 
 export interface LicitacionChileCompra {
@@ -91,11 +92,21 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
   const [postulacionGuardada, setPostulacionGuardada] = useState(false)
   const [postulacionesGuardadas, setPostulacionesGuardadas] = useState<Record<string, any>>({})
 
-  // Estado para el Análisis IA
+  // Estado para el Análisis IA y Documentos Adjuntos en Memoria
   const [analizandoIA, setAnalizandoIA] = useState(false)
   const [informeIA, setInformeIA] = useState<any>(null)
   const [errorIA, setErrorIA] = useState<string>('')
   const [seccionExpandida, setSeccionExpandida] = useState<string>('resumen')
+  const [archivoAdjuntoIA, setArchivoAdjuntoIA] = useState<{
+    nombre: string
+    tipo: string
+    tamañoKb: number
+    base64?: string
+    texto?: string
+  } | null>(null)
+  const [textoBasesManual, setTextoBasesManual] = useState<string>('')
+  const [mostrarPegarTexto, setMostrarPegarTexto] = useState(false)
+  const [documentoProcesadoInfo, setDocumentoProcesadoInfo] = useState<string | null>(null)
 
   // Cargar ticket y postulaciones guardadas (con sincronización móvil automática)
   useEffect(() => {
@@ -196,6 +207,10 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
     setTabModal(tabInicial)
     setInformeIA(null)
     setErrorIA('')
+    setArchivoAdjuntoIA(null)
+    setTextoBasesManual('')
+    setMostrarPegarTexto(false)
+    setDocumentoProcesadoInfo(null)
     setPostulacionGuardada(false)
     
     // Sugerir monto neto al 89% del monto estimado solo si está informado
@@ -250,25 +265,72 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
     setPostulacionGuardada(true)
   }
 
-  // ── ANÁLISIS IA DE LICITACIÓN ──
+  // Selección de archivo adjunto en memoria (0 bytes en disco)
+  const handleSeleccionarArchivo = (file: File | null) => {
+    if (!file) return
+    if (file.size > 4.5 * 1024 * 1024) {
+      setErrorIA(`El archivo "${file.name}" supera los 4.5 MB. Te sugerimos copiar y pegar el texto de los capítulos técnicos o comprimir el PDF.`)
+      return
+    }
+    setErrorIA('')
+    const tamañoKb = Math.round(file.size / 1024)
+    const tipo = file.type || 'application/pdf'
+    const nombre = file.name
+
+    const reader = new FileReader()
+    if (file.type.includes('text') || file.name.endsWith('.txt') || file.name.endsWith('.md') || file.name.endsWith('.csv')) {
+      reader.onload = (e) => {
+        const texto = e.target?.result as string
+        setArchivoAdjuntoIA({ nombre, tipo, tamañoKb, texto })
+      }
+      reader.readAsText(file)
+    } else {
+      reader.onload = (e) => {
+        const base64 = e.target?.result as string
+        setArchivoAdjuntoIA({ nombre, tipo, tamañoKb, base64 })
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  // ── ANÁLISIS IA DE LICITACIÓN CON DOCUMENTOS EN MEMORIA ──
   const handleAnalizarIA = async (lic: LicitacionChileCompra) => {
     setAnalizandoIA(true)
     setErrorIA('')
-    setInformeIA(null)
     setTabModal('ia')
     try {
+      const payload: any = {
+        codigo: lic.CodigoExterno,
+        ticket: ticketApi || '',
+        licitacion_basica: lic
+      }
+
+      if (archivoAdjuntoIA) {
+        payload.documento_adjunto = {
+          nombre: archivoAdjuntoIA.nombre,
+          tipo: archivoAdjuntoIA.tipo,
+          base64: archivoAdjuntoIA.base64,
+          texto: archivoAdjuntoIA.texto || (textoBasesManual.trim() || undefined)
+        }
+      } else if (textoBasesManual.trim()) {
+        payload.documento_adjunto = {
+          nombre: 'Bases_Texto_Manual.txt',
+          tipo: 'text/plain',
+          texto: textoBasesManual.trim()
+        }
+      }
+
       const res = await fetch('/api/mercado-publico/analizar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          codigo: lic.CodigoExterno,
-          ticket: ticketApi || '',
-          licitacion_basica: lic
-        })
+        body: JSON.stringify(payload)
       })
       const data = await res.json()
       if (data.success && data.informe) {
         setInformeIA(data.informe)
+        if (data.documento_procesado_en_memoria) {
+          setDocumentoProcesadoInfo(data.documento_procesado_en_memoria)
+        }
       } else {
         setErrorIA(data.error || 'No se pudo generar el informe.')
       }
@@ -1548,22 +1610,171 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
               {/* ── PESTAÑA 6: ANÁLISIS IA GAMA ── */}
               {tabModal === 'ia' && (
                 <div className="space-y-4">
-                  {!informeIA && !analizandoIA && (
-                    <div className="bg-slate-950/80 p-8 rounded-2xl border border-purple-500/30 text-center space-y-3">
-                      <div className="w-12 h-12 rounded-2xl bg-purple-600/20 border border-purple-500/40 flex items-center justify-center text-purple-400 mx-auto">
-                        <Brain className="w-6 h-6" />
+                  {/* ── SECCIÓN DE ADJUNTAR BASES / ESPECIFICACIONES TÉCNICAS (100% EN MEMORIA) ── */}
+                  <div className="bg-slate-950/80 border border-indigo-500/30 rounded-2xl p-4 sm:p-5 space-y-3 shadow-xl">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center shrink-0">
+                          <Paperclip className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <h5 className="text-xs sm:text-sm font-bold text-white flex items-center gap-2 flex-wrap">
+                            <span>Adjuntar Bases Técnicas o Términos de Referencia</span>
+                            <span className="text-[10px] font-black text-emerald-400 bg-emerald-950/80 border border-emerald-800 px-2 py-0.5 rounded-full flex items-center gap-1 font-mono">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                              0 Disco · 100% Memoria RAM
+                            </span>
+                          </h5>
+                          <p className="text-[11px] text-slate-400 mt-0.5">
+                            Sube el PDF descargado de Mercado Público o pega las cláusulas. La IA auditará multas, plazos, exigencias OS-10 y anexos económicos.
+                          </p>
+                        </div>
                       </div>
-                      <h4 className="text-base font-bold text-white">Análisis Inteligente de Licitación con IA</h4>
-                      <p className="text-xs text-slate-400 max-w-md mx-auto">
-                        Examina los pliegos técnicos, documentos, plazos y condiciones comerciales con el perfil operativo de Gama Seguridad para generar un informe de viabilidad y recomendaciones de oferta.
-                      </p>
+
+                      {archivoAdjuntoIA && (
+                        <button
+                          type="button"
+                          onClick={() => setArchivoAdjuntoIA(null)}
+                          className="text-[11px] text-rose-400 hover:text-rose-300 font-bold flex items-center gap-1 self-start sm:self-auto cursor-pointer"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" /> Quitar archivo
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Dropzone o Archivo Seleccionado */}
+                    {!archivoAdjuntoIA ? (
+                      <div className="space-y-2">
+                        <label className="border-2 border-dashed border-slate-700 hover:border-indigo-500/70 bg-slate-900/40 hover:bg-slate-900/80 rounded-xl p-4 flex flex-col items-center justify-center gap-2 cursor-pointer transition text-center group">
+                          <Upload className="w-6 h-6 text-slate-400 group-hover:text-indigo-400 transition" />
+                          <div className="text-xs text-slate-300">
+                            <span className="font-bold text-indigo-400 underline">Haz clic para seleccionar el PDF de Bases</span> o arrástralo aquí
+                          </div>
+                          <span className="text-[10px] text-slate-500">
+                            Formatos: PDF, TXT, Word (.docx) o Markdown (Hasta 4.5 MB) · No ocupa espacio en disco
+                          </span>
+                          <input
+                            type="file"
+                            accept=".pdf,.txt,.doc,.docx,.md,.csv"
+                            onChange={(e) => handleSeleccionarArchivo(e.target.files?.[0] || null)}
+                            className="hidden"
+                          />
+                        </label>
+
+                        {/* Opción alternativa: Pegar texto directamente */}
+                        <div className="pt-0.5">
+                          <button
+                            type="button"
+                            onClick={() => setMostrarPegarTexto(!mostrarPegarTexto)}
+                            className="text-[11px] text-indigo-400 hover:text-indigo-300 font-bold flex items-center gap-1 cursor-pointer"
+                          >
+                            <span>{mostrarPegarTexto ? '▲ Ocultar área de texto' : '📝 O copiar y pegar el texto de las bases directamente'}</span>
+                          </button>
+
+                          {mostrarPegarTexto && (
+                            <div className="mt-2 space-y-1.5">
+                              <textarea
+                                value={textoBasesManual}
+                                onChange={(e) => setTextoBasesManual(e.target.value)}
+                                placeholder="Pega aquí los capítulos técnicos, requerimientos de cámaras/guardias, plazos o condiciones de pago..."
+                                rows={4}
+                                className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-indigo-500 font-mono"
+                              />
+                              <div className="flex justify-between items-center text-[10px] text-slate-400">
+                                <span>{textoBasesManual.length.toLocaleString('es-CL')} caracteres listos en memoria</span>
+                                {textoBasesManual && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setTextoBasesManual('')}
+                                    className="text-rose-400 hover:underline cursor-pointer"
+                                  >
+                                    Limpiar texto
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="bg-slate-900 border border-emerald-500/50 rounded-xl p-3.5 flex items-center justify-between gap-3 shadow-md">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="w-9 h-9 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
+                            <FileText className="w-5 h-5" />
+                          </div>
+                          <div className="min-w-0">
+                            <div className="text-xs font-bold text-white truncate">{archivoAdjuntoIA.nombre}</div>
+                            <div className="text-[10px] text-slate-400 flex items-center gap-2 mt-0.5">
+                              <span>{archivoAdjuntoIA.tamañoKb} KB</span>
+                              <span>•</span>
+                              <span className="text-emerald-400 font-semibold flex items-center gap-1">
+                                <CheckCircle2 className="w-3 h-3" /> Procesado en memoria RAM (0 bytes en disco)
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => setArchivoAdjuntoIA(null)}
+                          className="p-1.5 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-rose-400 transition cursor-pointer"
+                          title="Quitar archivo"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Botón de Ejecución del Análisis */}
+                    <div className="pt-1 flex flex-col sm:flex-row items-center justify-between gap-3">
+                      <div className="text-[11px] text-slate-400">
+                        {archivoAdjuntoIA || textoBasesManual.trim() ? (
+                          <span className="text-amber-300 font-bold flex items-center gap-1">
+                            <Sparkles className="w-3.5 h-3.5 text-amber-400" /> La IA auditará los datos oficiales de ChileCompra cruzados con tu documento adjunto.
+                          </span>
+                        ) : (
+                          <span>Sin adjunto: la IA analizará la ficha oficial y descripción técnica de ChileCompra.</span>
+                        )}
+                      </div>
+
                       <button
+                        type="button"
                         onClick={() => handleAnalizarIA(licitacionModal)}
-                        className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs shadow-lg shadow-purple-600/30 transition cursor-pointer inline-flex items-center gap-2"
+                        disabled={analizandoIA}
+                        className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-bold text-xs shadow-lg shadow-purple-600/30 transition cursor-pointer inline-flex items-center justify-center gap-2 shrink-0 disabled:opacity-50"
                       >
-                        <Brain className="w-4 h-4" />
-                        <span>Iniciar Análisis con IA</span>
+                        <Brain className={`w-4 h-4 ${analizandoIA ? 'animate-spin' : ''}`} />
+                        <span>
+                          {analizandoIA 
+                            ? 'Auditando requerimientos en memoria...' 
+                            : informeIA 
+                            ? (archivoAdjuntoIA || textoBasesManual.trim() ? 'Re-analizar con este Documento' : 'Re-ejecutar Análisis IA')
+                            : (archivoAdjuntoIA || textoBasesManual.trim() ? 'Iniciar Análisis con Bases Adjuntas' : 'Iniciar Análisis con IA')}
+                        </span>
                       </button>
+                    </div>
+                  </div>
+
+                  {documentoProcesadoInfo && (
+                    <div className="bg-indigo-950/70 border border-indigo-500/40 rounded-xl p-3 flex items-center gap-2.5 text-xs text-indigo-200">
+                      <FileCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+                      <div>
+                        <strong className="text-white">Documento Auditado en Memoria:</strong>
+                        <span className="ml-1.5 text-indigo-300 font-mono">{documentoProcesadoInfo}</span>
+                        <span className="ml-2 text-[10px] bg-emerald-950 text-emerald-300 border border-emerald-800 px-2 py-0.5 rounded font-mono font-bold">0 bytes en disco</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {!informeIA && !analizandoIA && (
+                    <div className="bg-slate-950/40 p-6 rounded-2xl border border-slate-800 text-center space-y-2">
+                      <div className="w-10 h-10 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-indigo-400 mx-auto">
+                        <Brain className="w-5 h-5" />
+                      </div>
+                      <h4 className="text-sm font-bold text-white">Listo para generar el Informe de Viabilidad</h4>
+                      <p className="text-xs text-slate-400 max-w-md mx-auto">
+                        Presiona el botón superior para evaluar alineación operativa, precios sugeridos y plan de acción de 5 pasos para Gama Seguridad.
+                      </p>
                     </div>
                   )}
 
