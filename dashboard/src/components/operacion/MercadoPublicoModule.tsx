@@ -131,8 +131,15 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
     try {
       const params = new URLSearchParams()
       if (ticketApi) params.append('ticket', ticketApi)
+      params.append('_t', Date.now().toString())
 
-      const res = await fetch(`/api/mercado-publico?${params.toString()}`)
+      const res = await fetch(`/api/mercado-publico?${params.toString()}`, {
+        cache: 'no-store',
+        headers: {
+          'Pragma': 'no-cache',
+          'Cache-Control': 'no-cache'
+        }
+      })
       const data = await res.json()
       if (data.licitaciones) {
         setLicitaciones(data.licitaciones)

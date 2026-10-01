@@ -5,6 +5,9 @@ const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://onxwyrwmpj
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9ueHd5cndtcGp4dHdsbWpyb3NyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI4NTUxNDQsImV4cCI6MjA5ODQzMTE0NH0.8kJRf8hm3rHK8sygMcyBT0R83tyK8hIQCmnAQxannJs'
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const ticket = searchParams.get('ticket')?.trim() || ''
@@ -172,7 +175,7 @@ export async function GET(request: Request) {
       const apiUrl = `https://api.mercadopublico.cl/servicios/v1/publico/licitaciones.json?estado=activas&ticket=${encodeURIComponent(ticketActivo)}`
       const res = await fetch(apiUrl, {
         headers: { 'User-Agent': 'GamaSecurity-MercadoPublico/2.0' },
-        next: { revalidate: 120 }
+        cache: 'no-store'
       })
 
       if (res.ok) {
@@ -608,10 +611,12 @@ function clasificarRubro(nombre: string): string {
  */
 function extraerOrganismoDeTexto(texto: string): string | null {
   const t = texto.toUpperCase()
+  if (t.includes('407-135-LE26') || t.includes('HGGB') || t.includes('GRANT BENAVENTE')) return 'HOSPITAL GUILLERMO GRANT BENAVENTE'
+  if (t.includes('2772-23-LE26') || t.includes('CHIGUAYANTE')) return 'I MUNICIPALIDAD DE CHIGUAYANTE'
   if (t.includes('FUNDACIÓN INTEGRA') || t.includes('FUNDACION INTEGRA')) return 'FUNDACIÓN INTEGRA'
   if (t.includes('JUNJI')) return 'JUNTA NACIONAL DE JARDINES INFANTILES (JUNJI)'
   if (t.includes('CARABINEROS')) return 'CARABINEROS DE CHILE'
-  if (t.includes('HOSPITAL') || t.includes('HGGB')) return 'HOSPITAL PÚBLICO'
+  if (t.includes('HOSPITAL')) return 'HOSPITAL PÚBLICO'
   if (t.includes('MUNICIPALIDAD') || t.includes('MUNICIPIO')) return 'ILUSTRE MUNICIPALIDAD'
   if (t.includes('GENDARMERÍA') || t.includes('GENDARMERIA')) return 'GENDARMERÍA DE CHILE'
   if (t.includes('ARMADA')) return 'ARMADA DE CHILE'
@@ -621,9 +626,9 @@ function extraerOrganismoDeTexto(texto: string): string | null {
 
 function extraerRegionDeTexto(texto: string): string | null {
   const t = texto.toUpperCase()
+  if (t.includes('407-135-LE26') || t.includes('BIOBÍO') || t.includes('BIOBIO') || t.includes('CONCEPCIÓN') || t.includes('CONCEPCION') || t.includes('TALCAHUANO') || t.includes('CHIGUAYANTE') || t.includes('CORONEL') || t.includes('LOS ÁNGELES') || t.includes('LOS ANGELES') || t.includes('HGGB') || t.includes('GRANT BENAVENTE')) return 'Región del Biobío'
   if (t.includes('VALPARAÍSO') || t.includes('VALPARAISO') || t.includes('VIÑA') || t.includes('QUILPUÉ') || t.includes('VILLA ALEMANA') || t.includes('QUILLOTA') || t.includes('SAN ANTONIO') || t.includes('CONCÓN') || t.includes('EL TABO') || t.includes('NOGALES')) return 'Región de Valparaíso'
   if (t.includes('SANTIAGO') || t.includes('METROPOLITANA') || t.includes('PROVIDENCIA') || t.includes('LAS CONDES') || t.includes('MAIPÚ') || t.includes('CONCHALÍ') || t.includes('PUENTE ALTO')) return 'Región Metropolitana'
-  if (t.includes('BIOBÍO') || t.includes('BIOBIO') || t.includes('CONCEPCIÓN') || t.includes('CONCEPCION') || t.includes('TALCAHUANO') || t.includes('CHIGUAYANTE') || t.includes('CORONEL') || t.includes('LOS ÁNGELES') || t.includes('LOS ANGELES') || t.includes('HGGB') || t.includes('GRANT BENAVENTE')) return 'Región del Biobío'
   if (t.includes('ÑUBLE') || t.includes('NUBLE') || t.includes('CHILLÁN') || t.includes('CHILLAN')) return 'Región de Ñuble'
   if (t.includes('ANTOFAGASTA') || t.includes('CALAMA') || t.includes('MARIA ELENA')) return 'Región de Antofagasta'
   if (t.includes('COQUIMBO') || t.includes('LA SERENA') || t.includes('TIERRAS BLANCAS')) return 'Región de Coquimbo'
