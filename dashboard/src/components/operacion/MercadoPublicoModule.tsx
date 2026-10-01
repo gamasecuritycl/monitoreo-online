@@ -371,12 +371,12 @@ export default function MercadoPublicoModule({ onCotizarLicitacion }: MercadoPub
       if (filtroRubro === 'guardias' && !l.Rubro.includes('Guardias')) return false
       if (filtroRubro === 'acceso' && !l.Rubro.includes('Acceso')) return false
 
-      // 3. Filtro por Región
+      // 3. Filtro por Región (tolerante a tildes y mayúsculas)
       if (filtroRegion !== 'todas') {
-        const reg = (l.Region || '').toLowerCase()
-        const com = (l.Comuna || '').toLowerCase()
-        const f = filtroRegion.toLowerCase()
-        if (!reg.includes(f) && !com.includes(f)) return false
+        const fn = filtroRegion.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+        const reg = (l.Region || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+        const com = (l.Comuna || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+        if (!reg.includes(fn) && !com.includes(fn)) return false
       }
 
       // 4. Filtro por Estado

@@ -128,12 +128,33 @@ export async function GET(request: Request) {
         const codData = await codRes.json().catch(() => null)
         if (codData && Array.isArray(codData.Listado) && codData.Listado.length > 0) {
           const lic = codData.Listado[0]
+          const normalizada = normalizarLicitacionReal(lic)
+
+          // Auto-guardar en caché persistente de Supabase
+          try {
+            await supabase.from('eventos_monitoreo').insert({
+              cuenta: 'CACHE_LICITACION',
+              evento: normalizada.CodigoExterno,
+              nombre_abonado: JSON.stringify({
+                Organismo: normalizada.Organismo,
+                Region: normalizada.Region,
+                Comuna: normalizada.Comuna,
+                DireccionUnidad: normalizada.DireccionUnidad,
+                Contacto: normalizada.Contacto,
+                MontoEstimado: normalizada.MontoEstimado,
+                FechaCierre: normalizada.FechaCierre,
+                Descripcion: normalizada.Descripcion
+              }),
+              fecha_hora: new Date().toISOString()
+            })
+          } catch {}
+
           return NextResponse.json({
             success: true,
             modo: 'api_real_chilecompra_detalle',
             ticket_valido: true,
             total_encontradas: 1,
-            licitaciones: [normalizarLicitacionReal(lic)]
+            licitaciones: [normalizada]
           })
         }
       }
@@ -151,7 +172,7 @@ export async function GET(request: Request) {
       const apiUrl = `https://api.mercadopublico.cl/servicios/v1/publico/licitaciones.json?estado=activas&ticket=${encodeURIComponent(ticketActivo)}`
       const res = await fetch(apiUrl, {
         headers: { 'User-Agent': 'GamaSecurity-MercadoPublico/2.0' },
-        next: { revalidate: 180 }
+        next: { revalidate: 120 }
       })
 
       if (res.ok) {
@@ -179,10 +200,48 @@ export async function GET(request: Request) {
             return esLicitacionSeguridadReal(nombre)
           })
 
-          // 2. Enriquecimiento con Organismo y Región oficial para los primeros resultados
-          const mapeadas = await enriquecerLicitacionesConDetalle(filtradas, ticketActivo)
+          // 2. Cargar caché persistente de detalles desde Supabase
+          const cacheMap = new Map<string, any>()
+          try {
+            const { data: cacheFilas } = await supabase
+              .from('eventos_monitoreo')
+              .select('evento, nombre_abonado')
+              .eq('cuenta', 'CACHE_LICITACION')
+            if (Array.isArray(cacheFilas)) {
+              for (const r of cacheFilas) {
+                if (r.evento && r.nombre_abonado) {
+                  try {
+                    cacheMap.set(r.evento.trim().toUpperCase(), JSON.parse(r.nombre_abonado))
+                  } catch {}
+                }
+              }
+            }
+          } catch (e: any) {
+            console.warn('Error leyendo cache de licitaciones:', e?.message)
+          }
 
-          // 3. Filtro por rubro
+          // 3. Mapear cada licitación combinando datos oficiales de ChileCompra y caché persistente
+          const mapeadas = filtradas.map((lic: any) => {
+            const cod = (lic.CodigoExterno || '').trim().toUpperCase()
+            const base = normalizarLicitacionReal(lic)
+            const cached = cacheMap.get(cod)
+            if (cached) {
+              return {
+                ...base,
+                Organismo: cached.Organismo || base.Organismo,
+                Region: cached.Region || base.Region,
+                Comuna: cached.Comuna || base.Comuna,
+                DireccionUnidad: cached.DireccionUnidad || base.DireccionUnidad,
+                Contacto: cached.Contacto || base.Contacto,
+                MontoEstimado: (typeof cached.MontoEstimado === 'number' && cached.MontoEstimado > 0) ? cached.MontoEstimado : base.MontoEstimado,
+                FechaCierre: cached.FechaCierre || base.FechaCierre,
+                Descripcion: cached.Descripcion || base.Descripcion
+              }
+            }
+            return base
+          })
+
+          // 4. Filtro por rubro si el cliente lo solicita en query
           let resultado = mapeadas
           if (rubroFiltro && rubroFiltro !== 'todos') {
             resultado = resultado.filter((l: any) => {
@@ -194,12 +253,14 @@ export async function GET(request: Request) {
             })
           }
 
-          // 4. Filtro por región si se solicita
+          // 5. Filtro por región tolerante a tildes
           if (regionFiltro && regionFiltro !== 'todas') {
-            resultado = resultado.filter((l: any) => 
-              l.Region.toLowerCase().includes(regionFiltro) || 
-              (l.Comuna && l.Comuna.toLowerCase().includes(regionFiltro))
-            )
+            const rf = regionFiltro.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+            resultado = resultado.filter((l: any) => {
+              const regNorm = (l.Region || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+              const comNorm = (l.Comuna || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+              return regNorm.includes(rf) || comNorm.includes(rf)
+            })
           }
 
           return NextResponse.json({
