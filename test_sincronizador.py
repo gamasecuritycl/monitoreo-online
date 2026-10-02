@@ -22,15 +22,19 @@ class TestSincronizadorGama(unittest.TestCase):
         self.tz_str, self.offset_hours = get_chile_offset_info()
 
     # ── 1. PRUEBAS DE FECHAS Y HORA (Resolución indestructible) ──
-    def test_fechas_octubre_ambiguas(self):
-        """ Valida que el 1 de octubre no se confunda con 10 de enero """
-        # DD/MM/YYYY
+    def test_fechas_chile_estandar(self):
+        """ Valida que el formato chileno DD/MM/YYYY se respete siempre y jamás cree fechas futuras """
+        # 11 de agosto (DD/MM/YYYY) jamás debe convertirse en 8 de noviembre
+        res_ago11 = parse_fecha_hora('11/08/2026', '23:52:21', self.tz_str)
+        self.assertTrue(res_ago11.startswith('2026-08-11T23:52:21'), f"11/08/2026 fue mal interpretado como {res_ago11}")
+
+        # 10 de agosto (DD/MM/YYYY) jamás debe convertirse en 8 de octubre
+        res_ago10 = parse_fecha_hora('10/08/2026', '20:15:00', self.tz_str)
+        self.assertTrue(res_ago10.startswith('2026-08-10T20:15:00'), f"10/08/2026 fue mal interpretado como {res_ago10}")
+
+        # 01 de octubre (DD/MM/YYYY)
         res1 = parse_fecha_hora('01/10/2026', '14:30:00', self.tz_str)
         self.assertTrue(res1.startswith('2026-10-01T14:30:00'))
-
-        # MM/DD/YYYY (formato estadounidense de Access)
-        res2 = parse_fecha_hora('10/01/2026', '14:30:00', self.tz_str)
-        self.assertTrue(res2.startswith('2026-10-01T14:30:00'), f"Fallo al resolver 10/01/2026: {res2}")
 
         # ISO YYYY-MM-DD
         res3 = parse_fecha_hora('2026-10-01', '14:30:00', self.tz_str)
@@ -42,9 +46,15 @@ class TestSincronizadorGama(unittest.TestCase):
         res_mar = parse_fecha_hora('15/03/2026', '08:15:20', self.tz_str)
         self.assertTrue(res_mar.startswith('2026-03-15T08:15:20'))
 
-        # 25 de diciembre
-        res_dic = parse_fecha_hora('25/12/2026', '23:59:00', self.tz_str)
-        self.assertTrue(res_dic.startswith('2026-12-25T23:59:00'))
+        # 25 de agosto (mes previo válido)
+        res_ago = parse_fecha_hora('25/08/2026', '23:59:00', self.tz_str)
+        self.assertTrue(res_ago.startswith('2026-08-25T23:59:00'))
+
+    def test_proteccion_anti_futuro(self):
+        """ Valida que jamás se emitan fechas en el futuro (ej: noviembre 2026 en octubre 2026) """
+        res_fut = parse_fecha_hora('08/11/2026', '12:00:00', self.tz_str)
+        # No puede ser noviembre de 2026 (mes 11) si estamos a 2 de octubre
+        self.assertFalse('2026-11-08' in res_fut, f"Se emitió una fecha futura no permitida: {res_fut}")
 
     def test_objetos_nativos_pyodbc(self):
         """ Valida que objetos datetime o date nativos retornados por pyodbc se procesen limpios """

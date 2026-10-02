@@ -114,7 +114,7 @@ HEARTBEAT_ROW_ID = 1492786
 LAST_UPDATE_CHECK = 0
 CLIENTES_LOCAL_MAP = {}
 CODIGOS_LOCAL_MAP = {}
-PASSWORDS_PROBAR_MDB = ['SCORPION7', 'Administ', 'SCORPION29', '', 'scorpion', 'SCORPION', 'SCORPION2026', 'admin', 'ADMIN']
+PASSWORDS_PROBAR_MDB = ['Administ', 'SCORPION7', 'SCORPION29', 'SCORPION23', '', 'scorpion', 'SCORPION', 'SCORPION2026', 'admin', 'ADMIN']
 MDB_PASSWORD_CACHE = {}
 MDB_FILE_STATE = {}
 
@@ -703,7 +703,7 @@ def sincronizar_desde_mysql(cache):
 
 # ── FUENTE 2: Archivos MDB locales de Scorpion ─────────────────────
 def get_archivos_mdb_activos():
-    """ Retorna únicamente los archivos MDB activos y recientemente modificados para no saturar ODBC """
+    """ Retorna todos los archivos MDB de eventos desde el 01/08/2026 en adelante, ordenados del más reciente al más antiguo """
     archivos = []
     rutas_procesadas = set()
 
@@ -714,19 +714,32 @@ def get_archivos_mdb_activos():
                     if 'ZONIFICACION' in root.upper():
                         continue
                     for f in files:
-                        if f.upper().endswith('.MDB') and not f.startswith('_'):
-                            full_path = os.path.normpath(os.path.join(root, f))
-                            if full_path.lower() not in rutas_procesadas:
-                                rutas_procesadas.add(full_path.lower())
-                                try:
-                                    mtime = os.path.getmtime(full_path)
-                                    archivos.append((mtime, full_path))
-                                except Exception: pass
+                        if not f.upper().endswith('.MDB') or f.startswith('_'):
+                            continue
+                        
+                        full_path = os.path.normpath(os.path.join(root, f))
+                        if full_path.lower() in rutas_procesadas:
+                            continue
+                        
+                        # Si el nombre del archivo contiene fecha YYYY-MM-DD, verificar que no sea anterior al 01/08/2026
+                        m_date = re.search(r'(\d{4})-(\d{2})-(\d{2})', f)
+                        if m_date:
+                            try:
+                                f_date = datetime(int(m_date.group(1)), int(m_date.group(2)), int(m_date.group(3)))
+                                if f_date < datetime(2026, 8, 1):
+                                    continue
+                            except Exception: pass
+                        
+                        rutas_procesadas.add(full_path.lower())
+                        try:
+                            mtime = os.path.getmtime(full_path)
+                            archivos.append((mtime, full_path))
+                        except Exception: pass
             except Exception: pass
 
+    # Ordenar del más reciente al más antiguo para procesar primero los eventos de hoy y luego los anteriores
     archivos.sort(key=lambda x: x[0], reverse=True)
-    # Limitar a los 5 archivos más recientes para evitar agotar las tareas cliente ODBC (-1036)
-    return [item[1] for item in archivos[:5]]
+    return [item[1] for item in archivos]
 
 def copiar_mdb_con_retry(ruta_original, ruta_temp, max_intentos=2):
     for intento in range(max_intentos):
@@ -826,6 +839,10 @@ def sincronizar_desde_mdb(cache):
             for row in rows:
                 dia     = get_val(row, ['DIA'], 0)
                 hora    = get_val(row, ['HORA'], 1)
+                if not dia:
+                    m_fnd = re.search(r'(\d{4})-(\d{2})-(\d{2})', os.path.basename(ruta_original))
+                    if m_fnd:
+                        dia = f"{m_fnd.group(3)}-{m_fnd.group(2)}-{m_fnd.group(1)}"
                 cuenta  = get_val(row, ['CUENTA'], 2).upper().strip()
                 nombre  = get_val(row, ['NOMBRE', 'ABONADO', 'NOMBRE_ABONADO'], 3).strip()
                 evento_raw = get_val(row, ['EVENTO'], 4).strip()
@@ -920,6 +937,7 @@ def sincronizar_desde_mdb(cache):
             if os.path.exists(RUTA_COPIA_TEMP):
                 try: os.remove(RUTA_COPIA_TEMP)
                 except Exception: pass
+            time.sleep(0.05)
 
     return cache
 

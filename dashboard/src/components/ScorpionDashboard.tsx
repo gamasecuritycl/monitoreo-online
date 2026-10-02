@@ -638,9 +638,11 @@ export default function ScorpionDashboard() {
 
   const fetchEventos = useCallback(async () => {
     try {
+      const maxFechaPermitida = new Date(Date.now() + 60 * 60 * 1000).toISOString()
       let query = supabase
         .from('eventos_monitoreo')
         .select('*')
+        .lte('fecha_hora', maxFechaPermitida)
         .not('cuenta', 'in', '(CLIENTES,CODIGOS,ZONAS,__SINCRONIZADOR__,CONFIG_OPERADORES,CLIENTES_MAESTROS_CRM,EMPRESAS_CONGLOMERADO,COTIZACIONES_DOLIBARR,ORDENES_TRABAJO,ORDEN_EDITOR_REMOTO,AUDITORIA_EDITOR_REMOTO,0000,000)')
         .not('cuenta', 'like', 'CAMARAS_DAHUA_%')
         .not('cuenta', 'like', 'DAHUA_FRAME_%')
@@ -694,9 +696,11 @@ export default function ScorpionDashboard() {
     let lastSig = ''
     const poll = async () => {
       try {
+        const maxFechaPermitida = new Date(Date.now() + 60 * 60 * 1000).toISOString()
         const { data, error } = await supabase
           .from('eventos_monitoreo')
           .select('*')
+          .lte('fecha_hora', maxFechaPermitida)
           .not('cuenta', 'in', '(CLIENTES,CODIGOS,ZONAS,__SINCRONIZADOR__,CONFIG_OPERADORES,CLIENTES_MAESTROS_CRM,EMPRESAS_CONGLOMERADO,COTIZACIONES_DOLIBARR,ORDENES_TRABAJO,ORDEN_EDITOR_REMOTO,AUDITORIA_EDITOR_REMOTO,0000,000)')
           .not('cuenta', 'like', 'CAMARAS_DAHUA_%')
           .not('cuenta', 'like', 'DAHUA_FRAME_%')
@@ -763,6 +767,8 @@ export default function ScorpionDashboard() {
         const newEvent = payload.new as EventoMonitoreo
         // Ignorar filas especiales de sincronización y test de receptora (cuenta 0000)
         if (esCuentaInternaOFrame(newEvent.cuenta, newEvent.evento, newEvent.nombre_abonado)) return
+        // Ignorar eventos con fecha en el futuro (desfase mayor a 1 hora)
+        if (parseEventoTimestamp(newEvent.fecha_hora) > Date.now() + 3600_000) return
         
         setEventos((prev) => {
           const eventKey = `${newEvent.cuenta}_${newEvent.evento}_${newEvent.zona}_${newEvent.usuario}_${newEvent.fecha_hora}`
