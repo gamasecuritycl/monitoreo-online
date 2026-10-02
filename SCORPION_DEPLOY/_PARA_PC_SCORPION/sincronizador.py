@@ -65,7 +65,7 @@ HEADERS_SUPABASE = {
     "apikey": SUPABASE_KEY,
     "Authorization": f"Bearer {SUPABASE_KEY}",
     "Content-Type": "application/json",
-    "Prefer": "return=minimal"
+    "Prefer": "resolution=ignore-duplicates,return=minimal"
 }
 
 # ── MYSQL CENTRAL CONFIG (IPRS) ───────────────────────────────────
@@ -116,6 +116,7 @@ CLIENTES_LOCAL_MAP = {}
 CODIGOS_LOCAL_MAP = {}
 PASSWORDS_PROBAR_MDB = ['SCORPION7', 'Administ', 'SCORPION29', '', 'scorpion', 'SCORPION', 'SCORPION2026', 'admin', 'ADMIN']
 MDB_PASSWORD_CACHE = {}
+MDB_FILE_STATE = {}
 
 # ── DICCIONARIO COMPLETO SIA (DC-03 / DC-05) TRADUCIDO AL ESPAÑOL ──
 SIA_MAP = {
@@ -430,6 +431,29 @@ def parse_trama_alarma(trama):
             'usuario': val if is_user_code else ''
         }
 
+    # 3. Fallback Resiliente / Dead-Letter Queue: Jamás descartar tramas
+    # Si la trama tiene algún identificador de abonado, extraerlo con precisión
+    m_any_cta = re.search(r'#([A-Za-z0-9]{3,6})', trama_clean)
+    if not m_any_cta:
+        m_any_cta = re.search(r'18([A-Za-z0-9]{4})', trama_clean)
+    cuenta_fallback = m_any_cta.group(1).upper() if m_any_cta else ""
+    
+    try:
+        dead_log = os.path.join(script_dir, "_tramas_no_reconocidas.log")
+        with open(dead_log, "a", encoding="utf-8") as f_dl:
+            f_dl.write(f"{datetime.now().isoformat()} | Cuenta: {cuenta_fallback or 'DESCONOCIDA'} | Trama: {trama_clean}\n")
+    except Exception: pass
+
+    if cuenta_fallback and (not cuenta_fallback.isdigit() or len(cuenta_fallback) == 4):
+        # Limpiar caracteres de control para el nombre del evento
+        trama_display = re.sub(r'[\r\n\x00-\x1f]', '', trama_clean)[:30]
+        return {
+            'cuenta': cuenta_fallback,
+            'evento': f"SEÑAL SIN IDENTIFICAR [{trama_display}]",
+            'zona': '00',
+            'usuario': ''
+        }
+
     return None
 
 def load_cache():
@@ -734,6 +758,7 @@ def abrir_conexion_mdb(ruta_mdb):
     raise err_ultimo if err_ultimo else Exception("No se pudo abrir MDB")
 
 def sincronizar_desde_mdb(cache):
+    global MDB_FILE_STATE
     archivos_mdb = get_archivos_mdb_activos()
     if not archivos_mdb:
         return cache
@@ -741,6 +766,16 @@ def sincronizar_desde_mdb(cache):
     chile_tz, _ = get_chile_offset_info()
 
     for ruta_original in archivos_mdb:
+        # Optimización 99%: Solo leer MDB si ha cambiado de peso o timestamp
+        try:
+            cur_mtime = os.path.getmtime(ruta_original)
+            cur_size = os.path.getsize(ruta_original)
+            last_state = MDB_FILE_STATE.get(ruta_original)
+            if last_state and last_state == (cur_mtime, cur_size):
+                continue
+        except Exception:
+            continue
+
         ruta_lectura = RUTA_COPIA_TEMP
         if not copiar_mdb_con_retry(ruta_original, RUTA_COPIA_TEMP):
             ruta_lectura = ruta_original
@@ -866,6 +901,7 @@ def sincronizar_desde_mdb(cache):
             if '1036' in str(e_proc):
                 time.sleep(0.5)
         finally:
+            MDB_FILE_STATE[ruta_original] = (cur_mtime, cur_size)
             if cursor:
                 try: cursor.close()
                 except Exception: pass

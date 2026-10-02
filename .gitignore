@@ -38,6 +38,8 @@ __pycache__/
 
 # Logs, lock y archivos de diagnostico/estado
 *.log.bak
+_*.log
+*.log
 SCORPION_DEPLOY/_gama_log.txt
 SCORPION_DEPLOY/_watchdog_log.txt
 SCORPION_DEPLOY/_sincronizador.lock
