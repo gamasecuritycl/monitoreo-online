@@ -1,12 +1,19 @@
 import time, pyodbc, shutil, os, json, sys, re, subprocess
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, date, timezone, timedelta
 import requests
 import pymysql
 
+try:
+    from zoneinfo import ZoneInfo
+except ImportError:
+    ZoneInfo = None
+
 # ════════════════════════════════════════════════════════════════
-#  GAMA COMMAND CENTER - SINCRONIZADOR HÍBRIDO INDESTRUCTIBLE v6.1
+#  GAMA COMMAND CENTER - SINCRONIZADOR HÍBRIDO INDESTRUCTIBLE v6.5
 #  - Fuente 1: MySQL Central IPRS (Retransmisión en Vivo IP 1C7...)
 #  - Fuente 2: Bases de Datos Access (.MDB) locales Scorpion en PC Central
+#  - Traducción Universal SIA (DC-03 / DC-05) y Contact ID en Vivo
+#  - Sincronización Estricta de Horarios con Scorpion (America/Santiago)
 #  - Auto-Actualización GitHub + Resiliencia Zero-Crash
 # ════════════════════════════════════════════════════════════════
 
@@ -107,62 +114,175 @@ HEARTBEAT_ROW_ID = 1492786
 LAST_UPDATE_CHECK = 0
 CLIENTES_LOCAL_MAP = {}
 CODIGOS_LOCAL_MAP = {}
-PASSWORDS_PROBAR_MDB = ['Administ', 'SCORPION29', 'SCORPION7', '', 'scorpion', 'SCORPION', 'SCORPION2026', 'admin', 'ADMIN']
+PASSWORDS_PROBAR_MDB = ['SCORPION7', 'Administ', 'SCORPION29', '', 'scorpion', 'SCORPION', 'SCORPION2026', 'admin', 'ADMIN']
+MDB_PASSWORD_CACHE = {}
 
-def get_chile_offset() -> str:
-    # Chile continental en horario de verano / estándar actual: GMT-3 (-03:00)
-    return "-03:00"
+# ── DICCIONARIO COMPLETO SIA (DC-03 / DC-05) TRADUCIDO AL ESPAÑOL ──
+SIA_MAP = {
+    # Asalto / Holdup (Atraco / Coacción)
+    'HA': 'ALARMA DE ASALTO', 'HH': 'RESTABLECIMIENTO ASALTO', 'HR': 'RESTABLECIMIENTO ASALTO',
+    'HJ': 'FALLA ZONA DE ASALTO', 'HK': 'RESTABLEC. FALLA ASALTO', 'HT': 'ASALTO SILENCIOSO', 'HP': 'ASALTO VERIFICADO',
+    # Médico / Auxilio
+    'MA': 'EMERGENCIA MEDICA', 'MH': 'RESTABLECIMIENTO MEDICO', 'MR': 'RESTABLECIMIENTO MEDICO',
+    'MJ': 'FALLA ZONA MEDICA', 'MK': 'RESTABLEC. FALLA MEDICA', 'MB': 'ANULACION ZONA MEDICA',
+    'QA': 'EMERGENCIA AUXILIO', 'QH': 'RESTABLECIMIENTO AUXILIO', 'QR': 'RESTABLECIMIENTO AUXILIO',
+    # Robo / Intrusión
+    'BA': 'ALARMA DE ROBO', 'BH': 'RESTABLECIMIENTO ROBO', 'BR': 'RESTABLECIMIENTO ROBO',
+    'BC': 'CANCELACION DE ALARMA', 'BV': 'ROBO VERIFICADO', 'BB': 'ANULACION DE ZONA (BYPASS)',
+    'BU': 'DESANULACION DE ZONA', 'BJ': 'FALLA ZONA DE ROBO', 'BK': 'RESTABLEC. FALLA ROBO',
+    'BM': 'SUPERVISION ROBO', 'BT': 'ALARMA ROBO RETARDADA', 'BZ': 'ALARMA ROBO PERIMETRAL',
+    # Pánico
+    'PA': 'ALARMA DE PANICO', 'PH': 'RESTABLECIMIENTO PANICO', 'PR': 'RESTABLECIMIENTO PANICO',
+    'PJ': 'FALLA ZONA DE PANICO', 'PK': 'RESTABLEC. FALLA PANICO', 'PB': 'BYPASS ZONA PANICO',
+    # Fuego / Humo
+    'FA': 'ALARMA DE FUEGO', 'FH': 'RESTABLECIMIENTO FUEGO', 'FR': 'RESTABLECIMIENTO FUEGO',
+    'FS': 'FLUJO DE AGUA (SPRINKLER)', 'FJ': 'FALLA ZONA DE FUEGO', 'FK': 'RESTABLEC. FALLA FUEGO',
+    'FB': 'BYPASS DE FUEGO', 'FU': 'DESANULACION BYPASS FUEGO',
+    'KA': 'ALARMA SENSOR DE CALOR', 'KH': 'RESTABLECIMIENTO CALOR',
+    'SA': 'ALARMA SENSOR DE HUMO', 'SH': 'RESTABLECIMIENTO HUMO',
+    # Tamper / Sabotaje
+    'TA': 'TAMPER / SABOTAJE', 'TH': 'RESTABLECIMIENTO TAMPER', 'TR': 'RESTABLECIMIENTO TAMPER',
+    'TB': 'BYPASS DE TAMPER', 'TU': 'DESANULACION TAMPER', 'TJ': 'FALLA ZONA TAMPER', 'TK': 'RESTABLEC. FALLA TAMPER',
+    # Condiciones Técnicas / Gas / Agua / Temperatura
+    'GA': 'ALARMA DE GAS', 'GH': 'RESTABLECIMIENTO GAS', 'GR': 'RESTABLECIMIENTO GAS',
+    'WA': 'ALARMA DE INUNDACION', 'WH': 'RESTABLECIMIENTO AGUA', 'WR': 'RESTABLECIMIENTO AGUA',
+    'ZA': 'ALARMA CONGELAMIENTO', 'ZH': 'RESTABLEC. CONGELAMIENTO',
+    # Eléctrico / Batería
+    'AT': 'FALLA DE CORRIENTE ALTERNA (AC)', 'AR': 'RESTABLEC. CORRIENTE AC', 'AH': 'RESTABLEC. CORRIENTE AC',
+    'YT': 'BATERIA BAJA DEL SISTEMA', 'YR': 'RESTABLECIMIENTO BATERIA', 'YH': 'RESTABLECIMIENTO BATERIA',
+    'LB': 'BATERIA BAJA', 'LR': 'RESTABLECIMIENTO BATERIA',
+    'XT': 'BATERIA TRANSMISOR BAJA', 'XR': 'RESTABLEC. BATERIA TRANSMISOR',
+    'YP': 'FALLA FUENTE DE PODER', 'YQ': 'RESTABLEC. FUENTE DE PODER',
+    # Cierres / Aperturas (Armado / Desarmado)
+    'CL': 'CIERRE', 'CP': 'CIERRE PROGRAMADO', 'CA': 'CIERRE AUTOMATICO', 'CG': 'CIERRE DE GRUPO',
+    'CR': 'CIERRE RECIENTE', 'CF': 'CIERRE FORZADO', 'CT': 'CIERRE TARDIO', 'CE': 'CIERRE EXTENDIDO',
+    'OP': 'APERTURA', 'OA': 'APERTURA AUTOMATICA', 'OG': 'APERTURA DE GRUPO', 'OR': 'DESARME TRAS ALARMA',
+    'OQ': 'APERTURA REMOTA', 'OK': 'APERTURA TEMPRANA', 'OT': 'APERTURA TARDIA',
+    # Tests / Supervisión / Sistema
+    'RP': 'AUTOTEST', 'RX': 'AUTOTEST MANUAL', 'RY': 'AUTOTEST', 'TX': 'AUTOTEST',
+    'TS': 'INICIO DE TEST', 'TE': 'FIN DE TEST', 'TW': 'TEST DE CAMINATA',
+    'ZZ': 'IDENTIFICADOR DE PANEL'
+}
 
-def parse_fecha_hora(dia_str, hora_str, chile_tz, add_hours=0):
+# ── DICCIONARIO FALLBACK CONTACT ID (CID) ──────────────────────────
+CID_FALLBACK_MAP = {
+    'E100': 'ALARMA MEDICA', 'R100': 'RESTABLECIMIENTO MEDICO',
+    'E110': 'ALARMA DE FUEGO', 'R110': 'RESTABLECIMIENTO FUEGO',
+    'E120': 'ALARMA DE PANICO', 'R120': 'RESTABLECIMIENTO PANICO',
+    'E121': 'PANICO BAJO COACCION', 'R121': 'RESTABLECIMIENTO COACCION',
+    'E122': 'PANICO SILENCIOSO / ASALTO', 'R122': 'RESTABLECIMIENTO ASALTO',
+    'E130': 'ALARMA DE ROBO', 'R130': 'RESTABLECIMIENTO DE ROBO',
+    'E131': 'ALARMA PERIMETRAL', 'R131': 'RESTABLECIMIENTO PERIMETRAL',
+    'E132': 'ALARMA INTERIOR', 'R132': 'RESTABLECIMIENTO INTERIOR',
+    'E137': 'TAMPER / SABOTAJE', 'R137': 'RESTABLECIMIENTO TAMPER',
+    'E301': 'FALLA DE CORRIENTE ALTERNA', 'R301': 'RESTABLECIMIENTO AC',
+    'E302': 'BATERIA BAJA', 'R302': 'RESTABLECIMIENTO BATERIA',
+    'E351': 'FALLA LINEA TELEFONICA', 'R351': 'RESTABLECIMIENTO TELEFONICO',
+    'E400': 'APERTURA / CIERRE', 'R400': 'CIERRE ESPECIAL',
+    'E401': 'APERTURA', 'R401': 'CIERRE',
+    'E402': 'APERTURA DE GRUPO', 'R402': 'CIERRE DE GRUPO',
+    'E406': 'APERTURA TRAS ALARMA',
+    'E407': 'ARME/DESARME REMOTO', 'R407': 'CIERRE REMOTO',
+    'E408': 'ARME RAPIDO', 'R408': 'CIERRE RAPIDO',
+    'E409': 'APERTURA CON LLAVE', 'R409': 'CIERRE CON LLAVE',
+    'E530': 'FALLA COBERTURA INALAMBRICA', 'R530': 'RESTABLECIMIENTO COBERTURA',
+    'E570': 'ANULACION DE ZONA (BYPASS)', 'R570': 'DESANULACION DE ZONA',
+    'E602': 'AUTOTEST', 'R602': 'AUTOTEST OK',
+}
+
+def get_chile_offset_info():
+    """ Calcula de forma dinámica y exacta el huso horario oficial de Chile """
+    if ZoneInfo:
+        try:
+            now_cl = datetime.now(ZoneInfo("America/Santiago"))
+            offset_seconds = now_cl.utcoffset().total_seconds()
+            offset_hours = int(offset_seconds // 3600)
+            offset_minutes = int((abs(offset_seconds) % 3600) // 60)
+            sign = "+" if offset_hours >= 0 else "-"
+            tz_str = f"{sign}{abs(offset_hours):02d}:{offset_minutes:02d}"
+            return tz_str, offset_hours
+        except Exception:
+            pass
+    # Fallback predeterminado a Chile Continental (Verano UTC-3)
+    return "-03:00", -3
+
+def parse_fecha_hora(dia_val, hora_val, chile_tz, add_hours=0):
+    """
+    Parsea fechas de forma indestructible y tolerante a formatos mixtos:
+    - Objetos nativos pyodbc (datetime / date)
+    - Cadenas DD/MM/YYYY o MM/DD/YYYY (resuelve con cercanía a fecha actual)
+    - Formatos ISO YYYY-MM-DD
+    - AM/PM y 24 horas
+    """
     now_dt = datetime.now()
     year, month, day = now_dt.year, now_dt.month, now_dt.day
     h, m, s = 0, 0, 0
 
-    if dia_str:
-        dia_s = str(dia_str).strip()
+    # 1. Si pyodbc ya entrega un objeto datetime o date nativo
+    if isinstance(dia_val, datetime):
+        year, month, day = dia_val.year, dia_val.month, dia_val.day
+        if not hora_val:
+            h, m, s = dia_val.hour, dia_val.minute, dia_val.second
+    elif isinstance(dia_val, date):
+        year, month, day = dia_val.year, dia_val.month, dia_val.day
+    elif dia_val:
+        dia_s = str(dia_val).strip()
         parts_dia = dia_s.split()
         date_part = parts_dia[0].replace('/', '-')
         partes_d = date_part.split('-')
         if len(partes_d) == 3:
-            p0 = re.sub(r'\D', '', partes_d[0])
-            p1 = re.sub(r'\D', '', partes_d[1])
-            p2 = re.sub(r'\D', '', partes_d[2])
+            p0 = int(re.sub(r'\D', '', partes_d[0]) or 0)
+            p1 = int(re.sub(r'\D', '', partes_d[1]) or 0)
+            p2 = int(re.sub(r'\D', '', partes_d[2]) or 0)
+            
+            if p0 > 1000:  # YYYY-MM-DD
+                year, month, day = p0, p1, p2
+            elif p2 > 1000 or p2 < 100:  # DD-MM-YYYY o MM-DD-YYYY
+                yr = p2 if p2 > 1000 else 2000 + p2
+                if p0 > 12 and p1 <= 12:  # p0 es día
+                    day, month, year = p0, p1, yr
+                elif p1 > 12 and p0 <= 12:  # p1 es día
+                    day, month, year = p1, p0, yr
+                elif p0 <= 12 and p1 <= 12 and p0 > 0 and p1 > 0:
+                    # Ambigüedad (ej: 01/10 vs 10/01 en Octubre): elegir la fecha más cercana al día de hoy
+                    try:
+                        cand1 = datetime(yr, p1, p0)  # p0=dia, p1=mes
+                        diff1 = abs((now_dt - cand1).total_seconds())
+                    except Exception: diff1 = float('inf')
+                    try:
+                        cand2 = datetime(yr, p0, p1)  # p0=mes, p1=dia
+                        diff2 = abs((now_dt - cand2).total_seconds())
+                    except Exception: diff2 = float('inf')
+
+                    if diff1 <= diff2:
+                        day, month, year = p0, p1, yr
+                    else:
+                        day, month, year = p1, p0, yr
+
+        if len(parts_dia) > 1 and ':' in parts_dia[1] and not hora_val:
+            hora_val = parts_dia[1]
+
+    # 2. Parseo de hora
+    if hora_val:
+        if isinstance(hora_val, datetime):
+            h, m, s = hora_val.hour, hora_val.minute, hora_val.second
+        else:
+            hora_s = str(hora_val).strip()
+            is_pm = 'PM' in hora_s.upper() or 'P.M.' in hora_s.upper()
+            is_am = 'AM' in hora_s.upper() or 'A.M.' in hora_s.upper()
+
+            tokens = hora_s.split()
+            time_token = next((t for t in tokens if ':' in t), hora_s)
+            hora_nums = re.sub(r'[^\d:]', '', time_token)
+            partes_h = hora_nums.split(':')
             try:
-                if len(p0) == 4 and p0 and p1 and p2:
-                    year, month, day = int(p0), int(p1), int(p2)
-                elif len(p2) == 4 and p0 and p1 and p2:
-                    day, month, year = int(p0), int(p1), int(p2)
-                elif len(p2) == 2 and p0 and p1 and p2:
-                    day, month, year = int(p0), int(p1), 2000 + int(p2)
+                if len(partes_h) >= 1 and partes_h[0]: h = int(partes_h[0])
+                if len(partes_h) >= 2 and partes_h[1]: m = int(partes_h[1])
+                if len(partes_h) >= 3 and partes_h[2]: s = int(partes_h[2])
             except Exception: pass
 
-        if len(parts_dia) > 1 and ':' in parts_dia[1] and not hora_str:
-            hora_str = parts_dia[1]
-
-    if hora_str:
-        hora_s = str(hora_str).strip()
-        is_pm = 'PM' in hora_s.upper() or 'P.M.' in hora_s.upper()
-        is_am = 'AM' in hora_s.upper() or 'A.M.' in hora_s.upper()
-
-        tokens = hora_s.split()
-        time_token = ""
-        for tok in tokens:
-            if ':' in tok:
-                time_token = tok
-                break
-        if not time_token:
-            time_token = hora_s
-
-        hora_nums = re.sub(r'[^\d:]', '', time_token)
-        partes_h = hora_nums.split(':')
-        try:
-            if len(partes_h) >= 1 and partes_h[0]: h = int(partes_h[0])
-            if len(partes_h) >= 2 and partes_h[1]: m = int(partes_h[1])
-            if len(partes_h) >= 3 and partes_h[2]: s = int(partes_h[2])
-        except Exception: pass
-
-        if is_pm and h < 12: h += 12
-        elif is_am and h == 12: h = 0
+            if is_pm and h < 12: h += 12
+            elif is_am and h == 12: h = 0
 
     base_dt = datetime(year, month, day, h, m, s)
     if add_hours:
@@ -201,8 +321,43 @@ def load_maestros():
                 CODIGOS_LOCAL_MAP = db_co
     except Exception: pass
 
+def traducir_codigo_evento(raw_code: str) -> str:
+    """ Traduce cualquier código SIA o Contact ID crudo a español legible """
+    if not raw_code: return ''
+    clean = raw_code.strip().upper()
+
+    # 1. Si ya es una descripción en español (contiene espacios o palabras clave)
+    if ' ' in clean or any(w in clean for w in ['ALARMA', 'APERTURA', 'CIERRE', 'AUTOTEST', 'RESTABLECIMIENTO', 'BATERIA', 'CORRIENTE', 'PANICO', 'FUEGO', 'SABOTAJE']):
+        return clean
+
+    # 2. Buscar en CODIGOS.MDB si está cargado
+    if clean in CODIGOS_LOCAL_MAP and CODIGOS_LOCAL_MAP[clean].get('descripcion'):
+        return CODIGOS_LOCAL_MAP[clean]['descripcion']
+
+    # 3. Buscar en diccionario SIA de 2 letras
+    m_sia_clean = re.match(r'^([A-Z]{2})(?:[\s/_-]?\d+)?$', clean)
+    if m_sia_clean and m_sia_clean.group(1) in SIA_MAP:
+        return SIA_MAP[m_sia_clean.group(1)]
+
+    # 4. Buscar en diccionario Contact ID
+    if clean in CID_FALLBACK_MAP:
+        return CID_FALLBACK_MAP[clean]
+
+    # 5. Formato CID con prefijo E/R
+    m_cid_clean = re.match(r'^([ER])(\d{3})$', clean)
+    if m_cid_clean:
+        prefix, num = m_cid_clean.group(1), m_cid_clean.group(2)
+        key = f"{prefix}{num}"
+        if key in CID_FALLBACK_MAP:
+            return CID_FALLBACK_MAP[key]
+        if f"E{num}" in CID_FALLBACK_MAP:
+            base = CID_FALLBACK_MAP[f"E{num}"]
+            return f"RESTABLECIMIENTO {base}" if prefix == 'R' else base
+
+    return clean
+
 def parse_trama_alarma(trama):
-    """ Decodifica tramas estándar Contact ID y SIA """
+    """ Decodifica tramas estándar Contact ID y SIA con traducción total al español """
     if not trama: return None
     trama_clean = str(trama).strip().rstrip('\x14').rstrip('\r').rstrip('\n')
     
@@ -232,16 +387,7 @@ def parse_trama_alarma(trama):
         if cid_key in CODIGOS_LOCAL_MAP:
             desc = CODIGOS_LOCAL_MAP[cid_key].get('descripcion', '')
         if not desc:
-            fallback_cid = {
-                'E130': 'ALARMA DE ROBO', 'R130': 'RESTABLECIMIENTO DE ROBO',
-                'E401': 'APERTURA', 'R401': 'CIERRE',
-                'E402': 'APERTURA', 'R402': 'CIERRE',
-                'E406': 'APERTURA DESPUES DE ALARMA', 'R400': 'CIERRE ESPECIAL',
-                'E602': 'AUTOTEST', 'E110': 'FUEGO', 'E120': 'PANICO',
-                'E301': 'FALLA DE CORRIENTE ALTERNA', 'R301': 'RESTABLECIMIENTO AC',
-                'E302': 'BATERIA BAJA', 'R302': 'RESTABLECIMIENTO BATERIA'
-            }
-            desc = fallback_cid.get(cid_key, cid_key)
+            desc = CID_FALLBACK_MAP.get(cid_key, cid_key)
 
         return {
             'cuenta': cuenta,
@@ -250,39 +396,39 @@ def parse_trama_alarma(trama):
             'usuario': usuario
         }
 
-    # 2. Formato SIA (admite hex mayúsculas y minúsculas)
-    m_sia = re.search(r'\[#([a-zA-Z0-9]{4})\|N[^/]*?/(.*?)\]', trama_clean, re.IGNORECASE)
-    if m_sia:
+    # 2. Formato SIA Estándar y Extendido (DC-03 / DC-05)
+    # Soporta [#CUENTA|N.../CODE...], [#CUENTA/CODE...], S01001[#CUENTA|Nri1/OP0002], etc.
+    m_sia = re.search(r'\[#?([a-zA-Z0-9]{3,6})(?:\|[^/]*?)?/(?:[^/]*?/)?([A-Za-z]{2})([a-zA-Z0-9_-]*)\]', trama_clean)
+    if not m_sia:
+        m_sia = re.search(r'\[#?([a-zA-Z0-9]{3,6})\|N[^/]*?/(.*?)\]', trama_clean, re.IGNORECASE)
+        if m_sia:
+            cuenta = m_sia.group(1).upper().strip()
+            payload = m_sia.group(2)
+            first_sub = payload.split('/')[0]
+            m_sub = re.match(r'([A-Za-z]{2})(.*)', first_sub)
+            if m_sub:
+                code = m_sub.group(1).upper()
+                val = m_sub.group(2).strip()
+                desc = SIA_MAP.get(code, code)
+                is_user_code = code in ['OP', 'CL', 'OG', 'CG', 'OA', 'CA', 'OR', 'CR', 'OQ', 'CP', 'CF', 'CT', 'CE', 'NL', 'OK', 'OT']
+                return {
+                    'cuenta': cuenta,
+                    'evento': desc,
+                    'zona': '' if is_user_code else val,
+                    'usuario': val if is_user_code else ''
+                }
+    else:
         cuenta = m_sia.group(1).upper().strip()
-        payload = m_sia.group(2)
-        subcodes = payload.split('/')
-        first_sub = subcodes[0]
-        m_sub = re.match(r'([A-Z]{2})(.*)', first_sub)
-        if m_sub:
-            code = m_sub.group(1).upper()
-            val = m_sub.group(2)
-            
-            sia_map = {
-                'OP': 'APERTURA', 'CL': 'CIERRE', 'OG': 'APERTURA', 'CG': 'CIERRE',
-                'BA': 'ALARMA DE ROBO', 'BR': 'RESTABLECIMIENTO ROBO',
-                'FA': 'FUEGO', 'FR': 'RESTABLECIMIENTO FUEGO',
-                'PA': 'PANICO', 'PR': 'RESTABLECIMIENTO PANICO',
-                'TA': 'SABOTAJE', 'TR': 'RESTABLECIMIENTO SABOTAJE',
-                'RP': 'AUTOTEST', 'RX': 'AUTOTEST', 'RY': 'AUTOTEST',
-                'AT': 'FALLA DE CORRIENTE ALTERNA', 'AR': 'RESTABLECIMIENTO AC',
-                'LB': 'BATERIA BAJA', 'LR': 'RESTABLECIMIENTO BATERIA'
-            }
-            desc = sia_map.get(code, code)
-            is_user_code = code in ['OP', 'CL', 'OG', 'CG']
-            zona = val if not is_user_code else ''
-            usuario = val if is_user_code else ''
-
-            return {
-                'cuenta': cuenta,
-                'evento': desc,
-                'zona': zona,
-                'usuario': usuario
-            }
+        code = m_sia.group(2).upper()
+        val = m_sia.group(3).strip()
+        desc = SIA_MAP.get(code, code)
+        is_user_code = code in ['OP', 'CL', 'OG', 'CG', 'OA', 'CA', 'OR', 'CR', 'OQ', 'CP', 'CF', 'CT', 'CE', 'NL', 'OK', 'OT']
+        return {
+            'cuenta': cuenta,
+            'evento': desc,
+            'zona': '' if is_user_code else val,
+            'usuario': val if is_user_code else ''
+        }
 
     return None
 
@@ -371,7 +517,7 @@ def enviar_heartbeat():
         now_iso = datetime.now(timezone.utc).isoformat()
         patch_data = {
             "fecha_hora": now_iso,
-            "nombre_abonado": "PC CENTRAL EN LINEA (v6.1 Híbrido MDB+IPRS)",
+            "nombre_abonado": "PC CENTRAL EN LINEA (v6.5 Híbrido MDB+IPRS)",
             "evento": "HEARTBEAT",
             "zona": "000",
             "usuario": "SYSTEM"
@@ -403,7 +549,10 @@ def enviar_heartbeat():
 
 # ── FUENTE 1: MySQL Central IPRS ───────────────────────────────────
 def sincronizar_desde_mysql(cache):
-    chile_tz = get_chile_offset()
+    chile_tz, offset_hours = get_chile_offset_info()
+    # Diferencia entre reloj MySQL IPRS (Ecuador UTC-5) y Chile (UTC-3 verano = +2h, UTC-4 invierno = +1h)
+    mysql_diff_hours = offset_hours + 5
+
     cursor_id = 0
     if os.path.exists(RUTA_CURSOR_MYSQL):
         try:
@@ -460,7 +609,7 @@ def sincronizar_desde_mysql(cache):
             f_tokens = str(fecha_str).strip().split()
             d_part = f_tokens[0] if len(f_tokens) > 0 else ""
             h_part = f_tokens[1] if len(f_tokens) > 1 else ""
-            fecha_hora = parse_fecha_hora(d_part, h_part, chile_tz, add_hours=2)
+            fecha_hora = parse_fecha_hora(d_part, h_part, chile_tz, add_hours=mysql_diff_hours)
 
             nombre_abonado = CLIENTES_LOCAL_MAP.get(cuenta, {}).get('nombre', '') if isinstance(CLIENTES_LOCAL_MAP.get(cuenta), dict) else str(CLIENTES_LOCAL_MAP.get(cuenta) or '')
             if not nombre_abonado:
@@ -521,6 +670,7 @@ def sincronizar_desde_mysql(cache):
 
 # ── FUENTE 2: Archivos MDB locales de Scorpion ─────────────────────
 def get_archivos_mdb_activos():
+    """ Retorna únicamente los archivos MDB activos y recientemente modificados para no saturar ODBC """
     archivos = []
     rutas_procesadas = set()
 
@@ -542,7 +692,8 @@ def get_archivos_mdb_activos():
             except Exception: pass
 
     archivos.sort(key=lambda x: x[0], reverse=True)
-    return [item[1] for item in archivos[:20]]
+    # Limitar a los 5 archivos más recientes para evitar agotar las tareas cliente ODBC (-1036)
+    return [item[1] for item in archivos[:5]]
 
 def copiar_mdb_con_retry(ruta_original, ruta_temp, max_intentos=2):
     for intento in range(max_intentos):
@@ -559,16 +710,26 @@ def copiar_mdb_con_retry(ruta_original, ruta_temp, max_intentos=2):
     return False
 
 def abrir_conexion_mdb(ruta_mdb):
+    """ Abre conexión pyodbc reutilizando password probada exitosamente para no saturar Access """
+    global MDB_PASSWORD_CACHE
+    cached_pwd = MDB_PASSWORD_CACHE.get(ruta_mdb)
+    lista_pwd = [cached_pwd] + [p for p in PASSWORDS_PROBAR_MDB if p != cached_pwd] if cached_pwd is not None else PASSWORDS_PROBAR_MDB
+
     err_ultimo = None
-    for pwd in PASSWORDS_PROBAR_MDB:
+    for pwd in lista_pwd:
         try:
             conn_str = (
                 f'DRIVER={{Microsoft Access Driver (*.mdb, *.accdb)}};'
                 f'DBQ={ruta_mdb};PWD={pwd};ReadOnly=1;'
             )
-            return pyodbc.connect(conn_str)
+            c = pyodbc.connect(conn_str)
+            MDB_PASSWORD_CACHE[ruta_mdb] = pwd
+            return c
         except Exception as e:
             err_ultimo = e
+            if '1036' in str(e):
+                # Demasiadas tareas de cliente: breve pausa para que Access recicle
+                time.sleep(0.3)
             continue
     raise err_ultimo if err_ultimo else Exception("No se pudo abrir MDB")
 
@@ -577,13 +738,15 @@ def sincronizar_desde_mdb(cache):
     if not archivos_mdb:
         return cache
 
-    chile_tz = get_chile_offset()
+    chile_tz, _ = get_chile_offset_info()
 
     for ruta_original in archivos_mdb:
         ruta_lectura = RUTA_COPIA_TEMP
         if not copiar_mdb_con_retry(ruta_original, RUTA_COPIA_TEMP):
             ruta_lectura = ruta_original
 
+        conn = None
+        cursor = None
         try:
             conn = abrir_conexion_mdb(ruta_lectura)
             cursor = conn.cursor()
@@ -600,8 +763,6 @@ def sincronizar_desde_mdb(cache):
                     rows = cursor.fetchall()
                     columns = [col[0].upper() for col in cursor.description]
                 except Exception: pass
-
-            conn.close()
 
             if not rows:
                 continue
@@ -623,25 +784,29 @@ def sincronizar_desde_mdb(cache):
                 hora    = get_val(row, ['HORA'], 1)
                 cuenta  = get_val(row, ['CUENTA'], 2).upper().strip()
                 nombre  = get_val(row, ['NOMBRE', 'ABONADO', 'NOMBRE_ABONADO'], 3).strip()
-                evento  = get_val(row, ['EVENTO'], 4).strip()
+                evento_raw = get_val(row, ['EVENTO'], 4).strip()
                 zona    = get_val(row, ['ZONA'], 6).strip()
                 usuario = get_val(row, ['USUARIO'], 7).strip()
 
-                if not cuenta or not evento:
+                if not cuenta or not evento_raw:
                     continue
 
-                fecha_hora = parse_fecha_hora(dia, hora, chile_tz)
+                # Traducir evento si viene como código SIA o CID
+                evento = traducir_codigo_evento(evento_raw)
 
-                # Ignorar eventos con más de 7 días de antigüedad
+                # Parseo robusto coordinado con el registro exacto de Scorpion
+                fecha_hora = parse_fecha_hora(dia, hora, chile_tz, add_hours=0)
+
+                # Ventana de 30 días para jamás perder señales legítimas
                 try:
                     ev_clean = fecha_hora.split('T')[0]
                     ev_parts = [int(p) for p in ev_clean.split('-')]
                     ev_date = datetime(ev_parts[0], ev_parts[1], ev_parts[2])
-                    if (datetime.now() - ev_date).days > 7:
+                    if (datetime.now() - ev_date).days > 30:
                         continue
                 except Exception: pass
 
-                # Nombre resuelto si viene vacío (insensible a mayúsculas/minúsculas)
+                # Nombre resuelto si viene vacío
                 if not nombre:
                     nombre = CLIENTES_LOCAL_MAP.get(cuenta, {}).get('nombre', '') if isinstance(CLIENTES_LOCAL_MAP.get(cuenta), dict) else str(CLIENTES_LOCAL_MAP.get(cuenta) or '')
                     if not nombre:
@@ -697,9 +862,16 @@ def sincronizar_desde_mdb(cache):
                     save_cache(cache)
                     enviar_heartbeat()
 
-        except Exception:
-            pass
+        except Exception as e_proc:
+            if '1036' in str(e_proc):
+                time.sleep(0.5)
         finally:
+            if cursor:
+                try: cursor.close()
+                except Exception: pass
+            if conn:
+                try: conn.close()
+                except Exception: pass
             if os.path.exists(RUTA_COPIA_TEMP):
                 try: os.remove(RUTA_COPIA_TEMP)
                 except Exception: pass
@@ -727,10 +899,12 @@ def sincronizar_ciclo_completo(cache):
     return cache
 
 if __name__ == "__main__":
+    tz_str, _ = get_chile_offset_info()
     print("=" * 60)
-    print("  GAMA COMMAND CENTER - Sincronizador Indestructible v6.1")
-    print(f"  Timezone: Chile ({get_chile_offset()})")
+    print("  GAMA COMMAND CENTER - Sincronizador Indestructible v6.5")
+    print(f"  Timezone Oficial: Chile ({tz_str})")
     print("  Ingesta Híbrida: MDBs Scorpion Locales + IPRS Cloud")
+    print("  Decodificación Total SIA & Contact ID en Español")
     print("=" * 60)
     
     load_maestros()

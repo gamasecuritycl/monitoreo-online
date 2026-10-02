@@ -278,11 +278,12 @@ export default function TodosLosEventosModal({ onClose, clientesMap: propCliente
       const [anio, mes, dia] = fechaSeleccionada.split('-')
       const dateChileStr = `${dia}-${mes}-${anio}`
 
-      // Margen de consulta: como en DB la hora está adelantada en 1 hora,
-      // las 00:00 del día están guardadas como 01:00, y las 23:59 del día están como 00:59 del día siguiente.
-      const startIso = `${fechaSeleccionada}T00:00:00`
+      // Rango de consulta con margen generoso para cubrir el día completo en Chile (00:00:00 a 23:59:59)
+      // Chile continental (UTC-3 / UTC-4) se proyecta entre las 20:00 del día anterior y las 04:30 del día posterior en UTC.
+      const prevDay = new Date(new Date(`${fechaSeleccionada}T12:00:00Z`).getTime() - 86400000).toISOString().slice(0, 10)
       const nextDay = new Date(new Date(`${fechaSeleccionada}T12:00:00Z`).getTime() + 86400000).toISOString().slice(0, 10)
-      const endIso = `${nextDay}T01:30:00`
+      const startIso = `${prevDay}T20:00:00Z`
+      const endIso = `${nextDay}T05:00:00Z`
 
       let allRows: any[] = []
       let page = 0

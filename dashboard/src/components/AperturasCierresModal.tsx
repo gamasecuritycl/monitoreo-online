@@ -158,20 +158,22 @@ export default function AperturasCierresModal({ onClose }: AperturasCierresModal
 
           // Encontrar el último evento de Apertura/Cierre que corresponda a ESTA partición (PAR)
           const evRelevante = evsCuenta.find(e => {
-            const evUpper = (e.evento || '').toUpperCase()
-            const esApOrCie = evUpper.includes('APERTURA') || evUpper.includes('CIERRE') ||
-                              evUpper.includes('DESARME') || evUpper.includes('ARME') ||
-                              evUpper.includes('OPEN') || evUpper.includes('CLOSE')
+            const evUpper = (e.evento || '').toUpperCase().trim()
+            const esAp = evUpper.includes('APERTURA') || evUpper.includes('DESARME') || evUpper.includes('OPEN') ||
+                         ['OP', 'OA', 'OG', 'OR', 'OQ', 'OK', 'OT', 'E401', 'E402', 'E400', 'E407', 'E408', 'E409'].includes(evUpper)
+            const esCie = evUpper.includes('CIERRE') || evUpper.includes('ARME') || evUpper.includes('CLOSE') ||
+                          ['CL', 'CP', 'CA', 'CG', 'CR', 'CF', 'CT', 'CE', 'NL', 'R401', 'R402', 'R400', 'R407', 'R408', 'R409'].includes(evUpper)
             
-            if (!esApOrCie) return false
+            if (!esAp && !esCie) return false
 
             // Verificar si la partición (zona/PAR) coincide
             return matchParticion(e.zona || '', item.numParticion, item.particion)
           })
 
           if (evRelevante) {
-            const evUpper = (evRelevante.evento || '').toUpperCase()
-            const esApertura = evUpper.includes('APERTURA') || evUpper.includes('DESARME') || evUpper.includes('OPEN')
+            const evUpper = (evRelevante.evento || '').toUpperCase().trim()
+            const esApertura = evUpper.includes('APERTURA') || evUpper.includes('DESARME') || evUpper.includes('OPEN') ||
+                               ['OP', 'OA', 'OG', 'OR', 'OQ', 'OK', 'OT', 'E401', 'E402', 'E400', 'E407', 'E408', 'E409'].includes(evUpper)
             
             const fh = evRelevante.fecha_hora || ''
             const hora = fh.includes('T') ? fh.split('T')[1]?.substring(0, 8) : fh.substring(11, 19) || fh

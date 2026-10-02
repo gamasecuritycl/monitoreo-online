@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { EventoMonitoreo } from '@/lib/supabase'
 import { supabase, deduplicarEventos } from '@/lib/supabase'
-
+import { getSenalLegible } from './EventRow'
 
 // Base de datos de fallback de clientes
 import clientesDataRaw from '@/lib/clientes_general.json'
@@ -27,7 +27,6 @@ export default function EventosPorUsuarioModal({ onClose, eventoInicial }: Event
   const [clientesMap, setClientesMap] = useState<Record<string, Record<string, string>>>(clientesGeneralFallback)
   
   // Lista de días disponibles para el abonado activo
-  // Lista de días disponibles para el abonado activo
   const [diasDisponibles, setDiasDisponibles] = useState<string[]>([])
   const [diaSeleccionado, setDiaSeleccionado] = useState<string>('')
   
@@ -36,16 +35,23 @@ export default function EventosPorUsuarioModal({ onClose, eventoInicial }: Event
   const [eventosMostrados, setEventosMostrados] = useState<EventoMonitoreo[]>([])
   const [loading, setLoading] = useState(false)
 
-  // Normalizar fecha ISO → YYYY-MM-DD (robusto a formatos mixtos)
+  // Normalizar fecha ISO → YYYY-MM-DD en hora oficial de Chile (America/Santiago)
   const getDiaLocal = (iso: string): string => {
     try {
       const d = new Date(iso)
       if (isNaN(d.getTime())) {
         return iso.split('T')[0] || ''
       }
-      const anio = d.getFullYear().toString().padStart(4, '0')
-      const mes = (d.getMonth() + 1).toString().padStart(2, '0')
-      const dia = d.getDate().toString().padStart(2, '0')
+      const formatter = new Intl.DateTimeFormat('es-CL', {
+        timeZone: 'America/Santiago',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      })
+      const parts = formatter.formatToParts(d)
+      const anio = parts.find(p => p.type === 'year')?.value || ''
+      const mes = parts.find(p => p.type === 'month')?.value || ''
+      const dia = parts.find(p => p.type === 'day')?.value || ''
       return `${anio}-${mes}-${dia}`
     } catch {
       const partes = iso.split('T')[0]
@@ -240,13 +246,19 @@ export default function EventosPorUsuarioModal({ onClose, eventoInicial }: Event
   const getHoraSolo = (iso: string): string => {
     try {
       const d = new Date(iso)
-      const pad = (n: number) => n.toString().padStart(2, '0')
-      return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
-    } catch {
-      const partes = iso.split('T')
-      if (partes.length === 2) {
-        return partes[1].substring(0, 8)
+      if (isNaN(d.getTime())) {
+        const partes = iso.split('T')
+        return partes.length === 2 ? partes[1].substring(0, 8) : iso
       }
+      const formatter = new Intl.DateTimeFormat('es-CL', {
+        timeZone: 'America/Santiago',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+      })
+      return formatter.format(d)
+    } catch {
       return iso
     }
   }
@@ -391,15 +403,20 @@ export default function EventosPorUsuarioModal({ onClose, eventoInicial }: Event
                       <tr>
                         <td colSpan={5} className="p-4 text-center text-gray-500 italic">Cargando eventos...</td>
                       </tr>
-                    ) : eventosMostrados.map((ev, idx) => (
-                      <tr key={idx} className="hover:bg-blue-100 h-5 font-bold">
-                        <td className="p-1 border-r border-gray-300 text-center text-blue-900">{getHoraSolo(ev.fecha_hora)}</td>
-                        <td className="p-1 border-r border-gray-300 truncate max-w-[150px] sm:max-w-[250px] uppercase">{ev.evento}</td>
-                        <td className="p-1 border-r border-gray-300 text-center text-gray-600">01</td>
-                        <td className="p-1 border-r border-gray-300 text-center text-red-600">{formatZona(ev.zona)}</td>
-                        <td className="p-1 text-center text-green-700">{formatUsuario(ev.usuario)}</td>
-                      </tr>
-                    ))}
+                    ) : eventosMostrados.map((ev, idx) => {
+                      const senalLegible = getSenalLegible(ev.evento) || ev.evento
+                      return (
+                        <tr key={idx} className="hover:bg-blue-100 h-5 font-bold">
+                          <td className="p-1 border-r border-gray-300 text-center text-blue-900">{getHoraSolo(ev.fecha_hora)}</td>
+                          <td className="p-1 border-r border-gray-300 truncate max-w-[150px] sm:max-w-[250px] uppercase" title={ev.evento !== senalLegible ? `Código original: ${ev.evento}` : undefined}>
+                            {senalLegible}
+                          </td>
+                          <td className="p-1 border-r border-gray-300 text-center text-gray-600">01</td>
+                          <td className="p-1 border-r border-gray-300 text-center text-red-600">{formatZona(ev.zona)}</td>
+                          <td className="p-1 text-center text-green-700">{formatUsuario(ev.usuario)}</td>
+                        </tr>
+                      )
+                    })}
                     {!loading && eventosMostrados.length === 0 && (
                       <tr>
                         <td colSpan={5} className="p-6 text-center font-mono">
@@ -408,7 +425,7 @@ export default function EventosPorUsuarioModal({ onClose, eventoInicial }: Event
                           </div>
                           {ultimoEvento && ultimoEvento.fecha_hora ? (
                             <div className="text-[10px] text-gray-600 mt-1">
-                              Último evento recibido: <span className="font-bold text-blue-900">{ultimoEvento.evento}</span> el {new Date(ultimoEvento.fecha_hora).toLocaleDateString('es-CL')} a las {getHoraSolo(ultimoEvento.fecha_hora)}
+                              Último evento recibido: <span className="font-bold text-blue-900">{getSenalLegible(ultimoEvento.evento) || ultimoEvento.evento}</span> el {new Date(ultimoEvento.fecha_hora).toLocaleDateString('es-CL')} a las {getHoraSolo(ultimoEvento.fecha_hora)}
                             </div>
                           ) : (
                             <div className="text-[10px] text-gray-500 italic mt-1">
