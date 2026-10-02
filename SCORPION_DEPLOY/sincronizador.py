@@ -238,27 +238,12 @@ def parse_fecha_hora(dia_val, hora_val, chile_tz, add_hours=0):
             
             if p0 > 1000:  # YYYY-MM-DD
                 year, month, day = p0, p1, p2
-            elif p2 > 1000 or p2 < 100:  # DD-MM-YYYY o MM-DD-YYYY
+            elif p2 > 1000 or p2 < 100:  # DD-MM-YYYY estándar Scorpion Chile
                 yr = p2 if p2 > 1000 else 2000 + p2
-                if p0 > 12 and p1 <= 12:  # p0 es día
-                    day, month, year = p0, p1, yr
-                elif p1 > 12 and p0 <= 12:  # p1 es día
+                if p1 > 12 and p0 <= 12:  # p1 es día si supera 12
                     day, month, year = p1, p0, yr
-                elif p0 <= 12 and p1 <= 12 and p0 > 0 and p1 > 0:
-                    # Ambigüedad (ej: 01/10 vs 10/01 en Octubre): elegir la fecha más cercana al día de hoy
-                    try:
-                        cand1 = datetime(yr, p1, p0)  # p0=dia, p1=mes
-                        diff1 = abs((now_dt - cand1).total_seconds())
-                    except Exception: diff1 = float('inf')
-                    try:
-                        cand2 = datetime(yr, p0, p1)  # p0=mes, p1=dia
-                        diff2 = abs((now_dt - cand2).total_seconds())
-                    except Exception: diff2 = float('inf')
-
-                    if diff1 <= diff2:
-                        day, month, year = p0, p1, yr
-                    else:
-                        day, month, year = p1, p0, yr
+                else:  # Estándar Scorpion Chile: DD/MM/YYYY (p0 es día, p1 es mes)
+                    day, month, year = p0, p1, yr
 
         if len(parts_dia) > 1 and ':' in parts_dia[1] and not hora_val:
             hora_val = parts_dia[1]
@@ -288,6 +273,11 @@ def parse_fecha_hora(dia_val, hora_val, chile_tz, add_hours=0):
     base_dt = datetime(year, month, day, h, m, s)
     if add_hours:
         base_dt += timedelta(hours=add_hours)
+
+    # REGLA DE ORO INVIOLABLE: NINGUNA SEÑAL PUEDE SER DEL FUTURO
+    # Si por desalineación de reloj supera la hora actual (+ 1 hora de margen), se ajusta a la hora actual
+    if base_dt > now_dt + timedelta(hours=1):
+        base_dt = now_dt
 
     return f"{base_dt.year:04d}-{base_dt.month:02d}-{base_dt.day:02d}T{base_dt.hour:02d}:{base_dt.minute:02d}:{base_dt.second:02d}{chile_tz}"
 
@@ -863,7 +853,7 @@ def sincronizar_desde_mdb(cache):
                     ev_clean = fecha_hora.split('T')[0]
                     ev_parts = [int(p) for p in ev_clean.split('-')]
                     ev_date = datetime(ev_parts[0], ev_parts[1], ev_parts[2])
-                    if ev_date < datetime(2026, 8, 1):
+                    if ev_date < datetime(2026, 8, 1) or ev_date > datetime.now() + timedelta(days=1):
                         continue
                 except Exception: pass
 

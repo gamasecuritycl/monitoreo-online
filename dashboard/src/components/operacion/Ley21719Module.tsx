@@ -1532,7 +1532,7 @@ FOR ALL TO anon, authenticated, service_role USING (true) WITH CHECK (true);`
       </div>
 
       {/* Selector de Pestañas */}
-      <div className="flex border-b border-slate-700/60 gap-2">
+      <div className="flex border-b border-slate-700/60 gap-2 overflow-x-auto pb-1 scrollbar-thin">
         <button
           onClick={() => setPestañaActiva('documentos')}
           className={`px-4 py-2.5 text-xs sm:text-sm font-bold rounded-t-xl transition-all flex items-center gap-2 cursor-pointer ${

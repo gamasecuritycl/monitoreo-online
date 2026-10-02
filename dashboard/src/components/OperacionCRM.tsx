@@ -89,7 +89,9 @@ import {
   Save,
   Eye,
   EyeOff,
-  ChevronUp
+  ChevronUp,
+  Home,
+  Menu
 } from 'lucide-react'
 import ServicioTecnicoModal from './ServicioTecnicoModal'
 
@@ -352,6 +354,7 @@ export function normalizeCuentaCode(cta: any): string {
 export default function OperacionCRM() {
   const [moduloActivo, setModuloActivo] = useState<'ficha360' | 'autonomia' | 'salesbot' | 'presupuestos' | 'mercadopublico' | 'facturacion' | 'serv_tecnico' | 'kpis' | 'config' | 'marketing' | 'landing_marketing' | 'gestion_mails' | 'compras' | 'contratos' | 'ley21719' | null>(null)
   const [sidebarAbierto, setSidebarAbierto] = useState<boolean>(false)
+  const [filtroCategoriaLaunchpad, setFiltroCategoriaLaunchpad] = useState<string>('TODOS')
 
   // ── ESTADOS SALES-GAMA AI MODALS ──
   const [modalBotConfigOpen, setModalBotConfigOpen] = useState(false)
@@ -2899,6 +2902,18 @@ export default function OperacionCRM() {
       tag: '24/7 Activo'
     },
     {
+      id: 'salesbot',
+      titulo: 'Sales-Bot IA & Leads Hub',
+      categoria: 'COMERCIAL & IA',
+      descripcion: 'Agente de ventas 24/7, captura automática de prospectos calientes, transcripciones y radar de oportunidades.',
+      icono: Bot,
+      gradient: 'from-blue-700 via-indigo-600 to-violet-600',
+      borderColor: 'hover:border-indigo-400',
+      glowColor: 'group-hover:shadow-indigo-500/25',
+      badgeColor: 'bg-indigo-500/10 text-indigo-300 border-indigo-500/20',
+      tag: '🔥 Bot Hub'
+    },
+    {
       id: 'bot_config',
       titulo: 'Configuración Sales-Bot',
       categoria: 'INTELIGENCIA ARTIFICIAL',
@@ -3147,6 +3162,8 @@ export default function OperacionCRM() {
         }
         cantEmpresas={empresasConglomerado.length}
         valorUF={valorUF}
+        sidebarAbierto={sidebarAbierto}
+        setSidebarAbierto={setSidebarAbierto}
         moduloActivo={moduloActivo}
         onVolverMenu={() => setModuloActivo(null)}
         onOpenCommandPalette={() => setCommandPaletteOpen(true)}
@@ -3170,8 +3187,21 @@ export default function OperacionCRM() {
         }}
       />
 
+      {/* ── SIDEBAR DRAWER RESPONSIVE DE MÓDULOS (SLIDE-OVER LATERAL) ── */}
+      <OperacionSidebar
+        moduloActivo={moduloActivo}
+        setModuloActivo={setModuloActivo}
+        sidebarAbierto={sidebarAbierto}
+        setSidebarAbierto={setSidebarAbierto}
+        cantEmpresas={empresasConglomerado.length}
+        cantClientes={Object.keys(clientesMaestros).length}
+        cantCentros={Object.keys(abonadosCentrosCosto).length}
+        onOpenBotConfig={() => setModalBotConfigOpen(true)}
+        onOpenBotLeads={() => setModalBotLeadsOpen(true)}
+      />
+
       {/* ── CONTENEDOR PRINCIPAL RESPONSIVE (SIN DIVISIONES, CON MODALES AMPLIOS) ── */}
-      <div className="flex-1 overflow-hidden min-h-0 no-imprimir flex flex-col relative">
+      <div className="flex-1 overflow-hidden min-h-0 no-imprimir flex flex-col relative pb-16 md:pb-0">
 
         {/* ── VISTA 1: LAUNCHPAD HUB PRINCIPAL (10 BOTONES GRANDES) ── */}
         {!moduloActivo ? (
@@ -3234,9 +3264,50 @@ export default function OperacionCRM() {
               )}
             </div>
 
+            {/* FILTROS POR CATEGORÍA PARA ACCESO RÁPIDO RESPONSIVE */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-thin">
+              {[
+                { id: 'TODOS', label: 'Todos los Módulos', count: modulosOrdenados.length },
+                { id: 'OPERACIONES', label: 'Operaciones', count: modulosOrdenados.filter(m => m.categoria.includes('OPERACIONES')).length },
+                { id: 'COMERCIAL', label: 'Comercial & Ventas', count: modulosOrdenados.filter(m => m.categoria.includes('COMERCIAL') || m.categoria.includes('MARKETING') || m.categoria.includes('VENTAS')).length },
+                { id: 'FINANZAS', label: 'Finanzas & ERP', count: modulosOrdenados.filter(m => m.categoria.includes('FINANZAS') || m.categoria.includes('ERP') || m.categoria.includes('ABASTECIMIENTO')).length },
+                { id: 'IA', label: 'Inteligencia Artificial', count: modulosOrdenados.filter(m => m.categoria.includes('INTELIGENCIA') || m.categoria.includes('IA')).length },
+                { id: 'LEGAL', label: 'Legal & APDP', count: modulosOrdenados.filter(m => m.categoria.includes('LEGAL') || m.categoria.includes('CUMPLIMIENTO')).length },
+                { id: 'SISTEMA', label: 'Sistema & Ajustes', count: modulosOrdenados.filter(m => m.categoria.includes('SISTEMA')).length },
+              ].map(f => (
+                <button
+                  key={f.id}
+                  onClick={() => setFiltroCategoriaLaunchpad(f.id)}
+                  className={`px-3.5 py-2 rounded-2xl text-xs font-bold transition-all shrink-0 cursor-pointer flex items-center gap-1.5 shadow-2xs ${
+                    filtroCategoriaLaunchpad === f.id
+                      ? 'bg-[#0B2545] text-white border border-[#0B2545]'
+                      : 'bg-white text-slate-700 hover:bg-slate-50 border border-slate-200'
+                  }`}
+                >
+                  <span>{f.label}</span>
+                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold ${
+                    filtroCategoriaLaunchpad === f.id ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'
+                  }`}>
+                    {f.count}
+                  </span>
+                </button>
+              ))}
+            </div>
+
             {/* GRID DE BOTONES GRANDES REORDENABLES CON DRAG & DROP NATIVO */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 gap-5 sm:gap-6">
-              {modulosOrdenados.map((mod) => {
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 gap-4 sm:gap-6">
+              {modulosOrdenados
+                .filter(mod => {
+                  if (filtroCategoriaLaunchpad === 'TODOS') return true
+                  if (filtroCategoriaLaunchpad === 'OPERACIONES') return mod.categoria.includes('OPERACIONES')
+                  if (filtroCategoriaLaunchpad === 'COMERCIAL') return mod.categoria.includes('COMERCIAL') || mod.categoria.includes('MARKETING') || mod.categoria.includes('VENTAS')
+                  if (filtroCategoriaLaunchpad === 'FINANZAS') return mod.categoria.includes('FINANZAS') || mod.categoria.includes('ERP') || mod.categoria.includes('ABASTECIMIENTO')
+                  if (filtroCategoriaLaunchpad === 'IA') return mod.categoria.includes('INTELIGENCIA') || mod.categoria.includes('IA')
+                  if (filtroCategoriaLaunchpad === 'LEGAL') return mod.categoria.includes('LEGAL') || mod.categoria.includes('CUMPLIMIENTO')
+                  if (filtroCategoriaLaunchpad === 'SISTEMA') return mod.categoria.includes('SISTEMA')
+                  return true
+                })
+                .map((mod) => {
                 const IconComp = mod.icono
                 const isDragging = draggedItemId === mod.id
                 const isDragOver = dragOverItemId === mod.id
@@ -8030,6 +8101,67 @@ export default function OperacionCRM() {
         isOpen={modalBotLeadsOpen}
         onClose={() => setModalBotLeadsOpen(false)}
       />
+
+      {/* ── BARRA FLOTANTE DE NAVEGACIÓN MÓVIL (BOTTOM DOCK) ── */}
+      <nav className="fixed bottom-3 inset-x-3 z-40 bg-white/95 backdrop-blur-xl border border-slate-300/90 rounded-2xl shadow-2xl flex items-center justify-around p-2 md:hidden no-imprimir">
+        <button
+          onClick={() => setModuloActivo(null)}
+          className={`flex flex-col items-center justify-center p-2 rounded-xl transition cursor-pointer active:scale-95 ${
+            !moduloActivo ? 'text-[#0B2545] font-black' : 'text-slate-500 hover:text-slate-900 font-semibold'
+          }`}
+        >
+          <Home className="h-5 w-5 stroke-[2]" />
+          <span className="text-[10px] mt-0.5 tracking-tight">Inicio</span>
+        </button>
+
+        <button
+          onClick={() => setModuloActivo('ficha360')}
+          className={`flex flex-col items-center justify-center p-2 rounded-xl transition cursor-pointer active:scale-95 ${
+            moduloActivo === 'ficha360' ? 'text-[#0B2545] font-black' : 'text-slate-500 hover:text-slate-900 font-semibold'
+          }`}
+        >
+          <User className="h-5 w-5 stroke-[2]" />
+          <span className="text-[10px] mt-0.5 tracking-tight">Ficha 360</span>
+        </button>
+
+        <button
+          onClick={() => setModuloActivo('presupuestos')}
+          className={`flex flex-col items-center justify-center p-2 rounded-xl transition cursor-pointer active:scale-95 ${
+            moduloActivo === 'presupuestos' ? 'text-[#0B2545] font-black' : 'text-slate-500 hover:text-slate-900 font-semibold'
+          }`}
+        >
+          <FileText className="h-5 w-5 stroke-[2]" />
+          <span className="text-[10px] mt-0.5 tracking-tight">Cotizar</span>
+        </button>
+
+        <button
+          onClick={() => setModuloActivo('facturacion')}
+          className={`flex flex-col items-center justify-center p-2 rounded-xl transition cursor-pointer active:scale-95 ${
+            moduloActivo === 'facturacion' ? 'text-[#0B2545] font-black' : 'text-slate-500 hover:text-slate-900 font-semibold'
+          }`}
+        >
+          <DollarSign className="h-5 w-5 stroke-[2]" />
+          <span className="text-[10px] mt-0.5 tracking-tight">Cobranza</span>
+        </button>
+
+        <button
+          onClick={() => setModuloActivo('serv_tecnico')}
+          className={`flex flex-col items-center justify-center p-2 rounded-xl transition cursor-pointer active:scale-95 ${
+            moduloActivo === 'serv_tecnico' ? 'text-[#0B2545] font-black' : 'text-slate-500 hover:text-slate-900 font-semibold'
+          }`}
+        >
+          <Wrench className="h-5 w-5 stroke-[2]" />
+          <span className="text-[10px] mt-0.5 tracking-tight">OTs</span>
+        </button>
+
+        <button
+          onClick={() => setSidebarAbierto(true)}
+          className="flex flex-col items-center justify-center p-2 rounded-xl text-[#0B2545] bg-blue-50 border border-blue-200 shadow-2xs font-extrabold cursor-pointer active:scale-95"
+        >
+          <Menu className="h-5 w-5 stroke-[2.5]" />
+          <span className="text-[10px] mt-0.5">Módulos</span>
+        </button>
+      </nav>
 
     </div>
   )
