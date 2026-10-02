@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useMemo } from 'react'
 import type { EventoMonitoreo } from '@/lib/supabase'
 import { supabase, deduplicarEventos } from '@/lib/supabase'
 import { getSenalLegible } from './EventRow'
@@ -59,6 +59,29 @@ export default function EventosPorUsuarioModal({ onClose, eventoInicial }: Event
     }
   }
 
+  // Generador exhaustivo de todos los días consecutivos en hora de Chile desde 2026-08-01 hasta hoy
+  const generarDiasDesdeAgosto = (fechaFinStr: string, fechaInicioStr = '2026-08-01'): string[] => {
+    const lista: string[] = []
+    try {
+      const [iy, im, id] = fechaInicioStr.split('-').map(Number)
+      const [fy, fm, fd] = fechaFinStr.split('-').map(Number)
+      const inicio = new Date(Date.UTC(iy, im - 1, id, 12, 0, 0))
+      const fin = new Date(Date.UTC(fy, fm - 1, fd, 12, 0, 0))
+      
+      const actual = new Date(fin)
+      while (actual >= inicio) {
+        const y = actual.getUTCFullYear()
+        const m = String(actual.getUTCMonth() + 1).padStart(2, '0')
+        const d = String(actual.getUTCDate()).padStart(2, '0')
+        lista.push(`${y}-${m}-${d}`)
+        actual.setUTCDate(actual.getUTCDate() - 1)
+      }
+    } catch {
+      lista.push(fechaFinStr)
+    }
+    return lista
+  }
+
   // 1. Cargar la base de datos de clientes desde Supabase en la inicialización
   useEffect(() => {
     const fetchClientes = async () => {
@@ -67,13 +90,14 @@ export default function EventosPorUsuarioModal({ onClose, eventoInicial }: Event
           .from('eventos_monitoreo')
           .select('*')
           .eq('cuenta', 'CLIENTES')
+          .order('id', { ascending: false })
           .limit(1)
         
         if (data && data.length > 0 && !error) {
           const rawJson = data[0].nombre_abonado
           if (rawJson) {
             const map = JSON.parse(rawJson)
-            setClientesMap(map)
+            setClientesMap(prev => ({ ...clientesGeneralFallback, ...prev, ...map }))
           }
         }
       } catch (err) {
@@ -103,31 +127,30 @@ export default function EventosPorUsuarioModal({ onClose, eventoInicial }: Event
           const eventosLimpios = deduplicarEventos(data)
           setTodosEventosAbonado(eventosLimpios)
           
-          // Agrupar fechas únicas en formato YYYY-MM-DD (robusto)
-          const diasSet = new Set<string>()
+          // Generar todos los días continuos desde el 01/08/2026 hasta hoy
+          const hoy = getDiaLocal(new Date().toISOString())
+          const diasBase = generarDiasDesdeAgosto(hoy, '2026-08-01')
+          const diasSet = new Set<string>(diasBase)
+
+          // Agregar días adicionales si la cuenta tuviera señales previas a agosto
           eventosLimpios.forEach((ev: EventoMonitoreo) => {
             if (ev.fecha_hora) {
               diasSet.add(getDiaLocal(ev.fecha_hora))
             }
           })
           
-          // Siempre incluir la fecha de HOY en la lista de días
-          const hoy = getDiaLocal(new Date().toISOString())
-          diasSet.add(hoy)
-          
-          const listaDias = Array.from(diasSet).sort((a, b) => b.localeCompare(a)) // Orden descendente
+          const listaDias = Array.from(diasSet).sort((a, b) => b.localeCompare(a)) // Orden descendente estricto
           setDiasDisponibles(listaDias)
           
           // Seleccionar por defecto HOY si tiene eventos, si no el día más reciente con eventos reales
           const eventosHoy = eventosLimpios.filter(ev => ev.fecha_hora && getDiaLocal(ev.fecha_hora) === hoy)
           if (eventosHoy.length > 0) {
             setDiaSeleccionado(hoy)
-          } else if (listaDias.length > 0) {
-            // Si hoy no tiene eventos pero hay días anteriores, seleccionar el día más reciente con eventos
-            const diasConEventos = listaDias.filter(d => d !== hoy)
-            setDiaSeleccionado(diasConEventos.length > 0 ? diasConEventos[0] : hoy)
           } else {
-            setDiaSeleccionado(hoy)
+            const primerDiaConEventos = listaDias.find(d => {
+              return eventosLimpios.some(ev => ev.fecha_hora && getDiaLocal(ev.fecha_hora) === d)
+            })
+            setDiaSeleccionado(primerDiaConEventos || hoy)
           }
         }
       } catch (err) {
@@ -179,7 +202,7 @@ export default function EventosPorUsuarioModal({ onClose, eventoInicial }: Event
     }
   }, [cuentaActiva])
 
-  // 4. Filtrar eventos del abonado según el día seleccionado
+  // 4. Filtrar eventos del abonado según el día seleccionado (con consulta bajo demanda si no está en memoria)
   useEffect(() => {
     if (!diaSeleccionado) {
       setEventosMostrados([])
@@ -188,13 +211,50 @@ export default function EventosPorUsuarioModal({ onClose, eventoInicial }: Event
     const filtrados = todosEventosAbonado.filter(ev => {
       return ev.fecha_hora && getDiaLocal(ev.fecha_hora) === diaSeleccionado
     })
-    const filtradosLimpios = deduplicarEventos(filtrados)
-    // Orden cronológico ascendente por timestamp: el más reciente SIEMPRE abajo
-    const ordenAsc = [...filtradosLimpios].sort((a, b) => {
-      return new Date(a.fecha_hora).getTime() - new Date(b.fecha_hora).getTime()
-    })
-    setEventosMostrados(ordenAsc)
-  }, [diaSeleccionado, todosEventosAbonado])
+    
+    if (filtrados.length > 0) {
+      const filtradosLimpios = deduplicarEventos(filtrados)
+      const ordenAsc = [...filtradosLimpios].sort((a, b) => {
+        return new Date(a.fecha_hora).getTime() - new Date(b.fecha_hora).getTime()
+      })
+      setEventosMostrados(ordenAsc)
+    } else {
+      let cancelado = false
+      const buscarEnSupabase = async () => {
+        try {
+          const ctaUpper = cuentaActiva.toUpperCase().trim()
+          const ctaLower = cuentaActiva.toLowerCase().trim()
+          const prevDay = new Date(new Date(`${diaSeleccionado}T12:00:00Z`).getTime() - 86400000).toISOString().slice(0, 10)
+          const nextDay = new Date(new Date(`${diaSeleccionado}T12:00:00Z`).getTime() + 86400000).toISOString().slice(0, 10)
+          
+          const { data } = await supabase
+            .from('eventos_monitoreo')
+            .select('*')
+            .or(`cuenta.eq.${ctaUpper},cuenta.eq.${ctaLower}`)
+            .gte('fecha_hora', `${prevDay}T20:00:00Z`)
+            .lte('fecha_hora', `${nextDay}T05:00:00Z`)
+            .order('fecha_hora', { ascending: true })
+
+          if (!cancelado) {
+            if (data && data.length > 0) {
+              const delDia = data.filter((ev: EventoMonitoreo) => ev.fecha_hora && getDiaLocal(ev.fecha_hora) === diaSeleccionado)
+              const limpios = deduplicarEventos(delDia)
+              setEventosMostrados(limpios)
+              if (limpios.length > 0) {
+                setTodosEventosAbonado(prev => deduplicarEventos([...limpios, ...prev]))
+              }
+            } else {
+              setEventosMostrados([])
+            }
+          }
+        } catch {
+          if (!cancelado) setEventosMostrados([])
+        }
+      }
+      buscarEnSupabase()
+      return () => { cancelado = true }
+    }
+  }, [diaSeleccionado, todosEventosAbonado, cuentaActiva])
 
   // Scroll al fondo cuando cambian los eventos del día (ver lo último)
   useEffect(() => {
@@ -230,18 +290,46 @@ export default function EventosPorUsuarioModal({ onClose, eventoInicial }: Event
       nombre: eventoInicial?.nombre_abonado || 'SIN NOMBRE REGISTRADO'
     }
 
-  // Lista de clientes filtrada para el buscador lateral
-  const listaClientesBusqueda = Object.values(clientesMap).map(c => ({
-    cuenta: (c.cuenta || '').toUpperCase().trim(),
-    nombre: (c.nombre || '').toUpperCase().trim()
-  })).sort((a, b) => a.cuenta.localeCompare(b.cuenta))
+  const SYSTEM_ACCOUNTS = new Set([
+    'CLIENTES', 'CODIGOS', 'ZONAS', '__SINCRONIZADOR__', 'CONFIG_OPERADORES', 
+    'ORDEN_EDITOR_REMOTO', 'AUDITORIA_EDITOR_REMOTO', 'CONFIG_APERTURAS_CIERRES_LISTA', 
+    '0000', '000', '00000', 'RECEPTOR'
+  ])
 
-  const listaClientesFiltrada = buscarNombreInput.trim()
-    ? listaClientesBusqueda.filter(c => 
-        c.cuenta.toLowerCase().includes(buscarNombreInput.toLowerCase()) ||
-        c.nombre.toLowerCase().includes(buscarNombreInput.toLowerCase())
-      )
-    : listaClientesBusqueda.slice(0, 100)
+  // Lista de clientes filtrada para el buscador lateral garantizando todos los abonados (incluyendo C7XX)
+  const listaClientesBusqueda = useMemo(() => {
+    const combinado = { ...clientesGeneralFallback, ...clientesMap }
+    const mapaUnico = new Map<string, { cuenta: string, nombre: string }>()
+
+    Object.entries(combinado).forEach(([key, val]) => {
+      const cta = ((val as any)?.cuenta || key || '').toUpperCase().trim()
+      const nom = ((val as any)?.nombre || (val as any)?.nombre_abonado || (val as any)?.alias_unidad || '').toUpperCase().trim()
+      
+      if (!cta || SYSTEM_ACCOUNTS.has(cta) || cta.startsWith('__') || cta.startsWith('CONFIG') || cta.startsWith('ORDEN') || cta.startsWith('AUDITORIA')) {
+        return
+      }
+
+      if (!mapaUnico.has(cta)) {
+        mapaUnico.set(cta, { cuenta: cta, nombre: nom || `ABONADO ${cta}` })
+      }
+    })
+
+    return Array.from(mapaUnico.values()).sort((a, b) => 
+      a.cuenta.localeCompare(b.cuenta, undefined, { numeric: true, sensitivity: 'base' })
+    )
+  }, [clientesMap])
+
+  const listaClientesFiltrada = useMemo(() => {
+    const q = buscarNombreInput.trim().toLowerCase()
+    if (!q) {
+      // Mostrar todos los clientes sin corte de 100 para que aparezcan todos los C7XX
+      return listaClientesBusqueda
+    }
+    return listaClientesBusqueda.filter(c => 
+      c.cuenta.toLowerCase().includes(q) ||
+      c.nombre.toLowerCase().includes(q)
+    )
+  }, [listaClientesBusqueda, buscarNombreInput])
 
   const getHoraSolo = (iso: string): string => {
     try {
@@ -280,13 +368,15 @@ export default function EventosPorUsuarioModal({ onClose, eventoInicial }: Event
   }
 
   // Contar eventos por día para informar en el selector
-  const conteoPorDia = todosEventosAbonado.reduce<Record<string, number>>((acc, ev) => {
-    if (ev.fecha_hora) {
-      const d = getDiaLocal(ev.fecha_hora)
-      acc[d] = (acc[d] || 0) + 1
-    }
-    return acc
-  }, {})
+  const conteoPorDia = useMemo(() => {
+    return todosEventosAbonado.reduce<Record<string, number>>((acc, ev) => {
+      if (ev.fecha_hora) {
+        const d = getDiaLocal(ev.fecha_hora)
+        acc[d] = (acc[d] || 0) + 1
+      }
+      return acc
+    }, {})
+  }, [todosEventosAbonado])
 
   const hoyStr = getDiaLocal(new Date().toISOString())
 

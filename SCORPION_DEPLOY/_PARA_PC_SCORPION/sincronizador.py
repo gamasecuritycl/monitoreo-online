@@ -635,6 +635,15 @@ def sincronizar_desde_mysql(cache):
             h_part = f_tokens[1] if len(f_tokens) > 1 else ""
             fecha_hora = parse_fecha_hora(d_part, h_part, chile_tz, add_hours=mysql_diff_hours)
 
+            # Jamás descartar ninguna señal desde el 01/08/2026; ignorar fechas viejas previas para cuidar almacenamiento
+            try:
+                ev_clean = fecha_hora.split('T')[0]
+                ev_parts = [int(p) for p in ev_clean.split('-')]
+                ev_date = datetime(ev_parts[0], ev_parts[1], ev_parts[2])
+                if ev_date < datetime(2026, 8, 1):
+                    continue
+            except Exception: pass
+
             nombre_abonado = CLIENTES_LOCAL_MAP.get(cuenta, {}).get('nombre', '') if isinstance(CLIENTES_LOCAL_MAP.get(cuenta), dict) else str(CLIENTES_LOCAL_MAP.get(cuenta) or '')
             if not nombre_abonado:
                 nombre_abonado = f"ABONADO {cuenta}"
@@ -832,12 +841,12 @@ def sincronizar_desde_mdb(cache):
                 # Parseo robusto coordinado con el registro exacto de Scorpion
                 fecha_hora = parse_fecha_hora(dia, hora, chile_tz, add_hours=0)
 
-                # Ventana de 30 días para jamás perder señales legítimas
+                # Jamás descartar ninguna señal desde el 01/08/2026; ignorar fechas anteriores para cuidar almacenamiento
                 try:
                     ev_clean = fecha_hora.split('T')[0]
                     ev_parts = [int(p) for p in ev_clean.split('-')]
                     ev_date = datetime(ev_parts[0], ev_parts[1], ev_parts[2])
-                    if (datetime.now() - ev_date).days > 30:
+                    if ev_date < datetime(2026, 8, 1):
                         continue
                 except Exception: pass
 
