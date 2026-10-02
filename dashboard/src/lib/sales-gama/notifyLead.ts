@@ -73,16 +73,6 @@ https://wa.me/${clientPhoneFormatted}?text=${encodeURIComponent(`Hola ${nombre},
       console.warn('[notificarLeadCalienteWhatsApp] Error insert Supabase:', error.message);
     }
 
-    // 3. Emitir por Broadcast Realtime a 'whatsapp_outbound'
-    try {
-      const channel = supabase.channel('whatsapp_outbound');
-      await channel.send({
-        type: 'broadcast',
-        event: 'send_whatsapp',
-        payload: { phone: TOMAS_WHATSAPP, text: textoAlerta, id: insertData?.[0]?.id },
-      });
-    } catch {}
-
     console.log(`[ALERTA LEAD WHATSAPP] Notificación enviada con éxito a ${TOMAS_WHATSAPP} para el lead: ${nombre} (${clientPhoneFormatted})`);
     return true;
   } catch (err: any) {

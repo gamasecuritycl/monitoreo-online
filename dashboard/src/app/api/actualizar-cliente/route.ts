@@ -380,16 +380,7 @@ export async function POST(req: NextRequest) {
             tipo_evento: 'confirmacion_actualizacion_contacto1',
             estado: 'pendiente',
             created_at: nowIso
-          }).select()
-
-          try {
-            const channel = supabase.channel('whatsapp_outbound')
-            await channel.send({
-              type: 'broadcast',
-              event: 'send_whatsapp',
-              payload: { phone: telLimpio, text: mensajeWa, id: insertWa?.[0]?.id }
-            })
-          } catch {}
+          })
         }
       }
     } catch (errWaConfirm) {

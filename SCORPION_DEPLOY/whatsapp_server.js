@@ -684,9 +684,42 @@ async function despacharCola() {
 }
 
 // ──────────────────────────────────────────────
+//  DEDUPLICADOR DE ENVÍOS SALIENTES (Evita doble entrega)
+// ──────────────────────────────────────────────
+const outboundDedupCache = new Map()
+
+function isDuplicateOutbound(phone, text) {
+  const now = Date.now()
+  let contentHash = String(text || '').trim()
+  try {
+    const p = JSON.parse(text)
+    contentHash = (p.t || p.i || p.u || p.v || text).toString().slice(0, 100)
+  } catch {}
+
+  const key = `${normalizarJID(phone)}|${contentHash}`
+  const lastSent = outboundDedupCache.get(key)
+  if (lastSent && (now - lastSent) < 15000) {
+    return true
+  }
+  outboundDedupCache.set(key, now)
+  if (outboundDedupCache.size > 500) {
+    for (const [k, ts] of outboundDedupCache.entries()) {
+      if (now - ts > 60000) outboundDedupCache.delete(k)
+    }
+  }
+  return false
+}
+
+// ──────────────────────────────────────────────
 //  ENVÍO CON RETRY
 // ──────────────────────────────────────────────
 async function enviarMensaje(phone, text, retryNum = 0) {
+  // Deduplicación en el primer intento: evita colisión entre Broadcast, Realtime DB y Polling
+  if (retryNum === 0 && isDuplicateOutbound(phone, text)) {
+    log(`🛡️ [DEDUP] Mensaje idéntico descartado para ${phone} (evitado envío duplicado por colisión)`, 'WARN')
+    return { ok: true, duplicado: true, fuente: 'dedup_cache' }
+  }
+
   let payload
   let storageUrl = null
   try {
@@ -805,8 +838,14 @@ function suscribirSupabaseRealtime() {
       .on('broadcast', { event: 'send_whatsapp' }, async ({ payload }) => {
         if (payload?.phone && payload?.text) {
           log(`📡 Broadcast → ${payload.phone}`)
-          try { await enviarMensaje(payload.phone, payload.text) }
-          catch (err) { log(`Error broadcast: ${err.message}`, 'ERROR') }
+          try {
+            const res = await enviarMensaje(payload.phone, payload.text)
+            if (payload.id && res?.ok && !res?.duplicado) {
+              await supabase.from('conversaciones_whatsapp').update({ estado: 'enviado' }).eq('id', payload.id)
+            }
+          } catch (err) {
+            log(`Error broadcast: ${err.message}`, 'ERROR')
+          }
         }
       })
       .subscribe(status => log(`Supabase Realtime (outbound): ${status}`))
@@ -854,6 +893,7 @@ function suscribirSupabaseRealtime() {
         if (!row?.numero || !row?.mensaje_enviado) return
         log(`📡 Pendiente (Realtime): +${row.numero} (ID: ${row.id})`)
         try {
+          await supabase.from('conversaciones_whatsapp').update({ estado: 'procesando' }).eq('id', row.id)
           await enviarMensaje(row.numero, row.mensaje_enviado)
           await supabase.from('conversaciones_whatsapp').update({ estado: 'enviado' }).eq('id', row.id)
         } catch (err) {

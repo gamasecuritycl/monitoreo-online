@@ -69,16 +69,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: error.message }, { status: 500 })
     }
 
-    // 3. Emitir por Broadcast Realtime a 'whatsapp_outbound' para entrega instantánea sin latencia
-    try {
-      const channel = supabase.channel('whatsapp_outbound')
-      await channel.send({
-        type: 'broadcast',
-        event: 'send_whatsapp',
-        payload: { phone: telLimpio, text: payload, id: insertData?.[0]?.id }
-      })
-    } catch {}
-
     console.log(`[WHATSAPP SEND-DIRECT] Mensaje encolado (pendiente) a ${telLimpio} (cuenta: ${cuentaFinal}, media: ${tipoMedia || 'texto'})`)
     return NextResponse.json({ ok: true, proveedor: 'whatsapp_queue_direct', numero: telLimpio, cuenta: cuentaFinal, tipo_media: tipoMedia })
   } catch (err: any) {

@@ -1485,7 +1485,7 @@ export default function ScorpionDashboard() {
                   if (sub.modal === 'horarios') return attrs.verCRM || attrs.verMonitoreoEnVivo
                   if (sub.modal === 'book') return attrs.verCRM
                   if (sub.modal === 'search') return attrs.verCRM || attrs.verMonitoreoEnVivo
-                  if (sub.modal === 'servicio-tecnico') return attrs.verTelemetriaTecnica
+                  if (sub.modal === 'servicio-tecnico') return attrs.verTelemetriaTecnica || attrs.verMonitoreoEnVivo || attrs.verCRM
                   if (sub.modal === 'predictor-ia') return attrs.verTelemetriaTecnica
                   if (sub.modal === 'control-test') return attrs.controlTestSimulador || attrs.verTelemetriaTecnica
                   if (sub.modal === 'health-telemetry') return attrs.verTelemetriaTecnica
@@ -1933,6 +1933,27 @@ export default function ScorpionDashboard() {
                 ? `Activar verificación por video (${cantCamarasActiva} cam)`
                 : 'Sin cámaras registradas [Configurar]'}
             </span>
+          </button>
+
+          {/* Botón Agendar Servicio Técnico para el abonado */}
+          <button
+            onClick={() => {
+              if (!activeEvent) {
+                setModalActivo('servicio-tecnico')
+                return
+              }
+              const probDefecto = activeEvent.evento ? `Revisión técnica por evento: ${getSenalLegible(activeEvent.evento, codigosMap) || activeEvent.evento}${activeEvent.zona ? ' (Zona ' + activeEvent.zona + ')' : ''}` : ''
+              setServicioTecnicoInitialData({
+                cuenta: activeEvent.cuenta,
+                problema: probDefecto
+              })
+              setModalActivo('servicio-tecnico')
+            }}
+            title={activeEvent ? `Agendar visita de servicio técnico para la cuenta #${activeEvent.cuenta}` : 'Abrir módulo de servicio técnico'}
+            className="w-full bg-[#000080] text-white border-2 border-t-blue-300 border-l-blue-300 border-b-black border-r-black py-1.5 text-xs md:text-[12.5px] font-bold flex items-center justify-center gap-1.5 hover:bg-blue-900 active:border-t-black active:border-l-black select-none shrink-0 cursor-pointer shadow-xs mt-1"
+          >
+            <span>🛠️</span>
+            <span>Agendar Servicio Técnico OT {activeEvent?.cuenta ? `(#${activeEvent.cuenta})` : ''}</span>
           </button>
 
         </div>
