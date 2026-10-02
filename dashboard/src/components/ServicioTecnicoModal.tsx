@@ -38,8 +38,8 @@ interface Props {
   initialProblema?: string
 }
 
-const TECNITOS_NORMALIZADOS = ['Juan Perez', 'Diego Reyes', 'Mauricio Tapia', 'Cristian Munoz']
-const TECNICOS = ['Juan Pérez', 'Diego Reyes', 'Mauricio Tapia', 'Cristian Muñoz']
+const TECNITOS_NORMALIZADOS = ['Andres Alzamora']
+const TECNICOS = ['Andrés Alzamora', 'Otro']
 const TIPOS_VISITA = ['Correctiva', 'Preventiva', 'Cambio de Batería', 'Instalación', 'Revisión de Cámaras'] as const
 const BLOQUES_HORARIOS = ['Mañana (09:00 - 13:00)', 'Tarde (14:00 - 18:00)'] as const
 
@@ -79,6 +79,7 @@ export default function ServicioTecnicoModal({ onClose, clientesMap = {}, usuari
   )
   const [cuentaSeleccionada, setCuentaSeleccionada] = useState(initialCuenta || '')
   const [tecnicoAsignado, setTecnicoAsignado] = useState(TECNICOS[0])
+  const [otroTecnicoNombre, setOtroTecnicoNombre] = useState('')
   const [tipoVisita, setTipoVisita] = useState<typeof TIPOS_VISITA[number]>('Correctiva')
   const [fechaCita, setFechaCita] = useState(new Date().toISOString().slice(0, 10))
   const [bloqueHorario, setBloqueHorario] = useState<typeof BLOQUES_HORARIOS[number]>('Mañana (09:00 - 13:00)')
@@ -417,6 +418,7 @@ export default function ServicioTecnicoModal({ onClose, clientesMap = {}, usuari
     const abonadoInfo = clientesMap[cuentaSeleccionada] || { nombre: 'Abonado Desconocido' }
     const idOT = Date.now()
     const codigoOT = `OT-${idOT.toString().slice(-4)}`
+    const tecnicoFinal = tecnicoAsignado === 'Otro' ? (otroTecnicoNombre.trim() || 'Técnico Externo') : tecnicoAsignado
     
     const nuevaOrden: OrdenTrabajo = {
       id: idOT,
@@ -426,7 +428,7 @@ export default function ServicioTecnicoModal({ onClose, clientesMap = {}, usuari
       direccion: direccionAbonado || abonadoInfo.direccion || 'Dirección no disponible',
       telefono_contacto: telefonoContacto || abonadoInfo.telefono1 || '',
       tipo_visita: tipoVisita,
-      tecnico: tecnicoAsignado,
+      tecnico: tecnicoFinal,
       fecha_cita: fechaCita,
       bloque_horario: bloqueHorario,
       problema: problemaReportado.trim(),
@@ -441,9 +443,57 @@ export default function ServicioTecnicoModal({ onClose, clientesMap = {}, usuari
     const listaNueva = [nuevaOrden, ...ordenes]
     await guardarOrdenesBase(listaNueva)
     
+    // 1. Grabar automáticamente en Bitácora Central (bitacora.gamasecurity.cl) como SOLICITUD SERVICIO TECNICO
+    try {
+      let numericId: any = cuentaSeleccionada
+      try {
+        const resAb = await fetch(`/api/bitacora?action=abonados&q=${encodeURIComponent(cuentaSeleccionada)}`)
+        if (resAb.ok) {
+          const abList = await resAb.json()
+          if (Array.isArray(abList) && abList.length > 0) {
+            const match = abList.find((a: any) => a.cod === cuentaSeleccionada) || abList[0]
+            if (match && match.id) numericId = match.id
+          }
+        }
+      } catch (e) {
+        console.warn('Error buscando ID bitacora:', e)
+      }
+
+      const comBitacora = `[SOLICITUD SERVICIO TECNICO] OT #${codigoOT} (${tipoVisita}). Requerimiento: ${problemaReportado.trim()}. Técnico Asignado: ${tecnicoFinal}. Programado para: ${fechaCita} (${bloqueHorario}). Contacto: ${telefonoContacto || abonadoInfo.telefono1 || 'S/N'}. Dirección: ${direccionAbonado || abonadoInfo.direccion || 'S/D'}.`
+
+      await fetch('/api/bitacora', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'crear',
+          id_abonado: numericId,
+          comentario: comBitacora,
+          tipo_evento: 1, // Tipo 1: Servicio Técnico en bitacora.gamasecurity.cl
+          id_responsable: 1,
+          cuenta: cuentaSeleccionada
+        })
+      })
+    } catch (errBit) {
+      console.warn('Error registrando en Bitácora:', errBit)
+    }
+
+    // 2. Grabar en Supabase eventos_monitoreo como SOLICITUD SERVICIO TECNICO para auditoría en vivo
+    try {
+      await supabase.from('eventos_monitoreo').insert({
+        fecha_hora: new Date().toISOString(),
+        cuenta: cuentaSeleccionada,
+        nombre_abonado: abonadoInfo.nombre || 'Abonado Gama',
+        evento: `SOLICITUD SERVICIO TECNICO: ${problemaReportado.trim().toUpperCase()}`,
+        zona: 'S/T',
+        usuario: usuarioActivo?.nombre || 'CENTRAL'
+      })
+    } catch (errSup) {
+      console.warn('Error registrando evento en monitoreo:', errSup)
+    }
+
     // Notificación automática por WhatsApp al cliente
     if (nuevaOrden.telefono_contacto) {
-      const msgWA = `🛠️ *GAMA SEGURIDAD 24/7 - Servicio Técnico*\n\nEstimado cliente, su orden de atención técnica *#${codigoOT}* ha sido programada con éxito:\n\n• *Tipo:* ${tipoVisita}\n• *Fecha:* ${fechaCita}\n• *Horario:* ${bloqueHorario}\n• *Técnico Asignado:* ${tecnicoAsignado}\n\nQuedamos atentos a su llegada.`
+      const msgWA = `🛠️ *GAMA SEGURIDAD 24/7 - Servicio Técnico*\n\nEstimado cliente, su orden de atención técnica *#${codigoOT}* ha sido programada con éxito:\n\n• *Tipo:* ${tipoVisita}\n• *Fecha:* ${fechaCita}\n• *Horario:* ${bloqueHorario}\n• *Técnico Asignado:* ${tecnicoFinal}\n\nQuedamos atentos a su llegada.`
       enviarNotificacionWhatsApp(nuevaOrden.telefono_contacto, msgWA)
     }
 
@@ -451,7 +501,8 @@ export default function ServicioTecnicoModal({ onClose, clientesMap = {}, usuari
     setProblemaReportado('')
     setBuscarCuenta('')
     setCuentaSeleccionada('')
-    alert(`✅ Orden de trabajo #${codigoOT} programada con éxito para el técnico ${tecnicoAsignado}.`)
+    setOtroTecnicoNombre('')
+    alert(`✅ Orden de trabajo #${codigoOT} programada con éxito para el técnico ${tecnicoFinal}. Registrada en Bitácora como SOLICITUD SERVICIO TECNICO.`)
   }
 
   // Transición de estado de la OT por el Técnico
@@ -680,9 +731,19 @@ export default function ServicioTecnicoModal({ onClose, clientesMap = {}, usuari
                         className="bg-white border-2 border-gray-500 font-bold px-2 py-2 text-xs md:text-sm text-black focus:outline-none w-full rounded"
                       >
                         {TECNICOS.map(t => (
-                          <option key={t} value={t}>{t}</option>
+                          <option key={t} value={t}>{t === 'Otro' ? 'Otro (especificar...)' : t}</option>
                         ))}
                       </select>
+                      {tecnicoAsignado === 'Otro' && (
+                        <input
+                          type="text"
+                          value={otroTecnicoNombre}
+                          onChange={(e) => setOtroTecnicoNombre(e.target.value)}
+                          placeholder="Nombre y apellido del técnico..."
+                          className="bg-white border-2 border-blue-700 font-bold px-2.5 py-1.5 text-xs md:text-sm text-black focus:outline-none w-full rounded mt-1.5 shadow-sm"
+                          autoFocus
+                        />
+                      )}
                     </div>
                   </div>
 

@@ -42,11 +42,8 @@ export interface EventoAlarma {
 }
 
 const TECNICOS = [
-  { nombre: 'Andrés Alzamora', cargo: 'Técnico Jefe / Servicio Técnico & Terreno', pin: '1234' },
-  { nombre: 'Juan Pérez', cargo: 'Técnico Senior Sistemas Alarmas & CCTV', pin: '1234' },
-  { nombre: 'Diego Reyes', cargo: 'Técnico Terreno Redes & Acceso', pin: '1234' },
-  { nombre: 'Mauricio Tapia', cargo: 'Especialista en Automatización & Cercos', pin: '1234' },
-  { nombre: 'Cristian Muñoz', cargo: 'Técnico Terreno Mantenimiento Preventivo', pin: '1234' },
+  { nombre: 'Andrés Alzamora', cargo: 'Técnico Jefe / Servicio Técnico Oficial', pin: '1234' },
+  { nombre: 'Técnico de Apoyo', cargo: 'Servicio Técnico de Terreno', pin: '1234' },
 ]
 
 function formatFechaHoraChile(fechaIso: string) {

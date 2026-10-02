@@ -699,7 +699,8 @@ export default function OperacionCRM() {
   const [otFormCuenta, setOtFormCuenta] = useState('0999')
   const [otFormClienteNombre, setOtFormClienteNombre] = useState('GAMA SEGURIDAD SPA DEMO')
   const [otFormTipoServicio, setOtFormTipoServicio] = useState('Mantención Perimetral Alarma')
-  const [otFormTecnico, setOtFormTecnico] = useState('Técnico Juan Pérez')
+  const [otFormTecnico, setOtFormTecnico] = useState('Andrés Alzamora')
+  const [otFormTecnicoOtro, setOtFormTecnicoOtro] = useState('')
   const [otFormFecha, setOtFormFecha] = useState(new Date().toISOString().split('T')[0])
   const [otFormSLA, setOtFormSLA] = useState('Crítica (2h)')
   const [otFormEstado, setOtFormEstado] = useState<'Pendiente' | 'En Proceso' | 'Finalizada'>('Pendiente')
@@ -986,7 +987,7 @@ export default function OperacionCRM() {
                 cuenta: o.cuenta || '0999',
                 cliente_nombre: o.nombre_abonado || o.cliente_nombre || 'ABONADO GAMA',
                 tipo_servicio: o.tipo_visita || o.tipo_servicio || 'Mantención Perimetral',
-                tecnico_asignado: o.tecnico || o.tecnico_asignado || 'Técnico Juan Pérez',
+                tecnico_asignado: o.tecnico || o.tecnico_asignado || 'Andrés Alzamora',
                 fecha_programada: o.fecha_cita || o.fecha_programada || '2026-07-23',
                 prioridad_sla: o.prioridad_sla || 'Crítica (2h)',
                 estado: o.estado || 'Pendiente',
@@ -2137,7 +2138,8 @@ export default function OperacionCRM() {
     setOtFormTipoServicio(item.tipo_nombre === 'CORTE DE ENERGIA' ? 'Revisión de Fuente & Energía' : item.tipo_nombre === 'FALLA DE BATERIA' ? 'Cambio de Batería de Respaldo' : 'Revisión Técnica de Alarma / Zonas')
     setOtFormObservaciones(`Reporte Command Center [${item.created_at || 'Reciente'}]: ${nota}`)
     setOtFormSLA('Crítica (2h)')
-    setOtFormTecnico('Técnico Juan Pérez')
+    setOtFormTecnico('Andrés Alzamora')
+    setOtFormTecnicoOtro('')
     setOtFormFecha(new Date().toISOString().split('T')[0])
     setOtFormEstado('Pendiente')
     setMostrarModalOT(true)
@@ -2145,13 +2147,14 @@ export default function OperacionCRM() {
 
   const handleGuardarNuevaOT = async () => {
     const nextOtNum = ordenesTrabajo.length + 83
+    const tecnicoFinal = otFormTecnico === 'Otro' ? (otFormTecnicoOtro.trim() || 'Técnico Externo') : otFormTecnico
     const nuevaOT: OrdenDeTrabajo = {
       id: `OT-${Date.now()}`,
       codigo_ot: `OT-2026-${nextOtNum.toString().padStart(3, '0')}`,
       cuenta: otFormCuenta || '0999',
       cliente_nombre: otFormClienteNombre || 'Cliente Monitoreado',
       tipo_servicio: otFormTipoServicio,
-      tecnico_asignado: otFormTecnico,
+      tecnico_asignado: tecnicoFinal,
       fecha_programada: otFormFecha,
       prioridad_sla: otFormSLA,
       estado: otFormEstado,
@@ -2192,8 +2195,53 @@ export default function OperacionCRM() {
       console.error('Error al guardar OT en Supabase:', e)
     }
 
+    // 1. Grabar en Bitácora oficial como SOLICITUD SERVICIO TECNICO
+    try {
+      let numericId: any = nuevaOT.cuenta
+      try {
+        const resAb = await fetch(`/api/bitacora?action=abonados&q=${encodeURIComponent(nuevaOT.cuenta)}`)
+        if (resAb.ok) {
+          const abList = await resAb.json()
+          if (Array.isArray(abList) && abList.length > 0) {
+            const match = abList.find((a: any) => a.cod === nuevaOT.cuenta) || abList[0]
+            if (match && match.id) numericId = match.id
+          }
+        }
+      } catch (e) {}
+
+      const comBitacora = `[SOLICITUD SERVICIO TECNICO] OT #${nuevaOT.codigo_ot} (${nuevaOT.tipo_servicio}). Detalle: ${nuevaOT.observaciones || 'Solicitud de servicio'}. Técnico Asignado: ${tecnicoFinal}. Fecha: ${nuevaOT.fecha_programada} (SLA: ${nuevaOT.prioridad_sla}).`
+
+      await fetch('/api/bitacora', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'crear',
+          id_abonado: numericId,
+          comentario: comBitacora,
+          tipo_evento: 1, // Tipo 1: Servicio Técnico
+          id_responsable: 1,
+          cuenta: nuevaOT.cuenta
+        })
+      })
+    } catch (errBit) {
+      console.warn('Error registrando en Bitácora desde CRM:', errBit)
+    }
+
+    // 2. Grabar en eventos_monitoreo como SOLICITUD SERVICIO TECNICO
+    try {
+      await supabase.from('eventos_monitoreo').insert({
+        fecha_hora: new Date().toISOString(),
+        cuenta: nuevaOT.cuenta,
+        nombre_abonado: nuevaOT.cliente_nombre,
+        evento: `SOLICITUD SERVICIO TECNICO: ${(nuevaOT.observaciones || nuevaOT.tipo_servicio).toUpperCase().slice(0, 100)}`,
+        zona: 'S/T',
+        usuario: 'CENTRAL'
+      })
+    } catch (e) {}
+
     setMostrarModalOT(false)
-    setToastNotificacion({ tipo: 'exito', texto: `¡Orden de Trabajo ${nuevaOT.codigo_ot} guardada y sincronizada con Command Center 24/7!` })
+    setOtFormTecnicoOtro('')
+    setToastNotificacion({ tipo: 'exito', texto: `¡Orden ${nuevaOT.codigo_ot} para ${tecnicoFinal} guardada y registrada en Bitácora como SOLICITUD SERVICIO TECNICO!` })
   }
 
   const handleNotificarWhatsAppOT = async (ot: OrdenDeTrabajo) => {
@@ -7739,11 +7787,19 @@ export default function OperacionCRM() {
                     onChange={(e) => setOtFormTecnico(e.target.value)}
                     className="w-full bg-slate-50 border border-slate-300 p-2.5 sm:p-3 rounded-xl font-bold text-xs text-slate-900 focus:bg-white focus:ring-2 focus:ring-[#0B2545]/20 focus:border-[#0B2545] focus:outline-none transition-all"
                   >
-                    <option value="Técnico Juan Pérez">Técnico Juan Pérez</option>
-                    <option value="Técnico Carlos Rojas">Técnico Carlos Rojas</option>
-                    <option value="Técnico Esteban Soto">Técnico Esteban Soto</option>
-                    <option value="Técnico Matías Campos">Técnico Matías Campos</option>
+                    <option value="Andrés Alzamora">Andrés Alzamora</option>
+                    <option value="Otro">Otro (especificar...)</option>
                   </select>
+                  {otFormTecnico === 'Otro' && (
+                    <input
+                      type="text"
+                      value={otFormTecnicoOtro}
+                      onChange={(e) => setOtFormTecnicoOtro(e.target.value)}
+                      placeholder="Escriba nombre del técnico..."
+                      className="w-full mt-2 bg-white border-2 border-blue-600 p-2.5 rounded-xl font-bold text-xs text-slate-900 focus:outline-none transition-all shadow-sm"
+                      autoFocus
+                    />
+                  )}
                 </div>
                 <div>
                   <label className="text-[10px] font-extrabold text-slate-700 uppercase tracking-wider block mb-1">FECHA PROGRAMADA:</label>
