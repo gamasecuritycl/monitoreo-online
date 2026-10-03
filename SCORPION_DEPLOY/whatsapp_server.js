@@ -711,6 +711,36 @@ function isDuplicateOutbound(phone, text) {
 }
 
 // ──────────────────────────────────────────────
+//  NORMALIZADOR DE TEXTO Y ACENTUACIÓN (ES-CL)
+// ──────────────────────────────────────────────
+function normalizarTextoChile(str) {
+  if (!str || typeof str !== 'string') return str
+  return str
+    // Reparar mojibake de UTF-8 leído como ISO-8859-1 / Windows-1252
+    .replace(/Ã¡/g, 'á')
+    .replace(/Ã©/g, 'é')
+    .replace(/Ã­/g, 'í')
+    .replace(/Ã³/g, 'ó')
+    .replace(/Ãº/g, 'ú')
+    .replace(/Ã±/g, 'ñ')
+    .replace(/Ã /g, 'Á')
+    .replace(/Ã‰/g, 'É')
+    .replace(/Ã /g, 'Í')
+    .replace(/Ã“/g, 'Ó')
+    .replace(/Ãš/g, 'Ú')
+    .replace(/Ã‘/g, 'Ñ')
+    .replace(/Â¿/g, '¿')
+    .replace(/Â¡/g, '¡')
+    .replace(/â€œ/g, '“')
+    .replace(/â€/g, '”')
+    .replace(/â€™/g, '’')
+    .replace(/â€”/g, '—')
+    .replace(/Ã¼/g, 'ü')
+    .replace(/Ãœ/g, 'Ü')
+    .replace(/\uFFFD/g, '')
+}
+
+// ──────────────────────────────────────────────
 //  ENVÍO CON RETRY
 // ──────────────────────────────────────────────
 async function enviarMensaje(phone, text, retryNum = 0) {
@@ -729,21 +759,21 @@ async function enviarMensaje(phone, text, retryNum = 0) {
       if (storageUrl) {
         const res = await fetch(storageUrl)
         const buffer = Buffer.from(await res.arrayBuffer())
-        payload = { image: buffer, caption: parsed.t || '' }
+        payload = { image: buffer, caption: normalizarTextoChile(parsed.t || '') }
       } else {
-        payload = { image: Buffer.from(parsed.i, 'base64'), caption: parsed.t || '' }
+        payload = { image: Buffer.from(parsed.i, 'base64'), caption: normalizarTextoChile(parsed.t || '') }
       }
     } else if (parsed.u) {
       const res = await fetch(parsed.u)
       const buffer = Buffer.from(await res.arrayBuffer())
-      payload = { image: buffer, caption: parsed.t || '' }
+      payload = { image: buffer, caption: normalizarTextoChile(parsed.t || '') }
     } else if (parsed.v) {
-      payload = { video: Buffer.from(parsed.v, 'base64'), caption: parsed.t || '' }
+      payload = { video: Buffer.from(parsed.v, 'base64'), caption: normalizarTextoChile(parsed.t || '') }
     } else {
-      payload = { text: parsed.t || text }
+      payload = { text: normalizarTextoChile(parsed.t || text) }
     }
   } catch {
-    payload = { text }
+    payload = { text: normalizarTextoChile(text) }
   }
 
   if (isReady && sock) {

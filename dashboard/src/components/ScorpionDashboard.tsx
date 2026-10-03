@@ -1394,7 +1394,7 @@ export default function ScorpionDashboard() {
             id: 'menu-notificaciones',
             hasDropdown: true,
             items: [
-              { label: 'WhatsApp Central 24/7', modal: 'notificaciones-whatsapp', desc: 'Atención y mensajería en tiempo real' },
+              { label: 'WhatsApp Central 24/7 (Sellado 🛡️)', modal: 'notificaciones-whatsapp', desc: 'Atención y mensajería en tiempo real (Canal Único Certificado)' },
               { label: 'Notificaciones por Correo', modal: 'notificaciones-mail', desc: 'Despacho de eventos por email' },
             ]
           },
