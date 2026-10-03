@@ -32,6 +32,7 @@ import BuscadorUniversalModal from './BuscadorUniversalModal'
 import PersonasAutorizadasModal from './PersonasAutorizadasModal'
 import RegistroCambiosModal from './RegistroCambiosModal'
 import OperadorAutomaticoModal from './OperadorAutomaticoModal'
+import AyudaOperadorModal from './AyudaOperadorModal'
 import WhatsAppNotificationToast from './WhatsAppNotificationToast'
 import { lookupContactId } from '@/lib/contact_id_library'
 import { sendMessage, generarMensajeAlerta, generarMensajeEnergia, detectarPatronEvento, type EventInfo } from '@/lib/whatsapp'
@@ -1969,8 +1970,8 @@ export default function ScorpionDashboard() {
         />
       )}
 
-      {/* Buscador Universal & Auditoría Histórica Modal (Asociado al botón de Lupa 'search' del footer) */}
-      {modalActivo === 'search' && (
+      {/* Buscador Universal, Directorio General CRM & Auditoría Histórica Modal */}
+      {(modalActivo === 'search' || modalActivo === 'buscador-universal' || modalActivo === 'crm') && (
         <BuscadorUniversalModal
           onClose={() => setModalActivo(null)}
           clientesMap={clientesMap}
@@ -2000,13 +2001,47 @@ export default function ScorpionDashboard() {
         />
       )}
 
-      {/* Expediente Modal (Controlado por el botón de libros: 'bar-chart') */}
-      {modalActivo === 'bar-chart' && activeEvent && (
-        <ExpedienteModal
-          evento={activeEvent}
-          pestanaInicial={expedientePestana}
-          onClose={cerrarModalConRetorno}
-          usuarioRol={usuarioActivo.rol}
+      {/* Expediente Modal (Controlado por botón de libros o menú Expedientes) */}
+      {(modalActivo === 'bar-chart' || modalActivo === 'expediente') && (
+        activeEvent ? (
+          <ExpedienteModal
+            evento={activeEvent}
+            pestanaInicial={expedientePestana}
+            onClose={cerrarModalConRetorno}
+            usuarioRol={usuarioActivo.rol}
+          />
+        ) : (
+          <BuscadorUniversalModal
+            onClose={() => setModalActivo(null)}
+            clientesMap={clientesMap}
+            codigosMap={codigosMap}
+            onVerExpediente={(cuenta) => {
+              const evFake: any = eventos.find(e => e.cuenta === cuenta) || { cuenta, nombre_abonado: clientesMap[cuenta]?.nombre || cuenta }
+              setEventoSeleccionado(evFake)
+              setExpedientePestana('telefonos')
+              setModalActivo('bar-chart')
+            }}
+            onVerZonificacion={(cuenta) => {
+              const evFake: any = eventos.find(e => e.cuenta === cuenta) || { cuenta, nombre_abonado: clientesMap[cuenta]?.nombre || cuenta }
+              setEventoSeleccionado(evFake)
+              setModalActivo('zones-tree')
+            }}
+            onVerCamaras={(cuenta) => {
+              setCamaraGridCuenta(`CAMARAS_DAHUA_${cuenta.padStart(4, '0')}`)
+            }}
+            onEnviarWhatsApp={(telefono) => {
+              setWhatsappTelefonoInicial(telefono)
+              setModalActivo('notificaciones-whatsapp')
+            }}
+          />
+        )
+      )}
+
+      {/* Centro de Ayuda, FAQ y Manuales de Operador */}
+      {(modalActivo === 'ayuda-faq' || modalActivo === 'ayuda-manuales') && (
+        <AyudaOperadorModal
+          onClose={() => setModalActivo(null)}
+          seccionInicial={modalActivo === 'ayuda-faq' ? 'faq' : 'manual'}
         />
       )}
 
@@ -2174,12 +2209,13 @@ export default function ScorpionDashboard() {
         <ConfigModal onClose={() => setModalActivo(null)} />
       )}
 
-      {/* Camara Grid Modal */}
-      {camaraGridCuenta && (
+      {/* Camara Grid Modal (Menú Mosaico de Cámaras) */}
+      {(camaraGridCuenta || modalActivo === 'camara-grid') && (
         <CamaraGridModal
-          cuenta={camaraGridCuenta}
+          cuenta={camaraGridCuenta || (activeEvent?.cuenta ? `CAMARAS_DAHUA_${activeEvent.cuenta.padStart(4, '0')}` : 'CAMARAS_DAHUA_GENERAL')}
           onClose={() => {
             setCamaraGridCuenta(null)
+            setModalActivo(null)
             cerrarModalConRetorno()
           }}
         />
