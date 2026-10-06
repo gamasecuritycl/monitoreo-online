@@ -16,168 +16,126 @@ faq:
 relatedServicios: [alarmas-para-casa, sistema-alarma-inalambrico, alarma-con-app]
 ---
 
-Elegir una alarma para casa implica cuatro decisiones que se encadenan:
-dónde están los accesos, qué tecnología conviene en tu propiedad, cuántos
-sensores necesitas y qué monitoreo y aplicación usarás después. Elegir al
-azar produce coberturas incompletas, cables innecesarios o un panel con
-zonas de más que nunca se usan. Esta guía ordena el proceso paso a paso,
-con los criterios que usan los instaladores durante una evaluación. Si
-prefieres partir con una referencia de precios, nuestras alarmas para casa
-publican kits y rangos actualizados para cada tipo de vivienda.
+Elegir un sistema de alarma para tu casa implica cuatro decisiones estratégicas encadenadas:
 
-## Evaluación de accesos: por dónde entra un robo
+1. **Dónde están los accesos vulnerables** de la propiedad.
+2. **Qué tecnología conviene** (inalámbrica rápida vs cableada de obra).
+3. **Cuántos sensores se necesitan** para eliminar puntos ciegos.
+4. **Qué central de monitoreo 24/7 y aplicación móvil** responderán en caso de intrusión real.
 
-Toda elección comienza recorriendo la vivienda y anotando cada punto por
-donde alguien puede entrar sin autorización: puerta principal, puerta
-trasera, portón de servicio, ventanas a calle y ventanas a patio. Marca
-cuáles están a la vista de la calle y cuáles quedan ocultas, porque los
-ingresos traseros son los preferidos: dan espalda a los vecinos y suelen
-tener cerraduras más simples. Esa lista se convierte en tu plano de zonas.
+Elegir al azar sin planificación produce zonas desprotegidas, falsas alarmas recurrentes o gastos innecesarios. Esta guía resume los criterios exactos que utilizan los especialistas técnicos durante una evaluación en terreno. Para revisar modelos y costos base, revisa nuestras opciones en [alarmas para casa](/servicios/alarmas-para-casa).
 
-Después evalúa el entorno: iluminación nocturna, arbustos que tapan
-ventanas, rejas existentes y altura de plantas bajeras. Una ventana
-protegida por un arbusto denso es un riesgo mayor que una puerta principal
-con alarma. Con el plano en mano, el técnico asigna un sensor por acceso
-de riesgo y decide si una ventana requiere contacto magnético, detector de
-rotura o ambas. Este ejercicio previo —media hora caminando la propiedad—
-es lo que separa una instalación que tapa puntos ciegos de una que solo
-cubre lo más obvio y deja el flanco libre.
+> **Consejo de seguridad perimetral:** Los delincuentes rara vez ingresan por la puerta principal a la vista de los vecinos. Más del 70% de las intrusiones en viviendas ocurren por accesos traseros, patios interiores y ventanas secundarias.
 
-## Inalámbrica vs cableada en tu caso
+---
 
-La inalámbrica comunica sensores y central por radiofrecuencia encriptada:
-no exige obra, se instala en una o dos horas y permite reubicar equipos
-sin costo adicional de mano de obra. Es la opción recomendada para casas
-terminadas, departamentos y arriendos, donde abrir muros está descartado
-por razones prácticas o de permiso. Los kits parten desde $219.900 y el
-emparejamiento de sensores con la central se hace durante la misma visita.
+## 1. Evaluación de accesos: por dónde entra un robo
 
-La cableada dedica una línea física por sensor hasta el panel. Ofrece la
-máxima estabilidad y elimina la dependencia de baterías en campo, pero
-exige conductos, canaletas y perforaciones: entre un 15% y un 30% de recargo
-sobre el equipo. Rinde cuando la casa está en obra o sufre una
-remodelación mayor, porque el tendido se hace una vez y queda oculto. Si
-tu vivienda ya está terminada y en buen estado, la balanza inclina hacia
-lo inalámbrico sin matices; el detalle completo de cada tecnología está
-en la ficha de alarma inalámbrica.
+Toda elección profesional comienza recorriendo la vivienda y anotando cada punto por donde alguien podría entrar sin autorización:
 
-## Cuántos sensores necesitas
+- **Accesos principales:** Puerta de entrada y portón vehicular.
+- **Accesos vulnerables traseros:** Puertas de cocina hacia el patio, logias y ventanales corredizos de living/comedor.
+- **Ventanas a baja altura:** Ventanas que dan hacia calles secundarias o pasajes sin iluminación directa.
+- **Factores de entorno:** Árboles, muros perimetrales bajos o techumbres contiguas que faciliten el escalamiento.
 
-La regla práctica es simple: un detector por cada acceso de riesgo, más
-detectores de presencia en los corredores que conectan esos accesos con
-las habitaciones. Una casa de tres dormitorios con puerta principal,
-puerta de servicio y dos ventanas a calle resuelve con cuatro a seis
-sensores; una casa esquinal o con galería larga puede necesitar dos PIR
-adicionales para cubrir el recorrido interior completo.
+Con este diagnóstico en mano, se elabora un **plano de zonificación**. Cada punto de riesgo recibe el detector adecuado: magnético de impacto para aperturas forzadas, o sensor de movimiento volumétrico para áreas de tránsito obligado.
 
-La calidad del sensor importa tanto como la cantidad. Los PIR con
-inmunidad a mascotas evitan falsas alarmas si tienes perro o gato, y los
-modelos de doble tecnología combinan pasividad infrarroja con microondas
-para zonas con alta variación térmica, como patios con sol directo. Los
-contactos magnéticos de puerta parten desde $19.900 e instalan en minutos.
-Antes de comprar, pide el plano de zonas dibujado: te mostrará qué punto
-cubre cada sensor y qué hueco queda sin proteger. Agregar dos sensores
-sobrantes hoy siempre es más barato que rehacer una cobertura incompleta
-seis meses después.
+---
 
-## App y monitoreo: quién responde de verdad
+## 2. Inalámbrica vs Cableada: ¿Cuál conviene en tu caso?
 
-Una alarma sin central de monitoreo solo enciende una sirena en tu casa
-cuando no la escucha nadie. El plan mensual habilita una central que
-recibe tus señales las 24 horas, verifica cada activación y coordina la
-respuesta: aviso a tus contactos, guardia o carabineros según el caso. El
-plan residencial parte desde $19.900 mensuales y es la pieza que hace
-realmente efectiva la inversión en equipo.
+La elección entre tecnología cableada e inalámbrica depende principalmente del estado de la construcción de la vivienda:
 
-En paralelo, la aplicación móvil te pone el control en el bolsillo:
-armar y desarmar desde el teléfono, usuarios independientes para familia
-o empleada del hogar, historial de quién desarmó y cuándo, y notificaciones
-push al instante. Para arrendar o viajar sin estar, esa visibilidad vale
-tanto como los sensores. Verifica que el sistema que elijas incluya
-comunicación redundante —IP y red celular— para que la app siga
-respondiendo si se corta el internet. El detalle de módulos y planes se
-explica en el servicio de alarma con app.
+### Alarma Inalámbrica (Recomendada para viviendas terminadas)
+- **Instalación limpia y rápida:** Se monta en 1 a 2 horas sin picar paredes ni instalar canaletas visibles.
+- **Portabilidad total:** Si te cambias de casa o departamento, el sistema se desmonta y se traslada a tu nueva propiedad.
+- **Supervisión constante:** Comunicación digital encriptada por radiofrecuencia con aviso automático si alguna batería baja de carga.
+- Conoce más en nuestra sección de [sistema de alarma inalámbrico](/servicios/sistema-alarma-inalambrico).
 
-## Checklist de compra antes de firmar
+### Alarma Cableada (Recomendada para obras y remodelaciones)
+- **Máxima inmunidad:** Conexión física directa a través de cable estructurado hacia la central receptora.
+- **Cero mantenimiento de pilas:** La energía proviene de la fuente de alimentación respaldada con batería central de 12V.
+- **Costo de mano de obra:** Requiere tendido de ductos, lo que representa entre un 15% y un 30% adicional en mano de obra si la casa no está en obra gris.
 
-1. **Plano de zonas incluido.** Sin plano no sabes qué cubre cada sensor;
-   con plano, comparas propuestas en igualdad de condiciones.
-2. **Alcance y precio cerrado por escrito.** Equipo, instalación, puesta en
-   marcha y qué pasa si aparece obra adicional.
-3. **Monitoreo 24/7 definido.** Valor mensual, cantidad de contactos y
-   protocolo de despacho acordado, no "se verá después".
-4. **Comunicación redundante.** Doble vía IP + celular para que un corte
-   deje de ser una ventana de desprotección.
-5. **Supervisión de batería y fallas.** El panel debe avisar si un sensor
-   deja de reportar o su pila está baja.
-6. **Referencias y mantención.** Pide mantención programada y revisa
-   opiniones de clientes reales antes de decidir.
+---
 
-Recorre este checklist punto por punto antes de depositar un peso. Un
-vendedor serio responde cada casilla con datos escritos; si alguno queda
-en el aire —el plano, el monitoreo, la garantía— esa es precisamente la
-respuesta que faltaba para seguir comparando propuestas tranquilamente.
+## 3. Cuántos sensores necesitas realmente
 
-## Tabla resumen: alarmas y precios de referencia
+Una casa residencial estándar de 3 dormitorios habitualmente requiere entre **4 y 6 sensores** bien distribuidos:
 
-| Concepto | Rango de referencia |
-| --- | --- |
-| Kit básico (central + teclado + 2 sensores) | $199.900 – $349.900 |
-| Casa 3 dormitorios (4-6 sensores) | $349.900 – $549.900 |
-| Kit inalámbrico con app | desde $249.900 |
-| Monitoreo residencial 24/7 | desde $19.900/mes |
-| Sensor PIR adicional instalado | desde $29.900 |
+- **1 Sensor Magnético:** Puerta de acceso principal con retardo de entrada.
+- **1 a 2 Sensores Magnéticos:** Puertas traseras de patio o logia con disparo instantáneo.
+- **2 Detectores de Movimiento PIR:** Ubicados estratégicamente en el living y pasillo de distribución a dormitorios.
+- **Sirena Interior / Exterior:** Sirena de alto impacto sonoro (110 dB) para disuasión inmediata.
 
-Estos rangos sirven para ordenar el presupuesto y comparar cotizaciones
-en igualdad de condiciones. Una propuesta muy por debajo suele esconder
-componentes faltantes —sensores de más no vienen regalados, y el
-monitoreo casi nunca está incluido en el precio del equipo—. Al revés,
-una cotización disparada sin explicación técnica tampoco es mejor: pide
-desglose detallado de cada partida. La tabla es tu vara de medir mientras
-avanzas con la visita técnica y comparas tres propuestas en paralelo con
-total calma.
+> **Importante para hogares con mascotas:** Si tienes perros o gatos dentro de la casa, debes solicitar sensores PIR inmunes a mascotas (hasta 25 kg). De lo contrario, los movimientos de tus animales generarán falsos disparos continuos.
 
-## Preguntas frecuentes
+---
 
-**¿Qué alarma es mejor para una casa ya terminada?** La inalámbrica. Al
-no requerir obra civil, se instala en una tarde sin dañar pintura ni
-muros, los sensores se emparejan con la central en la misma visita y
-el sistema se puede reubicar si te mudas. Los kits parten desde $219.900
-con tecnología encriptada y supervisión de batería. Solo tiene sentido
-elegir cableada si tu casa está en construcción o remodelación mayor,
-donde el tendido se integra a la obra y queda invisible para siempre.
+## 4. App móvil y Central de Monitoreo: quién responde de verdad
 
-**¿Cuántos sensores necesita una casa?** Entre cuatro y seis cubren la
-mayoría de las viviendas de tres dormitorios: un contacto por cada acceso
-de riesgo y uno o dos detectores de presencia en pasillos. Casas con galería,
-quinta o más accesos requieren agregar zonas. Más allá del número, lo
-decisivo es tapar cada punto ciego identificado en la evaluación; por eso
-el plano de zonas se dibuja antes de instalar y se te entrega al finalizar.
+Tener una alarma que solo suena en el lugar físico no evita un robo si estás en el trabajo o de vacaciones.
 
-**¿Puedo armar y desarmar la alarma desde el celular?** Sí, con un sistema
-que incluya módulo de comunicación y aplicación. Permite armar y desarmar
-a distancia, crear usuarios independientes, recibir alertas instantáneas y
-revisar el historial de entradas. Es ideal para dejar accesos a familiares
-sin compartir el código del teclado. El plan de monitoreo sigue vigente:
-la app complementa la central, no la reemplaza, porque cuando duermes o
-viajas quien verifica sigue siendo la monitoreadora.
+- **Aplicación móvil en tu teléfono:** Permite armar y desarmar el sistema a distancia, crear usuarios individuales para cada miembro de la familia, verificar qué puerta se abrió y recibir notificaciones push en tiempo real. Más detalles en [alarma con app](/servicios/alarma-con-app).
+- **Central de Monitoreo 24/7:** Es el equipo humano que recibe las señales críticas, valida la emergencia mediante protocolo de llamada y contacta prioritariamente a Carabineros (133 / Plan Cuadrante) y servicios de auxilio.
+
+---
+
+## 5. Checklist indispensable antes de contratar
+
+Antes de firmar un contrato o pagar una instalación, verifica estos 6 puntos:
+
+- [x] **Plano de zonas detallado:** Que el instalador te entregue por escrito qué cubre cada sensor y cómo se llama cada zona.
+- [x] **Propiedad de los equipos:** Exige saber si el equipo es tuyo o si es un arriendo en comodato que te obligará a pagar de por vida.
+- [x] **Doble vía de comunicación:** Exige módulo de internet Wi-Fi/IP más tarjeta SIM celular 4G para que el sistema nunca quede mudo ante un corte de cable.
+- [x] **Tarifa de monitoreo fija:** Asegúrate de que la mensualidad no contenga cobros sorpresa por mantención o llamados. En Gama Seguridad es desde **0,9 UF + IVA**.
+- [x] **Compatibilidad futura:** Elige paneles abiertos (DSC, Honeywell, Vetti) que permitan agregar sensores de cualquier marca en el futuro.
+- [x] **Soporte técnico local:** Empresa formal con respuesta técnica presencial garantizada.
+
+---
+
+## 6. Tabla comparativa de referencia
+
+| Tipo de Solución | Tiempo de Instalación | Ideal Para | Propiedad del Equipo |
+| --- | --- | --- | --- |
+| Kit Inalámbrico Inteligente | 2 a 3 horas | Casas terminadas, departamentos, arriendos | 100% tuyo desde el día 1 |
+| Sistema Cableado Tradicional | 1 a 2 días | Casas en construcción o remodelación total | 100% tuyo |
+| Multinacionales (Verisure) | 2 a 3 horas | Comodato (arriendo forzoso) | Nunca es tuyo (devolución al salir) |
+| Migración Gama desde ADT | 1 hora | Casas con panel existente | Reprogramación a costo $0 en hardware |
+
+---
+
+## 7. Protocolo de verificación humana: Qué ocurre ante un salto de alarma
+
+El valor real de una empresa de seguridad no reside en la marca del plástico del sensor, sino en el **protocolo operativo humano** que se activa en milisegundos cuando se dispara una alerta:
+
+1. **Recepción instantánea de la señal:** La central receptora recibe el paquete de datos indicando la zona exacta (por ejemplo, "Zona 03: Sensor Magnético Puerta Trasera").
+2. **Llamado de verificación de seguridad:** Un operador especializado contacta de inmediato al número prioritario del titular de la cuenta solicitando la palabra clave o contra-contraseña de seguridad para descartar un descuido doméstico.
+3. **Escalamiento a contactos de emergencia:** Si el titular no responde o indica situación de peligro bajo coacción, se llama secuencialmente a los contactos autorizados en la lista familiar o vecinal.
+4. **Coordinación con servicios policiales y de emergencia:** Confirmada la intrusión o agotados los llamados preventivos con eventos consecutivos en distintas zonas (verificación secuencial), la central coordina el despacho con Carabineros de Chile (Plan Cuadrante / 133) y Bomberos (132) de la comuna respectiva.
+
+Este protocolo profesional evita la saturación de los cuadrantes policiales por falsas alarmas y garantiza que las emergencias reales reciban la máxima prioridad.
+
+---
+
+## 8. Las tres trampas comerciales más frecuentes al contratar en Chile
+
+Al cotizar alarmas para casas en Santiago y regiones, los usuarios suelen enfrentarse a tácticas agresivas de venta que conviene conocer de antemano:
+
+- **La falsa instalación gratuita:** Muchos promotores ofrecen instalar el sistema por "$0 de costo inicial". Sin embargo, esa gratuidad inicial esconde cuotas mensuales que superan los $60.000 a $75.000 mensuales y contratos amarrados por 24 o 36 meses con renovación automática forzada.
+- **El arriendo perpetuo (Comodato no advertido):** Al no leer la letra chica, miles de propietarios asumen que tras pagar dos o tres años la alarma es de su propiedad. Al intentar cambiarse de compañía, descubren que deben devolver hasta el último sensor o pagar multas millonarias por rescisión anticipada.
+- **Sistemas propietarios cautivos:** Si compras o arriendas tecnología cerrada que solo funciona con los servidores de una única marca, no podrás migrar a ninguna otra empresa en el futuro, perdiendo toda tu inversión si el servicio no cumple tus expectativas.
+
+En **GAMA SECURITY**, los equipos instalados son **100% propiedad del cliente**. Nuestro modelo amortiza el hardware a precio de costo mediante un contrato transparente y ofrece la mensualidad de monitoreo más competitiva del mercado: **desde 0,9 UF + IVA**.
+
+---
 
 ## Conclusión
 
-Elegir bien una alarma para casa se resume en recorrer la propiedad,
-cubrir cada acceso, escoger la tecnología que tu obra permite y contratar
-el monitoreo que hará efectiva la respuesta. Saltarse cualquiera de esos
-pasos produce un sistema caro pero incompleto. Empieza por el plano de
-zonas, exige precio cerrado y piensa en el costo total a tres años, no
-solo en la caja del equipo. Las cuatro decisiones —accesos, tecnología,
-sensores y monitoreo— se toman en una sola visita si el proceso está
-bien ordenado de principio a fin, con el plano sobre la mesa y las
-cotizaciones comparadas en papel.
+Proteger tu hogar de forma efectiva no es sinónimo de gastar una fortuna ni de quedar atado a contratos confusos. 
 
-Nuestro equipo hace esa evaluación sin costo y te entrega la propuesta
-por escrito. Explora las [alarmas para casa](/servicios/alarmas-para-casa),
-compara la [tecnología inalámbrica](/servicios/sistema-alarma-inalambrico)
-y conoce el [control por aplicación móvil](/servicios/alarma-con-app) para
-ver cómo queda armado el sistema completo antes de decidir sin presiones.
+Comienza identificando los accesos vulnerables, exige equipos propios con garantía y contrata un servicio de monitoreo 24/7 confiable y accesible.
+
+En **GAMA SECURITY** realizamos evaluaciones técnicas gratuitas para determinar la cantidad exacta de sensores que tu vivienda necesita. Conoce nuestras soluciones en [alarmas para casa](/servicios/alarmas-para-casa) y descubre cómo proteger a tu familia pagando una tarifa justa y transparente.
 
 #ElegirAlarma #AlarmaParaCasa #AlarmaInalambrica #SeguridadElectronica

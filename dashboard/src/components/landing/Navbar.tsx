@@ -30,8 +30,8 @@ const NAV_LINKS: {
   { id: 'inicio', label: 'Inicio', href: '/' },
   { id: 'servicios', label: 'Servicios', href: '/servicios', menu: 'servicios' },
   { id: 'comunas', label: 'Comunas', href: '/comunas', menu: 'comunas' },
-  { id: 'quienes-somos', label: 'Nosotros', href: '/#quienes-somos' },
   { id: 'blog', label: 'Blog', href: '/blog', menu: 'blog' },
+  { id: 'cotizar', label: 'Cotizador Online', href: '/cotizar' },
   { id: 'contacto', label: 'Contacto', href: '/contacto' },
 ]
 
@@ -226,10 +226,16 @@ export default function Navbar({ servicios, comunas, articulos }: NavbarProps) {
             {/* Right Side: Action Blue Pill CTA */}
             <div className="hidden sm:flex items-center gap-3">
               <Link
+                href="/cotizar"
+                className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs py-1.5 px-3.5 rounded-full shadow-md hover:scale-105 active:scale-95 transition-all inline-flex items-center gap-1 cursor-pointer"
+              >
+                <span>⚡</span> Cotizador Online
+              </Link>
+              <Link
                 href="/contacto"
                 className="btn-apple-primary text-xs py-1.5 px-4 font-normal"
               >
-                Solicitar Cotización
+                Contacto
               </Link>
             </div>
 

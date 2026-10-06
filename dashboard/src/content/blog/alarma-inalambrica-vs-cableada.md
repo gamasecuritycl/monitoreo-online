@@ -16,165 +16,111 @@ faq:
 relatedServicios: [sistema-alarma-inalambrico, sistema-alarma-cableada, alarmas-para-casa]
 ---
 
-Elegir entre una alarma inalámbrica y una cableada es una de las primeras
-decisiones al proteger tu casa o tu negocio en Chile. Una promete instalación
-rápida sin obra; la otra, la solidez de décadas de tecnología probada en el
-terreno. La buena noticia es que ninguna opción es mala por sí sola: cada una
-brilla en un tipo distinto de propiedad y de proyecto. En este artículo
-comparamos precio, instalación, fiabilidad y casos de uso reales, con cifras y
-recomendaciones concretas, para que tomes la decisión con información completa,
-sin sorpresas de presupuesto ni obras que no esperabas.
+Elegir entre una **alarma inalámbrica** y una **alarma cableada** es una de las primeras decisiones técnicas al proteger una casa, departamento o empresa en Chile.
 
-## ¿Cómo funciona una alarma inalámbrica?
+Una promete instalación rápida y limpia sin picar muros; la otra, la solidez inalterable de décadas de cableado físico estructurado. 
 
-Una alarma inalámbrica se compone de central, teclado, sensores de presencia
-PIR, contactos de apertura para puertas y ventanas, y detectores auxiliares.
-Cada dispositivo detecta un evento —una puerta que se abre, movimiento dentro de
-una zona— y transmite inmediatamente al panel mediante radiofrecuencia
-encriptada con código único emparejado de fábrica. Ese encriptamiento impide
-que un tercero intercepte la señal o active tu alarma con un transmisor ajeno,
-un punto crítico que descarta el mito de que "las inalámbricas se hackean
-fácilmente".
+Ninguna tecnología es inherentemente superior a la otra: cada una resuelve una necesidad arquitectónica distinta. En este análisis comparamos instalación, fiabilidad técnica, costos reales y casos de uso prácticos para 2026.
 
-La central evalúa cada mensaje: verifica integridad, nivel de señal y estado
-del sensor. Desde allí, la alarma reporta al centro de monitoreo por dos vías
-redundantes: conexión IP (cable de red o Wi-Fi) y módulo GPRS celular. Si se
-corta el internet, el aviso sale igual por la red móvil, por lo que la
-protección nunca depende de un solo enlace. Los mensajes viajan firmados y la
-central confirma recepción en milisegundos.
+> **Resumen rápido de elección:** Si tu casa o local ya está construido y habitado, elije **inalámbrica** (cero obras). Si estás construyendo desde cero o en remodelación mayor, elije **cableada** (cables ocultos dentro de muros).
 
-Otro diferencial es la supervisión de batería. Cada sensor reporta su nivel de
-pila de forma permanente; si está baja o si un sensor deja de "latir" por
-interferencia o sabotaje, la central genera alerta de falla antes de que quedes
-desprotegido sin saberlo. Al no existir cable entre sensor y central, la
-instalación no abre paredes: los dispositivos se fijan con tornillos o adhesivo
-y quedan operativos el mismo día.
+---
 
-## ¿Cómo funciona una alarma cableada?
+## 1. ¿Cómo funciona una alarma inalámbrica moderna?
 
-La alarma cableada trabaja con una línea dedicada por cada sensor hasta el
-panel. Cada punto —puerta, ventana, sensor PIR— se conecta a una zona cableada
-específica de la central, que identifica el punto exacto de la alarma o de la
-falla. La alimentación eléctrica del sistema viaja por el mismo tendido o por
-una línea propia con respaldo de batería central, de modo que todo el equipo
-depende de una infraestructura física diseñada junto a la obra.
+Una alarma inalámbrica comunica sus periféricos (sensores de apertura de puertas, detectores de movimiento PIR, barreras perimetrales y teclados) con la central receptora mediante **radiofrecuencia bidireccional encriptada**:
 
-Esta arquitectura cableada ofrece alta inmunidad a interferencias: la señal no
-compite en el aire con otros dispositivos, no hay atenuación por distancia
-dentro de rangos razonables y un cortocircuito o un corte se detectan como
-cambio de impedancia en la zona. Por eso históricamente se ha elegido en
-bancos, bodegas industriales y proyectos donde la prioridad absoluta es la
-estabilidad a largo plazo.
+- **Encriptación antibloqueo:** Los protocolos modernos utilizan algoritmos de salto de frecuencia que impiden la clonación o inhibición simple de la señal.
+- **Supervisión de batería y enlace (Heartbeat):** Cada sensor envía un reporte periódico de estado. Si una batería baja del 20% o un sensor pierde enlace, la central genera una advertencia preventiva de falla técnica.
+- **Transmisión de eventos al centro de monitoreo:** La central reporta vía IP (Wi-Fi o cable de red) y mediante tarjeta SIM de datos celulares 4G LTE. Si cortan el suministro eléctrico o internet, la alarma sigue comunicada.
 
-El costo de esa solidez es la obra civil. El tendido exige conductos, canaletas o
-paso dentro de muros, planificación de zonas antes de cerrar paredes y, en
-edificios en régimen, permisos para pasar por áreas comunes. Una instalación
-bien hecha dura décadas sin recambios de batería, pero rehacerla o agregar un
-sensor más adelante implica abrir de nuevo el recorrido. Por eso la cableada
-rinde mejor cuando se proyecta junto a una construcción o remodelación mayor.
+La gran ventaja es su **rapidez de implementación**: el técnico instala y prueba todo el sistema en 1 a 2 horas, fijando los sensores con adhesivos técnicos de alta resistencia o pequeños tornillos. Puedes revisar detalles en nuestro servicio de [sistema de alarma inalámbrico](/servicios/sistema-alarma-inalambrico).
 
-## Comparativa: instalación, precio y fiabilidad
+---
 
-La siguiente tabla resume las diferencias prácticas entre ambos sistemas:
+## 2. ¿Cómo funciona una alarma cableada profesional?
 
-| Criterio | Alarma inalámbrica | Alarma cableada |
+En un sistema cableado tradicional, cada detector se conecta físicamente a una bornera de zona en la central receptora a través de un cable multipar apantallado:
+
+- **Señal directa y constante:** No hay ondas de radio ni obstáculos estructurales (como muros de hormigón armado) que atenúen la comunicación.
+- **Alimentación centralizada:** Los sensores no llevan pilas. Reciben su energía de la fuente de poder de la central, la cual cuenta con batería de respaldo de 12V 7Ah capaz de operar hasta 48 horas sin luz.
+- **Supervisión por resistencia de fin de línea (EOL):** Cualquier corte o cortocircuito en el cable es detectado inmediatamente como sabotaje.
+
+Históricamente, los sistemas cableados (como DSC PowerSeries o Honeywell Vista) han sido el estándar en bancos, bodegas industriales y edificios corporativos. Consulta nuestra sección de [sistema de alarma cableada](/servicios/sistema-alarma-cableada).
+
+---
+
+## 3. Comparativa frente a frente: Instalación, Costos y Fiabilidad
+
+La siguiente tabla resume los aspectos clave a considerar antes de contratar:
+
+| Criterio de Comparación | Alarma Inalámbrica Inteligente | Alarma Cableada Estructurada |
 | --- | --- | --- |
-| Instalación | 1-2 h sin obra | 3-6 h con obra |
-| Obra civil | No | Sí |
-| Precio kit | desde $199.900 | desde $259.900 |
-| Ideal para | casas terminadas y arriendos | obras nuevas |
-| Mantención | baterías | revisión de cableado |
-| Fiabilidad | alta con supervisión | muy alta |
+| **Tiempo de instalación** | 1 a 2 horas | 1 a 3 días hábiles |
+| **Obra civil en muros** | Nula (sin perforaciones mayores) | Sí (canalizaciones o tubería embutida) |
+| **Estética en vivienda** | Impecable y discreta | Requiere canaletas si no hay ductos |
+| **Precio de partida del kit** | Desde $199.900 instalado | Desde $259.900 + mano de obra |
+| **Mantenimiento periódico** | Recambio de baterías cada 2-3 años | Casi nulo en periféricos |
+| **Portabilidad por mudanza** | 100% desmontable y reutilizable | Muy difícil de trasladar |
+| **Monitoreo 24/7 Gama** | Desde **0,9 UF + IVA / mes** | Desde **0,9 UF + IVA / mes** |
 
-En términos de dinero, la inalámbrica parte más económica porque el kit no
-incluye cable, conductos ni mano de obra de tendido: un sistema para casa típico
-queda por debajo de los $250.000 con instalación. La cableada parte desde
-$259.900 y escala entre un 15% y un 30% según metros de recorrido y complejidad
-de la obra. El plan de monitoreo 24/7, en cambio, es equivalente en ambos
-casos: la central recibe el mismo tipo de evento y aplica el mismo protocolo de
-verificación y despacho.
+---
 
-En fiabilidad, la diferencia ya no es tecnológica sino de escenario. Una
-inalámbrica con supervisión de batería, encriptación y doble vía de
-transmisión responde en condiciones comparables a las de un sistema cableado en
-la mayoría de las viviendas. La cableada mantiene una ventaja mínima en
-entornos con mucha interferencia radioeléctrica o en instalaciones de cientos
-de zonas, donde el cableado dedicado elimina toda duda de enlace.
+## 4. Cuál te conviene según tu tipo de propiedad
 
-## ¿Cuál te conviene? Casos de uso
+A continuación te presentamos los casos de uso más frecuentes:
 
-**Departamento:** inalámbrica. En un depto no controlas las paredes comunes ni
-siempre puedes pasar cable a las áreas privadas sin permiso de la comunidad. Un
-kit inalámbrico se instala en una tarde, se lleva si te mudas y no deja obras.
+- **Departamentos y Casas Habitadas:** **Inalámbrica.** No requieres pedir permisos a la comunidad del edificio ni tolerar polvo o canaletas a la vista sobre guardapolvos.
+- **Propiedades en Arriendo:** **Inalámbrica.** Si te cambias de domicilio, desinstalas tus sensores en 20 minutos y los instalas en tu nuevo hogar sin perder tu inversión.
+- **Casas en Construcción o Remodelación:** **Cableada.** Mientras los tabiques están descubiertos, pasar tuberías de PVC con cableado estructurado es muy económico y garantiza una instalación 100% invisible para los próximos 20 años.
+- **Locales Comerciales:** **Inalámbrica.** Permite habilitar la seguridad fuera del horario de atención al público sin interrumpir las ventas.
+- **Grandes Bodegas Industriales:** **Cableada.** Para distancias superiores a 100 metros o naves metálicas que bloquean las ondas de radio, el tendido físico es la solución recomendada.
 
-**Casa en arriendo:** inalámbrica. El propietario raramente autoriza abrir
-muros y tú no quieres entregar la propiedad con taladros y canaletas. Los
-sensores se desmontan sin dañar la pintura y el sistema se reubica contigo.
+---
 
-**Casa nueva en obra:** cableada. Mientras las paredes están abiertas, pasar
-los conductos es barato y el cableado queda invisible. Ahorras la mantención de
-baterías y obtienes la máxima estabilidad desde el día uno.
+## 5. Errores habituales que debes evitar
 
-**Negocio con estructura existente:** inalámbrica. Un local en arriendo o con
-interiorización ya terminada evita parar la operación por obra. La alarma se
-monta fuera del horario crítico y queda operativa sin cerrar el negocio.
+- **No considerar el plan de monitoreo 24/7:** Comprar solo la alarma para que suene una sirena deja tu propiedad a merced de la suerte si nadie está cerca. El [monitoreo de alarmas 24/7](/servicios/monitoreo-de-alarmas-24-7) es quien coordina la respuesta inmediata.
+- **Ignorar el plano de zonas:** Exige que cada sensor tenga nombre propio (ej: "Puerta Principal", "Sensor Pasillo"). Saber qué zona se activó ahorra minutos vitales ante un robo.
+- **Caer en contratos de arriendo en comodato:** Con multinacionales como Verisure nunca eres dueño de los equipos y pagas cuotas que suben continuamente. En Gama el hardware es tuyo.
 
-**Industrial greenfield:** cableada. Una bodega o planta en terreno nuevo
-permite diseñar zonas, rutas de cable y fuentes de alimentación junto al
-proyecto arquitectónico. Cientos de zonas, recorridos largos y cero
-dependencia de baterías en el campo.
+---
 
-## Errores comunes al elegir
+## 6. El mito del inhibidor de frecuencia (Jamming): ¿Se pueden bloquear?
 
-1. **Elegir solo por precio.** El kit más barato puede quedarse corto en
-   cobertura y terminar costando más tras agregar sensores y repetidores.
-2. **No considerar el monitoreo.** Una alarma sin central de monitoreo 24/7
-   solo enciende una bocina: quien decide si hay o no robo es el monitoreo.
-3. **No pedir el plano de zonas.** Sin plano, saber qué sensor se activó es
-   adivinar; con plano, se identifica la puerta exacta y se despacha más rápido.
-4. **Ignorar el mantenimiento de baterías.** Pila agotada sin aviso = sensor
-   mudo. Exige supervisión de batería y un plan de recambio periódico.
-5. **Instalar sin evaluación.** Copiar el vecino ignora los puntos ciegos, el
-   tipo de obra y el uso real de la propiedad. La evaluación gratuita corrige
-   eso antes de cobrar un peso.
+Una de las dudas más frecuentes de los clientes al comparar ambas tecnologías es si los delincuentes pueden "anular" una alarma inalámbrica utilizando inhibidores de radiofrecuencia (jammers):
 
-## Preguntas frecuentes respondidas
+- **En sistemas genéricos no supervisados:** Un dispositivo chino básico de 433 MHz sin encriptación puede ser saturado con ruido de radiofrecuencia, provocando que los sensores no logren comunicar el disparo a la central.
+- **En sistemas inalámbricos profesionales modernos:** Los paneles profesionales incorporan **detección activa de jamming**. Si la central detecta un nivel anormal de interferencia electromagnética que impide escuchar a sus sensores durante más de 10 o 15 segundos, la central interpreta la saturación como un intento deliberado de sabotaje y dispara de inmediato la alarma y el reporte a la central de monitoreo.
+- **La ventaja intrínseca del cableado:** En un sistema cableado convencional, este riesgo simplemente no existe: la corriente eléctrica viaja encapsulada por el cobre protegido por las paredes, haciendo inviable cualquier tipo de inhibición por radio.
 
-**¿Cuál es mejor, alarma inalámbrica o cableada?** No existe una ganadora
-absoluta. La inalámbrica gana en casas terminadas, departamentos y arriendos
-porque elimina la obra civil; la cableada gana en instalaciones nuevas o
-remodelaciones donde el tendido se hace una vez y para siempre. El presupuesto
-y el estado de tu propiedad definen la balanza, y una evaluación gratuita en el
-lugar resuelve la duda con un plano y un precio cerrado.
+Por lo tanto, si eliges una solución inalámbrica, asegúrate de que sea hardware certificado con supervisión de enlace bidireccional y detección de interferencias.
 
-**¿La alarma inalámbrica es confiable?** Sí. Los sistemas modernos encriptan
-la radiofrecuencia, emparejan cada sensor con su central y supervisan batería
-y señal de forma permanente. Si un sensor se desconecta o la pila está baja, el
-panel recibe el aviso al instante y la central de monitoreo 24/7 registra el
-evento. Sumado a la doble vía IP + GPRS, la fiabilidad es comparable a la de un
-sistema cableado en la práctica diaria.
+---
 
-**¿Cuánto cuesta instalar cada tipo de alarma?** Un kit inalámbrico para casa
-parte desde $199.900 con instalación incluida, y una casa estándar con seis
-sensores queda usualmente bajo $300.000. La cableada parte desde $259.900 y
-sube entre un 15% y un 30% por materiales y mano de obra del tendido. El plan
-mensual de monitoreo es el mismo para ambas tecnologías.
+## 7. Mantenimiento y ciclo de vida a 5 años: Costos comparados
+
+Al proyectar el gasto a lo largo del tiempo, los requerimientos de mantención difieren sustancialmente:
+
+- **Sistema Inalámbrico a 5 años:**
+  - **Pilas y baterías:** Los sensores utilizan baterías de litio (CR123A o CR2) con una vida útil comprobada de 24 a 36 meses bajo condiciones normales de tráfico. Un cambio de baterías para 5 o 6 sensores cada tres años representa un gasto menor de aproximadamente $25.000 a $35.000 CLP.
+  - **Reubicación de zonas:** Si decides cambiar la distribución de tus muebles o pintar las paredes, desmontar y volver a pegar los sensores toma 5 minutos sin costo alguno.
+
+- **Sistema Cableado a 5 años:**
+  - **Batería central:** Solo requiere el recambio de la batería de respaldo de plomo-ácido de 12V 7Ah cada 3 a 4 años (costo aproximado de $18.000 a $25.000).
+  - **Revisión de conexiones:** Puede requerir reapriete de bornes y verificación de impedancia si las canaletas sufren humedad o golpes accidentales.
+  - **Modificaciones:** Agregar un sensor nuevo exige canalizar y pasar cables, lo cual involucra costo de maestro o técnico instalador.
+
+Ambos sistemas presentan costos de mantención mínimos si se combinan con el monitoreo preventivo de Gama Seguridad, el cual audita el estado técnico de cada dispositivo de manera remota.
+
+---
 
 ## Conclusión
 
-La pregunta no es "¿cuál es mejor?", sino "¿cuál es mejor para mi propiedad?".
-La inalámbrica protege hoy sin obra, se lleva cuando te mudas y cuesta menos de
-instalar. La cableada ofrece la estabilidad máxima cuando se proyecta junto a
-una obra. Ambas con el mismo monitoreo 24/7 de GAMA SECURITY y la misma
-respuesta ante una alarma real.
+No existe una tecnología ganadora por defecto: existe la tecnología adecuada para las características de tu inmueble. 
 
-Agenda una **evaluación gratuita**: un técnico recorre tu casa o negocio, dibuja
-el plano de zonas y te entrega precio cerrado sin compromiso. Escríbenos por
-WhatsApp al **+56 9 9101 6912** o revisa nuestros servicios de [sistema de
-alarma inalámbrico](/servicios/sistema-alarma-inalambrico), [sistema de
-alarma cableada](/servicios/sistema-alarma-cableada) y [alarmas para
-casa](/servicios/alarmas-para-casa), con [monitoreo de alarmas
-24/7](/servicios/monitoreo-de-alarmas-24-7) incluido, para ver instalaciones,
-kits y precios de referencia.
+La **alarma inalámbrica** protege de inmediato con estética limpia y portabilidad; la **alarma cableada** ofrece la robustez industrial definitiva cuando la obra lo permite. Ambas se integran con la misma Central de Monitoreo 24/7 de GAMA SECURITY con tarifas transparentes desde **0,9 UF + IVA mensual**.
+
+Coordina una evaluación técnica en terreno llamando a nuestro equipo o escribiendo por WhatsApp al **+56 9 9101 6912**. También puedes revisar nuestras soluciones de [alarmas para casa](/servicios/alarmas-para-casa) y cotizar en línea.
 
 #AlarmaInalambrica #AlarmaCableada #SistemaDeAlarma #SeguridadElectronica
