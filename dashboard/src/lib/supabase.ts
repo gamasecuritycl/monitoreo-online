@@ -40,6 +40,10 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOi
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
+// Cliente administrativo maestro con service_role (Acceso total de administración)
+const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9ueHd5cndtcGp4dHdsbWpyb3NyIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4Mjg1NTE0NCwiZXhwIjoyMDk4NDMxMTQ0fQ.mCg5_fItAU1LxAfvN2ZhETB6NfxO1U_ODZ1QwUICA1Q'
+export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey)
+
 // Cliente para la base de datos de IA (RECOVERED_PROJECT)
 const supabaseIAUrl = 'https://usuzyqayiecsburbsipl.supabase.co'
 const supabaseIAServiceKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVzdXp5cWF5aWVjc2J1cmJzaXBsIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NDE0NTY0MCwiZXhwIjoyMDk5NzIxNjQwfQ.ZN2sw5R4K5EHuttLzDguKnsF1KBgqUKqOpipB7dGR1Y'
