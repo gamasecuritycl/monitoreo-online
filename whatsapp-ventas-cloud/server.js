@@ -139,14 +139,60 @@ if (GEMINI_API_KEY) {
 }
 
 const COMUNAS_CHILE = [
+  // Región Metropolitana (Gran Santiago y Provincias)
   'santiago', 'las condes', 'providencia', 'vitacura', 'la reina', 'lo barnechea',
-  'ñuñoa', 'la florida', 'maipu', 'maipú', 'puente alto', 'san miguel', 'macul',
-  'peñalolen', 'peñalolén', 'quilicura', 'pudahuel', 'colina', 'chicureo', 'lampa',
-  'san bernardo', 'buin', 'paine', 'melipilla', 'talagante', 'penaflor', 'peñaflor',
-  'viña', 'viña del mar', 'valparaiso', 'valparaíso', 'concon', 'concón', 'quilpue',
-  'quilpué', 'villa alemana', 'limache', 'quillota', 'san antonio', 'rengo', 'rancagua',
-  'la calera', 'la ligua', 'olmue', 'olmué', 'curacavi', 'curacaví'
+  'ñuñoa', 'nunoa', 'la florida', 'maipu', 'maipú', 'puente alto', 'san miguel', 'macul',
+  'peñalolen', 'peñalolén', 'penalolen', 'quilicura', 'pudahuel', 'colina', 'chicureo', 'lampa',
+  'san bernardo', 'buin', 'paine', 'melipilla', 'talagante', 'penaflor', 'peñaflor', 'padre hurtado',
+  'el monte', 'isla de maipo', 'curacavi', 'curacaví', 'maria pinto', 'maría pinto', 'san pedro',
+  'alhue', 'alhué', 'pirque', 'san jose de maipo', 'san josé de maipo', 'cerrillos', 'cerro navia',
+  'conchali', 'conchalí', 'el bosque', 'estacion central', 'estación central', 'huechuraba',
+  'independencia', 'la cisterna', 'la granja', 'la pintana', 'lo espejo', 'lo prado', 'pedro aguirre cerda',
+  'quinta normal', 'recoleta', 'renca', 'san joaquin', 'san joaquín', 'san ramon', 'san ramón',
+  'til til', 'tiltil', 'batuco', 'valle grande', 'chamisero',
+  // Región de Valparaíso (Costa, Marga Marga, Quillota, Aconcagua)
+  'viña', 'viña del mar', 'vina del mar', 'valparaiso', 'valparaíso', 'concon', 'concón',
+  'quilpue', 'quilpué', 'villa alemana', 'limache', 'quillota', 'san antonio', 'la calera',
+  'la cruz', 'nogales', 'hijuelas', 'la ligua', 'cabildo', 'zapallar', 'papudo', 'petorca',
+  'casablanca', 'cartagena', 'el tabo', 'el quisco', 'algarrobo', 'santo domingo',
+  'san felipe', 'los andes', 'catemu', 'llaillay', 'llay llay', 'panquehue', 'putaendo', 'santa maria',
+  'santa maría', 'calle larga', 'rinconada', 'san esteban', 'olmue', 'olmué',
+  // Región de O'Higgins
+  'rancagua', 'machali', 'machalí', 'graneros', 'rengo', 'san vicente', 'san fernando', 'requinoa', 'requínoa'
 ]
+
+function extraerComunaValida(texto) {
+  if (!texto) return null
+  const lower = texto.toLowerCase().trim()
+
+  const descartes = [
+    'cuentame', 'cuéntame', 'servicio', 'precio', 'costo', 'valor', 'cuanto', 'cuánto',
+    'hola', 'gracias', 'buenas', 'informacion', 'información', 'detalle', 'detalles',
+    'alarma', 'alarmas', 'camara', 'cámara', 'camaras', 'cámaras', 'cctv', 'empresa',
+    'casa', 'parcela', 'departamento', 'depto', 'local', 'negocio', 'asesor', 'ejecutivo',
+    'visita', 'horario', 'mañana', 'tarde', 'sabado', 'sábado', 'luz', 'mascota', 'perro', 'gato',
+    'verisure', 'adt', 'prosegur', 'comodato', 'quiero', 'necesito', 'sobre', 'sobre el', 'bueno'
+  ]
+
+  // Buscar coincidencia con la lista oficial de comunas
+  for (const c of COMUNAS_CHILE) {
+    const regex = new RegExp(`(^|\\b|en\\s+|comuna\\s+de\\s+)${c}(\\b|$)`, 'i')
+    if (regex.test(lower)) {
+      return capitalizar(c)
+    }
+  }
+
+  // Si dice explícitamente "vivo en X" o "en la comuna de X"
+  const m = texto.match(/(?:vivo en|en la comuna de|comuna de)\s+([a-záéíóúñ\s]{3,25})/i)
+  if (m && m[1]) {
+    const candidata = m[1].trim().toLowerCase()
+    if (!descartes.some(d => candidata.includes(d))) {
+      return capitalizar(candidata)
+    }
+  }
+
+  return null
+}
 
 // ──────────────────────────────────────────────
 //  ENVÍO SEGURO DE MENSAJES (REGISTRA ID PROPIO)
@@ -303,116 +349,51 @@ async function generarRespuestaLogica(texto, lower, lead, numero, reinicioPorIna
   }
 
   // ─────────────────────────────────────────────────────────────
-  //  PRIORIDAD 1: AGENDANDO VISITA TÉCNICA (EVITA CONFLICTO CON OPCIÓN 1)
+  //  DETECCIÓN DE INTENCIÓN CONSULTIVA (¡NUNCA CONFUNDIR CON COMUNA!)
   // ─────────────────────────────────────────────────────────────
-  if (lead.paso === 'agendando_visita') {
-    let bloque = 'Horario especial por coordinar'
-    if (lower === '1' || lower.includes('mañana') || lower.includes('manana')) {
-      bloque = 'Mañana (10:00 a 13:00 hrs)'
-    } else if (lower === '2' || lower.includes('tarde')) {
-      bloque = 'Tarde (15:00 a 18:00 hrs)'
-    } else if (lower === '3' || lower.includes('sabado') || lower.includes('sábado')) {
-      bloque = 'Sábado en la mañana (10:00 a 13:00 hrs)'
-    } else if (lower === '4' || lower.includes('especial') || lower.includes('asesor')) {
-      bloque = 'Horario especial por coordinar con asesor'
-    } else {
-      bloque = texto.slice(0, 45)
-    }
+  const esConsultaServicio = lower.includes('servicio') || lower.includes('cuentame') || lower.includes('cuéntame')
+    || lower.includes('de que se trata') || lower.includes('de qué se trata') || lower.includes('como funciona') || lower.includes('cómo funciona')
+    || lower.includes('que incluye') || lower.includes('qué incluye') || lower.includes('explicame') || lower.includes('explícame')
+    || lower.includes('informacion') || lower.includes('información')
 
-    lead.horarioVisita = bloque
-    lead.paso = 'finalizado'
-    guardarEnSupabase(lead, numero, 'visita_agendada')
-    dispararAlertaVIP(lead, numero)
+  const esConsultaPrecios = lower.includes('precio') || lower.includes('cuanto') || lower.includes('cuánto')
+    || lower.includes('valor') || lower.includes('costo') || lower.includes('tarifa') || lower.includes('plan') || lower.includes('cuota')
 
-    const esCamaras = lead.interes === 'CCTV 4K' || lead.tipoPropiedad === 'Cámaras de Seguridad'
-    const solTexto = esCamaras ? 'Cámaras de Seguridad 4K Ultra HD 📹' : (lead.tipoPropiedad || 'Alarma con Monitoreo 24/7 🛡️')
+  const esConsultaLuz = lower.includes('luz') || lower.includes('corte de luz') || lower.includes('bateria') || lower.includes('batería')
+  const esConsultaMascotas = lower.includes('perro') || lower.includes('gato') || lower.includes('mascota') || lower.includes('animal')
+  const esConsultaVerisure = lower.includes('verisure') || lower.includes('adt') || lower.includes('prosegur') || lower.includes('comodato')
+  const esConsultaDemora = lower.includes('demora') || lower.includes('cuanto tardan') || lower.includes('cuando instalan') || lower.includes('plazo')
 
+  // ─────────────────────────────────────────────────────────────
+  //  1. PRIORIDAD: EXPLICACIÓN COMPLETA DEL SERVICIO (POTENCIA AL 1000%)
+  // ─────────────────────────────────────────────────────────────
+  if (esConsultaServicio) {
+    const prodContext = lead.tipoPropiedad ? ` para tu **${lead.tipoPropiedad.toLowerCase()}**` : ''
     return {
-      texto: `¡Excelente, ${lead.nombre || 'estimado/a'}! 🎉 Tu evaluación técnica gratuita ($0) quedó agendada con éxito:\n\n📅 **Bloque horario:** ${bloque}\n📍 **Comuna:** ${lead.comuna || 'Tu domicilio'}\n🛡️ **Solución requerida:** ${solTexto}\n\nUn especialista técnico de terreno se comunicará a la brevedad a este mismo WhatsApp para afinar los detalles de la visita y responder cualquier inquietud técnica. ¡Muchas gracias por confiar en GAMA Seguridad! ✨🤝🚨`,
-      enviarPDF: false
-    }
-  }
-
-  // ─────────────────────────────────────────────────────────────
-  //  PRIORIDAD 2: PIDIENDO NOMBRE
-  // ─────────────────────────────────────────────────────────────
-  if (lead.paso === 'pidiendo_nombre' || (!lead.nombre && (lower.startsWith('me llamo') || lower.startsWith('soy ')))) {
-    let nombreLimpio = texto.replace(/me llamo|soy|mi nombre es/gi, '').trim()
-    if (nombreLimpio.length > 1) {
-      lead.nombre = capitalizar(nombreLimpio)
-      lead.paso = 'agendando_visita'
-      guardarEnSupabase(lead, numero, 'calificado')
-
-      const esCamaras = lead.interes === 'CCTV 4K' || lead.tipoPropiedad === 'Cámaras de Seguridad'
-      const textoVisita = esCamaras
-        ? `¡Un gusto, ${lead.nombre}! 🌟 Para el sistema de Cámaras 4K en **${lead.comuna || 'tu comuna'}**, un técnico especializado realiza una **Evaluación Técnica en Terreno 100% Gratuita ($0)** para definir puntos ciegos, cableado y cobertura exacta 📹.\n\n¿Qué día y bloque horario te acomoda más? 📅\n\n1️⃣ **Mañana (10:00 a 13:00 hrs)** ☀️\n2️⃣ **Tarde (15:00 a 18:00 hrs)** 🌤️\n3️⃣ **Sábado en la mañana (10:00 a 13:00 hrs)** 🗓️\n4️⃣ **Coordinar un horario especial con un asesor** 🤝\n\n*(Puedes responder con el número 1, 2, 3 o 4)*`
-        : `¡Un gusto, ${lead.nombre}! 🌟 Para proteger tu ${lead.tipoPropiedad?.toLowerCase() || 'propiedad'} en **${lead.comuna || 'tu comuna'}**, realizamos una **Evaluación Técnica en Terreno 100% Gratuita ($0)** sin ningún compromiso 🤝.\n\n¿Qué día y bloque horario te acomoda más? 📅\n\n1️⃣ **Mañana (10:00 a 13:00 hrs)** ☀️\n2️⃣ **Tarde (15:00 a 18:00 hrs)** 🌤️\n3️⃣ **Sábado en la mañana (10:00 a 13:00 hrs)** 🗓️\n4️⃣ **Coordinar un horario especial con un asesor** 🤝\n\n*(Puedes responder con el número 1, 2, 3 o 4)*`
-
-      return {
-        texto: textoVisita,
-        enviarPDF: false
-      }
-    }
-  }
-
-  // ─────────────────────────────────────────────────────────────
-  //  PRIORIDAD 3: PIDIENDO COMUNA
-  // ─────────────────────────────────────────────────────────────
-  if (lead.paso === 'pidiendo_comuna') {
-    const comunaDetectada = COMUNAS_CHILE.find(c => lower.includes(c))
-    lead.comuna = comunaDetectada ? capitalizar(comunaDetectada) : capitalizar(texto.slice(0, 35).replace(/en\s+/i, '').trim())
-    guardarEnSupabase(lead, numero)
-
-    const esCamaras = lead.interes === 'CCTV 4K' || lead.tipoPropiedad === 'Cámaras de Seguridad'
-
-    if (lead.nombre && lead.nombre !== 'Prospecto') {
-      lead.paso = 'agendando_visita'
-      const textoVisita = esCamaras
-        ? `¡Excelente! 🚨 En **${lead.comuna}** tenemos cobertura técnica completa con patrullaje y soporte técnico 🛡️.\n\nPara el sistema de Cámaras de Seguridad 4K, realizamos una **Evaluación Técnica en Terreno 100% Gratuita ($0)** sin compromiso para dimensionar la instalación 📹🤝.\n\n${lead.nombre}, ¿qué día y bloque horario te acomoda más? 📅\n\n1️⃣ **Mañana (10:00 a 13:00 hrs)** ☀️\n2️⃣ **Tarde (15:00 a 18:00 hrs)** 🌤️\n3️⃣ **Sábado en la mañana (10:00 a 13:00 hrs)** 🗓️\n4️⃣ **Coordinar un horario especial con un asesor** 🤝\n\n*(Puedes responder con 1, 2, 3 o 4)*`
-        : `¡Excelente! 🚨 En **${lead.comuna}** tenemos cobertura técnica completa con patrullaje de verificación rápida 🛡️.\n\nPara revisar los puntos vulnerables en tu propiedad, realizamos una **Evaluación Técnica en Terreno 100% Gratuita ($0)** sin compromiso 🤝.\n\n${lead.nombre}, ¿qué día y bloque horario te acomoda más? 📅\n\n1️⃣ **Mañana (10:00 a 13:00 hrs)** ☀️\n2️⃣ **Tarde (15:00 a 18:00 hrs)** 🌤️\n3️⃣ **Sábado en la mañana (10:00 a 13:00 hrs)** 🗓️\n4️⃣ **Coordinar un horario especial con un asesor** 🤝\n\n*(Puedes responder con el número 1, 2, 3 o 4)*`
-
-      return {
-        texto: textoVisita,
-        enviarPDF: false
-      }
-    } else {
-      lead.paso = 'pidiendo_nombre'
-      return {
-        texto: `¡Excelente! 🚨 En **${lead.comuna}** tenemos cobertura técnica completa con patrullaje y soporte técnico 🛡️.\n\nPara preparar tu ficha técnica formal y coordinar la **Evaluación en Terreno Gratuita ($0)**:\n📋 **¿Cuál es tu nombre y apellido?**`,
-        enviarPDF: false
-      }
-    }
-  }
-
-  // B) COTIZADOR DINÁMICO INTERACTIVO (Cálculo según cantidad de accesos)
-  const regexAccesos = /(\d+)\s*(puerta|puertas|ventana|ventanas|acceso|accesos)/i
-  if (regexAccesos.test(texto) || lower.includes('cotizar a medida') || lower.includes('dimensionar')) {
-    lead.interes = 'Cotización a medida'
-    lead.paso = 'pidiendo_comuna'
-    guardarEnSupabase(lead, numero)
-    return {
-      texto: `¡Excelente! 🧮 Para dimensionar tu sistema con exactitud:\n\n✨ **Nuestra recomendación técnica:**\n• **1 Central Inteligente Vetti Hub** con conexión dual WiFi + 4G GSM anti-corte 📶.\n• **Contactos magnéticos** en cada acceso vulnerable detectan apertura al instante.\n• **Sensores de movimiento antimascotas** (no se activan con animales de hasta 25 kg) 🐕.\n• **Sirena disuasiva 110 dB + 2 Controles SOS** 🚨.\n• Control total y notificaciones en tu celular vía **App NT CLICK** 📲.\n\n💰 **Lo mejor:** El plan de Monitoreo 24/7 conectado a Central se mantiene en **0,9 UF + IVA mensual** (~$35.000 CLP) y los equipos son **100% TUYOS**.\n\n📍 **¿En qué comuna se encuentra tu propiedad para confirmar la factibilidad y agendar la evaluación técnica $0?**`,
+      texto: `¡Con mucho gusto${nombreSaludo}! Te explico en detalle nuestro servicio de seguridad integral${prodContext} 🛡️✨:\n\nEn **GAMA Seguridad** protegemos tu propiedad con tecnología de punta conectada 24/7 a nuestra Central de Operaciones 🚨:\n\n📦 **¿Qué incluye el sistema?**\n• **Central Inteligente Vetti Hub:** Conexión dual WiFi + enlace celular 4G GSM anti-corte de luz e internet 📶.\n• **Sensores antimascotas PIR:** Detección de intrusión perimetral inmune a mascotas de hasta 25 kg 🐕.\n• **Contactos magnéticos:** Protección instantánea en puertas de acceso y ventanales 🚪.\n• **Sirena disuasiva 110 dB + Controles SOS:** Potencia acústica inmediata y botón de pánico en tu llavero 🚨.\n• **App Móvil NT CLICK:** Controlas, armas/desarmas y recibes alertas en tiempo real en tu celular 📲.\n\n💰 **Valores y condiciones transparentes:**\n• **Equipos 100% TUYOS en propiedad:** Cero arriendos eternos ni comodatos engañosos como en Verisure o ADT 🙌.\n• **Monitoreo Continuo 24/7:** Desde solo **0,9 UF + IVA mensual** (~$35.000 CLP), con verificación humana en menos de 2 minutos y coordinación con Carabineros 🚓.\n• **Instalación profesional bonificada ($0):** Con el plan de monitoreo.\n• **Evaluación técnica en terreno $0:** Sin ningún compromiso en RM y V Región 🤝.\n\n📍 Para verificar factibilidad técnica y cobertura inmediata:\n**¿En qué comuna o sector se ubica tu propiedad?** 🏡🏢`,
       enviarPDF: true,
       tipoPDF: 'alarmas'
     }
   }
 
-  // C) CONSULTAS FRECUENTES (Corte de luz, Mascotas, Verisure, Precios, etc.)
-  if (lower.includes('luz') || lower.includes('corte de luz') || lower.includes('bateria') || lower.includes('batería')) {
+  // ─────────────────────────────────────────────────────────────
+  //  2. CONSULTAS FRECUENTES (Luz, Mascotas, Verisure, Precios, etc.)
+  // ─────────────────────────────────────────────────────────────
+  if (esConsultaLuz) {
     return {
       texto: `¡Muy buena pregunta! 💡 Ante un corte de energía eléctrica (sea accidental o intencional), la central de alarma cuenta con **batería de respaldo autónoma** y enlace **4G GSM de emergencia** 📶.\n\nEl sistema sigue 100% activo, sonando ante intrusión y conectado a nuestra Central de Monitoreo 24/7 🛡️.\n\n📍 ¿En qué comuna se encuentra tu propiedad para verificar cobertura? 🏡`,
       enviarPDF: false
     }
   }
 
-  if (lower.includes('perro') || lower.includes('gato') || lower.includes('mascota') || lower.includes('animal')) {
+  if (esConsultaMascotas) {
     return {
       texto: `¡Totalmente cubierto! 🐕🐈 Nuestros sensores de movimiento incorporan **tecnología PIR inteligente antimascotas** que no se activa con mascotas de hasta 25 kg.\n\nPuedes armar tu alarma con tus regalones adentro sin falsas alarmas ni sobresaltos 🙌.\n\n¿Para qué tipo de propiedad la estás buscando? 🏡\n1️⃣ **Casa o Parcela** 🏡\n2️⃣ **Departamento** 🏢\n3️⃣ **Negocio o Empresa** 🏪`,
       enviarPDF: false
     }
   }
 
-  if (lower.includes('verisure') || lower.includes('adt') || lower.includes('prosegur') || lower.includes('comodato')) {
+  if (esConsultaVerisure) {
     lead.interes = 'Migración vs Verisure'
     guardarEnSupabase(lead, numero)
     return {
@@ -421,15 +402,15 @@ async function generarRespuestaLogica(texto, lower, lead, numero, reinicioPorIna
     }
   }
 
-  if (lower.includes('precio') || lower.includes('cuanto') || lower.includes('cuánto') || lower.includes('valor') || lower.includes('costo') || lower.includes('tarifa') || lower.includes('plan')) {
+  if (esConsultaPrecios) {
     return {
       texto: `¡Con total transparencia! 💰 En GAMA Seguridad cuidamos tu bolsillo:\n\n🛡️ **Plan Monitoreo 24/7:** Desde solo **0,9 UF + IVA al mes** (~$35.000 CLP) con conexión directa a Central y coordinación inmediata con Carabineros 🚨.\n🔒 **Equipos en propiedad:** 100% tuyos, sin arriendos eternos ni letras chicas.\n🛠️ **Instalación profesional:** Bonificada ($0) con el plan de monitoreo.\n📋 **Evaluación en terreno:** 100% gratuita ($0) en RM y V Región.\n\nPara darte el valor exacto según lo que necesitas:\n📍 **¿Es para Cámaras de Seguridad 📹 o Sistema de Alarma 🏡? ¿Y en qué comuna?**`,
       enviarPDF: true,
-      tipoPDF: 'alarmas'
+      tipoPDF: lead.tipoPropiedad === 'Cámaras de Seguridad' ? 'camaras' : 'alarmas'
     }
   }
 
-  if (lower.includes('demora') || lower.includes('cuanto tardan') || lower.includes('cuando instalan') || lower.includes('plazo')) {
+  if (esConsultaDemora) {
     return {
       texto: `¡Instalación súper rápida! ⚡ Tras coordinar la visita técnica, la instalación se realiza generalmente dentro de **24 a 48 horas hábiles**.\n\nNuestros técnicos certificados dejan todo funcionando, configurado y la aplicación móvil activa en aproximadamente 2 a 3 horas 🛠️📲.\n\n📍 ¿En qué comuna se ubica tu propiedad?`,
       enviarPDF: false
@@ -437,7 +418,95 @@ async function generarRespuestaLogica(texto, lower, lead, numero, reinicioPorIna
   }
 
   // ─────────────────────────────────────────────────────────────
-  //  D) SELECCIÓN DE PRODUCTO O TIPO DE PROPIEDAD
+  //  3. PRIORIDAD: AGENDANDO VISITA TÉCNICA (BLOQUES 1, 2, 3, 4)
+  // ─────────────────────────────────────────────────────────────
+  if (lead.paso === 'agendando_visita') {
+    let bloque = null
+    if (lower === '1' || lower.includes('mañana') || lower.includes('manana')) {
+      bloque = 'Mañana (10:00 a 13:00 hrs)'
+    } else if (lower === '2' || lower.includes('tarde')) {
+      bloque = 'Tarde (15:00 a 18:00 hrs)'
+    } else if (lower === '3' || lower.includes('sabado') || lower.includes('sábado')) {
+      bloque = 'Sábado en la mañana (10:00 a 13:00 hrs)'
+    } else if (lower === '4' || lower.includes('especial') || lower.includes('asesor') || lower.includes('coordinar')) {
+      bloque = 'Horario especial por coordinar con asesor'
+    }
+
+    if (bloque) {
+      lead.horarioVisita = bloque
+      lead.paso = 'finalizado'
+      guardarEnSupabase(lead, numero, 'visita_agendada')
+      dispararAlertaVIP(lead, numero)
+
+      const esCamaras = lead.interes === 'CCTV 4K' || lead.tipoPropiedad === 'Cámaras de Seguridad'
+      const solTexto = esCamaras ? 'Cámaras de Seguridad 4K Ultra HD 📹' : (lead.tipoPropiedad || 'Alarma con Monitoreo 24/7 🛡️')
+
+      return {
+        texto: `¡Excelente, ${lead.nombre || 'estimado/a'}! 🎉 Tu evaluación técnica gratuita ($0) quedó agendada con éxito:\n\n📅 **Bloque horario:** ${bloque}\n📍 **Comuna:** ${lead.comuna || 'Tu domicilio'}\n🛡️ **Solución requerida:** ${solTexto}\n\nUn especialista técnico de terreno se comunicará a la brevedad a este mismo WhatsApp para afinar los detalles de la visita y responder cualquier inquietud técnica. ¡Muchas gracias por confiar en GAMA Seguridad! ✨🤝🚨`,
+        enviarPDF: false
+      }
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  //  4. VALIDACIÓN DE COMUNA (ESTRICTA)
+  // ─────────────────────────────────────────────────────────────
+  const comunaDetectada = extraerComunaValida(texto)
+
+  if (lead.paso === 'pidiendo_comuna') {
+    if (comunaDetectada) {
+      lead.comuna = comunaDetectada
+      guardarEnSupabase(lead, numero)
+
+      const esCamaras = lead.interes === 'CCTV 4K' || lead.tipoPropiedad === 'Cámaras de Seguridad'
+
+      if (lead.nombre && lead.nombre !== 'Prospecto') {
+        lead.paso = 'agendando_visita'
+        const textoVisita = esCamaras
+          ? `¡Excelente! 🚨 En **${lead.comuna}** tenemos cobertura técnica completa y patrullaje de verificación rápida 🛡️.\n\nPara el sistema de Cámaras de Seguridad 4K, realizamos una **Evaluación Técnica en Terreno 100% Gratuita ($0)** sin compromiso para dimensionar la instalación 📹🤝.\n\n${lead.nombre}, ¿qué día y bloque horario te acomoda más? 📅\n\n1️⃣ **Mañana (10:00 a 13:00 hrs)** ☀️\n2️⃣ **Tarde (15:00 a 18:00 hrs)** 🌤️\n3️⃣ **Sábado en la mañana (10:00 a 13:00 hrs)** 🗓️\n4️⃣ **Coordinar un horario especial con un asesor** 🤝\n\n*(Puedes responder con 1, 2, 3 o 4)*`
+          : `¡Excelente! 🚨 En **${lead.comuna}** tenemos cobertura técnica completa con patrullaje de verificación rápida 🛡️.\n\nPara revisar los puntos vulnerables en tu propiedad, realizamos una **Evaluación Técnica en Terreno 100% Gratuita ($0)** sin compromiso 🤝.\n\n${lead.nombre}, ¿qué día y bloque horario te acomoda más? 📅\n\n1️⃣ **Mañana (10:00 a 13:00 hrs)** ☀️\n2️⃣ **Tarde (15:00 a 18:00 hrs)** 🌤️\n3️⃣ **Sábado en la mañana (10:00 a 13:00 hrs)** 🗓️\n4️⃣ **Coordinar un horario especial con un asesor** 🤝\n\n*(Puedes responder con 1, 2, 3 o 4)*`
+
+        return { texto: textoVisita, enviarPDF: false }
+      } else {
+        lead.paso = 'pidiendo_nombre'
+        return {
+          texto: `¡Excelente! 🚨 En **${lead.comuna}** tenemos cobertura técnica completa con patrullaje de verificación rápida 🛡️.\n\nPara preparar tu ficha técnica formal y coordinar la **Evaluación en Terreno Gratuita ($0)**:\n📋 **¿Cuál es tu nombre y apellido?**`,
+          enviarPDF: false
+        }
+      }
+    } else {
+      // Si no es comuna válida y no fue una consulta ya respondida
+      return {
+        texto: `Para verificar la cobertura técnica inmediata y disponibilidad de técnicos en tu sector:\n\n📍 **¿En qué comuna se encuentra tu propiedad?**\n*(Por ejemplo: Limache, Viña del Mar, Quilpué, Las Condes, Maipú, Colina...)* 🏡🏢`,
+        enviarPDF: false
+      }
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  //  5. PIDIENDO NOMBRE
+  // ─────────────────────────────────────────────────────────────
+  if (lead.paso === 'pidiendo_nombre' || (!lead.nombre && (lower.startsWith('me llamo') || lower.startsWith('soy ')))) {
+    let nombreLimpio = texto.replace(/me llamo|soy|mi nombre es/gi, '').trim()
+    const palabrasNoNombre = ['hola', 'servicio', 'precio', 'alarma', 'camara', 'comuna', 'visita']
+    const esNombreInvalido = palabrasNoNombre.some(p => nombreLimpio.toLowerCase().includes(p))
+
+    if (nombreLimpio.length > 1 && !esNombreInvalido) {
+      lead.nombre = capitalizar(nombreLimpio)
+      lead.paso = 'agendando_visita'
+      guardarEnSupabase(lead, numero, 'calificado')
+
+      const esCamaras = lead.interes === 'CCTV 4K' || lead.tipoPropiedad === 'Cámaras de Seguridad'
+      const textoVisita = esCamaras
+        ? `¡Un gusto, ${lead.nombre}! 🌟 Para el sistema de Cámaras 4K en **${lead.comuna || 'tu sector'}**, un técnico especializado realiza una **Evaluación Técnica en Terreno 100% Gratuita ($0)** para definir puntos ciegos, cableado y cobertura exacta 📹.\n\n¿Qué día y bloque horario te acomoda más? 📅\n\n1️⃣ **Mañana (10:00 a 13:00 hrs)** ☀️\n2️⃣ **Tarde (15:00 a 18:00 hrs)** 🌤️\n3️⃣ **Sábado en la mañana (10:00 a 13:00 hrs)** 🗓️\n4️⃣ **Coordinar un horario especial con un asesor** 🤝\n\n*(Puedes responder con el número 1, 2, 3 o 4)*`
+        : `¡Un gusto, ${lead.nombre}! 🌟 Para proteger tu ${lead.tipoPropiedad?.toLowerCase() || 'propiedad'} en **${lead.comuna || 'tu sector'}**, realizamos una **Evaluación Técnica en Terreno 100% Gratuita ($0)** sin ningún compromiso 🤝.\n\n¿Qué día y bloque horario te acomoda más? 📅\n\n1️⃣ **Mañana (10:00 a 13:00 hrs)** ☀️\n2️⃣ **Tarde (15:00 a 18:00 hrs)** 🌤️\n3️⃣ **Sábado en la mañana (10:00 a 13:00 hrs)** 🗓️\n4️⃣ **Coordinar un horario especial con un asesor** 🤝\n\n*(Puedes responder con el número 1, 2, 3 o 4)*`
+
+      return { texto: textoVisita, enviarPDF: false }
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  //  6. SELECCIÓN DE PRODUCTO (1 a 5)
   // ─────────────────────────────────────────────────────────────
   const esCamaras = lower === '5' || lower.includes('camara') || lower.includes('cámara') || lower.includes('cctv')
   const esCasa = lower === '1' || lower.includes('casa') || lower.includes('parcela') || lower.includes('hogar')
@@ -449,25 +518,14 @@ async function generarRespuestaLogica(texto, lower, lead, numero, reinicioPorIna
     lead.tipoPropiedad = 'Cámaras de Seguridad'
     lead.interes = 'CCTV 4K'
 
-    const comunaDetectada = COMUNAS_CHILE.find(c => lower.includes(c))
     if (comunaDetectada) {
-      lead.comuna = capitalizar(comunaDetectada)
+      lead.comuna = comunaDetectada
       guardarEnSupabase(lead, numero)
-
-      if (lead.nombre && lead.nombre !== 'Prospecto') {
-        lead.paso = 'agendando_visita'
-        return {
-          texto: `¡Excelente elección! 📹 Para el sistema de Cámaras de Seguridad 4K en **${lead.comuna}**, contamos con cobertura técnica completa y técnicos certificados 🛡️.\n\n*(Te adjunto la ficha técnica oficial en PDF con todos los detalles de Cámaras 4K con IA)* 📄\n\nPara definir los puntos de grabación y cableado sin compromiso, realizamos una **Evaluación Técnica en Terreno 100% Gratuita ($0)** 🤝.\n\n${lead.nombre}, ¿qué día y bloque horario te acomoda más? 📅\n\n1️⃣ **Mañana (10:00 a 13:00 hrs)** ☀️\n2️⃣ **Tarde (15:00 a 18:00 hrs)** 🌤️\n3️⃣ **Sábado en la mañana (10:00 a 13:00 hrs)** 🗓️\n4️⃣ **Coordinar un horario especial con un asesor** 🤝\n\n*(Puedes responder con 1, 2, 3 o 4)*`,
-          enviarPDF: true,
-          tipoPDF: 'camaras'
-        }
-      } else {
-        lead.paso = 'pidiendo_nombre'
-        return {
-          texto: `¡Excelente elección! 📹 Para el sistema de Cámaras de Seguridad 4K en **${lead.comuna}**, contamos con cobertura técnica completa y técnicos certificados 🛡️.\n\n*(Te adjunto la ficha técnica oficial en PDF con todos los detalles de Cámaras 4K con IA)* 📄\n\nPara preparar tu cotización formal y coordinar la **Evaluación en Terreno Gratuita ($0)**:\n📋 **¿Cuál es tu nombre y apellido?**`,
-          enviarPDF: true,
-          tipoPDF: 'camaras'
-        }
+      lead.paso = 'agendando_visita'
+      return {
+        texto: `¡Excelente elección! 📹 Para el sistema de Cámaras de Seguridad 4K en **${lead.comuna}**, contamos con cobertura técnica completa y técnicos certificados 🛡️.\n\n*(Te adjunto la ficha técnica oficial en PDF con todos los detalles de Cámaras 4K con IA)* 📄\n\nPara definir los puntos de grabación y cableado sin compromiso, realizamos una **Evaluación Técnica en Terreno 100% Gratuita ($0)** 🤝.\n\n${lead.nombre || 'Estimado/a'}, ¿qué día y bloque horario te acomoda más? 📅\n\n1️⃣ **Mañana (10:00 a 13:00 hrs)** ☀️\n2️⃣ **Tarde (15:00 a 18:00 hrs)** 🌤️\n3️⃣ **Sábado en la mañana (10:00 a 13:00 hrs)** 🗓️\n4️⃣ **Coordinar un horario especial con un asesor** 🤝\n\n*(Puedes responder con 1, 2, 3 o 4)*`,
+        enviarPDF: true,
+        tipoPDF: 'camaras'
       }
     }
 
@@ -495,25 +553,14 @@ async function generarRespuestaLogica(texto, lower, lead, numero, reinicioPorIna
       lead.interes = 'Migración $0'
     }
 
-    const comunaDetectada = COMUNAS_CHILE.find(c => lower.includes(c))
     if (comunaDetectada) {
-      lead.comuna = capitalizar(comunaDetectada)
+      lead.comuna = comunaDetectada
       guardarEnSupabase(lead, numero)
-
-      if (lead.nombre && lead.nombre !== 'Prospecto') {
-        lead.paso = 'agendando_visita'
-        return {
-          texto: `¡Excelente elección! 🏡 Para ${lead.tipoPropiedad.toLowerCase()} en **${lead.comuna}** tenemos cobertura técnica completa con patrullaje y verificación rápida 🚨.\n\n*(Te adjunto la ficha técnica oficial en PDF con todos los detalles del Pack VETTI Smart)* 📄\n\nPara revisar los puntos vulnerables en tu propiedad, realizamos una **Evaluación Técnica en Terreno 100% Gratuita ($0)** sin compromiso 🤝.\n\n${lead.nombre}, ¿qué día y bloque horario te acomoda más? 📅\n\n1️⃣ **Mañana (10:00 a 13:00 hrs)** ☀️\n2️⃣ **Tarde (15:00 a 18:00 hrs)** 🌤️\n3️⃣ **Sábado en la mañana (10:00 a 13:00 hrs)** 🗓️\n4️⃣ **Coordinar un horario especial con un asesor** 🤝\n\n*(Puedes responder con 1, 2, 3 o 4)*`,
-          enviarPDF: true,
-          tipoPDF: 'alarmas'
-        }
-      } else {
-        lead.paso = 'pidiendo_nombre'
-        return {
-          texto: `¡Excelente elección! 🏡 Para ${lead.tipoPropiedad.toLowerCase()} en **${lead.comuna}** tenemos cobertura técnica completa con patrullaje y verificación rápida 🚨.\n\n*(Te adjunto la ficha técnica oficial en PDF con todos los detalles)* 📄\n\nPara preparar tu ficha técnica formal y coordinar la **Evaluación en Terreno Gratuita ($0)**:\n📋 **¿Cuál es tu nombre y apellido?**`,
-          enviarPDF: true,
-          tipoPDF: 'alarmas'
-        }
+      lead.paso = 'agendando_visita'
+      return {
+        texto: `¡Excelente elección! 🏡 Para ${lead.tipoPropiedad.toLowerCase()} en **${lead.comuna}** tenemos cobertura técnica completa con patrullaje y verificación rápida 🚨.\n\n*(Te adjunto la ficha técnica oficial en PDF con todos los detalles)* 📄\n\nPara revisar los puntos vulnerables en tu propiedad, realizamos una **Evaluación Técnica en Terreno 100% Gratuita ($0)** sin compromiso 🤝.\n\n${lead.nombre || 'Estimado/a'}, ¿qué día y bloque horario te acomoda más? 📅\n\n1️⃣ **Mañana (10:00 a 13:00 hrs)** ☀️\n2️⃣ **Tarde (15:00 a 18:00 hrs)** 🌤️\n3️⃣ **Sábado en la mañana (10:00 a 13:00 hrs)** 🗓️\n4️⃣ **Coordinar un horario especial con un asesor** 🤝\n\n*(Puedes responder con 1, 2, 3 o 4)*`,
+        enviarPDF: true,
+        tipoPDF: 'alarmas'
       }
     }
 
@@ -545,10 +592,11 @@ async function generarRespuestaLogica(texto, lower, lead, numero, reinicioPorIna
     }
   }
 
-  // E) DETECCIÓN ESPONTÁNEA DE COMUNA SI EL USUARIO LA INGRESA DIRECTO
-  const comunaEncontrada = COMUNAS_CHILE.find(c => lower.includes(c))
-  if (comunaEncontrada) {
-    lead.comuna = capitalizar(comunaEncontrada)
+  // ─────────────────────────────────────────────────────────────
+  //  7. DETECCIÓN ESPONTÁNEA DE COMUNA EN CUALQUIER MOMENTO
+  // ─────────────────────────────────────────────────────────────
+  if (comunaDetectada) {
+    lead.comuna = comunaDetectada
     guardarEnSupabase(lead, numero)
 
     if (lead.nombre && lead.nombre !== 'Prospecto') {
@@ -566,7 +614,9 @@ async function generarRespuestaLogica(texto, lower, lead, numero, reinicioPorIna
     }
   }
 
-  // F) CONSULTA ABIERTA CON GEMINI IA (Si está configurado)
+  // ─────────────────────────────────────────────────────────────
+  //  8. CONSULTA ABIERTA CON GEMINI IA (Si está configurado)
+  // ─────────────────────────────────────────────────────────────
   const respuestaIA = await consultarGeminiOpcional(texto, lead)
   if (respuestaIA) {
     return {
@@ -575,7 +625,9 @@ async function generarRespuestaLogica(texto, lower, lead, numero, reinicioPorIna
     }
   }
 
-  // G) MENÚ DE BIENVENIDA POR DEFECTO
+  // ─────────────────────────────────────────────────────────────
+  //  9. MENÚ DE BIENVENIDA POR DEFECTO
+  // ─────────────────────────────────────────────────────────────
   lead.paso = 'esperando_opcion'
   return {
     texto: `¡Hola${nombreSaludo}! Qué gusto saludarte 👋 Soy Tomás, tu asesor de seguridad en **GAMA Seguridad** 🛡️.\n\nTe ayudo de inmediato a cotizar la mejor protección con monitoreo 24/7 y **equipos 100% propios** (sin pagar arriendos eternos de $75.000 como en otras empresas) 🙌.\n\n¿Qué tipo de solución necesitas proteger? 🏡📹\n\n1️⃣ **Casa o Parcela** 🏡\n2️⃣ **Departamento** 🏢\n3️⃣ **Negocio o Empresa** 🏪\n4️⃣ **Ya tengo alarma (Migración a costo $0)** 🔄\n5️⃣ **Cámaras de Seguridad 4K** 📹\n\n*(Puedes responder con el número 1, 2, 3... o escribirme directamente)*`,
@@ -617,14 +669,29 @@ async function guardarEnSupabase(lead, numero, estado = 'en_conversacion') {
 }
 
 // ──────────────────────────────────────────────
-//  ALERTA VIP AL CELULAR DEL DUEÑO
+//  ALERTA VIP AL CELULAR DEL DUEÑO (SIN SPAM AL CLIENTE)
 // ──────────────────────────────────────────────
 async function dispararAlertaVIP(lead, numero) {
   if (!OWNER_PHONE || !sock) return
+  const numLimpio = String(numero).replace(/\D/g, '')
+  const ownerLimpio = String(OWNER_PHONE).replace(/\D/g, '')
+
+  // Omitir alerta en el mismo chat si quien prueba es el dueño
+  if (numLimpio === ownerLimpio || numLimpio.endsWith(ownerLimpio) || ownerLimpio.endsWith(numLimpio)) {
+    log(`[ALERTA VIP] Lead coincide con OWNER_PHONE (${numero}). Omitiendo alerta duplicada en el mismo chat de prueba.`)
+    return
+  }
+
+  // Validar que la comuna sea real y no texto residual
+  if (!lead.comuna || lead.comuna.toLowerCase().includes('servicio')) {
+    log(`[ALERTA VIP] Comuna inválida o no confirmada (${lead.comuna}). Omitiendo alerta VIP.`)
+    return
+  }
+
   try {
     const alerta = `🚨 *[NUEVO LEAD CALIFICADO - GAMA]* 🚨\n\n` +
       `👤 *Nombre:* ${lead.nombre || 'Prospecto'}\n` +
-      `📍 *Comuna:* ${lead.comuna || 'No especificada'}\n` +
+      `📍 *Comuna:* ${lead.comuna}\n` +
       `🏡 *Tipo:* ${lead.tipoPropiedad || 'Casa o Parcela'}\n` +
       `📦 *Solución:* ${lead.interes || 'Pack VETTI Smart'}\n` +
       `📅 *Visita Técnica:* ${lead.horarioVisita || 'Por coordinar'}\n` +
