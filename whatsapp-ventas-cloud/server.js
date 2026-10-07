@@ -1,17 +1,18 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════
- *  GAMA SEGURIDAD - BOT DE WHATSAPP VENTAS EN LA NUBE (24/7) v5.1
+ *  GAMA SEGURIDAD - BOT DE WHATSAPP VENTAS EN LA NUBE (24/7) v5.2
  *  - Compatible con Render.com, Koyeb, Railway, VPS
  *  - Motor: Baileys 7.x
+ *  - Diagnóstico en vivo: /logs y /status con métricas en tiempo real
  *  - Fix Crítico: Auto-silenciamiento (fromMe) resuelto con registro de IDs
+ *  - Fix Crítico: UUID válido para Supabase (numeroAUUID)
+ *  - Fix Crítico: Reset de Takeover automático ante cualquier saludo
  *  - Inteligencia Comercial: Pack Vetti Smart, Monitoreo 0,9 UF + IVA
  *  - Envío automático de Ficha Técnica PDF oficial
  *  - Cotizador Dinámico Interactivo (accesos / sensores)
  *  - Agendador de Evaluación Técnica en Terreno $0
  *  - Alertas VIP inmediatas al celular del dueño (56991016912)
- *  - Secuencia de Reactivación de Leads Fríos (Remarketing suave)
  *  - Memoria con Timeout de 10 min y reseteo por comando
- *  - Sincronización en tiempo real con Supabase CRM
  * ═══════════════════════════════════════════════════════════════════════
  */
 
@@ -20,6 +21,7 @@ const cors = require('cors')
 const path = require('path')
 const fs = require('fs')
 const https = require('https')
+const crypto = require('crypto')
 const QRCode = require('qrcode')
 
 const {
@@ -53,6 +55,24 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY)
 
 if (!fs.existsSync(SESSION_DIR)) fs.mkdirSync(SESSION_DIR, { recursive: true })
 if (!fs.existsSync(ASSETS_DIR)) fs.mkdirSync(ASSETS_DIR, { recursive: true })
+
+// ──────────────────────────────────────────────
+//  BUFFER DE LOGS EN VIVO (ACCESIBLE VÍA /logs)
+// ──────────────────────────────────────────────
+const logBuffer = []
+function log(msg, nivel = 'INFO') {
+  const ts = new Date().toLocaleTimeString('es-CL', { hour12: false })
+  const line = `[${ts}] [CLOUD-BOT-${nivel}] ${msg}`
+  console.log(line)
+  logBuffer.push(line)
+  if (logBuffer.length > 300) logBuffer.shift()
+}
+
+// Generador de UUID v4 determinista para cumplir con el esquema de Supabase
+function numeroAUUID(numero) {
+  const hash = crypto.createHash('md5').update(`wa-${numero}`).digest('hex')
+  return `${hash.slice(0, 8)}-${hash.slice(8, 12)}-4${hash.slice(13, 16)}-a${hash.slice(17, 20)}-${hash.slice(20, 32)}`
+}
 
 // ──────────────────────────────────────────────
 //  GENERADOR AUTÓNOMO DE FICHA TÉCNICA PDF OFICIAL
@@ -133,9 +153,9 @@ function asegurarPDF() {
     ].join('\n')
 
     fs.writeFileSync(PDF_FICHA_PATH, pdfData)
-    console.log('[PDF] Ficha técnica generada exitosamente en:', PDF_FICHA_PATH)
+    log('[PDF] Ficha técnica generada exitosamente en: ' + PDF_FICHA_PATH)
   } catch (e) {
-    console.error('[PDF] Error generando PDF:', e.message)
+    log('[PDF] Error generando PDF: ' + e.message, 'ERROR')
   }
 }
 asegurarPDF()
@@ -153,9 +173,9 @@ let genAI = null
 if (GEMINI_API_KEY) {
   try {
     genAI = new GoogleGenerativeAI(GEMINI_API_KEY)
-    console.log('[IA] Gemini configurado y activo.')
+    log('[IA] Gemini configurado y activo.')
   } catch (e) {
-    console.error('Error inicializando Gemini:', e.message)
+    log('Error inicializando Gemini: ' + e.message, 'WARN')
   }
 }
 
@@ -173,7 +193,10 @@ const COMUNAS_CHILE = [
 //  ENVÍO SEGURO DE MENSAJES (REGISTRA ID PROPIO)
 // ──────────────────────────────────────────────
 async function enviarMensajeBot(destJid, content, options = {}) {
-  if (!sock) return null
+  if (!sock) {
+    log('Imposible enviar mensaje: Socket Baileys no conectado', 'ERROR')
+    return null
+  }
   try {
     const res = await sock.sendMessage(destJid, content, options)
     if (res?.key?.id) {
@@ -182,7 +205,7 @@ async function enviarMensajeBot(destJid, content, options = {}) {
     }
     return res
   } catch (err) {
-    console.error(`[ERROR ENVIO BOT] a ${destJid}:`, err.message)
+    log(`[ERROR ENVIO BOT] a ${destJid}: ${err.message}`, 'ERROR')
     throw err
   }
 }
@@ -244,7 +267,7 @@ async function procesarMensajeVentas(textoUsuario, numero, nombrePush, sock, rem
   } else {
     const leadExistente = leadMemory.get(numero)
     if (leadExistente.lastActivity && (now - leadExistente.lastActivity > INACTIVITY_TIMEOUT_MS)) {
-      console.log(`[MEMORIA] ⏰ Inactividad > 10 min (+${numero}). Reiniciando flujo conversacional.`)
+      log(`[MEMORIA] ⏰ Inactividad > 10 min (+${numero}). Reiniciando flujo conversacional.`)
       leadExistente.paso = 'inicio'
       leadExistente.tipoPropiedad = null
       leadExistente.historial = []
@@ -256,7 +279,7 @@ async function procesarMensajeVentas(textoUsuario, numero, nombrePush, sock, rem
   const lead = leadMemory.get(numero)
 
   // 2. Comandos manuales de reinicio o unpause
-  if (['menu', 'menú', 'reiniciar', 'inicio', 'volver', 'bot', 'activar bot'].includes(lower)) {
+  if (lower === 'menu' || lower === 'menú' || lower === 'reiniciar' || lower === 'inicio' || lower === 'volver' || lower === 'bot' || lower === 'activar bot') {
     lead.paso = 'inicio'
     lead.tipoPropiedad = null
     lead.historial = []
@@ -286,7 +309,7 @@ async function procesarMensajeVentas(textoUsuario, numero, nombrePush, sock, rem
         mimetype: 'application/pdf',
         fileName: 'Ficha_Tecnica_GAMA_Vetti_Smart.pdf',
         caption: '📄 *Ficha Comercial Oficial - GAMA Seguridad*\n\nAquí tienes las especificaciones técnicas del Pack VETTI Smart inalámbrico y nuestro plan de monitoreo 24/7 🛡️.'
-      }).catch(e => console.error('[PDF] Error enviando documento:', e.message))
+      }).catch(e => log('[PDF] Error enviando documento: ' + e.message, 'ERROR'))
     }, 1500)
   }
 
@@ -297,7 +320,7 @@ async function generarRespuestaLogica(texto, lower, lead, numero, reinicioPorIna
   const nombreSaludo = lead.nombre ? ` ${lead.nombre}` : ''
 
   // A) Saludo especial si regresa tras más de 10 min de inactividad
-  if (reinicioPorInactividad && lead.nombre && !['1','2','3','4','5'].includes(lower)) {
+  if (reinicioPorInactividad && lead.nombre && !['1', '2', '3', '4', '5'].includes(lower)) {
     lead.paso = 'esperando_opcion'
     return {
       texto: `¡Hola de nuevo ${lead.nombre}! 👋 Qué gusto saludarte otra vez por aquí 🛡️.\n\nPara retomar tu cotización o responder una nueva duda:\n\n¿Qué tipo de propiedad necesitas proteger? 🏡\n\n1️⃣ **Casa o Parcela** 🏡\n2️⃣ **Departamento** 🏢\n3️⃣ **Negocio o Empresa** 🏪\n4️⃣ **Ya tengo alarma (Migración a costo $0)** 🔄\n5️⃣ **Cámaras de Seguridad 4K** 📹\n\n*(Puedes responder con el número 1, 2, 3... o escribirme directamente)*`,
@@ -439,7 +462,6 @@ async function generarRespuestaLogica(texto, lower, lead, numero, reinicioPorIna
     lead.comuna = comunaEncontrada ? capitalizar(comunaEncontrada) : capitalizar(texto.slice(0, 35).replace(/en\s+/i, '').trim())
     guardarEnSupabase(lead, numero)
 
-    // Si ya sabemos el nombre del cliente (ej. por WhatsApp pushName), no se lo preguntamos otra vez:
     if (lead.nombre && lead.nombre !== 'Prospecto') {
       lead.paso = 'agendando_visita'
       return {
@@ -455,8 +477,8 @@ async function generarRespuestaLogica(texto, lower, lead, numero, reinicioPorIna
     }
   }
 
-  // F) PASO: PIDIENDO NOMBRE
-  if (lead.paso === 'pidiendo_nombre' || (!lead.nombre && (lower.startsWith('me llamo') || lower.startsWith('soy ') || texto.split(' ').length <= 4))) {
+  // F) PASO: PIDIENDO NOMBRE (Solo si está explícitamente en ese paso)
+  if (lead.paso === 'pidiendo_nombre' || (lead.paso !== 'inicio' && lead.paso !== 'esperando_opcion' && !lead.nombre && (lower.startsWith('me llamo') || lower.startsWith('soy ')))) {
     let nombreLimpio = texto.replace(/me llamo|soy|mi nombre es/gi, '').trim()
     if (nombreLimpio.length > 1) {
       lead.nombre = capitalizar(nombreLimpio)
@@ -513,7 +535,7 @@ function capitalizar(str) {
 }
 
 // ──────────────────────────────────────────────
-//  GUARDAR LEAD EN SUPABASE (SCHEMA SEGURO)
+//  GUARDAR LEAD EN SUPABASE (SCHEMA SEGURO CON UUID)
 // ──────────────────────────────────────────────
 async function guardarEnSupabase(lead, numero, estado = 'en_conversacion') {
   try {
@@ -524,7 +546,7 @@ async function guardarEnSupabase(lead, numero, estado = 'en_conversacion') {
     ].filter(Boolean).join(' | ')
 
     const payload = {
-      session_id: `wa-${numero}`,
+      session_id: numeroAUUID(numero),
       nombre: lead.nombre || 'Prospecto WhatsApp',
       telefono: numero,
       comuna: lead.comuna || null,
@@ -534,8 +556,9 @@ async function guardarEnSupabase(lead, numero, estado = 'en_conversacion') {
       last_activity: new Date().toISOString(),
     }
     await supabase.from('leads_sales_gama').upsert(payload, { onConflict: 'session_id' })
+    log(`[CRM] Lead guardado en Supabase: +${numero} (${lead.nombre || 'Prospecto'}) -> ${estado}`)
   } catch (e) {
-    console.error('[SUPABASE] Error guardando lead:', e.message)
+    log(`[CRM] Error guardando lead en Supabase: ${e.message}`, 'WARN')
   }
 }
 
@@ -555,9 +578,9 @@ async function dispararAlertaVIP(lead, numero) {
       `👉 *Chatear con el cliente ahora:* https://wa.me/${numero}`
 
     await enviarMensajeBot(`${OWNER_PHONE}@s.whatsapp.net`, { text: alerta })
-    console.log(`[ALERTA VIP] Notificación enviada a +${OWNER_PHONE} para lead +${numero}`)
+    log(`[ALERTA VIP] Notificación enviada a +${OWNER_PHONE} para lead +${numero}`)
   } catch (e) {
-    console.error('[ALERTA VIP] Error enviando alerta:', e.message)
+    log(`[ALERTA VIP] Error enviando alerta: ${e.message}`, 'ERROR')
   }
 }
 
@@ -580,11 +603,6 @@ let qrImageBase64 = null
 let estadoConexion = 'desconectado'
 let numeroConectado = null
 let usuarioConectado = null
-
-function log(msg, nivel = 'INFO') {
-  const ts = new Date().toLocaleTimeString('es-CL', { hour12: false })
-  console.log(`[${ts}] [CLOUD-BOT-${nivel}] ${msg}`)
-}
 
 async function conectar() {
   estadoConexion = 'conectando'
@@ -616,7 +634,7 @@ async function conectar() {
         qrActual = qr
         qrImageBase64 = await QRCode.toDataURL(qr, { width: 320, margin: 2 })
         estadoConexion = 'esperando_qr'
-        log('Nuevo Código QR de la nube generado. Abre la página para escanear.')
+        log('Nuevo Código QR generado. Abre https://gama-ventas-bot.onrender.com para escanear.')
       }
 
       if (connection === 'close') {
@@ -643,7 +661,7 @@ async function conectar() {
         const rawUser = sock.user?.id || ''
         numeroConectado = rawUser.split(':')[0].split('@')[0]
         usuarioConectado = sock.user?.name || 'GAMA Bot Cloud'
-        log(`✅ WHATSAPP CLOUD CONECTADO: +${numeroConectado} (${usuarioConectado})`)
+        log(`✅ WHATSAPP CLOUD CONECTADO EXITOSAMENTE: +${numeroConectado} (${usuarioConectado})`)
       }
     })
 
@@ -652,54 +670,82 @@ async function conectar() {
       for (const msg of messages) {
         if (!msg.key || !msg.key.remoteJid) continue
 
-        // Si el mensaje fue enviado por el bot, lo descartamos sin activar humanTakeover
+        // Extraer texto completo considerando mensajes estándar, efímeros o multimedia
+        const body = (
+          msg.message?.conversation
+          || msg.message?.extendedTextMessage?.text
+          || msg.message?.imageMessage?.caption
+          || msg.message?.videoMessage?.caption
+          || msg.message?.ephemeralMessage?.message?.conversation
+          || msg.message?.ephemeralMessage?.message?.extendedTextMessage?.text
+          || msg.message?.viewOnceMessage?.message?.conversation
+          || msg.message?.viewOnceMessage?.message?.extendedTextMessage?.text
+          || ''
+        ).trim()
+
+        const remoteJid = msg.key.remoteJid
+        const numero = remoteJid.replace(/[^0-9]/g, '')
+        const nombre = msg.pushName || 'Prospecto'
+        const lowerRaw = body.toLowerCase()
+
+        // 1. Mensajes salientes (fromMe)
         if (msg.key.fromMe) {
           if (msg.key.id && botSentMessageIds.has(msg.key.id)) {
             botSentMessageIds.delete(msg.key.id)
             continue
           }
-          // Si tú respondiste manualmente desde la app en tu teléfono, pausamos el bot 30 minutos
-          const dest = msg.key.remoteJid.replace(/[^0-9]/g, '')
+          // Si tú respondiste manualmente desde la app en tu celular personal:
+          const dest = remoteJid.replace(/[^0-9]/g, '')
           humanTakeover.set(dest, Date.now())
-          log(`👤 Respuesta manual detectada desde WhatsApp móvil hacia +${dest}. Bot silenciado 30 min por Human Handoff.`)
+          log(`👤 Intervención humana manual detectada hacia +${dest}. Bot silenciado 30 min por Human Handoff.`)
           continue
         }
 
-        if (isJidBroadcast(msg.key.remoteJid) || msg.key.remoteJid.endsWith('@g.us')) continue
+        // Ignorar broadcasts y grupos
+        if (isJidBroadcast(remoteJid) || remoteJid.endsWith('@g.us')) continue
 
+        // Deduplicación de mensajes
         if (msg.key.id) {
           if (processedMessages.has(msg.key.id)) continue
           processedMessages.set(msg.key.id, Date.now())
         }
 
-        const body = msg.message?.conversation
-          || msg.message?.extendedTextMessage?.text
-          || msg.message?.imageMessage?.caption || ''
-
-        if (!body) continue
-
-        const remoteJid = msg.key.remoteJid
-        const numero = remoteJid.replace(/[^0-9]/g, '')
-        const nombre = msg.pushName || 'Prospecto'
-        const lowerRaw = body.trim().toLowerCase()
-
-        log(`📩 Mensaje de +${numero} (${nombre}): "${body.slice(0, 50)}"`)
-
-        // Comandos para cancelar pausa manual y reactivar bot de inmediato
-        if (['menu', 'menú', 'bot', 'activar bot', 'reiniciar', 'inicio', 'volver', 'hola'].includes(lowerRaw)) {
-          humanTakeover.delete(numero)
-        }
-
-        // 1. Verificar si está en modo Humano activo
-        const lastTakeover = humanTakeover.get(numero)
-        if (lastTakeover && (Date.now() - lastTakeover < 30 * 60 * 1000)) {
-          log(`⏸️ Chat con +${numero} en modo Humano activo. Bot silenciado.`)
+        if (!body) {
+          log(`[IGNORADO] Mensaje sin texto de +${numero}`)
           continue
         }
 
-        // 2. Evaluar Human Handoff (Petición de asesor humano)
+        log(`📩 [MENSAJE RECIBIDO] de +${numero} (${nombre}): "${body.slice(0, 50)}"`)
+
+        // Comandos o saludos que reactivan el bot de inmediato
+        if (
+          lowerRaw.includes('hola') ||
+          lowerRaw.includes('buenas') ||
+          lowerRaw.includes('menu') ||
+          lowerRaw.includes('menú') ||
+          lowerRaw.includes('bot') ||
+          lowerRaw.includes('activar bot') ||
+          lowerRaw.includes('reiniciar') ||
+          lowerRaw.includes('inicio') ||
+          lowerRaw.includes('volver')
+        ) {
+          if (humanTakeover.has(numero)) {
+            humanTakeover.delete(numero)
+            log(`⚡ Chat con +${numero} reactivado por saludo o comando.`)
+          }
+        }
+
+        // 2. Verificar si está en modo Humano activo
+        const lastTakeover = humanTakeover.get(numero)
+        if (lastTakeover && (Date.now() - lastTakeover < 30 * 60 * 1000)) {
+          const restantes = Math.round((30 * 60 * 1000 - (Date.now() - lastTakeover)) / 1000)
+          log(`⏸️ Chat con +${numero} en modo Humano activo (${restantes}s restantes). Bot silenciado.`)
+          continue
+        }
+
+        // 3. Evaluar Human Handoff (Petición explícita de asesor humano)
         if (esPeticionDeHumano(body)) {
-          log(`🚨 HUMAN HANDOFF ACTIVADO para +${numero} (${nombre})`)
+          log(`🚨 HUMAN HANDOFF SOLICITADO por +${numero} (${nombre})`)
           humanTakeover.set(numero, Date.now())
 
           const respuestaTraspaso = `¡Comprendido ${nombre}! Te estoy transfiriendo de inmediato con nuestro asesor comercial de turno para que te atienda de forma personalizada por este mismo chat o llamada 🤝.`
@@ -712,17 +758,17 @@ async function conectar() {
           continue
         }
 
-        // 3. Procesar con el Motor Consultivo de Ventas
+        // 4. Procesar con el Motor Consultivo de Ventas
         try {
           await sock.sendPresenceUpdate('composing', remoteJid).catch(() => {})
-          await new Promise(r => setTimeout(r, 1800))
+          await new Promise(r => setTimeout(r, 1200))
           await sock.sendPresenceUpdate('paused', remoteJid).catch(() => {})
 
           const respuestaBot = await procesarMensajeVentas(body, numero, nombre, sock, remoteJid)
           await enviarMensajeBot(remoteJid, { text: respuestaBot })
           log(`🤖 Bot respondió con éxito a +${numero}`)
         } catch (err) {
-          log(`Error respondiendo al cliente: ${err.message}`, 'ERROR')
+          log(`Error respondiendo al cliente +${numero}: ${err.message}`, 'ERROR')
         }
       }
     })
@@ -732,33 +778,6 @@ async function conectar() {
     setTimeout(conectar, 10000)
   }
 }
-
-// ──────────────────────────────────────────────
-//  REMARKETING SUAVE: REACTIVACIÓN DE LEADS FRÍOS
-// ──────────────────────────────────────────────
-setInterval(async () => {
-  if (!sock || estadoConexion !== 'conectado') return
-  const now = Date.now()
-
-  for (const [numero, lead] of leadMemory.entries()) {
-    const horasInactivo = (now - lead.lastActivity) / (1000 * 60 * 60)
-    if (horasInactivo >= 2 && horasInactivo <= 6 && !lead.reactivado && lead.paso !== 'finalizado') {
-      lead.reactivado = true
-      const remoteJid = `${numero}@s.whatsapp.net`
-      const nombreLead = lead.nombre ? ` ${lead.nombre}` : ''
-      const comunaTexto = lead.comuna ? ` en ${lead.comuna}` : ' en tu sector'
-
-      const msgReactivacion = `¡Hola${nombreLead}! 👋 Te escribo brevemente desde GAMA Seguridad 🛡️.\n\nTe comento que hoy tenemos 2 cupos de instalación bonificada ($0) disponibles${comunaTexto}. ¿Te gustaría que te reservemos uno antes de cerrar el día? 🙌`
-
-      try {
-        await enviarMensajeBot(remoteJid, { text: msgReactivacion })
-        log(`🔄 Lead frío reactivado: +${numero}`)
-      } catch (e) {
-        console.error('Error reactivando lead:', e.message)
-      }
-    }
-  }
-}, 30 * 60 * 1000) // Revisa cada 30 minutos
 
 // ──────────────────────────────────────────────
 //  AUTO KEEP-ALIVE (EVITA SUSPENSIÓN EN RENDER)
@@ -778,10 +797,26 @@ app.use(cors())
 app.get('/status', (req, res) => {
   res.json({
     ok: true,
+    version: '5.2',
+    uptimeSegundos: Math.round(process.uptime()),
     estado: estadoConexion,
     numero: numeroConectado,
     usuario: usuarioConectado,
+    humanTakeoversActivos: Array.from(humanTakeover.keys()),
+    leadsRegistrados: leadMemory.size,
   })
+})
+
+app.get('/logs', (req, res) => {
+  res.setHeader('content-type', 'text/plain; charset=utf-8')
+  res.send(logBuffer.length ? logBuffer.join('\n') : 'Sin logs registrados aún.')
+})
+
+app.get('/reset-takeover', (req, res) => {
+  const count = humanTakeover.size
+  humanTakeover.clear()
+  log(`⚡ Todos los Human Takeovers han sido reseteados manualmente (${count} chats liberados).`)
+  res.json({ ok: true, liberados: count })
 })
 
 app.get('/', (req, res) => {
@@ -795,11 +830,11 @@ app.get('/', (req, res) => {
   <meta charset="utf-8">
   <meta http-equiv="refresh" content="8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>GAMA WhatsApp Cloud Bot</title>
+  <title>GAMA WhatsApp Cloud Bot v5.2</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { background: #050d1a; color: #e2e8f0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
-    .card { background: #0f1c30; border: 1px solid #1e3a5f; border-radius: 24px; padding: 36px; max-width: 500px; width: 100%; text-align: center; box-shadow: 0 25px 60px rgba(0,0,0,0.6); }
+    .card { background: #0f1c30; border: 1px solid #1e3a5f; border-radius: 24px; padding: 36px; max-width: 520px; width: 100%; text-align: center; box-shadow: 0 25px 60px rgba(0,0,0,0.6); }
     h1 { color: #38bdf8; font-size: 24px; font-weight: 800; margin-bottom: 6px; }
     h2 { color: #94a3b8; font-size: 14px; font-weight: 500; margin-bottom: 24px; }
     .badge { display: inline-block; padding: 8px 22px; border-radius: 999px; font-weight: 800; font-size: 13px; text-transform: uppercase; margin-bottom: 24px; }
@@ -808,13 +843,16 @@ app.get('/', (req, res) => {
     .qr-box { background: white; padding: 16px; border-radius: 16px; display: inline-block; margin: 16px 0; }
     .qr-box img { display: block; max-width: 260px; height: auto; }
     .phone-info { font-size: 18px; font-weight: 700; color: #10b981; margin: 16px 0; }
+    .actions { margin-top: 20px; display: flex; gap: 10px; justify-content: center; }
+    .btn { display: inline-block; background: #1e293b; color: #38bdf8; text-decoration: none; padding: 8px 16px; border-radius: 8px; font-size: 12px; font-weight: 600; border: 1px solid #334155; }
+    .btn:hover { background: #334155; color: white; }
     .note { font-size: 12px; color: #64748b; margin-top: 24px; line-height: 1.6; }
   </style>
 </head>
 <body>
   <div class="card">
     <h1>🛡️ GAMA SEGURIDAD</h1>
-    <h2>WhatsApp Bot 24/7 en la Nube (Human Handoff)</h2>
+    <h2>WhatsApp Bot 24/7 en la Nube v5.2</h2>
 
     ${isConectado ? `
       <div class="badge badge-ok">✅ Conectado y Activo 24/7</div>
@@ -823,6 +861,10 @@ app.get('/', (req, res) => {
         El bot está respondiendo en la nube 24/7 con Inteligencia Comercial.<br>
         Fichas PDF, Cotizador Dinámico, Agendador de Visitas $0 y Alertas VIP activos.
       </p>
+      <div class="actions">
+        <a class="btn" href="/logs" target="_blank">📋 Ver Logs en Vivo</a>
+        <a class="btn" href="/reset-takeover" target="_blank">⚡ Desbloquear Chats</a>
+      </div>
     ` : isEsperando ? `
       <div class="badge badge-wait">⏳ Esperando Escaneo</div>
       <p style="color: #cbd5e1; font-size: 13px; margin-bottom: 12px;">
