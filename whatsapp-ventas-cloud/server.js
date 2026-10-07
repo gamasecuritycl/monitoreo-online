@@ -283,17 +283,17 @@ function capitalizar(str) {
 
 async function guardarEnSupabase(lead, numero, estado = 'en_conversacion') {
   try {
-    await supabase.from('leads_sales_gama').upsert({
+    const payload = {
       session_id: `wa-${numero}`,
       nombre: lead.nombre || 'Prospecto WhatsApp',
       telefono: numero,
       comuna: lead.comuna || null,
-      tipo_propiedad: lead.tipoPropiedad || null,
-      interes: lead.interes || 'monitoreo_alarma',
+      direccion: lead.tipoPropiedad ? `[${lead.tipoPropiedad}] ${lead.interes || ''}` : null,
       estado: estado,
-      origen: 'meta_ads_whatsapp',
       updated_at: new Date().toISOString(),
-    }, { onConflict: 'session_id' })
+      last_activity: new Date().toISOString(),
+    }
+    await supabase.from('leads_sales_gama').upsert(payload, { onConflict: 'session_id' })
   } catch (e) {
     console.error('[SUPABASE] Error guardando lead:', e.message)
   }
