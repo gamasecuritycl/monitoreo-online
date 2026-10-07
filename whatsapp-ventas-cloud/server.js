@@ -106,9 +106,13 @@ const COMUNAS_CHILE = [
 // ──────────────────────────────────────────────
 //  MOTOR CONVERSACIONAL DE VENTAS GAMA
 // ──────────────────────────────────────────────
+const INACTIVITY_TIMEOUT_MS = 10 * 60 * 1000 // 10 minutos de inactividad
+
 async function procesarMensajeVentas(textoUsuario, numero, nombrePush) {
   const t = textoUsuario.trim()
   const lower = t.toLowerCase()
+  const now = Date.now()
+  let reinicioPorInactividad = false
 
   // Obtener o inicializar estado del lead
   if (!leadMemory.has(numero)) {
@@ -118,11 +122,32 @@ async function procesarMensajeVentas(textoUsuario, numero, nombrePush) {
       comuna: null,
       tipoPropiedad: null,
       interes: 'alarma_monitoreo',
-      historial: []
+      historial: [],
+      lastActivity: now
     })
+  } else {
+    const leadExistente = leadMemory.get(numero)
+    // ESTRATEGIA DE MEMORIA: Si han pasado más de 10 minutos de inactividad, se reinicia el flujo
+    if (leadExistente.lastActivity && (now - leadExistente.lastActivity > INACTIVITY_TIMEOUT_MS)) {
+      console.log(`[MEMORIA] ⏰ Inactividad > 10 min (+${numero}). Reiniciando flujo conversacional.`)
+      leadExistente.paso = 'inicio'
+      leadExistente.tipoPropiedad = null
+      leadExistente.historial = []
+      reinicioPorInactividad = true
+    }
+    leadExistente.lastActivity = now
   }
 
   const lead = leadMemory.get(numero)
+
+  // Comando manual para volver al menú
+  if (lower === 'menu' || lower === 'menú' || lower === 'reiniciar' || lower === 'inicio' || lower === 'volver') {
+    lead.paso = 'inicio'
+    lead.tipoPropiedad = null
+    lead.historial = []
+    reinicioPorInactividad = true
+  }
+
   lead.historial.push({ role: 'user', content: t })
   if (lead.historial.length > 8) lead.historial.shift()
 
@@ -160,13 +185,19 @@ Tomás (GAMA Seguridad):`
   }
 
   // 2. Motor Conversacional Nativo Experto de GAMA (Cálido, Dinámico, Guiado con Opciones)
-  const respuestaNativa = generarRespuestaNativa(t, lower, lead, numero)
+  const respuestaNativa = generarRespuestaNativa(t, lower, lead, numero, reinicioPorInactividad)
   lead.historial.push({ role: 'assistant', content: respuestaNativa })
   return respuestaNativa
 }
 
-function generarRespuestaNativa(texto, lower, lead, numero) {
+function generarRespuestaNativa(texto, lower, lead, numero, reinicioPorInactividad = false) {
   const nombreSaludo = lead.nombre ? ` ${lead.nombre}` : ''
+
+  // Saludo especial si regresa tras más de 10 min de inactividad
+  if (reinicioPorInactividad && lead.nombre && !lower.includes('1') && !lower.includes('2') && !lower.includes('3') && !lower.includes('4') && !lower.includes('5')) {
+    lead.paso = 'esperando_opcion'
+    return `¡Hola de nuevo ${lead.nombre}! 👋 Qué gusto saludarte otra vez por aquí.\n\nPara retomar tu cotización o hacer una nueva consulta:\n\n¿Qué tipo de propiedad necesitas proteger? 🏡\n\n1️⃣ **Casa o Parcela** 🏡\n2️⃣ **Departamento** 🏢\n3️⃣ **Negocio o Empresa** 🏪\n4️⃣ **Ya tengo alarma (Migración a costo $0)** 🔄\n5️⃣ **Cámaras de Seguridad 4K** 📹\n\n*(Puedes responder con el número 1, 2, 3... o escribirme directamente)*`
+  }
 
   // A) PREGUNTAS FRECUENTES COMUNES (Respuestas inmediatas sin perder el hilo)
   if (lower.includes('luz') || lower.includes('corte de luz') || lower.includes('bateria')) {
