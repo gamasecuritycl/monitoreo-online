@@ -57,12 +57,12 @@ if (!fs.existsSync(SESSION_DIR)) fs.mkdirSync(SESSION_DIR, { recursive: true })
 if (!fs.existsSync(ASSETS_DIR)) fs.mkdirSync(ASSETS_DIR, { recursive: true })
 
 // ──────────────────────────────────────────────
-//  BUFFER DE LOGS EN VIVO (ACCESIBLE VÍA /logs)
+//  BUFFER DE LOGS EN VIVO (HORA CHILE CONTINENTAL)
 // ──────────────────────────────────────────────
 const logBuffer = []
 function log(msg, nivel = 'INFO') {
-  const ts = new Date().toLocaleTimeString('es-CL', { hour12: false })
-  const line = `[${ts}] [CLOUD-BOT-${nivel}] ${msg}`
+  const ts = new Date().toLocaleTimeString('es-CL', { timeZone: 'America/Santiago', hour12: false })
+  const line = `[${ts} CL] [CLOUD-BOT-${nivel}] ${msg}`
   console.log(line)
   logBuffer.push(line)
   if (logBuffer.length > 300) logBuffer.shift()
@@ -72,6 +72,30 @@ function log(msg, nivel = 'INFO') {
 function numeroAUUID(numero) {
   const hash = crypto.createHash('md5').update(`wa-${numero}`).digest('hex')
   return `${hash.slice(0, 8)}-${hash.slice(8, 12)}-4${hash.slice(13, 16)}-a${hash.slice(17, 20)}-${hash.slice(20, 32)}`
+}
+
+// Extractor robusto de texto desde cualquier tipo de mensaje de WhatsApp
+function extraerTextoMensaje(msg) {
+  if (!msg || !msg.message) return ''
+  const m = msg.message
+  const inner = m.ephemeralMessage?.message
+    || m.viewOnceMessage?.message
+    || m.viewOnceMessageV2?.message
+    || m.documentWithCaptionMessage?.message
+    || m.editedMessage?.message?.protocolMessage?.editedMessage
+    || m
+
+  return (
+    inner.conversation
+    || inner.extendedTextMessage?.text
+    || inner.imageMessage?.caption
+    || inner.videoMessage?.caption
+    || inner.documentMessage?.caption
+    || inner.buttonsResponseMessage?.selectedButtonId
+    || inner.listResponseMessage?.singleSelectReply?.selectedRowId
+    || inner.templateButtonReplyMessage?.selectedId
+    || ''
+  ).trim()
 }
 
 // ──────────────────────────────────────────────
@@ -612,6 +636,8 @@ async function conectar() {
     const { state, saveCreds } = await useMultiFileAuthState(SESSION_DIR)
     const { version } = await fetchLatestBaileysVersion().catch(() => ({ version: [2, 3000, 1015901307] }))
 
+    const messageStore = new Map()
+
     sock = makeWASocket({
       version,
       auth: {
@@ -623,6 +649,9 @@ async function conectar() {
       browser: Browsers.macOS('GAMA Cloud Bot'),
       syncFullHistory: false,
       markOnlineOnConnect: true,
+      getMessage: async (key) => {
+        return messageStore.get(key.id) || undefined
+      }
     })
 
     sock.ev.on('creds.update', saveCreds)
@@ -670,36 +699,18 @@ async function conectar() {
       for (const msg of messages) {
         if (!msg.key || !msg.key.remoteJid) continue
 
-        // Extraer texto completo considerando mensajes estándar, efímeros o multimedia
-        const body = (
-          msg.message?.conversation
-          || msg.message?.extendedTextMessage?.text
-          || msg.message?.imageMessage?.caption
-          || msg.message?.videoMessage?.caption
-          || msg.message?.ephemeralMessage?.message?.conversation
-          || msg.message?.ephemeralMessage?.message?.extendedTextMessage?.text
-          || msg.message?.viewOnceMessage?.message?.conversation
-          || msg.message?.viewOnceMessage?.message?.extendedTextMessage?.text
-          || ''
-        ).trim()
+        // Guardar mensaje en store para reintentos de desencriptación
+        if (msg.key.id && msg.message) {
+          messageStore.set(msg.key.id, msg.message)
+        }
 
-        const remoteJid = msg.key.remoteJid
-        const numero = remoteJid.replace(/[^0-9]/g, '')
-        const nombre = msg.pushName || 'Prospecto'
-        const lowerRaw = body.toLowerCase()
-
-        // 1. Mensajes salientes (fromMe)
+        // 1. Descartar mensajes salientes (fromMe) sin silenciar nunca al bot
         if (msg.key.fromMe) {
-          if (msg.key.id && botSentMessageIds.has(msg.key.id)) {
-            botSentMessageIds.delete(msg.key.id)
-            continue
-          }
-          // Si tú respondiste manualmente desde la app en tu celular personal:
-          const dest = remoteJid.replace(/[^0-9]/g, '')
-          humanTakeover.set(dest, Date.now())
-          log(`👤 Intervención humana manual detectada hacia +${dest}. Bot silenciado 30 min por Human Handoff.`)
+          if (msg.key.id) botSentMessageIds.delete(msg.key.id)
           continue
         }
+
+        const remoteJid = msg.key.remoteJid
 
         // Ignorar broadcasts y grupos
         if (isJidBroadcast(remoteJid) || remoteJid.endsWith('@g.us')) continue
@@ -710,8 +721,14 @@ async function conectar() {
           processedMessages.set(msg.key.id, Date.now())
         }
 
+        const body = extraerTextoMensaje(msg)
+        const numero = remoteJid.replace(/[^0-9]/g, '')
+        const nombre = msg.pushName || 'Prospecto'
+        const lowerRaw = body.toLowerCase()
+
         if (!body) {
-          log(`[IGNORADO] Mensaje sin texto de +${numero}`)
+          const mKeys = msg.message ? Object.keys(msg.message).join(', ') : 'vacio'
+          log(`[IGNORADO] Mensaje sin texto legible de +${numero} (tipo: ${mKeys})`)
           continue
         }
 
