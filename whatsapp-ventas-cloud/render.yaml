@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: gama-whatsapp-ventas-cloud
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: NODE_VERSION
+        value: 20.18.0
+      - key: OWNER_PHONE
+        value: "56991016912"
