@@ -3,8 +3,9 @@
  *  GAMA SEGURIDAD - BOT DE WHATSAPP VENTAS EN LA NUBE (24/7)
  *  - Compatible con Render.com, Koyeb, Railway, VPS
  *  - Motor: Baileys 7.x
- *  - Inteligencia Artificial: Google Gemini
+ *  - Inteligencia Artificial: Google Gemini + Motor Conversacional Experto
  *  - Human Handoff (Derivación automática a asesor humano)
+ *  - Flujo Consultivo: Opciones con botones/emojis, toma de datos, CRM Supabase
  * ═══════════════════════════════════════════════════════════════════════
  */
 
@@ -12,6 +13,7 @@ const express = require('express')
 const cors = require('cors')
 const path = require('path')
 const fs = require('fs')
+const https = require('https')
 const QRCode = require('qrcode')
 
 const {
@@ -29,12 +31,13 @@ const { GoogleGenerativeAI } = require('@google/generative-ai')
 const { createClient } = require('@supabase/supabase-js')
 
 // ──────────────────────────────────────────────
-//  CONFIGURACIÓN
+//  CONFIGURACIÓN Y VARIABLES DE ENTORNO
 // ──────────────────────────────────────────────
 const PORT = process.env.PORT || 3000
 const SESSION_DIR = process.env.SESSION_DIR || path.join(__dirname, '.session-cloud')
 const OWNER_PHONE = process.env.OWNER_PHONE || '56991016912' // Teléfono donde llegan alertas de derivación
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || ''
+const RENDER_EXTERNAL_URL = process.env.RENDER_EXTERNAL_URL || 'https://gama-ventas-bot.onrender.com'
 
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://onxwyrwmpjxtwlmjrosr.supabase.co'
 const SUPABASE_KEY = process.env.SUPABASE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9ueHd5cndtcGp4dHdsbWpyb3NyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI4NTUxNDQsImV4cCI6MjA5ODQzMTE0NH0.8kJRf8hm3rHK8sygMcyBT0R83tyK8hIQCmnAQxannJs'
@@ -45,62 +48,255 @@ if (!fs.existsSync(SESSION_DIR)) {
 }
 
 // ──────────────────────────────────────────────
-//  SISTEMA DE HUMAN HANDOFF & IA
+//  MEMORIA DE CONVERSACIÓN & ESTADOS DE LEADS
 // ──────────────────────────────────────────────
-const humanTakeover = new Map() // telefono -> timestamp de derivación
-const processedMessages = new Map()
-const DEDUP_TTL = 300_000
+const humanTakeover = new Map()     // telefono -> timestamp
+const processedMessages = new Map() // id -> timestamp
+const leadMemory = new Map()        // telefono -> { paso, nombre, comuna, tipoPropiedad, interes, historial: [] }
 
 let genAI = null
 if (GEMINI_API_KEY) {
   try {
     genAI = new GoogleGenerativeAI(GEMINI_API_KEY)
+    console.log('[IA] Gemini configurado y activo.')
   } catch (e) {
     console.error('Error inicializando Gemini:', e.message)
   }
 }
 
+// ──────────────────────────────────────────────
+//  PROMPT DE ENTRENAMIENTO IA (CÁLIDO, CONSULTIVO, EMOTICONES)
+// ──────────────────────────────────────────────
 const SYSTEM_PROMPT = `
-Eres el Asistente Virtual Comercial de GAMA SEGURIDAD SpA (Chile).
-Tu objetivo es atender amablemente a los prospectos que llegan de anuncios de Facebook e Instagram, resolver sus dudas y conseguir sus datos para agendar una cotización o instalación.
+Eres Tomás, el Asesor Comercial y Especialista de Seguridad de GAMA SEGURIDAD (Chile).
+Atiendes prospectos que llegan desde anuncios en Facebook e Instagram por WhatsApp.
 
-INFORMACIÓN CLAVE DE GAMA SEGURIDAD:
-- Monitoreo 24/7 profesional desde 0,9 UF + IVA mensuales (~$35.000 CLP).
-- Los equipos son 100% PROPIOS del cliente. NO cobramos arriendos eternos ni comodato (gran ventaja frente a Verisure, que cobra $65.000 a $80.000/mes y los equipos nunca son del cliente).
-- Si el cliente ya tiene una alarma instalada (marca DSC, Honeywell o ADT), ofrecemos MIGRACIÓN A COSTO $0 en hardware (reprogramamos su panel existente hacia nuestra central).
-- Kits de alarmas inalámbricos nuevos para casa desde $199.900 con instalación.
-- Cobertura técnica propia en las 52 comunas de la Región Metropolitana y 38 de la Región de Valparaíso.
-- También instalamos cámaras de seguridad 4K con IA y cercos eléctricos certificados SEC.
+PERSONALIDAD Y TONO:
+- Eres cálido, cercano, empático, entusiasta y muy educado (trato chileno formal y cercano, sin tecnicismos fríos).
+- ¡Cero respuestas tipo robot o enciclopedia! Habla como una persona real conversando por WhatsApp.
+- Usa emoticones amigables de manera estratégica (🛡️, 🏡, 🏢, 📲, ✨, 💰, 📍, 🤝, 🚨, 🐕, 🌟).
+- No envíes párrafos eternos: usa mensajes ágiles, directos y con viñetas ordenadas.
+- Brinda siempre opciones numeradas claras con emojis (1️⃣, 2️⃣, 3️⃣...) para que al cliente le sea súper fácil responder tocando un número.
 
-PAUTAS DE RESPUESTA:
-- Responde siempre de forma cordial, profesional y chilena sin modismos exagerados.
-- Máximo 2 o 3 párrafos cortos (los mensajes de WhatsApp deben ser fáciles de leer en el celular).
-- Pregunta siempre: 1) ¿En qué comuna se encuentra tu propiedad? y 2) ¿Buscas seguridad para casa o negocio?
-- Si el usuario dice que quiere hablar con una persona humana, o si pide que lo llamen, indícale amablemente que lo transfieres de inmediato con un asesor humano.
+OBJETIVOS DEL CHAT:
+1. Conocer qué tipo de propiedad busca proteger (Casa/Parcela, Departamento, Negocio o Migrar alarma).
+2. Presentar la solución a la medida destacando los beneficios reales:
+   - Pack Vetti Smart Inalámbrico con App móvil NT CLICK.
+   - Monitoreo 24/7 conectado a Central desde 0,9 UF + IVA mensual (~$35.000 CLP).
+   - ¡EL GRAN DIFERENCIAL GAMA! Los equipos son 100% TUYOS en propiedad. Cero arriendos eternos ni comodatos abusivos de $70.000-$80.000 como Verisure o ADT.
+   - Sensores antimascotas (hasta 25 kg) que evitan falsas alarmas.
+   - Instalación técnica bonificada ($0 costo).
+   - Si ya tienen alarma instalada (DSC, ADT, etc.): Migración a costo $0 en hardware.
+3. Preguntar la comuna para confirmar cobertura inmediata (cubrimos las 52 comunas de RM y 38 de V Región) y ofrecer Evaluación Técnica en Terreno Gratuita ($0).
+4. Tomar el nombre del cliente para prepararle la propuesta formal o agendar su visita.
+5. Preguntar si prefiere coordinación por WhatsApp o llamada.
+6. Si piden hablar con un humano o asesor telefónico: avisa con total amabilidad que los transfieres de inmediato.
 `
 
-async function generarRespuestaIA(textoUsuario, nombreCliente) {
+// Comunas reconocidas para agilizar captura de datos
+const COMUNAS_CHILE = [
+  'santiago', 'las condes', 'providencia', 'vitacura', 'la reina', 'lo barnechea',
+  'ñuñoa', 'la florida', 'maipu', 'maipú', 'puente alto', 'san miguel', 'macul',
+  'peñalolen', 'peñalolén', 'quilicura', 'pudahuel', 'colina', 'chicureo', 'lampa',
+  'san bernardo', 'buin', 'paine', 'melipilla', 'talagante', 'penaflor', 'peñaflor',
+  'viña', 'viña del mar', 'valparaiso', 'valparaíso', 'concon', 'concón', 'quilpue',
+  'quilpué', 'villa alemana', 'limache', 'quillota', 'san antonio', 'rengo', 'rancagua'
+]
+
+// ──────────────────────────────────────────────
+//  MOTOR CONVERSACIONAL DE VENTAS GAMA
+// ──────────────────────────────────────────────
+async function procesarMensajeVentas(textoUsuario, numero, nombrePush) {
+  const t = textoUsuario.trim()
+  const lower = t.toLowerCase()
+
+  // Obtener o inicializar estado del lead
+  if (!leadMemory.has(numero)) {
+    leadMemory.set(numero, {
+      paso: 'inicio',
+      nombre: (nombrePush && nombrePush !== 'Prospecto') ? nombrePush : null,
+      comuna: null,
+      tipoPropiedad: null,
+      interes: 'alarma_monitoreo',
+      historial: []
+    })
+  }
+
+  const lead = leadMemory.get(numero)
+  lead.historial.push({ role: 'user', content: t })
+  if (lead.historial.length > 8) lead.historial.shift()
+
+  // 1. Si hay Gemini API Key configurada, enriquecer con IA manteniendo la guía
   if (genAI) {
     try {
       const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
-      const prompt = `${SYSTEM_PROMPT}\n\nCliente (${nombreCliente || 'Prospecto'}): "${textoUsuario}"\n\nRespuesta:`
-      const result = await model.generateContent(prompt)
-      const text = result?.response?.text()
-      if (text) return text.trim()
+      const histText = lead.historial.map(m => `${m.role === 'user' ? 'Cliente' : 'Tomás (GAMA)'}: ${m.content}`).join('\n')
+      const promptContext = `
+${SYSTEM_PROMPT}
+
+ESTADO ACTUAL DEL CLIENTE:
+- Nombre detectado: ${lead.nombre || 'No indicado aún'}
+- Comuna: ${lead.comuna || 'No indicada aún'}
+- Tipo de propiedad: ${lead.tipoPropiedad || 'No indicado aún'}
+
+HISTORIAL RECIENTE:
+${histText}
+
+Cliente: "${t}"
+Tomás (GAMA Seguridad):`
+
+      const res = await model.generateContent(promptContext)
+      const respuesta = res?.response?.text()
+      if (respuesta && respuesta.trim().length > 10) {
+        const limpia = respuesta.trim()
+        lead.historial.push({ role: 'assistant', content: limpia })
+        // Extraer datos si están presentes
+        actualizarDatosLeadDesdeTexto(lower, lead, numero)
+        return limpia
+      }
     } catch (err) {
-      console.error('[IA] Error en Gemini:', err.message)
+      console.error('[IA] Error llamando a Gemini, usando motor nativo:', err.message)
     }
   }
 
-  // Fallback inteligente si no hay API key de Gemini
-  const t = textoUsuario.toLowerCase()
-  if (t.includes('precio') || t.includes('cuanto') || t.includes('costo') || t.includes('plan')) {
-    return `¡Hola ${nombreCliente || ''}! En Gama Seguridad nuestro plan de monitoreo 24/7 cuesta desde 0,9 UF + IVA (~$35.000 CLP al mes). A diferencia de otras empresas, los equipos son 100% tuyos sin arriendos eternos.\n\n¿En qué comuna se encuentra tu propiedad y buscas alarma para casa o negocio?`
+  // 2. Motor Conversacional Nativo Experto de GAMA (Cálido, Dinámico, Guiado con Opciones)
+  const respuestaNativa = generarRespuestaNativa(t, lower, lead, numero)
+  lead.historial.push({ role: 'assistant', content: respuestaNativa })
+  return respuestaNativa
+}
+
+function generarRespuestaNativa(texto, lower, lead, numero) {
+  const nombreSaludo = lead.nombre ? ` ${lead.nombre}` : ''
+
+  // A) PREGUNTAS FRECUENTES COMUNES (Respuestas inmediatas sin perder el hilo)
+  if (lower.includes('luz') || lower.includes('corte de luz') || lower.includes('bateria')) {
+    return `¡Muy buena pregunta! 💡 Ante un corte intencional de energía eléctrica, la central de alarma cuenta con **batería de respaldo autónoma** y conexión **4G GSM de emergencia** 📶, por lo que el sistema sigue 100% activo y conectado a la Central de Monitoreo.\n\n¿En qué comuna se encuentra tu propiedad para confirmar la factibilidad técnica? 📍`
   }
-  if (t.includes('verisure') || t.includes('adt')) {
-    return `¡Hola ${nombreCliente || ''}! En Gama Seguridad no amarramos a nadie con contratos de arriendo abusivo: los equipos son de tu propiedad. Si ya tienes alarma instalada (como ADT o DSC), la reprogramamos a costo $0 en sensores y solo pagas 0,9 UF + IVA al mes.\n\n¿En qué comuna te ubicas para coordinar la evaluación técnica?`
+
+  if (lower.includes('perro') || lower.includes('gato') || lower.includes('mascota')) {
+    return `¡Totalmente cubierto! 🐕🐈 Nuestros sensores de movimiento incorporan **tecnología PIR inteligente antimascotas** que no se activa con mascotas de hasta 25 kg. Puedes dejar a tus regalones adentro con la alarma armada sin falsas alarmas.\n\n¿Para qué tipo de propiedad la estás buscando? 🏡\n1️⃣ Casa o Parcela\n2️⃣ Departamento\n3️⃣ Negocio`
   }
-  return `¡Hola ${nombreCliente || ''}! Gracias por contactar a GAMA Seguridad Chile. Protegemos hogares y empresas con monitoreo 24/7 desde 0,9 UF + IVA y equipos 100% propios sin comodato.\n\nPara ayudarte con una cotización exacta, ¿en qué comuna se ubica tu propiedad y es para casa o empresa?`
+
+  if (lower.includes('verisure') || lower.includes('adt')) {
+    lead.interes = 'migracion_competencia'
+    guardarEnSupabase(lead, numero)
+    return `¡Es la mejor decisión que puedes tomar! 🙌 A diferencia de Verisure o ADT donde pagas cuotas altísimas de $70.000 a $85.000 mensuales y los equipos están en arriendo eterno, en GAMA Seguridad:\n\n✅ **Los equipos son 100% TUYOS en propiedad**.\n✅ Plan de Monitoreo 24/7 desde **0,9 UF + IVA (~$35.000/mes)** 💰.\n✅ Si ya tienes alarma instalada, la **migramos a costo $0 en sensores** 🔄.\n\n📍 **¿En qué comuna te ubicas para agendar la revisión técnica gratuita?**`
+  }
+
+  // B) FLUJO POR PASOS Y BOTONES NUMERADOS
+
+  // PASO 0 / INICIO: Si recién saluda o no ha elegido propiedad
+  if (lead.paso === 'inicio' || (!lead.tipoPropiedad && (lower.includes('hola') || lower.includes('buenas') || lower.includes('precio') || lower.includes('cotiz') || lower.includes('info') || lower === '1' || lower === '2' || lower === '3' || lower === '4' || lower === '5'))) {
+
+    // Si ya presionó una opción directamente
+    if (lower === '1' || lower.includes('casa') || lower.includes('parcela')) {
+      lead.tipoPropiedad = 'Casa o Parcela'
+      lead.paso = 'pidiendo_comuna'
+      guardarEnSupabase(lead, numero)
+      return `¡Excelente elección! 🏡 Para casas y parcelas recomendamos nuestro **Pack VETTI Smart Inalámbrico** con control total desde tu smartphone en la App NT CLICK 📲.\n\n✨ **Lo más destacado:**\n• Central con doble vía WiFi + 4G anti-corte de luz.\n• Sensores antimascotas (evita falsas alarmas) 🐕.\n• Sirena de alta potencia 110 dB + botón de pánico SOS 🚨.\n• Monitoreo 24/7 conectado a Central por solo **0,9 UF + IVA mensual** (~$35.000 CLP).\n• **Instalación profesional bonificada ($0)** con el plan.\n• **Equipos 100% tuyos** (sin arriendos engañosos).\n\nPara verificar cobertura y factibilidad técnica inmediata:\n📍 **¿En qué comuna o sector se ubica tu casa?**`
+    }
+
+    if (lower === '2' || lower.includes('depto') || lower.includes('departamento')) {
+      lead.tipoPropiedad = 'Departamento'
+      lead.paso = 'pidiendo_comuna'
+      guardarEnSupabase(lead, numero)
+      return `¡Perfecto! 🏢 Para departamentos diseñamos una protección de acceso directo de alta precisión para puerta principal y ventanales.\n\n✨ **Beneficios:**\n• Detección perimetral instantánea antes de que ingresen.\n• Control y notificaciones push en tu celular en tiempo real 📲.\n• Conexión a Central 24/7 por **0,9 UF + IVA al mes** (~$35.000 CLP).\n• Equipos en propiedad sin arriendos eternos.\n\n📍 **¿En qué comuna se encuentra tu departamento?**`
+    }
+
+    if (lower === '3' || lower.includes('negocio') || lower.includes('empresa') || lower.includes('local') || lower.includes('bodega')) {
+      lead.tipoPropiedad = 'Negocio / Empresa'
+      lead.paso = 'pidiendo_comuna'
+      guardarEnSupabase(lead, numero)
+      return `¡Excelente! 🏪 Para negocios y empresas contamos con protocolos de control de apertura/cierre, múltiples usuarios y respuesta prioritaria ante intrusión.\n\n✨ **Incluye:**\n• Supervisión continua 24/7 con reporte de señales a Carabineros.\n• Verificación técnica y control desde la App móvil 📲.\n• Planes corporativos accesibles desde **0,9 UF + IVA** al mes.\n\n📍 **¿En qué comuna o comuna comercial se ubica tu negocio?**`
+    }
+
+    if (lower === '4' || lower.includes('migrar') || lower.includes('cambiar') || lower.includes('tengo alarma')) {
+      lead.tipoPropiedad = 'Migración de Alarma'
+      lead.interes = 'migracion'
+      lead.paso = 'pidiendo_comuna'
+      guardarEnSupabase(lead, numero)
+      return `¡Es una tremenda oportunidad de ahorro! 🔄 Si ya cuentas con sensores instalados (marca DSC, Honeywell o ADT), nuestros técnicos **reprograman tu sistema a costo $0 en sensores** y lo conectamos a nuestra Central de Monitoreo 24/7 por solo **0,9 UF + IVA al mes**.\n\nDejas de pagar mensualidades excesivas y conservas tus equipos 👍.\n\n📍 **¿En qué comuna está instalada tu alarma actual?**`
+    }
+
+    if (lower === '5' || lower.includes('camara') || lower.includes('cámara') || lower.includes('cctv')) {
+      lead.tipoPropiedad = 'Cámaras de Seguridad'
+      lead.interes = 'camaras_4k'
+      lead.paso = 'pidiendo_comuna'
+      guardarEnSupabase(lead, numero)
+      return `¡Genial! 📹 Instalamos sistemas de **Cámaras de Seguridad 4K Ultra HD** con Inteligencia Artificial, visión nocturna a color y visualización en vivo desde tu celular sin costos mensuales adicionales obligatorios.\n\n📍 **¿En qué comuna se encuentra la propiedad que deseas vigilar?**`
+    }
+
+    // Menú de Bienvenida con Botones y Emojis
+    lead.paso = 'esperando_opcion'
+    return `¡Hola${nombreSaludo}! Qué gusto saludarte 👋 Soy Tomás, tu asesor de seguridad en **GAMA Seguridad** 🛡️.\n\nTe ayudo de inmediato a cotizar la mejor protección con monitoreo 24/7 y **equipos 100% propios** (sin pagar arriendos eternos de $75.000 como en otras empresas) 🙌.\n\n¿Qué tipo de propiedad necesitas proteger? 🏡\n\n1️⃣ **Casa o Parcela** 🏡\n2️⃣ **Departamento** 🏢\n3️⃣ **Negocio o Empresa** 🏪\n4️⃣ **Ya tengo alarma (Migración a costo $0)** 🔄\n5️⃣ **Cámaras de Seguridad 4K** 📹\n\n*(Puedes responder con el número 1, 2, 3... o escribirme directamente)*`
+  }
+
+  // PASO: PIDIENDO COMUNA
+  // Revisar si el mensaje contiene alguna comuna de Chile
+  const comunaEncontrada = COMUNAS_CHILE.find(c => lower.includes(c))
+  if (comunaEncontrada || lead.paso === 'pidiendo_comuna') {
+    lead.comuna = comunaEncontrada ? capitalizar(comunaEncontrada) : capitalizar(t.slice(0, 30))
+    lead.paso = 'pidiendo_nombre'
+    guardarEnSupabase(lead, numero)
+
+    return `¡Excelente! En **${lead.comuna}** tenemos cobertura técnica completa con patrullaje de verificación rápida 🚨.\n\nPara tu tranquilidad, realizamos una **Evaluación Técnica en Terreno 100% Gratuita ($0)** sin ningún compromiso, donde un especialista revisa los puntos vulnerables de tu propiedad 🤝.\n\nPara preparar tu ficha técnica y cotización formal:\n📋 **¿Cuál es tu nombre y apellido?**`
+  }
+
+  // PASO: PIDIENDO NOMBRE
+  if (lead.paso === 'pidiendo_nombre' || (!lead.nombre && (lower.startsWith('me llamo') || lower.startsWith('soy ') || t.split(' ').length <= 4))) {
+    let nombreLimpio = t.replace(/me llamo|soy|mi nombre es/gi, '').trim()
+    if (nombreLimpio.length > 1) {
+      lead.nombre = capitalizar(nombreLimpio)
+      lead.paso = 'confirmado'
+      guardarEnSupabase(lead, numero, 'calificado')
+
+      return `¡Un gusto, ${lead.nombre}! 🌟 Ya ingresé tus datos en nuestro sistema de atención preferencial:\n\n📋 **Resumen de tu cotización:**\n• **Interés:** ${lead.tipoPropiedad || 'Alarma y Monitoreo 24/7'}\n• **Comuna:** ${lead.comuna || 'Región Metropolitana / V Región'}\n• **Plan:** Desde 0,9 UF + IVA mensual (Equipos propios)\n• **Evaluación técnica en terreno:** Bonificada $0\n\n¿Cómo prefieres que nos comuniquemos contigo para afinar los detalles? 📲\n1️⃣ **Por este mismo WhatsApp** 💬\n2️⃣ **Por llamada telefónica** 📞`
+    }
+  }
+
+  // PASO: CONFIRMACIÓN DE PREFERENCIA DE CONTACTO
+  if (lead.paso === 'confirmado') {
+    if (lower === '1' || lower.includes('whatsapp') || lower.includes('chat')) {
+      return `¡Anotado! 💬 Te mantendremos informado y coordinaremos todo por este mismo chat de WhatsApp. Un asesor técnico te enviará la propuesta detallada en breve. ¡Muchas gracias por confiar en GAMA Seguridad! 🛡️✨`
+    }
+    if (lower === '2' || lower.includes('llamada') || lower.includes('llamar') || lower.includes('telefono')) {
+      return `¡Perfecto! 📞 Nuestro ejecutivo comercial te llamará a la brevedad a este mismo número para resolver cualquier duda y coordinar tu visita técnica sin costo. ¡Que tengas un excelente día! 🛡️✨`
+    }
+  }
+
+  // RESPUESTA GENERAL CONSULTIVA SI ESCRIBE OTRA COSA
+  return `¡Comprendido! En GAMA Seguridad nos adaptamos exactamente a tus necesidades 🛡️.\n\nPara orientarte con la opción más conveniente:\n¿En qué **comuna** se ubica tu propiedad y buscas proteger **casa, departamento o negocio**? 🏡📍`
+}
+
+function actualizarDatosLeadDesdeTexto(lower, lead, numero) {
+  const comuna = COMUNAS_CHILE.find(c => lower.includes(c))
+  if (comuna && !lead.comuna) {
+    lead.comuna = capitalizar(comuna)
+    guardarEnSupabase(lead, numero)
+  }
+}
+
+function capitalizar(str) {
+  if (!str) return ''
+  return str.charAt(0).toUpperCase() + str.slice(1)
+}
+
+async function guardarEnSupabase(lead, numero, estado = 'en_conversacion') {
+  try {
+    await supabase.from('leads_sales_gama').upsert({
+      session_id: `wa-${numero}`,
+      nombre: lead.nombre || 'Prospecto WhatsApp',
+      telefono: numero,
+      comuna: lead.comuna || null,
+      tipo_propiedad: lead.tipoPropiedad || null,
+      interes: lead.interes || 'monitoreo_alarma',
+      estado: estado,
+      origen: 'meta_ads_whatsapp',
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'session_id' })
+  } catch (e) {
+    console.error('[SUPABASE] Error guardando lead:', e.message)
+  }
 }
 
 function esPeticionDeHumano(texto) {
@@ -108,7 +304,7 @@ function esPeticionDeHumano(texto) {
   const palabrasClave = [
     'humano', 'persona', 'alguien', 'asesor', 'ejecutivo', 'vendedor',
     'llamar', 'llamen', 'llamame', 'llámenme', 'fono', 'telefono', 'teléfono',
-    'hablar con alguien', 'comunicar con alguien', 'atencion humana'
+    'hablar con alguien', 'comunicar con alguien', 'atencion humana', 'atención humana'
   ]
   return palabrasClave.some(p => t.includes(p))
 }
@@ -194,7 +390,7 @@ async function conectar() {
       for (const msg of messages) {
         if (!msg.key || !msg.key.remoteJid) continue
         if (msg.key.fromMe) {
-          // Si tú respondes desde tu celular, marcamos como takeover para que el bot no se meta
+          // Si respondes tú desde el celular, activamos silencio de 30 min para ese contacto
           const dest = msg.key.remoteJid.replace(/[^0-9]/g, '')
           humanTakeover.set(dest, Date.now())
           continue
@@ -218,35 +414,21 @@ async function conectar() {
 
         log(`📩 Mensaje de +${numero} (${nombre}): "${body.slice(0, 50)}"`)
 
-        // 1. Guardar en Supabase para el CRM
-        try {
-          await supabase.from('leads_sales_gama').upsert({
-            session_id: `wa-${numero}`,
-            nombre,
-            telefono: numero,
-            estado: 'en_conversacion',
-            origen: 'meta_ads_whatsapp',
-            updated_at: new Date().toISOString(),
-          }, { onConflict: 'session_id' })
-        } catch {}
-
-        // 2. Verificar si está en modo Humano activo (últimos 30 minutos)
+        // 1. Verificar si está en modo Humano activo (últimos 30 minutos)
         const lastTakeover = humanTakeover.get(numero)
         if (lastTakeover && (Date.now() - lastTakeover < 30 * 60 * 1000)) {
           log(`⏸️ Chat con +${numero} está en modo Humano. Bot silenciado.`)
           continue
         }
 
-        // 3. Evaluar Human Handoff (¿Pide hablar con alguien?)
+        // 2. Evaluar Human Handoff (¿Pide hablar con alguien?)
         if (esPeticionDeHumano(body)) {
           log(`🚨 HUMAN HANDOFF ACTIVADO para +${numero} (${nombre})`)
           humanTakeover.set(numero, Date.now())
 
-          // A) Responder al cliente
-          const respuestaTraspaso = `¡Comprendido ${nombre}! Te estoy transfiriendo de inmediato con nuestro asesor comercial de turno para que te asista de forma personalizada por este mismo medio o llamada.`
+          const respuestaTraspaso = `¡Comprendido ${nombre}! Te estoy transfiriendo de inmediato con nuestro asesor comercial de turno para que te atienda de forma personalizada por este mismo chat o llamada 🤝.`
           await sock.sendMessage(remoteJid, { text: respuestaTraspaso })
 
-          // B) Alertar al dueño en su teléfono personal
           if (OWNER_PHONE && sock) {
             const alertaOwner = `🚨 *[LEAD CALIENTE GAMA]*\n\nEl cliente *${nombre}* (+${numero}) solicita hablar con un asesor.\n\n*Mensaje:* "${body}"\n\n👉 *Chatear con el cliente:* https://wa.me/${numero}`
             await sock.sendMessage(`${OWNER_PHONE}@s.whatsapp.net`, { text: alertaOwner }).catch(() => {})
@@ -254,11 +436,14 @@ async function conectar() {
           continue
         }
 
-        // 4. Si no pide humano: El Bot IA responde solo
+        // 3. Procesar con el Motor de Ventas Consultivo GAMA
         try {
-          const respuestaBot = await generarRespuestaIA(body, nombre)
-          // Simular tiempo de lectura humano (2 segundos)
-          await new Promise(r => setTimeout(r, 2000))
+          // Simular tiempo de lectura humano y digitación (2 a 3 segundos)
+          await sock.sendPresenceUpdate('composing', remoteJid).catch(() => {})
+          await new Promise(r => setTimeout(r, 2200))
+          await sock.sendPresenceUpdate('paused', remoteJid).catch(() => {})
+
+          const respuestaBot = await procesarMensajeVentas(body, numero, nombre)
           await sock.sendMessage(remoteJid, { text: respuestaBot })
           log(`🤖 Bot respondió a +${numero}`)
         } catch (err) {
@@ -274,24 +459,25 @@ async function conectar() {
 }
 
 // ──────────────────────────────────────────────
+//  AUTO KEEP-ALIVE (EVITA SUSPENSIÓN EN RENDER)
+// ──────────────────────────────────────────────
+if (RENDER_EXTERNAL_URL) {
+  setInterval(() => {
+    https.get(RENDER_EXTERNAL_URL, (res) => {
+      // Keep alive exitoso
+    }).on('error', () => {})
+  }, 8 * 60 * 1000) // cada 8 minutos
+}
+
+// ──────────────────────────────────────────────
 //  EXPRESS INTERFACE
 // ──────────────────────────────────────────────
 const app = express()
 app.use(cors())
-app.use(express.json())
-
-app.get('/status', (req, res) => {
-  res.json({
-    ok: true,
-    estado: estadoConexion,
-    numero: numeroConectado,
-    usuario: usuarioConectado,
-  })
-})
 
 app.get('/', (req, res) => {
   const isConectado = estadoConexion === 'conectado'
-  const isEsperando = estadoConexion === 'esperando_qr'
+  const isEsperando = estadoConexion === 'esperando_qr' && qrImageBase64
 
   res.send(`
 <!DOCTYPE html>
