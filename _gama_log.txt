@@ -13,3 +13,10 @@
   Timezone: Chile (-03:00)
   Ingesta Híbrida: MDBs Scorpion Locales + IPRS Cloud
 ============================================================
+============================================================
+  GAMA COMMAND CENTER - Sincronizador Indestructible v6.5
+  Timezone Oficial: Chile (-03:00)
+  Ingesta Híbrida: MDBs Scorpion Locales + IPRS Cloud
+  Decodificación Total SIA & Contact ID en Español
+============================================================
+[CACHE SUPABASE WARN] HTTPSConnectionPool(host='onxwyrwmpjxtwlmjrosr.supabase.co', port=443): Max retries exceeded with url: /rest/v1/eventos_monitoreo?select=fecha_hora,cuenta,evento,zona,usuario&cuenta=not.in.(CLIENTES,CODIGOS,ZONAS,__SINCRONIZADOR__,CONFIG_OPERADORES)&order=id.desc&limit=500 (Caused by NameResolutionError("<urllib3.connection.HTTPSConnection object at 0x000001918819D1D0>: Failed to resolve 'onxwyrwmpjxtwlmjrosr.supabase.co' ([Errno 11001] getaddrinfo failed)"))
