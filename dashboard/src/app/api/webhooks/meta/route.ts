@@ -5,8 +5,20 @@ import { extractLeadData } from '@/lib/sales-gama/extractLead';
 import { notificarLeadCalienteWhatsApp } from '@/lib/sales-gama/notifyLead';
 import type { ChatMessage } from '@/lib/sales-gama/types';
 
+import crypto from 'crypto';
+
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+
+/**
+ * Genera un UUID v4 sintético pero determinista a partir de cualquier string (ej: ID de Instagram o Facebook)
+ * para cumplir con la restricción de tipo UUID de la columna session_id en PostgreSQL / Supabase.
+ */
+function metaIdToUuid(prefix: string, senderId: string): string {
+  const hash = crypto.createHash('md5').update(`meta:${prefix}:${senderId}`).digest('hex');
+  return `${hash.slice(0, 8)}-${hash.slice(8, 12)}-4${hash.slice(13, 16)}-a${hash.slice(17, 20)}-${hash.slice(20, 32)}`;
+}
+
 
 /**
  * ─────────────────────────────────────────────────────────────────────────────
@@ -102,7 +114,7 @@ export async function POST(req: NextRequest) {
         }
         if (!userText) continue;
 
-        const sessionId = `${isInstagram ? 'ig_' : 'fb_'}${senderId}`;
+        const sessionId = metaIdToUuid(isInstagram ? 'ig' : 'fb', senderId);
 
         console.log(`[Meta Webhook] Mensaje recibido desde ${canalNombre} (${senderId}): "${userText}"`);
 
