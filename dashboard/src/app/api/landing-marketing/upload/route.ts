@@ -3,6 +3,16 @@ import fs from 'fs';
 import path from 'path';
 
 export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
+const NO_CACHE_HEADERS = {
+  'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0',
+  'CDN-Cache-Control': 'no-store',
+  'Surrogate-Control': 'no-store',
+  'Pragma': 'no-cache',
+  'Expires': '0',
+};
 
 export async function POST(req: NextRequest) {
   try {
@@ -10,7 +20,7 @@ export async function POST(req: NextRequest) {
     const file = formData.get('file') as File | null;
 
     if (!file) {
-      return NextResponse.json({ error: 'No se recibió ningún archivo' }, { status: 400 });
+      return NextResponse.json({ error: 'No se recibió ningún archivo' }, { status: 400, headers: NO_CACHE_HEADERS });
     }
 
     const bytes = await file.arrayBuffer();
@@ -19,7 +29,7 @@ export async function POST(req: NextRequest) {
     // Validar tipo de archivo
     const mimeType = file.type || 'image/png';
     if (!mimeType.startsWith('image/')) {
-      return NextResponse.json({ error: 'El archivo debe ser una imagen válida (PNG, JPG, WEBP, SVG)' }, { status: 400 });
+      return NextResponse.json({ error: 'El archivo debe ser una imagen válida (PNG, JPG, WEBP, SVG)' }, { status: 400, headers: NO_CACHE_HEADERS });
     }
 
     // Nombre de archivo seguro
@@ -52,9 +62,10 @@ export async function POST(req: NextRequest) {
       filename,
       size: buffer.length,
       mimeType,
-    });
+    }, { headers: NO_CACHE_HEADERS });
   } catch (err: any) {
     console.error('[Upload Marketing] Error procesando imagen:', err);
-    return NextResponse.json({ error: err.message || 'Error al procesar la imagen' }, { status: 500 });
+    return NextResponse.json({ error: err.message || 'Error al procesar la imagen' }, { status: 500, headers: NO_CACHE_HEADERS });
   }
 }
+

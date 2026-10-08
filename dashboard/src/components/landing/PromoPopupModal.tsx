@@ -17,9 +17,21 @@ export default function PromoPopupModal({ initialConfig }: PromoPopupModalProps)
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
-    // 1. Cargar config desde la API si no vino inicial
+    if (initialConfig) {
+      setConfig(initialConfig);
+    }
+  }, [initialConfig]);
+
+  useEffect(() => {
+    // 1. Cargar config desde la API sin ningún tipo de caché
     let isMounted = true;
-    fetch('/api/landing-marketing')
+    fetch(`/api/landing-marketing?t=${Date.now()}`, {
+      cache: 'no-store',
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+      },
+    })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (isMounted) {
@@ -31,6 +43,26 @@ export default function PromoPopupModal({ initialConfig }: PromoPopupModalProps)
       })
       .catch(() => {});
 
+    // Sincronización en vivo entre pestañas
+    const handleUpdate = (e: any) => {
+      const popupConfig = e?.detail?.popup;
+      if (popupConfig) {
+        setConfig(popupConfig);
+      }
+    };
+    window.addEventListener('landing-marketing-updated', handleUpdate);
+
+    let bc: BroadcastChannel | null = null;
+    try {
+      bc = new BroadcastChannel('landing_marketing_channel');
+      bc.onmessage = (ev) => {
+        const popupConfig = ev?.data?.popup;
+        if (popupConfig) {
+          setConfig(popupConfig);
+        }
+      };
+    } catch (_) {}
+
     // Escuchar evento personalizado para abrir en vivo (ej: desde panel /operacion)
     const handleForceOpen = () => {
       setIsOpen(true);
@@ -40,8 +72,11 @@ export default function PromoPopupModal({ initialConfig }: PromoPopupModalProps)
     return () => {
       isMounted = false;
       window.removeEventListener('open-promo-popup', handleForceOpen);
+      window.removeEventListener('landing-marketing-updated', handleUpdate);
+      if (bc) bc.close();
     };
   }, []);
+
 
   useEffect(() => {
     if (!config.activo) return;
@@ -136,10 +171,11 @@ export default function PromoPopupModal({ initialConfig }: PromoPopupModalProps)
                 src={config.imagenUrl || '/ads/vetti_ad_oficial_master.png'}
                 alt={config.titulo}
                 fill
-                unoptimized={typeof config.imagenUrl === 'string' && config.imagenUrl.startsWith('data:')}
+                unoptimized={true}
                 className="object-contain p-1 group-hover:scale-105 transition-transform duration-500"
                 sizes="(max-width: 640px) 100vw, 550px"
               />
+
             </div>
 
             {/* Título & Subtítulo */}

@@ -183,34 +183,138 @@ export default function LandingMarketingModule() {
   const [config, setConfig] = useState<LandingMarketingConfig>(DEFAULT_LANDING_MARKETING_CONFIG)
   const [isLoading, setIsLoading] = useState<boolean>(true)
   const [isSaving, setIsSaving] = useState<boolean>(false)
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
+  const [lastSavedTime, setLastSavedTime] = useState<string | null>(null)
+  const [isClearingCache, setIsClearingCache] = useState<boolean>(false)
   const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [selectedSlideIndex, setSelectedSlideIndex] = useState<number>(0)
   const [modalPreviewOpen, setModalPreviewOpen] = useState<boolean>(false)
 
-  // Cargar configuración desde la API
+  const isInitialLoadRef = React.useRef<boolean>(true)
+  const autoSaveTimerRef = React.useRef<NodeJS.Timeout | null>(null)
+
+  // Función principal de guardado con cero caché y propagación en vivo
+  const performSave = React.useCallback(async (configToSave: LandingMarketingConfig, isAutoSave = false) => {
+    setIsSaving(true)
+    setSaveStatus('saving')
+    try {
+      const res = await fetch(`/api/landing-marketing?t=${Date.now()}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+        },
+        cache: 'no-store',
+        body: JSON.stringify(configToSave),
+      })
+
+      if (res.ok) {
+        const timeStr = new Date().toLocaleTimeString('es-CL', {
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+        })
+        setLastSavedTime(timeStr)
+        setSaveStatus('saved')
+        setSaveMessage({
+          type: 'success',
+          text: isAutoSave
+            ? `✓ Auto-guardado en vivo (${timeStr}) — Base de datos sincronizada y caché purgada.`
+            : `✓ ¡Cambios guardados con éxito (${timeStr})! La portada www.gamasecurity.cl refleja los cambios de inmediato sin caché.`,
+        })
+
+        // Respaldar en localStorage
+        try {
+          localStorage.setItem('gama_landing_marketing_latest', JSON.stringify(configToSave))
+        } catch (_) {}
+
+        // Sincronizar en vivo con otras pestañas y ventanas
+        try {
+          window.dispatchEvent(new CustomEvent('landing-marketing-updated', { detail: configToSave }))
+          const bc = new BroadcastChannel('landing_marketing_channel')
+          bc.postMessage(configToSave)
+          bc.close()
+        } catch (_) {}
+      } else {
+        const err = await res.json().catch(() => ({}))
+        setSaveStatus('error')
+        setSaveMessage({
+          type: 'error',
+          text: err.error || 'Error al guardar la configuración en la base de datos.',
+        })
+      }
+    } catch (error) {
+      setSaveStatus('error')
+      setSaveMessage({
+        type: 'error',
+        text: 'Error de red al intentar sincronizar con el servidor.',
+      })
+    } finally {
+      setIsSaving(false)
+    }
+  }, [])
+
+  // Cargar configuración desde la API (sin caché)
   useEffect(() => {
     async function fetchConfig() {
       setIsLoading(true)
       try {
-        const res = await fetch('/api/landing-marketing')
+        const res = await fetch(`/api/landing-marketing?t=${Date.now()}&nocache=1`, {
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+          },
+        })
         if (res.ok) {
           const data = await res.json()
           if (data) {
-            if (data.config) {
-              setConfig(data.config)
-            } else if (data.popup) {
-              setConfig(data)
+            const loaded = data.config || (data.popup ? data : null)
+            if (loaded) {
+              setConfig(loaded)
+              try {
+                localStorage.setItem('gama_landing_marketing_latest', JSON.stringify(loaded))
+              } catch (_) {}
             }
           }
         }
       } catch (err) {
         console.error('Error al cargar config de landing marketing:', err)
+        try {
+          const cached = localStorage.getItem('gama_landing_marketing_latest')
+          if (cached) setConfig(JSON.parse(cached))
+        } catch (_) {}
       } finally {
         setIsLoading(false)
+        // Habilitar auto-save después de que el estado inicial se haya cargado
+        setTimeout(() => {
+          isInitialLoadRef.current = false
+        }, 400)
       }
     }
     fetchConfig()
   }, [])
+
+  // Auto-guardado en vivo ante cualquier modificación en config
+  useEffect(() => {
+    if (isInitialLoadRef.current) return
+
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current)
+    }
+
+    setSaveStatus('saving')
+    autoSaveTimerRef.current = setTimeout(() => {
+      performSave(config, true)
+    }, 700)
+
+    return () => {
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current)
+      }
+    }
+  }, [config, performSave])
 
   // Auto-ocultar mensaje después de 4s
   useEffect(() => {
@@ -220,55 +324,62 @@ export default function LandingMarketingModule() {
     }
   }, [saveMessage])
 
-  // Guardar configuración
-  const handleSave = async () => {
-    setIsSaving(true)
-    setSaveMessage(null)
+  // Purgar caché manual y recargar
+  const handleClearCacheAndReload = async () => {
+    setIsClearingCache(true)
     try {
-      const res = await fetch('/api/landing-marketing', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(config),
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('gama_landing_marketing_latest')
+        sessionStorage.clear()
+      }
+      const res = await fetch(`/api/landing-marketing?t=${Date.now()}&nocache=1`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+        },
       })
       if (res.ok) {
-        setSaveMessage({
-          type: 'success',
-          text: '¡Configuración guardada con éxito! La landing page ahora refleja estos cambios.',
-        })
-      } else {
-        const err = await res.json()
-        setSaveMessage({
-          type: 'error',
-          text: err.error || 'Error al guardar la configuración en la base de datos.',
-        })
+        const data = await res.json()
+        const loaded = data.config || (data.popup ? data : null)
+        if (loaded) {
+          setConfig(loaded)
+          setSaveMessage({
+            type: 'success',
+            text: '✓ Caché purgada y configuración sincronizada desde Supabase con éxito.',
+          })
+        }
       }
-    } catch (error) {
-      setSaveMessage({
-        type: 'error',
-        text: 'Error de red al intentar guardar la configuración.',
-      })
+    } catch (err) {
+      console.error('Error purgando caché:', err)
     } finally {
-      setIsSaving(false)
+      setIsClearingCache(false)
     }
+  }
+
+  // Guardar configuración manual
+  const handleSave = () => {
+    performSave(config, false)
   }
 
   // Restablecer por defecto
   const handleResetDefaults = () => {
     if (confirm('¿Deseas restablecer todos los textos y slides a los valores recomendados por defecto?')) {
       setConfig(DEFAULT_LANDING_MARKETING_CONFIG)
-      setSaveMessage({
-        type: 'success',
-        text: 'Valores restablecidos a predeterminados. Recuerda presionar "Guardar Cambios".',
-      })
+      performSave(DEFAULT_LANDING_MARKETING_CONFIG, false)
     }
   }
 
-  // Helpers para slides
-  const updateSlide = (idx: number, updates: Partial<HeroSlide>) => {
+  // Helpers para slides con guardado inmediato opcional
+  const updateSlide = (idx: number, updates: Partial<HeroSlide>, immediateSave = false) => {
     setConfig(prev => {
       const newSlides = [...prev.heroSlides]
       newSlides[idx] = { ...newSlides[idx], ...updates }
-      return { ...prev, heroSlides: newSlides }
+      const newConfig = { ...prev, heroSlides: newSlides }
+      if (immediateSave) {
+        performSave(newConfig, true)
+      }
+      return newConfig
     })
   }
 
@@ -288,11 +399,13 @@ export default function LandingMarketingModule() {
       btnSecundarioTexto: 'Consultar al Asesor Virtual',
       btnSecundarioTipo: 'chatbot',
     }
-    setConfig(prev => ({
-      ...prev,
-      heroSlides: [...prev.heroSlides, newSlide],
-    }))
+    const newConfig = {
+      ...config,
+      heroSlides: [...config.heroSlides, newSlide],
+    }
+    setConfig(newConfig)
     setSelectedSlideIndex(config.heroSlides.length)
+    performSave(newConfig, true)
   }
 
   const handleDeleteSlide = (idx: number) => {
@@ -301,11 +414,14 @@ export default function LandingMarketingModule() {
       return
     }
     if (confirm('¿Seguro que deseas eliminar este slide?')) {
-      setConfig(prev => ({
-        ...prev,
-        heroSlides: prev.heroSlides.filter((_, i) => i !== idx),
-      }))
+      const newSlides = config.heroSlides.filter((_, i) => i !== idx)
+      const newConfig = {
+        ...config,
+        heroSlides: newSlides,
+      }
+      setConfig(newConfig)
       setSelectedSlideIndex(0)
+      performSave(newConfig, true)
     }
   }
 
@@ -313,45 +429,49 @@ export default function LandingMarketingModule() {
     const targetIdx = direction === 'up' ? idx - 1 : idx + 1
     if (targetIdx < 0 || targetIdx >= config.heroSlides.length) return
 
-    setConfig(prev => {
-      const newSlides = [...prev.heroSlides]
-      const temp = newSlides[idx]
-      newSlides[idx] = newSlides[targetIdx]
-      newSlides[targetIdx] = temp
-      return { ...prev, heroSlides: newSlides }
-    })
+    const newSlides = [...config.heroSlides]
+    const temp = newSlides[idx]
+    newSlides[idx] = newSlides[targetIdx]
+    newSlides[targetIdx] = temp
+    const newConfig = { ...config, heroSlides: newSlides }
+    setConfig(newConfig)
     setSelectedSlideIndex(targetIdx)
+    performSave(newConfig, true)
   }
 
   // Helpers para FAQ Chips
   const handleAddChip = () => {
     const text = prompt('Escribe la pregunta o duda frecuente para el botón rápido:')
     if (text && text.trim()) {
-      setConfig(prev => ({
-        ...prev,
+      const newConfig = {
+        ...config,
         chatbot: {
-          ...prev.chatbot,
-          chipsIniciales: [...prev.chatbot.chipsIniciales, text.trim()],
+          ...config.chatbot,
+          chipsIniciales: [...config.chatbot.chipsIniciales, text.trim()],
         },
-      }))
+      }
+      setConfig(newConfig)
+      performSave(newConfig, true)
     }
   }
 
   const handleRemoveChip = (chipIdx: number) => {
-    setConfig(prev => ({
-      ...prev,
+    const newConfig = {
+      ...config,
       chatbot: {
-        ...prev.chatbot,
-        chipsIniciales: prev.chatbot.chipsIniciales.filter((_, i) => i !== chipIdx),
+        ...config.chatbot,
+        chipsIniciales: config.chatbot.chipsIniciales.filter((_, i) => i !== chipIdx),
       },
-    }))
+    }
+    setConfig(newConfig)
+    performSave(newConfig, true)
   }
 
   if (isLoading) {
     return (
       <div className="flex-1 bg-white border border-slate-300/80 rounded-2xl p-12 flex flex-col items-center justify-center gap-4 min-h-[400px]">
         <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
-        <p className="text-sm font-semibold text-slate-600">Cargando configuración de Landing Marketing...</p>
+        <p className="text-sm font-semibold text-slate-600">Cargando configuración de Landing Marketing en vivo...</p>
       </div>
     )
   }
@@ -368,7 +488,7 @@ export default function LandingMarketingModule() {
             <Sparkles className="h-6 w-6 stroke-[2.5]" />
           </div>
           <div>
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-2.5 flex-wrap">
               <h2 className="text-xl font-black uppercase tracking-wider text-white">
                 Landing Marketing
               </h2>
@@ -383,6 +503,33 @@ export default function LandingMarketingModule() {
         </div>
 
         <div className="flex items-center flex-wrap gap-2.5 w-full lg:w-auto">
+          {/* Indicador de estado en tiempo real */}
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-800/90 border border-slate-700/80 text-xs font-mono">
+            {saveStatus === 'saving' ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 text-amber-400 animate-spin" />
+                <span className="text-amber-300 font-semibold">Guardando en vivo...</span>
+              </>
+            ) : saveStatus === 'saved' ? (
+              <>
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                <span className="text-emerald-300 font-semibold">
+                  Sincronizado {lastSavedTime ? `(${lastSavedTime})` : ''} · Sin caché
+                </span>
+              </>
+            ) : saveStatus === 'error' ? (
+              <>
+                <AlertTriangle className="w-3.5 h-3.5 text-rose-400" />
+                <span className="text-rose-300 font-semibold">Error al guardar</span>
+              </>
+            ) : (
+              <>
+                <ShieldCheck className="w-3.5 h-3.5 text-blue-400" />
+                <span className="text-slate-300">Auto-guardado activo</span>
+              </>
+            )}
+          </div>
+
           <a
             href="/"
             target="_blank"
@@ -393,6 +540,17 @@ export default function LandingMarketingModule() {
             <span>Ver Landing</span>
             <ExternalLink className="w-3 h-3 text-slate-300" />
           </a>
+
+          <button
+            onClick={handleClearCacheAndReload}
+            disabled={isClearingCache || isLoading}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-cyan-300 hover:text-cyan-200 text-xs font-bold transition-all border border-cyan-800/40 cursor-pointer disabled:opacity-50"
+            title="Purgar caché local y del servidor y recargar desde Supabase"
+          >
+            <RotateCcw className={`w-3.5 h-3.5 ${isClearingCache ? 'animate-spin' : ''}`} />
+            <span>{isClearingCache ? 'Purgando...' : 'Limpiar Caché'}</span>
+          </button>
+
           <button
             onClick={handleResetDefaults}
             className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-semibold transition-all border border-slate-700 cursor-pointer"
@@ -401,6 +559,7 @@ export default function LandingMarketingModule() {
             <RotateCcw className="w-3.5 h-3.5" />
             <span>Predeterminados</span>
           </button>
+
           <button
             onClick={handleSave}
             disabled={isSaving}
@@ -420,6 +579,7 @@ export default function LandingMarketingModule() {
           </button>
         </div>
       </div>
+
 
       {/* ── NOTIFICACIÓN DE ESTADO ── */}
       {saveMessage && (
@@ -524,12 +684,14 @@ export default function LandingMarketingModule() {
                 <input
                   type="checkbox"
                   checked={config.popup.activo}
-                  onChange={(e) =>
-                    setConfig((prev) => ({
-                      ...prev,
-                      popup: { ...prev.popup, activo: e.target.checked },
-                    }))
-                  }
+                  onChange={(e) => {
+                    const newConfig = {
+                      ...config,
+                      popup: { ...config.popup, activo: e.target.checked },
+                    };
+                    setConfig(newConfig);
+                    performSave(newConfig, true);
+                  }}
                   className="sr-only peer"
                 />
                 <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
@@ -539,6 +701,7 @@ export default function LandingMarketingModule() {
               </label>
             </div>
           </div>
+
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             {/* Columna Izquierda: Formulario de Configuración */}
@@ -625,12 +788,14 @@ export default function LandingMarketingModule() {
                 label="Fotografía / Flyer del Pop-up"
                 helperText="Sube una foto desde tu PC. Se adaptará automáticamente y se guardará en la carpeta del proyecto."
                 value={config.popup.imagenUrl}
-                onChange={(url) =>
-                  setConfig((prev) => ({
-                    ...prev,
-                    popup: { ...prev.popup, imagenUrl: url },
-                  }))
-                }
+                onChange={(url) => {
+                  const newConfig = {
+                    ...config,
+                    popup: { ...config.popup, imagenUrl: url },
+                  };
+                  setConfig(newConfig);
+                  performSave(newConfig, true);
+                }}
               />
                 {/* Galería de imágenes rápidas */}
                 <div className="mt-2.5">
@@ -642,12 +807,14 @@ export default function LandingMarketingModule() {
                       <button
                         key={img.url}
                         type="button"
-                        onClick={() =>
-                          setConfig((prev) => ({
-                            ...prev,
-                            popup: { ...prev.popup, imagenUrl: img.url },
-                          }))
-                        }
+                        onClick={() => {
+                          const newConfig = {
+                            ...config,
+                            popup: { ...config.popup, imagenUrl: img.url },
+                          };
+                          setConfig(newConfig);
+                          performSave(newConfig, true);
+                        }}
                         className={`text-[10px] font-bold px-2.5 py-1 rounded-lg border transition-all cursor-pointer ${
                           config.popup.imagenUrl === img.url
                             ? 'bg-blue-600 text-white border-blue-600'
@@ -659,6 +826,7 @@ export default function LandingMarketingModule() {
                     ))}
                   </div>
                 </div>
+
 
               {/* Botones de Acción */}
               <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
@@ -839,7 +1007,7 @@ export default function LandingMarketingModule() {
                         type="checkbox"
                         checked={currentSlide.activo}
                         onChange={(e) =>
-                          updateSlide(selectedSlideIndex, { activo: e.target.checked })
+                          updateSlide(selectedSlideIndex, { activo: e.target.checked }, true)
                         }
                         className="sr-only peer"
                       />
@@ -943,7 +1111,7 @@ export default function LandingMarketingModule() {
                   helperText="Sube una foto desde tu PC. Se adaptará automáticamente al carrusel y se guardará en la carpeta del proyecto."
                   value={currentSlide.imagenUrl}
                   onChange={(url) =>
-                    updateSlide(selectedSlideIndex, { imagenUrl: url })
+                    updateSlide(selectedSlideIndex, { imagenUrl: url }, true)
                   }
                 />
 
@@ -954,10 +1122,11 @@ export default function LandingMarketingModule() {
                         key={img.url}
                         type="button"
                         onClick={() =>
-                          updateSlide(selectedSlideIndex, { imagenUrl: img.url })
+                          updateSlide(selectedSlideIndex, { imagenUrl: img.url }, true)
                         }
                         className={`text-[10px] font-bold px-2.5 py-1 rounded-lg border transition-all cursor-pointer ${
                           currentSlide.imagenUrl === img.url
+
                             ? 'bg-blue-600 text-white border-blue-600'
                             : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border-slate-200'
                         }`}
@@ -1095,13 +1264,16 @@ export default function LandingMarketingModule() {
               <input
                 type="checkbox"
                 checked={config.chatbot.calloutActivo}
-                onChange={(e) =>
-                  setConfig((prev) => ({
-                    ...prev,
-                    chatbot: { ...prev.chatbot, calloutActivo: e.target.checked },
-                  }))
-                }
+                onChange={(e) => {
+                  const newConfig = {
+                    ...config,
+                    chatbot: { ...config.chatbot, calloutActivo: e.target.checked },
+                  };
+                  setConfig(newConfig);
+                  performSave(newConfig, true);
+                }}
                 className="sr-only peer"
+
               />
               <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyan-600"></div>
               <span className="ml-2 text-xs font-bold text-slate-700">

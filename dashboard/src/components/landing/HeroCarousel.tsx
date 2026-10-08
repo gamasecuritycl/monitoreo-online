@@ -18,18 +18,36 @@ const STATS = [
 ];
 
 export default function HeroCarousel({ slides: propSlides }: HeroCarouselProps) {
-  const [slides, setSlides] = useState<HeroSlide[]>(
-    propSlides && propSlides.length > 0
-      ? propSlides.filter((s) => s.activo)
-      : DEFAULT_LANDING_MARKETING_CONFIG.heroSlides.filter((s) => s.activo)
-  );
+  const [slides, setSlides] = useState<HeroSlide[]>(() => {
+    if (propSlides && propSlides.length > 0) {
+      const actives = propSlides.filter((s) => s.activo);
+      if (actives.length > 0) return actives;
+    }
+    return DEFAULT_LANDING_MARKETING_CONFIG.heroSlides.filter((s) => s.activo);
+  });
 
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  // Cargar configuración en vivo desde la API si no vino precargada
+  // Sincronizar de inmediato si llegan nuevos slides vía props del servidor
+  useEffect(() => {
+    if (propSlides && propSlides.length > 0) {
+      const actives = propSlides.filter((s) => s.activo);
+      if (actives.length > 0) {
+        setSlides(actives);
+      }
+    }
+  }, [propSlides]);
+
+  // Cargar configuración en vivo desde la API sin ningún tipo de caché
   useEffect(() => {
     let isMounted = true;
-    fetch('/api/landing-marketing')
+    fetch(`/api/landing-marketing?t=${Date.now()}`, {
+      cache: 'no-store',
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+      },
+    })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (isMounted && data?.heroSlides && Array.isArray(data.heroSlides)) {
@@ -40,10 +58,38 @@ export default function HeroCarousel({ slides: propSlides }: HeroCarouselProps) 
         }
       })
       .catch(() => {});
+
+    // Sincronización en tiempo real entre pestañas (BroadcastChannel y evento)
+    const handleUpdate = (e: any) => {
+      if (e?.detail?.heroSlides && Array.isArray(e.detail.heroSlides)) {
+        const actives = e.detail.heroSlides.filter((s: HeroSlide) => s.activo);
+        if (actives.length > 0) {
+          setSlides(actives);
+        }
+      }
+    };
+    window.addEventListener('landing-marketing-updated', handleUpdate);
+
+    let bc: BroadcastChannel | null = null;
+    try {
+      bc = new BroadcastChannel('landing_marketing_channel');
+      bc.onmessage = (ev) => {
+        if (ev?.data?.heroSlides && Array.isArray(ev.data.heroSlides)) {
+          const actives = ev.data.heroSlides.filter((s: HeroSlide) => s.activo);
+          if (actives.length > 0) {
+            setSlides(actives);
+          }
+        }
+      };
+    } catch (_) {}
+
     return () => {
       isMounted = false;
+      window.removeEventListener('landing-marketing-updated', handleUpdate);
+      if (bc) bc.close();
     };
   }, []);
+
 
   const totalSlides = slides.length || 1;
 
@@ -191,11 +237,12 @@ export default function HeroCarousel({ slides: propSlides }: HeroCarouselProps) 
                   src={currentSlide.imagenUrl}
                   alt={currentSlide.titulo}
                   fill
-                  unoptimized={typeof currentSlide.imagenUrl === 'string' && currentSlide.imagenUrl.startsWith('data:')}
+                  unoptimized={true}
                   className="object-contain p-2 sm:p-4 group-hover:scale-105 transition-transform duration-700 ease-out"
                   priority
                   sizes="(max-width: 768px) 100vw, 460px"
                 />
+
 
                 {/* Overlay sutil de viñeta */}
                 <div className="absolute inset-0 bg-gradient-to-t from-[#050d1a]/80 via-transparent to-transparent pointer-events-none" />

@@ -137,25 +137,46 @@ export function ChatWidget() {
     '🛡️ ¿El equipo queda a mi nombre?',
   ]);
 
-  // Cargar configuración de marketing para el chatbot
+  // Cargar configuración de marketing para el chatbot sin caché
   useEffect(() => {
-    fetch('/api/landing-marketing')
+    const applyMarketingData = (data: any) => {
+      if (data?.chatbot) {
+        if (data.chatbot.calloutTexto) setCalloutText(data.chatbot.calloutTexto);
+        if (Array.isArray(data.chatbot.chipsIniciales) && data.chatbot.chipsIniciales.length > 0) {
+          setQuickChips(data.chatbot.chipsIniciales);
+        }
+        if (data.chatbot.calloutActivo) {
+          const delay = (data.chatbot.calloutDelaySeconds || 4) * 1000;
+          const t = setTimeout(() => setShowCallout(true), delay);
+          return () => clearTimeout(t);
+        }
+      }
+    };
+
+    fetch(`/api/landing-marketing?t=${Date.now()}`, {
+      cache: 'no-store',
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+      },
+    })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (data?.chatbot) {
-          if (data.chatbot.calloutTexto) setCalloutText(data.chatbot.calloutTexto);
-          if (Array.isArray(data.chatbot.chipsIniciales) && data.chatbot.chipsIniciales.length > 0) {
-            setQuickChips(data.chatbot.chipsIniciales);
-          }
-          if (data.chatbot.calloutActivo) {
-            const delay = (data.chatbot.calloutDelaySeconds || 4) * 1000;
-            const t = setTimeout(() => setShowCallout(true), delay);
-            return () => clearTimeout(t);
-          }
-        }
+        applyMarketingData(data);
       })
       .catch(() => {});
+
+    // Sincronización en tiempo real
+    const handleSync = (e: any) => {
+      if (e?.detail) applyMarketingData(e.detail);
+    };
+    window.addEventListener('landing-marketing-updated', handleSync);
+
+    return () => {
+      window.removeEventListener('landing-marketing-updated', handleSync);
+    };
   }, []);
+
 
   // Evento global para abrir el bot desde cualquier botón de la web
   useEffect(() => {

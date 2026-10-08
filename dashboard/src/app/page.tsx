@@ -16,8 +16,14 @@ import ComunaCard from '@/components/seo/ComunaCard'
 import ArticleCard from '@/components/seo/ArticleCard'
 import Faq from '@/components/seo/Faq'
 import { getAllServicios, getComunasByRegion, getAllArticulos, REGION_LABELS } from '@/lib/content'
+import { supabase } from '@/lib/supabase'
+import { DEFAULT_LANDING_MARKETING_CONFIG, LandingMarketingConfig } from '@/lib/landing-marketing/types'
+
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 const SITE_URL = 'https://www.gamasecurity.cl'
+
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -298,7 +304,25 @@ const localBusinessJsonLd = {
   ],
 }
 
-export default function Home() {
+async function getLandingMarketingConfig(): Promise<LandingMarketingConfig> {
+  try {
+    const { data, error } = await supabase
+      .from('config_sales_gama')
+      .select('value')
+      .eq('key', 'config')
+      .single()
+
+    if (!error && data?.value?.landing_marketing) {
+      return data.value.landing_marketing as LandingMarketingConfig
+    }
+  } catch (err) {
+    console.warn('[Landing Home] Error fetching marketing config, fallback to default:', err)
+  }
+  return DEFAULT_LANDING_MARKETING_CONFIG
+}
+
+export default async function Home() {
+  const marketingConfig = await getLandingMarketingConfig()
   const servicios = getAllServicios()
   const rmComunas = getComunasByRegion('rm')
   const vrComunas = getComunasByRegion('v-region')
@@ -331,13 +355,14 @@ export default function Home() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessJsonLd) }}
       />
       <Navbar servicios={navServicios} comunas={navComunas} articulos={navArticulos} />
-      <HeroCarousel />
+      <HeroCarousel slides={marketingConfig.heroSlides} />
       <Servicios />
       <VettiShowcase />
       <QuienesSomos />
       <Tecnologia />
       <Testimonios />
       <CTAEmergencia />
+
 
       {/* ── SEO: Grid de servicios ── */}
       <section id="servicios-grid" className="py-20 bg-[#0a1628]">
@@ -613,8 +638,9 @@ export default function Home() {
         footerComunas={footerComunas}
         footerArticulos={footerArticulos}
       />
-      <PromoPopupModal />
+      <PromoPopupModal initialConfig={marketingConfig.popup} />
       <ChatWidget />
     </main>
   )
 }
+
