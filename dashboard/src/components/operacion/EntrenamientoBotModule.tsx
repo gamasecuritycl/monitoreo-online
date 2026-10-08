@@ -679,30 +679,39 @@ export default function EntrenamientoBotModule() {
                   <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800/70 flex justify-between items-center">
                     <div>
                       <span className="text-slate-200 font-semibold block">Sensor de Movimiento PIR DSC Cableado</span>
-                      <span className="text-[10px] text-slate-400">Infrarrojo cableado de alta inmunidad antimascotas 25 kg</span>
+                      <span className="text-[10px] text-slate-400">Pago único por sensor adicional · Antimascotas 25 kg</span>
                     </div>
                     <span className="font-mono font-black text-white text-sm bg-purple-950/80 px-2.5 py-1 rounded-lg border border-purple-800/50">
-                      $19.900 CLP <span className="text-[10px] text-slate-400 font-normal">+ IVA</span>
+                      $22.900 CLP <span className="text-[10px] text-slate-400 font-normal">+ IVA</span>
                     </span>
                   </div>
 
                   <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800/70 flex justify-between items-center">
                     <div>
                       <span className="text-slate-200 font-semibold block">Contacto Magnético Cableado DSC</span>
-                      <span className="text-[10px] text-slate-400">Magnético embutido o sobrepuesto de alta duración</span>
+                      <span className="text-[10px] text-slate-400">Pago único por contacto adicional · Embutido o sobrepuesto</span>
                     </div>
                     <span className="font-mono font-black text-white text-sm bg-purple-950/80 px-2.5 py-1 rounded-lg border border-purple-800/50">
-                      $9.900 CLP <span className="text-[10px] text-slate-400 font-normal">+ IVA</span>
+                      $10.900 CLP <span className="text-[10px] text-slate-400 font-normal">+ IVA</span>
                     </span>
                   </div>
 
                   <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800/70 flex justify-between items-center">
                     <div>
                       <span className="text-slate-200 font-semibold block">Comunicador 4G Universal para Panel DSC</span>
-                      <span className="text-[10px] text-slate-400">Transmisor celular multi-operador para monitoreo 24/7 sin cables</span>
+                      <span className="text-[10px] text-slate-400">Pago único · Transmisor celular multi-operador 24/7</span>
                     </div>
                     <span className="font-mono font-black text-white text-sm bg-purple-950/80 px-2.5 py-1 rounded-lg border border-purple-800/50">
-                      $59.900 CLP <span className="text-[10px] text-slate-400 font-normal">+ IVA</span>
+                      $109.900 CLP <span className="text-[10px] text-slate-400 font-normal">+ IVA</span>
+                    </span>
+                  </div>
+                  <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800/70 flex justify-between items-center">
+                    <div>
+                      <span className="text-slate-200 font-semibold block">Teclado LED DSC Adicional</span>
+                      <span className="text-[10px] text-slate-400">Pago único · Teclado numérico LED adicional para panel DSC</span>
+                    </div>
+                    <span className="font-mono font-black text-white text-sm bg-purple-950/80 px-2.5 py-1 rounded-lg border border-purple-800/50">
+                      $74.900 CLP <span className="text-[10px] text-slate-400 font-normal">+ IVA</span>
                     </span>
                   </div>
                 </div>

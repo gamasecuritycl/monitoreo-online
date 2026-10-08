@@ -362,39 +362,51 @@ export async function getConfig(): Promise<Config | null> {
       },
       {
         id: "dsc-sensor-pir",
-        nombre: "Sensor de Movimiento PIR DSC Cableado Antimascotas",
-        descripcion: "Detector de movimiento infrarrojo pasivo cableado de alta confiabilidad con inmunidad a mascotas de hasta 25 kg.",
-        precio: 19900,
+        nombre: "Sensor de Movimiento PIR DSC Cableado",
+        descripcion: "Detector de movimiento infrarrojo pasivo cableado de alta confiabilidad con inmunidad antimascotas. Pago único por sensor adicional.",
+        precio: 22900,
         categoria: "DSC (Cableada)",
         marca: "DSC",
         palabras_clave: ["pir dsc", "sensor dsc", "cableado", "movimiento dsc", "antimascotas dsc"],
         incluye: ["Sensor PIR DSC", "Soporte", "Conexión a zona"],
         no_incluye: [],
-        faq: [{ q: "¿Cuánto cuesta un sensor PIR cableado DSC?", a: "$19.900 CLP + IVA cada uno." }]
+        faq: [{ q: "¿Cuánto cuesta el sensor PIR DSC cableado?", a: "$22.900 CLP + IVA (pago único por sensor adicional)." }]
       },
       {
         id: "dsc-contacto-magnetico",
-        nombre: "Contacto Magnético Cableado DSC (Puerta/Ventana)",
-        descripcion: "Contacto magnético embutido o sobrepuesto de alta durabilidad para puertas de acceso o ventanas.",
-        precio: 9900,
+        nombre: "Contacto Magnético Cableado DSC",
+        descripcion: "Contacto magnético embutido o sobrepuesto de alta durabilidad para puertas de acceso o ventanas. Pago único por contacto adicional.",
+        precio: 10900,
         categoria: "DSC (Cableada)",
         marca: "DSC",
         palabras_clave: ["magnetico dsc", "puerta dsc", "ventana dsc", "cableado"],
         incluye: ["Contacto magnético cableado", "Tornillería"],
         no_incluye: [],
-        faq: [{ q: "¿Cuánto cuesta el magnético cableado DSC?", a: "$9.900 CLP + IVA." }]
+        faq: [{ q: "¿Cuánto cuesta el contacto magnético DSC?", a: "$10.900 CLP + IVA (pago único por contacto adicional)." }]
       },
       {
         id: "dsc-comunicador-4g",
-        nombre: "Comunicador 4G LTE / IP Universal para Paneles DSC",
-        descripcion: "Módulo comunicador celular 4G de alta velocidad para reporte inmediato a Central de Monitoreo GAMA 24/7 sin línea telefónica fija.",
-        precio: 59900,
+        nombre: "Comunicador 4G Universal para Panel DSC",
+        descripcion: "Transmisor celular multi-operador universal para monitoreo 24/7 sin cables. Pago único.",
+        precio: 109900,
         categoria: "DSC (Cableada)",
         marca: "DSC",
-        palabras_clave: ["comunicador", "4g", "gsm", "chip", "reporte", "dsc"],
-        incluye: ["Módulo 4G LTE", "Antena de alta ganancia", "Chip M2M multioperador"],
+        palabras_clave: ["comunicador", "4g", "gsm", "chip", "reporte", "dsc", "universal"],
+        incluye: ["Módulo 4G LTE Universal", "Antena de alta ganancia", "Chip M2M multioperador"],
         no_incluye: [],
-        faq: [{ q: "¿Cuánto cuesta el comunicador 4G para DSC?", a: "$59.900 CLP + IVA." }]
+        faq: [{ q: "¿Cuánto cuesta el comunicador 4G universal para DSC?", a: "$109.900 CLP + IVA (pago único)." }]
+      },
+      {
+        id: "dsc-teclado-led",
+        nombre: "Teclado LED DSC Adicional",
+        descripcion: "Teclado numérico LED adicional para panel DSC PowerSeries. Pago único.",
+        precio: 74900,
+        categoria: "DSC (Cableada)",
+        marca: "DSC",
+        palabras_clave: ["teclado dsc", "teclado led", "powerseries", "teclado adicional", "dsc"],
+        incluye: ["Teclado LED DSC", "Manual de usuario", "Conexión Keybus"],
+        no_incluye: [],
+        faq: [{ q: "¿Cuánto cuesta el teclado LED DSC adicional?", a: "$74.900 CLP + IVA (pago único)." }]
       },
 
       // ── SERVICIO DE MONITOREO ──

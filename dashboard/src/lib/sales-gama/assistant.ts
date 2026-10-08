@@ -2,16 +2,25 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import type { Config, PreciosData, PreciosItem, ChatMessage, BotConfig } from './types';
 import { getConfig } from './supabase';
 
-export function matchPrecios(userMessage: string, precios: PreciosData): PreciosItem[] {
+export function matchPrecios(userMessage: string, precios: PreciosData, maxItems?: number): PreciosItem[] {
   const normalized = userMessage.toLowerCase().trim();
   const words = normalized.split(/\s+/).filter(w => w.length > 2);
 
-  return precios.items.filter((item) => {
+  const matched = precios.items.filter((item) => {
     return item.palabras_clave.some((kw) => {
       const kwLower = kw.toLowerCase();
       return words.some((w) => kwLower.includes(w) || w.includes(kwLower));
     });
   });
+
+  return maxItems && maxItems > 0 ? matched.slice(0, maxItems) : matched;
+}
+
+export function formatHistoryForGemini(history: ChatMessage[]): { role: 'user' | 'model'; parts: { text: string }[] }[] {
+  return history.map((m) => ({
+    role: m.role === 'assistant' ? 'model' : 'user',
+    parts: [{ text: m.content }],
+  }));
 }
 
 export function buildPreciosContext(items: PreciosItem[]): string {
@@ -94,10 +103,10 @@ REGLAS DE ORO OBLIGATORIAS:
    - 🛡️ TABLA OFICIAL DE VALORES DSC (Cableada / Híbrida PowerSeries PC1832 & Neo):
      * Migración / Reprogramación de alarma ADT o DSC ya instalada: ¡$0 CLP Costo de cambio! No pagas equipos nuevos, conservamos tus sensores y te enlazamos a Central GAMA desde 0,9 UF + IVA/mes.
      * Kit Central DSC PowerSeries PC1832 nuevo con Teclado y Sirena: $189.900 CLP + IVA.
-     * Sensor de Movimiento PIR Cableado Antimascotas DSC: $19.900 CLP + IVA cada uno.
-     * Contacto Magnético Cableado DSC: $9.900 CLP + IVA cada uno.
-     * Comunicador 4G LTE Universal para DSC: $59.900 CLP + IVA.
-     * Teclado Numérico Adicional DSC: $44.900 CLP + IVA.
+     * Sensor de Movimiento PIR DSC Cableado: $22.900 CLP + IVA cada uno (pago único por sensor adicional).
+     * Contacto Magnético Cableado DSC: $10.900 CLP + IVA cada uno (pago único por contacto adicional).
+     * Comunicador 4G Universal para Panel DSC: $109.900 CLP + IVA (pago único).
+     * Teclado LED DSC Adicional: $74.900 CLP + IVA (pago único).
      * Sirena Exterior 30W DSC con Gabinete Metálico: $24.900 CLP + IVA.
 
    - 🧮 CÓMO CALCULAR SI EL CLIENTE TE DA LA DISTRIBUCIÓN DE SU PROPIEDAD:
