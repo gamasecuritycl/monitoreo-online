@@ -204,11 +204,12 @@ export async function POST(req: NextRequest) {
 
 /**
  * Envía un mensaje de texto al usuario a través de la API oficial Graph de Meta.
- * Si el mensaje supera los 1900 caracteres, lo divide en fragmentos limpios.
+ * Instagram DM tiene un límite estricto de 1000 caracteres por mensaje;
+ * se divide en fragmentos limpios de <=950 caracteres para compatibilidad total con IG y Messenger.
  */
 async function sendMetaMessage(recipientId: string, text: string, accessToken: string): Promise<boolean> {
   try {
-    const chunks = splitTextIntoChunks(text, 1900);
+    const chunks = splitTextIntoChunks(text, 950);
 
     for (const chunk of chunks) {
       const res = await fetch(`https://graph.facebook.com/v21.0/me/messages?access_token=${encodeURIComponent(accessToken)}`, {

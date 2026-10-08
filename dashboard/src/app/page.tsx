@@ -11,6 +11,7 @@ import Testimonios from '@/components/landing/Testimonios'
 import CTAEmergencia from '@/components/landing/CTAEmergencia'
 import LandingInteractiveLayer from '@/components/landing/LandingInteractiveLayer'
 import ChatWidget from '@/components/SalesGama/ChatWidget'
+import WhatsAppFloating from '@/components/landing/WhatsAppFloating'
 import ServiceCard from '@/components/seo/ServiceCard'
 import ComunaCard from '@/components/seo/ComunaCard'
 import ArticleCard from '@/components/seo/ArticleCard'
@@ -639,6 +640,7 @@ export default async function Home() {
         footerArticulos={footerArticulos}
       />
       <PromoPopupModal initialConfig={marketingConfig.popup} />
+      <WhatsAppFloating />
       <ChatWidget />
     </main>
   )
