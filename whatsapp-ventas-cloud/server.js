@@ -126,6 +126,8 @@ const humanTakeover = new Map()     // telefono -> timestamp
 const processedMessages = new Map() // id -> timestamp
 const leadMemory = new Map()        // telefono -> datos del lead
 const botSentMessageIds = new Set() // IDs de mensajes despachados por el bot (evita auto-takeover)
+const lidToPhoneCache = new Map()   // lid -> telefono real
+let promosEnMemoria = []            // promociones sincronizadas desde /operacion
 const INACTIVITY_TIMEOUT_MS = 10 * 60 * 1000 // 10 minutos
 
 let genAI = null
@@ -160,6 +162,88 @@ const COMUNAS_CHILE = [
   // Región de O'Higgins
   'rancagua', 'machali', 'machalí', 'graneros', 'rengo', 'san vicente', 'san fernando', 'requinoa', 'requínoa'
 ]
+
+// Sincronización continua de promociones desde la plataforma de entrenamiento (/operacion)
+async function refrescarPromociones() {
+  try {
+    const { data } = await supabase.from('config_sales_gama').select('value').eq('key', 'promociones').single()
+    if (data?.value) {
+      const val = typeof data.value === 'string' ? JSON.parse(data.value) : data.value
+      if (Array.isArray(val)) {
+        promosEnMemoria = val
+        log(`[ENTRENAMIENTO] 🎁 ${promosEnMemoria.length} promociones activas sincronizadas desde Supabase.`)
+      }
+    }
+  } catch {}
+}
+setTimeout(refrescarPromociones, 3000)
+setInterval(refrescarPromociones, 10 * 60 * 1000)
+
+// Resolución infalible de LID a Teléfono Real
+async function resolverTelefonoReal(msg, sock, remoteJid, lead = null) {
+  // 1. Si termina en @s.whatsapp.net es el teléfono real directo
+  if (remoteJid.endsWith('@s.whatsapp.net')) {
+    const n = remoteJid.replace(/\D/g, '')
+    if (n.length >= 8 && n.length <= 13) {
+      lidToPhoneCache.set(remoteJid, n)
+      return n
+    }
+  }
+
+  // 2. Si ya lo tenemos en caché
+  if (lidToPhoneCache.has(remoteJid)) {
+    return lidToPhoneCache.get(remoteJid)
+  }
+
+  // 3. Revisar metadatos alternativos de Baileys
+  const candidateJid = msg?.key?.remoteJidAlt || msg?.key?.senderPn || msg?.key?.participantAlt || msg?.participant
+  if (candidateJid && typeof candidateJid === 'string' && candidateJid.includes('@s.whatsapp.net')) {
+    const n = candidateJid.replace(/\D/g, '')
+    if (n.length >= 8 && n.length <= 13) {
+      lidToPhoneCache.set(remoteJid, n)
+      log(`[LID] Teléfono real +${n} detectado desde metadatos para ${remoteJid}`)
+      return n
+    }
+  }
+
+  // 4. Intentar resolver vía Baileys signalRepository
+  if (sock?.signalRepository?.lidMapping?.getPNForLID) {
+    try {
+      const pnJid = await sock.signalRepository.lidMapping.getPNForLID(remoteJid)
+      if (pnJid && typeof pnJid === 'string') {
+        const n = pnJid.replace(/\D/g, '')
+        if (n.length >= 8 && n.length <= 13) {
+          lidToPhoneCache.set(remoteJid, n)
+          log(`[LID] Teléfono real +${n} resuelto vía signalRepository para ${remoteJid}`)
+          return n
+        }
+      }
+    } catch {}
+  }
+
+  // 5. Teléfono capturado en el lead
+  if (lead?.telefonoReal) {
+    return lead.telefonoReal
+  }
+
+  // 6. Detección en el texto del mensaje
+  const texto = extraerTextoMensaje(msg)
+  if (texto) {
+    const match = texto.match(/(?:\+?56\s?9|\b9)\s?[0-9]{4}\s?[0-9]{4}\b/)
+    if (match) {
+      let numLimpio = match[0].replace(/\D/g, '')
+      if (numLimpio.length === 9 && numLimpio.startsWith('9')) numLimpio = '56' + numLimpio
+      if (numLimpio.startsWith('569') && numLimpio.length === 11) {
+        lidToPhoneCache.set(remoteJid, numLimpio)
+        if (lead) lead.telefonoReal = numLimpio
+        log(`[LID] Teléfono +${numLimpio} detectado en el texto del chat`)
+        return numLimpio
+      }
+    }
+  }
+
+  return null
+}
 
 function extraerComunaValida(texto) {
   if (!texto) return null
@@ -301,7 +385,7 @@ async function procesarMensajeVentas(textoUsuario, numero, nombrePush, sock, rem
   if (lead.historial.length > 8) lead.historial.shift()
 
   // 4. Procesamiento del Mensaje
-  const resultado = await generarRespuestaLogica(t, lower, lead, numero, reinicioPorInactividad)
+  const resultado = await generarRespuestaLogica(t, lower, lead, numero, reinicioPorInactividad, remoteJid)
   if (resultado.enviarPDF) enviarPDF = true
 
   lead.historial.push({ role: 'assistant', content: resultado.texto })
@@ -336,7 +420,7 @@ async function procesarMensajeVentas(textoUsuario, numero, nombrePush, sock, rem
   return resultado.texto
 }
 
-async function generarRespuestaLogica(texto, lower, lead, numero, reinicioPorInactividad) {
+async function generarRespuestaLogica(texto, lower, lead, numero, reinicioPorInactividad, remoteJid = '') {
   const nombreSaludo = lead.nombre ? ` ${lead.nombre}` : ''
 
   // A) Saludo especial si regresa tras más de 10 min de inactividad
@@ -363,6 +447,18 @@ async function generarRespuestaLogica(texto, lower, lead, numero, reinicioPorIna
   const esConsultaMascotas = lower.includes('perro') || lower.includes('gato') || lower.includes('mascota') || lower.includes('animal')
   const esConsultaVerisure = lower.includes('verisure') || lower.includes('adt') || lower.includes('prosegur') || lower.includes('comodato')
   const esConsultaDemora = lower.includes('demora') || lower.includes('cuanto tardan') || lower.includes('cuando instalan') || lower.includes('plazo')
+  const esConsultaPromo = lower.includes('promocion') || lower.includes('promoción') || lower.includes('promo') || lower.includes('oferta') || lower.includes('descuento')
+
+  // ─────────────────────────────────────────────────────────────
+  //  PROMOCIONES VIGENTES (ENTRENADAS DESDE OPERACIÓN)
+  // ─────────────────────────────────────────────────────────────
+  if (esConsultaPromo && promosEnMemoria.length > 0) {
+    const promoActiva = promosEnMemoria.find(p => p.activa) || promosEnMemoria[0]
+    return {
+      texto: `🎉 *${promoActiva.titulo}* 🎉\n\n🎯 **Beneficio:** ${promoActiva.beneficio}\n\n${promoActiva.mensaje_whatsapp || 'Monitoreo profesional 24/7 desde 0,9 UF + IVA mensual y equipos 100% en tu propiedad sin comodato 🛡️.'}\n\n📍 ¿En qué comuna se ubica tu propiedad para validar cobertura y agendar tu evaluación técnica gratuita? 🏡`,
+      enviarPDF: false
+    }
+  }
 
   // ─────────────────────────────────────────────────────────────
   //  1. PRIORIDAD: EXPLICACIÓN COMPLETA DEL SERVICIO (POTENCIA AL 1000%)
@@ -434,15 +530,55 @@ async function generarRespuestaLogica(texto, lower, lead, numero, reinicioPorIna
 
     if (bloque) {
       lead.horarioVisita = bloque
+
+      // Si el chat viene con identificador privado @lid y aún no tenemos el teléfono confirmado
+      if (!lead.telefonoReal && remoteJid && remoteJid.endsWith('@lid')) {
+        lead.paso = 'pidiendo_telefono_visita'
+        return {
+          texto: `¡Excelente${nombreSaludo}! 🎉 Tu evaluación técnica gratuita ($0) para **${lead.comuna || 'tu sector'}** quedó pre-agendada en el bloque **${bloque}** 📅.\n\nPara que nuestro técnico especialista pueda llamarte antes de salir a terreno y confirmar la dirección exacta:\n📲 **¿A qué número de teléfono celular te contactamos?** *(Ej: +56 9 1234 5678)* 🏡🛡️`,
+          enviarPDF: false
+        }
+      }
+
       lead.paso = 'finalizado'
-      guardarEnSupabase(lead, numero, 'visita_agendada')
-      dispararAlertaVIP(lead, numero)
+      const telAlerta = lead.telefonoReal || numero
+      guardarEnSupabase(lead, telAlerta, 'visita_agendada')
+      dispararAlertaVIP(lead, telAlerta, remoteJid)
 
       const esCamaras = lead.interes === 'CCTV 4K' || lead.tipoPropiedad === 'Cámaras de Seguridad'
       const solTexto = esCamaras ? 'Cámaras de Seguridad 4K Ultra HD 📹' : (lead.tipoPropiedad || 'Alarma con Monitoreo 24/7 🛡️')
 
       return {
         texto: `¡Excelente, ${lead.nombre || 'estimado/a'}! 🎉 Tu evaluación técnica gratuita ($0) quedó agendada con éxito:\n\n📅 **Bloque horario:** ${bloque}\n📍 **Comuna:** ${lead.comuna || 'Tu domicilio'}\n🛡️ **Solución requerida:** ${solTexto}\n\nUn especialista técnico de terreno se comunicará a la brevedad a este mismo WhatsApp para afinar los detalles de la visita y responder cualquier inquietud técnica. ¡Muchas gracias por confiar en GAMA Seguridad! ✨🤝🚨`,
+        enviarPDF: false
+      }
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  //  3.1 PIDIENDO TELÉFONO PARA VISITA TÉCNICA (SI ES @lid)
+  // ─────────────────────────────────────────────────────────────
+  if (lead.paso === 'pidiendo_telefono_visita') {
+    const match = texto.match(/(?:\+?56\s?9|\b9)\s?[0-9]{4}\s?[0-9]{4}\b/) || texto.match(/\b[0-9]{8,12}\b/)
+    if (match) {
+      let numLimpio = match[0].replace(/\D/g, '')
+      if (numLimpio.length === 9 && numLimpio.startsWith('9')) numLimpio = '56' + numLimpio
+      lead.telefonoReal = numLimpio
+      lidToPhoneCache.set(remoteJid, numLimpio)
+      lead.paso = 'finalizado'
+      guardarEnSupabase(lead, numLimpio, 'visita_agendada')
+      dispararAlertaVIP(lead, numLimpio, remoteJid)
+
+      const esCamaras = lead.interes === 'CCTV 4K' || lead.tipoPropiedad === 'Cámaras de Seguridad'
+      const solTexto = esCamaras ? 'Cámaras de Seguridad 4K Ultra HD 📹' : (lead.tipoPropiedad || 'Alarma con Monitoreo 24/7 🛡️')
+
+      return {
+        texto: `¡Perfecto${nombreSaludo}! 📲 Teléfono **+${numLimpio}** confirmado con éxito.\n\nTu evaluación técnica gratuita ($0) para **${lead.comuna || 'tu propiedad'}** quedó agendada:\n\n📅 **Bloque:** ${lead.horarioVisita}\n🛡️ **Solución:** ${solTexto}\n\nNuestro especialista técnico te llamará antes de la visita. ¡Muchas gracias por confiar en GAMA Seguridad! ✨🤝🚨`,
+        enviarPDF: false
+      }
+    } else {
+      return {
+        texto: `Para que nuestro técnico pueda contactarte y confirmar la llegada a la visita, por favor indícanos tu número de teléfono celular 📲 *(Ej: 9 1234 5678 o +56 9 1234 5678)*:`,
         enviarPDF: false
       }
     }
@@ -771,15 +907,23 @@ function respaldarSesionASupabase() {
 // ──────────────────────────────────────────────
 //  ALERTA VIP AL CELULAR DEL DUEÑO (SIN SPAM AL CLIENTE)
 // ──────────────────────────────────────────────
-async function dispararAlertaVIP(lead, numero) {
+async function dispararAlertaVIP(lead, numero, remoteJid = '') {
   if (!OWNER_PHONE || !sock) return
-  const numLimpio = String(numero).replace(/\D/g, '')
   const ownerLimpio = String(OWNER_PHONE).replace(/\D/g, '')
   const destOwner = `${ownerLimpio}@s.whatsapp.net`
 
+  // Obtener teléfono real: primero el guardado en lead, luego el de caché LID, luego numero si no es @lid
+  let telReal = lead.telefonoReal
+  if (!telReal && remoteJid && lidToPhoneCache.has(remoteJid)) {
+    telReal = lidToPhoneCache.get(remoteJid)
+  }
+  if (!telReal && numero && !remoteJid.endsWith('@lid') && numero.length >= 8 && numero.length <= 13) {
+    telReal = numero
+  }
+
   // Omitir alerta si quien prueba es el propio teléfono del dueño
-  if (numLimpio === ownerLimpio || numLimpio.endsWith(ownerLimpio) || ownerLimpio.endsWith(numLimpio)) {
-    log(`[ALERTA VIP] Emisor es el propio teléfono del dueño (+${numero}). Omitiendo alerta duplicada en el mismo chat de prueba.`)
+  if (telReal && (telReal === ownerLimpio || telReal.endsWith(ownerLimpio) || ownerLimpio.endsWith(telReal))) {
+    log(`[ALERTA VIP] Emisor es el propio teléfono del dueño (+${telReal}). Omitiendo alerta duplicada.`)
     return
   }
 
@@ -790,17 +934,25 @@ async function dispararAlertaVIP(lead, numero) {
   }
 
   try {
+    let bloqueTelefono = ''
+    if (telReal) {
+      bloqueTelefono = `📱 *Teléfono:* +${telReal}\n\n` +
+        `👉 *Chatear con el cliente ahora:* https://wa.me/${telReal}`
+    } else {
+      bloqueTelefono = `📱 *Teléfono:* Pendiente de confirmación telefónica en el chat\n` +
+        `💬 *Identificador Chat:* ${remoteJid}`
+    }
+
     const alerta = `🚨 *[NUEVA DERIVACIÓN COMERCIAL - GAMA]* 🚨\n\n` +
       `👤 *Cliente:* ${lead.nombre || 'Prospecto'}\n` +
       `📍 *Comuna:* ${lead.comuna}\n` +
       `🏡 *Tipo:* ${lead.tipoPropiedad || 'Propiedad'}\n` +
       `📦 *Solución:* ${lead.interes || 'Pack VETTI Smart'}\n` +
       `📅 *Visita Técnica / Horario:* ${lead.horarioVisita || 'Por coordinar'}\n` +
-      `📱 *Teléfono:* +${numero}\n\n` +
-      `👉 *Chatear con el cliente ahora:* https://wa.me/${numero}`
+      bloqueTelefono
 
     await enviarMensajeBot(destOwner, { text: alerta })
-    log(`[ALERTA VIP] Derivación enviada con éxito a +${OWNER_PHONE} para lead +${numero}`)
+    log(`[ALERTA VIP] Derivación enviada con éxito a +${OWNER_PHONE} para lead ${telReal || remoteJid}`)
   } catch (e) {
     log(`[ALERTA VIP] Error enviando alerta a +${OWNER_PHONE}: ${e.message}`, 'ERROR')
   }
@@ -926,17 +1078,18 @@ async function conectar() {
         }
 
         const body = extraerTextoMensaje(msg)
-        const numero = remoteJid.replace(/[^0-9]/g, '')
+        const telReal = await resolverTelefonoReal(msg, sock, remoteJid, leadMemory.get(remoteJid))
+        const numero = telReal || remoteJid.replace(/[^0-9]/g, '')
         const nombre = msg.pushName || 'Prospecto'
         const lowerRaw = body.toLowerCase()
 
         if (!body) {
           const mKeys = msg.message ? Object.keys(msg.message).join(', ') : 'vacio'
-          log(`[IGNORADO] Mensaje sin texto legible de +${numero} (tipo: ${mKeys})`)
+          log(`[IGNORADO] Mensaje sin texto legible de ${telReal ? '+' + telReal : remoteJid} (tipo: ${mKeys})`)
           continue
         }
 
-        log(`📩 [MENSAJE RECIBIDO] de +${numero} (${nombre}): "${body.slice(0, 50)}"`)
+        log(`📩 [MENSAJE RECIBIDO] de ${telReal ? '+' + telReal : remoteJid} (${nombre}): "${body.slice(0, 50)}"`)
 
         // Comandos o saludos que reactivan el bot de inmediato
         if (
@@ -950,23 +1103,25 @@ async function conectar() {
           lowerRaw.includes('inicio') ||
           lowerRaw.includes('volver')
         ) {
-          if (humanTakeover.has(numero)) {
+          if (humanTakeover.has(remoteJid) || humanTakeover.has(numero)) {
+            humanTakeover.delete(remoteJid)
             humanTakeover.delete(numero)
-            log(`⚡ Chat con +${numero} reactivado por saludo o comando.`)
+            log(`⚡ Chat con ${telReal ? '+' + telReal : remoteJid} reactivado por saludo o comando.`)
           }
         }
 
         // 2. Verificar si está en modo Humano activo
-        const lastTakeover = humanTakeover.get(numero)
+        const lastTakeover = humanTakeover.get(remoteJid) || humanTakeover.get(numero)
         if (lastTakeover && (Date.now() - lastTakeover < 30 * 60 * 1000)) {
           const restantes = Math.round((30 * 60 * 1000 - (Date.now() - lastTakeover)) / 1000)
-          log(`⏸️ Chat con +${numero} en modo Humano activo (${restantes}s restantes). Bot silenciado.`)
+          log(`⏸️ Chat con ${telReal ? '+' + telReal : remoteJid} en modo Humano activo (${restantes}s restantes). Bot silenciado.`)
           continue
         }
 
         // 3. Evaluar Human Handoff (Petición explícita de asesor humano)
         if (esPeticionDeHumano(body)) {
-          log(`🚨 HUMAN HANDOFF SOLICITADO por +${numero} (${nombre})`)
+          log(`🚨 HUMAN HANDOFF SOLICITADO por ${telReal ? '+' + telReal : remoteJid} (${nombre})`)
+          humanTakeover.set(remoteJid, Date.now())
           humanTakeover.set(numero, Date.now())
 
           // Al cliente SOLO se le confirma la transferencia amablemente
@@ -976,19 +1131,26 @@ async function conectar() {
           // A Don Tomás (+56991016912) se le envía la derivación formal
           if (OWNER_PHONE) {
             const ownerLimpio = OWNER_PHONE.replace(/[^0-9]/g, '')
-            const numLimpio = numero.replace(/[^0-9]/g, '')
+            const numLimpio = String(telReal || numero).replace(/[^0-9]/g, '')
             const destOwner = `${ownerLimpio}@s.whatsapp.net`
 
-            if (numLimpio !== ownerLimpio) {
+            if (numLimpio !== ownerLimpio && !destOwner.includes(remoteJid)) {
+              let seccionTel = ''
+              if (telReal) {
+                seccionTel = `📱 *Teléfono:* +${telReal}\n\n👉 *Chatear con el cliente ahora:* https://wa.me/${telReal}`
+              } else {
+                seccionTel = `📱 *Teléfono:* Pendiente de confirmación telefónica en el chat\n💬 *ID Conversación:* ${remoteJid}`
+              }
+
               const alertaOwner = `🚨 *[DERIVACIÓN: CLIENTE SOLICITA ASESOR]* 🚨\n\n` +
                 `👤 *Cliente:* ${nombre}\n` +
-                `📱 *Teléfono:* +${numero}\n` +
                 `💬 *Mensaje:* "${body}"\n\n` +
-                `👉 *Chatear con el cliente ahora:* https://wa.me/${numero}`
+                seccionTel
+
               await enviarMensajeBot(destOwner, { text: alertaOwner }).catch(e => log(`Error enviando derivación a +${OWNER_PHONE}: ${e.message}`, 'ERROR'))
               log(`[DERIVACIÓN] Notificación enviada con éxito a +${OWNER_PHONE}`)
             } else {
-              log(`[DERIVACIÓN] Omitiendo alerta duplicada porque el emisor es el propio teléfono del dueño (+${numero}).`)
+              log(`[DERIVACIÓN] Omitiendo alerta duplicada porque el emisor es el propio teléfono del dueño.`)
             }
           }
           continue

@@ -103,3 +103,26 @@ export interface ListLeadsResponse {
   nextCursor?: string;
   total: number;
 }
+
+export interface PromocionItem {
+  id: string;
+  titulo: string;
+  subtitulo?: string;
+  beneficio: string;
+  descuento?: string;
+  vigencia_desde?: string;
+  vigencia_hasta?: string;
+  imagen_url?: string;
+  mensaje_whatsapp?: string;
+  activa: boolean;
+  destacada?: boolean;
+}
+
+export interface FAQItem {
+  id: string;
+  categoria: 'tecnica' | 'financiera' | 'objeciones' | 'garantias' | 'general';
+  pregunta: string;
+  respuesta: string;
+  palabras_clave?: string[];
+  activa: boolean;
+}

@@ -1,5 +1,5 @@
 import { supabase } from '../supabase';
-import type { Lead, LeadMessage, Config, PreciosData, BotConfig, ListLeadsResponse, LeadFilters, PaginationParams } from './types';
+import type { Lead, LeadMessage, Config, PreciosData, BotConfig, ListLeadsResponse, LeadFilters, PaginationParams, PromocionItem, FAQItem } from './types';
 
 export const supabaseAdmin = supabase;
 
@@ -339,7 +339,7 @@ export async function getConfig(): Promise<Config | null> {
   };
 }
 
-export async function setConfig(key: 'prompt' | 'precios' | 'config', value: unknown): Promise<boolean> {
+export async function setConfig(key: 'prompt' | 'precios' | 'config' | 'promociones' | 'faqs', value: unknown): Promise<boolean> {
   try {
     let finalValue = value;
 
@@ -367,6 +367,133 @@ export async function setConfig(key: 'prompt' | 'precios' | 'config', value: unk
     console.warn('setConfig error:', err);
     return false;
   }
+}
+
+export async function getPromociones(): Promise<PromocionItem[]> {
+  const defaultPromos: PromocionItem[] = [
+    {
+      id: 'promo-instalacion-cero',
+      titulo: 'Pack Hogar Seguro - Instalación $0',
+      subtitulo: 'Ahorro inmediato en equipamiento e instalación bonificada',
+      beneficio: 'Instalación $0 bonificada + 1er mes con 50% de descuento en Monitoreo 24/7',
+      descuento: 'Instalación $0 + 50% OFF Mes 1',
+      vigencia_desde: '2026-01-01',
+      vigencia_hasta: '2026-12-31',
+      imagen_url: '/camaras-cctv.png',
+      mensaje_whatsapp: '¡Excelente noticia! 🎉 Tenemos activa nuestra promo **Instalación Costo $0** para tu sector: el kit queda 100% en tu propiedad y el monitoreo profesional 24/7 desde solo 0,9 UF + IVA mensual 🛡️.',
+      activa: true,
+      destacada: true,
+    },
+    {
+      id: 'promo-reprogramacion-adt-dsc',
+      titulo: 'Reprogramación ADT / DSC a Costo $0',
+      subtitulo: 'Migra tu alarma actual a Central GAMA sin comprar sensores nuevos',
+      beneficio: 'Reprogramación técnica $0 + Conexión directa a Central de Monitoreo 24/7',
+      descuento: 'Costo de cambio $0',
+      vigencia_desde: '2026-01-01',
+      vigencia_hasta: '2026-12-31',
+      imagen_url: '/dsc-panels.png',
+      mensaje_whatsapp: '¿Ya tienes alarma instalada? 🔄 No pagues demás: en GAMA reprogramamos tus sensores existentes a costo $0 y te conectamos a nuestra Central por solo 0,9 UF + IVA al mes 🙌.',
+      activa: true,
+      destacada: false,
+    },
+    {
+      id: 'promo-cctv-4k',
+      titulo: 'Cyber Seguridad - Cámaras 4K con IA',
+      subtitulo: 'Videovigilancia Ultra HD con visión nocturna a color y disuasión',
+      beneficio: 'Evaluación técnica en terreno $0 + App móvil multicámara incluida',
+      descuento: 'Evaluación técnica $0',
+      vigencia_desde: '2026-01-01',
+      vigencia_hasta: '2026-12-31',
+      imagen_url: '/camaras-cctv.webp',
+      mensaje_whatsapp: 'Vigila tu propiedad en Ultra HD 4K con IA y alertas inteligentes a tu celular 📲. Te agendamos una visita técnica en terreno 100% gratuita ($0) para dimensionar los puntos exactos 📹.',
+      activa: true,
+      destacada: false,
+    }
+  ];
+
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('config_sales_gama')
+      .select('value')
+      .eq('key', 'promociones')
+      .single();
+
+    if (!error && data?.value) {
+      const val = typeof data.value === 'string' ? JSON.parse(data.value) : data.value;
+      if (Array.isArray(val) && val.length > 0) return val as PromocionItem[];
+    }
+  } catch {}
+
+  return defaultPromos;
+}
+
+export async function setPromociones(promos: PromocionItem[]): Promise<boolean> {
+  return setConfig('promociones', promos);
+}
+
+export async function getFAQs(): Promise<FAQItem[]> {
+  const defaultFAQs: FAQItem[] = [
+    {
+      id: 'faq-vs-verisure',
+      categoria: 'objeciones',
+      pregunta: '¿Por qué elegir GAMA y no Verisure o ADT?',
+      respuesta: 'En Verisure pagas de $75.000 a $85.000 mensuales y los equipos están en arriendo eterno (comodato). Si te vas, se los llevan. En GAMA los equipos son 100% de tu propiedad y el monitoreo profesional 24/7 cuesta desde 0,9 UF + IVA (~$35.000/mes). Ahorras más de $500.000 al año con mejor respuesta.',
+      palabras_clave: ['verisure', 'adt', 'prosegur', 'competencia', 'arriendo', 'comodato', 'diferencia'],
+      activa: true,
+    },
+    {
+      id: 'faq-corte-luz',
+      categoria: 'tecnica',
+      pregunta: '¿Qué sucede si hay corte de luz o sabotaje de cables?',
+      respuesta: 'El sistema cuenta con batería interna de alta autonomía y chip 4G GSM multi-operador de emergencia. Ante un corte de energía o sabotaje eléctrico, la alarma sigue sonando y reporta la señal de inmediato a nuestra Central 24/7.',
+      palabras_clave: ['luz', 'corte', 'energia', 'electricidad', 'sabotaje', 'bateria', '4g'],
+      activa: true,
+    },
+    {
+      id: 'faq-mascotas',
+      categoria: 'tecnica',
+      pregunta: 'Tengo perros o gatos en casa, ¿se activará la alarma por error?',
+      respuesta: 'No. Nuestros sensores de movimiento incorporan óptica inteligente antimascotas certificada para animales de hasta 25 kg. Puedes activar la alarma con tus mascotas adentro sin falsas alarmas.',
+      palabras_clave: ['mascotas', 'perro', 'perros', 'gato', 'gatos', 'animales', 'pir'],
+      activa: true,
+    },
+    {
+      id: 'faq-visita-gratis',
+      categoria: 'garantias',
+      pregunta: '¿La evaluación técnica en terreno tiene costo o compromiso?',
+      respuesta: 'Es 100% gratuita ($0) y sin ningún compromiso en toda la Región Metropolitana y V Región. Un especialista certificado revisa tu propiedad y te entrega la propuesta técnica exacta.',
+      palabras_clave: ['visita', 'terreno', 'evaluacion', 'costo', 'gratis', 'cuanto cuesta la visita'],
+      activa: true,
+    },
+    {
+      id: 'faq-contrato-salida',
+      categoria: 'financiera',
+      pregunta: '¿Tienen letra chica o multas por retiro de equipos?',
+      respuesta: 'Ninguna. Los equipos son 100% tuyos desde el día 1 en propiedad. No cobramos tarifas abusivas por desinstalación ni penalizaciones absurdas.',
+      palabras_clave: ['contrato', 'permanencia', 'letra chica', 'multa', 'salida', 'plazo fijo'],
+      activa: true,
+    }
+  ];
+
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('config_sales_gama')
+      .select('value')
+      .eq('key', 'faqs')
+      .single();
+
+    if (!error && data?.value) {
+      const val = typeof data.value === 'string' ? JSON.parse(data.value) : data.value;
+      if (Array.isArray(val) && val.length > 0) return val as FAQItem[];
+    }
+  } catch {}
+
+  return defaultFAQs;
+}
+
+export async function setFAQs(faqs: FAQItem[]): Promise<boolean> {
+  return setConfig('faqs', faqs);
 }
 
 export async function hashIp(ip: string): Promise<string> {

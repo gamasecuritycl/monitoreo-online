@@ -29,6 +29,7 @@ import GestionMailsModule from './operacion/GestionMailsModule'
 import { BotConfigModal } from '@/components/SalesGama/Modal/BotConfigModal'
 import { BotLeadsModal } from '@/components/SalesGama/Modal/BotLeadsModal'
 import { OperacionesBotHub } from '@/components/SalesGama/OperacionesBotHub'
+import EntrenamientoBotModule from './operacion/EntrenamientoBotModule'
 
 import {
   Shield,
@@ -352,7 +353,7 @@ export function normalizeCuentaCode(cta: any): string {
 }
 
 export default function OperacionCRM() {
-  const [moduloActivo, setModuloActivo] = useState<'ficha360' | 'autonomia' | 'salesbot' | 'presupuestos' | 'mercadopublico' | 'facturacion' | 'serv_tecnico' | 'kpis' | 'config' | 'marketing' | 'landing_marketing' | 'gestion_mails' | 'compras' | 'contratos' | 'ley21719' | null>(null)
+  const [moduloActivo, setModuloActivo] = useState<'ficha360' | 'autonomia' | 'salesbot' | 'entrenamiento_bot' | 'presupuestos' | 'mercadopublico' | 'facturacion' | 'serv_tecnico' | 'kpis' | 'config' | 'marketing' | 'landing_marketing' | 'gestion_mails' | 'compras' | 'contratos' | 'ley21719' | null>(null)
   const [sidebarAbierto, setSidebarAbierto] = useState<boolean>(false)
   const [filtroCategoriaLaunchpad, setFiltroCategoriaLaunchpad] = useState<string>('TODOS')
 
@@ -2950,6 +2951,18 @@ export default function OperacionCRM() {
       tag: '24/7 Activo'
     },
     {
+      id: 'entrenamiento_bot',
+      titulo: 'Entrenamiento Bot de Ventas',
+      categoria: 'COMERCIAL & IA',
+      descripcion: 'Entrena al bot de WhatsApp: catálogo de productos, promociones con afiches, objeciones Verisure y simulador en vivo.',
+      icono: Sparkles,
+      gradient: 'from-amber-600 via-orange-600 to-rose-600',
+      borderColor: 'hover:border-amber-400',
+      glowColor: 'group-hover:shadow-amber-500/25',
+      badgeColor: 'bg-amber-500/10 text-amber-300 border-amber-500/20',
+      tag: '⭐ Nuevo'
+    },
+    {
       id: 'salesbot',
       titulo: 'Sales-Bot IA & Leads Hub',
       categoria: 'COMERCIAL & IA',
@@ -3194,6 +3207,7 @@ export default function OperacionCRM() {
         moduloActivoLabel={
           !moduloActivo ? 'Menú Principal' :
           moduloActivo === 'ficha360' ? 'Ficha 360° Cliente' :
+          moduloActivo === 'entrenamiento_bot' ? 'Entrenamiento Bot Ventas' :
           moduloActivo === 'salesbot' ? 'Sales-Bot IA & Leads' :
           moduloActivo === 'presupuestos' ? 'Presupuestos Comerciales' :
           moduloActivo === 'mercadopublico' ? 'Mercado Público & Licitaciones' :
@@ -3451,6 +3465,7 @@ export default function OperacionCRM() {
                   <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                   {
                     moduloActivo === 'ficha360' ? 'Ficha 360° Cliente' :
+                    moduloActivo === 'entrenamiento_bot' ? 'Entrenamiento Bot Ventas' :
                     moduloActivo === 'salesbot' ? 'Sales-Bot IA & Leads' :
                     moduloActivo === 'presupuestos' ? 'Presupuestos Comerciales' :
                     moduloActivo === 'mercadopublico' ? 'Mercado Público & Licitaciones' :
@@ -4378,6 +4393,13 @@ export default function OperacionCRM() {
                   ))}
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* ── MÓDULO ENTRENAMIENTO BOT DE VENTAS ── */}
+          {moduloActivo === 'entrenamiento_bot' && (
+            <div className="flex-1 bg-[#050d1a] rounded-2xl flex flex-col border border-slate-800 shadow-sm overflow-hidden min-h-0">
+              <EntrenamientoBotModule />
             </div>
           )}
 

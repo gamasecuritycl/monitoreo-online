@@ -63,6 +63,7 @@ export default function OperacionSidebar({
       titulo: 'COMERCIAL & CONTRATOS',
       items: [
         { id: 'presupuestos', label: 'Presupuestos Comerciales', icon: FileText, desc: 'Cotizaciones oficiales PDF con catálogo' },
+        { id: 'entrenamiento_bot', label: 'Entrenamiento Bot Ventas', icon: Sparkles, desc: 'Catálogo de productos, promociones, afiches y prompt IA' },
         { id: 'salesbot', label: 'Sales-Bot IA & Leads Hub', icon: Bot, desc: 'Captura de prospectos y agente de ventas' },
         { id: 'landing_marketing', label: 'Landing Marketing', icon: Sparkles, desc: 'Control de hero, popups y web oficial' },
         { id: 'gestion_mails', label: 'Gestión de Mails IA', icon: Mail, desc: 'Campañas de email con redactor IA' },
