@@ -126,3 +126,14 @@ export interface FAQItem {
   palabras_clave?: string[];
   activa: boolean;
 }
+
+export interface MetaIntegrationConfig {
+  activo: boolean;
+  verifyToken: string;
+  pageAccessToken: string;
+  instagramAccountId?: string;
+  pageId?: string;
+  telefonoDerivacion: string;
+  autoResponderInstagram: boolean;
+  autoResponderMessenger: boolean;
+}

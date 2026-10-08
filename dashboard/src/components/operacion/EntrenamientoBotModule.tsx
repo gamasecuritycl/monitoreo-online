@@ -31,13 +31,16 @@ import {
   ChevronRight,
   Flame,
   Camera,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Globe,
+  Key,
+  Share2
 } from 'lucide-react'
-import type { PreciosData, PreciosItem, BotConfig, PromocionItem, FAQItem } from '@/lib/sales-gama/types'
+import type { PreciosData, PreciosItem, BotConfig, PromocionItem, FAQItem, MetaIntegrationConfig } from '@/lib/sales-gama/types'
 import { DEFAULT_SALES_PROMPT } from '@/lib/sales-gama/assistant'
 
 export default function EntrenamientoBotModule() {
-  const [activeTab, setActiveTab] = useState<'catalogo' | 'promociones' | 'objeciones' | 'prompt' | 'simulador'>('catalogo')
+  const [activeTab, setActiveTab] = useState<'catalogo' | 'promociones' | 'objeciones' | 'prompt' | 'simulador' | 'meta'>('catalogo')
   const [loading, setLoading] = useState(false)
   const [guardando, setGuardando] = useState(false)
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
@@ -61,6 +64,19 @@ export default function EntrenamientoBotModule() {
   })
   const [promociones, setPromociones] = useState<PromocionItem[]>([])
   const [faqs, setFaqs] = useState<FAQItem[]>([])
+  const [metaConfig, setMetaConfig] = useState<MetaIntegrationConfig>({
+    activo: true,
+    verifyToken: 'gama_security_meta_token_2026',
+    pageAccessToken: '',
+    instagramAccountId: '',
+    pageId: '',
+    telefonoDerivacion: '56991016912',
+    autoResponderInstagram: true,
+    autoResponderMessenger: true,
+  })
+  const [showToken, setShowToken] = useState(false)
+  const [testMetaSending, setTestMetaSending] = useState(false)
+
 
   // Filtros y búsquedas
   const [busquedaProducto, setBusquedaProducto] = useState('')
@@ -104,6 +120,7 @@ export default function EntrenamientoBotModule() {
         if (data.precios?.items) setPrecios(data.precios)
         if (data.promociones) setPromociones(data.promociones)
         if (data.faqs) setFaqs(data.faqs)
+        if (data.meta_integration) setMetaConfig(prev => ({ ...prev, ...data.meta_integration }))
       } else {
         notify('error', 'No se pudieron cargar todos los datos de entrenamiento.')
       }
@@ -131,6 +148,7 @@ export default function EntrenamientoBotModule() {
           precios,
           promociones,
           faqs,
+          meta_integration: metaConfig,
         })
       })
 
@@ -145,6 +163,7 @@ export default function EntrenamientoBotModule() {
       setGuardando(false)
     }
   }
+
 
   // Subida de imagen para promociones
   const handleSubirImagenPromo = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -372,7 +391,20 @@ export default function EntrenamientoBotModule() {
           <MessageSquare className="w-4 h-4" />
           <span>💬 Simulador de WhatsApp</span>
         </button>
+
+        <button
+          onClick={() => setActiveTab('meta')}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all whitespace-nowrap cursor-pointer ${
+            activeTab === 'meta'
+              ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg shadow-purple-950'
+              : 'text-purple-300 hover:text-purple-100 hover:bg-slate-800/40'
+          }`}
+        >
+          <Share2 className="w-4 h-4 text-pink-400" />
+          <span>🌐 Instagram & Messenger</span>
+        </button>
       </div>
+
 
       {/* ─────────────────────────────────────────────────────────────
           TAB 1: CATÁLOGO DE PRODUCTOS (CRUD)
@@ -975,6 +1007,284 @@ export default function EntrenamientoBotModule() {
           </div>
         </div>
       )}
+
+      {/* ─────────────────────────────────────────────────────────────
+          TAB 6: CONEXIÓN REDES SOCIALES (INSTAGRAM DM & FACEBOOK MESSENGER)
+         ───────────────────────────────────────────────────────────── */}
+      {activeTab === 'meta' && (
+        <div className="space-y-6">
+          {/* Card Principal: Estado y Conexión Directa */}
+          <div className="bg-gradient-to-br from-[#0c1933] via-[#0f2144] to-[#120f2e] border border-purple-500/30 rounded-3xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-96 h-96 bg-pink-500/10 blur-[130px] rounded-full pointer-events-none" />
+
+            <div className="relative z-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 pb-6 border-b border-purple-500/20">
+              <div className="space-y-2">
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-pink-500/15 border border-pink-500/30 text-xs font-bold text-pink-300">
+                    <Share2 className="w-3.5 h-3.5" />
+                    META GRAPH API v21.0 · CONEXIÓN OFICIAL
+                  </span>
+                  <span className={`px-3 py-1 rounded-full text-xs font-bold border ${
+                    metaConfig.activo
+                      ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300'
+                      : 'bg-slate-800 border-slate-700 text-slate-400'
+                  }`}>
+                    {metaConfig.activo ? '● BOT ACTIVO EN META' : '○ BOT PAUSADO'}
+                  </span>
+                </div>
+                <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                  Vende en Automático por Instagram Direct y Facebook Messenger
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-300 max-w-3xl leading-relaxed">
+                  Conecta el mismo cerebro con IA de GAMA Seguridad para responder consultas de cotización, promociones de kits Vetti y alarmas 24/7 en los chats de tus redes sociales, con derivación directa a WhatsApp (+56 9 9101 6912).
+                </p>
+              </div>
+
+              {/* Switch de Activación General */}
+              <div className="flex items-center gap-3 bg-slate-950/60 border border-purple-500/30 rounded-2xl p-3 shrink-0">
+                <span className="text-xs font-semibold text-slate-300">Respuesta Automática</span>
+                <button
+                  type="button"
+                  onClick={() => setMetaConfig(prev => ({ ...prev, activo: !prev.activo }))}
+                  className={`w-14 h-8 rounded-full transition-colors relative cursor-pointer ${
+                    metaConfig.activo ? 'bg-gradient-to-r from-purple-600 to-pink-600' : 'bg-slate-700'
+                  }`}
+                  aria-label="Alternar estado del bot en Meta"
+                >
+                  <span
+                    className={`absolute top-1 left-1 w-6 h-6 rounded-full bg-white transition-transform ${
+                      metaConfig.activo ? 'translate-x-6' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
+              </div>
+            </div>
+
+            {/* Parámetros Técnicos de Handshake con Meta */}
+            <div className="grid md:grid-cols-2 gap-5 pt-6">
+              {/* URL de Webhook */}
+              <div className="bg-slate-950/70 border border-slate-800/80 rounded-2xl p-5 space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold uppercase tracking-wider text-pink-300 flex items-center gap-1.5">
+                    <Globe className="w-4 h-4 text-pink-400" />
+                    <span>URL del Webhook (Callback URL)</span>
+                  </label>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText('https://www.gamasecurity.cl/api/webhooks/meta')
+                      notify('success', 'URL del Webhook copiada al portapapeles.')
+                    }}
+                    className="p-1.5 rounded-lg bg-pink-500/20 hover:bg-pink-500/30 text-pink-300 text-[11px] font-semibold flex items-center gap-1 transition-colors cursor-pointer"
+                  >
+                    <Copy className="w-3.5 h-3.5" />
+                    <span>Copiar URL</span>
+                  </button>
+                </div>
+                <div className="font-mono text-xs text-slate-200 bg-slate-900/90 border border-slate-700/60 p-3 rounded-xl break-all select-all">
+                  https://www.gamasecurity.cl/api/webhooks/meta
+                </div>
+                <p className="text-[11px] text-slate-400">
+                  Pega esta URL exacta en el campo <strong>Callback URL</strong> de la consola de Meta Developers.
+                </p>
+              </div>
+
+              {/* Verify Token */}
+              <div className="bg-slate-950/70 border border-slate-800/80 rounded-2xl p-5 space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold uppercase tracking-wider text-purple-300 flex items-center gap-1.5">
+                    <Key className="w-4 h-4 text-purple-400" />
+                    <span>Token de Verificación (Verify Token)</span>
+                  </label>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(metaConfig.verifyToken)
+                      notify('success', 'Verify Token copiado al portapapeles.')
+                    }}
+                    className="p-1.5 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 text-[11px] font-semibold flex items-center gap-1 transition-colors cursor-pointer"
+                  >
+                    <Copy className="w-3.5 h-3.5" />
+                    <span>Copiar Token</span>
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  value={metaConfig.verifyToken}
+                  onChange={(e) => setMetaConfig(prev => ({ ...prev, verifyToken: e.target.value }))}
+                  placeholder="gama_security_meta_token_2026"
+                  className="w-full bg-slate-900/90 border border-slate-700/60 p-3 rounded-xl font-mono text-xs text-slate-200 focus:outline-none focus:border-purple-400"
+                />
+                <p className="text-[11px] text-slate-400">
+                  Pega este mismo token en el campo <strong>Verify Token</strong> de Meta para validar el webhook.
+                </p>
+              </div>
+            </div>
+
+            {/* Credenciales de Envío: Page Access Token */}
+            <div className="mt-5 bg-slate-950/70 border border-slate-800/80 rounded-2xl p-5 space-y-4">
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-xs font-bold uppercase tracking-wider text-blue-300 flex items-center gap-1.5">
+                    <Key className="w-4 h-4 text-blue-400" />
+                    <span>Token de Acceso de Página (Page Access Token)</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setShowToken(!showToken)}
+                    className="text-[11px] text-slate-400 hover:text-white flex items-center gap-1 cursor-pointer"
+                  >
+                    <Eye className="w-3.5 h-3.5" />
+                    <span>{showToken ? 'Ocultar Token' : 'Mostrar Token'}</span>
+                  </button>
+                </div>
+                <input
+                  type={showToken ? 'text' : 'password'}
+                  value={metaConfig.pageAccessToken}
+                  onChange={(e) => setMetaConfig(prev => ({ ...prev, pageAccessToken: e.target.value }))}
+                  placeholder="EAA... (Pega el token generado en Meta Developers para enviar respuestas)"
+                  className="w-full bg-slate-900/90 border border-slate-700/60 p-3 rounded-xl font-mono text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-400"
+                />
+                <p className="text-[11px] text-slate-400 mt-1.5">
+                  Este token le da permiso al bot para escribir en el chat del cliente. Se obtiene en la sección <em>Messenger &gt; Configuración de API &gt; Generar token</em>.
+                </p>
+              </div>
+
+              {/* Toggles por Canal */}
+              <div className="grid sm:grid-cols-2 gap-4 pt-2 border-t border-slate-800">
+                <label className="flex items-center gap-3 p-3 rounded-xl bg-slate-900/60 border border-slate-800 cursor-pointer hover:border-pink-500/40 transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={metaConfig.autoResponderInstagram}
+                    onChange={(e) => setMetaConfig(prev => ({ ...prev, autoResponderInstagram: e.target.checked }))}
+                    className="w-4 h-4 rounded text-pink-600 focus:ring-0 cursor-pointer"
+                  />
+                  <div className="text-xs">
+                    <span className="font-bold text-white block">📸 Instagram Direct (DM)</span>
+                    <span className="text-[11px] text-slate-400">Responder mensajes directos y menciones en historias</span>
+                  </div>
+                </label>
+
+                <label className="flex items-center gap-3 p-3 rounded-xl bg-slate-900/60 border border-slate-800 cursor-pointer hover:border-blue-500/40 transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={metaConfig.autoResponderMessenger}
+                    onChange={(e) => setMetaConfig(prev => ({ ...prev, autoResponderMessenger: e.target.checked }))}
+                    className="w-4 h-4 rounded text-blue-600 focus:ring-0 cursor-pointer"
+                  />
+                  <div className="text-xs">
+                    <span className="font-bold text-white block">💬 Facebook Messenger</span>
+                    <span className="text-[11px] text-slate-400">Responder mensajes recibidos en la Fanpage</span>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            {/* Botón de Guardado y Prueba de Handshake */}
+            <div className="flex flex-wrap items-center justify-between gap-4 pt-6 mt-6 border-t border-purple-500/20">
+              <button
+                type="button"
+                onClick={async () => {
+                  setTestMetaSending(true)
+                  try {
+                    const testUrl = `/api/webhooks/meta?hub.mode=subscribe&hub.verify_token=${encodeURIComponent(metaConfig.verifyToken)}&hub.challenge=gama_meta_test_ok_123`
+                    const res = await fetch(testUrl)
+                    const text = await res.text()
+                    if (res.ok && text.includes('gama_meta_test_ok_123')) {
+                      notify('success', '🎉 ¡Handshake con Meta verificado correctamente!')
+                    } else {
+                      notify('error', 'Token de verificación no coincidió.')
+                    }
+                  } catch {
+                    notify('error', 'Error al probar endpoint de Meta.')
+                  } finally {
+                    setTestMetaSending(false)
+                  }
+                }}
+                disabled={testMetaSending}
+                className="py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 border border-purple-500/40 text-xs font-semibold text-purple-200 flex items-center gap-2 transition-all cursor-pointer disabled:opacity-50"
+              >
+                {testMetaSending ? <RefreshCw className="w-4 h-4 animate-spin" /> : <span>🧪 Probar Handshake del Webhook</span>}
+              </button>
+
+              <button
+                type="button"
+                onClick={handleGuardarTodo}
+                disabled={guardando}
+                className="py-2.5 px-6 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white text-xs font-bold shadow-lg shadow-purple-950 flex items-center gap-2 transition-all active:scale-95 cursor-pointer disabled:opacity-50"
+              >
+                {guardando ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                <span>Guardar Configuración de Redes Sociales</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Guía Paso a Paso */}
+          <div className="bg-[#09152a] border border-blue-900/40 rounded-3xl p-6 sm:p-8 space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="text-lg font-bold text-white flex items-center gap-2">
+                  <span>📋 Guía de Conexión en Meta for Developers</span>
+                </h4>
+                <p className="text-xs text-slate-300 mt-1">
+                  Sigue estos 4 pasos rápidos para dejar el bot operando en tu cuenta de Instagram y Facebook.
+                </p>
+              </div>
+
+              <a
+                href="https://developers.facebook.com/apps"
+                target="_blank"
+                rel="noreferrer"
+                className="py-2 px-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors"
+              >
+                <span>Ir a Meta Developers</span>
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
+            </div>
+
+            <div className="grid md:grid-cols-4 gap-4">
+              <div className="bg-slate-950/60 border border-slate-800/80 rounded-2xl p-4 space-y-2">
+                <div className="w-7 h-7 rounded-xl bg-purple-500/20 text-purple-300 flex items-center justify-center font-bold text-xs">
+                  1
+                </div>
+                <h5 className="font-bold text-white text-xs">Vincular Cuentas</h5>
+                <p className="text-[11px] text-slate-400 leading-relaxed">
+                  En <strong>Meta Business Suite</strong>, asegúrate de que tu cuenta de Instagram Empresa esté vinculada con la Página de Facebook de Gama Seguridad.
+                </p>
+              </div>
+
+              <div className="bg-slate-950/60 border border-slate-800/80 rounded-2xl p-4 space-y-2">
+                <div className="w-7 h-7 rounded-xl bg-pink-500/20 text-pink-300 flex items-center justify-center font-bold text-xs">
+                  2
+                </div>
+                <h5 className="font-bold text-white text-xs">Activar Permiso en Instagram</h5>
+                <p className="text-[11px] text-slate-400 leading-relaxed">
+                  En la app de Instagram de tu celular: <em>Configuración &gt; Mensajes y respuestas &gt; Herramientas para mensajes &gt;</em> Activa <strong>"Permitir acceso a los mensajes"</strong>.
+                </p>
+              </div>
+
+              <div className="bg-slate-950/60 border border-slate-800/80 rounded-2xl p-4 space-y-2">
+                <div className="w-7 h-7 rounded-xl bg-blue-500/20 text-blue-300 flex items-center justify-center font-bold text-xs">
+                  3
+                </div>
+                <h5 className="font-bold text-white text-xs">Configurar Webhook</h5>
+                <p className="text-[11px] text-slate-400 leading-relaxed">
+                  En tu app de Meta Developers, ve a <strong>Webhooks &gt; Messenger/Instagram</strong>, pega la URL y el Token de arriba y suscríbete al campo <code>messages</code>.
+                </p>
+              </div>
+
+              <div className="bg-slate-950/60 border border-slate-800/80 rounded-2xl p-4 space-y-2">
+                <div className="w-7 h-7 rounded-xl bg-emerald-500/20 text-emerald-300 flex items-center justify-center font-bold text-xs">
+                  4
+                </div>
+                <h5 className="font-bold text-white text-xs">Pegar Page Access Token</h5>
+                <p className="text-[11px] text-slate-400 leading-relaxed">
+                  Genera el token de acceso para la página en Meta Developers y pégalo en el campo superior de esta pantalla. ¡El bot comenzará a responder automáticamente!
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
 
       {/* ─────────────────────────────────────────────────────────────
           MODAL: EDITAR / CREAR PRODUCTO

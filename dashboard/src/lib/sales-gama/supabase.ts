@@ -1,7 +1,19 @@
 import { supabase } from '../supabase';
-import type { Lead, LeadMessage, Config, PreciosData, BotConfig, ListLeadsResponse, LeadFilters, PaginationParams, PromocionItem, FAQItem } from './types';
+import type { Lead, LeadMessage, Config, PreciosData, BotConfig, ListLeadsResponse, LeadFilters, PaginationParams, PromocionItem, FAQItem, MetaIntegrationConfig } from './types';
+
+export const DEFAULT_META_CONFIG: MetaIntegrationConfig = {
+  activo: true,
+  verifyToken: 'gama_security_meta_token_2026',
+  pageAccessToken: '',
+  instagramAccountId: '',
+  pageId: '',
+  telefonoDerivacion: '56991016912',
+  autoResponderInstagram: true,
+  autoResponderMessenger: true,
+};
 
 export const supabaseAdmin = supabase;
+
 
 export async function upsertLead(sessionId: string, partialLead: Partial<Lead>): Promise<Lead | null> {
   const now = new Date().toISOString();
@@ -339,15 +351,18 @@ export async function getConfig(): Promise<Config | null> {
   };
 }
 
-export async function setConfig(key: 'prompt' | 'precios' | 'config' | 'promociones' | 'faqs', value: unknown): Promise<boolean> {
+export async function setConfig(
+  key: 'prompt' | 'precios' | 'config' | 'promociones' | 'faqs' | 'meta_integration' | string,
+  value: unknown
+): Promise<boolean> {
   try {
     let finalValue = value;
 
-    if (key === 'config') {
+    if (key === 'config' || key === 'meta_integration') {
       const { data: current } = await supabaseAdmin
         .from('config_sales_gama')
         .select('value')
-        .eq('key', 'config')
+        .eq('key', key)
         .single();
 
       const existing = current?.value && typeof current.value === 'object' ? current.value : {};
@@ -368,6 +383,31 @@ export async function setConfig(key: 'prompt' | 'precios' | 'config' | 'promocio
     return false;
   }
 }
+
+export async function getMetaIntegrationConfig(): Promise<MetaIntegrationConfig> {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('config_sales_gama')
+      .select('value')
+      .eq('key', 'meta_integration')
+      .single();
+
+    if (!error && data?.value) {
+      const val = typeof data.value === 'string' ? JSON.parse(data.value) : data.value;
+      return {
+        ...DEFAULT_META_CONFIG,
+        ...val,
+      };
+    }
+  } catch {}
+
+  return DEFAULT_META_CONFIG;
+}
+
+export async function setMetaIntegrationConfig(config: Partial<MetaIntegrationConfig>): Promise<boolean> {
+  return setConfig('meta_integration', config);
+}
+
 
 export async function getPromociones(): Promise<PromocionItem[]> {
   const defaultPromos: PromocionItem[] = [
