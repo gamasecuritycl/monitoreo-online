@@ -675,6 +675,10 @@ const SESSION_BACKUP_UUID = '00000000-0000-4000-a000-000000000001'
 
 async function restaurarSesionDesdeSupabase() {
   try {
+    if (!fs.existsSync(SESSION_DIR)) {
+      fs.mkdirSync(SESSION_DIR, { recursive: true })
+    }
+
     const credsPath = path.join(SESSION_DIR, 'creds.json')
     if (fs.existsSync(credsPath) && fs.statSync(credsPath).size > 50) {
       log('[SESIÓN] creds.json ya existe localmente en el contenedor.')
@@ -689,58 +693,79 @@ async function restaurarSesionDesdeSupabase() {
       .single()
 
     if (error || !data?.direccion) {
-      log('[SESIÓN] No se encontró sesión previa en Supabase. Se generará QR para vincular una sola vez.')
+      log('[SESIÓN] No se encontró sesión previa en Supabase. Se requerirá vincular vía QR.')
       return
     }
 
-    const files = JSON.parse(data.direccion)
-    const fileNames = Object.keys(files)
-    if (!fileNames.length) return
-
-    for (const fileName of fileNames) {
-      const filePath = path.join(SESSION_DIR, fileName)
-      fs.writeFileSync(filePath, Buffer.from(files[fileName], 'base64'))
+    let files
+    try {
+      files = typeof data.direccion === 'string' ? JSON.parse(data.direccion) : data.direccion
+    } catch (parseErr) {
+      log(`[SESIÓN] JSON inválido en respaldo: ${parseErr.message}`, 'WARN')
+      return
     }
 
-    log(`[SESIÓN] ✅ ¡${fileNames.length} archivos de sesión restaurados desde Supabase! La sesión no requerirá QR.`)
+    if (!files || typeof files !== 'object' || !files['creds.json'] || typeof files['creds.json'] !== 'string') {
+      log('[SESIÓN] El respaldo no contiene creds.json válido. Se requerirá vincular vía QR.', 'WARN')
+      return
+    }
+
+    let count = 0
+    for (const [fileName, b64] of Object.entries(files)) {
+      if (typeof b64 !== 'string' || !b64) continue
+      try {
+        const filePath = path.join(SESSION_DIR, fileName)
+        fs.writeFileSync(filePath, Buffer.from(b64, 'base64'))
+        count++
+      } catch (errFile) {
+        log(`[SESIÓN] Error restaurando ${fileName}: ${errFile.message}`, 'WARN')
+      }
+    }
+
+    log(`[SESIÓN] ✅ ¡${count} archivos de sesión restaurados desde Supabase! La sesión se reanudará sin pedir QR.`)
   } catch (err) {
     log(`[SESIÓN] Error restaurando sesión desde Supabase: ${err.message}`, 'WARN')
   }
 }
 
 let syncTimeout = null
+async function realizarRespaldoSupabase() {
+  try {
+    if (!fs.existsSync(SESSION_DIR)) return
+    const credsPath = path.join(SESSION_DIR, 'creds.json')
+    if (!fs.existsSync(credsPath) || fs.statSync(credsPath).size < 50) return
+
+    const fileNames = fs.readdirSync(SESSION_DIR)
+    const payloadFiles = {}
+    for (const fileName of fileNames) {
+      const filePath = path.join(SESSION_DIR, fileName)
+      try {
+        if (fs.statSync(filePath).isFile()) {
+          payloadFiles[fileName] = fs.readFileSync(filePath).toString('base64')
+        }
+      } catch {}
+    }
+
+    if (!payloadFiles['creds.json']) return
+
+    await supabase.from('leads_sales_gama').upsert({
+      session_id: SESSION_BACKUP_UUID,
+      nombre: 'WHATSAPP_CLOUD_AUTH_SESSION',
+      direccion: JSON.stringify(payloadFiles),
+      estado: 'nuevo',
+      updated_at: new Date().toISOString(),
+      last_activity: new Date().toISOString()
+    }, { onConflict: 'session_id' })
+
+    log(`[SESIÓN] 💾 Respaldo permanente guardado en Supabase (${Object.keys(payloadFiles).length} archivos).`)
+  } catch (err) {
+    log(`[SESIÓN] Error respaldando sesión a Supabase: ${err.message}`, 'WARN')
+  }
+}
+
 function respaldarSesionASupabase() {
   if (syncTimeout) clearTimeout(syncTimeout)
-  syncTimeout = setTimeout(async () => {
-    try {
-      if (!fs.existsSync(SESSION_DIR)) return
-      const fileNames = fs.readdirSync(SESSION_DIR)
-      if (!fileNames.includes('creds.json')) return
-
-      const payloadFiles = {}
-      for (const fileName of fileNames) {
-        const filePath = path.join(SESSION_DIR, fileName)
-        try {
-          if (fs.statSync(filePath).isFile()) {
-            payloadFiles[fileName] = fs.readFileSync(filePath).toString('base64')
-          }
-        } catch {}
-      }
-
-      await supabase.from('leads_sales_gama').upsert({
-        session_id: SESSION_BACKUP_UUID,
-        nombre: 'WHATSAPP_CLOUD_AUTH_SESSION',
-        direccion: JSON.stringify(payloadFiles),
-        estado: 'nuevo',
-        updated_at: new Date().toISOString(),
-        last_activity: new Date().toISOString()
-      }, { onConflict: 'session_id' })
-
-      log(`[SESIÓN] 💾 Respaldo de sesión actualizado en Supabase (${Object.keys(payloadFiles).length} archivos).`)
-    } catch (err) {
-      log(`[SESIÓN] Error respaldando sesión a Supabase: ${err.message}`, 'WARN')
-    }
-  }, 3000)
+  syncTimeout = setTimeout(realizarRespaldoSupabase, 2000)
 }
 
 // ──────────────────────────────────────────────
@@ -853,15 +878,11 @@ async function conectar() {
         qrActual = null
         qrImageBase64 = null
 
+        // NUNCA eliminar el respaldo de Supabase automáticamente
         if (statusCode === DisconnectReason.loggedOut) {
-          try {
-            fs.rmSync(SESSION_DIR, { recursive: true, force: true })
-            fs.mkdirSync(SESSION_DIR, { recursive: true })
-            // Limpiar respaldo en Supabase si se desconectó voluntariamente
-            await supabase.from('leads_sales_gama').delete().eq('session_id', SESSION_BACKUP_UUID)
-          } catch {}
-          setTimeout(conectar, 3000)
-        } else if (shouldReconnect) {
+          log('[SESIÓN] Sesión reportó loggedOut (401). Esperando re-conexión...', 'WARN')
+          setTimeout(conectar, 5000)
+        } else {
           setTimeout(conectar, 5000)
         }
       } else if (connection === 'open') {
@@ -872,8 +893,8 @@ async function conectar() {
         numeroConectado = rawUser.split(':')[0].split('@')[0]
         usuarioConectado = sock.user?.name || 'GAMA Bot Cloud'
         log(`✅ WHATSAPP CLOUD CONECTADO EXITOSAMENTE: +${numeroConectado} (${usuarioConectado})`)
-        // Respaldar sesión confirmada a Supabase
-        respaldarSesionASupabase()
+        // Respaldar sesión confirmada a Supabase de forma inmediata
+        realizarRespaldoSupabase()
       }
     })
 
