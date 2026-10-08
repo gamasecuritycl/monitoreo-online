@@ -669,16 +669,92 @@ async function guardarEnSupabase(lead, numero, estado = 'en_conversacion') {
 }
 
 // ──────────────────────────────────────────────
+//  PERSISTENCIA PERMANENTE DE SESIÓN EN SUPABASE
+// ──────────────────────────────────────────────
+const SESSION_BACKUP_UUID = '00000000-0000-4000-a000-000000000001'
+
+async function restaurarSesionDesdeSupabase() {
+  try {
+    const credsPath = path.join(SESSION_DIR, 'creds.json')
+    if (fs.existsSync(credsPath) && fs.statSync(credsPath).size > 50) {
+      log('[SESIÓN] creds.json ya existe localmente en el contenedor.')
+      return
+    }
+
+    log('[SESIÓN] 🔄 Buscando respaldo de sesión de WhatsApp en Supabase...')
+    const { data, error } = await supabase
+      .from('leads_sales_gama')
+      .select('direccion')
+      .eq('session_id', SESSION_BACKUP_UUID)
+      .single()
+
+    if (error || !data?.direccion) {
+      log('[SESIÓN] No se encontró sesión previa en Supabase. Se generará QR para vincular una sola vez.')
+      return
+    }
+
+    const files = JSON.parse(data.direccion)
+    const fileNames = Object.keys(files)
+    if (!fileNames.length) return
+
+    for (const fileName of fileNames) {
+      const filePath = path.join(SESSION_DIR, fileName)
+      fs.writeFileSync(filePath, Buffer.from(files[fileName], 'base64'))
+    }
+
+    log(`[SESIÓN] ✅ ¡${fileNames.length} archivos de sesión restaurados desde Supabase! La sesión no requerirá QR.`)
+  } catch (err) {
+    log(`[SESIÓN] Error restaurando sesión desde Supabase: ${err.message}`, 'WARN')
+  }
+}
+
+let syncTimeout = null
+function respaldarSesionASupabase() {
+  if (syncTimeout) clearTimeout(syncTimeout)
+  syncTimeout = setTimeout(async () => {
+    try {
+      if (!fs.existsSync(SESSION_DIR)) return
+      const fileNames = fs.readdirSync(SESSION_DIR)
+      if (!fileNames.includes('creds.json')) return
+
+      const payloadFiles = {}
+      for (const fileName of fileNames) {
+        const filePath = path.join(SESSION_DIR, fileName)
+        try {
+          if (fs.statSync(filePath).isFile()) {
+            payloadFiles[fileName] = fs.readFileSync(filePath).toString('base64')
+          }
+        } catch {}
+      }
+
+      await supabase.from('leads_sales_gama').upsert({
+        session_id: SESSION_BACKUP_UUID,
+        nombre: 'WHATSAPP_CLOUD_AUTH_SESSION',
+        direccion: JSON.stringify(payloadFiles),
+        estado: 'nuevo',
+        updated_at: new Date().toISOString(),
+        last_activity: new Date().toISOString()
+      }, { onConflict: 'session_id' })
+
+      log(`[SESIÓN] 💾 Respaldo de sesión actualizado en Supabase (${Object.keys(payloadFiles).length} archivos).`)
+    } catch (err) {
+      log(`[SESIÓN] Error respaldando sesión a Supabase: ${err.message}`, 'WARN')
+    }
+  }, 3000)
+}
+
+// ──────────────────────────────────────────────
 //  ALERTA VIP AL CELULAR DEL DUEÑO (SIN SPAM AL CLIENTE)
 // ──────────────────────────────────────────────
 async function dispararAlertaVIP(lead, numero) {
   if (!OWNER_PHONE || !sock) return
   const numLimpio = String(numero).replace(/\D/g, '')
   const ownerLimpio = String(OWNER_PHONE).replace(/\D/g, '')
+  const destOwner = `${ownerLimpio}@s.whatsapp.net`
 
-  // Omitir alerta en el mismo chat si quien prueba es el dueño
+  // Omitir alerta si quien prueba es el propio teléfono del dueño
   if (numLimpio === ownerLimpio || numLimpio.endsWith(ownerLimpio) || ownerLimpio.endsWith(numLimpio)) {
-    log(`[ALERTA VIP] Lead coincide con OWNER_PHONE (${numero}). Omitiendo alerta duplicada en el mismo chat de prueba.`)
+    log(`[ALERTA VIP] Emisor es el propio teléfono del dueño (+${numero}). Omitiendo alerta duplicada en el mismo chat de prueba.`)
     return
   }
 
@@ -689,19 +765,19 @@ async function dispararAlertaVIP(lead, numero) {
   }
 
   try {
-    const alerta = `🚨 *[NUEVO LEAD CALIFICADO - GAMA]* 🚨\n\n` +
-      `👤 *Nombre:* ${lead.nombre || 'Prospecto'}\n` +
+    const alerta = `🚨 *[NUEVA DERIVACIÓN COMERCIAL - GAMA]* 🚨\n\n` +
+      `👤 *Cliente:* ${lead.nombre || 'Prospecto'}\n` +
       `📍 *Comuna:* ${lead.comuna}\n` +
-      `🏡 *Tipo:* ${lead.tipoPropiedad || 'Casa o Parcela'}\n` +
+      `🏡 *Tipo:* ${lead.tipoPropiedad || 'Propiedad'}\n` +
       `📦 *Solución:* ${lead.interes || 'Pack VETTI Smart'}\n` +
-      `📅 *Visita Técnica:* ${lead.horarioVisita || 'Por coordinar'}\n` +
+      `📅 *Visita Técnica / Horario:* ${lead.horarioVisita || 'Por coordinar'}\n` +
       `📱 *Teléfono:* +${numero}\n\n` +
       `👉 *Chatear con el cliente ahora:* https://wa.me/${numero}`
 
-    await enviarMensajeBot(`${OWNER_PHONE}@s.whatsapp.net`, { text: alerta })
-    log(`[ALERTA VIP] Notificación enviada a +${OWNER_PHONE} para lead +${numero}`)
+    await enviarMensajeBot(destOwner, { text: alerta })
+    log(`[ALERTA VIP] Derivación enviada con éxito a +${OWNER_PHONE} para lead +${numero}`)
   } catch (e) {
-    log(`[ALERTA VIP] Error enviando alerta: ${e.message}`, 'ERROR')
+    log(`[ALERTA VIP] Error enviando alerta a +${OWNER_PHONE}: ${e.message}`, 'ERROR')
   }
 }
 
@@ -729,6 +805,9 @@ async function conectar() {
   estadoConexion = 'conectando'
   log(`Iniciando Baileys en la nube (Puerto ${PORT})...`)
 
+  // 1. Restaurar sesión permanente desde Supabase si existe
+  await restaurarSesionDesdeSupabase()
+
   try {
     const { state, saveCreds } = await useMultiFileAuthState(SESSION_DIR)
     const { version } = await fetchLatestBaileysVersion().catch(() => ({ version: [2, 3000, 1015901307] }))
@@ -751,7 +830,10 @@ async function conectar() {
       }
     })
 
-    sock.ev.on('creds.update', saveCreds)
+    sock.ev.on('creds.update', async () => {
+      await saveCreds()
+      respaldarSesionASupabase()
+    })
 
     sock.ev.on('connection.update', async (update) => {
       const { connection, lastDisconnect, qr } = update
@@ -775,6 +857,8 @@ async function conectar() {
           try {
             fs.rmSync(SESSION_DIR, { recursive: true, force: true })
             fs.mkdirSync(SESSION_DIR, { recursive: true })
+            // Limpiar respaldo en Supabase si se desconectó voluntariamente
+            await supabase.from('leads_sales_gama').delete().eq('session_id', SESSION_BACKUP_UUID)
           } catch {}
           setTimeout(conectar, 3000)
         } else if (shouldReconnect) {
@@ -788,6 +872,8 @@ async function conectar() {
         numeroConectado = rawUser.split(':')[0].split('@')[0]
         usuarioConectado = sock.user?.name || 'GAMA Bot Cloud'
         log(`✅ WHATSAPP CLOUD CONECTADO EXITOSAMENTE: +${numeroConectado} (${usuarioConectado})`)
+        // Respaldar sesión confirmada a Supabase
+        respaldarSesionASupabase()
       }
     })
 
@@ -862,12 +948,27 @@ async function conectar() {
           log(`🚨 HUMAN HANDOFF SOLICITADO por +${numero} (${nombre})`)
           humanTakeover.set(numero, Date.now())
 
-          const respuestaTraspaso = `¡Comprendido ${nombre}! Te estoy transfiriendo de inmediato con nuestro asesor comercial de turno para que te atienda de forma personalizada por este mismo chat o llamada 🤝.`
+          // Al cliente SOLO se le confirma la transferencia amablemente
+          const respuestaTraspaso = `¡Comprendido ${nombre}! 🤝 He transferido tu solicitud directamente a nuestro Asesor Comercial (+56 9 9101 6912) para que tome contacto contigo a la brevedad por este chat o llamada.`
           await enviarMensajeBot(remoteJid, { text: respuestaTraspaso })
 
+          // A Don Tomás (+56991016912) se le envía la derivación formal
           if (OWNER_PHONE) {
-            const alertaOwner = `🚨 *[LEAD SOLICITA ASESOR HUMANO]*\n\nEl cliente *${nombre}* (+${numero}) solicita hablar con un asesor.\n\n*Mensaje:* "${body}"\n\n👉 *Chatear con el cliente:* https://wa.me/${numero}`
-            await enviarMensajeBot(`${OWNER_PHONE}@s.whatsapp.net`, { text: alertaOwner }).catch(() => {})
+            const ownerLimpio = OWNER_PHONE.replace(/[^0-9]/g, '')
+            const numLimpio = numero.replace(/[^0-9]/g, '')
+            const destOwner = `${ownerLimpio}@s.whatsapp.net`
+
+            if (numLimpio !== ownerLimpio) {
+              const alertaOwner = `🚨 *[DERIVACIÓN: CLIENTE SOLICITA ASESOR]* 🚨\n\n` +
+                `👤 *Cliente:* ${nombre}\n` +
+                `📱 *Teléfono:* +${numero}\n` +
+                `💬 *Mensaje:* "${body}"\n\n` +
+                `👉 *Chatear con el cliente ahora:* https://wa.me/${numero}`
+              await enviarMensajeBot(destOwner, { text: alertaOwner }).catch(e => log(`Error enviando derivación a +${OWNER_PHONE}: ${e.message}`, 'ERROR'))
+              log(`[DERIVACIÓN] Notificación enviada con éxito a +${OWNER_PHONE}`)
+            } else {
+              log(`[DERIVACIÓN] Omitiendo alerta duplicada porque el emisor es el propio teléfono del dueño (+${numero}).`)
+            }
           }
           continue
         }
