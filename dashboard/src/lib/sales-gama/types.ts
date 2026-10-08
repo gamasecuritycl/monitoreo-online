@@ -45,6 +45,7 @@ export interface PreciosItem {
   precio: number;
   precio_uf?: string;
   categoria: string;
+  marca?: 'VETTI' | 'DSC' | 'CCTV' | 'GENERAL' | string;
   palabras_clave: string[];
   incluye: string[];
   no_incluye: string[];

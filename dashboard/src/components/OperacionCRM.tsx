@@ -2952,51 +2952,15 @@ export default function OperacionCRM() {
     },
     {
       id: 'entrenamiento_bot',
-      titulo: 'Entrenamiento Bot de Ventas',
+      titulo: 'Bot de Ventas IA (Control Total)',
       categoria: 'COMERCIAL & IA',
-      descripcion: 'Entrena al bot de WhatsApp: catálogo de productos, promociones con afiches, objeciones Verisure y simulador en vivo.',
-      icono: Sparkles,
-      gradient: 'from-amber-600 via-orange-600 to-rose-600',
-      borderColor: 'hover:border-amber-400',
-      glowColor: 'group-hover:shadow-amber-500/25',
-      badgeColor: 'bg-amber-500/10 text-amber-300 border-amber-500/20',
-      tag: '⭐ Nuevo'
-    },
-    {
-      id: 'salesbot',
-      titulo: 'Sales-Bot IA & Leads Hub',
-      categoria: 'COMERCIAL & IA',
-      descripcion: 'Agente de ventas 24/7, captura automática de prospectos calientes, transcripciones y radar de oportunidades.',
+      descripcion: 'Control maestro unificado: Precios Vetti & DSC en CLP, promociones con afiches, prospectos en vivo, WhatsApp e Instagram.',
       icono: Bot,
       gradient: 'from-blue-700 via-indigo-600 to-violet-600',
       borderColor: 'hover:border-indigo-400',
       glowColor: 'group-hover:shadow-indigo-500/25',
       badgeColor: 'bg-indigo-500/10 text-indigo-300 border-indigo-500/20',
-      tag: '🔥 Bot Hub'
-    },
-    {
-      id: 'bot_config',
-      titulo: 'Configuración Sales-Bot',
-      categoria: 'INTELIGENCIA ARTIFICIAL',
-      descripcion: 'Prompt de ventas, CRUD de catálogo en UF/CLP, temperatura y parámetros comerciales del asesor IA.',
-      icono: Sparkles,
-      gradient: 'from-blue-600 to-indigo-600',
-      borderColor: 'hover:border-blue-400',
-      glowColor: 'group-hover:shadow-blue-500/25',
-      badgeColor: 'bg-blue-500/10 text-blue-300 border-blue-500/20',
-      tag: 'Ajustes & Catálogo'
-    },
-    {
-      id: 'bot_leads',
-      titulo: 'Leads - Bot',
-      categoria: 'COMERCIAL & VENTAS',
-      descripcion: 'Prospectos calientes 🔥 capturados en tiempo real por SALES-GAMA, WhatsApp 1-clic y transcripciones.',
-      icono: Target,
-      gradient: 'from-amber-500 to-orange-600',
-      borderColor: 'hover:border-amber-400',
-      glowColor: 'group-hover:shadow-amber-500/25',
-      badgeColor: 'bg-amber-500/10 text-amber-300 border-amber-500/20',
-      tag: '🔥 Leads Activos'
+      tag: '⭐ Control Total'
     },
     {
       id: 'landing_marketing',
@@ -3384,12 +3348,8 @@ export default function OperacionCRM() {
                     onDrop={(e) => handleDrop(e, mod.id)}
                     onDragEnd={() => { setDraggedItemId(null); setDragOverItemId(null); }}
                     onClick={() => {
-                      if (mod.id === 'bot_config') {
-                        setModalBotConfigOpen(true);
-                        return;
-                      }
-                      if (mod.id === 'bot_leads') {
-                        setModalBotLeadsOpen(true);
+                      if (mod.id === 'bot_config' || mod.id === 'bot_leads' || mod.id === 'salesbot') {
+                        setModuloActivo('entrenamiento_bot' as any);
                         return;
                       }
                       setModuloActivo(mod.id as any);
@@ -4397,16 +4357,10 @@ export default function OperacionCRM() {
           )}
 
           {/* ── MÓDULO ENTRENAMIENTO BOT DE VENTAS ── */}
-          {moduloActivo === 'entrenamiento_bot' && (
+          {/* ── MÓDULO UNIFICADO BOT DE VENTAS IA ── */}
+          {(moduloActivo === 'entrenamiento_bot' || moduloActivo === 'salesbot') && (
             <div className="flex-1 bg-[#050d1a] rounded-2xl flex flex-col border border-slate-800 shadow-sm overflow-hidden min-h-0">
               <EntrenamientoBotModule />
-            </div>
-          )}
-
-          {/* ── MÓDULO SALES-BOT IA & LEADS ── */}
-          {moduloActivo === 'salesbot' && (
-            <div className="flex-1 bg-[#050d1a] rounded-2xl p-4 sm:p-6 flex flex-col gap-6 border border-slate-800 shadow-sm overflow-y-auto">
-              <OperacionesBotHub />
             </div>
           )}
 

@@ -63,8 +63,7 @@ export default function OperacionSidebar({
       titulo: 'COMERCIAL & CONTRATOS',
       items: [
         { id: 'presupuestos', label: 'Presupuestos Comerciales', icon: FileText, desc: 'Cotizaciones oficiales PDF con catálogo' },
-        { id: 'entrenamiento_bot', label: 'Entrenamiento Bot Ventas', icon: Sparkles, desc: 'Catálogo de productos, promociones, afiches y prompt IA' },
-        { id: 'salesbot', label: 'Sales-Bot IA & Leads Hub', icon: Bot, desc: 'Captura de prospectos y agente de ventas' },
+        { id: 'entrenamiento_bot', label: 'Bot de Ventas IA (Control Total)', icon: Bot, desc: 'Precios Vetti & DSC, prospectos en vivo, promociones, WhatsApp e Instagram' },
         { id: 'landing_marketing', label: 'Landing Marketing', icon: Sparkles, desc: 'Control de hero, popups y web oficial' },
         { id: 'gestion_mails', label: 'Gestión de Mails IA', icon: Mail, desc: 'Campañas de email con redactor IA' },
         { id: 'mercadopublico', label: 'Mercado Público & Licitaciones', icon: Building2, desc: 'Radar de licitaciones ChileCompra' },
@@ -208,35 +207,6 @@ export default function OperacionSidebar({
                         )}
                       </button>
 
-                      {/* Sub-acciones para Sales-Bot */}
-                      {m.id === 'salesbot' && (
-                        <div className="grid grid-cols-2 gap-1.5 pl-6 pt-0.5">
-                          {onOpenBotLeads && (
-                            <button
-                              onClick={() => {
-                                onOpenBotLeads()
-                                setSidebarAbierto(false)
-                              }}
-                              className="px-2 py-1 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 rounded-lg text-[10px] font-bold flex items-center justify-center gap-1 transition"
-                            >
-                              <Target className="h-3 w-3 text-amber-600" />
-                              <span>Ver Leads 🔥</span>
-                            </button>
-                          )}
-                          {onOpenBotConfig && (
-                            <button
-                              onClick={() => {
-                                onOpenBotConfig()
-                                setSidebarAbierto(false)
-                              }}
-                              className="px-2 py-1 bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200 rounded-lg text-[10px] font-bold flex items-center justify-center gap-1 transition"
-                            >
-                              <Sparkles className="h-3 w-3 text-blue-600" />
-                              <span>Config Catálogo</span>
-                            </button>
-                          )}
-                        </div>
-                      )}
                     </div>
                   )
                 })}

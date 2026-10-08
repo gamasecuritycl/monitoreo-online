@@ -242,22 +242,24 @@ export async function listLeads(
 export async function getConfig(): Promise<Config | null> {
   const defaultPrecios: PreciosData = {
     version: 2,
-    categorias: ["Monitoreo 24/7", "Alarmas Inteligentes", "Alarmas Cableadas", "Cámaras CCTV", "Cercos Eléctricos", "Promociones"],
+    categorias: ["Promociones", "VETTI (Inalámbrica)", "DSC (Cableada)", "Monitoreo 24/7", "Cámaras CCTV"],
     items: [
+      // ── VETTI SMART ──
       {
         id: "pack-vetti-smart-promo",
-        nombre: "Promoción Exclusiva Pack VETTI Smart",
+        nombre: "Promoción Exclusiva Pack VETTI Smart (Kit Base)",
         descripcion: "Sistema de alarma inalámbrica de alta tecnología con App NT CLICK y monitoreo 24/7. Equipos propios sin arriendo.",
         precio: 0,
         precio_uf: "Instalación $0 bonificada / Monitoreo desde 0,9 UF + IVA mensual",
         categoria: "Promociones",
+        marca: "VETTI",
         palabras_clave: ["vetti", "pack", "promocion", "promo", "oferta", "smart", "nt click", "alarma", "kit", "casa", "departamento", "negocio", "valores", "detalles"],
         incluye: [
-          "Central Inteligente Vetti (WiFi + 4G GSM anti-corte)",
+          "Central Inteligente Vetti Hub (WiFi + 4G GSM anti-corte)",
           "1 Sensor de movimiento PIR antimascotas (hasta 25 kg)",
           "1 Contacto magnético de puerta/ventana",
           "2 Controles remotos con botón de pánico SOS",
-          "Sirena disuasiva 110 dB",
+          "Sirena disuasiva 110 dB integrada",
           "Batería de respaldo autónoma",
           "App NT CLICK en tu smartphone",
           "Instalación $0 bonificada",
@@ -272,28 +274,142 @@ export async function getConfig(): Promise<Config | null> {
         ]
       },
       {
+        id: "vetti-sensor-pir",
+        nombre: "Sensor de Movimiento PIR Antimascotas Vetti (Inalámbrico Adicional)",
+        descripcion: "Sensor infrarrojo pasivo inalámbrico con óptica inteligente antimascotas (hasta 25 kg). No genera falsas alarmas con perros o gatos.",
+        precio: 24900,
+        categoria: "VETTI (Inalámbrica)",
+        marca: "VETTI",
+        palabras_clave: ["pir", "sensor", "movimiento", "dormitorio", "living", "comedor", "antimascotas", "vetti", "adicional"],
+        incluye: ["Sensor PIR inalámbrico", "Soporte angular de fijación", "Batería de larga duración de litio"],
+        no_incluye: ["Cables (es 100% inalámbrico)"],
+        faq: [{ q: "¿Cuánto cuesta cada sensor adicional de movimiento?", a: "$24.900 CLP + IVA cada uno. Es un pago único y el sensor es 100% tuyo." }]
+      },
+      {
+        id: "vetti-contacto-magnetico",
+        nombre: "Contacto Magnético Puerta/Ventana Vetti (Inalámbrico Adicional)",
+        descripcion: "Sensor magnético de apertura inalámbrico de alta precisión para puertas de acceso, servicio o ventanales.",
+        precio: 19900,
+        categoria: "VETTI (Inalámbrica)",
+        marca: "VETTI",
+        palabras_clave: ["magnetico", "puerta", "ventana", "acceso", "servicio", "apertura", "vetti", "adicional"],
+        incluye: ["Sensor magnético emisor + imán", "Batería de litio", "Cinta de fijación 3M de alta resistencia"],
+        no_incluye: [],
+        faq: [{ q: "¿Cuánto cuesta cada contacto magnético adicional?", a: "$19.900 CLP + IVA cada uno. Pago único." }]
+      },
+      {
+        id: "vetti-control-remoto",
+        nombre: "Control Remoto Inalámbrico Vetti (4 Botones con Botón Pánico SOS)",
+        descripcion: "Control llavero de 4 funciones (armado total, armado noche en casa, desarmado y botón de pánico SOS de emergencia).",
+        precio: 14900,
+        categoria: "VETTI (Inalámbrica)",
+        marca: "VETTI",
+        palabras_clave: ["control", "remoto", "llavero", "panico", "sos", "vetti"],
+        incluye: ["Control remoto 4 botones", "Pila incluida", "Llavero metálico"],
+        no_incluye: [],
+        faq: [{ q: "¿Cuánto cuesta un control remoto extra?", a: "$14.900 CLP + IVA cada uno." }]
+      },
+      {
+        id: "vetti-sirena-exterior",
+        nombre: "Sirena Exterior Inalámbrica 110 dB con Baliza Estroboscópica Vetti",
+        descripcion: "Sirena de alta potencia disuasiva para frontis o patio con luz estroboscópica LED roja intermitente y protección intemperie IP65.",
+        precio: 29900,
+        categoria: "VETTI (Inalámbrica)",
+        marca: "VETTI",
+        palabras_clave: ["sirena", "exterior", "baliza", "luz", "ruido", "disuasion", "vetti"],
+        incluye: ["Sirena 110 dB", "Luz estroboscópica LED", "Batería de respaldo y transformador"],
+        no_incluye: [],
+        faq: [{ q: "¿Cuánto cuesta la sirena exterior?", a: "$29.900 CLP + IVA." }]
+      },
+
+      // ── DSC POWERSERIES & NEO (CABLEADA / HÍBRIDA) ──
+      {
+        id: "dsc-reprogramacion-adt",
+        nombre: "Reprogramación y Migración Alarma ADT / DSC a Central GAMA",
+        descripcion: "Migra tu panel existente DSC o ADT a nuestra Central 24/7 a costo $0. Conservas todos tus sensores instalados.",
+        precio: 0,
+        precio_uf: "Costo $0 de cambio / Monitoreo desde 0,9 UF + IVA mensual",
+        categoria: "Promociones",
+        marca: "DSC",
+        palabras_clave: ["adt", "reprogramacion", "migracion", "cambiar", "dsc", "powerseries", "costo cero"],
+        incluye: [
+          "Evaluación y reprogramación técnica en terreno $0",
+          "Conexión de sensores existentes a Central GAMA 24/7",
+          "Sin comprar sensores nuevos",
+          "Plan monitoreo desde 0,9 UF + IVA mensual (~$35.000 CLP)",
+          "Ahorro de más de $350.000 al año"
+        ],
+        no_incluye: ["Costos de salida abusivos (no tenemos letra chica)"],
+        faq: [{ q: "¿Cuánto cobran por cambiarme desde ADT si tengo panel DSC?", a: "Costo $0 de instalación y reprogramación. Solo pagas el monitoreo desde 0,9 UF + IVA al mes." }]
+      },
+      {
+        id: "dsc-kit-powerseries",
+        nombre: "Kit Central DSC PowerSeries PC1832 (Cableada)",
+        descripcion: "Sistema de alarma cableado grado comercial e industrial de máxima robustez. Compatible con hasta 32 zonas cableadas.",
+        precio: 189900,
+        categoria: "DSC (Cableada)",
+        marca: "DSC",
+        palabras_clave: ["dsc", "pc1832", "powerseries", "cableada", "central dsc", "kit dsc"],
+        incluye: [
+          "Gabinete metálico con cerradura",
+          "Placa madre DSC PC1832 de 8 zonas expandible a 32",
+          "Transformador 16.5V y batería de respaldo 12V 4Ah",
+          "Teclado LED DSC",
+          "Sirena interior 30W"
+        ],
+        no_incluye: ["Monitoreo mensual (desde 0,9 UF + IVA)"],
+        faq: [{ q: "¿Cuánto cuesta el kit DSC cableado?", a: "$189.900 CLP + IVA." }]
+      },
+      {
+        id: "dsc-sensor-pir",
+        nombre: "Sensor de Movimiento PIR DSC Cableado Antimascotas",
+        descripcion: "Detector de movimiento infrarrojo pasivo cableado de alta confiabilidad con inmunidad a mascotas de hasta 25 kg.",
+        precio: 19900,
+        categoria: "DSC (Cableada)",
+        marca: "DSC",
+        palabras_clave: ["pir dsc", "sensor dsc", "cableado", "movimiento dsc", "antimascotas dsc"],
+        incluye: ["Sensor PIR DSC", "Soporte", "Conexión a zona"],
+        no_incluye: [],
+        faq: [{ q: "¿Cuánto cuesta un sensor PIR cableado DSC?", a: "$19.900 CLP + IVA cada uno." }]
+      },
+      {
+        id: "dsc-contacto-magnetico",
+        nombre: "Contacto Magnético Cableado DSC (Puerta/Ventana)",
+        descripcion: "Contacto magnético embutido o sobrepuesto de alta durabilidad para puertas de acceso o ventanas.",
+        precio: 9900,
+        categoria: "DSC (Cableada)",
+        marca: "DSC",
+        palabras_clave: ["magnetico dsc", "puerta dsc", "ventana dsc", "cableado"],
+        incluye: ["Contacto magnético cableado", "Tornillería"],
+        no_incluye: [],
+        faq: [{ q: "¿Cuánto cuesta el magnético cableado DSC?", a: "$9.900 CLP + IVA." }]
+      },
+      {
+        id: "dsc-comunicador-4g",
+        nombre: "Comunicador 4G LTE / IP Universal para Paneles DSC",
+        descripcion: "Módulo comunicador celular 4G de alta velocidad para reporte inmediato a Central de Monitoreo GAMA 24/7 sin línea telefónica fija.",
+        precio: 59900,
+        categoria: "DSC (Cableada)",
+        marca: "DSC",
+        palabras_clave: ["comunicador", "4g", "gsm", "chip", "reporte", "dsc"],
+        incluye: ["Módulo 4G LTE", "Antena de alta ganancia", "Chip M2M multioperador"],
+        no_incluye: [],
+        faq: [{ q: "¿Cuánto cuesta el comunicador 4G para DSC?", a: "$59.900 CLP + IVA." }]
+      },
+
+      // ── SERVICIO DE MONITOREO ──
+      {
         id: "monitoreo-247-uf",
         nombre: "Plan Monitoreo de Alarmas 24/7",
         descripcion: "Monitoreo continuo 24/7 los 365 días con verificación humana de señales en < 2 min. El equipo es 100% tuyo.",
         precio: 35000,
         precio_uf: "0,9 UF + IVA mensual",
         categoria: "Monitoreo 24/7",
-        palabras_clave: ["monitoreo", "central", "24/7", "uf", "plan"],
-        incluye: ["Verificación < 2 min", "App móvil", "Aviso telefónico prioritario", "Equipo propio"],
-        no_incluye: ["Hardware inicial"],
-        faq: [{ q: "¿Cuál es el valor mensual?", a: "0,9 UF + IVA mensual fijo sin cobros sorpresa." }]
-      },
-      {
-        id: "kit-vetti-inteligente",
-        nombre: "Kit Alarma Inteligente Vetti NT CLICK",
-        descripcion: "Panel de control inalámbrico de alta tecnología con App NT CLICK. Notificaciones push al instante.",
-        precio: 199900,
-        precio_uf: "5,3 UF + IVA",
-        categoria: "Alarmas Inteligentes",
-        palabras_clave: ["vetti", "nt click", "inalambrica", "kit", "smart"],
-        incluye: ["Panel Vetti Smart", "1 Sensor de movimiento PIR", "1 Contacto magnético", "2 Controles remotos", "Sirena integrada", "App NT CLICK"],
-        no_incluye: ["Instalación en altura especial", "Monitoreo mensual"],
-        faq: [{ q: "¿Tiene garantía?", a: "1 año de garantía oficial GAMA Security con soporte técnico directo." }]
+        marca: "GENERAL",
+        palabras_clave: ["monitoreo", "central", "24/7", "uf", "plan", "mensualidad"],
+        incluye: ["Verificación < 2 min por operadores certificados", "App móvil", "Aviso telefónico prioritario", "Equipos propios sin comodato"],
+        no_incluye: ["Equipos de hardware inicial"],
+        faq: [{ q: "¿Cuál es el valor mensual del monitoreo?", a: "Desde 0,9 UF + IVA mensual (~$35.000 CLP aprox), con equipos 100% propios." }]
       }
     ]
   };

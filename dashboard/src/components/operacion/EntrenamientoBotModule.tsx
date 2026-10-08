@@ -34,13 +34,20 @@ import {
   Image as ImageIcon,
   Globe,
   Key,
-  Share2
+  Share2,
+  Users,
+  Download,
+  CheckCheck,
+  MessageCircle,
+  Filter,
+  ArrowUpRight,
+  Layers
 } from 'lucide-react'
-import type { PreciosData, PreciosItem, BotConfig, PromocionItem, FAQItem, MetaIntegrationConfig } from '@/lib/sales-gama/types'
+import type { PreciosData, PreciosItem, BotConfig, PromocionItem, FAQItem, MetaIntegrationConfig, Lead, LeadMessage } from '@/lib/sales-gama/types'
 import { DEFAULT_SALES_PROMPT } from '@/lib/sales-gama/assistant'
 
 export default function EntrenamientoBotModule() {
-  const [activeTab, setActiveTab] = useState<'catalogo' | 'promociones' | 'objeciones' | 'prompt' | 'simulador' | 'meta'>('catalogo')
+  const [activeTab, setActiveTab] = useState<'catalogo' | 'promociones' | 'objeciones' | 'prompt' | 'leads' | 'simulador' | 'meta'>('catalogo')
   const [loading, setLoading] = useState(false)
   const [guardando, setGuardando] = useState(false)
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
@@ -59,7 +66,7 @@ export default function EntrenamientoBotModule() {
   })
   const [precios, setPrecios] = useState<PreciosData>({
     version: 2,
-    categorias: ['Monitoreo 24/7', 'Alarmas Inteligentes', 'Alarmas Cableadas', 'Cámaras CCTV', 'Cercos Eléctricos', 'Promociones'],
+    categorias: ['Promociones', 'VETTI (Inalámbrica)', 'DSC (Cableada)', 'Monitoreo 24/7', 'Cámaras CCTV'],
     items: [],
   })
   const [promociones, setPromociones] = useState<PromocionItem[]>([])
@@ -77,11 +84,20 @@ export default function EntrenamientoBotModule() {
   const [showToken, setShowToken] = useState(false)
   const [testMetaSending, setTestMetaSending] = useState(false)
 
-
-  // Filtros y búsquedas
+  // Filtros y búsquedas de Catálogo
   const [busquedaProducto, setBusquedaProducto] = useState('')
   const [categoriaSeleccionada, setCategoriaSeleccionada] = useState<string>('Todas')
+  const [marcaSeleccionada, setMarcaSeleccionada] = useState<'Todas' | 'VETTI' | 'DSC' | 'CCTV'>('Todas')
   const [busquedaFaq, setBusquedaFaq] = useState('')
+
+  // Prospectos Capturados (Leads en Vivo)
+  const [leadsList, setLeadsList] = useState<Lead[]>([])
+  const [loadingLeads, setLoadingLeads] = useState(false)
+  const [filtroEstadoLead, setFiltroEstadoLead] = useState<string>('todos')
+  const [busquedaLead, setBusquedaLead] = useState('')
+  const [selectedLead, setSelectedLead] = useState<Lead | null>(null)
+  const [chatMessagesLead, setChatMessagesLead] = useState<LeadMessage[]>([])
+  const [loadingChatLead, setLoadingChatLead] = useState(false)
 
   // Modales CRUD
   const [editingProducto, setEditingProducto] = useState<PreciosItem | null>(null)
@@ -195,15 +211,111 @@ export default function EntrenamientoBotModule() {
     }
   }
 
-  // Filtrado de productos
+  // Carga y sincronización de prospectos (Leads)
+  const fetchLeads = useCallback(async () => {
+    setLoadingLeads(true)
+    try {
+      const res = await fetch('/api/sales-gama/leads?limit=100')
+      if (res.ok) {
+        const data = await res.json()
+        setLeadsList(data.items || [])
+      }
+    } catch {
+      notify('error', 'Error al cargar prospectos.')
+    } finally {
+      setLoadingLeads(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (activeTab === 'leads') {
+      fetchLeads()
+    }
+  }, [activeTab, fetchLeads])
+
+  const handleOpenChatLead = async (lead: Lead) => {
+    setSelectedLead(lead)
+    setLoadingChatLead(true)
+    try {
+      const res = await fetch(`/api/sales-gama/leads/${lead.id}`)
+      if (res.ok) {
+        const data = await res.json()
+        setChatMessagesLead(data.messages || [])
+      } else {
+        notify('error', 'Error al obtener conversación')
+      }
+    } catch {
+      notify('error', 'Fallo de red al cargar conversación')
+    } finally {
+      setLoadingChatLead(false)
+    }
+  }
+
+  const handleChangeStatusLead = async (leadId: string, newStatus: string) => {
+    try {
+      const res = await fetch(`/api/sales-gama/leads/${leadId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ estado: newStatus })
+      })
+      if (res.ok) {
+        setLeadsList(prev => prev.map(l => l.id === leadId ? { ...l, estado: newStatus as any } : l))
+        if (selectedLead?.id === leadId) {
+          setSelectedLead(prev => prev ? { ...prev, estado: newStatus as any } : null)
+        }
+        notify('success', `Estado actualizado a "${newStatus}"`)
+      }
+    } catch {
+      notify('error', 'No se pudo actualizar estado del prospecto')
+    }
+  }
+
+  const handleExportLeadsCSV = () => {
+    if (leadsList.length === 0) {
+      notify('error', 'No hay prospectos para exportar')
+      return
+    }
+    const headers = ['Fecha', 'Nombre', 'Teléfono', 'Email', 'Comuna', 'Dirección', 'Estado', 'Resumen']
+    const rows = leadsList.map(l => [
+      new Date(l.created_at).toLocaleString('es-CL'),
+      `"${(l.nombre || 'Anónimo').replace(/"/g, '""')}"`,
+      `"${(l.telefono || '').replace(/"/g, '""')}"`,
+      `"${(l.email || '').replace(/"/g, '""')}"`,
+      `"${(l.comuna || '').replace(/"/g, '""')}"`,
+      `"${(l.direccion || '').replace(/"/g, '""')}"`,
+      l.estado,
+      `"${(l.resumen || '').replace(/"/g, '""')}"`,
+    ])
+    const csvContent = '\uFEFF' + [headers.join(';'), ...rows.map(r => r.join(';'))].join('\n')
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.setAttribute('href', url)
+    link.setAttribute('download', `leads_bot_gama_${new Date().toISOString().slice(0, 10)}.csv`)
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    notify('success', 'Archivo CSV de prospectos descargado.')
+  }
+
+  // Filtrado de productos por Categoría, Marca (VETTI / DSC) y Búsqueda
   const productosFiltrados = useMemo(() => {
     return precios.items.filter(item => {
       const matchCat = categoriaSeleccionada === 'Todas' || item.categoria === categoriaSeleccionada
       const q = busquedaProducto.toLowerCase()
       const matchSearch = !q || item.nombre.toLowerCase().includes(q) || item.descripcion.toLowerCase().includes(q)
-      return matchCat && matchSearch
+      
+      const itemMarca = (item.marca || '').toUpperCase()
+      const itemNombre = item.nombre.toLowerCase()
+      const matchMarca = marcaSeleccionada === 'Todas' || 
+        itemMarca === marcaSeleccionada ||
+        (marcaSeleccionada === 'VETTI' && (itemMarca.includes('VETTI') || itemNombre.includes('vetti'))) ||
+        (marcaSeleccionada === 'DSC' && (itemMarca.includes('DSC') || itemNombre.includes('dsc'))) ||
+        (marcaSeleccionada === 'CCTV' && (itemMarca.includes('CCTV') || item.categoria.toLowerCase().includes('cámara') || itemNombre.includes('cámara')))
+      
+      return matchCat && matchSearch && matchMarca
     })
-  }, [precios.items, categoriaSeleccionada, busquedaProducto])
+  }, [precios.items, categoriaSeleccionada, busquedaProducto, marcaSeleccionada])
 
   // Simulador de chat interactivo
   const handleEnviarSimulador = async (mensajeDirecto?: string) => {
@@ -393,6 +505,18 @@ export default function EntrenamientoBotModule() {
         </button>
 
         <button
+          onClick={() => setActiveTab('leads')}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all whitespace-nowrap cursor-pointer ${
+            activeTab === 'leads'
+              ? 'bg-gradient-to-r from-amber-600 to-orange-600 text-white shadow-lg shadow-orange-950'
+              : 'text-amber-400 hover:text-amber-200 hover:bg-slate-800/40'
+          }`}
+        >
+          <Flame className="w-4 h-4 text-amber-300" />
+          <span>🔥 Prospectos en Vivo ({leadsList.length})</span>
+        </button>
+
+        <button
           onClick={() => setActiveTab('meta')}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all whitespace-nowrap cursor-pointer ${
             activeTab === 'meta'
@@ -407,11 +531,196 @@ export default function EntrenamientoBotModule() {
 
 
       {/* ─────────────────────────────────────────────────────────────
-          TAB 1: CATÁLOGO DE PRODUCTOS (CRUD)
+          TAB 1: CATÁLOGO DE PRODUCTOS & TABLAS OFICIALES DE VALORES
          ───────────────────────────────────────────────────────────── */}
       {activeTab === 'catalogo' && (
         <div className="space-y-6 animate-in fade-in duration-200">
-          {/* Barra de control */}
+          
+          {/* BANNER REGLA INFLEXIBLE: HARDWARE EN CLP, UF SOLO MONITOREO */}
+          <div className="p-4 sm:p-5 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-start sm:items-center gap-3.5 shadow-lg">
+            <AlertCircle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5 sm:mt-0" />
+            <div className="text-xs space-y-1">
+              <span className="font-extrabold text-amber-200 uppercase tracking-wide block">
+                🛡️ REGLA COMERCIAL DE VALORES PARA EL BOT DE VENTAS (PROHIBIDO COTIZAR HARDWARE EN UF)
+              </span>
+              <p className="text-slate-300 leading-relaxed">
+                Los sensores y accesorios se cotizan <strong>SIEMPRE en pesos chilenos (CLP)</strong> con pago único. El valor en <strong>UF</strong> está estrictamente reservado para la mensualidad del servicio de monitoreo 24/7 (desde <strong>0,9 UF + IVA/mes</strong>, ~$35.000 CLP). Cuando un cliente te consulte por distribución de su propiedad (ej. 3 dormitorios y 2 accesos), calcula los accesorios adicionales multiplicando su valor en CLP y suma la mensualidad en UF.
+              </p>
+            </div>
+          </div>
+
+          {/* TABLAS COMPARATIVAS DE VALORES OFICIALES: VETTI vs DSC */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            {/* TABLA 1: VETTI SMART INALÁMBRICA */}
+            <div className="bg-[#09152a] border border-blue-800/60 rounded-3xl p-5 sm:p-6 shadow-xl relative overflow-hidden flex flex-col justify-between">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 blur-3xl pointer-events-none rounded-full" />
+              <div>
+                <div className="flex items-center justify-between pb-3 border-b border-blue-900/40">
+                  <div className="flex items-center gap-2.5">
+                    <span className="p-2 rounded-xl bg-blue-500/20 text-blue-300 border border-blue-500/30 font-black text-xs">
+                      VETTI
+                    </span>
+                    <div>
+                      <h3 className="text-base font-black text-white">Tabla Oficial VETTI Smart</h3>
+                      <span className="text-[11px] text-blue-300 font-medium">Inalámbrica de Alta Gama · App NT CLICK</span>
+                    </div>
+                  </div>
+                  <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                    Propiedad 100% Cliente
+                  </span>
+                </div>
+
+                <div className="mt-4 space-y-2.5 text-xs">
+                  <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800/70 flex justify-between items-center">
+                    <div>
+                      <strong className="text-white block">Pack Base VETTI Smart (Kit Inicial)</strong>
+                      <span className="text-[11px] text-slate-400">1 Hub WiFi/4G + 1 PIR + 1 Magnético + 2 Controles + Sirena</span>
+                    </div>
+                    <div className="text-right">
+                      <span className="font-mono font-black text-emerald-400 block">$0 Instalación</span>
+                      <span className="text-[10px] text-slate-400">Plan 0,9 UF + IVA/mes</span>
+                    </div>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800/70 flex justify-between items-center">
+                    <div>
+                      <span className="text-slate-200 font-semibold block">Sensor Movimiento PIR Antimascotas Vetti</span>
+                      <span className="text-[10px] text-slate-400">Inalámbrico adicional (dormitorio, living, pasillo)</span>
+                    </div>
+                    <span className="font-mono font-black text-white text-sm bg-blue-950/80 px-2.5 py-1 rounded-lg border border-blue-800/50">
+                      $24.900 CLP <span className="text-[10px] text-slate-400 font-normal">+ IVA</span>
+                    </span>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800/70 flex justify-between items-center">
+                    <div>
+                      <span className="text-slate-200 font-semibold block">Contacto Magnético Puerta/Ventana Vetti</span>
+                      <span className="text-[10px] text-slate-400">Inalámbrico adicional (puerta acceso, cocina, terraza)</span>
+                    </div>
+                    <span className="font-mono font-black text-white text-sm bg-blue-950/80 px-2.5 py-1 rounded-lg border border-blue-800/50">
+                      $19.900 CLP <span className="text-[10px] text-slate-400 font-normal">+ IVA</span>
+                    </span>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800/70 flex justify-between items-center">
+                    <div>
+                      <span className="text-slate-200 font-semibold block">Control Remoto 4 Botones con Botón SOS Vetti</span>
+                      <span className="text-[10px] text-slate-400">Llavero adicional con botón de pánico de emergencia</span>
+                    </div>
+                    <span className="font-mono font-black text-white text-sm bg-blue-950/80 px-2.5 py-1 rounded-lg border border-blue-800/50">
+                      $14.900 CLP <span className="text-[10px] text-slate-400 font-normal">+ IVA</span>
+                    </span>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800/70 flex justify-between items-center">
+                    <div>
+                      <span className="text-slate-200 font-semibold block">Sirena Exterior Baliza Estroboscópica Vetti</span>
+                      <span className="text-[10px] text-slate-400">110 dB disuasiva con luz destellante roja IP65</span>
+                    </div>
+                    <span className="font-mono font-black text-white text-sm bg-blue-950/80 px-2.5 py-1 rounded-lg border border-blue-800/50">
+                      $29.900 CLP <span className="text-[10px] text-slate-400 font-normal">+ IVA</span>
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-3 mt-3 border-t border-blue-900/40 flex justify-between items-center text-[11px] text-slate-400">
+                <span>🛡️ Protocolo Vetti 433 MHz cifrado</span>
+                <button
+                  onClick={() => { setMarcaSeleccionada('VETTI'); setCategoriaSeleccionada('Todas'); }}
+                  className="text-blue-400 hover:text-blue-300 font-semibold cursor-pointer underline"
+                >
+                  Filtrar productos VETTI →
+                </button>
+              </div>
+            </div>
+
+            {/* TABLA 2: DSC POWERSERIES CABLEADA / MIGRACIÓN ADT */}
+            <div className="bg-[#09152a] border border-purple-800/60 rounded-3xl p-5 sm:p-6 shadow-xl relative overflow-hidden flex flex-col justify-between">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/10 blur-3xl pointer-events-none rounded-full" />
+              <div>
+                <div className="flex items-center justify-between pb-3 border-b border-purple-900/40">
+                  <div className="flex items-center gap-2.5">
+                    <span className="p-2 rounded-xl bg-purple-500/20 text-purple-300 border border-purple-500/30 font-black text-xs">
+                      DSC
+                    </span>
+                    <div>
+                      <h3 className="text-base font-black text-white">Tabla Oficial DSC (PowerSeries)</h3>
+                      <span className="text-[11px] text-purple-300 font-medium">Cableada Comercial / Híbrida · Migración ADT</span>
+                    </div>
+                  </div>
+                  <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                    Ahorro &gt; $350.000/año
+                  </span>
+                </div>
+
+                <div className="mt-4 space-y-2.5 text-xs">
+                  <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800/70 flex justify-between items-center">
+                    <div>
+                      <strong className="text-white block">Reprogramación y Migración Panel ADT a Central GAMA</strong>
+                      <span className="text-[11px] text-slate-400">Costo $0 de cambio conservando todos tus sensores existentes</span>
+                    </div>
+                    <div className="text-right">
+                      <span className="font-mono font-black text-emerald-400 block">$0 Costo Técnico</span>
+                      <span className="text-[10px] text-slate-400">Monitoreo 0,9 UF + IVA/mes</span>
+                    </div>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800/70 flex justify-between items-center">
+                    <div>
+                      <span className="text-slate-200 font-semibold block">Kit Central DSC PC1832 Cableada</span>
+                      <span className="text-[10px] text-slate-400">Gabinete + placa 8-32 zonas + teclado LED + batería + transformador</span>
+                    </div>
+                    <span className="font-mono font-black text-white text-sm bg-purple-950/80 px-2.5 py-1 rounded-lg border border-purple-800/50">
+                      $189.900 CLP <span className="text-[10px] text-slate-400 font-normal">+ IVA</span>
+                    </span>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800/70 flex justify-between items-center">
+                    <div>
+                      <span className="text-slate-200 font-semibold block">Sensor de Movimiento PIR DSC Cableado</span>
+                      <span className="text-[10px] text-slate-400">Infrarrojo cableado de alta inmunidad antimascotas 25 kg</span>
+                    </div>
+                    <span className="font-mono font-black text-white text-sm bg-purple-950/80 px-2.5 py-1 rounded-lg border border-purple-800/50">
+                      $19.900 CLP <span className="text-[10px] text-slate-400 font-normal">+ IVA</span>
+                    </span>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800/70 flex justify-between items-center">
+                    <div>
+                      <span className="text-slate-200 font-semibold block">Contacto Magnético Cableado DSC</span>
+                      <span className="text-[10px] text-slate-400">Magnético embutido o sobrepuesto de alta duración</span>
+                    </div>
+                    <span className="font-mono font-black text-white text-sm bg-purple-950/80 px-2.5 py-1 rounded-lg border border-purple-800/50">
+                      $9.900 CLP <span className="text-[10px] text-slate-400 font-normal">+ IVA</span>
+                    </span>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800/70 flex justify-between items-center">
+                    <div>
+                      <span className="text-slate-200 font-semibold block">Comunicador 4G Universal para Panel DSC</span>
+                      <span className="text-[10px] text-slate-400">Transmisor celular multi-operador para monitoreo 24/7 sin cables</span>
+                    </div>
+                    <span className="font-mono font-black text-white text-sm bg-purple-950/80 px-2.5 py-1 rounded-lg border border-purple-800/50">
+                      $59.900 CLP <span className="text-[10px] text-slate-400 font-normal">+ IVA</span>
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-3 mt-3 border-t border-purple-900/40 flex justify-between items-center text-[11px] text-slate-400">
+                <span>🛡️ Grado 2 Industrial DSC PowerSeries</span>
+                <button
+                  onClick={() => { setMarcaSeleccionada('DSC'); setCategoriaSeleccionada('Todas'); }}
+                  className="text-purple-400 hover:text-purple-300 font-semibold cursor-pointer underline"
+                >
+                  Filtrar productos DSC →
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Barra de control y filtros del Catálogo */}
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 bg-[#09152a] p-4 rounded-2xl border border-blue-900/40">
             <div className="flex flex-wrap items-center gap-2 flex-1">
               <div className="relative flex-1 min-w-[200px]">
@@ -423,6 +732,23 @@ export default function EntrenamientoBotModule() {
                   onChange={(e) => setBusquedaProducto(e.target.value)}
                   className="w-full bg-slate-900/80 border border-slate-700/80 rounded-xl pl-10 pr-4 py-2 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-blue-500"
                 />
+              </div>
+
+              {/* Selector de Marca Rápido */}
+              <div className="flex items-center gap-1 bg-slate-950/60 p-1 rounded-xl border border-slate-800">
+                {(['Todas', 'VETTI', 'DSC', 'CCTV'] as const).map(m => (
+                  <button
+                    key={m}
+                    onClick={() => setMarcaSeleccionada(m)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                      marcaSeleccionada === m
+                        ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    {m === 'Todas' ? 'Todas' : m === 'VETTI' ? '🏷️ VETTI' : m === 'DSC' ? '🛡️ DSC' : '📹 CCTV'}
+                  </button>
+                ))}
               </div>
 
               {/* Selector de categoría */}
@@ -449,9 +775,10 @@ export default function EntrenamientoBotModule() {
                   id: 'prod-' + Date.now(),
                   nombre: '',
                   descripcion: '',
-                  precio: 35000,
-                  precio_uf: '0,9 UF + IVA mensual',
-                  categoria: 'Alarmas Inteligentes',
+                  precio: 24900,
+                  precio_uf: '',
+                  categoria: 'VETTI (Inalámbrica)',
+                  marca: 'VETTI',
                   palabras_clave: [],
                   incluye: [],
                   no_incluye: [],
@@ -475,9 +802,20 @@ export default function EntrenamientoBotModule() {
               >
                 <div className="space-y-3">
                   <div className="flex items-start justify-between gap-2">
-                    <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-blue-950 text-blue-300 border border-blue-800/50 uppercase tracking-wider">
-                      {item.categoria}
-                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-blue-950 text-blue-300 border border-blue-800/50 uppercase tracking-wider">
+                        {item.categoria}
+                      </span>
+                      {item.marca && (
+                        <span className={`px-2 py-0.5 rounded-md text-[10px] font-extrabold font-mono border ${
+                          item.marca === 'VETTI' ? 'bg-sky-500/15 border-sky-500/40 text-sky-300' :
+                          item.marca === 'DSC' ? 'bg-purple-500/15 border-purple-500/40 text-purple-300' :
+                          'bg-slate-800 border-slate-700 text-slate-300'
+                        }`}>
+                          {item.marca}
+                        </span>
+                      )}
+                    </div>
                     <div className="flex items-center gap-1.5">
                       <button
                         onClick={() => {
@@ -515,13 +853,15 @@ export default function EntrenamientoBotModule() {
 
                   <div className="bg-slate-950/60 p-3 rounded-xl border border-slate-800/60 space-y-1">
                     <div className="flex items-center justify-between text-xs">
-                      <span className="text-slate-400">Valor UF:</span>
-                      <span className="font-bold text-emerald-400">{item.precio_uf || 'A convenir'}</span>
+                      <span className="text-slate-400">Precio CLP:</span>
+                      <span className="font-mono font-bold text-white text-sm">
+                        {item.precio > 0 ? `$${item.precio.toLocaleString('es-CL')} CLP` : '$0 (Bonificado)'}
+                      </span>
                     </div>
-                    {item.precio > 0 && (
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-slate-400">Precio CLP:</span>
-                        <span className="font-mono text-slate-300">${item.precio.toLocaleString('es-CL')}</span>
+                    {item.precio_uf && (
+                      <div className="flex items-center justify-between text-[11px] pt-1 border-t border-slate-800/60">
+                        <span className="text-slate-400">Valor UF / Plan:</span>
+                        <span className="font-bold text-emerald-400">{item.precio_uf}</span>
                       </div>
                     )}
                   </div>
@@ -549,7 +889,7 @@ export default function EntrenamientoBotModule() {
                 <div className="pt-4 mt-4 border-t border-slate-800/60 flex items-center justify-between text-[11px] text-slate-400">
                   <span className="flex items-center gap-1">
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>Activo en WhatsApp</span>
+                    <span>Activo en Bot</span>
                   </span>
                   <span className="font-mono text-[10px] text-slate-500">{item.id}</span>
                 </div>
@@ -1285,6 +1625,264 @@ export default function EntrenamientoBotModule() {
         </div>
       )}
 
+      {/* ─────────────────────────────────────────────────────────────
+          TAB 7: PROSPECTOS EN VIVO (LEADS DE WHATSAPP, META & WEB)
+         ───────────────────────────────────────────────────────────── */}
+      {activeTab === 'leads' && (
+        <div className="space-y-6 animate-in fade-in duration-200">
+          {/* Header con estadísticas */}
+          <div className="bg-[#09152a] p-5 sm:p-6 rounded-3xl border border-blue-900/40 shadow-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse" />
+                <span className="text-xs font-mono font-bold text-amber-400 uppercase tracking-wider">RADAR DE OPORTUNIDADES SALES-GAMA</span>
+              </div>
+              <h2 className="text-xl sm:text-2xl font-black text-white mt-1">Prospectos Capturados en Vivo</h2>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Contactos comerciales filtrados automáticamente por el bot desde WhatsApp, Instagram y la Web.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <button
+                onClick={fetchLeads}
+                disabled={loadingLeads}
+                className="py-2 px-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-xs font-semibold text-slate-300 flex items-center gap-2 transition cursor-pointer"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${loadingLeads ? 'animate-spin' : ''}`} />
+                <span>Actualizar</span>
+              </button>
+              <button
+                onClick={handleExportLeadsCSV}
+                className="py-2 px-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold flex items-center gap-2 transition cursor-pointer shadow-lg shadow-blue-950"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>Exportar CSV</span>
+              </button>
+            </div>
+          </div>
+
+          {/* KPI Strip */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="bg-[#09152a] border border-blue-900/40 p-4 rounded-2xl">
+              <span className="text-[11px] text-slate-400 block font-medium">Total Prospectos</span>
+              <span className="text-2xl font-black text-white">{leadsList.length}</span>
+            </div>
+            <div className="bg-[#09152a] border border-amber-900/40 p-4 rounded-2xl">
+              <span className="text-[11px] text-amber-300 block font-medium">🔥 Calientes (Con Teléfono)</span>
+              <span className="text-2xl font-black text-amber-400">
+                {leadsList.filter(l => l.estado === 'caliente' || Boolean(l.telefono)).length}
+              </span>
+            </div>
+            <div className="bg-[#09152a] border border-blue-900/40 p-4 rounded-2xl">
+              <span className="text-[11px] text-blue-300 block font-medium">Nuevos Sin Atender</span>
+              <span className="text-2xl font-black text-blue-400">
+                {leadsList.filter(l => l.estado === 'nuevo').length}
+              </span>
+            </div>
+            <div className="bg-[#09152a] border border-emerald-900/40 p-4 rounded-2xl">
+              <span className="text-[11px] text-emerald-300 block font-medium">Derivados a Ejecutivo</span>
+              <span className="text-2xl font-black text-emerald-400">
+                {leadsList.filter(l => l.estado === 'derivado').length}
+              </span>
+            </div>
+          </div>
+
+          {/* Filtros de Leads */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-[#09152a] p-3.5 rounded-2xl border border-blue-900/40">
+            <div className="relative flex-1 min-w-[200px]">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
+              <input
+                type="text"
+                placeholder="Buscar por nombre, teléfono, comuna..."
+                value={busquedaLead}
+                onChange={(e) => setBusquedaLead(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+              />
+            </div>
+
+            <div className="flex items-center gap-1.5 overflow-x-auto">
+              {(['todos', 'caliente', 'nuevo', 'derivado', 'cerrado'] as const).map(est => (
+                <button
+                  key={est}
+                  onClick={() => setFiltroEstadoLead(est)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition cursor-pointer ${
+                    filtroEstadoLead === est
+                      ? 'bg-amber-600 text-white shadow'
+                      : 'bg-slate-950 text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  {est === 'todos' ? 'Todos' : est === 'caliente' ? '🔥 Calientes' : est.charAt(0).toUpperCase() + est.slice(1)}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Tabla de Leads */}
+          <div className="bg-[#09152a] border border-blue-900/40 rounded-3xl overflow-hidden shadow-xl">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="bg-slate-950/80 text-slate-400 border-b border-blue-900/40 uppercase text-[10px] tracking-wider font-bold">
+                    <th className="p-3.5">Fecha</th>
+                    <th className="p-3.5">Contacto / Nombre</th>
+                    <th className="p-3.5">Comuna / Ubicación</th>
+                    <th className="p-3.5">Resumen de Interés</th>
+                    <th className="p-3.5 text-center">Estado</th>
+                    <th className="p-3.5 text-right">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800/60 text-slate-300">
+                  {leadsList
+                    .filter(l => {
+                      const matchEst = filtroEstadoLead === 'todos' || l.estado === filtroEstadoLead
+                      const q = busquedaLead.toLowerCase()
+                      const matchQ = !q || (l.nombre && l.nombre.toLowerCase().includes(q)) || (l.telefono && l.telefono.includes(q)) || (l.comuna && l.comuna.toLowerCase().includes(q))
+                      return matchEst && matchQ
+                    })
+                    .map(lead => {
+                      const telLimpio = (lead.telefono || '').replace(/\D/g, '')
+                      const waUrl = telLimpio ? `https://wa.me/${telLimpio.startsWith('56') ? telLimpio : '56' + telLimpio}` : null
+                      return (
+                        <tr key={lead.id} className="hover:bg-slate-900/60 transition-colors">
+                          <td className="p-3.5 font-mono text-[11px] text-slate-400 whitespace-nowrap">
+                            {new Date(lead.created_at).toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                          </td>
+                          <td className="p-3.5">
+                            <strong className="text-white block">{lead.nombre || 'Interesado Anónimo'}</strong>
+                            <span className="font-mono text-emerald-400 text-[11px]">{lead.telefono || 'Sin teléfono'}</span>
+                          </td>
+                          <td className="p-3.5">
+                            <span className="text-slate-200 font-semibold">{lead.comuna || 'Región Metropolitana / V Región'}</span>
+                            {lead.direccion && <span className="block text-[11px] text-slate-500 truncate max-w-[200px]">{lead.direccion}</span>}
+                          </td>
+                          <td className="p-3.5 max-w-xs">
+                            <p className="line-clamp-2 text-slate-300 text-[11px] leading-relaxed">
+                              {lead.resumen || 'Consulta comercial por sistema de alarma o monitoreo 24/7.'}
+                            </p>
+                          </td>
+                          <td className="p-3.5 text-center">
+                            <select
+                              value={lead.estado}
+                              onChange={(e) => handleChangeStatusLead(lead.id, e.target.value)}
+                              className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase font-mono border cursor-pointer ${
+                                lead.estado === 'caliente' ? 'bg-amber-500/20 text-amber-300 border-amber-500/40' :
+                                lead.estado === 'nuevo' ? 'bg-blue-500/20 text-blue-300 border-blue-500/40' :
+                                lead.estado === 'derivado' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' :
+                                'bg-slate-800 text-slate-400 border-slate-700'
+                              }`}
+                            >
+                              <option value="nuevo">Nuevo</option>
+                              <option value="caliente">🔥 Caliente</option>
+                              <option value="derivado">Derivado</option>
+                              <option value="cerrado">Cerrado</option>
+                            </select>
+                          </td>
+                          <td className="p-3.5 text-right whitespace-nowrap">
+                            <div className="flex items-center justify-end gap-1.5">
+                              {waUrl && (
+                                <a
+                                  href={waUrl}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="p-1.5 rounded-lg bg-emerald-600/20 hover:bg-emerald-600 text-emerald-300 hover:text-white border border-emerald-500/40 transition cursor-pointer"
+                                  title="Contactar por WhatsApp"
+                                >
+                                  <Phone className="w-3.5 h-3.5" />
+                                </a>
+                              )}
+                              <button
+                                onClick={() => handleOpenChatLead(lead)}
+                                className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-blue-600 text-slate-200 hover:text-white font-semibold text-[11px] transition flex items-center gap-1 cursor-pointer"
+                              >
+                                <MessageSquare className="w-3 h-3" />
+                                <span>Ver Chat</span>
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  {leadsList.length === 0 && (
+                    <tr>
+                      <td colSpan={6} className="p-8 text-center text-slate-500 text-xs">
+                        No hay prospectos capturados todavía. Las consultas recibidas por WhatsApp, Instagram o la Web aparecerán aquí al instante.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Modal / Drawer de Chat del Lead */}
+          {selectedLead && (
+            <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+              <div className="bg-[#09152a] border border-blue-900/60 rounded-3xl max-w-2xl w-full p-6 shadow-2xl space-y-4 animate-in zoom-in-95 duration-150 max-h-[85vh] flex flex-col">
+                <div className="flex items-center justify-between pb-3 border-b border-blue-900/40">
+                  <div>
+                    <h3 className="text-base font-bold text-white flex items-center gap-2">
+                      <MessageSquare className="w-4 h-4 text-blue-400" />
+                      <span>Transcripción de Chat: {selectedLead.nombre || 'Cliente'}</span>
+                    </h3>
+                    <span className="text-xs text-emerald-400 font-mono">{selectedLead.telefono || 'Sin teléfono'} · {selectedLead.comuna || 'Sin comuna'}</span>
+                  </div>
+                  <button onClick={() => setSelectedLead(null)} className="p-1 text-slate-400 hover:text-white cursor-pointer">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <div className="flex-1 overflow-y-auto space-y-3 p-3 bg-slate-950/70 rounded-2xl border border-slate-800 text-xs">
+                  {loadingChatLead ? (
+                    <div className="py-8 text-center text-slate-400 flex items-center justify-center gap-2">
+                      <RefreshCw className="w-4 h-4 animate-spin text-blue-400" />
+                      <span>Cargando transcripción de mensajes...</span>
+                    </div>
+                  ) : chatMessagesLead.length === 0 ? (
+                    <p className="text-center py-6 text-slate-500">No hay historial de mensajes disponible para esta sesión.</p>
+                  ) : (
+                    chatMessagesLead.map((m, idx) => (
+                      <div
+                        key={idx}
+                        className={`flex flex-col ${m.role === 'user' ? 'items-end' : 'items-start'}`}
+                      >
+                        <div
+                          className={`max-w-[85%] p-3 rounded-2xl ${
+                            m.role === 'user'
+                              ? 'bg-blue-600 text-white rounded-br-none'
+                              : 'bg-slate-900 border border-slate-800 text-slate-200 rounded-bl-none'
+                          }`}
+                        >
+                          <span className="text-[10px] opacity-75 font-mono block mb-1">
+                            {m.role === 'user' ? '👤 Cliente' : '🛡️ Bot GAMA'}
+                          </span>
+                          <p className="whitespace-pre-wrap leading-relaxed">{m.content}</p>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                <div className="flex items-center justify-between pt-2 border-t border-blue-900/40">
+                  <span className="text-[11px] text-slate-500">{chatMessagesLead.length} mensajes intercambiados</span>
+                  <button
+                    onClick={() => {
+                      const transcript = chatMessagesLead.map(m => `[${m.role === 'user' ? 'CLIENTE' : 'BOT GAMA'}]: ${m.content}`).join('\n\n')
+                      navigator.clipboard.writeText(transcript)
+                      notify('success', 'Transcripción copiada al portapapeles.')
+                    }}
+                    className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300 flex items-center gap-2 transition cursor-pointer"
+                  >
+                    <Copy className="w-3.5 h-3.5" />
+                    <span>Copiar Chat</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
 
       {/* ─────────────────────────────────────────────────────────────
           MODAL: EDITAR / CREAR PRODUCTO
@@ -1311,12 +1909,25 @@ export default function EntrenamientoBotModule() {
                   type="text"
                   value={editingProducto.nombre}
                   onChange={(e) => setEditingProducto({ ...editingProducto, nombre: e.target.value })}
-                  placeholder="Ej: Pack Vetti Smart Inalámbrico"
+                  placeholder="Ej: Sensor Movimiento PIR Antimascotas Vetti"
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-slate-300 font-semibold block mb-1">Marca del Hardware</label>
+                  <select
+                    value={editingProducto.marca || 'GENERAL'}
+                    onChange={(e) => setEditingProducto({ ...editingProducto, marca: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white font-bold text-blue-300"
+                  >
+                    <option value="VETTI">VETTI (Inalámbrica)</option>
+                    <option value="DSC">DSC (Cableada / PowerSeries)</option>
+                    <option value="CCTV">CCTV (Cámaras)</option>
+                    <option value="GENERAL">GENERAL</option>
+                  </select>
+                </div>
                 <div>
                   <label className="text-slate-300 font-semibold block mb-1">Categoría</label>
                   <select
@@ -1327,26 +1938,31 @@ export default function EntrenamientoBotModule() {
                     {precios.categorias.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-slate-300 font-semibold block mb-1">Valor en UF</label>
+                  <label className="text-slate-300 font-semibold block mb-1">Precio en CLP (Hardware / Accesorio)</label>
+                  <input
+                    type="number"
+                    value={editingProducto.precio || 0}
+                    onChange={(e) => setEditingProducto({ ...editingProducto, precio: parseInt(e.target.value) || 0 })}
+                    placeholder="24900"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 font-mono font-bold text-white"
+                  />
+                  <span className="text-[10px] text-slate-500 mt-1 block">Los accesorios se cotizan 100% en CLP</span>
+                </div>
+                <div>
+                  <label className="text-slate-300 font-semibold block mb-1">Valor en UF (Solo Monitoreo / Planes)</label>
                   <input
                     type="text"
                     value={editingProducto.precio_uf || ''}
                     onChange={(e) => setEditingProducto({ ...editingProducto, precio_uf: e.target.value })}
                     placeholder="Ej: 0,9 UF + IVA mensual"
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-emerald-400 font-bold"
                   />
+                  <span className="text-[10px] text-slate-500 mt-1 block">Dejar vacío si es accesorio de pago único</span>
                 </div>
-              </div>
-
-              <div>
-                <label className="text-slate-300 font-semibold block mb-1">Precio Referencial CLP</label>
-                <input
-                  type="number"
-                  value={editingProducto.precio || 0}
-                  onChange={(e) => setEditingProducto({ ...editingProducto, precio: parseInt(e.target.value) || 0 })}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"
-                />
               </div>
 
               <div>
