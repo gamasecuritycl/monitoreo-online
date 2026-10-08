@@ -77,7 +77,7 @@ REGLAS DE ORO OBLIGATORIAS:
 
 2. POLÍTICA DE DERIVACIÓN A WHATSAPP:
    - Solo deriva a WhatsApp si el cliente insiste explícitamente en hablar con una persona por teléfono, o como invitación opcional y cordial al final del mensaje:
-     "Si deseas agendar tu evaluación técnica gratuita en terreno ($0) o que te preparemos una propuesta formal en PDF, puedes indicarme tu WhatsApp por aquí o escribirnos directamente a nuestro enlace oficial: https://wa.me/56991016912".
+     "Si deseas agendar tu evaluación técnica gratuita en terreno ($0) o que te preparemos una propuesta formal en PDF, puedes indicarme tu WhatsApp por aquí o escribirnos directamente a nuestro enlace oficial: https://wa.me/56964364943".
    - NUNCA uses la derivación a WhatsApp como una salida fácil para no dar la información.
 
 3. EVALUACIÓN EN TERRENO GRATUITA:
@@ -129,7 +129,7 @@ export function buildSystemPrompt(config: Config, preciosContext: string): strin
   }
 
   systemPrompt += `\n\n--- ENLACE OFICIAL DE WHATSAPP ---
-Enlace para derivación a ejecutivo humano: ${botConfig.waUrl || 'https://wa.me/56991016912'}`;
+Enlace para derivación a ejecutivo humano: ${botConfig.waUrl || 'https://wa.me/56964364943'}`;
 
   return systemPrompt;
 }
@@ -162,7 +162,7 @@ function generateSmartFallback(userMessage: string, history: ChatMessage[]): str
   if (msg.includes('humano') || msg.includes('ejecutivo') || msg.includes('persona') || msg.includes('asesor')) {
     const previousHumanRequest = history.some(h => /humano|ejecutivo|persona/i.test(h.content));
     if (previousHumanRequest) {
-      return '¡Comprendo perfectamente! Te derivo de inmediato con uno de nuestros ejecutivos comerciales directos vía WhatsApp:\n\n👉 https://wa.me/56991016912\n\n¡Un asesor te atenderá al instante!';
+      return '¡Comprendo perfectamente! Te derivo de inmediato con uno de nuestros ejecutivos comerciales directos vía WhatsApp:\n\n👉 https://wa.me/56964364943\n\n¡Un asesor te atenderá al instante!';
     }
     return 'Puedo dimensionar tu sistema, entregarte valores y resolver todas tus dudas de inmediato sin tiempos de espera. ¿Qué tipo de propiedad necesitas proteger (casa, departamento, negocio o parcela)?\n\n(Si de todas formas prefieres atención telefónica, avísame y te derivo al WhatsApp de guardia).';
   }
@@ -194,7 +194,7 @@ export async function getAssistantResponse(
       rateLimit: 100,
       timeoutMin: 30,
       despedida: '¡Gracias por contactar a GAMA Seguridad!',
-      waUrl: 'https://wa.me/56991016912',
+      waUrl: 'https://wa.me/56964364943',
       model: 'gemini-2.5-flash',
       temperature: 0.7,
       topP: 0.9,
@@ -336,7 +336,7 @@ export async function generateSalesResponseText(
       rateLimit: 100,
       timeoutMin: 30,
       despedida: '¡Gracias por contactar a GAMA Seguridad!',
-      waUrl: 'https://wa.me/56991016912',
+      waUrl: 'https://wa.me/56964364943',
       model: 'gemini-2.5-flash',
       temperature: 0.7,
       topP: 0.9,

@@ -5,7 +5,7 @@ import { SalesGamaAvatar } from "@/components/SalesGamaAvatar";
 import { useSalesGama } from "@/hooks/useSalesGama";
 import type { ChatMessage } from "@/lib/sales-gama/types";
 
-const WA_URL = "https://wa.me/56991016912";
+const WA_URL = "https://wa.me/56964364943";
 
 function formatTime(date: Date = new Date()): string {
   return date.toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" });

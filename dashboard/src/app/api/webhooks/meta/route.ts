@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getMetaIntegrationConfig, upsertLead, getLeadBySession, getLeadWithMessages, appendMessage } from '@/lib/sales-gama/supabase';
+import { getMetaIntegrationConfig, upsertLead, getLeadBySession, getLeadWithMessages, appendMessage, getConfig } from '@/lib/sales-gama/supabase';
 import { generateSalesResponseText } from '@/lib/sales-gama/assistant';
 import { extractLeadData } from '@/lib/sales-gama/extractLead';
 import { notificarLeadCalienteWhatsApp } from '@/lib/sales-gama/notifyLead';
@@ -161,15 +161,31 @@ export async function POST(req: NextRequest) {
           }).catch((err) => console.warn('[Meta Webhook] Error al notificar lead a WhatsApp:', err));
         }
 
-        // 2. Cargar historial previo de la conversación para dar coherencia
+        // 2. Cargar historial previo de la conversación respetando tiempo de inactividad (timeout)
         let history: ChatMessage[] = [];
         if (savedLead?.id) {
+          const botConfig = (await getConfig().catch(() => null))?.config;
+          const timeoutMin = botConfig?.timeoutMin ?? 30;
+          const timeoutMs = timeoutMin * 60 * 1000;
+
           const leadDataWithMsg = await getLeadWithMessages(savedLead.id).catch(() => null);
-          if (leadDataWithMsg?.messages) {
-            history = leadDataWithMsg.messages.slice(-8).map((m) => ({
-              role: m.role === 'assistant' ? ('assistant' as const) : ('user' as const),
-              content: m.content,
-            }));
+          const allMsgs = leadDataWithMsg?.messages || [];
+          const prevMsgs = allMsgs.slice(0, -1);
+          const lastPrevMsg = prevMsgs[prevMsgs.length - 1];
+
+          if (lastPrevMsg) {
+            const diffMs = Date.now() - new Date(lastPrevMsg.created_at).getTime();
+            if (diffMs <= timeoutMs) {
+              history = prevMsgs
+                .filter((m) => Date.now() - new Date(m.created_at).getTime() <= timeoutMs)
+                .slice(-8)
+                .map((m) => ({
+                  role: m.role === 'assistant' ? ('assistant' as const) : ('user' as const),
+                  content: m.content,
+                }));
+            } else {
+              console.log(`[Meta Webhook] Sesión anterior expirada para ${senderId} (${Math.round(diffMs / 60000)} min > ${timeoutMin} min). Conversación fresca.`);
+            }
           }
         }
 

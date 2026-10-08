@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { generateSalesResponseText } from '@/lib/sales-gama/assistant';
-import { upsertLead, appendMessage, supabaseAdmin } from '@/lib/sales-gama/supabase';
+import { upsertLead, appendMessage, supabaseAdmin, getConfig } from '@/lib/sales-gama/supabase';
 import type { ChatMessage } from '@/lib/sales-gama/types';
 
 // Cache en memoria para deduplicación instantánea de wamid (evita respuestas dobles en reintentos de Meta)
@@ -111,22 +111,35 @@ export async function POST(req: Request) {
       resumen: 'Contacto iniciado vía WhatsApp Ventas Oficial',
     });
 
-    // 2. Obtener historial reciente para memoria de la conversación
+    // 2. Obtener historial reciente para memoria respetando tiempo de inactividad (timeout)
     let chatHistory: ChatMessage[] = [];
     if (lead?.id) {
       try {
+        const botConfig = (await getConfig().catch(() => null))?.config;
+        const timeoutMin = botConfig?.timeoutMin ?? 30;
+        const timeoutMs = timeoutMin * 60 * 1000;
+
         const { data: recentMsgs } = await supabaseAdmin
           .from('lead_messages')
-          .select('role, content')
+          .select('role, content, created_at')
           .eq('lead_id', lead.id)
           .order('created_at', { ascending: false })
           .limit(8);
 
         if (recentMsgs && recentMsgs.length > 0) {
-          chatHistory = recentMsgs.reverse().map(m => ({
-            role: m.role as 'user' | 'assistant',
-            content: m.content,
-          }));
+          const mostRecent = recentMsgs[0];
+          const diffMs = Date.now() - new Date(mostRecent.created_at).getTime();
+          if (diffMs <= timeoutMs) {
+            chatHistory = recentMsgs
+              .filter((m) => Date.now() - new Date(m.created_at).getTime() <= timeoutMs)
+              .reverse()
+              .map((m) => ({
+                role: m.role as 'user' | 'assistant',
+                content: m.content,
+              }));
+          } else {
+            console.log(`[WhatsApp Ventas] Sesión anterior expirada para ${from} (${Math.round(diffMs / 60000)} min > ${timeoutMin} min). Conversación fresca.`);
+          }
         }
       } catch (err) {
         console.warn('[WhatsApp Ventas] Error leyendo historial previo:', err);

@@ -40,7 +40,7 @@ export const BotConfigSchema = z.object({
   rateLimit: z.number().int().min(1, 'Rate limit mínimo es 1').max(1000, 'Rate limit máximo es 1000').optional().default(100),
   timeoutMin: z.number().int().min(1, 'Timeout mínimo es 1 minuto').max(1440, 'Timeout máximo es 1440 minutos').optional().default(30),
   despedida: z.string().min(1, 'Mensaje de despedida es requerido').optional().default('¡Gracias por contactar a GAMA Seguridad! Te esperamos.'),
-  waUrl: z.string().optional().default('https://wa.me/56991016912'),
+  waUrl: z.string().optional().default('https://wa.me/56964364943'),
   model: z.string().optional().default('gemini-2.0-flash'),
   temperature: z.number().min(0, 'Temperatura mínima es 0').max(1, 'Temperatura máxima es 1').optional().default(0.7),
   topP: z.number().min(0, 'Top-p mínimo es 0').max(1, 'Top-p máximo es 1').optional().default(0.9),

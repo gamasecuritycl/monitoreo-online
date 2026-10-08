@@ -7,7 +7,7 @@ export const DEFAULT_META_CONFIG: MetaIntegrationConfig = {
   pageAccessToken: '',
   instagramAccountId: '',
   pageId: '',
-  telefonoDerivacion: '56991016912',
+  telefonoDerivacion: '56964364943',
   autoResponderInstagram: true,
   autoResponderMessenger: true,
 };
@@ -430,7 +430,7 @@ export async function getConfig(): Promise<Config | null> {
     rateLimit: 100,
     timeoutMin: 30,
     despedida: '¡Gracias por contactar a GAMA Seguridad! Te esperamos.',
-    waUrl: 'https://wa.me/56991016912',
+    waUrl: 'https://wa.me/56964364943',
     model: 'gemini-1.5-flash',
     temperature: 0.7,
     topP: 0.9,
