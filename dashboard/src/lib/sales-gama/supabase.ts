@@ -356,9 +356,30 @@ export async function setConfig(
   value: unknown
 ): Promise<boolean> {
   try {
+    // Si la clave es un sub-objeto (promociones, faqs, meta_integration),
+    // guardarlo dentro de la fila única 'config' para respetar la restricción check de PostgreSQL
+    if (key === 'promociones' || key === 'faqs' || key === 'meta_integration') {
+      const { data: current } = await supabaseAdmin
+        .from('config_sales_gama')
+        .select('value')
+        .eq('key', 'config')
+        .single();
+
+      const existingConfig = current?.value && typeof current.value === 'object' ? current.value : {};
+      const updatedConfig = {
+        ...existingConfig,
+        [key]: value,
+      };
+
+      const { error } = await supabaseAdmin
+        .from('config_sales_gama')
+        .upsert({ key: 'config', value: updatedConfig, updated_at: new Date().toISOString() }, { onConflict: 'key' });
+      return !error;
+    }
+
     let finalValue = value;
 
-    if (key === 'config' || key === 'meta_integration') {
+    if (key === 'config') {
       const { data: current } = await supabaseAdmin
         .from('config_sales_gama')
         .select('value')
@@ -386,14 +407,32 @@ export async function setConfig(
 
 export async function getMetaIntegrationConfig(): Promise<MetaIntegrationConfig> {
   try {
+    // 1. Intentar leer desde el objeto 'config'
     const { data, error } = await supabaseAdmin
+      .from('config_sales_gama')
+      .select('value')
+      .eq('key', 'config')
+      .single();
+
+    if (!error && data?.value) {
+      const val = typeof data.value === 'string' ? JSON.parse(data.value) : data.value;
+      if (val?.meta_integration) {
+        return {
+          ...DEFAULT_META_CONFIG,
+          ...val.meta_integration,
+        };
+      }
+    }
+
+    // 2. Fallback a clave directa si existe
+    const { data: directData } = await supabaseAdmin
       .from('config_sales_gama')
       .select('value')
       .eq('key', 'meta_integration')
       .single();
 
-    if (!error && data?.value) {
-      const val = typeof data.value === 'string' ? JSON.parse(data.value) : data.value;
+    if (directData?.value) {
+      const val = typeof directData.value === 'string' ? JSON.parse(directData.value) : directData.value;
       return {
         ...DEFAULT_META_CONFIG,
         ...val,
@@ -453,6 +492,21 @@ export async function getPromociones(): Promise<PromocionItem[]> {
   ];
 
   try {
+    // 1. Intentar leer desde config.promociones
+    const { data: cfgData } = await supabaseAdmin
+      .from('config_sales_gama')
+      .select('value')
+      .eq('key', 'config')
+      .single();
+
+    if (cfgData?.value) {
+      const cfgVal = typeof cfgData.value === 'string' ? JSON.parse(cfgData.value) : cfgData.value;
+      if (Array.isArray(cfgVal?.promociones) && cfgVal.promociones.length > 0) {
+        return cfgVal.promociones as PromocionItem[];
+      }
+    }
+
+    // 2. Fallback a clave directa
     const { data, error } = await supabaseAdmin
       .from('config_sales_gama')
       .select('value')
@@ -517,6 +571,21 @@ export async function getFAQs(): Promise<FAQItem[]> {
   ];
 
   try {
+    // 1. Intentar leer desde config.faqs
+    const { data: cfgData } = await supabaseAdmin
+      .from('config_sales_gama')
+      .select('value')
+      .eq('key', 'config')
+      .single();
+
+    if (cfgData?.value) {
+      const cfgVal = typeof cfgData.value === 'string' ? JSON.parse(cfgData.value) : cfgData.value;
+      if (Array.isArray(cfgVal?.faqs) && cfgVal.faqs.length > 0) {
+        return cfgVal.faqs as FAQItem[];
+      }
+    }
+
+    // 2. Fallback a clave directa
     const { data, error } = await supabaseAdmin
       .from('config_sales_gama')
       .select('value')
