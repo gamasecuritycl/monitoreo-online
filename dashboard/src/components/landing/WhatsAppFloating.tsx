@@ -8,22 +8,22 @@ export default function WhatsAppFloating() {
   return (
     <aside
       aria-label="Chat de Ventas WhatsApp"
-      className="whatsapp-floating fixed bottom-6 left-4 sm:bottom-8 sm:left-6 z-[9990] flex items-center"
+      className="whatsapp-floating fixed bottom-[24px] left-[24px] z-[9990] flex items-center"
     >
       <a
         href={whatsappUrl}
         target="_blank"
         rel="noopener noreferrer"
-        aria-label="Abrir Chat de Ventas por WhatsApp al +56 9 6436 4943"
-        className="flex items-center gap-3 pl-2.5 pr-4 py-2 rounded-full bg-[#071322]/95 hover:bg-[#0c1f36] border-2 border-[#25D366] text-white shadow-[0_8px_30px_rgba(37,211,102,0.45)] hover:shadow-[0_12px_40px_rgba(37,211,102,0.7)] backdrop-blur-md transition-all duration-300 transform hover:scale-105 active:scale-95 cursor-pointer no-underline group"
+        aria-label="Abrir Chat de Ventas por WhatsApp (Solo Chat)"
+        className="flex items-center gap-2.5 pl-2.5 pr-4 h-[62px] rounded-full bg-[#071322]/95 hover:bg-[#0c1f36] border-2 border-[#25D366] text-white shadow-[0_8px_32px_rgba(37,211,102,0.45)] hover:shadow-[0_12px_40px_rgba(37,211,102,0.7)] backdrop-blur-md transition-all duration-300 transform hover:scale-105 active:scale-95 cursor-pointer no-underline group"
       >
-        {/* Contenedor del icono con pulso animado */}
-        <div className="relative w-10 h-10 shrink-0 flex items-center justify-center">
+        {/* Contenedor del icono oficial de WhatsApp con anillo de pulso */}
+        <div className="relative w-11 h-11 shrink-0 flex items-center justify-center">
           <span className="absolute inset-0 rounded-full bg-[#25D366] opacity-60 animate-ping pointer-events-none duration-1000" />
-          
+
           {/* SVG Oficial de WhatsApp con viewBox 0 0 48 48 sin distorsión */}
           <svg
-            className="w-10 h-10 drop-shadow-md shrink-0 block"
+            className="w-11 h-11 drop-shadow-md shrink-0 block"
             viewBox="0 0 48 48"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
@@ -40,20 +40,20 @@ export default function WhatsAppFloating() {
             />
           </svg>
 
-          {/* Badge rojo de notificación */}
+          {/* Badge rojo de mensaje entrante */}
           <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-500 border border-slate-950 text-white font-black text-[9px] flex items-center justify-center shadow-md animate-bounce z-20">
             1
           </span>
         </div>
 
-        {/* Texto explícito y visible: CHAT DE VENTAS */}
+        {/* Texto explícito: CHAT DE VENTAS (Solo Chat, sin número visible para evitar llamadas) */}
         <div className="flex flex-col text-left leading-tight pr-1">
-          <span className="text-[12px] font-black text-white tracking-wide uppercase flex items-center gap-1.5">
+          <span className="text-[12px] font-black text-white tracking-wide uppercase flex items-center gap-1.5 whitespace-nowrap">
             <span className="w-2 h-2 rounded-full bg-[#25D366] animate-pulse"></span>
             Chat de Ventas
           </span>
-          <span className="text-[10px] text-emerald-400 font-semibold tracking-tight">
-            +56 9 6436 4943
+          <span className="text-[10.5px] text-emerald-400 font-semibold tracking-tight whitespace-nowrap">
+            Solo Chat · Respuesta inmediata
           </span>
         </div>
       </a>
