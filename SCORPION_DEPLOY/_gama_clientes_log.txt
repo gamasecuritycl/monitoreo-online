@@ -1008,3 +1008,23 @@
 [SUPABASE ERROR] Excepción subiendo CLIENTES: HTTPSConnectionPool(host='onxwyrwmpjxtwlmjrosr.supabase.co', port=443): Max retries exceeded with url: /rest/v1/eventos_monitoreo (Caused by NameResolutionError("<urllib3.connection.HTTPSConnection object at 0x00000216E526B4D0>: Failed to resolve 'onxwyrwmpjxtwlmjrosr.supabase.co' ([Errno 11001] getaddrinfo failed)"))
 [SUPABASE ERROR] Excepción subiendo AUTORIZADOS: HTTPSConnectionPool(host='onxwyrwmpjxtwlmjrosr.supabase.co', port=443): Max retries exceeded with url: /rest/v1/eventos_monitoreo (Caused by NameResolutionError("<urllib3.connection.HTTPSConnection object at 0x00000216E56C5310>: Failed to resolve 'onxwyrwmpjxtwlmjrosr.supabase.co' ([Errno 11001] getaddrinfo failed)"))
 [SYNC WARN] Falló la subida a Supabase.
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\Users\tetor\Downloads\GENERAL.mdb
+[REPLICA SUCCESS] Replicado a: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[REPLICA SUCCESS] Replicado a: C:\SCORPION\BASES DE DATOS\GENERAL.mdb
+[SYNC] Subiendo a Supabase: 466 abonados, 914 con autorizados...
+[10:54:35] [SUPABASE] Clientes insertados/actualizados exitosamente (466 cuentas).
+[10:54:36] [SUPABASE] Personas autorizadas insertadas/actualizadas exitosamente (914 cuentas).
+[LOCAL JSON] Archivo actualizado: C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
+[LOCAL JSON] Archivo actualizado: C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
+[SYNC SUCCESS] Sincronización completada exitosamente a las 10:54:36!
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\Users\tetor\Downloads\GENERAL.mdb
+[REPLICA SUCCESS] Replicado a: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[REPLICA SUCCESS] Replicado a: C:\SCORPION\BASES DE DATOS\GENERAL.mdb
+[SYNC] Subiendo a Supabase: 466 abonados, 914 con autorizados...
+[10:55:09] [SUPABASE] Clientes insertados/actualizados exitosamente (466 cuentas).
+[10:55:10] [SUPABASE] Personas autorizadas insertadas/actualizadas exitosamente (914 cuentas).
+[LOCAL JSON] Archivo actualizado: C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
+[LOCAL JSON] Archivo actualizado: C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
+[SYNC SUCCESS] Sincronización completada exitosamente a las 10:55:10!

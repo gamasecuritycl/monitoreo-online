@@ -581,10 +581,10 @@ export default function ScorpionDashboard() {
     const n = (nombreRaw || '').toUpperCase().trim()
 
     // Ignorar cuenta 0000 / test del receptor
-    if (c === '0000' || c === '000' || c === '00000' || c.startsWith('0000') || n.includes('RECEPTOR') || c === 'RECEPTOR') return true
+    if (c === '0000' || c === '000' || c === '00000' || c.startsWith('0000') || n.includes('RECEPTOR') || c === 'RECEPTOR' || c === 'PERSONAS_AUTORIZADAS' || c.startsWith('PERSONAS_') || e.includes('AUTORIZADOS MDB')) return true
 
     if (c.startsWith('CAMARAS_DAHUA_') || c.startsWith('DAHUA_FRAME_') || c.startsWith('DAHUA_STREAM_REQ_') || c.startsWith('SNAPSHOT_') || c.startsWith('CLIP_') || c.startsWith('CONFIG_WHATSAPP_') || c.startsWith('CONFIG_APERTURAS_') || c.startsWith('CONFIG_') || c.startsWith('__')) return true
-    if (c.startsWith('ORDEN_') || c.startsWith('AUDITORIA_') || ['CLIENTES', 'CODIGOS', 'ZONAS', '__SINCRONIZADOR__', 'EMPRESAS_CONGLOMERADO', 'COTIZACIONES_DOLIBARR', 'ORDENES_TRABAJO', 'CONFIG_OPERADORES', 'CLIENTES_MAESTROS_CRM', 'CONFIG_APERTURAS_CIERRES_LISTA', 'ORDEN_EDITOR_REMOTO', 'AUDITORIA_EDITOR_REMOTO', '0000'].includes(c)) return true
+    if (c.startsWith('ORDEN_') || c.startsWith('AUDITORIA_') || ['CLIENTES', 'CODIGOS', 'ZONAS', 'PERSONAS_AUTORIZADAS', '__SINCRONIZADOR__', 'EMPRESAS_CONGLOMERADO', 'COTIZACIONES_DOLIBARR', 'ORDENES_TRABAJO', 'CONFIG_OPERADORES', 'CLIENTES_MAESTROS_CRM', 'CONFIG_APERTURAS_CIERRES_LISTA', 'ORDEN_EDITOR_REMOTO', 'AUDITORIA_EDITOR_REMOTO', '0000'].includes(c)) return true
     if (['PREMIUM', 'ELIMINACION_DAHUA_CRUD', 'GENERACION_NVR_MULTICANAL', 'FRAME_SYNC', 'NVR_DVR_FRAME_SYNC', 'CAMERA_FRAME_SYNC', 'STREAM_REQ', 'SNAPSHOT_OPERADOR', 'CLIP_VIDEO_OPERADOR', 'CONFIG_UPDATE_APERTURAS_CIERRES'].includes(e) || e.startsWith('CONFIG_UPDATE_') || e.startsWith('EDITAR_GENERAL') || e.startsWith('EDITOR REMOTO') || e.includes('EDITOR_REMOTO') || e.includes('EDITAR_GENERAL') || e.startsWith('REGISTRO_CAMBIO')) return true
 
     // Descartar 100% cualquier registro de chatbot, prospectos o configuración para que nunca aparezca en la grilla operativa
@@ -644,7 +644,7 @@ export default function ScorpionDashboard() {
         .from('eventos_monitoreo')
         .select('*')
         .lte('fecha_hora', maxFechaPermitida)
-        .not('cuenta', 'in', '(CLIENTES,CODIGOS,ZONAS,__SINCRONIZADOR__,CONFIG_OPERADORES,CLIENTES_MAESTROS_CRM,EMPRESAS_CONGLOMERADO,COTIZACIONES_DOLIBARR,ORDENES_TRABAJO,ORDEN_EDITOR_REMOTO,AUDITORIA_EDITOR_REMOTO,0000,000)')
+        .not('cuenta', 'in', '(CLIENTES,CODIGOS,ZONAS,PERSONAS_AUTORIZADAS,__SINCRONIZADOR__,CONFIG_OPERADORES,CLIENTES_MAESTROS_CRM,EMPRESAS_CONGLOMERADO,COTIZACIONES_DOLIBARR,ORDENES_TRABAJO,ORDEN_EDITOR_REMOTO,AUDITORIA_EDITOR_REMOTO,0000,000)')
         .not('cuenta', 'like', 'CAMARAS_DAHUA_%')
         .not('cuenta', 'like', 'DAHUA_FRAME_%')
         .not('cuenta', 'like', 'DAHUA_STREAM_REQ_%')
@@ -702,7 +702,7 @@ export default function ScorpionDashboard() {
           .from('eventos_monitoreo')
           .select('*')
           .lte('fecha_hora', maxFechaPermitida)
-          .not('cuenta', 'in', '(CLIENTES,CODIGOS,ZONAS,__SINCRONIZADOR__,CONFIG_OPERADORES,CLIENTES_MAESTROS_CRM,EMPRESAS_CONGLOMERADO,COTIZACIONES_DOLIBARR,ORDENES_TRABAJO,ORDEN_EDITOR_REMOTO,AUDITORIA_EDITOR_REMOTO,0000,000)')
+          .not('cuenta', 'in', '(CLIENTES,CODIGOS,ZONAS,PERSONAS_AUTORIZADAS,__SINCRONIZADOR__,CONFIG_OPERADORES,CLIENTES_MAESTROS_CRM,EMPRESAS_CONGLOMERADO,COTIZACIONES_DOLIBARR,ORDENES_TRABAJO,ORDEN_EDITOR_REMOTO,AUDITORIA_EDITOR_REMOTO,0000,000)')
           .not('cuenta', 'like', 'CAMARAS_DAHUA_%')
           .not('cuenta', 'like', 'DAHUA_FRAME_%')
           .not('cuenta', 'like', 'DAHUA_STREAM_REQ_%')

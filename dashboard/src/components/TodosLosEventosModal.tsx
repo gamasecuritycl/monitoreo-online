@@ -297,7 +297,7 @@ export default function TodosLosEventosModal({ onClose, clientesMap: propCliente
         const { data, error } = await supabase
           .from('eventos_monitoreo')
           .select('id, fecha_hora, cuenta, evento, zona, usuario, nombre_abonado')
-          .not('cuenta', 'in', '(CLIENTES,CODIGOS,ZONAS,__SINCRONIZADOR__,CONFIG_OPERADORES,CLIENTES_MAESTROS_CRM,EMPRESAS_CONGLOMERADO,COTIZACIONES_DOLIBARR,ORDENES_TRABAJO,ORDEN_EDITOR_REMOTO,AUDITORIA_EDITOR_REMOTO,0000,000)')
+          .not('cuenta', 'in', '(CLIENTES,CODIGOS,ZONAS,PERSONAS_AUTORIZADAS,__SINCRONIZADOR__,CONFIG_OPERADORES,CLIENTES_MAESTROS_CRM,EMPRESAS_CONGLOMERADO,COTIZACIONES_DOLIBARR,ORDENES_TRABAJO,ORDEN_EDITOR_REMOTO,AUDITORIA_EDITOR_REMOTO,0000,000)')
           .not('cuenta', 'like', 'CONFIG_WHATSAPP_%')
           .not('cuenta', 'like', 'DAHUA_%')
           .not('cuenta', 'like', 'CAMARAS_%')
@@ -320,7 +320,7 @@ export default function TodosLosEventosModal({ onClose, clientesMap: propCliente
         const { data: dateData } = await supabase
           .from('eventos_monitoreo')
           .select('id, fecha_hora, cuenta, evento, zona, usuario, nombre_abonado')
-          .not('cuenta', 'in', '(CLIENTES,CODIGOS,ZONAS,__SINCRONIZADOR__,CONFIG_OPERADORES,0000,000)')
+          .not('cuenta', 'in', '(CLIENTES,CODIGOS,ZONAS,PERSONAS_AUTORIZADAS,__SINCRONIZADOR__,CONFIG_OPERADORES,0000,000)')
           .not('cuenta', 'like', 'CONFIG_WHATSAPP_%')
           .or(`fecha_hora.like.%${dateChileStr}%,fecha_hora.like.%${fechaSeleccionada}%`)
           .order('id', { ascending: true })
