@@ -1,46 +1,62 @@
 'use client'
 
 export default function WhatsAppFloating() {
-  const handleWhatsApp = () => {
-    const text = encodeURIComponent('Hola GAMA Seguridad, me comunico con Ventas para cotizar un sistema de alarma y monitoreo 24/7.')
-    window.open(`https://wa.me/56964364943?text=${text}`, '_blank', 'noopener,noreferrer')
-  }
+  const whatsappUrl =
+    'https://wa.me/56964364943?text=' +
+    encodeURIComponent('Hola GAMA Seguridad, me comunico con Ventas para cotizar un sistema de alarma y monitoreo 24/7.')
 
   return (
-    <div className="whatsapp-floating fixed bottom-6 left-5 sm:bottom-8 sm:left-6 z-[9990] flex items-center group">
-      {/* Botón flotante a la izquierda */}
-      <button
-        type="button"
-        onClick={handleWhatsApp}
-        className="relative w-14 h-14 rounded-full bg-gradient-to-br from-[#25D366] to-[#128C7E] text-white flex items-center justify-center shadow-[0_6px_25px_rgba(37,211,102,0.45)] hover:shadow-[0_8px_32px_rgba(37,211,102,0.7)] transition-all duration-300 transform group-hover:scale-110 active:scale-95 cursor-pointer border-2 border-white/25 focus:outline-none"
-        aria-label="Contactar a Ventas por WhatsApp"
+    <aside
+      aria-label="Chat de Ventas WhatsApp"
+      className="whatsapp-floating fixed bottom-6 left-4 sm:bottom-8 sm:left-6 z-[9990] flex items-center"
+    >
+      <a
+        href={whatsappUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="Abrir Chat de Ventas por WhatsApp al +56 9 6436 4943"
+        className="flex items-center gap-3 pl-2.5 pr-4 py-2 rounded-full bg-[#071322]/95 hover:bg-[#0c1f36] border-2 border-[#25D366] text-white shadow-[0_8px_30px_rgba(37,211,102,0.45)] hover:shadow-[0_12px_40px_rgba(37,211,102,0.7)] backdrop-blur-md transition-all duration-300 transform hover:scale-105 active:scale-95 cursor-pointer no-underline group"
       >
-        {/* Anillo de pulso disuasivo */}
-        <span className="absolute inset-0 rounded-full bg-[#25D366] opacity-75 animate-ping pointer-events-none duration-1000" />
-
-        {/* Badge 1 de mensaje pendiente */}
-        <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 border-2 border-slate-950 text-white font-black text-[10px] flex items-center justify-center shadow-md animate-bounce z-20">
-          1
-        </span>
-
-        {/* Contenedor ópticamente centrado para el logo WhatsApp */}
-        <span className="relative z-10 flex items-center justify-center w-7 h-7 translate-x-[0.5px] -translate-y-[0.5px]">
+        {/* Contenedor del icono con pulso animado */}
+        <div className="relative w-10 h-10 shrink-0 flex items-center justify-center">
+          <span className="absolute inset-0 rounded-full bg-[#25D366] opacity-60 animate-ping pointer-events-none duration-1000" />
+          
+          {/* SVG Oficial de WhatsApp con viewBox 0 0 48 48 sin distorsión */}
           <svg
-            className="w-7 h-7 fill-white drop-shadow-sm"
-            viewBox="0 0 24 24"
+            className="w-10 h-10 drop-shadow-md shrink-0 block"
+            viewBox="0 0 48 48"
+            fill="none"
             xmlns="http://www.w3.org/2000/svg"
           >
-            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+            <path
+              fillRule="evenodd"
+              clipRule="evenodd"
+              d="M24 4C12.9543 4 4 12.9543 4 24C4 27.8576 5.09241 31.4623 6.98595 34.5262L4.5 43.5L13.7153 41.0772C16.666 42.9242 20.2075 44 24 44C35.0457 44 44 35.0457 44 24C44 12.9543 35.0457 4 24 4Z"
+              fill="#25D366"
+            />
+            <path
+              d="M17.481 14.3777C17.0264 13.3639 16.5457 13.3444 16.1118 13.3262C15.7533 13.3106 15.3344 13.3113 14.9157 13.3113C14.4967 13.3113 13.8153 13.4687 13.2389 14.0975C12.6625 14.7263 11.0378 16.2464 11.0378 19.3387C11.0378 22.431 13.2913 25.4182 13.6059 25.8376C13.9205 26.257 18.0163 32.5649 24.2748 35.2678C29.4764 37.514 30.5361 37.0653 31.6892 36.9605C32.8423 36.8557 35.4093 35.4406 35.9335 33.973C36.4577 32.5054 36.4577 31.2476 36.3004 30.9856C36.1432 30.7236 35.7239 30.5663 35.0949 30.2517C34.4659 29.9371 31.3736 28.417 30.7972 28.2074C30.2208 27.9978 29.8015 27.8931 29.3826 28.5219C28.9636 29.1507 27.758 30.5663 27.3911 30.9856C27.0242 31.405 26.6573 31.4574 26.0283 31.1428C25.3993 30.8282 23.3761 30.1652 20.9767 28.026C19.108 26.3601 17.8475 24.3039 17.4806 23.6751C17.1137 23.0463 17.4414 22.7062 17.7573 22.3924C18.0409 22.1105 18.3879 21.6575 18.7025 21.2906C19.0171 20.9237 19.1219 20.6617 19.3315 20.2423C19.5411 19.8229 19.4363 19.456 19.2791 19.1414C19.1219 18.8268 17.8927 15.7915 17.481 14.3777Z"
+              fill="white"
+            />
           </svg>
-        </span>
-      </button>
 
-      {/* Tooltip badge hacia la derecha */}
-      <div className="hidden sm:flex items-center gap-2 ml-3 px-3.5 py-1.5 rounded-full bg-[#0a1628]/95 backdrop-blur-md border border-[#25D366]/40 text-white text-xs font-sans shadow-2xl opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none transform -translate-x-2 group-hover:translate-x-0">
-        <span className="w-2 h-2 rounded-full bg-[#25D366] animate-pulse" />
-        <span className="font-bold text-[#25D366]">WhatsApp Ventas</span>
-        <span className="text-slate-300">· +56 9 6436 4943</span>
-      </div>
-    </div>
+          {/* Badge rojo de notificación */}
+          <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-500 border border-slate-950 text-white font-black text-[9px] flex items-center justify-center shadow-md animate-bounce z-20">
+            1
+          </span>
+        </div>
+
+        {/* Texto explícito y visible: CHAT DE VENTAS */}
+        <div className="flex flex-col text-left leading-tight pr-1">
+          <span className="text-[12px] font-black text-white tracking-wide uppercase flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-[#25D366] animate-pulse"></span>
+            Chat de Ventas
+          </span>
+          <span className="text-[10px] text-emerald-400 font-semibold tracking-tight">
+            +56 9 6436 4943
+          </span>
+        </div>
+      </a>
+    </aside>
   )
 }
