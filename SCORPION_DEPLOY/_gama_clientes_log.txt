@@ -1028,3 +1028,8 @@
 [LOCAL JSON] Archivo actualizado: C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
 [LOCAL JSON] Archivo actualizado: C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
 [SYNC SUCCESS] Sincronización completada exitosamente a las 10:55:10!
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\Users\tetor\Downloads\GENERAL.mdb
+[REPLICA SUCCESS] Replicado a: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[REPLICA SUCCESS] Replicado a: C:\SCORPION\BASES DE DATOS\GENERAL.mdb
+[SYNC] Contenido idéntico al último sincronizado.

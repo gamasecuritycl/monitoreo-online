@@ -92,11 +92,48 @@ import {
   EyeOff,
   ChevronUp,
   Home,
-  Menu
+  Menu,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown
 } from 'lucide-react'
 import ServicioTecnicoModal from './ServicioTecnicoModal'
 
 const clientesFallback = clientesDataRaw as Record<string, Record<string, string>>
+
+export type CotSortCol = 'fecha' | 'folio' | 'empresa' | 'cliente' | 'comuna' | 'neto' | 'total' | 'etapa'
+export type CotSortDir = 'asc' | 'desc'
+
+export function parseFechaTimestamp(fechaStr?: string): number {
+  if (!fechaStr || typeof fechaStr !== 'string') return 0
+  const f = fechaStr.trim()
+  if (!f) return 0
+
+  // Formato DD-MM-YYYY o DD/MM/YYYY (ej: "10-10-2026", "08/04/2026")
+  const partesDmy = f.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})(?:\s+(\d{1,2}):(\d{1,2}))?/)
+  if (partesDmy) {
+    const d = parseInt(partesDmy[1], 10)
+    const m = parseInt(partesDmy[2], 10) - 1
+    const y = parseInt(partesDmy[3], 10)
+    const hr = partesDmy[4] ? parseInt(partesDmy[4], 10) : 12
+    const min = partesDmy[5] ? parseInt(partesDmy[5], 10) : 0
+    return new Date(y, m, d, hr, min).getTime()
+  }
+
+  // Formato YYYY-MM-DD o YYYY/MM/DD (ej: "2026-10-10", "2026-07-20")
+  const partesYmd = f.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})(?:\s+(\d{1,2}):(\d{1,2}))?/)
+  if (partesYmd) {
+    const y = parseInt(partesYmd[1], 10)
+    const m = parseInt(partesYmd[2], 10) - 1
+    const d = parseInt(partesYmd[3], 10)
+    const hr = partesYmd[4] ? parseInt(partesYmd[4], 10) : 12
+    const min = partesYmd[5] ? parseInt(partesYmd[5], 10) : 0
+    return new Date(y, m, d, hr, min).getTime()
+  }
+
+  const ts = Date.parse(f)
+  return isNaN(ts) ? 0 : ts
+}
 
 const IVA_PORCENTAJE = 0.19
 
@@ -967,7 +1004,7 @@ export default function OperacionCRM() {
 
         const cotizacionesConsolidadas = Array.from(cotizacionesMap.values())
         if (cotizacionesConsolidadas.length > 0) {
-          cotizacionesConsolidadas.sort((a, b) => (b.id || 0) - (a.id || 0))
+          cotizacionesConsolidadas.sort((a, b) => parseFechaTimestamp(b.fecha) - parseFechaTimestamp(a.fecha) || (b.id || 0) - (a.id || 0))
           setCotizaciones(cotizacionesConsolidadas)
           localStorage.setItem('gama_cotizaciones', JSON.stringify(cotizacionesConsolidadas))
         }
@@ -1284,7 +1321,23 @@ export default function OperacionCRM() {
   const [filtroCotDesde, setFiltroCotDesde] = useState<string>('')
   const [filtroCotHasta, setFiltroCotHasta] = useState<string>('')
   const [filtroCotEmpresa, setFiltroCotEmpresa] = useState<string>('todas')
-  const [filtroCotOrden, setFiltroCotOrden] = useState<'recientes' | 'antiguos' | 'monto_desc' | 'monto_asc' | 'cliente_asc'>('recientes')
+  
+  // Ordenamiento interactivo a un click (por defecto: fecha más cercana en la parte superior)
+  const [cotSortCol, setCotSortCol] = useState<CotSortCol>('fecha')
+  const [cotSortDir, setCotSortDir] = useState<CotSortDir>('desc')
+
+  const handleCotSortClick = (col: CotSortCol) => {
+    if (cotSortCol === col) {
+      setCotSortDir(prev => prev === 'asc' ? 'desc' : 'asc')
+    } else {
+      setCotSortCol(col)
+      if (col === 'fecha' || col === 'neto' || col === 'total' || col === 'folio') {
+        setCotSortDir('desc')
+      } else {
+        setCotSortDir('asc')
+      }
+    }
+  }
 
   const resumenCotizacionesKPI = useMemo(() => {
     const total = cotizaciones.length
@@ -1339,10 +1392,12 @@ export default function OperacionCRM() {
 
     // 3. Filtro por Rango de Fechas
     if (filtroCotDesde) {
-      list = list.filter(c => (c.fecha || '') >= filtroCotDesde)
+      const tsDesde = parseFechaTimestamp(filtroCotDesde)
+      list = list.filter(c => parseFechaTimestamp(c.fecha) >= tsDesde)
     }
     if (filtroCotHasta) {
-      list = list.filter(c => (c.fecha || '') <= filtroCotHasta)
+      const tsHasta = parseFechaTimestamp(filtroCotHasta) + (24 * 60 * 60 * 1000 - 1)
+      list = list.filter(c => parseFechaTimestamp(c.fecha) <= tsHasta)
     }
 
     // 4. Filtro por Empresa Emisora
@@ -1350,18 +1405,70 @@ export default function OperacionCRM() {
       list = list.filter(c => c.empresa_facturadora_id === filtroCotEmpresa)
     }
 
-    // 5. Ordenamiento
+    // 5. Ordenamiento Dinámico a un Click (Por defecto: Fecha más cercana en la parte superior)
     list.sort((a, b) => {
-      if (filtroCotOrden === 'recientes') return (b.fecha || '').localeCompare(a.fecha || '') || b.id - a.id
-      if (filtroCotOrden === 'antiguos') return (a.fecha || '').localeCompare(b.fecha || '') || a.id - b.id
-      if (filtroCotOrden === 'monto_desc') return (b.monto_total_iva_incluido || 0) - (a.monto_total_iva_incluido || 0)
-      if (filtroCotOrden === 'monto_asc') return (a.monto_total_iva_incluido || 0) - (b.monto_total_iva_incluido || 0)
-      if (filtroCotOrden === 'cliente_asc') return (a.nombre_cliente || '').localeCompare(b.nombre_cliente || '')
-      return 0
+      let cmp = 0
+
+      switch (cotSortCol) {
+        case 'fecha': {
+          const tA = parseFechaTimestamp(a.fecha)
+          const tB = parseFechaTimestamp(b.fecha)
+          cmp = tA - tB
+          if (cmp === 0) cmp = (a.id || 0) - (b.id || 0)
+          break
+        }
+        case 'folio': {
+          const codA = a.codigo_cotizacion || ''
+          const codB = b.codigo_cotizacion || ''
+          cmp = codA.localeCompare(codB, 'es', { numeric: true, sensitivity: 'base' })
+          if (cmp === 0) cmp = (a.id || 0) - (b.id || 0)
+          break
+        }
+        case 'empresa': {
+          const empA = (empresasConglomerado.find(e => e.id === a.empresa_facturadora_id)?.razon_social || '').toLowerCase()
+          const empB = (empresasConglomerado.find(e => e.id === b.empresa_facturadora_id)?.razon_social || '').toLowerCase()
+          cmp = empA.localeCompare(empB, 'es')
+          break
+        }
+        case 'cliente': {
+          const cliA = (a.nombre_cliente || '').trim().toLowerCase()
+          const cliB = (b.nombre_cliente || '').trim().toLowerCase()
+          cmp = cliA.localeCompare(cliB, 'es')
+          break
+        }
+        case 'comuna': {
+          const comA = (a.ciudad_cliente || 'Santiago').trim().toLowerCase()
+          const comB = (b.ciudad_cliente || 'Santiago').trim().toLowerCase()
+          cmp = comA.localeCompare(comB, 'es')
+          break
+        }
+        case 'neto': {
+          cmp = (a.neto_con_descuento || 0) - (b.neto_con_descuento || 0)
+          break
+        }
+        case 'total': {
+          cmp = (a.monto_total_iva_incluido || 0) - (b.monto_total_iva_incluido || 0)
+          break
+        }
+        case 'etapa': {
+          const estA = (a.etapa_pipeline || 'Cotización').toLowerCase()
+          const estB = (b.etapa_pipeline || 'Cotización').toLowerCase()
+          cmp = estA.localeCompare(estB, 'es')
+          break
+        }
+        default: {
+          const tA = parseFechaTimestamp(a.fecha)
+          const tB = parseFechaTimestamp(b.fecha)
+          cmp = tA - tB
+          break
+        }
+      }
+
+      return cotSortDir === 'desc' ? -cmp : cmp
     })
 
     return list
-  }, [cotizaciones, filtroCotCategoria, filtroCotBusqueda, filtroCotDesde, filtroCotHasta, filtroCotEmpresa, filtroCotOrden])
+  }, [cotizaciones, filtroCotCategoria, filtroCotBusqueda, filtroCotDesde, filtroCotHasta, filtroCotEmpresa, cotSortCol, cotSortDir, empresasConglomerado])
 
   // ── FILTRO INTELIGENTE IA PARA INCIDENTES Y FALLAS TÉCNICAS REALES DE CENTRAL ──
   const alertasTecnicasCommandCenter = useMemo(() => {
@@ -4038,7 +4145,10 @@ export default function OperacionCRM() {
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-200/70 font-medium">
-                            {cotizaciones.filter(c => c.rut_cliente === clienteActivo?.rut || c.cuenta === cuentaSeleccionada).map(c => (
+                            {cotizaciones
+                              .filter(c => c.rut_cliente === clienteActivo?.rut || c.cuenta === cuentaSeleccionada)
+                              .sort((a, b) => parseFechaTimestamp(b.fecha) - parseFechaTimestamp(a.fecha) || (b.id || 0) - (a.id || 0))
+                              .map(c => (
                               <tr key={c.id} className="hover:bg-blue-50/50 transition-colors">
                                 <td className="py-3.5 px-4 font-mono font-black text-[#1E40AF]">{c.codigo_cotizacion}</td>
                                 <td className="py-3.5 px-4 font-semibold text-slate-600">{c.fecha}</td>
@@ -4502,21 +4612,36 @@ export default function OperacionCRM() {
                   ))}
                 </select>
 
-                {/* Ordenamiento */}
+                {/* Selector de Ordenamiento Sincronizado */}
                 <select
-                  value={filtroCotOrden}
-                  onChange={e => setFiltroCotOrden(e.target.value as any)}
+                  value={`${cotSortCol}_${cotSortDir}`}
+                  onChange={e => {
+                    const [col, dir] = e.target.value.split('_') as [CotSortCol, CotSortDir]
+                    setCotSortCol(col)
+                    setCotSortDir(dir)
+                  }}
                   className="min-h-[44px] bg-white border border-slate-300 px-4 py-2 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:border-[#1E40AF] shadow-2xs"
                 >
-                  <option value="recientes">Más Recientes</option>
-                  <option value="antiguos">Más Antiguos</option>
-                  <option value="monto_desc">Mayor Monto</option>
-                  <option value="monto_asc">Menor Monto</option>
-                  <option value="cliente_asc">Cliente (A-Z)</option>
+                  <option value="fecha_desc">📅 Fecha: Más cercana primero</option>
+                  <option value="fecha_asc">📅 Fecha: Más lejana primero</option>
+                  <option value="cliente_asc">👤 Cliente: A a la Z</option>
+                  <option value="cliente_desc">👤 Cliente: Z a la A</option>
+                  <option value="total_desc">💰 Total: Mayor a Menor</option>
+                  <option value="total_asc">💰 Total: Menor a Mayor</option>
+                  <option value="neto_desc">💵 Neto: Mayor a Menor</option>
+                  <option value="neto_asc">💵 Neto: Menor a Mayor</option>
+                  <option value="folio_desc">🏷️ Folio: Más reciente / Mayor</option>
+                  <option value="folio_asc">🏷️ Folio: Más antiguo / Menor</option>
+                  <option value="empresa_asc">🏢 Empresa Emisora: A a la Z</option>
+                  <option value="empresa_desc">🏢 Empresa Emisora: Z a la A</option>
+                  <option value="comuna_asc">📍 Comuna / Ciudad: A a la Z</option>
+                  <option value="comuna_desc">📍 Comuna / Ciudad: Z a la A</option>
+                  <option value="etapa_asc">📊 Etapa Pipeline: A a la Z</option>
+                  <option value="etapa_desc">📊 Etapa Pipeline: Z a la A</option>
                 </select>
 
                 {/* Botón Limpiar */}
-                {(filtroCotBusqueda || filtroCotDesde || filtroCotHasta || filtroCotCategoria !== 'todas' || filtroCotEmpresa !== 'todas' || filtroCotOrden !== 'recientes') && (
+                {(filtroCotBusqueda || filtroCotDesde || filtroCotHasta || filtroCotCategoria !== 'todas' || filtroCotEmpresa !== 'todas' || cotSortCol !== 'fecha' || cotSortDir !== 'desc') && (
                   <button
                     onClick={() => {
                       setFiltroCotCategoria('todas')
@@ -4524,7 +4649,8 @@ export default function OperacionCRM() {
                       setFiltroCotDesde('')
                       setFiltroCotHasta('')
                       setFiltroCotEmpresa('todas')
-                      setFiltroCotOrden('recientes')
+                      setCotSortCol('fecha')
+                      setCotSortDir('desc')
                     }}
                     className="min-h-[44px] px-4 py-2 text-xs font-bold text-red-700 hover:text-red-800 cursor-pointer flex items-center gap-1.5 bg-red-50 border border-red-200 rounded-xl transition"
                   >
@@ -4538,8 +4664,68 @@ export default function OperacionCRM() {
               {vistaCotizaciones === 'tabla' && (
                 <div className="bg-white border border-slate-300/80 rounded-2xl p-5 sm:p-6 shadow-sm">
                   
-                  {/* Tarjetas Móviles (< md) */}
+                  {/* Tarjetas Móviles (< md) con Orden Rápido a un Clic */}
                   <div className="md:hidden space-y-4">
+                    <div className="bg-slate-50 border border-slate-200/90 rounded-xl p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-[11px] font-black uppercase tracking-wider text-slate-500">Ordenar por (1 Clic):</span>
+                        <span className="text-[10px] font-mono font-bold text-[#1E40AF]">
+                          {cotSortCol === 'fecha' ? (cotSortDir === 'desc' ? '📅 Más Cercana' : '📅 Más Lejana') :
+                           cotSortCol === 'cliente' ? (cotSortDir === 'asc' ? '👤 Cliente A-Z' : '👤 Cliente Z-A') :
+                           cotSortCol === 'total' ? (cotSortDir === 'desc' ? '💰 Monto Mayor' : '💰 Monto Menor') :
+                           cotSortCol === 'folio' ? (cotSortDir === 'desc' ? '🏷️ Folio Reciente' : '🏷️ Folio Antiguo') :
+                           `${cotSortCol.toUpperCase()} (${cotSortDir.toUpperCase()})`}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs no-scrollbar">
+                        <button
+                          onClick={() => handleCotSortClick('fecha')}
+                          className={`px-3 py-1.5 rounded-lg font-bold shrink-0 transition flex items-center gap-1 ${
+                            cotSortCol === 'fecha' ? 'bg-[#1E40AF] text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-700'
+                          }`}
+                        >
+                          <span>Fecha</span>
+                          {cotSortCol === 'fecha' && (cotSortDir === 'desc' ? <ArrowDown className="h-3 w-3" /> : <ArrowUp className="h-3 w-3" />)}
+                        </button>
+                        <button
+                          onClick={() => handleCotSortClick('cliente')}
+                          className={`px-3 py-1.5 rounded-lg font-bold shrink-0 transition flex items-center gap-1 ${
+                            cotSortCol === 'cliente' ? 'bg-[#1E40AF] text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-700'
+                          }`}
+                        >
+                          <span>Cliente</span>
+                          {cotSortCol === 'cliente' && (cotSortDir === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />)}
+                        </button>
+                        <button
+                          onClick={() => handleCotSortClick('total')}
+                          className={`px-3 py-1.5 rounded-lg font-bold shrink-0 transition flex items-center gap-1 ${
+                            cotSortCol === 'total' ? 'bg-[#1E40AF] text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-700'
+                          }`}
+                        >
+                          <span>Total</span>
+                          {cotSortCol === 'total' && (cotSortDir === 'desc' ? <ArrowDown className="h-3 w-3" /> : <ArrowUp className="h-3 w-3" />)}
+                        </button>
+                        <button
+                          onClick={() => handleCotSortClick('folio')}
+                          className={`px-3 py-1.5 rounded-lg font-bold shrink-0 transition flex items-center gap-1 ${
+                            cotSortCol === 'folio' ? 'bg-[#1E40AF] text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-700'
+                          }`}
+                        >
+                          <span>Folio</span>
+                          {cotSortCol === 'folio' && (cotSortDir === 'desc' ? <ArrowDown className="h-3 w-3" /> : <ArrowUp className="h-3 w-3" />)}
+                        </button>
+                        <button
+                          onClick={() => handleCotSortClick('etapa')}
+                          className={`px-3 py-1.5 rounded-lg font-bold shrink-0 transition flex items-center gap-1 ${
+                            cotSortCol === 'etapa' ? 'bg-[#1E40AF] text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-700'
+                          }`}
+                        >
+                          <span>Etapa</span>
+                          {cotSortCol === 'etapa' && (cotSortDir === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />)}
+                        </button>
+                      </div>
+                    </div>
+
                     {cotizacionesFiltradas.length === 0 ? (
                       <div className="py-12 text-center text-slate-400 font-semibold text-xs">
                         No se encontraron presupuestos.
@@ -4619,102 +4805,264 @@ export default function OperacionCRM() {
                     )}
                   </div>
 
-                  {/* Tabla Desktop (>= md) */}
-                  <div className="hidden md:block overflow-x-auto">
-                    <table className="w-full text-left border-collapse text-xs sm:text-sm font-medium">
-                      <thead>
-                        <tr className="bg-slate-50 text-slate-600 border-b border-slate-200 font-extrabold uppercase text-[11px] tracking-wider">
-                          <th className="py-4.5 px-4">FOLIO / FECHA</th>
-                          <th className="py-4.5 px-4">EMPRESA EMISORA</th>
-                          <th className="py-4.5 px-4">RECEPTOR (CLIENTE / PROSPECTO)</th>
-                          <th className="py-4.5 px-4">CIUDAD / COMUNA</th>
-                          <th className="py-4.5 px-4 text-right">NETO AFECTO</th>
-                          <th className="py-4.5 px-4 text-right">TOTAL IVA INCL.</th>
-                          <th className="py-4.5 px-4 text-center">ETAPA PIPELINE</th>
-                          <th className="py-4.5 px-4 text-center min-w-[280px]">ACCIONES</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
-                        {cotizacionesFiltradas.length === 0 ? (
-                          <tr>
-                            <td colSpan={8} className="py-14 px-6 text-center text-slate-400 font-semibold text-sm">
-                              No se encontraron presupuestos que coincidan con los criterios de búsqueda o filtros seleccionados.
-                            </td>
-                          </tr>
-                        ) : (
-                          cotizacionesFiltradas.map(c => {
-                          const empEmisora = empresasConglomerado.find(e => e.id === c.empresa_facturadora_id) || empresasConglomerado[0]
-                          return (
-                            <tr key={c.id} className="hover:bg-blue-50/40 transition-colors group">
-                              <td className="py-4.5 px-4 font-mono font-black text-sm text-[#1E40AF]">
-                                <div className="tracking-tight">{c.codigo_cotizacion}</div>
-                                <div className="text-[11px] text-slate-500 font-sans font-medium mt-0.5">{c.fecha}</div>
-                              </td>
-                              <td className="py-4.5 px-4 font-bold text-slate-700 text-xs sm:text-sm">{empEmisora.razon_social}</td>
-                              <td className="py-4.5 px-4 font-bold text-slate-900">
-                                <div className="text-xs sm:text-sm leading-snug">{c.nombre_cliente}</div>
-                                <div className="text-[11px] text-slate-500 font-mono font-medium mt-0.5">RUT: {c.rut_cliente}</div>
-                              </td>
-                              <td className="py-4.5 px-4 font-semibold text-slate-600 text-xs sm:text-sm">{c.ciudad_cliente || 'Santiago'}</td>
-                              <td className="py-4.5 px-4 text-right font-mono font-bold text-slate-600 text-xs sm:text-sm">${Math.round(c.neto_con_descuento || 0).toLocaleString('es-CL')}</td>
-                              <td className="py-4.5 px-4 text-right font-mono font-black text-slate-900 text-sm sm:text-base">${Math.round(c.monto_total_iva_incluido || 0).toLocaleString('es-CL')}</td>
-                              <td className="py-4.5 px-4 text-center font-bold">
-                                <span className="px-3.5 py-1 bg-blue-50 text-[#1E40AF] border border-blue-200 rounded-full text-[11px] font-extrabold uppercase whitespace-nowrap inline-block">
-                                  {c.etapa_pipeline || 'Cotización'}
+                  {/* Tabla Desktop (>= md) con Ordenamiento Interactivo a un Clic */}
+                  <div className="hidden md:block">
+                    {/* Barra de estado del ordenamiento activo */}
+                    <div className="flex items-center justify-between pb-3.5 mb-2 border-b border-slate-200 text-xs">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-slate-500 uppercase tracking-wider text-[11px]">Orden activo:</span>
+                        <span className="px-3 py-1 bg-blue-50 border border-blue-200 text-[#1E40AF] rounded-lg font-bold text-xs inline-flex items-center gap-1.5 shadow-2xs">
+                          {cotSortCol === 'fecha' && (cotSortDir === 'desc' ? '📅 Fecha: Más cercana en la parte superior' : '📅 Fecha: Más lejana primero')}
+                          {cotSortCol === 'cliente' && (cotSortDir === 'asc' ? '👤 Cliente: A a la Z' : '👤 Cliente: Z a la A')}
+                          {cotSortCol === 'folio' && (cotSortDir === 'desc' ? '🏷️ Folio: Más reciente / Mayor' : '🏷️ Folio: Menor')}
+                          {cotSortCol === 'empresa' && (cotSortDir === 'asc' ? '🏢 Empresa: A a la Z' : '🏢 Empresa: Z a la A')}
+                          {cotSortCol === 'comuna' && (cotSortDir === 'asc' ? '📍 Comuna: A a la Z' : '📍 Comuna: Z a la A')}
+                          {cotSortCol === 'neto' && (cotSortDir === 'desc' ? '💵 Neto: Mayor a Menor' : '💵 Neto: Menor a Mayor')}
+                          {cotSortCol === 'total' && (cotSortDir === 'desc' ? '💰 Total IVA Incl.: Mayor a Menor' : '💰 Total IVA Incl.: Menor a Mayor')}
+                          {cotSortCol === 'etapa' && (cotSortDir === 'asc' ? '📊 Etapa Pipeline: A a la Z' : '📊 Etapa Pipeline: Z a la A')}
+                        </span>
+                      </div>
+                      <span className="text-slate-400 font-medium text-[11px]">
+                        💡 Haz clic en cualquier columna para ordenar al instante (A-Z, Z-A, fecha más cercana, montos, etc.)
+                      </span>
+                    </div>
+
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left border-collapse text-xs sm:text-sm font-medium">
+                        <thead>
+                          <tr className="bg-slate-50 text-slate-600 border-b border-slate-200 font-extrabold uppercase text-[11px] tracking-wider select-none">
+                            {/* FOLIO */}
+                            <th 
+                              onClick={() => handleCotSortClick('folio')}
+                              className={`py-4 px-3.5 cursor-pointer hover:bg-slate-100 transition-colors group ${cotSortCol === 'folio' ? 'bg-blue-50/80 text-[#1E40AF]' : ''}`}
+                              title={cotSortCol === 'folio' ? (cotSortDir === 'desc' ? 'Clic para ordenar Folio: Menor a Mayor' : 'Clic para ordenar Folio: Mayor a Menor') : 'Ordenar por Folio'}
+                            >
+                              <div className="flex items-center gap-1.5">
+                                <span>FOLIO</span>
+                                <span className="shrink-0">
+                                  {cotSortCol === 'folio' ? (
+                                    cotSortDir === 'desc' ? <ArrowDown className="h-3.5 w-3.5 text-[#1E40AF]" /> : <ArrowUp className="h-3.5 w-3.5 text-[#1E40AF]" />
+                                  ) : (
+                                    <ArrowUpDown className="h-3.5 w-3.5 text-slate-400 opacity-40 group-hover:opacity-100" />
+                                  )}
                                 </span>
-                              </td>
-                              <td className="py-4.5 px-4 text-center">
-                                <div className="flex items-center justify-center gap-2">
-                                  <button
-                                    onClick={() => handleEnviarWhatsAppCotizacion(c)}
-                                    title="Enviar por WhatsApp"
-                                    className="p-2.5 bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white border border-emerald-200 rounded-xl font-bold cursor-pointer transition-all hover:scale-105 shadow-2xs"
-                                  >
-                                    <MessageSquare className="h-4 w-4 stroke-[2]" />
-                                  </button>
-                                  <button
-                                    onClick={() => handleEnviarEmailCotizacion(c)}
-                                    disabled={enviandoEmailId === c.id}
-                                    title="Enviar Presupuesto por Email (Empresas Gama Seguridad)"
-                                    className="p-2.5 bg-blue-50 hover:bg-[#0B2545] text-[#1E40AF] hover:text-white border border-blue-200 rounded-xl font-bold cursor-pointer transition-all hover:scale-105 shadow-2xs"
-                                  >
-                                    {enviandoEmailId === c.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4 stroke-[2]" />}
-                                  </button>
-                                  <button
-                                    onClick={() => setCotSeleccionada(c)}
-                                    title="Ver e Imprimir Presupuesto"
-                                    className="p-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold cursor-pointer transition-all hover:scale-105 border border-slate-200 shadow-2xs"
-                                  >
-                                    <FileText className="h-4 w-4 stroke-[2]" />
-                                  </button>
-                                  <button
-                                    onClick={() => handleEditarCotizacion(c)}
-                                    title="Editar Cotización"
-                                    className="p-2.5 bg-amber-50 hover:bg-amber-500 text-amber-700 hover:text-white border border-amber-200 rounded-xl font-bold cursor-pointer transition-all hover:scale-105 shadow-2xs"
-                                  >
-                                    <Pencil className="h-4 w-4 stroke-[2]" />
-                                  </button>
-                                  <button
-                                    onClick={() => handleDuplicarCotizacion(c)}
-                                    title="Copiar Cotización"
-                                    className="p-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold cursor-pointer transition-all hover:scale-105 border border-slate-200 shadow-2xs"
-                                  >
-                                    <Copy className="h-4 w-4 stroke-[2]" />
-                                  </button>
-                                  <button
-                                    onClick={() => handleEliminarCotizacion(c.id, c.codigo_cotizacion)}
-                                    title="Eliminar Cotización"
-                                    className="p-2.5 bg-red-50 hover:bg-red-600 text-red-600 hover:text-white border border-red-200 rounded-xl font-bold cursor-pointer transition-all hover:scale-105 shadow-2xs"
-                                  >
-                                    <Trash2 className="h-4 w-4 stroke-[2]" />
-                                  </button>
-                                </div>
+                              </div>
+                            </th>
+
+                            {/* FECHA */}
+                            <th 
+                              onClick={() => handleCotSortClick('fecha')}
+                              className={`py-4 px-3.5 cursor-pointer hover:bg-slate-100 transition-colors group ${cotSortCol === 'fecha' ? 'bg-blue-50/80 text-[#1E40AF]' : ''}`}
+                              title={cotSortCol === 'fecha' ? (cotSortDir === 'desc' ? 'Clic para ordenar: Fecha más lejana primero' : 'Clic para ordenar: Fecha más cercana primero') : 'Ordenar por Fecha (Más cercana arriba por defecto)'}
+                            >
+                              <div className="flex items-center gap-1.5">
+                                <span>FECHA</span>
+                                <span className="shrink-0">
+                                  {cotSortCol === 'fecha' ? (
+                                    cotSortDir === 'desc' ? <ArrowDown className="h-3.5 w-3.5 text-[#1E40AF]" /> : <ArrowUp className="h-3.5 w-3.5 text-[#1E40AF]" />
+                                  ) : (
+                                    <ArrowUpDown className="h-3.5 w-3.5 text-slate-400 opacity-40 group-hover:opacity-100" />
+                                  )}
+                                </span>
+                              </div>
+                            </th>
+
+                            {/* EMPRESA EMISORA */}
+                            <th 
+                              onClick={() => handleCotSortClick('empresa')}
+                              className={`py-4 px-3.5 cursor-pointer hover:bg-slate-100 transition-colors group ${cotSortCol === 'empresa' ? 'bg-blue-50/80 text-[#1E40AF]' : ''}`}
+                              title={cotSortCol === 'empresa' ? (cotSortDir === 'asc' ? 'Clic para ordenar: Empresa Z a la A' : 'Clic para ordenar: Empresa A a la Z') : 'Ordenar por Empresa Emisora'}
+                            >
+                              <div className="flex items-center gap-1.5">
+                                <span>EMPRESA EMISORA</span>
+                                <span className="shrink-0">
+                                  {cotSortCol === 'empresa' ? (
+                                    cotSortDir === 'asc' ? <ArrowUp className="h-3.5 w-3.5 text-[#1E40AF]" /> : <ArrowDown className="h-3.5 w-3.5 text-[#1E40AF]" />
+                                  ) : (
+                                    <ArrowUpDown className="h-3.5 w-3.5 text-slate-400 opacity-40 group-hover:opacity-100" />
+                                  )}
+                                </span>
+                              </div>
+                            </th>
+
+                            {/* RECEPTOR (CLIENTE / PROSPECTO) */}
+                            <th 
+                              onClick={() => handleCotSortClick('cliente')}
+                              className={`py-4 px-3.5 cursor-pointer hover:bg-slate-100 transition-colors group ${cotSortCol === 'cliente' ? 'bg-blue-50/80 text-[#1E40AF]' : ''}`}
+                              title={cotSortCol === 'cliente' ? (cotSortDir === 'asc' ? 'Clic para ordenar: Cliente Z a la A' : 'Clic para ordenar: Cliente A a la Z') : 'Ordenar por Nombre de Cliente (A a la Z)'}
+                            >
+                              <div className="flex items-center gap-1.5">
+                                <span>RECEPTOR (CLIENTE / PROSPECTO)</span>
+                                <span className="shrink-0">
+                                  {cotSortCol === 'cliente' ? (
+                                    cotSortDir === 'asc' ? <ArrowUp className="h-3.5 w-3.5 text-[#1E40AF]" /> : <ArrowDown className="h-3.5 w-3.5 text-[#1E40AF]" />
+                                  ) : (
+                                    <ArrowUpDown className="h-3.5 w-3.5 text-slate-400 opacity-40 group-hover:opacity-100" />
+                                  )}
+                                </span>
+                              </div>
+                            </th>
+
+                            {/* CIUDAD / COMUNA */}
+                            <th 
+                              onClick={() => handleCotSortClick('comuna')}
+                              className={`py-4 px-3.5 cursor-pointer hover:bg-slate-100 transition-colors group ${cotSortCol === 'comuna' ? 'bg-blue-50/80 text-[#1E40AF]' : ''}`}
+                              title={cotSortCol === 'comuna' ? (cotSortDir === 'asc' ? 'Clic para ordenar: Comuna Z a la A' : 'Clic para ordenar: Comuna A a la Z') : 'Ordenar por Comuna / Ciudad'}
+                            >
+                              <div className="flex items-center gap-1.5">
+                                <span>CIUDAD / COMUNA</span>
+                                <span className="shrink-0">
+                                  {cotSortCol === 'comuna' ? (
+                                    cotSortDir === 'asc' ? <ArrowUp className="h-3.5 w-3.5 text-[#1E40AF]" /> : <ArrowDown className="h-3.5 w-3.5 text-[#1E40AF]" />
+                                  ) : (
+                                    <ArrowUpDown className="h-3.5 w-3.5 text-slate-400 opacity-40 group-hover:opacity-100" />
+                                  )}
+                                </span>
+                              </div>
+                            </th>
+
+                            {/* NETO AFECTO */}
+                            <th 
+                              onClick={() => handleCotSortClick('neto')}
+                              className={`py-4 px-3.5 cursor-pointer hover:bg-slate-100 transition-colors group text-right ${cotSortCol === 'neto' ? 'bg-blue-50/80 text-[#1E40AF]' : ''}`}
+                              title={cotSortCol === 'neto' ? (cotSortDir === 'desc' ? 'Clic para ordenar: Neto Menor a Mayor' : 'Clic para ordenar: Neto Mayor a Menor') : 'Ordenar por Monto Neto'}
+                            >
+                              <div className="flex items-center justify-end gap-1.5">
+                                <span>NETO AFECTO</span>
+                                <span className="shrink-0">
+                                  {cotSortCol === 'neto' ? (
+                                    cotSortDir === 'desc' ? <ArrowDown className="h-3.5 w-3.5 text-[#1E40AF]" /> : <ArrowUp className="h-3.5 w-3.5 text-[#1E40AF]" />
+                                  ) : (
+                                    <ArrowUpDown className="h-3.5 w-3.5 text-slate-400 opacity-40 group-hover:opacity-100" />
+                                  )}
+                                </span>
+                              </div>
+                            </th>
+
+                            {/* TOTAL IVA INCL. */}
+                            <th 
+                              onClick={() => handleCotSortClick('total')}
+                              className={`py-4 px-3.5 cursor-pointer hover:bg-slate-100 transition-colors group text-right ${cotSortCol === 'total' ? 'bg-blue-50/80 text-[#1E40AF]' : ''}`}
+                              title={cotSortCol === 'total' ? (cotSortDir === 'desc' ? 'Clic para ordenar: Total Menor a Mayor' : 'Clic para ordenar: Total Mayor a Menor') : 'Ordenar por Monto Total IVA Incluido'}
+                            >
+                              <div className="flex items-center justify-end gap-1.5">
+                                <span>TOTAL IVA INCL.</span>
+                                <span className="shrink-0">
+                                  {cotSortCol === 'total' ? (
+                                    cotSortDir === 'desc' ? <ArrowDown className="h-3.5 w-3.5 text-[#1E40AF]" /> : <ArrowUp className="h-3.5 w-3.5 text-[#1E40AF]" />
+                                  ) : (
+                                    <ArrowUpDown className="h-3.5 w-3.5 text-slate-400 opacity-40 group-hover:opacity-100" />
+                                  )}
+                                </span>
+                              </div>
+                            </th>
+
+                            {/* ETAPA PIPELINE */}
+                            <th 
+                              onClick={() => handleCotSortClick('etapa')}
+                              className={`py-4 px-3.5 cursor-pointer hover:bg-slate-100 transition-colors group text-center ${cotSortCol === 'etapa' ? 'bg-blue-50/80 text-[#1E40AF]' : ''}`}
+                              title={cotSortCol === 'etapa' ? (cotSortDir === 'asc' ? 'Clic para ordenar: Etapa Z a la A' : 'Clic para ordenar: Etapa A a la Z') : 'Ordenar por Etapa del Pipeline'}
+                            >
+                              <div className="flex items-center justify-center gap-1.5">
+                                <span>ETAPA PIPELINE</span>
+                                <span className="shrink-0">
+                                  {cotSortCol === 'etapa' ? (
+                                    cotSortDir === 'asc' ? <ArrowUp className="h-3.5 w-3.5 text-[#1E40AF]" /> : <ArrowDown className="h-3.5 w-3.5 text-[#1E40AF]" />
+                                  ) : (
+                                    <ArrowUpDown className="h-3.5 w-3.5 text-slate-400 opacity-40 group-hover:opacity-100" />
+                                  )}
+                                </span>
+                              </div>
+                            </th>
+
+                            {/* ACCIONES */}
+                            <th className="py-4 px-3.5 text-center min-w-[260px]">ACCIONES</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {cotizacionesFiltradas.length === 0 ? (
+                            <tr>
+                              <td colSpan={9} className="py-14 px-6 text-center text-slate-400 font-semibold text-sm">
+                                No se encontraron presupuestos que coincidan con los criterios de búsqueda o filtros seleccionados.
                               </td>
                             </tr>
-                          )
-                        }))}
-                      </tbody>
-                    </table>
+                          ) : (
+                            cotizacionesFiltradas.map(c => {
+                            const empEmisora = empresasConglomerado.find(e => e.id === c.empresa_facturadora_id) || empresasConglomerado[0]
+                            return (
+                              <tr key={c.id} className="hover:bg-blue-50/40 transition-colors group">
+                                <td className="py-4 px-3.5 font-mono font-black text-sm text-[#1E40AF]">
+                                  {c.codigo_cotizacion}
+                                </td>
+                                <td className="py-4 px-3.5 font-medium text-slate-700 text-xs sm:text-sm whitespace-nowrap">
+                                  <div className="font-semibold text-slate-800">{c.fecha}</div>
+                                </td>
+                                <td className="py-4 px-3.5 font-bold text-slate-700 text-xs sm:text-sm">{empEmisora.razon_social}</td>
+                                <td className="py-4 px-3.5 font-bold text-slate-900">
+                                  <div className="text-xs sm:text-sm leading-snug">{c.nombre_cliente}</div>
+                                  <div className="text-[11px] text-slate-500 font-mono font-medium mt-0.5">RUT: {c.rut_cliente}</div>
+                                </td>
+                                <td className="py-4 px-3.5 font-semibold text-slate-600 text-xs sm:text-sm">{c.ciudad_cliente || 'Santiago'}</td>
+                                <td className="py-4 px-3.5 text-right font-mono font-bold text-slate-600 text-xs sm:text-sm">${Math.round(c.neto_con_descuento || 0).toLocaleString('es-CL')}</td>
+                                <td className="py-4 px-3.5 text-right font-mono font-black text-slate-900 text-sm sm:text-base">${Math.round(c.monto_total_iva_incluido || 0).toLocaleString('es-CL')}</td>
+                                <td className="py-4 px-3.5 text-center font-bold">
+                                  <span className="px-3.5 py-1 bg-blue-50 text-[#1E40AF] border border-blue-200 rounded-full text-[11px] font-extrabold uppercase whitespace-nowrap inline-block">
+                                    {c.etapa_pipeline || 'Cotización'}
+                                  </span>
+                                </td>
+                                <td className="py-4 px-3.5 text-center">
+                                  <div className="flex items-center justify-center gap-2">
+                                    <button
+                                      onClick={() => handleEnviarWhatsAppCotizacion(c)}
+                                      title="Enviar por WhatsApp"
+                                      className="p-2.5 bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white border border-emerald-200 rounded-xl font-bold cursor-pointer transition-all hover:scale-105 shadow-2xs"
+                                    >
+                                      <MessageSquare className="h-4 w-4 stroke-[2]" />
+                                    </button>
+                                    <button
+                                      onClick={() => handleEnviarEmailCotizacion(c)}
+                                      disabled={enviandoEmailId === c.id}
+                                      title="Enviar Presupuesto por Email (Empresas Gama Seguridad)"
+                                      className="p-2.5 bg-blue-50 hover:bg-[#0B2545] text-[#1E40AF] hover:text-white border border-blue-200 rounded-xl font-bold cursor-pointer transition-all hover:scale-105 shadow-2xs"
+                                    >
+                                      {enviandoEmailId === c.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4 stroke-[2]" />}
+                                    </button>
+                                    <button
+                                      onClick={() => setCotSeleccionada(c)}
+                                      title="Ver e Imprimir Presupuesto"
+                                      className="p-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold cursor-pointer transition-all hover:scale-105 border border-slate-200 shadow-2xs"
+                                    >
+                                      <FileText className="h-4 w-4 stroke-[2]" />
+                                    </button>
+                                    <button
+                                      onClick={() => handleEditarCotizacion(c)}
+                                      title="Editar Cotización"
+                                      className="p-2.5 bg-amber-50 hover:bg-amber-500 text-amber-700 hover:text-white border border-amber-200 rounded-xl font-bold cursor-pointer transition-all hover:scale-105 shadow-2xs"
+                                    >
+                                      <Pencil className="h-4 w-4 stroke-[2]" />
+                                    </button>
+                                    <button
+                                      onClick={() => handleDuplicarCotizacion(c)}
+                                      title="Copiar Cotización"
+                                      className="p-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold cursor-pointer transition-all hover:scale-105 border border-slate-200 shadow-2xs"
+                                    >
+                                      <Copy className="h-4 w-4 stroke-[2]" />
+                                    </button>
+                                    <button
+                                      onClick={() => handleEliminarCotizacion(c.id, c.codigo_cotizacion)}
+                                      title="Eliminar Cotización"
+                                      className="p-2.5 bg-red-50 hover:bg-red-600 text-red-600 hover:text-white border border-red-200 rounded-xl font-bold cursor-pointer transition-all hover:scale-105 shadow-2xs"
+                                    >
+                                      <Trash2 className="h-4 w-4 stroke-[2]" />
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            )
+                          }))}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 </div>
               )}
