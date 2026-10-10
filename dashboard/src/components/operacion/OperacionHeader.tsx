@@ -13,6 +13,7 @@ interface OperacionHeaderProps {
   onQuickCotizacion: () => void
   onQuickOT: () => void
   onOpenWhatsAppPlantillas?: () => void
+  onOpenOrganigrama?: () => void
   moduloActivo?: string | null
   onVolverMenu?: () => void
 }
@@ -27,6 +28,7 @@ export default function OperacionHeader({
   onQuickCotizacion,
   onQuickOT,
   onOpenWhatsAppPlantillas,
+  onOpenOrganigrama,
   moduloActivo,
   onVolverMenu
 }: OperacionHeaderProps) {
@@ -103,6 +105,21 @@ export default function OperacionHeader({
           <span className="text-slate-400 font-sans font-medium text-[11px]">UF:</span>
           <strong className="text-slate-900 font-bold">${valorUF.toLocaleString('es-CL')}</strong>
         </div>
+
+        {/* BOTÓN RÁPIDO OFICINA AUTÓNOMA VIRTUAL SIMS */}
+        {onOpenOrganigrama && (
+          <button
+            onClick={onOpenOrganigrama}
+            className="bg-gradient-to-r from-blue-700 via-indigo-600 to-purple-700 hover:from-blue-600 hover:to-indigo-500 text-white text-xs py-2 px-3 sm:px-3.5 rounded-2xl flex items-center gap-1.5 font-bold transition-all shadow-sm shadow-blue-950/20 active:scale-95 cursor-pointer border border-blue-400/40"
+            title="Abrir Oficina Autónoma Virtual (Sims IA 24/7)"
+          >
+            <span>🏢</span>
+            <span className="hidden sm:inline">Oficina Virtual</span>
+            <span className="bg-emerald-400 text-slate-950 text-[9px] font-black px-1.5 py-0.2 rounded-full font-mono animate-pulse">
+              SIMS
+            </span>
+          </button>
+        )}
 
         {/* BOTÓN RÁPIDO NUEVA COTIZACIÓN */}
         <button

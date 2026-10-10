@@ -3327,6 +3327,7 @@ export default function OperacionCRM() {
         moduloActivo={moduloActivo}
         onVolverMenu={() => setModuloActivo(null)}
         onOpenCommandPalette={() => setCommandPaletteOpen(true)}
+        onOpenOrganigrama={() => setModuloActivo('organigrama')}
         onQuickCotizacion={() => {
           setModuloActivo('presupuestos')
           setMostrarModalCotizacion(true)
