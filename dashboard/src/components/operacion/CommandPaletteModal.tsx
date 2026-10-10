@@ -53,6 +53,13 @@ export default function CommandPaletteModal({
 
   const commandItems: CommandPaletteItem[] = [
     {
+      id: 'cmd-organigrama',
+      titulo: 'Ir a Organigrama Sims 24/7 (Equipo IA)',
+      subtitulo: 'Oficina virtual interactiva con agentes autónomos trabajando 24 horas',
+      categoria: 'Comando',
+      accion: () => { onNavigateModule('organigrama'); onClose() }
+    },
+    {
       id: 'cmd-ficha',
       titulo: 'Ir a Ficha 360° de Clientes',
       subtitulo: 'Búsqueda por abonado, señales en vivo y expediente maestro',

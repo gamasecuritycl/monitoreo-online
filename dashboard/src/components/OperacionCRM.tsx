@@ -30,11 +30,13 @@ import { BotConfigModal } from '@/components/SalesGama/Modal/BotConfigModal'
 import { BotLeadsModal } from '@/components/SalesGama/Modal/BotLeadsModal'
 import { OperacionesBotHub } from '@/components/SalesGama/OperacionesBotHub'
 import EntrenamientoBotModule from './operacion/EntrenamientoBotModule'
+import OrganigramaModule from './operacion/OrganigramaModule'
 
 import {
   Shield,
   ShieldCheck,
   User,
+  Users,
   FileText,
   DollarSign,
   MessageSquare,
@@ -390,7 +392,7 @@ export function normalizeCuentaCode(cta: any): string {
 }
 
 export default function OperacionCRM() {
-  const [moduloActivo, setModuloActivo] = useState<'ficha360' | 'autonomia' | 'salesbot' | 'entrenamiento_bot' | 'presupuestos' | 'mercadopublico' | 'facturacion' | 'serv_tecnico' | 'kpis' | 'config' | 'marketing' | 'landing_marketing' | 'gestion_mails' | 'compras' | 'contratos' | 'ley21719' | null>(null)
+  const [moduloActivo, setModuloActivo] = useState<'ficha360' | 'autonomia' | 'salesbot' | 'entrenamiento_bot' | 'presupuestos' | 'mercadopublico' | 'facturacion' | 'serv_tecnico' | 'kpis' | 'config' | 'marketing' | 'landing_marketing' | 'gestion_mails' | 'compras' | 'contratos' | 'ley21719' | 'organigrama' | null>(null)
   const [sidebarAbierto, setSidebarAbierto] = useState<boolean>(false)
   const [filtroCategoriaLaunchpad, setFiltroCategoriaLaunchpad] = useState<string>('TODOS')
 
@@ -2974,6 +2976,18 @@ export default function OperacionCRM() {
 
   const modulosLaunchpad = [
     {
+      id: 'organigrama',
+      titulo: 'Organigrama Sims 24/7 (Equipo IA)',
+      categoria: 'DIRECCIÓN & EQUIPO VIRTUAL',
+      descripcion: 'Oficina virtual con 10 agentes IA autónomos trabajando 24/7. Organigrama jerárquico, misiones en tiempo real y reportes a Gerencia.',
+      icono: Users,
+      gradient: 'from-[#1E40AF] to-indigo-700',
+      borderColor: 'hover:border-blue-400',
+      glowColor: 'group-hover:shadow-blue-500/30',
+      badgeColor: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30',
+      tag: '10 Sims Activos'
+    },
+    {
       id: 'ficha360',
       titulo: 'Ficha 360° Cliente',
       categoria: 'OPERACIONES',
@@ -3277,6 +3291,7 @@ export default function OperacionCRM() {
       <OperacionHeader
         moduloActivoLabel={
           !moduloActivo ? 'Menú Principal' :
+          moduloActivo === 'organigrama' ? 'Organigrama Sims 24/7' :
           moduloActivo === 'ficha360' ? 'Ficha 360° Cliente' :
           moduloActivo === 'entrenamiento_bot' ? 'Entrenamiento Bot Ventas' :
           moduloActivo === 'salesbot' ? 'Sales-Bot IA & Leads' :
@@ -3531,6 +3546,7 @@ export default function OperacionCRM() {
                 <span className="text-xs sm:text-sm font-black text-slate-900 tracking-wide flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                   {
+                    moduloActivo === 'organigrama' ? 'Organigrama Sims 24/7 (Equipo IA)' :
                     moduloActivo === 'ficha360' ? 'Ficha 360° Cliente' :
                     moduloActivo === 'entrenamiento_bot' ? 'Entrenamiento Bot Ventas' :
                     moduloActivo === 'salesbot' ? 'Sales-Bot IA & Leads' :
@@ -6836,6 +6852,13 @@ export default function OperacionCRM() {
           {/* ── MÓDULO LEGAL: LEY 21.719 PROTECCIÓN DE DATOS PERSONALES ── */}
           {moduloActivo === 'ley21719' && (
             <Ley21719Module />
+          )}
+
+          {/* ── MÓDULO ORGANIGRAMA: OFICINA VIRTUAL SIMS 24/7 (EQUIPO IA) ── */}
+          {moduloActivo === 'organigrama' && (
+            <OrganigramaModule
+              onNavigateModule={(modId) => setModuloActivo(modId as any)}
+            />
           )}
 
             </main>

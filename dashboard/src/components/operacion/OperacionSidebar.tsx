@@ -3,6 +3,7 @@
 import React, { useState, useMemo } from 'react'
 import {
   User,
+  Users,
   FileText,
   FileCheck,
   Megaphone,
@@ -52,11 +53,17 @@ export default function OperacionSidebar({
 
   const grupos = [
     {
+      titulo: 'DIRECCIÓN & EQUIPO IA 24/7',
+      items: [
+        { id: 'organigrama', label: 'Organigrama Sims 24/7', icon: Users, desc: 'Oficina virtual con agentes IA interactivos' },
+        { id: 'autonomia', label: 'Agentes Autónomos IA', icon: Bot, desc: 'Supervisión 24/7 y auditoría en vivo' },
+      ]
+    },
+    {
       titulo: 'OPERACIONES & MONITOREO',
       items: [
         { id: 'ficha360', label: 'Ficha 360° Cliente', icon: User, desc: 'Expedientes, abonados y contactos' },
         { id: 'serv_tecnico', label: 'Servicios Técnicos (OTs)', icon: Wrench, desc: 'Gestión de órdenes de trabajo y terreno' },
-        { id: 'autonomia', label: 'Agentes Autónomos IA', icon: Bot, desc: 'Supervisión 24/7 y auditoría en vivo' },
       ]
     },
     {
