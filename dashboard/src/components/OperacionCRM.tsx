@@ -2977,15 +2977,15 @@ export default function OperacionCRM() {
   const modulosLaunchpad = [
     {
       id: 'organigrama',
-      titulo: 'Organigrama Sims 24/7 (Equipo IA)',
-      categoria: 'DIRECCIÓN & EQUIPO VIRTUAL',
-      descripcion: 'Oficina virtual con 10 agentes IA autónomos trabajando 24/7. Organigrama jerárquico, misiones en tiempo real y reportes a Gerencia.',
+      titulo: 'Oficina Autónoma Virtual',
+      categoria: 'DIRECCIÓN & SIMS IA 24/7',
+      descripcion: 'Simulación estilo Sims en vivo con 10 empleados IA interactivos: atribuciones de mando, misiones, entrenamiento editable y lógica empresarial.',
       icono: Users,
-      gradient: 'from-[#1E40AF] to-indigo-700',
+      gradient: 'from-[#1E40AF] via-indigo-600 to-purple-700',
       borderColor: 'hover:border-blue-400',
       glowColor: 'group-hover:shadow-blue-500/30',
       badgeColor: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30',
-      tag: '10 Sims Activos'
+      tag: '🎮 10 Sims IA Autónomos'
     },
     {
       id: 'ficha360',
@@ -3187,10 +3187,22 @@ export default function OperacionCRM() {
   }, [])
 
   const modulosOrdenados = useMemo(() => {
-    if (!ordenLaunchpad || ordenLaunchpad.length === 0) return modulosLaunchpad
-    const itemsMap = new Map(modulosLaunchpad.map(m => [m.id, m]))
+    const itemOficina = modulosLaunchpad.find(m => m.id === 'organigrama')
+    const otrosModulos = modulosLaunchpad.filter(m => m.id !== 'organigrama')
+
+    if (!ordenLaunchpad || ordenLaunchpad.length === 0) {
+      return itemOficina ? [itemOficina, ...otrosModulos] : modulosLaunchpad
+    }
+    const itemsMap = new Map(otrosModulos.map(m => [m.id, m]))
     const ordenados: typeof modulosLaunchpad = []
+
+    // La Oficina Autónoma Virtual siempre encabeza la primera posición fija
+    if (itemOficina) {
+      ordenados.push(itemOficina)
+    }
+
     for (const id of ordenLaunchpad) {
+      if (id === 'organigrama') continue
       const item = itemsMap.get(id)
       if (item) {
         ordenados.push(item)
@@ -3371,6 +3383,23 @@ export default function OperacionCRM() {
                 <p className="text-xs sm:text-sm text-slate-500 max-w-2xl leading-relaxed font-medium">
                   Seleccione cualquiera de los módulos para operar en pantalla completa, con máxima amplitud y sin barras laterales restrictivas.
                 </p>
+
+                {/* BOTÓN DESTACADO: OFICINA AUTÓNOMA VIRTUAL (SIMS IA) */}
+                <div className="pt-2 flex flex-wrap items-center gap-3">
+                  <button
+                    onClick={() => setModuloActivo('organigrama')}
+                    className="px-5 py-2.5 bg-gradient-to-r from-blue-700 via-indigo-600 to-purple-700 hover:from-blue-600 hover:to-indigo-500 text-white font-black rounded-2xl text-xs sm:text-sm shadow-md shadow-blue-950/20 flex items-center gap-2.5 cursor-pointer transition-all active:scale-95 group border border-blue-400/40"
+                  >
+                    <span className="text-lg group-hover:scale-125 transition-transform">🏢</span>
+                    <span>Entrar a Oficina Autónoma Virtual (Sims IA 24/7)</span>
+                    <span className="bg-emerald-400 text-slate-950 text-[10px] font-black px-2 py-0.5 rounded-full font-mono animate-pulse">
+                      EN VIVO
+                    </span>
+                  </button>
+                  <span className="text-[11px] text-slate-500 font-bold hidden sm:inline">
+                    10 Empleados IA trabajando con atribuciones y entrenamiento editable.
+                  </span>
+                </div>
               </div>
 
               {/* STATS EN TIEMPO REAL */}
