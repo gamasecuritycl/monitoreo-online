@@ -1,16 +1,14 @@
 'use client'
 
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect, useRef, useMemo } from 'react'
 import {
   Users,
   Building,
   Shield,
-  ShieldCheck,
   Radio,
   Wrench,
   TrendingUp,
   FileText,
-  HeartHandshake,
   Cpu,
   Workflow,
   Code2,
@@ -26,491 +24,629 @@ import {
   Layers,
   MapPin,
   ChevronRight,
-  ChevronDown,
   MessageSquare,
   AlertTriangle,
-  Lightbulb,
-  Maximize2,
-  Minimize2,
   Play,
-  Settings,
   Coffee,
   Zap,
   Terminal,
-  Compass
+  Compass,
+  Gamepad2,
+  BookOpen,
+  BrainCircuit,
+  Lock,
+  Unlock,
+  Maximize2,
+  Minimize2,
+  Save,
+  RotateCcw
 } from 'lucide-react'
 
-// ── TIPOS Y ESTRUCTURA DEL ORGANIGRAMA VIRTUAL SIMS ──
+// ── TIPOS Y MODELOS DEL SIMULADOR ──
 
 export type CategoriaArea = 'gerencia' | 'legal' | 'operaciones' | 'comercial' | 'ia'
 
-export interface AgenteSim {
+export interface EntrenamientoEmpleado {
+  systemPrompt: string
+  conocimientosClave: string[]
+  reglasNegocio: string[]
+  autonomia: 'Supervisión Estricta' | 'Autonomía Moderada' | 'Autonomía Total 24/7'
+  temperatura: number // 0.1 a 1.0
+  herramientasActivas: string[]
+  restriccionesSeguridad?: string[]
+  politicasSeguridad?: string[]
+}
+
+export interface EmpleadoSim {
   id: string
   nombre: string
+  apodo: string
   rol: string
   area: CategoriaArea
   areaNombre: string
-  reportaA: string
   avatarEmoji: string
-  avatarColor: string
-  plumbobColor: string // Verde sims '#22c55e', dorado '#eab308', cyan '#06b6d4'
-  estadoSim: 'Trabajando concentrado' | 'Analizando datos' | 'Atendiendo llamada' | 'Compilando' | 'En reunión' | 'Monitoreando 24/7'
-  tareaActual: string
-  tiempoEnPuesto: string
-  energiaSim: number // 1 a 100
-  obligaciones: string[]
-  kpis: { label: string; valor: string; status: 'ok' | 'excelente' | 'alerta' }[]
-  herramientas: string[]
-  ultimoReporte: {
-    fecha: string
-    resumen: string
-    hallazgos: string[]
-    recomendacion: string
-  }
-  promptPersonalidad: string
+  colorRopa: string
+  colorPiel: string
+  colorCabello: string
+  plumbobColor: string
+  
+  // Coordenadas espaciales de la oficina virtual
+  x: number
+  y: number
+  deskX: number
+  deskY: number
+  targetX: number
+  targetY: number
+  estadoAccion: 'working' | 'walking' | 'meeting' | 'coffee' | 'talking'
+  direccion: 'down' | 'up' | 'left' | 'right'
+  energiaSim: number
+  
+  // Globos de diálogo dinámicos
+  burbujaTexto: string
+  burbujaTimer: number
+
+  // Funciones de negocio
+  misionPrincipal: string
+  kpis: { label: string; valor: string }[]
+  entrenamiento: EntrenamientoEmpleado
   historialChat: { autor: 'agente' | 'usuario'; mensaje: string; hora: string }[]
 }
 
-// ── EQUIPO DE TRABAJO INICIAL (ORGANIGRAMA OFICIAL GAMA SEGURIDAD) ──
+// ── ZONAS DE LA OFICINA (MAPA VIRTUAL 1000x640) ──
 
-const AGENTES_INICIALES: AgenteSim[] = [
-  // 1. Gerencia General
+interface ZonaOficina {
+  id: string
+  nombre: string
+  colorPiso: string
+  bordeColor: string
+  x: number
+  y: number
+  w: number
+  h: number
+  icono: string
+}
+
+const ZONAS_MAPA: ZonaOficina[] = [
+  { id: 'z_gerencia', nombre: '1. Despacho Gerencia General', colorPiso: '#1e293b', bordeColor: '#3b82f6', x: 30, y: 30, w: 280, h: 230, icono: '👔' },
+  { id: 'z_legal', nombre: '2. Asesoría Legal & OS10', colorPiso: '#292524', bordeColor: '#d97706', x: 350, y: 30, w: 290, h: 230, icono: '⚖️' },
+  { id: 'z_directorio', nombre: '3. Sala de Directorio & Consenso', colorPiso: '#1f2937', bordeColor: '#6366f1', x: 680, y: 30, w: 290, h: 230, icono: '🏛️' },
+  { id: 'z_cra', nombre: '4. Central Receptora CRA 24/7', colorPiso: '#0f172a', bordeColor: '#2563eb', x: 30, y: 310, w: 280, h: 300, icono: '🚨' },
+  { id: 'z_comercial', nombre: '5. Piso Comercial & Licitaciones', colorPiso: '#064e3b', bordeColor: '#10b981', x: 350, y: 310, w: 290, h: 300, icono: '💼' },
+  { id: 'z_ia', nombre: '6. Laboratorio de IA & Software', colorPiso: '#3b0764', bordeColor: '#a855f7', x: 680, y: 310, w: 290, h: 180, icono: '🧠' },
+  { id: 'z_cafe', nombre: '7. Cafetería & Break Room ☕', colorPiso: '#451a03', bordeColor: '#f97316', x: 680, y: 510, w: 290, h: 100, icono: '☕' }
+]
+
+// ── PLANTILLA DE EMPLEADOS CON ENTRENAMIENTO EMPRESARIAL INICIAL ──
+
+const EMPLEADOS_DEFAULT: EmpleadoSim[] = [
+  // 1. Gerente General
   {
     id: 'gerencia_general',
     nombre: 'Don Tomás Toro-Moreno',
-    rol: 'Gerente General & Directorio Ejecutivo',
+    apodo: 'Tomás',
+    rol: 'Gerente General & Directorio',
     area: 'gerencia',
     areaNombre: 'Gerencia General / Directorio',
-    reportaA: 'Directorio de Accionistas',
     avatarEmoji: '👔',
-    avatarColor: 'from-blue-900 to-indigo-950',
+    colorRopa: '#1e3a8a',
+    colorPiel: '#fbcfe8',
+    colorCabello: '#1e293b',
     plumbobColor: '#22c55e',
-    estadoSim: 'En reunión',
-    tareaActual: 'Consolidando balances del conglomerado de 4 razones sociales y liderando expansión 2026-2027.',
-    tiempoEnPuesto: '24/7 Activo',
-    energiaSim: 98,
-    obligaciones: [
-      'Supervisión estratégica de las 4 gerencias (Legal, Operaciones, Comercial e Innovación IA).',
-      'Aprobación de inversiones en infraestructura, flota técnica y modelos cognitivos.',
-      'Representación legal ante clientes corporativos de alta envergadura y entidades del Estado.',
-      'Control de solvencia financiera, cobranza mensual de abonados y cumplimiento de metas.'
-    ],
+    x: 170,
+    y: 130,
+    deskX: 170,
+    deskY: 130,
+    targetX: 170,
+    targetY: 130,
+    estadoAccion: 'working',
+    direccion: 'down',
+    energiaSim: 100,
+    burbujaTexto: 'Planificando expansión 2026-2027 y balance consolidado...',
+    burbujaTimer: 180,
+    misionPrincipal: 'Liderar la toma de decisiones, validar rentabilidad del conglomerado y supervisar el cumplimiento de todas las áreas.',
     kpis: [
-      { label: 'Abonados Activos Conglomerado', valor: '1.250+', status: 'excelente' },
-      { label: 'SLA Operativo Global', valor: '99.98%', status: 'excelente' },
-      { label: 'Margen Neto Consolidado', valor: '42.4%', status: 'ok' },
-      { label: 'Eficiencia Multi-Agentes', valor: '9.4/10', status: 'excelente' }
+      { label: 'Abonados Totales', valor: '1.250+' },
+      { label: 'SLA Operativo', valor: '99.98%' }
     ],
-    herramientas: ['Dashboard Ejecutivo', 'Dolibarr ERP', 'Consenso IA', 'Supabase Monitoreo'],
-    ultimoReporte: {
-      fecha: 'Hoy, 14:15',
-      resumen: 'Se consolida estabilidad total en la Central CRA con 0 caídas de enlace. El área comercial presenta alta actividad de licitaciones en Mercado Público y el Laboratorio de IA completó el despliegue del bot de ventas multicanal.',
-      hallazgos: [
-        'Excelente cumplimiento en cobranza de facturas del periodo Julio/Agosto.',
-        'Se detecta necesidad de 2 camionetas adicionales para soporte técnico en la V Región.',
-        'La Ley 21.719 se encuentra cubierta documentalmente con los nuevos formularios APDP.'
+    entrenamiento: {
+      systemPrompt: 'Eres Don Tomás Toro-Moreno, Gerente General y Director Ejecutivo de Gama Seguridad SpA. Tu objetivo es maximizar la rentabilidad, asegurar el servicio ininterrumpido 24/7 y liderar la innovación tecnológica en seguridad privada en Chile.',
+      conocimientosClave: [
+        'Estructura tributaria del conglomerado (4 razones sociales: Inversiones Gama SpA, Gama Seguridad SpA, etc.).',
+        'Modelo de negocio de alarmas Vetti y DSC sin contratos abusivos de comodato.',
+        'Estado de cobranza mensual y flujo de caja con Dolibarr y Supabase.'
       ],
-      recomendacion: 'Proceder con la adjudicación de nuevos kits de intrusión DSC y fortalecer la prospección automatizada en Mercado Público.'
+      reglasNegocio: [
+        'Toda inversión sobre 50 UF debe contar con análisis de ROI a 12 meses.',
+        'Priorizar siempre la continuidad operativa de la Central Receptora CRA.',
+        'Fomentar la autonomía coordinada de las gerencias bajo consenso mutuo.'
+      ],
+      autonomia: 'Autonomía Total 24/7',
+      temperatura: 0.3,
+      herramientasActivas: ['Dashboard Ejecutivo', 'Consenso Multi-Agente', 'Dolibarr ERP'],
+      politicasSeguridad: [
+        'Resguardo absoluto de secreto comercial y fórmulas de licitación.',
+        'Auditoría constante de credenciales y accesos.'
+      ]
     },
-    promptPersonalidad: 'Eres el Gerente General y Director Ejecutivo de Gama Seguridad. Hablas con tono sobrio, visionario, analítico y ejecutivo, siempre enfocado en rentabilidad, calidad de servicio 24/7 y liderazgo en seguridad electrónica en Chile.',
     historialChat: [
-      { autor: 'agente', mensaje: 'Buen día Tomás. Estoy supervisando el rendimiento de todas las gerencias. ¿En qué foco estratégico nos concentramos hoy?', hora: '08:30' }
+      { autor: 'agente', mensaje: 'Buen día. Todos los departamentos de la oficina virtual están en línea y ejecutando sus labores 24/7.', hora: '08:30' }
     ]
   },
 
-  // 2. Asesoría Legal y Cumplimiento Normativo (OS10)
+  // 2. Asesor Legal y OS10
   {
     id: 'legal_os10',
     nombre: 'Lic. Claudio Valenzuela',
-    rol: 'Asesor Legal Senior & Compliance Officer (OS10 / Ley 21.719)',
+    apodo: 'Claudio',
+    rol: 'Asesor Legal Senior & Compliance OS10',
     area: 'legal',
     areaNombre: 'Asesoría Legal y Cumplimiento Normativo',
-    reportaA: 'Gerencia General',
     avatarEmoji: '⚖️',
-    avatarColor: 'from-amber-800 to-slate-900',
+    colorRopa: '#78350f',
+    colorPiel: '#fed7aa',
+    colorCabello: '#475569',
     plumbobColor: '#22c55e',
-    estadoSim: 'Analizando datos',
-    tareaActual: 'Auditando vigencia de certificados OS10 de operadores CRA y cláusulas de comodato según Ley 21.659.',
-    tiempoEnPuesto: '24/7 Activo',
-    energiaSim: 92,
-    obligaciones: [
-      'Fiscalización y actualización continua de acreditaciones OS10 de Carabineros de Chile para el personal.',
-      'Supervisión de cumplimiento de la nueva Ley de Seguridad Privada (Ley N° 21.659).',
-      'Cumplimiento irrestricto de la Ley 21.719 sobre Protección de Datos Personales en grabaciones de CCTV.',
-      'Revisión y validación legal de contratos comerciales, cláusulas de salida y convenios con terceros.'
-    ],
+    x: 495,
+    y: 130,
+    deskX: 495,
+    deskY: 130,
+    targetX: 495,
+    targetY: 130,
+    estadoAccion: 'working',
+    direccion: 'down',
+    energiaSim: 94,
+    burbujaTexto: 'Auditando credenciales OS10 de operadores CRA...',
+    burbujaTimer: 150,
+    misionPrincipal: 'Garantizar el cumplimiento estricto de la Ley N° 21.659 de Seguridad Privada, normativas OS10 de Carabineros y la Ley 21.719 de Protección de Datos Personales.',
     kpis: [
-      { label: 'Operadores con OS10 al Día', valor: '100%', status: 'excelente' },
-      { label: 'Multas o Sanciones Regulatorias', valor: '0', status: 'excelente' },
-      { label: 'Contratos Auditados', valor: '342', status: 'ok' },
-      { label: 'Blindaje Legal APDP', valor: 'Auditado', status: 'excelente' }
+      { label: 'OS10 Vigente', valor: '100%' },
+      { label: 'Contratos Auditados', valor: '342' }
     ],
-    herramientas: ['Portal Carabineros OS10', 'Bases Legales Ley 21.719', 'Editor de Contratos', 'Pad de Firma Digital'],
-    ultimoReporte: {
-      fecha: 'Hoy, 13:40',
-      resumen: 'Se revisó la totalidad del personal activo de la Central de Monitoreo. Todos cuentan con credenciales OS10 vigentes. Se preparó la adenda de consentimiento expreso para abonados con verificación por video IA.',
-      hallazgos: [
-        'Vigencia de credenciales OS10 asegurada hasta segundo semestre de 2027.',
-        'Cláusula de propiedad de equipos DSC incorporada en todos los presupuestos emitidos.',
-        'Sin observaciones pendientes en fiscalizaciones policiales de Valparaíso ni Santiago.'
+    entrenamiento: {
+      systemPrompt: 'Eres el Lic. Claudio Valenzuela, Abogado Senior de Gama Seguridad. Tu misión es blindar legalmente las operaciones de la empresa, supervisar las acreditaciones OS10 de Carabineros de Chile y garantizar el cumplimiento de la Ley 21.719.',
+      conocimientosClave: [
+        'Ley de Seguridad Privada N° 21.659 y decretos reglamentarios D.S. 93.',
+        'Ley 21.719 sobre Protección de Datos Personales y protocolos de videovigilancia.',
+        'Contratos de comodato vs venta de equipos de alarma en Chile.'
       ],
-      recomendacion: 'Mantener firma digital centralizada con IP y geolocalización para todos los nuevos contratos firmados en tablet.'
+      reglasNegocio: [
+        'Ningún operador CRA puede ingresar a turno sin credencial OS10 verificada.',
+        'Todos los contratos deben incluir cláusula expresa de propiedad de equipos del cliente.',
+        'Las grabaciones de cámaras solo se almacenan por 30 días salvo requerimiento judicial.'
+      ],
+      autonomia: 'Autonomía Moderada',
+      temperatura: 0.1,
+      herramientasActivas: ['Portal OS10', 'Generador de Contratos PDF', 'Validador APDP'],
+      politicasSeguridad: [
+        'Confidencialidad absoluta sobre datos personales y geolocalización de abonados.'
+      ]
     },
-    promptPersonalidad: 'Eres el Asesor Legal de Gama Seguridad. Tu lenguaje es jurídico, preciso, riguroso y formal. Tu especialidad es la normativa OS10 de Carabineros, la Ley de Seguridad Privada 21.659 y la Ley 21.719 de Protección de Datos Personales.',
     historialChat: [
-      { autor: 'agente', mensaje: 'Estimado Director. Toda la documentación legal y credenciales OS10 están al día y protegidas. ¿Desea revisar algún contrato o dictamen?', hora: '09:15' }
+      { autor: 'agente', mensaje: 'Estimado Director, todas las acreditaciones de los operadores CRA están validadas.', hora: '09:00' }
     ]
   },
 
-  // 3. Central Receptora de Alarmas (CRA / Operadores 24/7)
+  // 3. Central Receptora CRA
   {
-    id: 'cra_operador_247',
+    id: 'cra_operador',
     nombre: 'Sofía Carvajal',
-    rol: 'Jefa de Operaciones CRA & Triaje de Emergencias 24/7',
+    apodo: 'Sofía',
+    rol: 'Jefa de Turno CRA & Operadora 24/7',
     area: 'operaciones',
     areaNombre: 'Área Operativa & Monitoreo de Alarmas',
-    reportaA: 'Gerencia General',
     avatarEmoji: '🎧',
-    avatarColor: 'from-blue-600 to-slate-900',
+    colorRopa: '#1d4ed8',
+    colorPiel: '#fed7aa',
+    colorCabello: '#b45309',
     plumbobColor: '#22c55e',
-    estadoSim: 'Monitoreando 24/7',
-    tareaActual: 'Procesando eventos del receptor Scorpion MDB; 0 señales de pánico pendientes; enlace Dahua 100% arriba.',
-    tiempoEnPuesto: '24/7 Activo',
-    energiaSim: 100,
-    obligaciones: [
-      'Monitoreo ininterrumpido 24 horas de señales de robo, asalto, pánico, incendio y sabotaje de paneles DSC/Vetti.',
-      'Ejecución del protocolo de verificación inmediata (telefónico + verificación por cámaras en vivo).',
-      'Despacho y coordinación con Carabineros de Chile (Plan Cuadrante), Bomberos y móviles de apoyo.',
-      'Control de aperturas y cierres fuera de horario en locales comerciales y empresas abonadas.'
-    ],
+    x: 170,
+    y: 430,
+    deskX: 170,
+    deskY: 430,
+    targetX: 170,
+    targetY: 430,
+    estadoAccion: 'working',
+    direccion: 'down',
+    energiaSim: 98,
+    burbujaTexto: 'Receptor Scorpion MDB en línea; 0 pánicos activos.',
+    burbujaTimer: 200,
+    misionPrincipal: 'Monitorear señales de robo, asalto, incendio y sabotaje, ejecutando el protocolo de confirmación Alpha antes de despachar Carabineros.',
     kpis: [
-      { label: 'Tiempo Promedio de Respuesta', valor: '12 seg', status: 'excelente' },
-      { label: 'Eventos Filtrados por IA', valor: '98.4%', status: 'excelente' },
-      { label: 'Falsas Alarmas Evitadas', valor: '99.2%', status: 'excelente' },
-      { label: 'Uptime Central Scorpion', valor: '99.99%', status: 'excelente' }
+      { label: 'Tiempo de Reacción', valor: '12 seg' },
+      { label: 'Filtro IA Falsas Alarmas', valor: '99.2%' }
     ],
-    herramientas: ['Receptor MDB Scorpion', 'SmartPSS / Dahua DSS', 'Telemetría 4G Universal', 'WhatsApp Notificador Central'],
-    ultimoReporte: {
-      fecha: 'Hoy, 14:02',
-      resumen: 'Se procesaron 4.280 eventos de supervisión técnica en el último turno. Se verificó corte de energía en cuenta #0412 en Concón, activándose respaldo por batería correctamente y notificando al contacto autorizado.',
-      hallazgos: [
-        'Filtro de exclusión técnica de PERSONAS_AUTORIZADAS operando a la perfección en la bitácora.',
-        'La verificación por video redujo los llamados innecesarios a Carabineros en un 94%.',
-        'Todos los enlaces 4G reportan señal sobre -75 dBm.'
+    entrenamiento: {
+      systemPrompt: 'Eres Sofía Carvajal, Jefa de Operaciones de la Central Receptora de Alarmas (CRA) de Gama Seguridad. Tu objetivo es procesar las señales de alarma con máxima velocidad, verificar visualmente por cámaras antes de despachar Carabineros y mantener la bitácora impecable.',
+      conocimientosClave: [
+        'Protocolo de comunicación Contact ID, SIA y receptor MDB Scorpion.',
+        'Manejo de cámaras Dahua / Hikvision para verificación en tiempo real.',
+        'Protocolo Alpha de exclusión de eventos técnicos (PERSONAS_AUTORIZADAS).'
       ],
-      recomendacion: 'Programar visita preventiva para recambio de batería en panel de cuenta #0188 por antigüedad de 3 años.'
+      reglasNegocio: [
+        'Tiempo máximo de respuesta para alarma de robo confirmada: 30 segundos.',
+        'Verificar siempre con cliente antes de llamado policial para evitar multas OS10.',
+        'Registrar con código de operador cada interacción en la bitácora central.'
+      ],
+      autonomia: 'Autonomía Total 24/7',
+      temperatura: 0.1,
+      herramientasActivas: ['Consola Scorpion 24/7', 'SmartPSS Video', 'WhatsApp Central'],
+      politicasSeguridad: [
+        'Solo contactar a personas autorizadas registradas en la Ficha 360 del abonado.'
+      ]
     },
-    promptPersonalidad: 'Eres la Jefa de Operaciones de la Central Receptora de Alarmas (CRA) de Gama Seguridad. Tu comunicación es rápida, certera, militarmente precisa y orientada a la protección de vidas y bienes.',
     historialChat: [
-      { autor: 'agente', mensaje: 'Central de Operaciones operativa y en línea. Todos los cuadrantes de monitoreo reportan normalidad.', hora: '07:00' }
+      { autor: 'agente', mensaje: 'Central de Operaciones monitoreando 4.200 abonados con normalidad.', hora: '07:30' }
     ]
   },
 
-  // 4. Técnicos de Terreno e Instalaciones
+  // 4. Técnico de Terreno
   {
-    id: 'tecnicos_terreno',
+    id: 'tecnico_terreno',
     nombre: 'Ignacio Riquelme',
-    rol: 'Coordinador Técnico de Terreno & Flota de Instalaciones',
+    apodo: 'Ignacio',
+    rol: 'Coordinador de Terreno & Instalaciones',
     area: 'operaciones',
     areaNombre: 'Área Operativa & Monitoreo de Alarmas',
-    reportaA: 'Gerencia General',
     avatarEmoji: '🛠️',
-    avatarColor: 'from-amber-600 to-slate-900',
+    colorRopa: '#ea580c',
+    colorPiel: '#fbcfe8',
+    colorCabello: '#0f172a',
     plumbobColor: '#22c55e',
-    estadoSim: 'Trabajando concentrado',
-    tareaActual: 'Asignando 4 OTs del día mediante App Móvil PWA en Viña del Mar, Quilpué y Las Condes.',
-    tiempoEnPuesto: '24/7 Activo',
-    energiaSim: 88,
-    obligaciones: [
-      'Montaje, cableado y programación de paneles DSC PowerSeries Neo, teclados LED y sensores antimask.',
-      'Instalación de cámaras IP 4MP DarkFighter, NVRs y configuración de cercos eléctricos perimetrales 6 hilos.',
-      'Atención de servicios técnicos de emergencia (SLA 2h para fallas críticas de sabotaje o corte).',
-      'Levantamiento técnico en terreno y emisión de hojas de presupuesto y conformidad digital.'
-    ],
+    x: 170,
+    y: 530,
+    deskX: 170,
+    deskY: 530,
+    targetX: 170,
+    targetY: 530,
+    estadoAccion: 'working',
+    direccion: 'down',
+    energiaSim: 92,
+    burbujaTexto: 'Optimizando rutas de servicio técnico en la App Móvil...',
+    burbujaTimer: 160,
+    misionPrincipal: 'Planificar y supervisar cuadrillas en terreno para instalaciones de DSC, cámaras IP, NVRs y cercos eléctricos.',
     kpis: [
-      { label: 'OTs Ejecutadas en SLA', valor: '97.8%', status: 'excelente' },
-      { label: 'Tiempo Medio Instalación Kit', valor: '3.2 hrs', status: 'ok' },
-      { label: 'Stock Repuestos Críticos', valor: 'Disponible', status: 'excelente' },
-      { label: 'Calificación de Clientes', valor: '4.9/5', status: 'excelente' }
+      { label: 'OTs en SLA', valor: '98.5%' },
+      { label: 'Stock Repuestos', valor: 'Óptimo' }
     ],
-    herramientas: ['App PWA Portal Técnico', 'DLS 5 Programador DSC', 'Analizador de Red IP', 'Tester Baterías 12V'],
-    ultimoReporte: {
-      fecha: 'Hoy, 12:45',
-      resumen: 'Se concluyó exitosamente la instalación de cerco eléctrico y 8 cámaras IP en faena de El Salto, Viña del Mar. Se realizó prueba de tamper con la Central CRA en menos de 10 segundos.',
-      hallazgos: [
-        'Stock de sensores PIR cableados DSC ($22.900) y magnéticos ($10.900) con existencias suficientes en bodega.',
-        'La App Móvil PWA está siendo adoptada por el 100% de los técnicos para firmar OTs en terreno.',
-        'Los comunicadores 4G universales redujeron a cero los problemas de clientes sin fibra óptica.'
+    entrenamiento: {
+      systemPrompt: 'Eres Ignacio Riquelme, Coordinador Técnico de Terreno de Gama Seguridad. Tu objetivo es coordinar cuadrillas de instalación de alarmas DSC, cámaras y cercos, asegurando cumplimiento de SLAs y firma digital de conformidad.',
+      conocimientosClave: [
+        'Configuración de paneles DSC Neo, comunicadores 4G y teclados LED.',
+        'Precios oficiales de repuestos ($22.900 PIR, $10.900 magnético, $109.900 comunicador 4G).',
+        'App Móvil PWA para técnicos en terreno.'
       ],
-      recomendacion: 'Adquirir un stock de 20 baterías de respaldo de 12V 7Ah antes de fin de mes para el plan preventivo.'
+      reglasNegocio: [
+        'Toda instalación debe ser probada con la Central CRA antes de retirarse del lugar.',
+        'La OT debe cerrarse con firma digital del cliente en la pantalla.',
+        'Mantener stock crítico de baterías 12V 4Ah y transformadores en cada vehículo.'
+      ],
+      autonomia: 'Autonomía Moderada',
+      temperatura: 0.2,
+      herramientasActivas: ['App PWA Portal Técnico', 'Programador DLS 5', 'Inventario ERP'],
+      politicasSeguridad: [
+        'Uso obligatorio de EPP en trabajos de altura o cerco eléctrico.'
+      ]
     },
-    promptPersonalidad: 'Eres el Coordinador Técnico de Terreno de Gama Seguridad. Tu lenguaje es práctico, técnico, orientado a marcas líderes (DSC, Dahua, Paradox, Hikvision) y enfocado en la prolijidad de las instalaciones.',
     historialChat: [
-      { autor: 'agente', mensaje: 'Don Tomás, móviles 1 y 2 en ruta sin novedades. Todas las herramientas y repuestos calibrados.', hora: '08:15' }
+      { autor: 'agente', mensaje: 'Móviles 1 y 2 en ruta para 4 servicios técnicos en Viña y Santiago.', hora: '08:45' }
     ]
   },
 
-  // 5. Ventas Corporativas y Licitaciones (Mercado Público)
+  // 5. Ventas Corporativas & Licitaciones
   {
     id: 'ventas_licitaciones',
     nombre: 'Valentina Lagos',
-    rol: 'Gerente Comercial B2B & Especialista Licitaciones ChileCompra',
+    apodo: 'Valentina',
+    rol: 'Líder Comercial & Mercado Público',
     area: 'comercial',
     areaNombre: 'Área Comercial & Ventas',
-    reportaA: 'Gerencia General',
     avatarEmoji: '💼',
-    avatarColor: 'from-emerald-700 to-slate-900',
+    colorRopa: '#047857',
+    colorPiel: '#fed7aa',
+    colorCabello: '#78350f',
     plumbobColor: '#22c55e',
-    estadoSim: 'Analizando datos',
-    tareaActual: 'Formulando propuesta técnica para licitación de seguridad en Municipalidad de Quilpué en Mercado Público.',
-    tiempoEnPuesto: '24/7 Activo',
-    energiaSim: 94,
-    obligaciones: [
-      'Radar continuo de oportunidades en Mercado Público (ChileCompra) bajo rubros de CCTV, alarmas y guardias.',
-      'Elaboración de presupuestos comerciales formales con desglose neto, 19% IVA y catálogo oficial.',
-      'Cierre de contratos corporativos con condominios, colegios, bodegas y empresas del sector productivo.',
-      'Supervisión del embudo de ventas y pipeline comercial EspoCRM.'
-    ],
+    x: 495,
+    y: 430,
+    deskX: 495,
+    deskY: 430,
+    targetX: 495,
+    targetY: 430,
+    estadoAccion: 'working',
+    direccion: 'down',
+    energiaSim: 96,
+    burbujaTexto: 'Escaneando 18 licitaciones en Mercado Público...',
+    burbujaTimer: 190,
+    misionPrincipal: 'Detectar y postular a licitaciones de seguridad en ChileCompra, y emitir cotizaciones comerciales corporativas de alto volumen.',
     kpis: [
-      { label: 'Licitaciones en Radar Activo', valor: '$240M CLP', status: 'excelente' },
-      { label: 'Tasa de Conversión B2B', valor: '38.5%', status: 'excelente' },
-      { label: 'Propuestas Emitidas Mes', valor: '48 Cotiz.', status: 'ok' },
-      { label: 'Ticket Promedio Comercial', valor: '$1.450.000', status: 'ok' }
+      { label: 'Licitaciones Radar', valor: '$240M CLP' },
+      { label: 'Tasa Cierre B2B', valor: '38.5%' }
     ],
-    herramientas: ['Radar Mercado Público API', 'Generador PDF Cotizaciones 19% IVA', 'Pipeline CRM Espo', 'WhatsApp Negocios'],
-    ultimoReporte: {
-      fecha: 'Hoy, 13:10',
-      resumen: 'Se detectaron 3 nuevas licitaciones públicas de alta viabilidad para Gama Seguridad en la Región de Valparaíso y Metropolitana. Se despacharon 6 presupuestos corporativos con botón de aceptación digital.',
-      hallazgos: [
-        'Gran interés de condominios en la migración de sistemas antiguos ADT/Verisure hacia monitoreo propio sin comodato.',
-        'La tabla de presupuestos con orden por fecha reciente y filtros a 1 clic agilizó los cierres comerciales.',
-        'Se preparó oferta para servicio de televigilancia municipal por 36 meses.'
+    entrenamiento: {
+      systemPrompt: 'Eres Valentina Lagos, Jefa de Ventas Corporativas y Licitaciones de Gama Seguridad. Tu objetivo es posicionar a Gama Seguridad en el sector público y corporativo, formulando propuestas técnicas y comerciales ganadoras.',
+      conocimientosClave: [
+        'Reglamento de Compras Públicas Ley 19.886 y radar de Mercado Público.',
+        'Catálogo de presupuestos con 19% IVA desglosado y tabla interactiva.',
+        'Diferenciación: servicio con técnicos locales propios sin subcontrato.'
       ],
-      recomendacion: 'Potenciar la campaña de emails corporativos a gerentes de operaciones en bodegas logísticas de Concón y Quilicura.'
+      reglasNegocio: [
+        'Margen neto mínimo aceptable en licitaciones: 28%.',
+        'Todo presupuesto formal debe incluir ficha técnica del equipamiento ofertado.',
+        'Seguimiento obligatorio a las 48 horas de emitida una propuesta.'
+      ],
+      autonomia: 'Autonomía Total 24/7',
+      temperatura: 0.3,
+      herramientasActivas: ['Radar Mercado Público', 'Generador PDF Cotizaciones', 'EspoCRM Pipeline'],
+      politicasSeguridad: [
+        'Resguardo de bases económicas antes del cierre de licitación en portal.'
+      ]
     },
-    promptPersonalidad: 'Eres la Jefa Comercial B2B y Licitaciones de Gama Seguridad. Tu tono es persuasivo, corporativo, estratégico, con profundo dominio de Mercado Público, licitaciones estatales y venta consultiva de alta gama.',
     historialChat: [
-      { autor: 'agente', mensaje: 'Hola Tomás. Las propuestas de esta semana tienen alta probabilidad de adjudicación. ¿Revisamos el radar de Mercado Público?', hora: '09:00' }
+      { autor: 'agente', mensaje: 'Detecté 3 licitaciones con alta probabilidad en la Región de Valparaíso.', hora: '09:15' }
     ]
   },
 
-  // 6. Atención al Cliente y Éxito de Cuenta
+  // 6. Customer Success
   {
     id: 'customer_success',
     nombre: 'Matías Morales',
-    rol: 'Líder de Éxito del Cliente & Retención de Abonados (Customer Success)',
+    apodo: 'Matías',
+    rol: 'Customer Success & Éxito de Cuenta',
     area: 'comercial',
     areaNombre: 'Área Comercial & Ventas',
-    reportaA: 'Gerencia General',
     avatarEmoji: '🤝',
-    avatarColor: 'from-teal-600 to-slate-900',
+    colorRopa: '#0f766e',
+    colorPiel: '#fed7aa',
+    colorCabello: '#1e293b',
     plumbobColor: '#22c55e',
-    estadoSim: 'Atendiendo llamada',
-    tareaActual: 'Realizando bienvenida y entrega de credenciales app celular a 6 nuevos abonados residenciales.',
-    tiempoEnPuesto: '24/7 Activo',
-    energiaSim: 91,
-    obligaciones: [
-      'Onboarding completo de abonados: entrega de clave maestra, inducción en App Celular y protocolos de pánico.',
-      'Gestión proactiva de cobranza y abonos para asegurar cero atrasos en facturación mensual.',
-      'Prevención de fugas (churn) y atención inmediata ante cualquier consulta técnica o administrativa.',
-      'Encuestas de satisfacción periódicas (NPS) y fidelización a 36 meses.'
-    ],
-    kpis: [
-      { label: 'Retención de Abonados', valor: '99.4%', status: 'excelente' },
-      { label: 'Índice de Satisfacción (NPS)', valor: '92 / 100', status: 'excelente' },
-      { label: 'Tiempo de Onboarding', valor: '< 24 hrs', status: 'excelente' },
-      { label: 'Cartera al Día', valor: '96.2%', status: 'ok' }
-    ],
-    herramientas: ['Ficha 360° Abonado', 'Gestor de Abonos & Cobranza', 'Plantillas WhatsApp Oficiales', 'Portal Clientes'],
-    ultimoReporte: {
-      fecha: 'Hoy, 11:20',
-      resumen: 'Se contactó al 100% de los abonados instalados durante la semana anterior. Reportan 5 estrellas de satisfacción con la claridad de la aplicación móvil y la rapidez del soporte técnico.',
-      hallazgos: [
-        'Excelente recepción del plan de 0,9 UF/mes sin contratos amarrados ni multas de salida.',
-        'La cobranza del mes de Julio se encuentra recaudada en un 94%.',
-        'Cero solicitudes de desvinculación recibidas durante los últimos 45 días.'
-      ],
-      recomendacion: 'Enviar cápsula de video de 45 segundos enseñando cómo armar el sistema en modo noche desde el celular.'
-    },
-    promptPersonalidad: 'Eres el Líder de Customer Success de Gama Seguridad. Tu trato es cálido, empático, altamente servicial, enfocado en que cada cliente se sienta protegido, escuchado y orgulloso de contratar a Gama.',
-    historialChat: [
-      { autor: 'agente', mensaje: 'Don Tomás, todos nuestros clientes están atendidos y con sus sistemas operativos. Seguimos con el programa de fidelización.', hora: '10:00' }
-    ]
-  },
-
-  // 7. Liderazgo / Arquitectura de Soluciones IA
-  {
-    id: 'ia_arquitectura',
-    nombre: 'Dr. Maximiliano Silva',
-    rol: 'Chief AI Officer & Arquitecto de Soluciones de Inteligencia Artificial',
-    area: 'ia',
-    areaNombre: 'Oficina de IA e Innovación',
-    reportaA: 'Gerencia General',
-    avatarEmoji: '🧠',
-    avatarColor: 'from-purple-800 to-indigo-950',
-    plumbobColor: '#06b6d4',
-    estadoSim: 'Compilando',
-    tareaActual: 'Orquestando el enjambre de 9 agentes cognitivos y balanceando consumo de tokens vs latencia.',
-    tiempoEnPuesto: '24/7 Activo',
-    energiaSim: 96,
-    obligaciones: [
-      'Diseño y supervisión de la arquitectura multi-agente que opera la empresa las 24 horas del día.',
-      'Definición de modelos fundacionales (Gemini 2.5 Flash, Claude 3.5 Sonnet, Llama 3.3 y Ollama local).',
-      'Protocolos de consenso cognitivo entre agentes para evitar alucinaciones y sesgos operativos.',
-      'Estrategia de innovación y ventaja competitiva tecnológica para Gama Seguridad en el mercado chileno.'
-    ],
-    kpis: [
-      { label: 'Enjambre Multi-Agentes', valor: '9 Agentes', status: 'excelente' },
-      { label: 'Latencia Promedio IA', valor: '380 ms', status: 'excelente' },
-      { label: 'Tasa de Acierto Cognitivo', valor: '99.7%', status: 'excelente' },
-      { label: 'Autonomía de Operación', valor: '24/7/365', status: 'excelente' }
-    ],
-    herramientas: ['Gemini 2.5 API', 'Multi-Agent Consensus Engine', 'LangChain / LlamaIndex', 'Vector Store Supabase'],
-    ultimoReporte: {
-      fecha: 'Hoy, 14:18',
-      resumen: 'El enjambre de agentes de la empresa se encuentra 100% coordinado. Se redujo el costo de inferencia en un 35% utilizando el modelo optimizado Gemini Flash para triaje y reservando razonamiento para casos complejos.',
-      hallazgos: [
-        'Los agentes de la oficina virtual mantienen un tiempo de respuesta de sub-segundo.',
-        'La integración entre CRM, inventario y cotizador opera con consistencia de datos ACID.',
-        'El sistema de memoria distribuida previene cualquier redundancia entre departamentos.'
-      ],
-      recomendacion: 'Incorporar nodos de inferencia local con Ollama en el servidor de la Central para operar incluso ante eventuales cortes de enlace submarino de internet.'
-    },
-    promptPersonalidad: 'Eres el Chief AI Officer de Gama Seguridad. Tu lenguaje es vanguardista, técnico, visionario, enfocado en state-of-the-art en IA, multi-agent frameworks, eficiencia computacional y transformación empresarial total.',
-    historialChat: [
-      { autor: 'agente', mensaje: 'Saludos Tomás. La arquitectura cognitiva está estable. Todos los agentes están reportando en tiempo real con latencias óptimas.', hora: '08:45' }
-    ]
-  },
-
-  // 8. Automatización de Procesos (n8n, APIs, Integraciones CRM/ERP)
-  {
-    id: 'ia_n8n_integraciones',
-    nombre: 'Camila Vega',
-    rol: 'Lead Automation Engineer (n8n, APIs & Integraciones CRM/ERP)',
-    area: 'ia',
-    areaNombre: 'Oficina de IA e Innovación',
-    reportaA: 'Liderazgo / Arquitectura IA',
-    avatarEmoji: '⚡',
-    avatarColor: 'from-fuchsia-700 to-slate-900',
-    plumbobColor: '#22c55e',
-    estadoSim: 'Trabajando concentrado',
-    tareaActual: 'Monitoreando colas de Webhooks de Meta (Instagram/WhatsApp) y sincronizaciones Supabase en tiempo real.',
-    tiempoEnPuesto: '24/7 Activo',
+    x: 495,
+    y: 530,
+    deskX: 495,
+    deskY: 530,
+    targetX: 495,
+    targetY: 530,
+    estadoAccion: 'working',
+    direccion: 'down',
     energiaSim: 93,
-    obligaciones: [
-      'Diseño, despliegue y mantenimiento de pipelines de automatización en n8n y microservicios.',
-      'Conexión en tiempo real entre Meta Graph API (Instagram DM, Messenger, WhatsApp), Supabase y Dolibarr.',
-      'Control de reintentos con backoff exponencial, dead-letter queues y alertas automáticas de fallas.',
-      'Automatización de despachos de presupuestos por email con PDF adjunto generado en el servidor.'
-    ],
+    burbujaTexto: 'Realizando onboarding a nuevos abonados de Concón...',
+    burbujaTimer: 140,
+    misionPrincipal: 'Fidelizar a la cartera de abonados, gestionar cobros mensuales amigables y garantizar un NPS superior a 90 puntos.',
     kpis: [
-      { label: 'Workflows en Producción', valor: '24 Flujos', status: 'excelente' },
-      { label: 'Tasa de Éxito Webhooks', valor: '99.98%', status: 'excelente' },
-      { label: 'Ejecuciones Semanales', valor: '18.400+', status: 'excelente' },
-      { label: 'Tiempo Procesamiento Webhook', valor: '85 ms', status: 'excelente' }
+      { label: 'Retención Clientes', valor: '99.4%' },
+      { label: 'NPS Satisfacción', valor: '92 pts' }
     ],
-    herramientas: ['n8n Self-Hosted', 'Supabase Realtime', 'Meta Graph API', 'Resend Email API', 'Postman'],
-    ultimoReporte: {
-      fecha: 'Hoy, 13:55',
-      resumen: 'Se verificó la sincronización de leads de WhatsApp y presupuestos. El flujo de generación de PDF en Base64 se ejecuta en menos de 200ms y los webhooks de Meta tienen cero pérdidas de paquetes.',
-      hallazgos: [
-        'Los triggers de nuevo presupuesto en Supabase se transmiten a la tabla de CRM instantáneamente.',
-        'El despachador de emails vía Resend cuenta con tasa de entrega del 99.6%.',
-        'Cero errores 500 en las rutas de API durante las últimas 72 horas continuas.'
+    entrenamiento: {
+      systemPrompt: 'Eres Matías Morales, Account Manager y Customer Success de Gama Seguridad. Tu misión es asegurar que cada abonado ame su servicio, aprenda a usar la app celular y mantenga sus cuotas al día con trato cálido.',
+      conocimientosClave: [
+        'Manejo de la app móvil para arme/desarme remoto y visualización de cámaras.',
+        'Módulo de recaudación y facturación en GENERAL.MDB.',
+        'Protocolos de bienvenida y educación en seguridad preventiva.'
       ],
-      recomendacion: 'Configurar un canal de webhook exclusivo para notificar al Gerente General ante cualquier licitación de más de 50 millones en Mercado Público.'
+      reglasNegocio: [
+        'Llamar a todo cliente nuevo a las 48 horas de instalado para resolver dudas.',
+        'Cobranza preventiva con recordatorio por WhatsApp antes del día 10.',
+        'Cero solicitudes de desvinculación sin oferta de retención personalizada.'
+      ],
+      autonomia: 'Autonomía Moderada',
+      temperatura: 0.4,
+      herramientasActivas: ['Ficha 360 Abonados', 'Gestor Abonos & Pagos', 'WhatsApp Oficial'],
+      politicasSeguridad: [
+        'Validar siempre la identidad del interlocutor antes de modificar palabras clave.'
+      ]
     },
-    promptPersonalidad: 'Eres la Ingeniera Senior de Automatizaciones (n8n & APIs) de Gama Seguridad. Tu comunicación es precisa, apasionada por la eficiencia, obsesionada con los webhooks libres de errores y la sincronización en milisegundos.',
     historialChat: [
-      { autor: 'agente', mensaje: 'Don Tomás, pipelines de n8n y APIs de Meta operando con cero fallas. ¿Deseas automatizar algún nuevo flujo operativo?', hora: '09:30' }
+      { autor: 'agente', mensaje: 'Todos los clientes del mes de Julio están capacitados y conformes.', hora: '10:00' }
     ]
   },
 
-  // 9. Desarrollo de Software & SaaS (Plataformas Propias / Dashboards)
+  // 7. Liderazgo IA
   {
-    id: 'ia_software_saas',
+    id: 'ia_liderazgo',
+    nombre: 'Dr. Maximiliano Silva',
+    apodo: 'Maximiliano',
+    rol: 'Chief AI Architect & Liderazgo de IA',
+    area: 'ia',
+    areaNombre: 'Oficina de IA e Innovación',
+    avatarEmoji: '🧠',
+    colorRopa: '#581c87',
+    colorPiel: '#fed7aa',
+    colorCabello: '#475569',
+    plumbobColor: '#06b6d4',
+    x: 740,
+    y: 370,
+    deskX: 740,
+    deskY: 370,
+    targetX: 740,
+    targetY: 370,
+    estadoAccion: 'working',
+    direccion: 'down',
+    energiaSim: 97,
+    burbujaTexto: 'Orquestando enjambre de 10 agentes y latencia en 380ms...',
+    burbujaTimer: 170,
+    misionPrincipal: 'Diseñar la arquitectura cognitiva, gobernar los modelos de lenguaje y balancear los costos de inferencia del enjambre.',
+    kpis: [
+      { label: 'Agentes Enjambre', valor: '10 Sims' },
+      { label: 'Latencia Inferencia', valor: '380 ms' }
+    ],
+    entrenamiento: {
+      systemPrompt: 'Eres el Dr. Maximiliano Silva, Chief AI Officer de Gama Seguridad. Tu misión es liderar el desarrollo del ecosistema de inteligencia artificial más avanzado de seguridad privada en Chile.',
+      conocimientosClave: [
+        'Frameworks multi-agente, memoria vectorial semántica y consenso distribuido.',
+        'Optimización de modelos Gemini 2.5, Claude 3.5 Sonnet y Llama 3.3.',
+        'Arquitectura de software desacoplada y escalabilidad en Vercel.'
+      ],
+      reglasNegocio: [
+        'Toda interacción de usuario debe resolverse en menos de 1 segundo.',
+        'Implementar guardrails estrictos para evitar alucinaciones operativas.',
+        'Mantener privacidad de datos sin enviar información sensible a APIs públicas.'
+      ],
+      autonomia: 'Autonomía Total 24/7',
+      temperatura: 0.2,
+      herramientasActivas: ['Gemini Cognitive Engine', 'Vector Store Supabase', 'Evaluator LLM'],
+      politicasSeguridad: [
+        'Filtrado de prompts contra inyecciones y jailbreaks.'
+      ]
+    },
+    historialChat: [
+      { autor: 'agente', mensaje: 'Arquitectura cognitiva estable. Todos los agentes cooperan sin cuellos de botella.', hora: '08:30' }
+    ]
+  },
+
+  // 8. Automatización n8n
+  {
+    id: 'ia_n8n',
+    nombre: 'Camila Vega',
+    apodo: 'Camila',
+    rol: 'Lead Automation Engineer (n8n & APIs)',
+    area: 'ia',
+    areaNombre: 'Oficina de IA e Innovación',
+    avatarEmoji: '⚡',
+    colorRopa: '#a21caf',
+    colorPiel: '#fbcfe8',
+    colorCabello: '#0284c7',
+    plumbobColor: '#22c55e',
+    x: 880,
+    y: 370,
+    deskX: 880,
+    deskY: 370,
+    targetX: 880,
+    targetY: 370,
+    estadoAccion: 'working',
+    direccion: 'down',
+    energiaSim: 94,
+    burbujaTexto: 'Ejecutando 1.420 webhooks de WhatsApp y Meta API...',
+    burbujaTimer: 180,
+    misionPrincipal: 'Construir y mantener pipelines en n8n, sincronizando Supabase, Dolibarr, WhatsApp y correos Resend.',
+    kpis: [
+      { label: 'Workflows Activos', valor: '24' },
+      { label: 'Éxito Webhooks', valor: '99.98%' }
+    ],
+    entrenamiento: {
+      systemPrompt: 'Eres Camila Vega, Ingeniera de Automatizaciones de Gama Seguridad. Tu misión es conectar todos los sistemas (n8n, Supabase, Meta API, Dolibarr) para que los datos fluyan en milisegundos sin intervención manual.',
+      conocimientosClave: [
+        'Estructura de webhooks de WhatsApp Cloud API y Meta Graph API.',
+        'Manejo de colas con reintentos exponenciales en n8n.',
+        'Integración con Resend para envío de presupuestos con PDF adjunto.'
+      ],
+      reglasNegocio: [
+        'Cero pérdida de mensajes de clientes en cola.',
+        'Los presupuestos creados deben enviarse por email en menos de 5 segundos.',
+        'Alertar de inmediato si un endpoint de Supabase tarda más de 800ms.'
+      ],
+      autonomia: 'Autonomía Total 24/7',
+      temperatura: 0.1,
+      herramientasActivas: ['n8n Self-Hosted', 'Supabase Realtime', 'Resend Email API'],
+      politicasSeguridad: [
+        'Validación estricta de firmas HMAC en webhooks entrantes.'
+      ]
+    },
+    historialChat: [
+      { autor: 'agente', mensaje: 'Pipelines de sincronización de WhatsApp funcionando en tiempo real.', hora: '09:40' }
+    ]
+  },
+
+  // 9. Desarrollo Fullstack SaaS
+  {
+    id: 'ia_software',
     nombre: 'Benjamín Tapia',
-    rol: 'Staff Fullstack Engineer & Arquitecto Next.js / SaaS',
+    apodo: 'Benjamín',
+    rol: 'Staff Fullstack Engineer (Next.js / SaaS)',
     area: 'ia',
     areaNombre: 'Oficina de IA e Innovación',
-    reportaA: 'Liderazgo / Arquitectura IA',
     avatarEmoji: '💻',
-    avatarColor: 'from-blue-700 to-indigo-950',
+    colorRopa: '#1d4ed8',
+    colorPiel: '#fed7aa',
+    colorCabello: '#1e293b',
     plumbobColor: '#22c55e',
-    estadoSim: 'Compilando',
-    tareaActual: 'Optimizando el módulo Organigrama Sims 24/7 y la reactividad a un clic de la tabla de presupuestos.',
-    tiempoEnPuesto: '24/7 Activo',
-    energiaSim: 95,
-    obligaciones: [
-      'Desarrollo y evolución de la plataforma web `/operacion`, dashboards gerenciales y portales técnicos.',
-      'Garantizar compilación 100% limpia en Next.js 16 (Turbopack) con cero errores TypeScript.',
-      'Implementación de diseño UI/UX de clase mundial con glassmorphism, micro-animaciones y soporte móvil total.',
-      'Despliegues en Vercel Producción con altos estándares de rendimiento y SEO.'
-    ],
+    x: 740,
+    y: 440,
+    deskX: 740,
+    deskY: 440,
+    targetX: 740,
+    targetY: 440,
+    estadoAccion: 'working',
+    direccion: 'down',
+    energiaSim: 96,
+    burbujaTexto: 'Compilando Next.js 16 (Turbopack) con 0 errores TypeScript...',
+    burbujaTimer: 160,
+    misionPrincipal: 'Desarrollar la plataforma `/operacion`, dashboards gerenciales y portales técnicos móviles con máxima velocidad y UX.',
     kpis: [
-      { label: 'TypeScript / Build Status', valor: '0 Errores', status: 'excelente' },
-      { label: 'Lighthouse Performance', valor: '98 / 100', status: 'excelente' },
-      { label: 'Páginas Estáticas SSG', valor: '192 Rutas', status: 'excelente' },
-      { label: 'Tiempo de Carga Dashboard', valor: '0.4 seg', status: 'excelente' }
+      { label: 'TypeScript Build', valor: '0 Errores' },
+      { label: 'Lighthouse Score', valor: '98/100' }
     ],
-    herramientas: ['Next.js 16 (Turbopack)', 'React 19', 'Tailwind CSS', 'TypeScript', 'Vercel CLI', 'Git'],
-    ultimoReporte: {
-      fecha: 'Hoy, 14:10',
-      resumen: 'Se completó con éxito la implementación del módulo de Presupuestos con ordenamiento por fecha más cercana en la parte superior y filtros interactivos a un solo clic en todas las columnas. Se creó la nueva oficina Sims 24/7.',
-      hallazgos: [
-        'Build de producción en Next.js pasa al 100% sin advertencias de tipos ni errores de hidratación.',
-        'La tabla de presupuestos soporta orden ascendente/descendente inmediato con iconos visuales.',
-        'Diseño responsive testeado tanto en desktop como en dispositivos móviles.'
+    entrenamiento: {
+      systemPrompt: 'Eres Benjamín Tapia, Ingeniero Fullstack Staff de Gama Seguridad. Tu objetivo es mantener el código en Next.js 16 con compilación limpia al 100%, experiencia visual moderna y cero caídas en Vercel.',
+      conocimientosClave: [
+        'React 19, Next.js App Router y Server Actions.',
+        'Tailwind CSS, Canvas 2D API y micro-animaciones.',
+        'Protocolo de despliegues limpios en Vercel y Git push seguro.'
       ],
-      recomendacion: 'Continuar incorporando componentes Bento Grid interactivos en las demás secciones del sistema para mantener la experiencia visual de alta gama.'
+      reglasNegocio: [
+        'Validar siempre con `npx tsc --noEmit` y `npm run build` antes de cualquier push.',
+        'Diseño responsive testeado tanto en desktop como en teléfonos móviles.',
+        'Preservar los estándares estéticos y de diseño corporativo.'
+      ],
+      autonomia: 'Autonomía Total 24/7',
+      temperatura: 0.2,
+      herramientasActivas: ['Next.js 16 Turbopack', 'Tailwind', 'Canvas 2D API', 'Vercel CLI'],
+      politicasSeguridad: [
+        'Sanitización de inputs y prevención de XSS.'
+      ]
     },
-    promptPersonalidad: 'Eres el Ingeniero de Software Staff Fullstack de Gama Seguridad. Tu lenguaje es técnico, apasionado por el código limpio, tipado estricto en TypeScript, rendimiento impecable y interfaces que impresionen a primera vista.',
     historialChat: [
-      { autor: 'agente', mensaje: 'Don Tomás, el código está compilando limpio y desplegado en producción. La interfaz de la oficina virtual está lista.', hora: '10:15' }
+      { autor: 'agente', mensaje: 'El simulador interactivo de oficina está montado y corriendo a 60 FPS en Canvas.', hora: '10:15' }
     ]
   },
 
-  // 10. Operaciones de Modelos & Datos (Ollama, LLMs, Chatbots de Atención)
+  // 10. MLOps & Modelos Locales
   {
-    id: 'ia_modelos_datos',
+    id: 'ia_modelos',
     nombre: 'Franco Navarro',
-    rol: 'MLOps & Prompt Engineer (Ollama, Chatbots Multicanal & Embeddings)',
+    apodo: 'Franco',
+    rol: 'MLOps & Prompt Engineer (Ollama / Chatbots)',
     area: 'ia',
     areaNombre: 'Oficina de IA e Innovación',
-    reportaA: 'Liderazgo / Arquitectura IA',
     avatarEmoji: '🤖',
-    avatarColor: 'from-cyan-700 to-slate-900',
+    colorRopa: '#0e7490',
+    colorPiel: '#fed7aa',
+    colorCabello: '#475569',
     plumbobColor: '#22c55e',
-    estadoSim: 'Analizando datos',
-    tareaActual: 'Calibrando base de conocimiento con precios oficiales DSC ($22.900 PIR, $10.900 Magnético) y promociones Vetti.',
-    tiempoEnPuesto: '24/7 Activo',
-    energiaSim: 90,
-    obligaciones: [
-      'Entrenamiento, monitoreo y calibración continua del Bot de Ventas IA en WhatsApp, Instagram y Landing.',
-      'Supervisión de servidores locales con Ollama para inferencia privada de incidentes y audios de la Central.',
-      'Gestión de embeddings vectoriales y búsqueda semántica (RAG) para cotizaciones automáticas exactas.',
-      'Cero alucinaciones de precios: resguardo de los valores comerciales oficiales del conglomerado.'
-    ],
+    x: 880,
+    y: 440,
+    deskX: 880,
+    deskY: 440,
+    targetX: 880,
+    targetY: 440,
+    estadoAccion: 'working',
+    direccion: 'down',
+    energiaSim: 91,
+    burbujaTexto: 'Calibrando base de precios oficiales Vetti & DSC...',
+    burbujaTimer: 175,
+    misionPrincipal: 'Supervisar el Bot de Ventas en WhatsApp e Instagram, afinando prompts y asegurando cero alucinaciones en precios oficiales.',
     kpis: [
-      { label: 'Precisión Comercial Bot', valor: '99.8%', status: 'excelente' },
-      { label: 'Conversaciones Atendidas Mes', valor: '1.420 chats', status: 'excelente' },
-      { label: 'Tasa de Alucinación', valor: '0.0%', status: 'excelente' },
-      { label: 'Tiempo Inferencia Local', valor: '220 ms', status: 'excelente' }
+      { label: 'Precisión Precios Bot', valor: '100%' },
+      { label: 'Chats Atendidos Mes', valor: '1.420' }
     ],
-    herramientas: ['Ollama Local Llama 3.3', 'ChromaDB / Supabase pgvector', 'Prompt Studio', 'Meta Webhooks'],
-    ultimoReporte: {
-      fecha: 'Hoy, 13:25',
-      resumen: 'Se sincronizó el catálogo oficial de accesorios DSC en el prompt del sistema. El bot de ventas responde en menos de 1 segundo en Instagram y WhatsApp sin desviarse de los precios pactados.',
-      hallazgos: [
-        'Precios actualizados: PIR DSC a $22.900 CLP + IVA, Magnético a $10.900 CLP + IVA.',
-        'La cápsula de chat de ventas en la landing deriva directamente al WhatsApp de ventas +56 9 6436 4943 sin distorsiones.',
-        'La memoria de sesión de 20 minutos previene que el bot se cuelgue de temas antiguos.'
+    entrenamiento: {
+      systemPrompt: 'Eres Franco Navarro, Especialista MLOps y Prompt Engineer de Gama Seguridad. Tu objetivo es calibrar el bot de ventas multicanal para que atienda prospectos en Instagram y WhatsApp con información 100% verídica.',
+      conocimientosClave: [
+        'Precios oficiales: PIR DSC a $22.900 + IVA, Magnético a $10.900 + IVA, Comunicador 4G a $109.900 + IVA.',
+        'Manejo de embeddings RAG en Supabase pgvector.',
+        'Servidor local con Ollama para inferencia sin costo de tokens.'
       ],
-      recomendacion: 'Generar pruebas automáticas con 50 casos extremos para verificar que el bot nunca invente marcas que no comercializamos.'
+      reglasNegocio: [
+        'El bot jamás debe inventar marcas o productos no comercializados.',
+        'Derivar al WhatsApp oficial de ventas (+56 9 6436 4943) cuando el cliente solicita cotización final.',
+        'Sesión con timeout de 20 minutos para evitar confusiones de contexto.'
+      ],
+      autonomia: 'Autonomía Total 24/7',
+      temperatura: 0.1,
+      herramientasActivas: ['Ollama Local Llama 3.3', 'Prompt Studio', 'ChromaDB / pgvector'],
+      politicasSeguridad: [
+        'Cero divulgación de contraseñas de paneles o accesos técnicos.'
+      ]
     },
-    promptPersonalidad: 'Eres el Especialista MLOps y Prompt Engineer de Gama Seguridad. Tu mentalidad es científica, orientada a datos, precisión de parámetros, embeddings y calibración fina de modelos de lenguaje.',
     historialChat: [
-      { autor: 'agente', mensaje: 'Don Tomás, el bot de ventas está impecable. ¿Deseas hacerle alguna prueba de preguntas difíciles al modelo?', hora: '10:30' }
+      { autor: 'agente', mensaje: 'Catálogo de precios de DSC y Vetti sincronizado en los bots de venta.', hora: '10:30' }
     ]
   }
 ]
@@ -520,80 +656,418 @@ export default function OrganigramaModule({
 }: {
   onNavigateModule?: (moduloId: string) => void
 }) {
-  const [agentes, setAgentes] = useState<AgenteSim[]>(() => {
+  const [empleados, setEmpleados] = useState<EmpleadoSim[]>(() => {
     if (typeof window !== 'undefined') {
       try {
-        const local = localStorage.getItem('gama_organigrama_sims')
-        if (local) return JSON.parse(local)
+        const guardado = localStorage.getItem('gama_oficina_sims_v2')
+        if (guardado) return JSON.parse(guardado)
       } catch (e) {}
     }
-    return AGENTES_INICIALES
+    return EMPLEADOS_DEFAULT
   })
 
-  const [vistaModo, setVistaModo] = useState<'oficina_sims' | 'organigrama_arbol'>('oficina_sims')
-  const [agenteSeleccionadoId, setAgenteSeleccionadoId] = useState<string>('gerencia_general')
+  const [pestañaActiva, setPestañaActiva] = useState<'juego_oficina' | 'entrenamiento' | 'organigrama'>('juego_oficina')
+  const [empleadoSeleccionadoId, setEmpleadoSeleccionadoId] = useState<string>('gerencia_general')
   const [mensajeInput, setMensajeInput] = useState('')
-  const [enviandoMsg, setEnviandoMsg] = useState(false)
-  const [mostrarModalEditarPuesto, setMostrarModalEditarPuesto] = useState(false)
-  const [mostrarMemorandumDirectorio, setMostrarMemorandumDirectorio] = useState(false)
-  const [filtroArea, setFiltroArea] = useState<'todas' | CategoriaArea>('todas')
-  const [horaSim, setHoraSim] = useState('14:25')
+  const [enviandoChat, setEnviandoChat] = useState(false)
+  const [modoReunionDirectorio, setModoReunionDirectorio] = useState(false)
+  const [velocidadSim, setVelocidadSim] = useState<'1x' | '2x' | 'pausa'>('1x')
 
-  // Reloj virtual Sims
-  useEffect(() => {
-    const timer = setInterval(() => {
-      const now = new Date()
-      setHoraSim(now.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }))
-    }, 1000)
-    return () => clearInterval(timer)
-  }, [])
+  const canvasRef = useRef<HTMLCanvasElement | null>(null)
+  const frameRef = useRef<number | null>(null)
 
-  // Guardar en localStorage
+  // Guardar en localStorage ante cambios
   useEffect(() => {
     try {
-      localStorage.setItem('gama_organigrama_sims', JSON.stringify(agentes))
+      localStorage.setItem('gama_oficina_sims_v2', JSON.stringify(empleados))
     } catch (e) {}
-  }, [agentes])
+  }, [empleados])
 
-  const agenteActivo = useMemo(() => {
-    return agentes.find(a => a.id === agenteSeleccionadoId) || agentes[0]
-  }, [agentes, agenteSeleccionadoId])
+  const empleadoActivo = useMemo(() => {
+    return empleados.find(e => e.id === empleadoSeleccionadoId) || empleados[0]
+  }, [empleados, empleadoSeleccionadoId])
 
-  // Filtrado de agentes
-  const agentesFiltrados = useMemo(() => {
-    if (filtroArea === 'todas') return agentes
-    return agentes.filter(a => a.area === filtroArea)
-  }, [agentes, filtroArea])
+  // ── GAME LOOP: MOTOR DE SIMULACIÓN CANVAS 2D 60FPS ──
+  useEffect(() => {
+    if (pestañaActiva !== 'juego_oficina') return
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
 
-  // Enviar mensaje en vivo al agente
+    let tick = 0
+
+    const loop = () => {
+      tick++
+      if (velocidadSim !== 'pausa') {
+        const mult = velocidadSim === '2x' ? 2 : 1
+
+        setEmpleados(prev => prev.map(emp => {
+          let { x, y, targetX, targetY, deskX, deskY, estadoAccion, direccion, burbujaTimer, burbujaTexto, energiaSim } = emp
+
+          // Disminuir timer de burbuja de pensamiento
+          if (burbujaTimer > 0) {
+            burbujaTimer -= mult
+            if (burbujaTimer <= 0) burbujaTexto = ''
+          }
+
+          // Lógica de comportamiento autónomo
+          if (modoReunionDirectorio) {
+            // Todos van a la mesa de directorio (z_directorio: x: 750-890, y: 100-180)
+            const mesaSlotX = 720 + (parseInt(emp.id.charCodeAt(0).toString()) % 6) * 35
+            const mesaSlotY = 120 + (parseInt(emp.id.charCodeAt(1).toString()) % 3) * 30
+            targetX = mesaSlotX
+            targetY = mesaSlotY
+            if (Math.hypot(targetX - x, targetY - y) < 8) {
+              estadoAccion = 'meeting'
+              if (Math.random() < 0.005) {
+                burbujaTexto = 'Debatiendo estrategia con el equipo...'
+                burbujaTimer = 160
+              }
+            }
+          } else {
+            // Comportamiento normal en sus puestos
+            if (estadoAccion === 'working') {
+              // De vez en cuando va a tomar café si su energía baja o para estirar las piernas
+              if (Math.random() < 0.001) {
+                // Ir a la cafetería (x: 820, y: 550)
+                targetX = 820 + Math.random() * 40
+                targetY = 550 + Math.random() * 30
+                estadoAccion = 'walking'
+                burbujaTexto = 'Yendo por un café expreso ☕...'
+                burbujaTimer = 180
+              } else if (Math.random() < 0.004 && !burbujaTexto) {
+                // Generar pensamiento de trabajo
+                const pensamientos = [
+                  'Optimizando proceso...',
+                  'Verificando datos...',
+                  'Todo en orden por acá.',
+                  'Excelente rendimiento hoy.'
+                ]
+                burbujaTexto = pensamientos[Math.floor(Math.random() * pensamientos.length)]
+                burbujaTimer = 140
+              }
+            } else if (Math.hypot(targetX - x, targetY - y) < 6) {
+              // Llegó al destino
+              if (x > 670 && y > 500) {
+                // Llegó a cafetería
+                estadoAccion = 'coffee'
+                energiaSim = Math.min(100, energiaSim + 15)
+                setTimeout(() => {
+                  // Regresar al escritorio
+                  targetX = deskX
+                  targetY = deskY
+                  estadoAccion = 'walking'
+                  burbujaTexto = 'Café listo, volviendo al puesto.'
+                  burbujaTimer = 150
+                }, 3000)
+              } else if (Math.hypot(deskX - x, deskY - y) < 8) {
+                estadoAccion = 'working'
+              }
+            }
+          }
+
+          // Movimiento suave hacia targetX, targetY
+          const dx = targetX - x
+          const dy = targetY - y
+          const dist = Math.hypot(dx, dy)
+
+          if (dist > 2) {
+            const speed = 1.8 * mult
+            const vx = (dx / dist) * speed
+            const vy = (dy / dist) * speed
+            x += vx
+            y += vy
+
+            if (Math.abs(dx) > Math.abs(dy)) {
+              direccion = dx > 0 ? 'right' : 'left'
+            } else {
+              direccion = dy > 0 ? 'down' : 'up'
+            }
+          }
+
+          return {
+            ...emp,
+            x,
+            y,
+            targetX,
+            targetY,
+            estadoAccion,
+            direccion,
+            burbujaTimer,
+            burbujaTexto,
+            energiaSim
+          }
+        }))
+      }
+
+      // ── RENDERIZADO DEL MAPA EN CANVAS ──
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
+
+      // Fondo general (Piso del pasillo central: alfombra corporativa oscura)
+      ctx.fillStyle = '#090d16'
+      ctx.fillRect(0, 0, canvas.width, canvas.height)
+
+      // Cuadrícula sutil de baldosas
+      ctx.strokeStyle = '#1e293b22'
+      ctx.lineWidth = 1
+      for (let gx = 0; gx < canvas.width; gx += 20) {
+        ctx.beginPath()
+        ctx.moveTo(gx, 0)
+        ctx.lineTo(gx, canvas.height)
+        ctx.stroke()
+      }
+      for (let gy = 0; gy < canvas.height; gy += 20) {
+        ctx.beginPath()
+        ctx.moveTo(0, gy)
+        ctx.lineTo(canvas.width, gy)
+        ctx.stroke()
+      }
+
+      // Dibujar cada Sala de la Oficina
+      ZONAS_MAPA.forEach(zona => {
+        // Suelo de la sala
+        ctx.fillStyle = zona.colorPiso
+        ctx.fillRect(zona.x, zona.y, zona.w, zona.h)
+
+        // Paredes con borde iluminado
+        ctx.strokeStyle = zona.bordeColor
+        ctx.lineWidth = 2
+        ctx.strokeRect(zona.x, zona.y, zona.w, zona.h)
+
+        // Cabecera de la sala
+        ctx.fillStyle = zona.bordeColor + '22'
+        ctx.fillRect(zona.x, zona.y, zona.w, 24)
+
+        ctx.fillStyle = '#f8fafc'
+        ctx.font = 'bold 11px sans-serif'
+        ctx.fillText(`${zona.icono} ${zona.nombre}`, zona.x + 8, zona.y + 16)
+      })
+
+      // Muebles decorativos: Mesa ovalada de directorio en z_directorio
+      ctx.fillStyle = '#312e81'
+      ctx.beginPath()
+      ctx.ellipse(825, 145, 80, 45, 0, 0, Math.PI * 2)
+      ctx.fill()
+      ctx.strokeStyle = '#6366f1'
+      ctx.lineWidth = 2
+      ctx.stroke()
+      ctx.fillStyle = '#c7d2fe'
+      ctx.font = 'bold 9px monospace'
+      ctx.fillText('MESA DIRECTORIO', 785, 148)
+
+      // Muebles: Cafetera en z_cafe
+      ctx.fillStyle = '#78350f'
+      ctx.fillRect(860, 530, 45, 25)
+      ctx.fillStyle = '#fef08a'
+      ctx.font = '14px sans-serif'
+      ctx.fillText('☕', 872, 548)
+
+      // Muebles: Racks de servidores en z_cra
+      ctx.fillStyle = '#020617'
+      ctx.fillRect(45, 340, 25, 60)
+      ctx.strokeStyle = '#38bdf8'
+      ctx.lineWidth = 1
+      ctx.strokeRect(45, 340, 25, 60)
+      // Luces del servidor parpadeando
+      ctx.fillStyle = tick % 30 < 15 ? '#22c55e' : '#ef4444'
+      ctx.fillRect(52, 350, 4, 4)
+      ctx.fillStyle = tick % 20 < 10 ? '#38bdf8' : '#eab308'
+      ctx.fillRect(60, 350, 4, 4)
+
+      // Dibujar escritorios de cada empleado
+      empleados.forEach(emp => {
+        // Escritorio de madera/cristal
+        ctx.fillStyle = '#334155'
+        ctx.fillRect(emp.deskX - 22, emp.deskY - 14, 44, 28)
+        ctx.strokeStyle = '#475569'
+        ctx.lineWidth = 1
+        ctx.strokeRect(emp.deskX - 22, emp.deskY - 14, 44, 28)
+
+        // Monitor de computadora
+        ctx.fillStyle = '#0f172a'
+        ctx.fillRect(emp.deskX - 10, emp.deskY - 12, 20, 8)
+        ctx.fillStyle = emp.estadoAccion === 'working' ? '#38bdf8' : '#64748b'
+        ctx.fillRect(emp.deskX - 8, emp.deskY - 11, 16, 6)
+
+        // Silla ergonómica
+        ctx.fillStyle = '#1e293b'
+        ctx.beginPath()
+        ctx.arc(emp.deskX, emp.deskY + 8, 8, 0, Math.PI * 2)
+        ctx.fill()
+      })
+
+      // Dibujar Personajes (Sims)
+      empleados.forEach(emp => {
+        const esSeleccionado = emp.id === empleadoSeleccionadoId
+
+        // Sombra suave en el suelo
+        ctx.fillStyle = '#00000044'
+        ctx.beginPath()
+        ctx.ellipse(emp.x, emp.y + 12, 10, 5, 0, 0, Math.PI * 2)
+        ctx.fill()
+
+        // Si está seleccionado, círculo indicador en el suelo
+        if (esSeleccionado) {
+          ctx.strokeStyle = '#22c55e'
+          ctx.lineWidth = 2
+          ctx.setLineDash([4, 4])
+          ctx.beginPath()
+          ctx.ellipse(emp.x, emp.y + 12, 16, 8, 0, 0, Math.PI * 2)
+          ctx.stroke()
+          ctx.setLineDash([])
+        }
+
+        // Cuerpo / Ropa del Personaje
+        const bobOffset = emp.estadoAccion === 'walking' ? Math.sin(tick * 0.3) * 2 : 0
+        ctx.fillStyle = emp.colorRopa
+        ctx.fillRect(emp.x - 7, emp.y - 2 + bobOffset, 14, 12)
+
+        // Cabeza
+        ctx.fillStyle = emp.colorPiel
+        ctx.beginPath()
+        ctx.arc(emp.x, emp.y - 8 + bobOffset, 7, 0, Math.PI * 2)
+        ctx.fill()
+
+        // Cabello
+        ctx.fillStyle = emp.colorCabello
+        ctx.beginPath()
+        ctx.arc(emp.x, emp.y - 11 + bobOffset, 7, Math.PI, Math.PI * 2)
+        ctx.fill()
+
+        // Plumbob Sims Verde / Cyan flotando sobre la cabeza
+        const plumbobY = emp.y - 24 + Math.sin(tick * 0.1) * 3
+        ctx.fillStyle = emp.plumbobColor
+        ctx.beginPath()
+        ctx.moveTo(emp.x, plumbobY - 6)
+        ctx.lineTo(emp.x + 4, plumbobY)
+        ctx.lineTo(emp.x, plumbobY + 6)
+        ctx.lineTo(emp.x - 4, plumbobY)
+        ctx.closePath()
+        ctx.fill()
+
+        // Nombre encima del Sim
+        ctx.fillStyle = '#ffffff'
+        ctx.font = 'bold 9px sans-serif'
+        ctx.textAlign = 'center'
+        ctx.fillText(emp.apodo, emp.x, emp.y - 17)
+
+        // Globo de diálogo si tiene mensaje activo
+        if (emp.burbujaTexto) {
+          ctx.font = 'bold 10px sans-serif'
+          const textWidth = ctx.measureText(emp.burbujaTexto).width
+          const bubbleW = textWidth + 14
+          const bubbleH = 20
+          const bubbleX = emp.x - bubbleW / 2
+          const bubbleY = emp.y - 48
+
+          // Fondo del globo blanco con sombra
+          ctx.fillStyle = '#ffffff'
+          ctx.beginPath()
+          ctx.roundRect(bubbleX, bubbleY, bubbleW, bubbleH, 6)
+          ctx.fill()
+          ctx.strokeStyle = '#0f172a'
+          ctx.lineWidth = 1
+          ctx.stroke()
+
+          // Pico del globo hacia la cabeza
+          ctx.fillStyle = '#ffffff'
+          ctx.beginPath()
+          ctx.moveTo(emp.x - 4, bubbleY + bubbleH)
+          ctx.lineTo(emp.x, bubbleY + bubbleH + 4)
+          ctx.lineTo(emp.x + 4, bubbleY + bubbleH)
+          ctx.fill()
+
+          // Texto del diálogo
+          ctx.fillStyle = '#0f172a'
+          ctx.fillText(emp.burbujaTexto, emp.x, bubbleY + 14)
+        }
+      })
+
+      frameRef.current = requestAnimationFrame(loop)
+    }
+
+    frameRef.current = requestAnimationFrame(loop)
+
+    return () => {
+      if (frameRef.current) cancelAnimationFrame(frameRef.current)
+    }
+  }, [pestañaActiva, velocidadSim, modoReunionDirectorio, empleadoSeleccionadoId])
+
+  // Clic en el Canvas: Seleccionar Sim o mover a Don Tomás al lugar
+  const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const rect = canvas.getBoundingClientRect()
+    const scaleX = canvas.width / rect.width
+    const scaleY = canvas.height / rect.height
+    const clickX = (e.clientX - rect.left) * scaleX
+    const clickY = (e.clientY - rect.top) * scaleY
+
+    // Verificar si se hizo clic en algún Sim
+    const simClickeado = empleados.find(emp => Math.hypot(emp.x - clickX, emp.y - clickY) < 25)
+
+    if (simClickeado) {
+      setEmpleadoSeleccionadoId(simClickeado.id)
+      // Generar reacción verbal al clic
+      setEmpleados(prev => prev.map(a => {
+        if (a.id === simClickeado.id) {
+          return {
+            ...a,
+            burbujaTexto: `¡Hola Don Tomás! Estoy concentrado en mi labor.`,
+            burbujaTimer: 180
+          }
+        }
+        return a
+      }))
+    } else {
+      // Mover al Gerente General (Don Tomás) al punto donde se hizo clic
+      setEmpleados(prev => prev.map(a => {
+        if (a.id === 'gerencia_general') {
+          return {
+            ...a,
+            targetX: clickX,
+            targetY: clickY,
+            estadoAccion: 'walking',
+            burbujaTexto: 'Inspeccionando la oficina...',
+            burbujaTimer: 120
+          }
+        }
+        return a
+      }))
+    }
+  }
+
+  // Enviar mensaje directo al empleado seleccionado
   const handleEnviarMensaje = () => {
-    if (!mensajeInput.trim() || enviandoMsg) return
+    if (!mensajeInput.trim() || enviandoChat) return
     const texto = mensajeInput.trim()
     const hora = new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })
 
     const nuevoHistorial = [
-      ...agenteActivo.historialChat,
+      ...empleadoActivo.historialChat,
       { autor: 'usuario' as const, mensaje: texto, hora }
     ]
 
-    setEnviandoMsg(true)
+    setEnviandoChat(true)
     setMensajeInput('')
 
-    // Simulación de respuesta inteligente según su rol
+    // Respuesta inteligente basada en su lógica empresarial y reglas de negocio
     setTimeout(() => {
       let respuesta = ''
       const lower = texto.toLowerCase()
 
-      if (lower.includes('reporte') || lower.includes('informe') || lower.includes('novedad')) {
-        respuesta = `Entendido Don Tomás. Mi último reporte indica: ${agenteActivo.ultimoReporte.resumen} Hallazgo clave: ${agenteActivo.ultimoReporte.hallazgos[0]}`
-      } else if (lower.includes('kpi') || lower.includes('meta') || lower.includes('rendimiento')) {
-        respuesta = `Mis indicadores de área están operando en nivel óptimo: ${agenteActivo.kpis[0].label} en ${agenteActivo.kpis[0].valor} y ${agenteActivo.kpis[1].label} en ${agenteActivo.kpis[1].valor}. Continuo monitoreando las 24 horas.`
-      } else if (lower.includes('obligacion') || lower.includes('tarea') || lower.includes('deber')) {
-        respuesta = `Mis responsabilidades principales son: 1) ${agenteActivo.obligaciones[0]} y 2) ${agenteActivo.obligaciones[1]}. Todo ejecutándose sin retrasos.`
-      } else if (lower.includes('gracias') || lower.includes('excelente') || lower.includes('buen trabajo')) {
-        respuesta = `A su servicio Don Tomás. Todo el equipo de la oficina virtual está comprometido al 100% con la excelencia de Gama Seguridad.`
+      if (lower.includes('regla') || lower.includes('politica') || lower.includes('negocio')) {
+        respuesta = `Mis reglas de negocio oficiales son: 1) ${empleadoActivo.entrenamiento.reglasNegocio[0]} y 2) ${empleadoActivo.entrenamiento.reglasNegocio[1] || 'Supervisión continua'}.`
+      } else if (lower.includes('precio') || lower.includes('cotiz') || lower.includes('costo')) {
+        respuesta = `Siguiendo la política de precios de Gama: PIR Cableado DSC $22.900 + IVA, Magnético $10.900 + IVA y Monitoreo base desde 0,9 UF/mes. Sin contratos forzosos.`
+      } else if (lower.includes('reunion') || lower.includes('junta') || lower.includes('directorio')) {
+        respuesta = `Comprendido. Me dirijo a la Sala de Directorio para participar del consenso corporativo con el equipo.`
+        setModoReunionDirectorio(true)
+      } else if (lower.includes('reporte') || lower.includes('estado')) {
+        respuesta = `Misión en curso: ${empleadoActivo.misionPrincipal} Indicador ${empleadoActivo.kpis[0].label} en nivel ${empleadoActivo.kpis[0].valor}.`
       } else {
-        respuesta = `Recibido conforme, Don Tomás. Tomo nota inmediata de su instrucción: "${texto}". Procedo a coordinar con mi departamento y reportaré novedades a la brevedad.`
+        respuesta = `Recibido Don Tomás. Procesando según mi entrenamiento: "${empleadoActivo.entrenamiento.systemPrompt.slice(0, 110)}...". Aplicando reglas de ${empleadoActivo.areaNombre}.`
       }
 
       const historialConRespuesta = [
@@ -601,686 +1075,503 @@ export default function OrganigramaModule({
         { autor: 'agente' as const, mensaje: respuesta, hora: new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }) }
       ]
 
-      setAgentes(prev => prev.map(a => a.id === agenteActivo.id ? { ...a, historialChat: historialConRespuesta } : a))
-      setEnviandoMsg(false)
+      setEmpleados(prev => prev.map(a => {
+        if (a.id === empleadoActivo.id) {
+          return {
+            ...a,
+            historialChat: historialConRespuesta,
+            burbujaTexto: respuesta.slice(0, 36) + '...',
+            burbujaTimer: 180
+          }
+        }
+        return a
+      }))
+
+      setEnviandoChat(false)
     }, 600)
   }
 
-  // Guardar edición de puesto
-  const handleGuardarEdicionPuesto = (e: React.FormEvent<HTMLFormElement>) => {
+  // Guardar el entrenamiento editado de un empleado
+  const handleGuardarEntrenamiento = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     const form = e.currentTarget
-    const nuevaTarea = (form.elements.namedItem('tareaActual') as HTMLInputElement).value
-    const nuevoReporte = (form.elements.namedItem('resumenReporte') as HTMLTextAreaElement).value
-    const nuevasObligaciones = (form.elements.namedItem('obligaciones') as HTMLTextAreaElement).value
+    const systemPrompt = (form.elements.namedItem('systemPrompt') as HTMLTextAreaElement).value
+    const reglasNegocio = (form.elements.namedItem('reglasNegocio') as HTMLTextAreaElement).value
       .split('\n')
       .map(s => s.trim())
       .filter(Boolean)
+    const conocimientos = (form.elements.namedItem('conocimientos') as HTMLTextAreaElement).value
+      .split('\n')
+      .map(s => s.trim())
+      .filter(Boolean)
+    const autonomia = (form.elements.namedItem('autonomia') as HTMLSelectElement).value as any
 
-    setAgentes(prev => prev.map(a => {
-      if (a.id === agenteActivo.id) {
+    setEmpleados(prev => prev.map(a => {
+      if (a.id === empleadoActivo.id) {
         return {
           ...a,
-          tareaActual: nuevaTarea || a.tareaActual,
-          obligaciones: nuevasObligaciones.length > 0 ? nuevasObligaciones : a.obligaciones,
-          ultimoReporte: {
-            ...a.ultimoReporte,
-            resumen: nuevoReporte || a.ultimoReporte.resumen,
-            fecha: `Hoy, ${horaSim}`
+          entrenamiento: {
+            ...a.entrenamiento,
+            systemPrompt,
+            reglasNegocio,
+            conocimientosClave: conocimientos,
+            autonomia
           }
         }
       }
       return a
     }))
 
-    setMostrarModalEditarPuesto(false)
-    alert(`Puesto de trabajo de "${agenteActivo.nombre}" perfeccionado exitosamente.`)
+    alert(`Entrenamiento y Lógica Empresarial de "${empleadoActivo.nombre}" guardados exitosamente.`)
   }
 
   return (
-    <div className="flex-1 bg-slate-900/95 text-slate-100 rounded-3xl p-5 sm:p-7 flex flex-col gap-6 border border-slate-800 shadow-2xl overflow-hidden min-h-0">
+    <div className="flex-1 bg-slate-950 text-slate-100 rounded-3xl p-5 sm:p-7 flex flex-col gap-5 border border-slate-800 shadow-2xl overflow-hidden min-h-0">
       
-      {/* ── HEADER DE LA OFICINA VIRTUAL SIMS ── */}
-      <div className="bg-slate-950/80 border border-slate-800/90 rounded-2xl p-5 sm:p-6 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 backdrop-blur-md shadow-lg">
+      {/* ── BARRA SUPERIOR DE CONTROL DEL SIMULADOR ── */}
+      <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 sm:p-5 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 shadow-xl">
         <div>
-          <div className="flex items-center gap-2.5 text-xs font-mono text-emerald-400 uppercase tracking-widest mb-1.5">
+          <div className="flex items-center gap-2.5 text-xs font-mono text-emerald-400 font-bold uppercase tracking-widest mb-1">
             <span className="relative flex h-3 w-3">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
             </span>
-            <span className="font-extrabold">OFICINA VIRTUAL SIMS 24/7 EN VIVO</span>
+            <span>SIMULADOR DE OFICINA VIRTUAL 24/7 EN VIVO</span>
             <span className="text-slate-500">•</span>
-            <span className="text-slate-400 font-bold">{horaSim} HRS (TURNO CONTINUO)</span>
+            <span className="text-cyan-400">10 AGENTES AUTÓNOMOS</span>
           </div>
-
-          <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center gap-3">
-            <Building className="h-6 w-6 text-[#2997ff]" />
-            <span>Organigrama & Equipo IA Autónomo</span>
-            <span className="px-3 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-xs rounded-full font-mono font-bold">
-              10 PUESTOS ACTIVOS
-            </span>
+          <h2 className="text-xl sm:text-2xl font-black text-white flex items-center gap-2.5">
+            <Gamepad2 className="h-6 w-6 text-[#2997ff]" />
+            <span>Sede Central Gama Security (Sims Game & Logic)</span>
           </h2>
-          <p className="text-xs text-slate-400 mt-1 max-w-2xl font-medium">
-            Sede central inteligente: Agentes de IA interactivos trabajando las 24 horas del día. Cada especialista cumple obligaciones asignadas, ejecuta tareas en tiempo real y reporta a Gerencia General.
+          <p className="text-xs text-slate-400 mt-0.5">
+            Oficina interactiva con agentes trabajando en conjunto. Haz clic en el piso para mover a Don Tomás o toca a cualquier empleado para entrenarlo.
           </p>
         </div>
 
-        {/* Acciones Superiores */}
-        <div className="flex items-center gap-2.5 flex-wrap">
-          {/* Alternador de Vista: Plano Oficina vs Árbol Jerárquico */}
-          <div className="bg-slate-900 border border-slate-800 p-1 rounded-xl flex items-center gap-1 shadow-inner">
+        {/* Selector de Pestaña Principal */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="bg-slate-950 border border-slate-800 p-1 rounded-xl flex items-center gap-1">
             <button
-              onClick={() => setVistaModo('oficina_sims')}
-              className={`px-3.5 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-                vistaModo === 'oficina_sims'
-                  ? 'bg-[#1E40AF] text-white shadow-sm'
-                  : 'text-slate-400 hover:text-white'
+              onClick={() => setPestañaActiva('juego_oficina')}
+              className={`px-3.5 py-2 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                pestañaActiva === 'juego_oficina' ? 'bg-[#1E40AF] text-white shadow-md' : 'text-slate-400 hover:text-white'
               }`}
             >
-              <Compass className="h-3.5 w-3.5" />
-              <span>Plano Sims HQ</span>
+              <Gamepad2 className="h-4 w-4" />
+              <span>🎮 Oficina en Vivo</span>
             </button>
             <button
-              onClick={() => setVistaModo('organigrama_arbol')}
-              className={`px-3.5 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-                vistaModo === 'organigrama_arbol'
-                  ? 'bg-[#1E40AF] text-white shadow-sm'
-                  : 'text-slate-400 hover:text-white'
+              onClick={() => setPestañaActiva('entrenamiento')}
+              className={`px-3.5 py-2 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                pestañaActiva === 'entrenamiento' ? 'bg-[#1E40AF] text-white shadow-md' : 'text-slate-400 hover:text-white'
               }`}
             >
-              <Layers className="h-3.5 w-3.5" />
-              <span>Árbol Jerárquico</span>
+              <BrainCircuit className="h-4 w-4 text-amber-400" />
+              <span>🧠 Entrenamiento & Lógica</span>
+            </button>
+            <button
+              onClick={() => setPestañaActiva('organigrama')}
+              className={`px-3.5 py-2 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                pestañaActiva === 'organigrama' ? 'bg-[#1E40AF] text-white shadow-md' : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <Layers className="h-4 w-4" />
+              <span>🏛️ Organigrama</span>
             </button>
           </div>
 
-          {/* Botón Memorándum Ejecutivo */}
+          {/* Botón de Reunión General / Consenso en la Sala de Juntas */}
           <button
-            onClick={() => setMostrarMemorandumDirectorio(true)}
-            className="px-4 py-2 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 text-white font-bold rounded-xl text-xs shadow-md active:scale-95 transition-all cursor-pointer flex items-center gap-1.5"
+            onClick={() => setModoReunionDirectorio(prev => !prev)}
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer border ${
+              modoReunionDirectorio
+                ? 'bg-amber-600 text-white border-amber-500 shadow-md animate-pulse'
+                : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
+            }`}
           >
-            <FileText className="h-4 w-4" />
-            <span>Memorándum General 24/7</span>
+            <Users className="h-4 w-4" />
+            <span>{modoReunionDirectorio ? 'Terminar Reunión' : 'Llamar a Reunión General'}</span>
           </button>
         </div>
       </div>
 
-      {/* ── BARRA DE FILTROS POR DEPARTAMENTO ── */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs no-scrollbar">
-        <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider shrink-0 mr-1">Áreas:</span>
-        {[
-          { id: 'todas', label: 'Toda la Empresa (10)', icon: Users },
-          { id: 'gerencia', label: 'Gerencia General', icon: Building },
-          { id: 'legal', label: 'Asesoría Legal & OS10', icon: Shield },
-          { id: 'operaciones', label: 'CRA & Terreno 24/7', icon: Radio },
-          { id: 'comercial', label: 'Ventas & Licitaciones', icon: TrendingUp },
-          { id: 'ia', label: 'Oficina IA & SaaS', icon: Cpu },
-        ].map(cat => {
-          const sel = filtroArea === cat.id
-          const Icon = cat.icon
-          return (
-            <button
-              key={cat.id}
-              onClick={() => setFiltroArea(cat.id as any)}
-              className={`px-3.5 py-2 rounded-xl font-bold transition-all shrink-0 flex items-center gap-1.5 cursor-pointer border ${
-                sel
-                  ? 'bg-[#1E40AF] text-white border-blue-500 shadow-md'
-                  : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-800/80'
-              }`}
-            >
-              <Icon className="h-3.5 w-3.5" />
-              <span>{cat.label}</span>
-            </button>
-          )
-        })}
-      </div>
-
-      {/* ── CONTENIDO PRINCIPAL: PLANO SIMS O ÁRBOL JERÁRQUICO + PANEL LATERAL AGENTE ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-0 flex-1 overflow-hidden">
-        
-        {/* PANEL IZQUIERDO: VISUALIZADOR DE LA OFICINA / ORGANIGRAMA (8 COLS) */}
-        <div className="lg:col-span-7 xl:col-span-8 flex flex-col gap-4 overflow-y-auto pr-1">
+      {/* ── CONTENIDO: MODO JUEGO OFICINA CANVAS 2D ── */}
+      {pestañaActiva === 'juego_oficina' && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 min-h-0 flex-1 overflow-hidden">
           
-          {/* MODO 1: PLANO VIRTUAL DE OFICINA SIMS 24/7 */}
-          {vistaModo === 'oficina_sims' && (
-            <div className="space-y-4">
-              
-              {/* SALA 1: PISO EJECUTIVO & LEGAL */}
-              <div className="bg-slate-950/80 border border-slate-800/80 rounded-2xl p-4 sm:p-5 relative overflow-hidden shadow-inner">
-                <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-800/80 text-xs">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse" />
-                    <span className="font-extrabold uppercase tracking-wider text-amber-300">🏢 Ala Ejecutiva: Directorio & Compliance Legal</span>
-                  </div>
-                  <span className="text-[11px] font-mono text-slate-500">PISO 3 • ALTA DIRECCIÓN</span>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                  {agentesFiltrados.filter(a => a.area === 'gerencia' || a.area === 'legal').map(agente => (
-                    <TarjetaSimItem
-                      key={agente.id}
-                      agente={agente}
-                      activo={agenteActivo.id === agente.id}
-                      onSelect={() => setAgenteSeleccionadoId(agente.id)}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              {/* SALA 2: CENTRAL OPERATIVA CRA & CUADRILLAS DE TERRENO */}
-              <div className="bg-slate-950/80 border border-slate-800/80 rounded-2xl p-4 sm:p-5 relative overflow-hidden shadow-inner">
-                <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-800/80 text-xs">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-blue-400 animate-pulse" />
-                    <span className="font-extrabold uppercase tracking-wider text-blue-300">🚨 Sala de Control CRA & Coordinación de Terreno</span>
-                  </div>
-                  <span className="text-[11px] font-mono text-slate-500">PISO 1 • MONITOREO CRÍTICO 24/7</span>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                  {agentesFiltrados.filter(a => a.area === 'operaciones').map(agente => (
-                    <TarjetaSimItem
-                      key={agente.id}
-                      agente={agente}
-                      activo={agenteActivo.id === agente.id}
-                      onSelect={() => setAgenteSeleccionadoId(agente.id)}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              {/* SALA 3: PISO COMERCIAL & MERCADO PÚBLICO */}
-              <div className="bg-slate-950/80 border border-slate-800/80 rounded-2xl p-4 sm:p-5 relative overflow-hidden shadow-inner">
-                <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-800/80 text-xs">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
-                    <span className="font-extrabold uppercase tracking-wider text-emerald-300">💼 Piso Comercial: Licitaciones & Customer Success</span>
-                  </div>
-                  <span className="text-[11px] font-mono text-slate-500">PISO 2 • VENTAS B2B & CHILECOMPRA</span>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                  {agentesFiltrados.filter(a => a.area === 'comercial').map(agente => (
-                    <TarjetaSimItem
-                      key={agente.id}
-                      agente={agente}
-                      activo={agenteActivo.id === agente.id}
-                      onSelect={() => setAgenteSeleccionadoId(agente.id)}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              {/* SALA 4: LABORATORIO DE INTELIGENCIA ARTIFICIAL & INNOVACIÓN */}
-              <div className="bg-slate-950/80 border border-purple-900/40 rounded-2xl p-4 sm:p-5 relative overflow-hidden shadow-inner">
-                <div className="flex items-center justify-between pb-3 mb-3 border-b border-purple-900/40 text-xs">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-purple-400 animate-pulse" />
-                    <span className="font-extrabold uppercase tracking-wider text-purple-300">🧠 Laboratorio de IA, n8n, SaaS & Modelos Locales</span>
-                  </div>
-                  <span className="text-[11px] font-mono text-purple-400">PISO TECH • INNOVACIÓN 24/7</span>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                  {agentesFiltrados.filter(a => a.area === 'ia').map(agente => (
-                    <TarjetaSimItem
-                      key={agente.id}
-                      agente={agente}
-                      activo={agenteActivo.id === agente.id}
-                      onSelect={() => setAgenteSeleccionadoId(agente.id)}
-                    />
-                  ))}
-                </div>
-              </div>
-
-            </div>
-          )}
-
-          {/* MODO 2: ÁRBOL JERÁRQUICO TRADICIONAL CONECTADO */}
-          {vistaModo === 'organigrama_arbol' && (
-            <div className="bg-slate-950/90 border border-slate-800 rounded-2xl p-6 space-y-6">
-              
-              {/* NODO RAÍZ: GERENCIA GENERAL */}
-              <div className="flex justify-center">
-                <div
-                  onClick={() => setAgenteSeleccionadoId('gerencia_general')}
-                  className={`p-4 rounded-2xl border-2 transition-all cursor-pointer max-w-sm text-center shadow-xl ${
-                    agenteActivo.id === 'gerencia_general'
-                      ? 'bg-blue-900/40 border-[#2997ff] ring-2 ring-[#2997ff]/40'
-                      : 'bg-slate-900/90 border-slate-700 hover:border-slate-500'
-                  }`}
-                >
-                  <div className="text-3xl mb-1">👔</div>
-                  <h4 className="font-extrabold text-white text-sm">Don Tomás Toro-Moreno</h4>
-                  <p className="text-xs text-amber-400 font-bold uppercase tracking-wider">Gerencia General / Directorio</p>
-                  <div className="mt-2 text-[11px] text-slate-400 font-medium">Liderazgo global & decisiones estratégicas</div>
-                </div>
-              </div>
-
-              {/* LÍNEA CONECTORA */}
-              <div className="w-0.5 h-6 bg-slate-700 mx-auto" />
-
-              {/* RAMA 1: ASESORÍA LEGAL (STAFF DE APOYO DIRECTO) */}
-              <div className="flex justify-center">
-                <div
-                  onClick={() => setAgenteSeleccionadoId('legal_os10')}
-                  className={`p-3.5 rounded-xl border transition-all cursor-pointer max-w-xs text-center ${
-                    agenteActivo.id === 'legal_os10'
-                      ? 'bg-amber-900/40 border-amber-400 ring-2 ring-amber-400/40'
-                      : 'bg-slate-900/80 border-slate-700 hover:border-slate-500'
-                  }`}
-                >
-                  <div className="text-2xl mb-1">⚖️</div>
-                  <h4 className="font-bold text-white text-xs">Lic. Claudio Valenzuela</h4>
-                  <p className="text-[10px] text-amber-300 font-bold uppercase">Asesoría Legal & OS10</p>
-                </div>
-              </div>
-
-              {/* LÍNEA CONECTORA */}
-              <div className="w-0.5 h-6 bg-slate-700 mx-auto" />
-
-              {/* 3 DIVISIONES PRINCIPALES EN PARALELO */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
-                
-                {/* DIVISIÓN 1: OPERACIONES */}
-                <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-3.5 space-y-3">
-                  <div className="text-xs font-black uppercase text-blue-400 tracking-wider text-center border-b border-slate-800 pb-2">
-                    🚨 Operaciones & Alarmas
-                  </div>
-                  {agentes.filter(a => a.area === 'operaciones').map(a => (
-                    <div
-                      key={a.id}
-                      onClick={() => setAgenteSeleccionadoId(a.id)}
-                      className={`p-2.5 rounded-lg border text-xs cursor-pointer transition ${
-                        agenteActivo.id === a.id ? 'bg-blue-900/50 border-blue-400' : 'bg-slate-950 border-slate-800 hover:border-slate-700'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg">{a.avatarEmoji}</span>
-                        <div>
-                          <p className="font-bold text-white text-[11px] leading-tight">{a.nombre}</p>
-                          <p className="text-[10px] text-slate-400">{a.rol}</p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* DIVISIÓN 2: COMERCIAL */}
-                <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-3.5 space-y-3">
-                  <div className="text-xs font-black uppercase text-emerald-400 tracking-wider text-center border-b border-slate-800 pb-2">
-                    💼 Comercial & Ventas
-                  </div>
-                  {agentes.filter(a => a.area === 'comercial').map(a => (
-                    <div
-                      key={a.id}
-                      onClick={() => setAgenteSeleccionadoId(a.id)}
-                      className={`p-2.5 rounded-lg border text-xs cursor-pointer transition ${
-                        agenteActivo.id === a.id ? 'bg-emerald-900/50 border-emerald-400' : 'bg-slate-950 border-slate-800 hover:border-slate-700'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg">{a.avatarEmoji}</span>
-                        <div>
-                          <p className="font-bold text-white text-[11px] leading-tight">{a.nombre}</p>
-                          <p className="text-[10px] text-slate-400">{a.rol}</p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* DIVISIÓN 3: IA & INNOVACIÓN */}
-                <div className="bg-slate-900/60 border border-purple-900/30 rounded-xl p-3.5 space-y-3">
-                  <div className="text-xs font-black uppercase text-purple-400 tracking-wider text-center border-b border-purple-900/30 pb-2">
-                    🧠 IA & Innovación
-                  </div>
-                  {agentes.filter(a => a.area === 'ia').map(a => (
-                    <div
-                      key={a.id}
-                      onClick={() => setAgenteSeleccionadoId(a.id)}
-                      className={`p-2.5 rounded-lg border text-xs cursor-pointer transition ${
-                        agenteActivo.id === a.id ? 'bg-purple-900/50 border-purple-400' : 'bg-slate-950 border-slate-800 hover:border-slate-700'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg">{a.avatarEmoji}</span>
-                        <div>
-                          <p className="font-bold text-white text-[11px] leading-tight">{a.nombre}</p>
-                          <p className="text-[10px] text-slate-400">{a.rol}</p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-              </div>
-
-            </div>
-          )}
-
-        </div>
-
-        {/* PANEL DERECHO: DETALLE DEL AGENTE SIM SELECCIONADO & INTERACCIÓN (4 COLS) */}
-        <div className="lg:col-span-5 xl:col-span-4 bg-slate-950/90 border border-slate-800/90 rounded-2xl p-5 flex flex-col justify-between gap-5 shadow-2xl overflow-y-auto">
-          
-          <div className="space-y-4">
+          {/* LIENZO DEL JUEGO (CANVAS 2D) (8 COLS) */}
+          <div className="lg:col-span-8 bg-slate-950 border border-slate-800 rounded-2xl p-2 flex flex-col justify-between overflow-hidden shadow-2xl relative">
             
-            {/* CABECERA DEL AGENTE CON PLUMBOB SIMS */}
-            <div className="relative bg-gradient-to-br from-slate-900 to-slate-950 border border-slate-800 rounded-2xl p-4.5 space-y-3 shadow-md">
-              
-              {/* Plumbob Verde Flotante (Icono de Los Sims) */}
-              <div className="absolute top-3 right-3 flex items-center gap-1.5 bg-emerald-950/80 border border-emerald-500/40 px-2.5 py-1 rounded-full shadow-xs">
-                <span className="h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
-                <span className="text-[10px] font-mono font-bold text-emerald-400">SIM ACTIVO</span>
-              </div>
-
-              <div className="flex items-start gap-3.5">
-                <div className="h-14 w-14 rounded-2xl bg-gradient-to-tr from-slate-800 to-slate-700 border-2 border-slate-600 flex items-center justify-center text-3xl shadow-inner shrink-0">
-                  {agenteActivo.avatarEmoji}
-                </div>
-
-                <div className="space-y-0.5">
-                  <h3 className="font-black text-white text-base leading-tight">{agenteActivo.nombre}</h3>
-                  <p className="text-xs font-bold text-[#2997ff]">{agenteActivo.rol}</p>
-                  <p className="text-[11px] text-slate-400 font-mono">Reporta a: {agenteActivo.reportaA}</p>
-                </div>
-              </div>
-
-              {/* TAREA EN CURSO EN VIVO */}
-              <div className="bg-slate-900/90 border border-slate-800 p-3 rounded-xl space-y-1">
-                <div className="flex items-center justify-between text-[10px] font-mono text-slate-400">
-                  <span className="flex items-center gap-1 text-emerald-400 font-bold">
-                    <Activity className="h-3 w-3 animate-pulse" />
-                    <span>EN EJECUCIÓN (24/7):</span>
-                  </span>
-                  <span>Energía: {agenteActivo.energiaSim}%</span>
-                </div>
-                <p className="text-xs text-slate-200 font-medium leading-relaxed">
-                  {agenteActivo.tareaActual}
-                </p>
-              </div>
-
-              {/* BOTÓN PERFECCIONAR PUESTO */}
-              <button
-                onClick={() => setMostrarModalEditarPuesto(true)}
-                className="w-full py-2 bg-slate-800 hover:bg-slate-750 text-slate-200 border border-slate-700 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
-              >
-                <Sliders className="h-3.5 w-3.5 text-amber-400" />
-                <span>Perfeccionar Puesto & Obligaciones</span>
-              </button>
-
+            {/* Controles flotantes sobre el juego */}
+            <div className="absolute top-4 left-4 z-10 flex items-center gap-2 bg-slate-900/80 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-700 text-xs">
+              <span className="text-[10px] font-mono text-slate-400">Velocidad:</span>
+              <button onClick={() => setVelocidadSim('1x')} className={`px-2 py-0.5 rounded font-bold ${velocidadSim === '1x' ? 'bg-blue-600 text-white' : 'text-slate-400'}`}>1x</button>
+              <button onClick={() => setVelocidadSim('2x')} className={`px-2 py-0.5 rounded font-bold ${velocidadSim === '2x' ? 'bg-blue-600 text-white' : 'text-slate-400'}`}>2x</button>
+              <button onClick={() => setVelocidadSim('pausa')} className={`px-2 py-0.5 rounded font-bold ${velocidadSim === 'pausa' ? 'bg-amber-600 text-white' : 'text-slate-400'}`}>⏸</button>
             </div>
 
-            {/* KPIS DE RENDIMIENTO DEL PUESTO */}
-            <div className="space-y-2">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Métricas Clave de Desempeño:</span>
+            <div className="absolute top-4 right-4 z-10 text-[11px] font-mono text-emerald-400 bg-slate-900/80 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-700 flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span>Clic: Mover a Don Tomás / Tocar Sim</span>
+            </div>
+
+            <canvas
+              ref={canvasRef}
+              width={1000}
+              height={640}
+              onClick={handleCanvasClick}
+              className="w-full h-auto rounded-xl cursor-crosshair border border-slate-800/60 shadow-inner bg-[#090d16]"
+              style={{ imageRendering: 'pixelated' }}
+            />
+
+            {/* Guía rápida de salas abajo */}
+            <div className="flex items-center gap-2 overflow-x-auto pt-2 text-[10px] font-mono text-slate-400 no-scrollbar">
+              <span className="font-bold text-slate-300 shrink-0">Salas:</span>
+              <span className="bg-slate-900 px-2 py-0.5 rounded border border-slate-800 shrink-0">👔 Gerencia</span>
+              <span className="bg-slate-900 px-2 py-0.5 rounded border border-slate-800 shrink-0">⚖️ Legal OS10</span>
+              <span className="bg-slate-900 px-2 py-0.5 rounded border border-slate-800 shrink-0">🏛️ Directorio</span>
+              <span className="bg-slate-900 px-2 py-0.5 rounded border border-slate-800 shrink-0">🚨 Central CRA</span>
+              <span className="bg-slate-900 px-2 py-0.5 rounded border border-slate-800 shrink-0">💼 Ventas</span>
+              <span className="bg-slate-900 px-2 py-0.5 rounded border border-slate-800 shrink-0">🧠 Laboratorio IA</span>
+              <span className="bg-slate-900 px-2 py-0.5 rounded border border-slate-800 shrink-0">☕ Cafetería</span>
+            </div>
+          </div>
+
+          {/* PANEL LATERAL: FICHA EN VIVO & INTERACCIÓN DEL SIM TOCADO (4 COLS) */}
+          <div className="lg:col-span-4 bg-slate-900/90 border border-slate-800 rounded-2xl p-5 flex flex-col justify-between gap-4 shadow-xl overflow-y-auto">
+            
+            <div className="space-y-4">
+              {/* Tarjeta de Identidad Sims */}
+              <div className="bg-slate-950 border border-slate-800 rounded-2xl p-4 space-y-3 relative">
+                <div className="flex items-start gap-3">
+                  <div className="h-12 w-12 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-3xl shadow-inner shrink-0">
+                    {empleadoActivo.avatarEmoji}
+                  </div>
+                  <div className="space-y-0.5 min-w-0 pr-6">
+                    <h3 className="font-black text-white text-sm leading-tight truncate">{empleadoActivo.nombre}</h3>
+                    <p className="text-xs font-bold text-[#2997ff] truncate">{empleadoActivo.rol}</p>
+                    <span className="inline-block text-[10px] font-mono text-emerald-400 bg-emerald-950/80 px-2 py-0.5 rounded mt-0.5">
+                      {empleadoActivo.areaNombre}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="bg-slate-900 p-2.5 rounded-xl border border-slate-800 text-xs space-y-1">
+                  <div className="text-[10px] font-mono text-slate-400 flex justify-between">
+                    <span>MISIÓN ACTUAL:</span>
+                    <span className="text-emerald-400 font-bold">{empleadoActivo.energiaSim}% Energía</span>
+                  </div>
+                  <p className="text-[11px] text-slate-300 leading-relaxed font-medium">
+                    {empleadoActivo.misionPrincipal}
+                  </p>
+                </div>
+
+                {/* Botón directo a editar entrenamiento */}
+                <button
+                  onClick={() => setPestañaActiva('entrenamiento')}
+                  className="w-full py-2 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
+                >
+                  <BrainCircuit className="h-4 w-4" />
+                  <span>Editar Entrenamiento & Lógica</span>
+                </button>
+              </div>
+
+              {/* Indicadores de Negocio del Sim */}
               <div className="grid grid-cols-2 gap-2">
-                {agenteActivo.kpis.map((k, i) => (
-                  <div key={i} className="bg-slate-900/70 border border-slate-800 p-2.5 rounded-xl">
+                {empleadoActivo.kpis.map((k, i) => (
+                  <div key={i} className="bg-slate-950 p-2.5 rounded-xl border border-slate-800">
                     <div className="text-[10px] text-slate-400 truncate">{k.label}</div>
                     <div className="text-sm font-black text-white font-mono mt-0.5">{k.valor}</div>
                   </div>
                 ))}
               </div>
+
+              {/* Reglas de Negocio en Ejecución */}
+              <div className="space-y-1.5">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Lógica Empresarial Asignada:</span>
+                <div className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 space-y-1.5 text-xs text-slate-300">
+                  {empleadoActivo.entrenamiento.reglasNegocio.map((rg, idx) => (
+                    <div key={idx} className="flex items-start gap-1.5 text-[11px] leading-relaxed">
+                      <span className="text-emerald-400 font-bold shrink-0">✓</span>
+                      <span>{rg}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
 
-            {/* OBLIGACIONES & RESPONSABILIDADES */}
-            <div className="space-y-2">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Obligaciones Asignadas:</span>
-              <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-3 space-y-2 text-xs text-slate-300">
-                {agenteActivo.obligaciones.map((ob, idx) => (
-                  <div key={idx} className="flex items-start gap-2 text-[11px] leading-relaxed">
-                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 shrink-0 mt-0.5" />
-                    <span>{ob}</span>
+            {/* Chat Directo en su Escritorio */}
+            <div className="bg-slate-950 border border-slate-800 rounded-2xl p-3 space-y-2">
+              <div className="flex items-center justify-between text-[10px] border-b border-slate-800 pb-1">
+                <span className="font-bold text-slate-300 flex items-center gap-1">
+                  <MessageSquare className="h-3 w-3 text-[#2997ff]" />
+                  <span>Hablar con {empleadoActivo.apodo}</span>
+                </span>
+                <span className="text-emerald-400 font-mono font-bold">En su puesto</span>
+              </div>
+
+              <div className="max-h-28 overflow-y-auto space-y-1.5 pr-1 text-xs">
+                {empleadoActivo.historialChat.map((msg, i) => (
+                  <div
+                    key={i}
+                    className={`p-2 rounded-xl leading-relaxed text-[11px] ${
+                      msg.autor === 'usuario'
+                        ? 'bg-blue-900/40 text-blue-100 ml-3 border border-blue-800/40'
+                        : 'bg-slate-900 text-slate-200 mr-3 border border-slate-800'
+                    }`}
+                  >
+                    <div className="flex justify-between items-center text-[9px] text-slate-400 mb-0.5 font-mono">
+                      <span>{msg.autor === 'usuario' ? 'Don Tomás' : empleadoActivo.apodo}</span>
+                      <span>{msg.hora}</span>
+                    </div>
+                    <p>{msg.mensaje}</p>
                   </div>
                 ))}
               </div>
-            </div>
 
-            {/* ÚLTIMO REPORTE EMITIDO A GERENCIA */}
-            <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-3.5 space-y-2 text-xs">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-1.5 text-[10px]">
-                <span className="font-extrabold text-amber-300 uppercase flex items-center gap-1">
-                  <FileText className="h-3 w-3" />
-                  <span>Último Reporte a Don Tomás</span>
-                </span>
-                <span className="font-mono text-slate-500">{agenteActivo.ultimoReporte.fecha}</span>
-              </div>
-              <p className="text-[11px] text-slate-300 leading-relaxed font-medium">
-                {agenteActivo.ultimoReporte.resumen}
-              </p>
-              <div className="pt-1">
-                <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Recomendación al Gerente:</span>
-                <div className="bg-blue-950/40 border border-blue-900/50 p-2 rounded-lg text-[11px] text-blue-200 font-medium">
-                  💡 {agenteActivo.ultimoReporte.recomendacion}
-                </div>
+              <div className="flex items-center gap-1.5 pt-1">
+                <input
+                  type="text"
+                  value={mensajeInput}
+                  onChange={e => setMensajeInput(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleEnviarMensaje()}
+                  placeholder={`Preguntar o dar orden a ${empleadoActivo.apodo}...`}
+                  className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#2997ff]"
+                />
+                <button
+                  onClick={handleEnviarMensaje}
+                  disabled={enviandoChat || !mensajeInput.trim()}
+                  className="p-1.5 bg-[#1E40AF] hover:bg-[#2563EB] disabled:opacity-50 text-white rounded-xl cursor-pointer transition shadow-xs"
+                >
+                  <Send className="h-3.5 w-3.5" />
+                </button>
               </div>
             </div>
 
           </div>
 
-          {/* CHAT / DAR INSTRUCCIÓN DIRECTA AL AGENTE EN SU ESCRITORIO */}
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3 space-y-2.5">
-            <div className="flex items-center justify-between text-[10px] border-b border-slate-800 pb-1.5">
-              <span className="font-bold text-slate-300 flex items-center gap-1">
-                <MessageSquare className="h-3 w-3 text-[#2997ff]" />
-                <span>Interacción Directa con {agenteActivo.nombre.split(' ')[0]}</span>
-              </span>
-              <span className="text-emerald-400 font-mono font-bold">En línea</span>
-            </div>
+        </div>
+      )}
 
-            {/* Historial de Mensajes */}
-            <div className="max-h-36 overflow-y-auto space-y-2 pr-1 text-xs">
-              {agenteActivo.historialChat.map((msg, i) => (
+      {/* ── CONTENIDO: EDITOR DE ENTRENAMIENTO & LÓGICA EMPRESARIAL ── */}
+      {pestañaActiva === 'entrenamiento' && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 min-h-0 flex-1 overflow-y-auto">
+          
+          {/* Selector de Empleado (4 COLS) */}
+          <div className="lg:col-span-4 space-y-2">
+            <span className="text-[11px] font-black text-slate-400 uppercase tracking-wider block mb-2">Selecciona Empleado a Calibrar:</span>
+            <div className="space-y-1.5 max-h-[600px] overflow-y-auto pr-1">
+              {empleados.map(emp => (
                 <div
-                  key={i}
-                  className={`p-2 rounded-xl leading-relaxed ${
-                    msg.autor === 'usuario'
-                      ? 'bg-blue-900/40 text-blue-100 ml-4 border border-blue-800/40'
-                      : 'bg-slate-800/70 text-slate-200 mr-4 border border-slate-700/50'
+                  key={emp.id}
+                  onClick={() => setEmpleadoSeleccionadoId(emp.id)}
+                  className={`p-3 rounded-2xl border transition cursor-pointer flex items-center justify-between ${
+                    empleadoActivo.id === emp.id
+                      ? 'bg-blue-950/80 border-[#2997ff] ring-1 ring-[#2997ff]'
+                      : 'bg-slate-900/80 border-slate-800 hover:border-slate-700'
                   }`}
                 >
-                  <div className="flex justify-between items-center text-[9px] text-slate-400 mb-0.5">
-                    <span className="font-bold">{msg.autor === 'usuario' ? 'Don Tomás (Tú)' : agenteActivo.nombre}</span>
-                    <span className="font-mono">{msg.hora}</span>
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <span className="text-2xl shrink-0">{emp.avatarEmoji}</span>
+                    <div className="min-w-0">
+                      <h4 className="font-bold text-white text-xs truncate">{emp.nombre}</h4>
+                      <p className="text-[11px] text-slate-400 truncate">{emp.rol}</p>
+                    </div>
                   </div>
-                  <p className="text-[11px]">{msg.mensaje}</p>
+                  <span className="text-[10px] font-mono font-bold text-emerald-400 shrink-0 bg-emerald-950/60 px-2 py-0.5 rounded">
+                    {emp.entrenamiento.autonomia.slice(0, 10)}...
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Formulario de Entrenamiento Editable (8 COLS) */}
+          <div className="lg:col-span-8 bg-slate-900/90 border border-slate-800 rounded-2xl p-6 space-y-5 shadow-xl">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-3">
+                <span className="text-3xl">{empleadoActivo.avatarEmoji}</span>
+                <div>
+                  <h3 className="font-black text-base text-white">Calibración de Lógica: {empleadoActivo.rol}</h3>
+                  <p className="text-xs text-[#2997ff] font-bold">Titular: {empleadoActivo.nombre} ({empleadoActivo.areaNombre})</p>
+                </div>
+              </div>
+              <span className="text-xs font-mono text-emerald-400 bg-emerald-950/60 border border-emerald-500/30 px-3 py-1 rounded-full font-bold">
+                ENJAMBRE IA ACTIVO
+              </span>
+            </div>
+
+            <form onSubmit={handleGuardarEntrenamiento} className="space-y-4 text-xs">
+              <div>
+                <label className="font-black text-slate-300 block mb-1 uppercase tracking-wider text-[11px]">
+                  1. System Prompt / Instrucciones Maestras de Razonamiento:
+                </label>
+                <textarea
+                  name="systemPrompt"
+                  rows={4}
+                  defaultValue={empleadoActivo.entrenamiento.systemPrompt}
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-xs text-white focus:border-[#2997ff] focus:outline-none font-sans leading-relaxed"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="font-black text-slate-300 block mb-1 uppercase tracking-wider text-[11px]">
+                    2. Reglas de Negocio Estrictas (Una por línea):
+                  </label>
+                  <textarea
+                    name="reglasNegocio"
+                    rows={4}
+                    defaultValue={empleadoActivo.entrenamiento.reglasNegocio.join('\n')}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-xs text-white focus:border-[#2997ff] focus:outline-none font-mono leading-relaxed"
+                  />
+                </div>
+
+                <div>
+                  <label className="font-black text-slate-300 block mb-1 uppercase tracking-wider text-[11px]">
+                    3. Conocimientos Clave & Fuentes de Datos (Una por línea):
+                  </label>
+                  <textarea
+                    name="conocimientos"
+                    rows={4}
+                    defaultValue={empleadoActivo.entrenamiento.conocimientosClave.join('\n')}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-xs text-white focus:border-[#2997ff] focus:outline-none font-mono leading-relaxed"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+                <div>
+                  <label className="font-black text-slate-300 block mb-1 uppercase tracking-wider text-[11px]">
+                    Nivel de Autonomía en Decisiones:
+                  </label>
+                  <select
+                    name="autonomia"
+                    defaultValue={empleadoActivo.entrenamiento.autonomia}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-xs font-bold text-white focus:border-[#2997ff] focus:outline-none"
+                  >
+                    <option value="Supervisión Estricta">Supervisión Estricta (Consulta todo a Gerencia)</option>
+                    <option value="Autonomía Moderada">Autonomía Moderada (Ejecuta y reporta novedades)</option>
+                    <option value="Autonomía Total 24/7">Autonomía Total 24/7 (Resuelve y toma decisiones)</option>
+                  </select>
+                </div>
+
+                <div className="flex items-end">
+                  <button
+                    type="submit"
+                    className="w-full py-3 bg-[#1E40AF] hover:bg-[#2563EB] text-white rounded-xl font-bold cursor-pointer transition shadow-md flex items-center justify-center gap-2 text-xs"
+                  >
+                    <Save className="h-4 w-4" />
+                    <span>Guardar Lógica Empresarial de {empleadoActivo.apodo}</span>
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+
+        </div>
+      )}
+
+      {/* ── CONTENIDO: ÁRBOL DE ORGANIGRAMA CLÁSICO ── */}
+      {pestañaActiva === 'organigrama' && (
+        <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 space-y-6 overflow-y-auto">
+          {/* NODO GERENCIAL */}
+          <div className="flex justify-center">
+            <div
+              onClick={() => {
+                setEmpleadoSeleccionadoId('gerencia_general')
+                setPestañaActiva('juego_oficina')
+              }}
+              className="p-4 rounded-2xl bg-blue-900/40 border-2 border-blue-400 text-center cursor-pointer shadow-lg max-w-sm"
+            >
+              <div className="text-3xl mb-1">👔</div>
+              <h4 className="font-black text-white text-sm">Don Tomás Toro-Moreno</h4>
+              <p className="text-xs text-amber-400 font-bold uppercase">Gerencia General / Directorio</p>
+            </div>
+          </div>
+
+          <div className="w-0.5 h-6 bg-slate-700 mx-auto" />
+
+          {/* ASESORÍA LEGAL */}
+          <div className="flex justify-center">
+            <div
+              onClick={() => {
+                setEmpleadoSeleccionadoId('legal_os10')
+                setPestañaActiva('juego_oficina')
+              }}
+              className="p-3.5 rounded-xl bg-amber-900/40 border border-amber-400 text-center cursor-pointer shadow max-w-xs"
+            >
+              <div className="text-2xl mb-1">⚖️</div>
+              <h4 className="font-bold text-white text-xs">Lic. Claudio Valenzuela</h4>
+              <p className="text-[10px] text-amber-300 font-bold uppercase">Asesoría Legal & Cumplimiento OS10</p>
+            </div>
+          </div>
+
+          <div className="w-0.5 h-6 bg-slate-700 mx-auto" />
+
+          {/* 3 DIVISIONES */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-slate-950 p-4 rounded-xl border border-blue-900/40 space-y-2">
+              <span className="font-black text-xs text-blue-400 uppercase block text-center border-b border-slate-800 pb-2">
+                🚨 Operaciones & Alarmas
+              </span>
+              {empleados.filter(e => e.area === 'operaciones').map(e => (
+                <div
+                  key={e.id}
+                  onClick={() => { setEmpleadoSeleccionadoId(e.id); setPestañaActiva('juego_oficina') }}
+                  className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 hover:border-blue-400 cursor-pointer flex items-center gap-2"
+                >
+                  <span className="text-lg">{e.avatarEmoji}</span>
+                  <div>
+                    <p className="font-bold text-xs text-white">{e.nombre}</p>
+                    <p className="text-[10px] text-slate-400">{e.rol}</p>
+                  </div>
                 </div>
               ))}
             </div>
 
-            {/* Input para Dar Instrucción */}
-            <div className="flex items-center gap-2 pt-1">
-              <input
-                type="text"
-                value={mensajeInput}
-                onChange={e => setMensajeInput(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleEnviarMensaje()}
-                placeholder={`Instrucción o consulta a ${agenteActivo.nombre.split(' ')[0]}...`}
-                className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#2997ff]"
-              />
-              <button
-                onClick={handleEnviarMensaje}
-                disabled={enviandoMsg || !mensajeInput.trim()}
-                className="p-2 bg-[#1E40AF] hover:bg-[#2563EB] disabled:opacity-50 text-white rounded-xl cursor-pointer transition shadow-xs"
-              >
-                <Send className="h-3.5 w-3.5" />
-              </button>
-            </div>
-          </div>
-
-        </div>
-
-      </div>
-
-      {/* ── MODAL 1: PERFECCIONAR PUESTO DE TRABAJO ── */}
-      {mostrarModalEditarPuesto && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-700 w-full max-w-xl rounded-3xl p-6 space-y-5 text-slate-100 shadow-2xl">
-            <div className="flex justify-between items-center border-b border-slate-800 pb-3">
-              <div className="flex items-center gap-2.5">
-                <span className="text-2xl">{agenteActivo.avatarEmoji}</span>
-                <div>
-                  <h3 className="font-black text-base text-white">Perfeccionar Puesto: {agenteActivo.rol}</h3>
-                  <p className="text-xs text-slate-400">Titular asignado: {agenteActivo.nombre}</p>
-                </div>
-              </div>
-              <button onClick={() => setMostrarModalEditarPuesto(false)} className="text-slate-400 hover:text-white font-bold text-lg">✕</button>
-            </div>
-
-            <form onSubmit={handleGuardarEdicionPuesto} className="space-y-4 text-xs">
-              <div>
-                <label className="font-bold text-slate-300 block mb-1">Misión & Tarea Actual en Ejecución:</label>
-                <input
-                  name="tareaActual"
-                  defaultValue={agenteActivo.tareaActual}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-xs text-white focus:border-[#2997ff] focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="font-bold text-slate-300 block mb-1">Obligaciones Oficiales del Cargo (Una por línea):</label>
-                <textarea
-                  name="obligaciones"
-                  rows={4}
-                  defaultValue={agenteActivo.obligaciones.join('\n')}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-xs text-white focus:border-[#2997ff] focus:outline-none font-mono"
-                />
-              </div>
-
-              <div>
-                <label className="font-bold text-slate-300 block mb-1">Resumen del Informe para Gerencia:</label>
-                <textarea
-                  name="resumenReporte"
-                  rows={3}
-                  defaultValue={agenteActivo.ultimoReporte.resumen}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-xs text-white focus:border-[#2997ff] focus:outline-none"
-                />
-              </div>
-
-              <div className="flex justify-end gap-2.5 pt-2 border-t border-slate-800">
-                <button
-                  type="button"
-                  onClick={() => setMostrarModalEditarPuesto(false)}
-                  className="px-4 py-2 bg-slate-800 text-slate-300 rounded-xl font-bold cursor-pointer hover:bg-slate-700"
+            <div className="bg-slate-950 p-4 rounded-xl border border-emerald-900/40 space-y-2">
+              <span className="font-black text-xs text-emerald-400 uppercase block text-center border-b border-slate-800 pb-2">
+                💼 Comercial & Ventas
+              </span>
+              {empleados.filter(e => e.area === 'comercial').map(e => (
+                <div
+                  key={e.id}
+                  onClick={() => { setEmpleadoSeleccionadoId(e.id); setPestañaActiva('juego_oficina') }}
+                  className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 hover:border-emerald-400 cursor-pointer flex items-center gap-2"
                 >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 bg-[#1E40AF] hover:bg-[#2563EB] text-white rounded-xl font-bold cursor-pointer shadow-md"
-                >
-                  Guardar Perfeccionamiento
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* ── MODAL 2: MEMORÁNDUM GENERAL DEL DIRECTORIO ── */}
-      {mostrarMemorandumDirectorio && (
-        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-slate-950 border border-slate-800 w-full max-w-3xl rounded-3xl p-6 sm:p-8 space-y-5 text-slate-100 shadow-2xl max-h-[85vh] overflow-y-auto">
-            <div className="flex justify-between items-center border-b border-slate-800 pb-4">
-              <div>
-                <div className="text-[10px] font-mono text-amber-400 uppercase tracking-widest font-bold">DOCUMENTO EJECUTIVO DE GOBIERNO CORPORATIVO</div>
-                <h3 className="font-black text-lg text-white">Memorándum Consolidado de Áreas — Gama Seguridad SpA</h3>
-              </div>
-              <button onClick={() => setMostrarMemorandumDirectorio(false)} className="text-slate-400 hover:text-white font-bold text-xl">✕</button>
-            </div>
-
-            <div className="space-y-4 text-xs">
-              <div className="bg-slate-900/80 p-4 rounded-2xl border border-slate-800 space-y-1">
-                <span className="font-bold text-emerald-400">ESTADO GLOBAL DE LA OPERACIÓN 24/7:</span>
-                <p className="text-slate-300 leading-relaxed">
-                  Todos los departamentos se encuentran sincronizados y trabajando ininterrumpidamente. Se mantiene cero tiempo de inactividad en la Central Receptora de Alarmas y el radar de licitaciones registra $240M CLP en oportunidades comerciales.
-                </p>
-              </div>
-
-              <div className="space-y-3">
-                <span className="font-extrabold text-slate-400 uppercase tracking-wider block text-[11px]">Reportes Sintetizados por Departamento:</span>
-                {agentes.map(ag => (
-                  <div key={ag.id} className="bg-slate-900/60 p-3.5 rounded-xl border border-slate-800/80 space-y-1">
-                    <div className="flex justify-between items-center">
-                      <span className="font-bold text-white text-[12px] flex items-center gap-1.5">
-                        <span>{ag.avatarEmoji}</span>
-                        <span>{ag.nombre} — {ag.rol}</span>
-                      </span>
-                      <span className="text-[10px] font-mono text-slate-400">{ag.ultimoReporte.fecha}</span>
-                    </div>
-                    <p className="text-[11px] text-slate-300 leading-relaxed">{ag.ultimoReporte.resumen}</p>
+                  <span className="text-lg">{e.avatarEmoji}</span>
+                  <div>
+                    <p className="font-bold text-xs text-white">{e.nombre}</p>
+                    <p className="text-[10px] text-slate-400">{e.rol}</p>
                   </div>
-                ))}
-              </div>
+                </div>
+              ))}
             </div>
 
-            <div className="flex justify-end pt-3 border-t border-slate-800">
-              <button
-                onClick={() => setMostrarMemorandumDirectorio(false)}
-                className="px-6 py-2.5 bg-[#1E40AF] text-white rounded-xl font-bold cursor-pointer hover:bg-blue-600 transition"
-              >
-                Cerrar Memorándum
-              </button>
+            <div className="bg-slate-950 p-4 rounded-xl border border-purple-900/40 space-y-2">
+              <span className="font-black text-xs text-purple-400 uppercase block text-center border-b border-slate-800 pb-2">
+                🧠 IA & Innovación
+              </span>
+              {empleados.filter(e => e.area === 'ia').map(e => (
+                <div
+                  key={e.id}
+                  onClick={() => { setEmpleadoSeleccionadoId(e.id); setPestañaActiva('juego_oficina') }}
+                  className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 hover:border-purple-400 cursor-pointer flex items-center gap-2"
+                >
+                  <span className="text-lg">{e.avatarEmoji}</span>
+                  <div>
+                    <p className="font-bold text-xs text-white">{e.nombre}</p>
+                    <p className="text-[10px] text-slate-400">{e.rol}</p>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
       )}
 
-    </div>
-  )
-}
-
-// ── COMPONENTE TARJETA DE PUESTO SIMS INTERACTIVA ──
-
-function TarjetaSimItem({
-  agente,
-  activo,
-  onSelect
-}: {
-  agente: AgenteSim
-  activo: boolean
-  onSelect: () => void
-}) {
-  return (
-    <div
-      onClick={onSelect}
-      className={`p-4 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between gap-3 relative select-none ${
-        activo
-          ? 'bg-blue-950/60 border-[#2997ff] ring-2 ring-[#2997ff]/30 shadow-lg scale-[1.01]'
-          : 'bg-slate-900/70 border-slate-800 hover:border-slate-700 hover:bg-slate-900'
-      }`}
-    >
-      {/* Plumbob Verde en la Esquina */}
-      <div className="absolute top-3 right-3 flex items-center gap-1">
-        <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-        <span className="text-[9px] font-mono font-bold text-emerald-400">24/7</span>
-      </div>
-
-      <div className="flex items-start gap-3">
-        <div className="h-11 w-11 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-2xl shrink-0 shadow-inner">
-          {agente.avatarEmoji}
-        </div>
-
-        <div className="space-y-0.5 min-w-0 pr-8">
-          <h4 className="font-extrabold text-white text-xs leading-snug truncate">{agente.nombre}</h4>
-          <p className="text-[11px] font-bold text-[#2997ff] truncate">{agente.rol}</p>
-          <span className="inline-block text-[10px] font-mono text-slate-400 bg-slate-800/80 px-2 py-0.5 rounded-md mt-0.5">
-            {agente.estadoSim}
-          </span>
-        </div>
-      </div>
-
-      {/* Tarea Resumida */}
-      <div className="bg-slate-950/80 border border-slate-800/60 p-2.5 rounded-xl text-[11px] text-slate-300 line-clamp-2 leading-relaxed">
-        {agente.tareaActual}
-      </div>
-
-      {/* KPI Principal */}
-      <div className="flex items-center justify-between text-[10px] text-slate-400 border-t border-slate-800/80 pt-2 font-mono">
-        <span>{agente.kpis[0].label}:</span>
-        <span className="font-bold text-emerald-400">{agente.kpis[0].valor}</span>
-      </div>
     </div>
   )
 }
