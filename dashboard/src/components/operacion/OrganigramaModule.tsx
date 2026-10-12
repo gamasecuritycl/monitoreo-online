@@ -744,6 +744,123 @@ const EMPLEADOS_DEFAULT: EmpleadoSim[] = [
       { autor: 'agente', mensaje: 'Tomás, stock crítico de baterías respaldado para todo el trimestre.', hora: '08:25' }
     ]
   }
+,
+  // 11. Jefa de Reclutamiento & Talento IA
+  {
+    id: 'ia_reclutamiento',
+    nombre: 'Loreto Baeza',
+    apodo: 'Loreto',
+    rol: 'Jefa de Reclutamiento & Arquitectura de Talento IA',
+    area: 'ia',
+    areaNombre: 'Laboratorio de IA & Software',
+    avatarEmoji: '🧩',
+    colorRopa: '#ec4899',
+    colorPiel: '#fed7aa',
+    colorCabello: '#b45309',
+    plumbobColor: '#22c55e',
+    x: 810,
+    y: 360,
+    deskX: 810,
+    deskY: 360,
+    targetX: 810,
+    targetY: 360,
+    estadoAccion: 'working',
+    direccion: 'down',
+    energiaSim: 100,
+    tareaActual: '🧩 Calibrando System Prompts y control de fatiga cognitiva de los modelos',
+    progresoTarea: 85,
+    burbujaTexto: 'Poblando perfiles y cuidando el descanso de los modelos...',
+    burbujaTimer: 180,
+    atribucionesEjecutivas: [
+      'Diseño, entrenamiento y pruebas de estrés de nuevos micro-agentes',
+      'Purga periódica de contexto y prevención de fatiga computacional',
+      'Asignación del arquetipo de IA adecuado para cada función operativa'
+    ],
+    misionPrincipal: 'Diseñar agentes de IA altamente competentes, asegurando que tengan pausas de hibernación para evitar alucinaciones.',
+    kpis: [
+      { label: 'Especialistas Activos', valor: '12 Modelos' },
+      { label: 'Salud Cognitiva', valor: '100% Precisión' }
+    ],
+    trayectoriaLinkedIn: 'Especialista en Meta-Prompting y Arquitectura Multi-Agente. Ha calibrado más de 80 sistemas autónomos con memoria persistente y control de alucinaciones.',
+    certificacionesElite: [
+      'Prompt Engineering Master Certification',
+      'Multi-Agent System Architect'
+    ],
+    hardSkills: ['Diseño de Prompts Estrictos', 'Evaluación de Alucinaciones', 'Orquestación de Contexto'],
+    softSkills: ['Criterio Pedagógico', 'Rigor Evaluativo', 'Empatía de Diseño'],
+    stackHerramientas: ['Gemini 2.5 Flash / Pro', 'LangChain / LangGraph', 'Supabase Vector'],
+    metodologias: ['Human-in-the-Loop Validation', 'Agentic Triage'],
+    entrenamiento: {
+      systemPrompt: 'Eres Loreto Baeza, encargada de Reclutamiento y Talento IA en Gama Seguridad. Tu misión es crear y calibrar los agentes virtuales de la colonia, asegurando que descansen para no degradar su rendimiento.',
+      conocimientosClave: ['Arquitectura de agentes', 'Purga de memoria', 'Límites de contexto', 'Pruebas de estrés'],
+      reglasNegocio: ['Ningún agente sale a operar sin validación de cero alucinaciones', 'El descanso del modelo es obligatorio'],
+      autonomia: 'Autonomía Total 24/7',
+      temperatura: 0.1,
+      herramientasActivas: ['Forge de Agentes', 'Calibrador de Contexto', 'Detector de Alucinación']
+    },
+    historialChat: [
+      { autor: 'agente', mensaje: 'Tomás, dotación virtual calibrada al 100% y con purga de memoria realizada a las 13:00 hrs.', hora: '08:28' }
+    ]
+  },
+
+  // 12. Asesor Senior de Estrategia Organizacional & Expansión
+  {
+    id: 'gerencia_expansion',
+    nombre: 'Rodrigo Sanhueza',
+    apodo: 'Rodrigo',
+    rol: 'Asesor Senior de Estrategia Organizacional & Expansión',
+    area: 'gerencia',
+    areaNombre: 'Gerencia General / Directorio',
+    avatarEmoji: '🏛️',
+    colorRopa: '#0284c7',
+    colorPiel: '#fed7aa',
+    colorCabello: '#1e293b',
+    plumbobColor: '#22c55e',
+    x: 235,
+    y: 135,
+    deskX: 235,
+    deskY: 135,
+    targetX: 235,
+    targetY: 135,
+    estadoAccion: 'working',
+    direccion: 'down',
+    energiaSim: 98,
+    tareaActual: '🏛️ Evaluando capacidad instalada vs crecimiento de abonados',
+    progresoTarea: 90,
+    burbujaTexto: 'Estructurando informe de las 14:00 para Tomás...',
+    burbujaTimer: 180,
+    atribucionesEjecutivas: [
+      'Diagnóstico continuo de cuellos de botella y sobrecarga en la colonia de agentes',
+      'Recomendación técnica a Tomás de cuándo y qué nuevo puesto abrir',
+      'Blindaje organizacional para que Tomás no tenga que intervenir en operaciones'
+    ],
+    misionPrincipal: 'Optimizar la topología de la oficina virtual para que Gama crezca de forma ordenada y Tomás tenga paz absoluta.',
+    kpis: [
+      { label: 'Carga Operativa', valor: 'Equilibrada' },
+      { label: 'Eficiencia Colonia', valor: '99.4%' }
+    ],
+    trayectoriaLinkedIn: 'Consultor Senior en Organización de Operaciones Críticas con 16 años asesorando a directores generales en escalamiento sin saturación de fundadores.',
+    certificacionesElite: [
+      'Chief Operating Officer Executive Program',
+      'Lean Scalability & Capacity Planning'
+    ],
+    hardSkills: ['Modelos de Capacidad Operativa', 'Diseño Organizacional Eficiente', 'Métricas de Latencia'],
+    softSkills: ['Visión Global', 'Claridad Ejecutiva', 'Pragmatismo'],
+    stackHerramientas: ['Command Center Metrics', 'PowerBI Executive', 'Matriz de Capacidad Gama'],
+    metodologias: ['Theory of Constraints (TOC)', 'Modular Scalability'],
+    entrenamiento: {
+      systemPrompt: 'Eres Rodrigo Sanhueza, Asesor Senior de Expansión de Gama Seguridad. Tu objetivo es decirle a Tomás con total franqueza y números en mano qué puestos abrir y cómo evitar sobrecargas innecesarias.',
+      conocimientosClave: ['Cartera 415 abonados', 'Tramos de escalamiento', 'Paz mental de Tomás', 'Cero puestos ociosos'],
+      reglasNegocio: ['No recomendar crear puestos que no tengan justificación en volumen de abonados', 'Cuidar el flujo de caja'],
+      autonomia: 'Autonomía Total 24/7',
+      temperatura: 0.1,
+      herramientasActivas: ['Matriz de Capacidad', 'Diagnosticador de Sobrecarga', 'Informe 14:00']
+    },
+    historialChat: [
+      { autor: 'agente', mensaje: 'Tomás, el balance de carga de mediodía está listo para el informe consolidado de las 14:00 hrs.', hora: '08:30' }
+    ]
+  }
+
 ]
 
 // ── BANCO DE ACCIONES REALES PARA EL FEED EN VIVO ──
@@ -779,6 +896,26 @@ export default function OrganigramaModule() {
   const [velocidadSim, setVelocidadSim] = useState<'1x' | '2x' | 'pausa'>('1x')
   const [modoReunionDirectorio, setModoReunionDirectorio] = useState<boolean>(false)
   const [modoPausaBienestar, setModoPausaBienestar] = useState<boolean>(false)
+
+  const [enviandoInforme14, setEnviandoInforme14] = useState<boolean>(false)
+
+  const handleDespacharInforme14Hrs = async () => {
+    setEnviandoInforme14(true)
+    try {
+      const res = await fetch('/api/agentes/informe-14hrs?send=true')
+      const data = await res.json()
+      if (data.ok) {
+        alert('✓ Informe Consolidado de las 14:00 hrs despachado exitosamente vía Resend a tetoromoreno@gamasecurity.cl')
+      } else {
+        alert('Error en despacho: ' + (data.error || 'Desconocido'))
+      }
+    } catch (err: any) {
+      alert('Error conectando con API de informe 14hrs: ' + err.message)
+    } finally {
+      setEnviandoInforme14(false)
+    }
+  }
+
 
   // Estados interactivos de herramientas de área
   const [cargandoInformeSofia, setCargandoInformeSofia] = useState<boolean>(false)
@@ -1496,7 +1633,7 @@ export default function OrganigramaModule() {
                 OFICINA AUTÓNOMA VIRTUAL
               </h1>
               <span className="text-[10px] font-mono text-emerald-400 bg-emerald-950/80 border border-emerald-800/60 px-2 py-0.5 rounded-full font-bold">
-                10 ESPECIALISTAS ACTIVOS
+                12 ESPECIALISTAS ACTIVOS
               </span>
             </div>
             <p className="text-[11px] text-slate-400">
@@ -1535,6 +1672,18 @@ export default function OrganigramaModule() {
             <Users className="h-3.5 w-3.5 text-indigo-400" />
             <span>Directorio</span>
           </button>
+
+          {/* Botón de Despacho de Informe 14:00 hrs */}
+          <button
+            onClick={handleDespacharInforme14Hrs}
+            disabled={enviandoInforme14}
+            className="px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer border bg-blue-900/60 hover:bg-blue-800 text-blue-200 border-blue-600/60 shadow-sm"
+            title="Despachar informe consolidado de las 14:00 hrs a Tomás vía Resend"
+          >
+            <Send className="h-3.5 w-3.5 text-blue-300" />
+            <span>{enviandoInforme14 ? 'Enviando...' : 'Informe 14:00 (Resend)'}</span>
+          </button>
+
 
           <div className="bg-slate-950 p-1 rounded-xl border border-slate-800 flex items-center gap-1 text-xs font-bold">
             <button
@@ -1627,7 +1776,7 @@ export default function OrganigramaModule() {
                   </span>
                 </div>
                 <span className="text-[10px] font-mono text-slate-400">
-                  415 Abonados Monitoreados • 10 Agentes Conectados
+                  415 Abonados Monitoreados • 12 Especialistas Conectados
                 </span>
               </div>
 
