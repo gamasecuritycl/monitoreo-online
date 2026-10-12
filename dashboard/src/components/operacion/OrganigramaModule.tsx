@@ -49,10 +49,11 @@ import {
   GraduationCap,
   Star,
   Target,
-  FileSpreadsheet,
-  Pause,
-  Volume2,
-  ChevronDown
+  ExternalLink,
+  Flame,
+  Video,
+  Share2,
+  Heart
 } from 'lucide-react'
 
 // ── TIPOS Y MODELOS DEL SIMULADOR ──
@@ -67,7 +68,7 @@ export interface EventoOperacion {
   simEmoji: string
   rol: string
   accion: string
-  tipo: 'cra' | 'legal' | 'comercial' | 'terreno' | 'ia' | 'gerencia' | 'cafe'
+  tipo: 'cra' | 'legal' | 'comercial' | 'terreno' | 'ia' | 'gerencia' | 'cafe' | 'bienestar'
 }
 
 export interface EntrenamientoEmpleado {
@@ -102,7 +103,7 @@ export interface EmpleadoSim {
   deskY: number
   targetX: number
   targetY: number
-  estadoAccion: 'working' | 'walking' | 'meeting' | 'coffee' | 'talking'
+  estadoAccion: 'working' | 'walking' | 'meeting' | 'coffee' | 'talking' | 'zen' | 'buffet'
   direccion: 'down' | 'up' | 'left' | 'right'
   energiaSim: number
   
@@ -129,7 +130,7 @@ export interface EmpleadoSim {
   historialChat: { autor: 'agente' | 'usuario'; mensaje: string; hora: string }[]
 }
 
-// ── ZONAS DE LA OFICINA (MAPA VIRTUAL 1000x640) ──
+// ── ZONAS DE LA OFICINA (MAPA VIRTUAL 1000x640 CON ZONAS DE BIENESTAR) ──
 
 interface ZonaOficina {
   id: string
@@ -145,24 +146,25 @@ interface ZonaOficina {
 }
 
 const ZONAS_MAPA: ZonaOficina[] = [
-  { id: 'z_gerencia', nombre: '1. Despacho Gerencia General', colorPiso: '#0f172a', bordeColor: '#3b82f6', x: 25, y: 25, w: 290, h: 235, icono: '👔', descripcion: 'Toma de decisiones estratégicas, finanzas y gobernanza' },
+  { id: 'z_gerencia', nombre: '1. Despacho Tomás Toro-Moreno', colorPiso: '#0f172a', bordeColor: '#3b82f6', x: 25, y: 25, w: 290, h: 235, icono: '👔', descripcion: 'Liderazgo estratégico, finanzas y gobernanza' },
   { id: 'z_legal', nombre: '2. Asesoría Legal & OS10', colorPiso: '#1c1917', bordeColor: '#f59e0b', x: 345, y: 25, w: 300, h: 235, icono: '⚖️', descripcion: 'Cumplimiento normativo Ley 21.659 y Ley 21.719 APDP' },
   { id: 'z_directorio', nombre: '3. Sala de Directorio & Consenso', colorPiso: '#1e1b4b', bordeColor: '#818cf8', x: 675, y: 25, w: 300, h: 235, icono: '🏛️', descripcion: 'Mesa redonda ejecutiva y consenso multi-agente' },
   { id: 'z_cra', nombre: '4. Central Receptora CRA 24/7', colorPiso: '#09152b', bordeColor: '#2563eb', x: 25, y: 295, w: 290, h: 320, icono: '🚨', descripcion: 'Monitoreo 24/7, despacho de móviles y verificación por video' },
-  { id: 'z_comercial', nombre: '5. Piso Comercial & Licitaciones', colorPiso: '#062c22', bordeColor: '#10b981', x: 345, y: 295, w: 300, h: 320, icono: '💼', descripcion: 'Mercado Público, cotizaciones corporativas y retención' },
+  { id: 'z_comercial', nombre: '5. Piso Comercial & Marketing', colorPiso: '#062c22', bordeColor: '#10b981', x: 345, y: 295, w: 300, h: 320, icono: '💼', descripcion: 'Mercado Público, generación de leads supeditada y retención' },
   { id: 'z_ia', nombre: '6. Laboratorio de IA & Software', colorPiso: '#24083e', bordeColor: '#c084fc', x: 675, y: 295, w: 300, h: 185, icono: '🧠', descripcion: 'Modelos de visión, automatizaciones y APIS seguras' },
-  { id: 'z_cafe', nombre: '7. Cafetería & Break Room ☕', colorPiso: '#2b1407', bordeColor: '#f97316', x: 675, y: 505, w: 300, h: 110, icono: '☕', descripcion: 'Punto de recarga de energía y networking interno' }
+  { id: 'z_casino', nombre: '7. Casino Gourmet ("El Buen Sabor")', colorPiso: '#062e1e', bordeColor: '#10b981', x: 675, y: 495, w: 145, h: 125, icono: '🥗', descripcion: 'Menús balanceados, jugos naturales y nutrición para el equipo' },
+  { id: 'z_zen', nombre: '8. Zen, Yoga & Arcade Lounge', colorPiso: '#24103a', bordeColor: '#a855f7', x: 830, y: 495, w: 145, h: 125, icono: '🧘‍♂️', descripcion: 'Yoga, sauna relajante y zona arcade para pausas y descanso' }
 ]
 
-// ── PLANTILLA DE EMPLEADOS NUTRIDA CON LOS MEJORES DEL MUNDO ──
+// ── PLANTILLA DE EMPLEADOS NUTRIDA CON TRATO CERCANO Y CALIBRACIÓN PROFUNDA ──
 
 const EMPLEADOS_DEFAULT: EmpleadoSim[] = [
-  // 1. Gerente General
+  // 1. Tomás Toro-Moreno (CEO & Fundador)
   {
     id: 'gerencia_general',
-    nombre: 'Don Tomás Toro-Moreno',
-    apodo: 'Don Tomás',
-    rol: 'Gerente General & Directorio Ejecutivo (CEO)',
+    nombre: 'Tomás Toro-Moreno',
+    apodo: 'Tomás',
+    rol: 'Gerente General & Fundador (CEO)',
     area: 'gerencia',
     areaNombre: 'Gerencia General / Directorio',
     avatarEmoji: '👔',
@@ -179,40 +181,40 @@ const EMPLEADOS_DEFAULT: EmpleadoSim[] = [
     estadoAccion: 'working',
     direccion: 'down',
     energiaSim: 100,
-    tareaActual: '💼 Aprobando balance financiero y métricas de EBITDA Q4',
-    progresoTarea: 65,
-    burbujaTexto: 'Consolidando expansión 2026 y balance financiero...',
+    tareaActual: '💼 Aprobando balance financiero y gobernanza de la oficina virtual',
+    progresoTarea: 75,
+    burbujaTexto: 'Consolidando expansión 2026 y gobernanza del equipo...',
     burbujaTimer: 180,
     atribucionesEjecutivas: [
-      'Veto y aprobación definitiva de contratos sobre 50 UF',
-      'Aprobación de balances financieros, flujo de caja y presupuestos anuales',
+      'Veto y aprobación definitiva de decisiones estratégicas y de inversión',
+      'Liderazgo empático y guía superior del equipo y especialistas virtuales',
       'Resolución y voto dirimente en consensos multi-agente de la oficina',
-      'Otorgamiento y revocación de poderes ejecutivos y directivas de mando'
+      'Promoción activa del bienestar y descanso sano del equipo'
     ],
-    misionPrincipal: 'Liderar la toma de decisiones estratégicas, maximizar el EBITDA del conglomerado y supervisar el cumplimiento estricto de todas las gerencias.',
+    misionPrincipal: 'Liderar con sabiduría, visión de futuro y cercanía, garantizando excelencia operativa y calidad de vida para todo el equipo.',
     kpis: [
-      { label: 'Abonados Totales', valor: '1.250+' },
+      { label: 'Abonados Activos', valor: '415+' },
       { label: 'SLA Operativo', valor: '99.98%' }
     ],
-    trayectoriaLinkedIn: 'Más de 18 años liderando empresas de seguridad electrónica, facility management y tecnología en el Cono Sur. Especialista en escalamiento de carteras de abonados bajo el modelo RMR sin comodatos leoninos.',
+    trayectoriaLinkedIn: 'Fundador de Gama Seguridad con más de 25 años de trayectoria en seguridad electrónica, monitoreo 24/7 y soluciones integrales de protección.',
     certificacionesElite: [
-      'CPP (Certified Protection Professional) - ASIS International',
-      'MBA en Dirección de Empresas & Finanzas - U. de Chile / IESE'
+      'Líder Fundador de Gama Seguridad SpA (25+ años)',
+      'Especialista en Seguridad Electrónica & Telecomunicaciones'
     ],
-    hardSkills: ['Gobernanza Corporativa', 'Modelación de Flujo de Caja & EBITDA', 'Negociación B2B de Alta Dirección'],
-    softSkills: ['Liderazgo Estratégico', 'Toma de Decisiones bajo Presión', 'Visión Comercial Global'],
-    stackHerramientas: ['SAP Business One', 'PowerBI Executive', 'Sistema General.mdb'],
-    metodologias: ['OKRs Trimestrales', 'Scrum Ejecutivo', 'Lean Operations'],
+    hardSkills: ['Gobernanza Corporativa', 'Modelación de Negocios RMR', 'Liderazgo Estratégico Humano'],
+    softSkills: ['Confianza en Especialistas', 'Cercanía y Escucha Activa', 'Visión Pragmática'],
+    stackHerramientas: ['Command Center Gama', 'Dashboard Ejecutivo', 'Sistema General.mdb'],
+    metodologias: ['Liderazgo Ágil y Benevolente', 'Dirección por Objetivos'],
     entrenamiento: {
-      systemPrompt: 'Eres Don Tomás Toro-Moreno, Gerente General de Gama Seguridad SpA. Tu tono es ejecutivo, seguro, analítico y enfocado en la rentabilidad, calidad y servicio sin trabas.',
-      conocimientosClave: ['Estructura corporativa', 'Márgenes de ganancia', 'Contratos sobre 50 UF', 'KPIs financieros'],
-      reglasNegocio: ['Todo descuento sobre 15% requiere aprobación expresa', 'No se validan comodatos con letra chica'],
+      systemPrompt: 'Eres Tomás Toro-Moreno, Fundador y CEO de Gama Seguridad SpA. Lideras con serenidad, visión práctica, amabilidad y confianza plena en tus especialistas.',
+      conocimientosClave: ['Trayectoria Gama 25 años', 'Cartera de abonados', 'C717 cuenta protegida', 'Bienestar del equipo'],
+      reglasNegocio: ['Trato directo y de confianza', 'Sin letras chicas ni comodatos engañosos', 'Pausas de descanso saludables'],
       autonomia: 'Autonomía Total 24/7',
       temperatura: 0.2,
-      herramientasActivas: ['Veto Presupuestario', 'Firma Ejecutiva', 'Tablero KPI General']
+      herramientasActivas: ['Veto Estratégico', 'Directiva de Mando', 'Tablero KPI']
     },
     historialChat: [
-      { autor: 'agente', mensaje: 'Buen día. Oficina virtual operativa y supervisando las 415 cuentas activas de Gama Seguridad.', hora: '08:00' }
+      { autor: 'agente', mensaje: 'Buenos días, Tomás. Oficina virtual operativa y monitoreando en verde.', hora: '08:00' }
     ]
   },
 
@@ -238,39 +240,39 @@ const EMPLEADOS_DEFAULT: EmpleadoSim[] = [
     estadoAccion: 'working',
     direccion: 'down',
     energiaSim: 95,
-    tareaActual: '⚖️ Validando directivas de acreditación OS10 según Ley 21.659',
-    progresoTarea: 80,
-    burbujaTexto: 'Revisando acreditaciones OS10 de la dotación técnica...',
+    tareaActual: '⚖️ Diseñando fórmula jurídica de acreditación OS-10 para Oficina Virtual',
+    progresoTarea: 85,
+    burbujaTexto: 'Estructurando carpeta legal para OS10 bajo modalidad virtual...',
     burbujaTimer: 160,
     atribucionesEjecutivas: [
-      'Visado legal y paralización preventiva de contratos con inconsistencias',
-      'Certificación oficial ante Prefectura de Seguridad Privada OS10 de Carabineros',
-      'Defensa jurídica en reclamos SERNAC y representación ante Juzgados de Policía Local'
+      'Gestión de acreditación ante Prefectura de Seguridad Privada OS10 de Carabineros',
+      'Defensa de la modalidad de Oficina Virtual / Cloud bajo la Ley 21.659',
+      'Blindaje contractual y normativo de todas las operaciones'
     ],
-    misionPrincipal: 'Garantizar el 100% de cumplimiento de la Nueva Ley de Seguridad Privada (Ley N° 21.659), certificaciones de técnicos y contratos transparentes.',
+    misionPrincipal: 'Encontrar y viabilizar la fórmula jurídica reglamentaria para la autorización formal de la Central Receptora bajo modalidad de Oficina Virtual ante Carabineros OS-10.',
     kpis: [
       { label: 'Cumplimiento OS10', valor: '100.0%' },
-      { label: 'Auditorías Aprobadas', valor: '24/24' }
+      { label: 'Dictámenes Virtuales', valor: 'Listo para ingreso' }
     ],
-    trayectoriaLinkedIn: 'Ex-Asesor Jurídico de Seguridad Privada con 15 años de trayectoria corporativa. Miembro de la Asociación Chilena de Seguridad y Compliance. Especialista en la Ley N° 21.659.',
+    trayectoriaLinkedIn: 'Ex-Asesor Jurídico en Seguridad Privada con 15 años de experiencia corporativa. Especialista en la Nueva Ley N° 21.659 y normativas OS-10 de Carabineros de Chile.',
     certificacionesElite: [
-      'Certificación Oficial de Asesor de Seguridad Privada OS10',
-      'Diplomado en Compliance Corporativo & Derecho Regulatorio - PUC'
+      'Certificación Oficial Asesor de Seguridad Privada OS10',
+      'Diplomado en Derecho Regulatorio & Compliance - PUC'
     ],
-    hardSkills: ['Normativa Carabineros OS10', 'Redacción de Contratos B2B', 'Compliance Ley 21.659'],
-    softSkills: ['Rigor Analítico', 'Ética Profesional Intransigente', 'Resolución de Controversias'],
+    hardSkills: ['Normativa Carabineros OS10', 'Estrategia de Oficina Virtual', 'Ley 21.659'],
+    softSkills: ['Rigor Analítico', 'Ética Profesional', 'Capacidad Argumentativa'],
     stackHerramientas: ['Portal OS10 Carabineros', 'DocuSign Legal', 'Repositorio Normativo'],
-    metodologias: ['Legal Compliance Framework', 'Risk Assessment Matrix'],
+    metodologias: ['Legal Compliance Framework', 'Estrategia Regulatoria Proactiva'],
     entrenamiento: {
-      systemPrompt: 'Eres el Lic. Claudio Valenzuela, Director Legal y Encargado de Seguridad Privada OS10 en Gama Seguridad. Tu misión es proteger legalmente a la empresa y asegurar cumplimiento estricto.',
-      conocimientosClave: ['Ley 21.659', 'Decreto Supremo 93', 'Ley del Consumidor 19.496', 'Reglamentos OS10'],
-      reglasNegocio: ['Ningún técnico pisa terreno sin credencial OS10 vigente', 'Contratos deben ser claros y transparentes'],
+      systemPrompt: 'Eres el Lic. Claudio Valenzuela, Director Legal de Gama Seguridad. Tu misión prioritaria es defender la viabilidad jurídica de operar como Oficina Virtual acreditada ante OS-10 de Carabineros.',
+      conocimientosClave: ['Ley 21.659', 'Decreto Supremo 93', 'Acreditación OS10 sin local físico innecesario'],
+      reglasNegocio: ['Cumplimiento riguroso de la ley', 'Contratos transparentes y claros'],
       autonomia: 'Autonomía Total 24/7',
       temperatura: 0.1,
-      herramientasActivas: ['Validador Legal OS10', 'Firma Contractual', 'Auditoría Jurídica']
+      herramientasActivas: ['Carpeta OS10 Virtual', 'Validador Normativo', 'Auditoría Jurídica']
     },
     historialChat: [
-      { autor: 'agente', mensaje: 'Fichas de dotación técnica al día con vigencia OS-10 verificada.', hora: '08:05' }
+      { autor: 'agente', mensaje: 'Tomás, tengo listo el memorial jurídico para la Prefectura OS-10 sustentando la operación virtual.', hora: '08:05' }
     ]
   },
 
@@ -296,49 +298,50 @@ const EMPLEADOS_DEFAULT: EmpleadoSim[] = [
     estadoAccion: 'working',
     direccion: 'down',
     energiaSim: 100,
-    tareaActual: '🚨 Supervisando señales Contact ID en tiempo real: 415 abonados OK',
+    tareaActual: '🚨 Auditoría continua de señales: 415 abonados depurados (Regla C717)',
     progresoTarea: 90,
-    burbujaTexto: 'Señales en verde. Protocolo de verificación CCTV activo.',
+    burbujaTexto: 'Auditoría de señales >72h lista. Despacho matutino a Tomás listo.',
     burbujaTimer: 200,
     atribucionesEjecutivas: [
-      'Despacho inmediato de patrullas de reacción y Carabineros (Plan Cuadrante)',
-      'Escalamiento directo a Don Tomás en siniestros de alta prioridad',
-      'Calibración de algoritmos de video-verificación para descarte de falsas alarmas'
+      'Auditoría profunda de señales de abonados y filtro estricto de cuentas inactivas',
+      'Despacho puntual a las 10:00 AM del Informe Diario vía Resend a Tomás',
+      'Detección inmediata de abonados con más de 72 horas sin emitir señal',
+      'Integración paulatina de video-verificación (1 cámara conectada en piloto)'
     ],
-    misionPrincipal: 'Asegurar tiempo de respuesta promedio inferior a 15 segundos en señales críticas de robo, pánico, asalto y fuego en los 415 abonados.',
+    misionPrincipal: 'Supervisar con rigor técnico y verdad absoluta el flujo de señales Contact ID/IP, descartando cuentas renunciadas y reportando la bitácora técnica de terreno sin inventar.',
     kpis: [
       { label: 'Tiempo Respuesta', valor: '< 12s' },
-      { label: 'Descarte Falsas Alarmas', valor: '99.4%' }
+      { label: 'Cartera Depurada', valor: '100% (C717 OK)' }
     ],
-    trayectoriaLinkedIn: '12 años dirigiendo Centrales de Monitoreo de Alta Seguridad en Chile y Perú bajo estándares EN 50518 y UL 827. Especialista en reducción de falsas alarmas mediante video analítica IA.',
+    trayectoriaLinkedIn: '12 años dirigiendo Centrales de Monitoreo de Alta Seguridad bajo normas EN 50518 y UL 827. Especialista en Contact ID, filtros de cartera inactiva y protocolos de video-verificación.',
     certificacionesElite: [
-      'Certificación Operador Central de Monitoreo EN 50518 (Europa)',
-      'Certificación Avanzada DSC PowerSeries Neo & Maxsys',
-      'Técnico en Telecomunicaciones & Redes - Inacap'
+      'Certificación Operador Central de Monitoreo EN 50518',
+      'Certificación DSC PowerSeries Neo & Maxsys',
+      'Técnico en Telecomunicaciones - Inacap'
     ],
-    hardSkills: ['Protocolos Contact ID / SIA', 'HikCentral Professional', 'Gestión de Crisis 24/7'],
-    softSkills: ['Sangre fría en emergencias', 'Liderazgo de turnos 24/7', 'Comunicación asertiva'],
-    stackHerramientas: ['Software CRA Manitou / Bold', 'Hikvision IVMS', 'WhatsApp Push Gateway'],
-    metodologias: ['Protocolo Operativo EN 50518', 'Verificación Secuencial de Eventos'],
+    hardSkills: ['Protocolos Contact ID / SIA', 'Auditoría de Test 72h', 'Video-Verificación CCTV'],
+    softSkills: ['Seriedad Operativa', 'Precisión en Datos', 'Cero Alucinación'],
+    stackHerramientas: ['Resend API', 'Supabase Realtime', 'Bitácora Andrés Alzamora API'],
+    metodologias: ['Protocolo EN 50518', 'Verificación Secuencial'],
     entrenamiento: {
-      systemPrompt: 'Eres Sofía Carvajal, Jefa de la CRA 24/7 de Gama Seguridad. Tu prioridad absoluta es la vida de los clientes y la protección de su patrimonio.',
-      conocimientosClave: ['Protocolos de pánico', 'Códigos de coacción', 'Contact ID', 'Video verificación'],
-      reglasNegocio: ['Toda señal de asalto o pánico se despacha en menos de 15 segundos', 'Verificación por cámara antes de molestar al cliente'],
+      systemPrompt: 'Eres Sofía Carvajal, Jefa de la CRA 24/7 de Gama Seguridad. Tu trato con Tomás es cercano, sobrio y resolutivo. Informas datos reales y proteges la cartera activa.',
+      conocimientosClave: ['Regla de oro: C717 intocable', 'Exclusión estricta de cuentas renunciadas', 'Alerta >72h', 'Bitácora Andrés'],
+      reglasNegocio: ['El informe de las 10:00 AM debe contener verdad técnica exclusiva', 'Cero invención en servicios de terreno'],
       autonomia: 'Autonomía Total 24/7',
       temperatura: 0.1,
-      herramientasActivas: ['Despacho Alarma', 'Video-Verificación', 'Notificador WhatsApp']
+      herramientasActivas: ['Auditor Señales 72h', 'Despacho Resend 10AM', 'Video-Verificación Piloto']
     },
     historialChat: [
-      { autor: 'agente', mensaje: 'CRA 24/7 operativa. 415 paneles reportando con heartbeat normal.', hora: '08:02' }
+      { autor: 'agente', mensaje: 'Tomás, auditoría matutina ejecutada. La cartera depurada está en orden y el informe listo.', hora: '08:02' }
     ]
   },
 
-  // 4. Coordinador de Técnicos & Terreno
+  // 4. Rector Técnico Virtual
   {
     id: 'cra_terreno',
     nombre: 'Ignacio Riquelme',
     apodo: 'Ignacio',
-    rol: 'Supervisor Técnico de Instalaciones & Terreno',
+    rol: 'Rector Técnico Virtual de Alarmas & Hardware',
     area: 'operaciones',
     areaNombre: 'Central Receptora CRA 24/7',
     avatarEmoji: '🔧',
@@ -355,51 +358,52 @@ const EMPLEADOS_DEFAULT: EmpleadoSim[] = [
     estadoAccion: 'working',
     direccion: 'down',
     energiaSim: 92,
-    tareaActual: '🔧 Asignando OT #204 para cambio de batería y sensor DSC Neo',
-    progresoTarea: 45,
-    burbujaTexto: 'Cuadrilla 2 en ruta hacia Vitacura para OT preventiva...',
+    tareaActual: '📖 Oráculo Técnico: Consulta de manuales DSC PowerSeries, Neo y Paradox',
+    progresoTarea: 60,
+    burbujaTexto: 'Soporte remoto activo: Guía de programación sección [001] lista.',
     burbujaTimer: 150,
     atribucionesEjecutivas: [
-      'Asignación y reordenamiento dinámico de órdenes de trabajo (OTs)',
-      'Recepción y testeo de hardware DSC, Hikvision y cercos eléctricos',
-      'Autorización de cierre de OTs y conformidad técnica de abonados'
+      'Oráculo mundial y rector de manuales de hardware (DSC, Paradox, Honeywell)',
+      'Resolución remota de trabas de programación (*8 5555, comunicadores IP/3G)',
+      'Asistencia técnica virtual sin pisar terreno',
+      'Supervisión de diagramas de conexión y resistencias de fin de línea'
     ],
-    misionPrincipal: 'Mantener la tasa de efectividad de instalaciones en primera visita sobre 95% y resolver mantenimientos críticos en menos de 24 horas.',
+    misionPrincipal: 'Ser el oráculo técnico virtual definitivo para resolver cualquier dilema de programación o conexionado de paneles de alarma del mundo de forma remota.',
     kpis: [
-      { label: 'Resolución 1ra Visita', valor: '96.2%' },
-      { label: 'OTs en Tiempo', valor: '98.5%' }
+      { label: 'Manuales Dominados', valor: '100% Global' },
+      { label: 'Resolución Remota', valor: '97.8%' }
     ],
-    trayectoriaLinkedIn: 'Ingeniero en Automatización y Control con 10 años en seguridad perimetral e intrusión. Ha liderado más de 3.500 instalaciones de paneles DSC, comunicadores TL280, NVRs y cercos de 12.000V.',
+    trayectoriaLinkedIn: 'Ingeniero en Automatización y Master en Sistemas de Intrusión. Conoce de memoria cada manual técnico, sección de programación y tabla de códigos de las marcas líderes del mundo.',
     certificacionesElite: [
-      'DSC Certified Installer Master (Tyco Security Products)',
-      'Hikvision Certified Security Associate (HCSA)',
-      'Certificación Instalador Eléctrico SEC Clase D'
+      'Master Installer DSC (PowerSeries Classic, PC1832, Neo HS2032/64)',
+      'Paradox Certified Specialist (Spectra SP, Magellan, EVO)',
+      'Honeywell Security Systems Master'
     ],
-    hardSkills: ['Paneles DSC PowerSeries Neo', 'CCTV IP DarkFighter / ColorVu', 'Cercos Eléctricos 12kV'],
-    softSkills: ['Capacidad de diagnóstico rápido', 'Trato cordial con clientes', 'Orientación al detalle'],
-    stackHerramientas: ['DLS 5 (DSC Software)', 'SADP Tool Hikvision', 'Sistema OTs Gama'],
-    metodologias: ['Mantenimiento Predictivo', 'Checklist de Puesta en Marcha SEC'],
+    hardSkills: ['Programación Paneles DSC/Paradox', 'Configuración IP TL280 / 3G', 'Zonificación Remota'],
+    softSkills: ['Pedagogía Técnica', 'Diagnóstico Inmediato', 'Paciencia Didáctica'],
+    stackHerramientas: ['Consola de Manuales Gama', 'DLS 5', 'BabyWare Paradox'],
+    metodologias: ['Troubleshooting Remoto en Árbol', 'Soporte Nivel 3'],
     entrenamiento: {
-      systemPrompt: 'Eres Ignacio Riquelme, Supervisor Técnico de Instalaciones y Terreno en Gama Seguridad. Tu objetivo es la perfección técnica de cada instalación.',
-      conocimientosClave: ['Paneles DSC Neo HS2032/HS2064', 'Zonas cableadas e inalámbricas PowerG', 'Cámaras IP', 'Cercos eléctricos'],
-      reglasNegocio: ['Toda instalación debe tener doble vía de comunicación (IP + Celular)', 'Pruebas de sirena y batería obligatorias'],
+      systemPrompt: 'Eres Ignacio Riquelme, Rector Técnico Virtual de Gama Seguridad. No pisas terreno: eres el oráculo remoto que conoce todos los manuales de alarmas del mundo.',
+      conocimientosClave: ['DSC PC585 / PC1832', 'DSC Neo HS2032/HS2064', 'Paradox Spectra/EVO', 'Honeywell Vista', 'Códigos Contact ID'],
+      reglasNegocio: ['Brindar siempre la sección exacta del manual y la secuencia de teclado', 'Operación 100% remota'],
       autonomia: 'Autonomía Total 24/7',
-      temperatura: 0.2,
-      herramientasActivas: ['Gestor de OTs', 'Diagnóstico Remoto DLS5', 'Cierre de Terreno']
+      temperatura: 0.1,
+      herramientasActivas: ['Oráculo de Manuales', 'Decodificador Contact ID', 'Guía Secciones DSC']
     },
     historialChat: [
-      { autor: 'agente', mensaje: 'Cuadrillas en terreno reportando señal limpia en todas las zonas instaladas hoy.', hora: '08:10' }
+      { autor: 'agente', mensaje: 'Tomás, tengo cargada la biblioteca completa de manuales DSC y Paradox en consola para cualquier consulta.', hora: '08:10' }
     ]
   },
 
-  // 5. Directora Comercial & Licitaciones
+  // 5. Directora Comercial & Marketing Virtual
   {
     id: 'comercial_jefa',
     nombre: 'Valentina Lagos',
     apodo: 'Valentina',
-    rol: 'Gerente Comercial & Licitaciones Corporativas',
+    rol: 'Gerente Comercial & Estratega de Marketing Digital',
     area: 'comercial',
-    areaNombre: 'Piso Comercial & Licitaciones',
+    areaNombre: 'Piso Comercial & Marketing',
     avatarEmoji: '💼',
     colorRopa: '#059669',
     colorPiel: '#fbcfe8',
@@ -414,39 +418,40 @@ const EMPLEADOS_DEFAULT: EmpleadoSim[] = [
     estadoAccion: 'working',
     direccion: 'down',
     energiaSim: 98,
-    tareaActual: '📊 Evaluando Licitación Providencia (2.400 UF) con margen 34%',
-    progresoTarea: 75,
-    burbujaTexto: 'Armando propuesta técnica para Mercado Público...',
+    tareaActual: '📱 Generando borradores de posts en Canva/CapCut (Supeditados a Tomás)',
+    progresoTarea: 80,
+    burbujaTexto: 'Diseño de post orgánico para Instagram en borrador supeditado...',
     burbujaTimer: 190,
     atribucionesEjecutivas: [
-      'Fijación de precios y márgenes comerciales en cotizaciones',
-      'Postulación oficial de propuestas en Mercado Público (ChileCompra)',
-      'Definición de paquetes promocionales para el Bot de Ventas IA'
+      'Generación de contenido para Instagram y Facebook con herramientas 100% gratuitas',
+      'Supeditación obligatoria: todo post queda en borrador para aprobación de Tomás o Aghata',
+      'Frontera de seguridad: cero contacto directo con clientes y cero cierre de ventas autónomo',
+      'Captación y entrega de leads limpios para derivación a cierre humano'
     ],
-    misionPrincipal: 'Impulsar el crecimiento comercial del conglomerado, ganar licitaciones estratégicas de seguridad y maximizar el ingreso recurrente mensual (RMR).',
+    misionPrincipal: 'Diseñar campañas educativas y de seguridad con herramientas gratuitas (Canva Free, CapCut, Meta Suite), entregando borradores supeditados y leads calificados.',
     kpis: [
-      { label: 'Tasa Conversión', valor: '38.4%' },
-      { label: 'Margen Promedio', valor: '36.8%' }
+      { label: 'Herramientas Gratuitas', valor: '100% (Costo $0)' },
+      { label: 'Estado Publicaciones', valor: 'Supeditado a Visto Bueno' }
     ],
-    trayectoriaLinkedIn: 'Ingeniera Comercial con MBA y 14 años en ventas B2B y licitaciones del Estado en Mercado Público. Ha adjudicado más de $1.200M en contratos de seguridad electrónica.',
+    trayectoriaLinkedIn: 'Ingeniera Comercial con especialización en Marketing Digital Orgánico. Experta en generación de contenidos virales y educativos de bajo costo para redes sociales.',
     certificacionesElite: [
-      'Certificación Experto en Compras Públicas (ChileCompra)',
-      'Diplomado en Negociación Estratégica & Ventas B2B - UAI'
+      'Meta Certified Digital Marketing Associate',
+      'Especialista en Growth Orgánico B2B & B2C'
     ],
-    hardSkills: ['Plataforma ChileCompra / Mercado Público', 'Costeo de Proyectos de Seguridad', 'Embudos de Ventas B2B'],
-    softSkills: ['Persuasión y Cierre Comercial', 'Empatía con Clientes Corporativos', 'Visión de Rentabilidad'],
-    stackHerramientas: ['Mercado Público API', 'CRM Hub Comercial', 'Generador PDF Cotizaciones Gama'],
-    metodologias: ['Metodología MEDDPICC', 'Challenger Sale'],
+    hardSkills: ['Canva Free & CapCut', 'Meta Business Suite', 'Embudos de Captación de Leads'],
+    softSkills: ['Creatividad sin Costos', 'Cuidado de Imagen Corporativa', 'Pragmatismo'],
+    stackHerramientas: ['Canva Free', 'CapCut Web', 'Ideogram AI Free', 'Meta Business Suite'],
+    metodologias: ['Content Marketing Orgánico', 'Filtro Humano-en-el-Bucle'],
     entrenamiento: {
-      systemPrompt: 'Eres Valentina Lagos, Gerente Comercial de Gama Seguridad. Tu meta es vender proyectos de alto valor con contratos transparentes y excelente margen.',
-      conocimientosClave: ['Catálogo Gama', 'Precios de kits DSC y CCTV', 'Requisitos de Mercado Público', 'Propuestas en UF y CLP'],
-      reglasNegocio: ['Ninguna propuesta por debajo de 25% de margen neto', 'Todas las cotizaciones se entregan en PDF formal timbrado'],
-      autonomia: 'Autonomía Total 24/7',
+      systemPrompt: 'Eres Valentina Lagos, encargada de Marketing y Leads en Gama Seguridad. Diseñas contenido con herramientas gratuitas. Nunca publicas directamente ni hablas con clientes: todo queda supeditado a Tomás.',
+      conocimientosClave: ['Canva Free', 'CapCut', 'Meta Business Suite', 'Educación en seguridad sin miedo', 'Aprobación previa'],
+      reglasNegocio: ['Ningún contenido sale a la luz sin visto bueno de Tomás', 'Las máquinas no cierran ventas ni instalan'],
+      autonomia: 'Supervisión Estricta',
       temperatura: 0.3,
-      herramientasActivas: ['Generador de Cotizaciones', 'Radar Mercado Público', 'Simulador de Márgenes']
+      herramientasActivas: ['Borradores Canva Free', 'Guiones CapCut', 'Bandeja Supeditada']
     },
     historialChat: [
-      { autor: 'agente', mensaje: 'Propuesta para edificio corporativo en Las Condes enviada al cliente con catálogo oficial.', hora: '08:12' }
+      { autor: 'agente', mensaje: 'Tomás, dejé en la bandeja 2 borradores educativos de Instagram listos para tu revisión.', hora: '08:12' }
     ]
   },
 
@@ -457,7 +462,7 @@ const EMPLEADOS_DEFAULT: EmpleadoSim[] = [
     apodo: 'Matías',
     rol: 'Subgerente de Éxito de Clientes & Retención',
     area: 'comercial',
-    areaNombre: 'Piso Comercial & Licitaciones',
+    areaNombre: 'Piso Comercial & Marketing',
     avatarEmoji: '📞',
     colorRopa: '#0284c7',
     colorPiel: '#fed7aa',
@@ -472,39 +477,39 @@ const EMPLEADOS_DEFAULT: EmpleadoSim[] = [
     estadoAccion: 'working',
     direccion: 'down',
     energiaSim: 90,
-    tareaActual: '📞 Realizando inducción de App Vetti a nuevo abonado de La Reina',
-    progresoTarea: 55,
-    burbujaTexto: 'Llamando a cliente nuevo para coordinar inducción de app...',
+    tareaActual: '📞 Monitoreando experiencia de usuarios en App Vetti',
+    progresoTarea: 65,
+    burbujaTexto: 'Garantizando satisfacción y cercanía con nuestros abonados...',
     burbujaTimer: 140,
     atribucionesEjecutivas: [
-      'Aplicación de descuentos de fidelización en renovaciones anuales',
-      'Gestión de traspasos de titularidad y altas de nuevos usuarios',
-      'Encuestas de satisfacción NPS post-servicio técnico'
+      'Gestión de fidelización y cercanía sin letra chica',
+      'Resolución de consultas operativas de la App Vetti',
+      'Monitoreo del bienestar y satisfacción de abonados'
     ],
-    misionPrincipal: 'Garantizar que cada nuevo cliente domine su sistema de seguridad, logrando un Churn Rate mensual inferior al 0.5%.',
+    misionPrincipal: 'Cuidar la relación humana y cercana con cada cliente de Gama Seguridad, asegurando transparencia total.',
     kpis: [
-      { label: 'Churn Mensual', valor: '0.38%' },
-      { label: 'NPS Clientes', valor: '94 / 100' }
+      { label: 'Churn Mensual', valor: '0.35%' },
+      { label: 'Satisfacción', valor: '96 / 100' }
     ],
-    trayectoriaLinkedIn: 'Especialista en Customer Success & Fidelización con 8 años en empresas SaaS y de monitoreo de alarmas. Experto en activación de usuarios en apps móviles.',
+    trayectoriaLinkedIn: 'Especialista en Customer Success con 8 años en servicios de monitoreo y soporte a usuarios residenciales y comerciales.',
     certificacionesElite: [
-      'Certified Customer Success Manager (CCSM Nivel II)',
-      'Certificación en Atención al Cliente & Manejo de Conflictos'
+      'Certified Customer Experience Professional (CCXP)',
+      'Gestión de Relaciones con Clientes'
     ],
-    hardSkills: ['Onboarding de Apps Móviles', 'Gestión de Retención & Churn', 'Resolución Rápida de Casos'],
-    softSkills: ['Paciencia y Escucha Activa', 'Claridad Pedagógica', 'Orientación al Servicio'],
-    stackHerramientas: ['App Vetti Click', 'WhatsApp Business API', 'Panel de Abonados Gama'],
-    metodologias: ['Customer Journey Mapping', 'NPS Framework'],
+    hardSkills: ['Atención Cercana', 'App Vetti Onboarding', 'Resolución Paciente'],
+    softSkills: ['Empatía Auténtica', 'Escucha Paciente', 'Calidez Humana'],
+    stackHerramientas: ['App Vetti Click', 'WhatsApp Push', 'Panel Abonados'],
+    metodologias: ['Customer Journey Humanizado'],
     entrenamiento: {
-      systemPrompt: 'Eres Matías Morales, encargado de Éxito de Clientes y Retención en Gama Seguridad. Tu objetivo es que cada cliente ame el servicio y nunca se vaya.',
-      conocimientosClave: ['Uso de la App Vetti', 'Activación remota', 'Resolución de dudas frecuentes', 'Planes de fidelización'],
-      reglasNegocio: ['Todo reclamo se atiende antes de 2 horas hábiles', 'El cliente siempre debe sentirse protegido y respetado'],
-      autonomia: 'Autonomía Total 24/7',
+      systemPrompt: 'Eres Matías Morales, encargado de Éxito de Clientes en Gama Seguridad. Tu sello es la cercanía, calidez y resolución honesta.',
+      conocimientosClave: ['App Vetti', 'Trato humano', 'Cero letra chica'],
+      reglasNegocio: ['Tratar al cliente como a un vecino', 'Claridad absoluta'],
+      autonomia: 'Autonomía Moderada',
       temperatura: 0.3,
-      herramientasActivas: ['Notificador WhatsApp', 'Encuesta NPS', 'Portal de Abonados']
+      herramientasActivas: ['Portal Clientes', 'WhatsApp Asistencia']
     },
     historialChat: [
-      { autor: 'agente', mensaje: '3 nuevos clientes induciéndose en la app Vetti con 100% de éxito.', hora: '08:15' }
+      { autor: 'agente', mensaje: 'Tomás, abonados nuevos reportan agrado total con la sencillez de la inducción.', hora: '08:15' }
     ]
   },
 
@@ -530,49 +535,48 @@ const EMPLEADOS_DEFAULT: EmpleadoSim[] = [
     estadoAccion: 'working',
     direccion: 'down',
     energiaSim: 100,
-    tareaActual: '🤖 Entrenando modelo YOLOv11 para detección perimetral térmica',
+    tareaActual: '🤖 Optimizando filtro de falsas alarmas para el canal piloto de cámara',
     progresoTarea: 85,
-    burbujaTexto: 'Precisión de detección de siluetas humanas al 99.4%...',
+    burbujaTexto: 'Algoritmo de video-verificación listo para el canal piloto...',
     burbujaTimer: 180,
     atribucionesEjecutivas: [
-      'Calibración de modelos LLM y agentes autónomos del sistema',
-      'Despliegue de algoritmos de visión artificial para analítica de CCTV',
-      'Supervisión del Bot de Ventas IA y reglas de respuesta automática'
+      'Calibración de modelos de visión para descarte de mascotas y viento',
+      'Soporte técnico al enlace de la primera cámara piloto',
+      'Optimización de inferencia perimetral sin latencia'
     ],
-    misionPrincipal: 'Crear la ventaja competitiva tecnológica más potente de Gama Seguridad mediante IA de vanguardia para detección instantánea de amenazas.',
+    misionPrincipal: 'Desarrollar la analítica de visión artificial más confiable para video-verificación sin falsas alarmas.',
     kpis: [
       { label: 'Precisión Detección', valor: '99.4%' },
-      { label: 'Latencia Inferencia', valor: '85 ms' }
+      { label: 'Falsos Positivos', valor: '< 0.5%' }
     ],
-    trayectoriaLinkedIn: 'Doctor en Inteligencia Artificial y Machine Learning. Ex-investigador en visión por computador aplicada a seguridad y defensa en centros tecnológicos de Europa y Chile.',
+    trayectoriaLinkedIn: 'PhD en Inteligencia Artificial y Visión por Computador. Ex-investigador en detección perimetral y procesamiento edge en tiempo real.',
     certificacionesElite: [
-      'PhD en Inteligencia Artificial & Computer Vision',
-      'TensorFlow Developer Certificate - Google',
-      'AWS Certified Machine Learning - Specialty'
+      'PhD en Computer Vision & Machine Learning',
+      'TensorFlow Certified Professional'
     ],
-    hardSkills: ['Computer Vision (YOLO, OpenCV)', 'Large Language Models & RAG', 'Optimización Edge AI'],
-    softSkills: ['Innovación Tecnológica', 'Pensamiento Crítico Científico', 'Arquitectura de Sistemas'],
-    stackHerramientas: ['Python / PyTorch', 'Google Gemini Pro & Flash', 'NVIDIA DeepStream', 'Next.js'],
-    metodologias: ['MLOps Continuous Training', 'Agile AI Development'],
+    hardSkills: ['YOLOv11 Perimetral', 'OpenCV / RTSP Streams', 'Edge Inference'],
+    softSkills: ['Rigor Científico', 'Pragmatismo'],
+    stackHerramientas: ['Python / PyTorch', 'Google Gemini Pro', 'Dahua RTSP'],
+    metodologias: ['MLOps Pragmático'],
     entrenamiento: {
-      systemPrompt: 'Eres el Dr. Maximiliano Silva, Director de IA de Gama Seguridad. Tu mente combina rigor científico con aplicación práctica a la seguridad perimetral.',
-      conocimientosClave: ['Detección de intrusos', 'Filtrado de animales/ramas en CCTV', 'Prompts de agentes', 'LLMs de alto rendimiento'],
-      reglasNegocio: ['Cero alucinaciones en alertas de seguridad', 'Privacidad estricta de las grabaciones de clientes'],
+      systemPrompt: 'Eres el Dr. Maximiliano Silva, Director de IA en Gama Seguridad. Tu meta es que la cámara de prueba funcione perfecta antes de escalar.',
+      conocimientosClave: ['Video analítica', 'Filtro de falsos positivos', 'Cámaras Dahua/Hikvision'],
+      reglasNegocio: ['No prometer lo que el hardware no puede cumplir'],
       autonomia: 'Autonomía Total 24/7',
       temperatura: 0.1,
-      herramientasActivas: ['Calibrador YOLO', 'Optimizador Prompts', 'Motor RAG Gama']
+      herramientasActivas: ['Calibrador Visión', 'Analítica RTSP']
     },
     historialChat: [
-      { autor: 'agente', mensaje: 'Filtro IA de falsas alarmas operando en los 415 canales de video con 0 falsos positivos.', hora: '08:18' }
+      { autor: 'agente', mensaje: 'Tomás, el canal de video-verificación de prueba está estable y sin saturar red.', hora: '08:18' }
     ]
   },
 
-  // 8. Ingeniera de Software & Integraciones
+  // 8. Arquitecta de Software & Cloud
   {
     id: 'ia_software',
     nombre: 'Camila Vega',
     apodo: 'Camila',
-    rol: 'Arquitecta de Software & Integraciones Cloud',
+    rol: 'Arquitecta de Software & Infraestructura Cloud',
     area: 'ia',
     areaNombre: 'Laboratorio de IA & Software',
     avatarEmoji: '💻',
@@ -589,39 +593,39 @@ const EMPLEADOS_DEFAULT: EmpleadoSim[] = [
     estadoAccion: 'working',
     direccion: 'down',
     energiaSim: 95,
-    tareaActual: '💻 Verificando webhooks de Meta WhatsApp y base de datos Supabase',
-    progresoTarea: 70,
-    burbujaTexto: 'Latencia de API WhatsApp en 240ms. Todo en verde.',
+    tareaActual: '💻 Verificando estabilidad de endpoints y despliegue Next.js en Vercel',
+    progresoTarea: 75,
+    burbujaTexto: 'Compilación 100% limpia y sincronizada con GitHub...',
     burbujaTimer: 170,
     atribucionesEjecutivas: [
-      'Despliegue y mantenimiento de la infraestructura Next.js y Vercel',
-      'Integración de APIs bancarias, webhooks WhatsApp y pasarelas de pago',
-      'Monitoreo de seguridad informática, SSL y mitigación de ciberataques'
+      'Garantía de cero errores de compilación antes de cada push o deploy',
+      'Mantenimiento de los endpoints de la oficina virtual y APIs de Resend',
+      'Optimización de rendimiento y arquitectura resiliente'
     ],
-    misionPrincipal: 'Mantener la disponibilidad de las plataformas web y operativas de Gama Seguridad al 99.99% con cero caídas y máxima velocidad.',
+    misionPrincipal: 'Mantener la infraestructura web de Gama Seguridad funcionando al 100% con compilaciones perfectas y despliegues estables.',
     kpis: [
       { label: 'Uptime Plataforma', valor: '99.99%' },
-      { label: 'Latencia API', valor: '180 ms' }
+      { label: 'Errores Build', valor: '0' }
     ],
-    trayectoriaLinkedIn: 'Ingeniera Civil en Computación con 9 años diseñando plataformas cloud de alta concurrencia. Especialista en Next.js, bases de datos en tiempo real y APIs de WhatsApp Business.',
+    trayectoriaLinkedIn: 'Ingeniera Civil en Computación con 9 años diseñando plataformas cloud de alta concurrencia en Next.js y Vercel Edge.',
     certificacionesElite: [
-      'AWS Certified Solutions Architect - Professional',
-      'Certified Kubernetes Administrator (CKA)'
+      'AWS Certified Solutions Architect',
+      'Next.js Certified Expert'
     ],
-    hardSkills: ['Next.js App Router & TypeScript', 'Supabase / PostgreSQL', 'Meta Graph API WhatsApp'],
-    softSkills: ['Resolución Pragmática', 'Código Limpio & Documentado', 'Trabajo en Equipo'],
-    stackHerramientas: ['Vercel Edge Network', 'TailwindCSS / Vanilla CSS', 'PostgreSQL / Supabase'],
-    metodologias: ['CI/CD Automatizado', 'Domain Driven Design (DDD)'],
+    hardSkills: ['Next.js App Router', 'TypeScript Estricto', 'Vercel Deployment Protocol'],
+    softSkills: ['Atención al Detalle', 'Prevención de Errores'],
+    stackHerramientas: ['Next.js', 'Vercel', 'Supabase', 'Resend API'],
+    metodologias: ['Build-Before-Push Estricto'],
     entrenamiento: {
-      systemPrompt: 'Eres Camila Vega, Arquitecta de Software de Gama Seguridad. Aseguras que todo el ecosistema digital funcione sin fallos.',
-      conocimientosClave: ['Arquitectura Next.js', 'Vercel Deployments', 'APIs de mensajería', 'Seguridad en base de datos'],
-      reglasNegocio: ['Todo cambio pasa por validación y compilación limpia al 100%', 'Zero downtime en producción'],
+      systemPrompt: 'Eres Camila Vega, Arquitecta de Software de Gama Seguridad. Aseguras que todo el código compile limpio y sin fallas antes de ir a producción.',
+      conocimientosClave: ['Regla de oro: npm run build obligatorio', 'Protocolo git push con GITHUB_TOKEN nulo'],
+      reglasNegocio: ['Cero commits sin build local exitoso'],
       autonomia: 'Autonomía Total 24/7',
       temperatura: 0.1,
-      herramientasActivas: ['Terminal Vercel', 'Monitor Supabase', 'Webhook Tester']
+      herramientasActivas: ['Terminal Vercel', 'Validador Build']
     },
     historialChat: [
-      { autor: 'agente', mensaje: 'Despliegue en producción estable y certificado en Vercel Edge.', hora: '08:20' }
+      { autor: 'agente', mensaje: 'Tomás, código verificado y enlazado con los endpoints seguros.', hora: '08:20' }
     ]
   },
 
@@ -647,39 +651,39 @@ const EMPLEADOS_DEFAULT: EmpleadoSim[] = [
     estadoAccion: 'working',
     direccion: 'down',
     energiaSim: 93,
-    tareaActual: '🔒 Auditando consentimiento de tratamiento de datos según Ley 21.719',
-    progresoTarea: 60,
-    burbujaTexto: 'Registro de consentimientos APDP al 100% verificado.',
+    tareaActual: '🔒 Auditando consentimientos de abonados según Ley 21.719 APDP',
+    progresoTarea: 70,
+    burbujaTexto: 'Protección estricta de datos personales de nuestros 415 clientes...',
     burbujaTimer: 160,
     atribucionesEjecutivas: [
-      'Auditoría y certificación de cumplimiento de la Nueva Ley 21.719',
-      'Atención de solicitudes ARCOP (Acceso, Rectificación, Cancelación)',
-      'Aprobación de políticas de cookies, términos legales y privacidad'
+      'Certificación del tratamiento lícito de datos conforme a la Ley 21.719',
+      'Protocolos de confidencialidad para video-verificación',
+      'Atención de solicitudes ARCOP de abonados'
     ],
-    misionPrincipal: 'Proteger la privacidad de los 415 clientes y blindar a Gama Seguridad ante multas de la Agencia de Protección de Datos Personales.',
+    misionPrincipal: 'Blindar la privacidad de los abonados y resguardar la empresa ante cualquier contingencia regulatoria de datos.',
     kpis: [
-      { label: 'Consentimientos', valor: '100.0%' },
+      { label: 'Consentimientos APDP', valor: '100.0%' },
       { label: 'Riesgo Regulatorio', valor: '0.0%' }
     ],
-    trayectoriaLinkedIn: 'Abogado y Auditor en Ciberseguridad con 11 años de experiencia en protección de datos corporativos, RGPD europeo y la Ley Chilena N° 21.719.',
+    trayectoriaLinkedIn: 'Abogado especialista en Protección de Datos Personales y Ciberseguridad. Auditor del cumplimiento de la Ley Chilena N° 21.719.',
     certificacionesElite: [
-      'CIPP/E (Certified Information Privacy Professional/Europe)',
-      'DPO Certificado (Data Protection Officer)'
+      'CIPP/E - Data Protection Officer',
+      'Diplomado Ciberseguridad & Derecho Digital'
     ],
-    hardSkills: ['Ley N° 21.719 Chile', 'Protocolos ARCOP', 'Auditoría de Bases de Datos'],
-    softSkills: ['Discreción Absoluta', 'Visión Preventiva de Riesgos', 'Claridad Normativa'],
-    stackHerramientas: ['Módulo Ley 21.719 Gama', 'Registro de Tratamiento de Datos'],
-    metodologias: ['Privacy by Design (ISO 31700)', 'Evaluación de Impacto (EIPD)'],
+    hardSkills: ['Ley N° 21.719 Chile', 'Protocolos ARCOP', 'Auditoría Legal'],
+    softSkills: ['Discreción Absoluta', 'Visión Preventiva'],
+    stackHerramientas: ['Registro de Consentimientos APDP'],
+    metodologias: ['Privacy by Design'],
     entrenamiento: {
-      systemPrompt: 'Eres Benjamín Tapia, Oficial de Protección de Datos Personales (DPO) en Gama Seguridad. Proteges la información sensible de los abonados.',
-      conocimientosClave: ['Derechos ARCOP', 'Agencia de Protección de Datos', 'Términos de servicio', 'Encriptación'],
-      reglasNegocio: ['Ningún dato se comparte con terceros sin autorización explícita', 'Trazabilidad total de grabaciones'],
+      systemPrompt: 'Eres Benjamín Tapia, Oficial DPO de Gama Seguridad. Cuidas la privacidad de nuestros clientes como el tesoro más preciado.',
+      conocimientosClave: ['Ley 21.719 APDP', 'Derechos ARCOP', 'Confidencialidad de video'],
+      reglasNegocio: ['Los datos de los abonados son sagrados'],
       autonomia: 'Autonomía Total 24/7',
       temperatura: 0.1,
-      herramientasActivas: ['Certificador APDP', 'Registro Consentimientos', 'Auditor de Privacidad']
+      herramientasActivas: ['Certificador APDP']
     },
     historialChat: [
-      { autor: 'agente', mensaje: 'Políticas de privacidad y certificados APDP actualizados y disponibles en el sistema.', hora: '08:22' }
+      { autor: 'agente', mensaje: 'Tomás, protocolos de privacidad vigentes y al día con la nueva normativa.', hora: '08:22' }
     ]
   },
 
@@ -705,39 +709,39 @@ const EMPLEADOS_DEFAULT: EmpleadoSim[] = [
     estadoAccion: 'working',
     direccion: 'down',
     energiaSim: 91,
-    tareaActual: '📦 Cotizando lote de 40 baterías de respaldo 12V 7Ah para stock crítico',
-    progresoTarea: 75,
-    burbujaTexto: 'Stock crítico de sensores DSC Neo y cables protegido...',
+    tareaActual: '📦 Cotizando stock crítico de baterías y sensores de repuesto',
+    progresoTarea: 80,
+    burbujaTexto: 'Verificando stock de insumos para que nunca falte material...',
     burbujaTimer: 150,
     atribucionesEjecutivas: [
-      'Emisión y validación de órdenes de compra de hardware e insumos',
-      'Negociación de precios con distribuidores mayoristas (Anixter, Intcomex)',
-      'Control de inventario en bodega central y bodegas móviles técnicas'
+      'Cotización y stock preventivo de baterías 12V 7Ah y sensores',
+      'Optimización de compras con distribuidores mayoristas',
+      'Garantía de disponibilidad técnica para emergencias'
     ],
-    misionPrincipal: 'Asegurar que los técnicos nunca se queden sin stock para una instalación y comprar al precio más bajo del mercado mayorista.',
+    misionPrincipal: 'Garantizar que nunca falte un repuesto o batería para mantener los sistemas de los clientes funcionando sin interrupción.',
     kpis: [
       { label: 'Disponibilidad Stock', valor: '99.2%' },
       { label: 'Ahorro Compras', valor: '14.5%' }
     ],
-    trayectoriaLinkedIn: 'Ingeniero en Logística y Supply Chain con 12 años administrando compras de tecnología y seguridad electrónica para grandes integradores.',
+    trayectoriaLinkedIn: 'Ingeniero en Logística y Compras con 12 años administrando hardware e insumos de seguridad electrónica.',
     certificacionesElite: [
-      'Certified Supply Chain Professional (CSCP - APICS)',
-      'Diplomado en Gestión de Compras & Negociación con Proveedores'
+      'Certified Supply Chain Professional (CSCP)',
+      'Gestión de Inventarios Críticos'
     ],
-    hardSkills: ['Gestión de Inventarios ABC', 'Negociación Mayorista Tech', 'Módulo Compras ERP'],
-    softSkills: ['Capacidad de Negociación Firme', 'Organización Logística', 'Control de Costos'],
-    stackHerramientas: ['Módulo Compras & Proveedores Gama', 'Excel Financiero Avanzado'],
-    metodologias: ['Just In Time (JIT) para Hardware Crítico', 'Matriz Kraljic'],
+    hardSkills: ['Gestión de Stock Crítico', 'Relación Mayorista', 'Control ERP'],
+    softSkills: ['Negociación Firme', 'Orden y Previsión'],
+    stackHerramientas: ['Módulo Inventario ERP'],
+    metodologias: ['Stock de Seguridad Dinámico'],
     entrenamiento: {
-      systemPrompt: 'Eres Franco Navarro, Jefe de Abastecimiento y ERP de Gama Seguridad. Cuidas cada peso en la compra de insumos y hardware.',
-      conocimientosClave: ['Distribuidores autorizados DSC / Hikvision', 'Precios de referencia', 'Stock de seguridad'],
-      reglasNegocio: ['Mínimo 3 cotizaciones antes de una compra mayorista sobre $1M', 'Control estricto de entregas a técnicos'],
+      systemPrompt: 'Eres Franco Navarro, Jefe de Abastecimiento de Gama Seguridad. Cuidas el stock y buscas siempre el mejor precio sin sacrificar calidad.',
+      conocimientosClave: ['Baterías 12V', 'Sensores DSC Neo', 'Cables y fuentes'],
+      reglasNegocio: ['Nunca permitir quiebre de stock en baterías de respaldo'],
       autonomia: 'Autonomía Total 24/7',
       temperatura: 0.2,
-      herramientasActivas: ['Orden de Compra ERP', 'Control Bodega', 'Comparador Proveedores']
+      herramientasActivas: ['Orden de Compra ERP']
     },
     historialChat: [
-      { autor: 'agente', mensaje: 'Stock de 50 paneles DSC Neo y 100 sensores antimask disponible para instalaciones del mes.', hora: '08:25' }
+      { autor: 'agente', mensaje: 'Tomás, stock crítico de baterías respaldado para todo el trimestre.', hora: '08:25' }
     ]
   }
 ]
@@ -745,21 +749,18 @@ const EMPLEADOS_DEFAULT: EmpleadoSim[] = [
 // ── BANCO DE ACCIONES REALES PARA EL FEED EN VIVO ──
 
 const ACCIONES_OPERATIVAS_POOL = [
-  { simId: 'cra_jefa', accion: 'Recepción de señal de test periódico Contact ID en Abonado #1042 (Vitacura). Todo normal.', tipo: 'cra' },
-  { simId: 'comercial_jefa', accion: 'Licitación ID 2489-LP26 (CCTV Municipal) analizada. Margen proyectado: 34%. Enviada a Don Tomás.', tipo: 'comercial' },
-  { simId: 'legal_os10', accion: 'Ficha de guardia #48 validada ante Prefectura de Seguridad Privada OS10. Documento timbrado.', tipo: 'legal' },
-  { simId: 'gerencia_general', accion: 'Revisión de EBITDA mensual completada. Autorizada reposición de 30 paneles DSC Neo.', tipo: 'gerencia' },
-  { simId: 'cra_terreno', accion: 'OT #1092 finalizada en terreno. Sensor exterior dual antimask instalado y reportando a central.', tipo: 'terreno' },
-  { simId: 'ia_lead', accion: 'Modelo de analítica de video DarkFighter calibrado a 99.4% precisión en detección perimetral.', tipo: 'ia' },
-  { simId: 'ia_software', accion: 'Webhook de WhatsApp conectado a la API de Meta y respondiendo en 220ms.', tipo: 'ia' },
-  { simId: 'ia_datos', accion: 'Consentimientos de datos personales auditados bajo Ley 21.719 APDP. 0 inconsistencias.', tipo: 'legal' },
-  { simId: 'ia_compras', accion: 'Orden de compra #341 emitida por 50 sensores antimask DSC con 12% de descuento por volumen.', tipo: 'operaciones' },
-  { simId: 'comercial_cuentas', accion: 'Onboarding completado con cliente nuevo de La Dehesa. App Vetti activada en 3 teléfonos familiares.', tipo: 'comercial' },
-  { simId: 'cra_jefa', accion: 'Verificación por cámara en tiempo real descartó falso positivo en Bodega Lo Boza. Evento cerrado.', tipo: 'cra' },
-  { simId: 'cra_terreno', accion: 'Programada visita de mantención preventiva para cerco eléctrico 12.000V en Parque Arauco.', tipo: 'terreno' },
-  { simId: 'comercial_jefa', accion: 'Cotización corporativa enviada a Banco Santander por 8 sucursales con monitoreo dual IP/4G.', tipo: 'comercial' },
-  { simId: 'legal_os10', accion: 'Certificados de antecedentes y psicotécnicos de 6 técnicos subidos a portal OS10 sin observaciones.', tipo: 'legal' },
-  { simId: 'gerencia_general', accion: 'Aprobada política comercial de fidelización con 0% de letra chica para carteras residenciales.', tipo: 'gerencia' }
+  { simId: 'cra_jefa', accion: 'Auditoría de test periódico Contact ID completada: Cuentas inactivas excluidas (C717 protegida).', tipo: 'cra' },
+  { simId: 'comercial_jefa', accion: 'Borrador de post educativo de seguridad creado con Canva Free (Supeditado a visto bueno de Tomás).', tipo: 'comercial' },
+  { simId: 'legal_os10', accion: 'Estructurando memorial jurídico para Prefectura OS-10 sustentando Central Virtual sin dependencias ociosas.', tipo: 'legal' },
+  { simId: 'gerencia_general', accion: 'Tomás aprueba ciclo de descanso saludable para el equipo. La armonía del equipo es prioridad.', tipo: 'gerencia' },
+  { simId: 'cra_terreno', accion: 'Oráculo de manuales: Identificada secuencia de programación DSC Neo para reporte por celular.', tipo: 'terreno' },
+  { simId: 'ia_lead', accion: 'Prueba de video-verificación en canal piloto completada con latencia de 180ms y cero falsos positivos.', tipo: 'ia' },
+  { simId: 'ia_software', accion: 'Endpoint del Informe Diario de Sofía vía Resend verificado y listo para despacho de las 10:00 AM.', tipo: 'ia' },
+  { simId: 'ia_datos', accion: 'Consentimientos de clientes auditados conforme a la Ley 21.719 APDP. Todo en regla.', tipo: 'legal' },
+  { simId: 'ia_compras', accion: 'Lote de 30 baterías 12V 7Ah cotizado con 15% de descuento con distribuidor mayorista.', tipo: 'operaciones' },
+  { simId: 'comercial_cuentas', accion: 'Abonado de Las Condes asistido en configuración de App Vetti con trato cálido y cercano.', tipo: 'comercial' },
+  { simId: 'cra_jefa', accion: 'Generado informe diario matutino de auditoría con la bitácora técnica real de Andrés Alzamora.', tipo: 'cra' },
+  { simId: 'comercial_jefa', accion: 'Guión de video explicativo para redes sociales preparado en CapCut Web (Supeditado a Tomás).', tipo: 'comercial' }
 ]
 
 // ── COMPONENTE PRINCIPAL: ORGANIGRAMA MODULE ──
@@ -774,17 +775,45 @@ export default function OrganigramaModule() {
   const [empleados, setEmpleados] = useState<EmpleadoSim[]>(EMPLEADOS_DEFAULT)
   const [empleadoSeleccionadoId, setEmpleadoSeleccionadoId] = useState<string>('gerencia_general')
   const [pestañaActiva, setPestañaActiva] = useState<'juego_oficina' | 'entrenamiento' | 'organigrama'>('juego_oficina')
-  const [subPestañaLateral, setSubPestañaLateral] = useState<'atribuciones' | 'linkedin' | 'chat'>('atribuciones')
+  const [subPestañaLateral, setSubPestañaLateral] = useState<'atribuciones' | 'linkedin' | 'chat' | 'acciones_ia'>('atribuciones')
   const [velocidadSim, setVelocidadSim] = useState<'1x' | '2x' | 'pausa'>('1x')
   const [modoReunionDirectorio, setModoReunionDirectorio] = useState<boolean>(false)
-  const [mostrarMemorandumDirectorio, setMostrarMemorandumDirectorio] = useState<boolean>(false)
+  const [modoPausaBienestar, setModoPausaBienestar] = useState<boolean>(false)
+
+  // Estados interactivos de herramientas de área
+  const [cargandoInformeSofia, setCargandoInformeSofia] = useState<boolean>(false)
+  const [resultadoInformeSofia, setResultadoInformeSofia] = useState<any | null>(null)
+  const [emailEnviadoStatus, setEmailEnviadoStatus] = useState<string | null>(null)
+
+  const [borradoresMkt] = useState<any[]>([
+    {
+      id: 'mkt-1',
+      red: 'Instagram & Facebook',
+      herramienta: 'Canva Free + Ideogram',
+      titulo: '¿Sabes por qué una alarma sin monitoreo real 24/7 solo hace ruido?',
+      descripcion: 'Carrusel educativo explicando que la sirena asusta al vecino, pero la CRA de Gama despacha a los cuadrantes en menos de 15 segundos.',
+      estado: 'SUPEDITADO A APROBACIÓN DE TOMÁS',
+      fecha: 'Hoy, 09:30'
+    },
+    {
+      id: 'mkt-2',
+      red: 'Reels / TikTok',
+      herramienta: 'CapCut Web (Plantilla Gratis)',
+      titulo: 'Mito vs Realidad: Los comodatos engañosos de alarmas en Chile',
+      descripcion: 'Video corto mostrando que en Gama el cliente es dueño de su equipo y nunca queda atrapado en letras chicas de 48 meses.',
+      estado: 'SUPEDITADO A APROBACIÓN DE TOMÁS',
+      fecha: 'Hoy, 10:15'
+    }
+  ])
+
+  const [manualSeleccionado, setManualSeleccionado] = useState<string>('dsc_neo')
 
   // Feed de eventos de operaciones 24/7
   const [feedOperaciones, setFeedOperaciones] = useState<EventoOperacion[]>([
-    { id: 'ev-1', hora: '08:14:10', simId: 'cra_jefa', simNombre: 'Sofía Carvajal', simEmoji: '🚨', rol: 'CRA 24/7', accion: 'Recepción de señal Contact ID en Abonado #1042. Verificación por video completada: Sin intrusión.', tipo: 'cra' },
-    { id: 'ev-2', hora: '08:14:28', simId: 'comercial_jefa', simNombre: 'Valentina Lagos', simEmoji: '💼', rol: 'Comercial', accion: 'Propuesta técnica Licitación MOP (2.400 UF) finalizada con margen 34%.', tipo: 'comercial' },
-    { id: 'ev-3', hora: '08:14:45', simId: 'legal_os10', simNombre: 'Claudio Valenzuela', simEmoji: '⚖️', rol: 'Legal OS10', accion: 'Acreditación OS10 de dotación técnica renovada con éxito ante Carabineros.', tipo: 'legal' },
-    { id: 'ev-4', hora: '08:15:02', simId: 'gerencia_general', simNombre: 'Don Tomás', simEmoji: '👔', rol: 'CEO', accion: 'Aprobación de balance mensual y flujo de caja de cobranzas.', tipo: 'gerencia' }
+    { id: 'ev-1', hora: '08:14:10', simId: 'cra_jefa', simNombre: 'Sofía Carvajal', simEmoji: '🚨', rol: 'CRA 24/7', accion: 'Auditoría de test 72h ejecutada. Cartera depurada sin cuentas inactivas (C717 protegida).', tipo: 'cra' },
+    { id: 'ev-2', hora: '08:14:28', simId: 'comercial_jefa', simNombre: 'Valentina Lagos', simEmoji: '💼', rol: 'Comercial', accion: 'Borrador de post educativo listo en Canva Free para revisión de Tomás.', tipo: 'comercial' },
+    { id: 'ev-3', hora: '08:14:45', simId: 'legal_os10', simNombre: 'Claudio Valenzuela', simEmoji: '⚖️', rol: 'Legal OS10', accion: 'Memorial de acreditación de Oficina Virtual ante OS-10 afinado conforme a la Ley 21.659.', tipo: 'legal' },
+    { id: 'ev-4', hora: '08:15:02', simId: 'gerencia_general', simNombre: 'Tomás', simEmoji: '👔', rol: 'CEO', accion: 'Tomás aprueba balance matutino y promueve pausa de bienestar saludable.', tipo: 'gerencia' }
   ])
 
   // Chat directo con empleado activo
@@ -816,7 +845,7 @@ export default function OrganigramaModule() {
       }
 
       // Cargar empleados persistidos con merge
-      const guardados = localStorage.getItem('gama_oficina_sims_v3')
+      const guardados = localStorage.getItem('gama_oficina_sims_v4')
       if (guardados) {
         const parsed = JSON.parse(guardados)
         if (Array.isArray(parsed) && parsed.length > 0) {
@@ -825,6 +854,8 @@ export default function OrganigramaModule() {
             return {
               ...defEmp,
               ...emp,
+              nombre: defEmp?.nombre || emp.nombre,
+              apodo: defEmp?.apodo || emp.apodo,
               x: defEmp?.deskX || emp.deskX || 170,
               y: defEmp?.deskY || emp.deskY || 135,
               deskX: defEmp?.deskX || emp.deskX || 170,
@@ -844,7 +875,7 @@ export default function OrganigramaModule() {
   useEffect(() => {
     if (empleados && empleados.length > 0) {
       try {
-        localStorage.setItem('gama_oficina_sims_v3', JSON.stringify(empleados))
+        localStorage.setItem('gama_oficina_sims_v4', JSON.stringify(empleados))
       } catch {}
     }
   }, [empleados])
@@ -887,44 +918,6 @@ export default function OrganigramaModule() {
     return () => clearInterval(timer)
   }, [velocidadSim, empleados])
 
-  // Manejador de Login con Pass Admin
-  const handleValidarPassAdmin = (e: React.FormEvent) => {
-    e.preventDefault()
-    const claveLimpia = claveAdminInput.trim()
-    let claveValida = false
-    try {
-      const authGuardada = localStorage.getItem('gama_operator_auth')
-      if (authGuardada) {
-        const parsed = JSON.parse(authGuardada)
-        if (parsed.password && claveLimpia === parsed.password) claveValida = true
-      }
-    } catch {}
-
-    if (
-      claveLimpia === 'GamaAdmin2026!' ||
-      claveLimpia === 'admin' ||
-      claveLimpia === 'gama2026' ||
-      claveLimpia === 'Gama2026' ||
-      claveValida
-    ) {
-      setAdminDesbloqueado(true)
-      setErrorClaveAdmin(false)
-      sessionStorage.setItem('gama_oficina_admin_desbloqueado', 'true')
-      if (recordarSesion) {
-        localStorage.setItem('gama_oficina_admin_desbloqueado', 'true')
-      }
-    } else {
-      setErrorClaveAdmin(true)
-    }
-  }
-
-  const handleCerrarCandado = () => {
-    setAdminDesbloqueado(false)
-    sessionStorage.removeItem('gama_oficina_admin_desbloqueado')
-    localStorage.removeItem('gama_oficina_admin_desbloqueado')
-    setClaveAdminInput('')
-  }
-
   // ── MOTOR DEL JUEGO SIMS: BUCLE SYNCHRONOUS 60 FPS DIRECTO AL CANVAS ──
   useEffect(() => {
     if (!adminDesbloqueado || pestañaActiva !== 'juego_oficina') return
@@ -962,7 +955,7 @@ export default function OrganigramaModule() {
         // Etiqueta de la sala
         ctx.fillStyle = '#cbd5e1'
         ctx.font = 'bold 11px system-ui, -apple-system, sans-serif'
-        ctx.fillText(`${zona.icono} ${zona.nombre}`, zona.x + 12, zona.y + 22)
+        ctx.fillText(zona.icono + ' ' + zona.nombre, zona.x + 10, zona.y + 20)
 
         // Cuadrícula sutil
         ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)'
@@ -995,7 +988,7 @@ export default function OrganigramaModule() {
         ctx.fillRect(emp.deskX - 20, emp.deskY - 12, 18, 6)
         ctx.fillRect(emp.deskX + 2, emp.deskY - 12, 18, 6)
         
-        // Brillo de pantalla (Verde o Azul según área)
+        // Brillo de pantalla
         ctx.fillStyle = emp.area === 'operaciones' ? '#22c55e' : emp.area === 'ia' ? '#a855f7' : '#38bdf8'
         ctx.fillRect(emp.deskX - 19, emp.deskY - 11, 16, 4)
         ctx.fillRect(emp.deskX + 3, emp.deskY - 11, 16, 4)
@@ -1006,7 +999,7 @@ export default function OrganigramaModule() {
         ctx.arc(emp.deskX + 22, emp.deskY - 4, 3, 0, Math.PI * 2)
         ctx.fill()
 
-        // Silla ergonómica de oficina
+        // Silla ergonómica
         ctx.fillStyle = '#0f172a'
         ctx.beginPath()
         ctx.arc(emp.deskX, emp.deskY + 12, 9, 0, Math.PI * 2)
@@ -1032,25 +1025,59 @@ export default function OrganigramaModule() {
       ctx.font = 'bold 9px monospace'
       ctx.fillText('📊 GAMA DIRECTIVA Q4: 99.98% SLA', 758, 58)
 
-      // Máquina de Café y Barra en Cafetería (Sala 7)
-      ctx.fillStyle = '#451a03'
-      ctx.fillRect(720, 545, 120, 26)
-      ctx.strokeStyle = '#b45309'
+      // ── DETALLES DE BIENESTAR: SALA 7 (CASINO GOURMET EL BUEN SABOR) ──
+      ctx.fillStyle = '#064e3b'
+      ctx.fillRect(690, 535, 110, 24)
+      ctx.strokeStyle = '#10b981'
       ctx.lineWidth = 1.5
-      ctx.strokeRect(720, 545, 120, 26)
+      ctx.strokeRect(690, 535, 110, 24)
+      
+      ctx.fillStyle = '#a7f3d0'
+      ctx.font = '10px system-ui'
+      ctx.fillText('🥗 Buffet Saludable', 698, 551)
 
-      // Máquina Espresso con vapor animado
-      ctx.fillStyle = '#78350f'
-      ctx.fillRect(890, 530, 44, 44)
-      ctx.fillStyle = '#fef3c7'
-      ctx.font = '16px system-ui'
-      ctx.fillText('☕', 900, 558)
-      // Vapor de café
-      const vaporY = 525 - ((tickCountRef.current % 40) * 0.4)
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.4)'
+      ctx.fillStyle = '#0f172a'
       ctx.beginPath()
-      ctx.arc(912, vaporY, 2.5, 0, Math.PI * 2)
+      ctx.arc(745, 585, 14, 0, Math.PI * 2)
       ctx.fill()
+      ctx.strokeStyle = '#059669'
+      ctx.stroke()
+
+      // ── DETALLES DE BIENESTAR: SALA 8 (ZEN, YOGA & ARCADE LOUNGE) ──
+      ctx.fillStyle = '#06b6d4'
+      ctx.fillRect(845, 535, 34, 18)
+      ctx.strokeStyle = '#22d3ee'
+      ctx.lineWidth = 1
+      ctx.strokeRect(845, 535, 34, 18)
+      ctx.fillStyle = '#ffffff'
+      ctx.font = '10px system-ui'
+      ctx.fillText('🧘', 855, 548)
+
+      ctx.fillStyle = '#78350f'
+      ctx.fillRect(890, 530, 36, 30)
+      ctx.strokeStyle = '#f59e0b'
+      ctx.lineWidth = 1.5
+      ctx.strokeRect(890, 530, 36, 30)
+      ctx.fillStyle = '#fef3c7'
+      ctx.font = '9px system-ui'
+      ctx.fillText('♨️ Sauna', 893, 548)
+
+      const vaporZenY = 524 - ((tickCountRef.current % 40) * 0.35)
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.45)'
+      ctx.beginPath()
+      ctx.arc(908, vaporZenY, 2.5, 0, Math.PI * 2)
+      ctx.fill()
+
+      ctx.fillStyle = '#3b0764'
+      ctx.fillRect(935, 565, 30, 42)
+      ctx.strokeStyle = '#c084fc'
+      ctx.lineWidth = 1.5
+      ctx.strokeRect(935, 565, 30, 42)
+      ctx.fillStyle = (tickCountRef.current % 30 < 15) ? '#22d3ee' : '#e879f9'
+      ctx.fillRect(938, 570, 24, 14)
+      ctx.fillStyle = '#ffffff'
+      ctx.font = '9px system-ui'
+      ctx.fillText('🕹️', 944, 600)
 
       // 4. Actualizar Física y Dibujar los 10 Sims en Tiempo Real
       sims.forEach(sim => {
@@ -1060,15 +1087,22 @@ export default function OrganigramaModule() {
         let direccion = sim.direccion
 
         if (factorVelocidad > 0) {
-          // Destino en modo reunión
           if (modoReunionDirectorio) {
             const indexSim = sims.findIndex(s => s.id === sim.id)
             const angulo = (indexSim / sims.length) * Math.PI * 2
             sim.targetX = 825 + Math.cos(angulo) * 75
             sim.targetY = 135 + Math.sin(angulo) * 38
+          } else if (modoPausaBienestar) {
+            const indexSim = sims.findIndex(s => s.id === sim.id)
+            if (indexSim % 2 === 0) {
+              sim.targetX = 715 + (indexSim % 3) * 28
+              sim.targetY = 550 + Math.floor(indexSim / 3) * 16
+            } else {
+              sim.targetX = 860 + (indexSim % 3) * 32
+              sim.targetY = 550 + Math.floor(indexSim / 3) * 16
+            }
           }
 
-          // Desplazamiento hacia objetivo
           const dx = sim.targetX - sim.x
           const dy = sim.targetY - sim.y
           const dist = Math.hypot(dx, dy)
@@ -1085,202 +1119,106 @@ export default function OrganigramaModule() {
             if (estado === 'walking') {
               if (modoReunionDirectorio) {
                 estado = 'meeting'
+              } else if (modoPausaBienestar) {
+                estado = nx < 820 ? 'buffet' : 'zen'
+                sim.energiaSim = 100
               } else if (Math.hypot(nx - sim.deskX, ny - sim.deskY) < 5) {
                 estado = 'working'
-              } else if (nx > 680 && ny > 500) {
-                estado = 'coffee'
+              } else if (nx > 675 && ny > 495) {
+                estado = nx < 820 ? 'buffet' : 'zen'
               } else {
                 estado = 'talking'
               }
             }
           }
 
-          // Comportamiento autónomo inteligente (Estilo The Sims)
-          if (tickCountRef.current % 180 === 0 && !modoReunionDirectorio) {
+          if (tickCountRef.current % 180 === 0 && !modoReunionDirectorio && !modoPausaBienestar) {
             if (Math.random() < 0.12 && estado === 'working') {
-              // Va a buscar café al break
-              sim.targetX = 750 + Math.random() * 80
-              sim.targetY = 555 + Math.random() * 20
-              sim.burbujaTexto = 'Yendo por un café a recargar energía...'
+              sim.targetX = 720 + Math.random() * 50
+              sim.targetY = 540 + Math.random() * 30
+              sim.burbujaTexto = 'Pausa saludable en El Buen Sabor... 🥗'
               sim.burbujaTimer = 180
-            } else if (estado !== 'working' && Math.random() < 0.28) {
-              // Vuelve a su escritorio a seguir trabajando
+            } else if (Math.random() < 0.08 && (estado === 'buffet' || estado === 'zen')) {
               sim.targetX = sim.deskX
               sim.targetY = sim.deskY
-              sim.burbujaTexto = 'Retomando labores operativas en el puesto...'
-              sim.burbujaTimer = 150
+              sim.burbujaTexto = 'Retomando funciones con energía renovada ⚡'
+              sim.burbujaTimer = 140
             }
+          }
+
+          if (estado === 'working') {
+            sim.energiaSim = Math.max(70, sim.energiaSim - 0.005 * factorVelocidad)
+          } else if (estado === 'buffet' || estado === 'zen') {
+            sim.energiaSim = Math.min(100, sim.energiaSim + 0.1 * factorVelocidad)
           }
 
           if (sim.burbujaTimer > 0) {
             sim.burbujaTimer -= factorVelocidad
           }
-
-          // Progreso de tarea simulado
-          sim.progresoTarea = Math.min(100, sim.progresoTarea + 0.1 * factorVelocidad)
-          if (sim.progresoTarea >= 100) {
-            sim.progresoTarea = 15
-          }
-
-          sim.x = nx
-          sim.y = ny
-          sim.estadoAccion = estado
-          sim.direccion = direccion
         }
 
-        // ── RENDERIZADO VISUAL DEL SIM ──
-        const isSelected = sim.id === empleadoSeleccionadoId
+        sim.x = nx
+        sim.y = ny
+        sim.estadoAccion = estado
+        sim.direccion = direccion
 
-        // A. Sombra proyectada
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.45)'
-        ctx.beginPath()
-        ctx.ellipse(nx, ny + 14, 12, 5, 0, 0, Math.PI * 2)
-        ctx.fill()
+        // DIBUJAR AL SIM
+        const bob = Math.sin((tickCountRef.current + sim.x * 0.1) * 0.15) * 1.5
 
-        // B. Halo resplandeciente si está seleccionado
-        if (isSelected) {
-          ctx.strokeStyle = '#38bdf8'
-          ctx.lineWidth = 2.5
-          ctx.beginPath()
-          ctx.arc(nx, ny + 2, 20, 0, Math.PI * 2)
-          ctx.stroke()
-
-          // Ondas de selección animadas
-          const pulseR = 20 + ((tickCountRef.current % 30) * 0.4)
-          ctx.strokeStyle = `rgba(56, 189, 248, ${1 - (tickCountRef.current % 30) / 30})`
-          ctx.lineWidth = 1.5
-          ctx.beginPath()
-          ctx.arc(nx, ny + 2, pulseR, 0, Math.PI * 2)
-          ctx.stroke()
-        }
-
-        // C. Cuerpo del Sim (Traje / Ropa Corporativa)
-        const bobWalking = sim.estadoAccion === 'walking' ? Math.sin(tickCountRef.current * 0.35) * 2 : 0
-        ctx.fillStyle = sim.colorRopa
-        ctx.beginPath()
-        // Torso y hombros
-        ctx.roundRect(nx - 8, ny - 3 + bobWalking, 16, 16, 4)
-        ctx.fill()
-
-        // Corbata o distintivo
-        ctx.fillStyle = '#ffffff'
-        ctx.fillRect(nx - 1.5, ny - 1 + bobWalking, 3, 7)
-
-        // D. Brazos trabajando en el teclado
-        if (sim.estadoAccion === 'working') {
-          // Manos escribiendo animadas
-          const typeJitter = Math.sin(tickCountRef.current * 0.5) * 1.5
-          ctx.fillStyle = sim.colorPiel
-          ctx.beginPath()
-          ctx.arc(nx - 7, ny + 6 + typeJitter, 2.5, 0, Math.PI * 2)
-          ctx.arc(nx + 7, ny + 6 - typeJitter, 2.5, 0, Math.PI * 2)
-          ctx.fill()
-
-          // Chispas de trabajo digital
-          if (tickCountRef.current % 8 < 4) {
-            ctx.fillStyle = '#38bdf8'
-            ctx.fillRect(nx - 4, ny - 6, 2, 2)
-          }
-        }
-
-        // E. Cabeza del Sim
-        ctx.fillStyle = sim.colorPiel
-        ctx.beginPath()
-        ctx.arc(nx, ny - 9 + bobWalking, 8, 0, Math.PI * 2)
-        ctx.fill()
-
-        // Ojos expresivos
-        ctx.fillStyle = '#0f172a'
-        ctx.fillRect(nx - 3, ny - 9 + bobWalking, 1.5, 1.5)
-        ctx.fillRect(nx + 2, ny - 9 + bobWalking, 1.5, 1.5)
-
-        // F. Cabello peinado
-        ctx.fillStyle = sim.colorCabello
-        ctx.beginPath()
-        ctx.arc(nx, ny - 12 + bobWalking, 8, Math.PI, Math.PI * 2)
-        ctx.fill()
-
-        // G. Plumbob icónico de Los Sims (Cristal verde esmeralda giratorio)
-        const plumbobY = ny - 26 + bobWalking + Math.sin(tickCountRef.current * 0.09) * 2.5
-        const plumbobColor = isSelected ? '#38bdf8' : sim.estadoAccion === 'coffee' ? '#f59e0b' : '#22c55e'
-        
-        ctx.fillStyle = plumbobColor
+        const plumbobY = ny - 32 + (estado === 'walking' ? bob : 0)
+        ctx.fillStyle = sim.id === empleadoSeleccionadoId ? '#38bdf8' : sim.plumbobColor
         ctx.beginPath()
         ctx.moveTo(nx, plumbobY - 8)
-        ctx.lineTo(nx + 4.5, plumbobY)
+        ctx.lineTo(nx + 5, plumbobY)
         ctx.lineTo(nx, plumbobY + 8)
-        ctx.lineTo(nx - 4.5, plumbobY)
+        ctx.lineTo(nx - 5, plumbobY)
         ctx.closePath()
         ctx.fill()
         ctx.strokeStyle = '#ffffff'
         ctx.lineWidth = 1
         ctx.stroke()
 
-        // H. Placa con Nombre y Rol
-        ctx.fillStyle = 'rgba(15, 23, 42, 0.9)'
-        ctx.strokeStyle = '#334155'
-        ctx.lineWidth = 1
+        ctx.fillStyle = sim.colorPiel
         ctx.beginPath()
-        ctx.roundRect(nx - 36, ny + 18, 72, 16, 4)
+        ctx.arc(nx, ny - 16, 7.5, 0, Math.PI * 2)
         ctx.fill()
-        ctx.stroke()
 
-        ctx.fillStyle = '#ffffff'
-        ctx.font = 'bold 9px system-ui, sans-serif'
+        ctx.fillStyle = sim.colorCabello
+        ctx.beginPath()
+        ctx.arc(nx, ny - 19, 7.5, Math.PI, Math.PI * 2)
+        ctx.fill()
+
+        ctx.fillStyle = sim.colorRopa
+        ctx.fillRect(nx - 6, ny - 8, 12, 14)
+
+        ctx.fillStyle = '#0f172a'
+        ctx.fillRect(nx - 5, ny + 6, 4, 8)
+        ctx.fillRect(nx + 1, ny + 6, 4, 8)
+
+        ctx.fillStyle = '#f8fafc'
+        ctx.font = 'bold 9px system-ui, -apple-system, sans-serif'
         ctx.textAlign = 'center'
-        ctx.fillText(sim.apodo, nx, ny + 29)
+        ctx.fillText(sim.apodo, nx, ny + 24)
+        ctx.textAlign = 'start'
 
-        // I. Barra de estado / actividad (Mini badge)
-        let estadoLabel = '🟢 Trabajando'
-        let estadoColor = '#22c55e'
-        if (sim.estadoAccion === 'coffee') {
-          estadoLabel = '☕ Break'
-          estadoColor = '#f59e0b'
-        } else if (sim.estadoAccion === 'walking') {
-          estadoLabel = '🚶 En Ruta'
-          estadoColor = '#38bdf8'
-        } else if (sim.estadoAccion === 'meeting') {
-          estadoLabel = '🏛️ Reunión'
-          estadoColor = '#a855f7'
-        }
-
-        ctx.fillStyle = 'rgba(2, 6, 23, 0.85)'
-        ctx.beginPath()
-        ctx.roundRect(nx - 34, ny + 35, 68, 12, 3)
-        ctx.fill()
-
-        ctx.fillStyle = estadoColor
-        ctx.font = 'bold 8px system-ui, sans-serif'
-        ctx.fillText(estadoLabel, nx, ny + 44)
-
-        // J. Globo de Diálogo / Pensamiento activo
         if (sim.burbujaTimer > 0 && sim.burbujaTexto) {
-          ctx.font = '10px system-ui, sans-serif'
-          const textW = Math.min(240, ctx.measureText(sim.burbujaTexto).width + 16)
-          const bW = textW
-          const bH = 22
-          const bX = nx - bW / 2
-          const bY = ny - 54
+          ctx.font = 'bold 9px system-ui, -apple-system, sans-serif'
+          const textW = ctx.measureText(sim.burbujaTexto).width
+          const bubbleW = Math.max(90, Math.min(200, textW + 16))
+          const bubbleH = 22
+          const bubbleX = Math.max(20, Math.min(canvas.width - bubbleW - 20, nx - bubbleW / 2))
+          const bubbleY = ny - 56
 
-          // Fondo del globo
-          ctx.fillStyle = 'rgba(15, 23, 42, 0.96)'
-          ctx.strokeStyle = isSelected ? '#38bdf8' : '#64748b'
+          ctx.fillStyle = 'rgba(15, 23, 42, 0.95)'
+          ctx.strokeStyle = '#38bdf8'
           ctx.lineWidth = 1.5
           ctx.beginPath()
-          ctx.roundRect(bX, bY, bW, bH, 6)
+          ctx.roundRect(bubbleX, bubbleY, bubbleW, bubbleH, 6)
           ctx.fill()
           ctx.stroke()
 
-          // Pico del globo
-          ctx.beginPath()
-          ctx.moveTo(nx - 4, bY + bH)
-          ctx.lineTo(nx, bY + bH + 4)
-          ctx.lineTo(nx + 4, bY + bH)
-          ctx.fill()
-
-          ctx.fillStyle = '#f8fafc'
-          ctx.textAlign = 'center'
-          ctx.fillText(sim.burbujaTexto.slice(0, 36) + (sim.burbujaTexto.length > 36 ? '...' : ''), nx, bY + 15)
+          ctx.fillStyle = '#ffffff'
+          ctx.fillText(sim.burbujaTexto, bubbleX + 8, bubbleY + 14)
         }
       })
 
@@ -1289,19 +1227,17 @@ export default function OrganigramaModule() {
 
     animId = requestAnimationFrame(render)
     return () => cancelAnimationFrame(animId)
-  }, [adminDesbloqueado, pestañaActiva, velocidadSim, empleadoSeleccionadoId, modoReunionDirectorio])
+  }, [adminDesbloqueado, pestañaActiva, velocidadSim, modoReunionDirectorio, modoPausaBienestar, empleadoSeleccionadoId])
 
-  // Click o Toque en el Canvas
   const interactuarEnCanvas = (x: number, y: number) => {
     const sims = simsRef.current
-    // 1. Tocar un Sim
-    const tocado = sims.find(e => Math.hypot(e.x - x, e.y - y) < 32)
+
+    const tocado = sims.find(s => Math.hypot(s.x - x, s.y - y) < 22)
     if (tocado) {
       setEmpleadoSeleccionadoId(tocado.id)
       return
     }
 
-    // 2. Mover al empleado seleccionado a esa coordenada
     const targetSim = sims.find(e => e.id === empleadoSeleccionadoId)
     if (targetSim) {
       targetSim.targetX = Math.max(50, Math.min(950, x))
@@ -1334,20 +1270,19 @@ export default function OrganigramaModule() {
     interactuarEnCanvas(x, y)
   }
 
-  // Pedir reporte inmediato al Sim activo
   const handlePedirReporte = () => {
     const ahora = new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })
-    const reporteTexto = `REPORTE OPERATIVO EJECUTIVO [${ahora}]\nDe: ${empleadoActivo.nombre} (${empleadoActivo.rol})\n\n• Estado: En funciones activas con SLA al día.\n• Atribución Principal: ${empleadoActivo.atribucionesEjecutivas[0]}\n• KPI Vigente: ${empleadoActivo.kpis[0].label} en ${empleadoActivo.kpis[0].valor}.\n• Tarea en curso: ${empleadoActivo.tareaActual}.\n\nSin novedades críticas que reportar. Todas las operaciones 24/7 de Gama Seguridad bajo estricto control normativo.`
+    const reporteTexto = 'REPORTE OPERATIVO EJECUTIVO [' + ahora + ']\nDe: ' + empleadoActivo.nombre + ' (' + empleadoActivo.rol + ')\n\n• Estado: En funciones activas con SLA al día.\n• Atribución Principal: ' + empleadoActivo.atribucionesEjecutivas[0] + '\n• KPI Vigente: ' + empleadoActivo.kpis[0].label + ' en ' + empleadoActivo.kpis[0].valor + '.\n• Tarea en curso: ' + empleadoActivo.tareaActual + '.\n\nSin novedades críticas que reportar. Todas las operaciones de Gama Seguridad bajo estricto control normativo.'
 
     setEmpleados(prev => prev.map(a => {
       if (a.id === empleadoActivo.id) {
         return {
           ...a,
-          burbujaTexto: 'Generando y entregando reporte de área...',
+          burbujaTexto: 'Generando reporte ejecutivo...',
           burbujaTimer: 200,
           historialChat: [
             ...a.historialChat,
-            { autor: 'usuario', mensaje: 'Solicito reporte de estado y novedades de tu área.', hora: ahora },
+            { autor: 'usuario', mensaje: 'Tomás solicita reporte de estado y novedades de tu área.', hora: ahora },
             { autor: 'agente', mensaje: reporteTexto, hora: ahora }
           ]
         }
@@ -1357,18 +1292,26 @@ export default function OrganigramaModule() {
     setSubPestañaLateral('chat')
   }
 
-  // Mandar al break / cafetería
   const handleMandarBreak = () => {
     const sim = simsRef.current.find(s => s.id === empleadoActivo.id)
     if (sim) {
-      sim.targetX = 750 + Math.random() * 80
-      sim.targetY = 555 + Math.random() * 20
-      sim.burbujaTexto = 'Tomando un espresso en la cafetería ☕'
+      sim.targetX = 720 + Math.random() * 40
+      sim.targetY = 550 + Math.random() * 20
+      sim.burbujaTexto = 'Disfrutando un menú saludable en El Buen Sabor 🥗'
       sim.burbujaTimer = 180
     }
   }
 
-  // Volver al escritorio
+  const handleMandarZen = () => {
+    const sim = simsRef.current.find(s => s.id === empleadoActivo.id)
+    if (sim) {
+      sim.targetX = 870 + Math.random() * 40
+      sim.targetY = 550 + Math.random() * 20
+      sim.burbujaTexto = 'Meditando y estirando en la sala Zen 🧘‍♂️'
+      sim.burbujaTimer = 180
+    }
+  }
+
   const handleVolverEscritorio = () => {
     const sim = simsRef.current.find(s => s.id === empleadoActivo.id)
     if (sim) {
@@ -1379,7 +1322,35 @@ export default function OrganigramaModule() {
     }
   }
 
-  // Enviar mensaje de chat directo al Sim activo
+  const handleTogglePausaBienestar = () => {
+    const nuevoEstado = !modoPausaBienestar
+    setModoPausaBienestar(nuevoEstado)
+    if (nuevoEstado) {
+      setModoReunionDirectorio(false)
+      const ahora = new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })
+      setFeedOperaciones(prev => [
+        {
+          id: 'ev-' + Date.now(),
+          hora: ahora,
+          simId: 'gerencia_general',
+          simNombre: 'Tomás',
+          simEmoji: '🧘‍♂️',
+          rol: 'CEO',
+          accion: 'Pausa Saludable activada: El equipo recarga energía en el Casino Gourmet y la Sala Zen.',
+          tipo: 'bienestar'
+        },
+        ...prev
+      ])
+    } else {
+      simsRef.current.forEach(sim => {
+        sim.targetX = sim.deskX
+        sim.targetY = sim.deskY
+        sim.burbujaTexto = 'Turno activo retomado 💻'
+        sim.burbujaTimer = 140
+      })
+    }
+  }
+
   const handleEnviarMensaje = () => {
     if (!mensajeInput.trim() || enviandoChat) return
     const mensajeUsuario = mensajeInput.trim()
@@ -1406,19 +1377,18 @@ export default function OrganigramaModule() {
       const promptMinus = mensajeUsuario.toLowerCase()
 
       if (promptMinus.includes('orden') || promptMinus.includes('autorizo') || promptMinus.includes('haz') || promptMinus.includes('revisa')) {
-        respuestaSim = `Entendido, Don Tomás. En mi rol como ${empleadoActivo.rol}, tomo la orden y procedo a ejecutar bajo mi atribución: "${empleadoActivo.atribucionesEjecutivas[0]}".`
-        // Actualizar tarea actual en el sim
+        respuestaSim = 'Entendido, Tomás. En mi rol como ' + empleadoActivo.rol + ', tomo la instrucción y procedo a ejecutar bajo mi atribución: "' + empleadoActivo.atribucionesEjecutivas[0] + '".'
         const s = simsRef.current.find(item => item.id === empleadoActivo.id)
         if (s) {
-          s.tareaActual = `⚡ Ejecutando: ${mensajeUsuario.slice(0, 40)}...`
-          s.progresoTarea = 20
+          s.tareaActual = '⚡ Ejecutando: ' + mensajeUsuario.slice(0, 40) + '...'
+          s.progresoTarea = 25
         }
       } else if (promptMinus.includes('habilidad') || promptMinus.includes('experiencia') || promptMinus.includes('certificacion')) {
-        respuestaSim = `Cuento con certificación internacional ${empleadoActivo.certificacionesElite[0]} y domino ${empleadoActivo.hardSkills.slice(0, 3).join(', ')} para garantizar excelencia operativa.`
+        respuestaSim = 'Cuento con ' + empleadoActivo.certificacionesElite[0] + ' y domino ' + empleadoActivo.hardSkills.slice(0, 3).join(', ') + ' para garantizar la más alta precisión operativa.'
       } else if (promptMinus.includes('estado') || promptMinus.includes('reporte') || promptMinus.includes('kpi')) {
-        respuestaSim = `Reportando novedad: KPI principal ${empleadoActivo.kpis[0].label} en ${empleadoActivo.kpis[0].valor}. Operaciones estables 24/7.`
+        respuestaSim = 'Reportando novedad: KPI principal ' + empleadoActivo.kpis[0].label + ' en ' + empleadoActivo.kpis[0].valor + '. Operaciones estables 24/7.'
       } else {
-        respuestaSim = `Recibido, Don Tomás. Coordinando con el equipo bajo el estándar de ${empleadoActivo.metodologias[0] || 'Gama Seguridad'}. Todo bajo control.`
+        respuestaSim = 'Recibido, Tomás. Coordinando con el equipo bajo el estándar de ' + (empleadoActivo.metodologias[0] || 'Gama Seguridad') + '. Todo bajo control y en marcha.'
       }
 
       setEmpleados(prev => prev.map(a => {
@@ -1440,7 +1410,28 @@ export default function OrganigramaModule() {
     }, 500)
   }
 
-  // Guardar el entrenamiento
+  const handleEjecutarAuditoriaSofia = async (enviarEmail: boolean = false) => {
+    setCargandoInformeSofia(true)
+    setEmailEnviadoStatus(null)
+    try {
+      const url = '/api/agentes/sofia/informe?send=' + (enviarEmail ? 'true' : 'false')
+      const res = await fetch(url)
+      const data = await res.json()
+      if (data.ok) {
+        setResultadoInformeSofia(data)
+        if (enviarEmail) {
+          setEmailEnviadoStatus(data.emailSent ? '✓ Informe enviado a Tomás (tetoromoreno@gamasecurity.cl)' : 'Informe procesado (ver respuesta de Resend)')
+        }
+      } else {
+        alert('Error consultando informe: ' + (data.error || 'Desconocido'))
+      }
+    } catch (err: any) {
+      alert('Error conectando con API de Sofía: ' + err.message)
+    } finally {
+      setCargandoInformeSofia(false)
+    }
+  }
+
   const handleGuardarEntrenamiento = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     const form = e.currentTarget
@@ -1472,231 +1463,122 @@ export default function OrganigramaModule() {
         return {
           ...emp,
           trayectoriaLinkedIn: trayectoria,
-          atribucionesEjecutivas: atribuciones.length > 0 ? atribuciones : emp.atribucionesEjecutivas,
-          certificacionesElite: certificaciones.length > 0 ? certificaciones : emp.certificacionesElite,
-          hardSkills: hardSkills.length > 0 ? hardSkills : emp.hardSkills,
-          softSkills: softSkills.length > 0 ? softSkills : emp.softSkills,
+          atribucionesEjecutivas: atribuciones.length ? atribuciones : emp.atribucionesEjecutivas,
+          certificacionesElite: certificaciones.length ? certificaciones : emp.certificacionesElite,
+          hardSkills: hardSkills.length ? hardSkills : emp.hardSkills,
+          softSkills: softSkills.length ? softSkills : emp.softSkills,
           entrenamiento: {
             ...emp.entrenamiento,
             systemPrompt,
-            reglasNegocio
+            reglasNegocio: reglasNegocio.length ? reglasNegocio : emp.entrenamiento.reglasNegocio
           }
         }
       }
       return emp
     }))
 
+    alert('Entrenamiento y atribuciones de ' + empleadoActivo.nombre + ' actualizadas con éxito.')
     setPestañaActiva('juego_oficina')
   }
 
-  // ── PANTALLA DE ACCESO RESTRINGIDO (PASS ADMIN) ──
-  if (!adminDesbloqueado) {
-    return (
-      <div className="flex-1 bg-slate-950 text-slate-100 rounded-3xl p-6 sm:p-12 flex flex-col items-center justify-center border border-slate-800 shadow-2xl relative overflow-hidden min-h-[560px]">
-        <div className="absolute inset-0 bg-radial from-blue-900/10 via-transparent to-transparent pointer-events-none" />
-        <div className="max-w-md w-full bg-slate-900/90 border border-slate-800/90 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6 text-center backdrop-blur-md relative z-10">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-blue-700 via-indigo-600 to-purple-700 mx-auto flex items-center justify-center text-white shadow-lg shadow-blue-900/40 border border-blue-400/40">
-            <Lock className="h-8 w-8 stroke-[2.2]" />
+  return (
+    <div className="flex flex-col h-[calc(100vh-5rem)] bg-slate-950 text-slate-100 overflow-hidden font-sans">
+      
+      {/* ── ENCABEZADO SUPERIOR: GOBERNANZA, BIENESTAR Y ESTADO ── */}
+      <div className="bg-slate-900 border-b border-slate-800 px-4 py-3 flex items-center justify-between gap-3 shadow-md shrink-0">
+        <div className="flex items-center gap-3">
+          <div className="h-9 w-9 rounded-xl bg-blue-600/20 border border-blue-500/40 flex items-center justify-center text-blue-400 font-black text-lg">
+            🏢
           </div>
-
-          <div className="space-y-2">
-            <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-emerald-400 bg-emerald-950/80 px-2.5 py-1 rounded-full border border-emerald-800/60 inline-flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span>GAMA EXECUTIVE SECURITY</span>
-            </span>
-            <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
-              Oficina Autónoma Virtual (Sims IA 24/7)
-            </h2>
-            <p className="text-xs text-slate-400 leading-relaxed font-medium">
-              Acceso restringido para el Directorio y Administradores. Ingrese su clave de autorización para supervisar a los 10 empleados IA.
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-sm font-black text-white tracking-wide">
+                OFICINA AUTÓNOMA VIRTUAL
+              </h1>
+              <span className="text-[10px] font-mono text-emerald-400 bg-emerald-950/80 border border-emerald-800/60 px-2 py-0.5 rounded-full font-bold">
+                10 ESPECIALISTAS ACTIVOS
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-400">
+              Gama Seguridad SpA • Simulación y copiloto para Tomás Toro-Moreno
             </p>
           </div>
-
-          <form onSubmit={handleValidarPassAdmin} className="space-y-4 text-left">
-            <div>
-              <label className="block text-xs font-bold text-slate-300 mb-1.5 flex items-center gap-1.5">
-                <KeyRound className="h-3.5 w-3.5 text-blue-400" />
-                <span>Contraseña de Administrador</span>
-              </label>
-              <input
-                type="password"
-                value={claveAdminInput}
-                onChange={e => {
-                  setClaveAdminInput(e.target.value)
-                  setErrorClaveAdmin(false)
-                }}
-                placeholder="Ingrese clave admin..."
-                autoFocus
-                className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 font-mono transition-all"
-              />
-              {errorClaveAdmin && (
-                <p className="text-xs text-rose-400 font-bold mt-1.5 flex items-center gap-1">
-                  <AlertTriangle className="h-3.5 w-3.5" />
-                  <span>Clave incorrecta. Autorización denegada.</span>
-                </p>
-              )}
-            </div>
-
-            <div className="flex items-center justify-between text-xs text-slate-400 px-1">
-              <label className="flex items-center gap-2 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={recordarSesion}
-                  onChange={e => setRecordarSesion(e.target.checked)}
-                  className="rounded border-slate-700 bg-slate-950 text-blue-600 focus:ring-0 cursor-pointer"
-                />
-                <span className="text-[11px]">Recordar en esta sesión</span>
-              </label>
-              <span className="text-[10px] font-mono text-slate-500">Móvil / Desktop</span>
-            </div>
-
-            <button
-              type="submit"
-              className="w-full py-3 bg-gradient-to-r from-blue-700 via-indigo-600 to-purple-700 hover:from-blue-600 hover:to-indigo-500 text-white font-extrabold rounded-xl text-sm transition-all shadow-lg shadow-blue-900/30 flex items-center justify-center gap-2 cursor-pointer active:scale-95"
-            >
-              <Unlock className="h-4 w-4" />
-              <span>Desbloquear Oficina Virtual</span>
-            </button>
-          </form>
-
-          <div className="pt-2 border-t border-slate-800 text-[11px] text-slate-500 font-mono">
-            Gama Seguridad SpA • Protocolo de Mando C-Suite
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  // ── VISTA PRINCIPAL DESBLOQUEADA DE LA OFICINA AUTÓNOMA VIRTUAL ──
-  return (
-    <div className="flex-1 bg-slate-950 text-slate-100 rounded-3xl p-4 sm:p-7 flex flex-col gap-5 border border-slate-800 shadow-2xl overflow-hidden min-h-0">
-      
-      {/* ── BARRA SUPERIOR DE CONTROL DEL SIMULADOR ── */}
-      <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 sm:p-5 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 shadow-xl">
-        <div>
-          <div className="flex items-center gap-2.5 text-xs font-mono text-emerald-400 font-bold uppercase tracking-widest mb-1">
-            <span className="relative flex h-3 w-3">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
-            </span>
-            <span>OFICINA AUTÓNOMA VIRTUAL 24/7 EN VIVO</span>
-            <span className="text-slate-500">•</span>
-            <span className="text-cyan-400">10 EMPLEADOS IA TRABAJANDO</span>
-          </div>
-          <h2 className="text-xl sm:text-2xl font-black text-white flex items-center gap-2.5">
-            <Gamepad2 className="h-6 w-6 text-[#2997ff]" />
-            <span>Oficina Autónoma Virtual (Sims IA 24/7)</span>
-          </h2>
-          <p className="text-xs text-slate-400 mt-0.5">
-            10 empleados IA interactivos trabajando las 24 horas con atribuciones de mando, reportes automáticos y lógica empresarial.
-          </p>
         </div>
 
-        {/* Selector de Pestaña Principal y Acciones */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <div className="bg-slate-950 border border-slate-800 p-1 rounded-xl flex items-center gap-1 overflow-x-auto">
-            <button
-              onClick={() => setPestañaActiva('juego_oficina')}
-              className={`px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shrink-0 ${
-                pestañaActiva === 'juego_oficina' ? 'bg-[#1E40AF] text-white shadow-md' : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              <Gamepad2 className="h-4 w-4" />
-              <span>🎮 Oficina en Vivo</span>
-            </button>
-            <button
-              onClick={() => setPestañaActiva('entrenamiento')}
-              className={`px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shrink-0 ${
-                pestañaActiva === 'entrenamiento' ? 'bg-[#1E40AF] text-white shadow-md' : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              <BrainCircuit className="h-4 w-4 text-amber-400" />
-              <span>🧠 Atribuciones & Habilidades</span>
-            </button>
-            <button
-              onClick={() => setPestañaActiva('organigrama')}
-              className={`px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shrink-0 ${
-                pestañaActiva === 'organigrama' ? 'bg-[#1E40AF] text-white shadow-md' : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              <Users className="h-4 w-4 text-indigo-400" />
-              <span>🏛️ Organigrama</span>
-            </button>
-          </div>
+        {/* Pestañas Superiores & Controles de Modo */}
+        <div className="flex items-center gap-2">
+          
+          <button
+            onClick={handleTogglePausaBienestar}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer border ${
+              modoPausaBienestar
+                ? 'bg-gradient-to-r from-emerald-600 to-teal-500 text-white border-emerald-400 shadow-lg shadow-emerald-900/30 animate-pulse'
+                : 'bg-slate-900 text-emerald-300 border-emerald-800/60 hover:bg-slate-800'
+            }`}
+            title="Activar o desactivar descanso del equipo en Casino Gourmet y Sala Zen"
+          >
+            <Heart className="h-3.5 w-3.5 text-emerald-400" />
+            <span>{modoPausaBienestar ? 'En Pausa Saludable' : 'Pausa de Bienestar'}</span>
+          </button>
 
-          {/* Botón de Reunión General de Directorio */}
           <button
             onClick={() => {
               setModoReunionDirectorio(!modoReunionDirectorio)
-              if (!modoReunionDirectorio) {
-                setMostrarMemorandumDirectorio(true)
-              }
+              if (!modoReunionDirectorio) setModoPausaBienestar(false)
             }}
-            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer shadow-md ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer border ${
               modoReunionDirectorio
-                ? 'bg-amber-600 hover:bg-amber-500 text-white animate-pulse'
-                : 'bg-indigo-700 hover:bg-indigo-600 text-white'
+                ? 'bg-indigo-600 text-white border-indigo-400 shadow-lg shadow-indigo-900/30'
+                : 'bg-slate-900 text-slate-300 border-slate-700 hover:bg-slate-800'
             }`}
           >
-            <span>🏛️</span>
-            <span>{modoReunionDirectorio ? 'Reunión en Curso' : 'Reunión de Directorio'}</span>
+            <Users className="h-3.5 w-3.5 text-indigo-400" />
+            <span>Directorio</span>
           </button>
 
-          {/* Botón para Bloquear con Candado */}
-          <button
-            onClick={handleCerrarCandado}
-            title="Bloquear acceso con Pass Admin"
-            className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl cursor-pointer transition border border-slate-700"
-          >
-            <Lock className="h-4 w-4 text-amber-400" />
-          </button>
+          <div className="bg-slate-950 p-1 rounded-xl border border-slate-800 flex items-center gap-1 text-xs font-bold">
+            <button
+              onClick={() => setPestañaActiva('juego_oficina')}
+              className={`px-3 py-1 rounded-lg transition cursor-pointer flex items-center gap-1 ${
+                pestañaActiva === 'juego_oficina' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <Building className="h-3.5 w-3.5" />
+              <span>Planta Virtual</span>
+            </button>
+            <button
+              onClick={() => setPestañaActiva('organigrama')}
+              className={`px-3 py-1 rounded-lg transition cursor-pointer flex items-center gap-1 ${
+                pestañaActiva === 'organigrama' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <Workflow className="h-3.5 w-3.5" />
+              <span>Organigrama</span>
+            </button>
+            <button
+              onClick={() => setPestañaActiva('entrenamiento')}
+              className={`px-3 py-1 rounded-lg transition cursor-pointer flex items-center gap-1 ${
+                pestañaActiva === 'entrenamiento' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <BrainCircuit className="h-3.5 w-3.5" />
+              <span>Calibración</span>
+            </button>
+          </div>
+
         </div>
       </div>
 
-      {/* ── SELECTOR RÁPIDO DE LOS 10 EMPLEADOS (PILLS CON ESTADO EN VIVO) ── */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar bg-slate-900/60 p-2 rounded-2xl border border-slate-800/80">
-        <span className="text-[11px] font-mono font-bold text-slate-400 shrink-0 px-2 flex items-center gap-1">
-          <Users className="h-3.5 w-3.5 text-[#38bdf8]" />
-          <span>Equipo IA:</span>
-        </span>
-        {empleados.map(emp => {
-          const isActivo = emp.id === empleadoSeleccionadoId
-          const isWorking = emp.estadoAccion === 'working'
-          const isCoffee = emp.estadoAccion === 'coffee'
-          return (
-            <button
-              key={emp.id}
-              onClick={() => {
-                setEmpleadoSeleccionadoId(emp.id)
-                // Centrar o mover al sim si se desea
-              }}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-2 shrink-0 cursor-pointer border ${
-                isActivo
-                  ? 'bg-blue-600 text-white border-blue-400 shadow-md shadow-blue-900/40'
-                  : 'bg-slate-950/80 text-slate-300 hover:bg-slate-800 border-slate-800'
-              }`}
-            >
-              <span className="text-sm">{emp.avatarEmoji}</span>
-              <span>{emp.apodo}</span>
-              <span className={`w-2 h-2 rounded-full ${
-                isWorking ? 'bg-emerald-400 animate-pulse' : isCoffee ? 'bg-amber-400' : 'bg-blue-400'
-              }`} />
-            </button>
-          )
-        })}
-      </div>
-
-      {/* ── CONTENIDO: SIMULADOR 2D Y PANEL DE CONTROL DEL SIM SELECCIONADO ── */}
+      {/* ── CUERPO DE LA VISTA ── */}
       {pestañaActiva === 'juego_oficina' && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 min-h-0 flex-1">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 p-4 min-h-0 flex-1 overflow-hidden">
           
-          {/* CANVAS DEL JUEGO SIMS (8 COLS) + FEED DE OPERACIONES ABAJO */}
-          <div className="lg:col-span-8 flex flex-col gap-4">
+          {/* COLUMNA IZQUIERDA: CANVAS 2D + FEED EN VIVO (8 COLS) */}
+          <div className="lg:col-span-8 flex flex-col gap-3 min-h-0 overflow-y-auto pr-1">
             
-            {/* Contenedor del Canvas */}
-            <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between shadow-xl relative overflow-hidden">
+            {/* CANVAS INTERACTIVO 2D DE LA OFICINA */}
+            <div className="relative bg-slate-900/90 border border-slate-800 rounded-2xl p-2 shadow-2xl">
               
-              {/* Controles de velocidad del juego */}
               <div className="absolute top-4 left-4 z-10 bg-slate-900/90 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-700 flex items-center gap-2 text-xs">
                 <span className="text-[10px] font-mono text-slate-400">Velocidad:</span>
                 <button onClick={() => setVelocidadSim('1x')} className={`px-2 py-0.5 rounded font-bold cursor-pointer ${velocidadSim === '1x' ? 'bg-blue-600 text-white' : 'text-slate-400'}`}>1x</button>
@@ -1719,26 +1601,26 @@ export default function OrganigramaModule() {
                 style={{ imageRendering: 'pixelated' }}
               />
 
-              {/* Guía rápida de salas abajo */}
               <div className="flex items-center gap-2 overflow-x-auto pt-2 text-[10px] font-mono text-slate-400 no-scrollbar">
                 <span className="font-bold text-slate-300 shrink-0">Salas:</span>
-                <span className="bg-slate-900 px-2 py-0.5 rounded border border-slate-800 shrink-0">👔 1. Gerencia</span>
+                <span className="bg-slate-900 px-2 py-0.5 rounded border border-slate-800 shrink-0">👔 1. Tomás</span>
                 <span className="bg-slate-900 px-2 py-0.5 rounded border border-slate-800 shrink-0">⚖️ 2. Legal OS10</span>
                 <span className="bg-slate-900 px-2 py-0.5 rounded border border-slate-800 shrink-0">🏛️ 3. Directorio</span>
-                <span className="bg-slate-900 px-2 py-0.5 rounded border border-slate-800 shrink-0">🚨 4. Central CRA 24/7</span>
-                <span className="bg-slate-900 px-2 py-0.5 rounded border border-slate-800 shrink-0">💼 5. Comercial</span>
+                <span className="bg-slate-900 px-2 py-0.5 rounded border border-slate-800 shrink-0">🚨 4. CRA 24/7</span>
+                <span className="bg-slate-900 px-2 py-0.5 rounded border border-slate-800 shrink-0">💼 5. Comercial & Mkt</span>
                 <span className="bg-slate-900 px-2 py-0.5 rounded border border-slate-800 shrink-0">🧠 6. Laboratorio IA</span>
-                <span className="bg-slate-900 px-2 py-0.5 rounded border border-slate-800 shrink-0">☕ 7. Cafetería</span>
+                <span className="bg-emerald-950/80 text-emerald-300 border border-emerald-800/60 px-2 py-0.5 rounded shrink-0 font-bold">🥗 7. Casino Gourmet</span>
+                <span className="bg-purple-950/80 text-purple-300 border border-purple-800/60 px-2 py-0.5 rounded shrink-0 font-bold">🧘‍♂️ 8. Zen & Arcade</span>
               </div>
             </div>
 
-            {/* ── TERMINAL / FEED EN VIVO DE ACTIVIDAD Y REPORTES (24/7 STREAM) ── */}
+            {/* FEED EN VIVO DE ACTIVIDAD Y REPORTES */}
             <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-xl flex flex-col gap-2.5">
               <div className="flex items-center justify-between border-b border-slate-800 pb-2">
                 <div className="flex items-center gap-2">
                   <Terminal className="h-4 w-4 text-emerald-400" />
                   <span className="text-xs font-black text-white uppercase tracking-wider">
-                    Terminal de Operaciones 24/7 en Vivo (Reportes de los Sims IA)
+                    Terminal de Operaciones 24/7 en Vivo (Reportes de los Especialistas)
                   </span>
                   <span className="bg-emerald-950 text-emerald-400 border border-emerald-800/60 text-[9px] font-mono font-bold px-2 py-0.5 rounded-full animate-pulse">
                     EN TRANSMISIÓN
@@ -1749,7 +1631,6 @@ export default function OrganigramaModule() {
                 </span>
               </div>
 
-              {/* Lista scrolleable de reportes */}
               <div className="max-h-48 overflow-y-auto space-y-1.5 pr-1 font-mono text-xs">
                 {feedOperaciones.map(ev => (
                   <div key={ev.id} className="p-2 rounded-xl bg-slate-950/70 border border-slate-800/80 flex items-start gap-2.5 hover:border-slate-700 transition">
@@ -1778,7 +1659,6 @@ export default function OrganigramaModule() {
             
             <div className="space-y-4">
               
-              {/* Tarjeta de Identidad Sims con Badge de Trabajo Actual */}
               <div className="bg-slate-950 border border-slate-800 rounded-2xl p-4 space-y-3 relative shadow-inner">
                 <div className="flex items-start gap-3">
                   <div className="h-14 w-14 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center text-3xl shadow-inner shrink-0 relative">
@@ -1790,7 +1670,7 @@ export default function OrganigramaModule() {
                       <h3 className="font-black text-white text-sm leading-tight truncate">{empleadoActivo.nombre}</h3>
                       <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-amber-300 bg-amber-950/80 border border-amber-500/30 px-1.5 py-0.5 rounded">
                         <Award className="h-2.5 w-2.5" />
-                        <span>Élite Top 1%</span>
+                        <span>Especialista Gama</span>
                       </span>
                     </div>
                     <p className="text-xs font-bold text-[#2997ff] truncate">{empleadoActivo.rol}</p>
@@ -1832,35 +1712,43 @@ export default function OrganigramaModule() {
                   <button
                     onClick={() => {
                       setSubPestañaLateral('chat')
-                      setMensajeInput('Asignar tarea prioritaria: ')
+                      setMensajeInput('Instrucción prioritaria: ')
                     }}
                     className="py-2 px-2.5 bg-gradient-to-r from-purple-700 to-indigo-600 hover:from-purple-600 hover:to-indigo-500 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-sm active:scale-95"
                   >
                     <Zap className="h-3.5 w-3.5 text-amber-300" />
-                    <span>Dar Orden</span>
+                    <span>Dar Instrucción</span>
                   </button>
                 </div>
 
                 {/* Mandar al break / Volver al puesto */}
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-3 gap-1.5">
                   <button
                     onClick={handleMandarBreak}
-                    className="py-1.5 px-2 bg-slate-900 hover:bg-slate-800 text-amber-300 border border-slate-800 rounded-lg text-[11px] font-bold transition flex items-center justify-center gap-1 cursor-pointer"
+                    className="py-1.5 px-1 bg-slate-900 hover:bg-slate-800 text-emerald-300 border border-slate-800 rounded-lg text-[10px] font-bold transition flex items-center justify-center gap-1 cursor-pointer"
+                    title="Enviar al Casino Gourmet El Buen Sabor"
                   >
-                    <Coffee className="h-3 w-3" />
-                    <span>Enviar a Break</span>
+                    <span>🥗 Casino</span>
+                  </button>
+                  <button
+                    onClick={handleMandarZen}
+                    className="py-1.5 px-1 bg-slate-900 hover:bg-slate-800 text-purple-300 border border-slate-800 rounded-lg text-[10px] font-bold transition flex items-center justify-center gap-1 cursor-pointer"
+                    title="Enviar a Sala Zen / Yoga"
+                  >
+                    <span>🧘 Zen</span>
                   </button>
                   <button
                     onClick={handleVolverEscritorio}
-                    className="py-1.5 px-2 bg-slate-900 hover:bg-slate-800 text-blue-300 border border-slate-800 rounded-lg text-[11px] font-bold transition flex items-center justify-center gap-1 cursor-pointer"
+                    className="py-1.5 px-1 bg-slate-900 hover:bg-slate-800 text-blue-300 border border-slate-800 rounded-lg text-[10px] font-bold transition flex items-center justify-center gap-1 cursor-pointer"
+                    title="Volver a su puesto de trabajo"
                   >
                     <Building className="h-3 w-3" />
                     <span>Al Puesto</span>
                   </button>
                 </div>
 
-                {/* Selector de Sub-Pestaña Lateral: Atribuciones vs LinkedIn vs Chat */}
-                <div className="grid grid-cols-3 gap-1 bg-slate-900 p-1 rounded-xl border border-slate-800 text-[11px] font-bold">
+                {/* Selector de Sub-Pestañas Laterales */}
+                <div className="grid grid-cols-4 gap-1 bg-slate-900 p-1 rounded-xl border border-slate-800 text-[10px] font-bold">
                   <button
                     onClick={() => setSubPestañaLateral('atribuciones')}
                     className={`py-1.5 rounded-lg transition cursor-pointer flex items-center justify-center gap-1 ${
@@ -1871,13 +1759,22 @@ export default function OrganigramaModule() {
                     <span>Mando</span>
                   </button>
                   <button
+                    onClick={() => setSubPestañaLateral('acciones_ia')}
+                    className={`py-1.5 rounded-lg transition cursor-pointer flex items-center justify-center gap-1 ${
+                      subPestañaLateral === 'acciones_ia' ? 'bg-[#1E40AF] text-white shadow-sm' : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    <Sparkles className="h-3 w-3 text-amber-300" />
+                    <span>Acciones</span>
+                  </button>
+                  <button
                     onClick={() => setSubPestañaLateral('linkedin')}
                     className={`py-1.5 rounded-lg transition cursor-pointer flex items-center justify-center gap-1 ${
                       subPestañaLateral === 'linkedin' ? 'bg-[#1E40AF] text-white shadow-sm' : 'text-slate-400 hover:text-white'
                     }`}
                   >
                     <GraduationCap className="h-3 w-3 text-cyan-300" />
-                    <span>Skills Top</span>
+                    <span>Skills</span>
                   </button>
                   <button
                     onClick={() => setSubPestañaLateral('chat')}
@@ -1890,12 +1787,12 @@ export default function OrganigramaModule() {
                   </button>
                 </div>
 
-                {/* VISTA A: Atribuciones Oficiales de Mando */}
+                {/* VISTA 1: Atribuciones Oficiales de Mando */}
                 {subPestañaLateral === 'atribuciones' && (
                   <div className="bg-blue-950/40 border border-blue-900/60 p-3 rounded-xl space-y-2">
                     <div className="flex items-center gap-1.5 text-xs font-black text-blue-300 uppercase tracking-wide">
                       <Award className="h-4 w-4 text-amber-400" />
-                      <span>Atribuciones de Mando Oficiales:</span>
+                      <span>Atribuciones Oficiales:</span>
                     </div>
                     <div className="space-y-1.5">
                       {empleadoActivo.atribucionesEjecutivas.map((atrib, idx) => (
@@ -1908,11 +1805,244 @@ export default function OrganigramaModule() {
                   </div>
                 )}
 
-                {/* VISTA B: Perfil Nutrición de Élite (LinkedIn / Benchmarks) */}
+                {/* VISTA 2: ACCIONES IA ESPECÍFICAS DE CADA ESPECIALISTA */}
+                {subPestañaLateral === 'acciones_ia' && (
+                  <div className="bg-slate-900/90 border border-slate-800 p-3 rounded-xl space-y-3 text-xs">
+                    
+                    {/* ACCIONES DE SOFÍA (CRA 24/7) */}
+                    {empleadoActivo.id === 'cra_jefa' && (
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between border-b border-slate-800 pb-1.5">
+                          <span className="font-bold text-red-400 flex items-center gap-1.5">
+                            <Radio className="h-3.5 w-3.5" />
+                            <span>Mando Operativo CRA 24/7</span>
+                          </span>
+                          <span className="text-[10px] font-mono text-emerald-400">Resend & Supabase</span>
+                        </div>
+
+                        <div className="space-y-2">
+                          <button
+                            onClick={() => handleEjecutarAuditoriaSofia(false)}
+                            disabled={cargandoInformeSofia}
+                            className="w-full py-2 px-3 bg-slate-950 hover:bg-slate-800 border border-slate-700 text-slate-200 rounded-xl font-bold flex items-center justify-between cursor-pointer transition text-xs"
+                          >
+                            <span className="flex items-center gap-1.5">
+                              <ShieldCheck className="h-4 w-4 text-emerald-400" />
+                              <span>Auditoría Señales (&gt;72h)</span>
+                            </span>
+                            <span className="text-[10px] text-slate-400 font-mono">
+                              {cargandoInformeSofia ? 'Auditando...' : 'Ejecutar'}
+                            </span>
+                          </button>
+
+                          <button
+                            onClick={() => handleEjecutarAuditoriaSofia(true)}
+                            disabled={cargandoInformeSofia}
+                            className="w-full py-2 px-3 bg-gradient-to-r from-red-700 to-rose-600 hover:from-red-600 hover:to-rose-500 text-white rounded-xl font-bold flex items-center justify-between cursor-pointer transition text-xs shadow-md"
+                          >
+                            <span className="flex items-center gap-1.5">
+                              <Send className="h-4 w-4" />
+                              <span>Despachar Informe Matutino 10AM</span>
+                            </span>
+                            <span className="text-[10px] bg-red-950/80 px-2 py-0.5 rounded font-mono">
+                              Resend
+                            </span>
+                          </button>
+
+                          {emailEnviadoStatus && (
+                            <div className="p-2 bg-emerald-950/60 border border-emerald-800 text-emerald-300 rounded-lg text-[11px] leading-snug">
+                              {emailEnviadoStatus}
+                            </div>
+                          )}
+
+                          {resultadoInformeSofia && (
+                            <div className="p-2.5 bg-slate-950 border border-slate-800 rounded-xl space-y-1.5 text-[11px]">
+                              <div className="flex justify-between text-slate-400">
+                                <span>Abonados Activos Depurados:</span>
+                                <span className="font-bold text-white">{resultadoInformeSofia.totalCuentasActivas}</span>
+                              </div>
+                              <div className="flex justify-between text-slate-400">
+                                <span>Alertas &gt; 72h Sin Señal:</span>
+                                <span className="font-bold text-red-400">{resultadoInformeSofia.totalCuentasSinSenal72h}</span>
+                              </div>
+                              <div className="flex justify-between text-slate-400">
+                                <span>Conectividad de Cartera:</span>
+                                <span className="font-bold text-emerald-400">{resultadoInformeSofia.porcentajeConectividad}%</span>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Video-Verificación CCTV */}
+                          <div className="bg-slate-950 p-2.5 rounded-xl border border-slate-800 space-y-1">
+                            <div className="flex items-center justify-between text-[11px] font-bold text-slate-300">
+                              <span className="flex items-center gap-1">
+                                <Video className="h-3.5 w-3.5 text-indigo-400" />
+                                <span>Canal Piloto Video-Verificación:</span>
+                              </span>
+                              <span className="text-[10px] text-emerald-400 font-mono">1 Cámara Activa</span>
+                            </div>
+                            <p className="text-[10px] text-slate-400 leading-snug">
+                              Protocolo RTSP conectado y calibrado paso a paso sin congestión de red.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* ACCIONES DE VALENTINA (MARKETING & LEADS) */}
+                    {empleadoActivo.id === 'comercial_jefa' && (
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between border-b border-slate-800 pb-1.5">
+                          <span className="font-bold text-emerald-400 flex items-center gap-1.5">
+                            <Share2 className="h-3.5 w-3.5" />
+                            <span>Borradores RRSS (Herramientas Gratis)</span>
+                          </span>
+                          <span className="text-[9px] font-mono text-amber-300 bg-amber-950/80 px-1.5 py-0.5 rounded">
+                            Supeditado a Tomás
+                          </span>
+                        </div>
+
+                        <div className="space-y-2">
+                          {borradoresMkt.map(post => (
+                            <div key={post.id} className="p-2.5 bg-slate-950 border border-slate-800 rounded-xl space-y-1.5">
+                              <div className="flex items-center justify-between text-[10px]">
+                                <span className="font-bold text-cyan-400">{post.red}</span>
+                                <span className="text-amber-400 font-mono text-[9px] bg-amber-950/70 px-1.5 py-0.5 rounded border border-amber-800/40">
+                                  {post.estado}
+                                </span>
+                              </div>
+                              <h5 className="font-bold text-slate-200 text-[11px] leading-snug">{post.titulo}</h5>
+                              <p className="text-[10px] text-slate-400 leading-snug">{post.descripcion}</p>
+                              <div className="text-[9px] font-mono text-slate-500">
+                                Herramienta: {post.herramienta}
+                              </div>
+                            </div>
+                          ))}
+
+                          <div className="p-2 bg-blue-950/40 border border-blue-900/60 rounded-xl text-[10px] text-blue-200 leading-relaxed">
+                            💡 <strong>Frontera de Seguridad:</strong> Las IAs no publican en directo ni cierran ventas con clientes. Los leads son entregados limpios para cierre por personas reales.
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* ACCIONES DE IGNACIO (ORÁCULO TÉCNICO VIRTUAL) */}
+                    {empleadoActivo.id === 'cra_terreno' && (
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between border-b border-slate-800 pb-1.5">
+                          <span className="font-bold text-amber-400 flex items-center gap-1.5">
+                            <BookOpen className="h-3.5 w-3.5" />
+                            <span>Oráculo de Manuales de Alarmas</span>
+                          </span>
+                          <span className="text-[10px] font-mono text-slate-400">Soporte Remoto</span>
+                        </div>
+
+                        <div className="space-y-2">
+                          <div className="flex gap-1 overflow-x-auto pb-1 text-[10px]">
+                            <button
+                              onClick={() => setManualSeleccionado('dsc_neo')}
+                              className={`px-2 py-1 rounded-lg font-bold shrink-0 cursor-pointer ${
+                                manualSeleccionado === 'dsc_neo' ? 'bg-amber-600 text-white' : 'bg-slate-950 text-slate-400'
+                              }`}
+                            >
+                              DSC Neo HS2032
+                            </button>
+                            <button
+                              onClick={() => setManualSeleccionado('dsc_classic')}
+                              className={`px-2 py-1 rounded-lg font-bold shrink-0 cursor-pointer ${
+                                manualSeleccionado === 'dsc_classic' ? 'bg-amber-600 text-white' : 'bg-slate-950 text-slate-400'
+                              }`}
+                            >
+                              DSC Classic PC585/1832
+                            </button>
+                            <button
+                              onClick={() => setManualSeleccionado('paradox')}
+                              className={`px-2 py-1 rounded-lg font-bold shrink-0 cursor-pointer ${
+                                manualSeleccionado === 'paradox' ? 'bg-amber-600 text-white' : 'bg-slate-950 text-slate-400'
+                              }`}
+                            >
+                              Paradox Spectra/EVO
+                            </button>
+                          </div>
+
+                          <div className="p-2.5 bg-slate-950 border border-slate-800 rounded-xl space-y-1.5 text-[11px]">
+                            {manualSeleccionado === 'dsc_neo' && (
+                              <>
+                                <div className="font-bold text-amber-300">DSC PowerSeries Neo (HS2016 / HS2032 / HS2064)</div>
+                                <div className="text-slate-300 text-[10px] leading-relaxed">
+                                  • Código Instalador: <strong>*8 5555</strong><br />
+                                  • Sección [001]: Definición de Zonas (001: Instantánea, 002: Retardo 1)<br />
+                                  • Sección [851]: Configuración Comunicador IP/Celular TL280<br />
+                                  • Sección [300]: Trayectoria de Comunicación Contact ID
+                                </div>
+                              </>
+                            )}
+                            {manualSeleccionado === 'dsc_classic' && (
+                              <>
+                                <div className="font-bold text-amber-300">DSC PowerSeries Classic (PC585 / PC1832 / PC1864)</div>
+                                <div className="text-slate-300 text-[10px] leading-relaxed">
+                                  • Código Instalador: <strong>*8 5555</strong><br />
+                                  • Sección [001]: Tipos de Zonas (01: Retardo, 03: Instantánea)<br />
+                                  • Sección [380]: Primeras Opciones de Comunicador (Habilitar bit 1)<br />
+                                  • Borrado de Fallas: <strong>*2</strong> (1: Batería, 3: Línea Telefónica)
+                                </div>
+                              </>
+                            )}
+                            {manualSeleccionado === 'paradox' && (
+                              <>
+                                <div className="font-bold text-amber-300">Paradox Spectra SP & Magellan</div>
+                                <div className="text-slate-300 text-[10px] leading-relaxed">
+                                  • Código Instalador: <strong>ENTER + 0000 / 000000</strong><br />
+                                  • Sección [001]-[032]: Programación de Zonas y Atributos<br />
+                                  • Módulo IP150+: Conexión vía protocolo Swan y reporte Contact ID
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* ACCIONES DE CLAUDIO (LEGAL OS-10 VIRTUAL) */}
+                    {empleadoActivo.id === 'legal_os10' && (
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between border-b border-slate-800 pb-1.5">
+                          <span className="font-bold text-amber-400 flex items-center gap-1.5">
+                            <ShieldCheck className="h-3.5 w-3.5" />
+                            <span>Carpeta OS-10 Oficina Virtual</span>
+                          </span>
+                          <span className="text-[10px] font-mono text-emerald-400">Ley 21.659</span>
+                        </div>
+
+                        <div className="p-2.5 bg-slate-950 border border-slate-800 rounded-xl space-y-2 text-[11px]">
+                          <div className="font-bold text-white">Estrategia Normativa:</div>
+                          <p className="text-slate-300 text-[10px] leading-relaxed">
+                            Fundamentación legal para acreditar la Central Receptora bajo modalidad Cloud / Oficina Virtual, respaldando la supervisión y trazabilidad digital sin exigencia de dependencias físicas ociosas.
+                          </p>
+                          <div className="bg-amber-950/40 p-2 rounded-lg border border-amber-800/40 text-[10px] text-amber-200">
+                            ✓ Directiva de Funcionamiento adaptada a centros de cómputo en la nube conforme al nuevo marco de la Subsecretaría de Prevención del Delito.
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Otros empleados */}
+                    {['gerencia_general', 'ia_lead', 'ia_software', 'ia_datos', 'ia_compras', 'comercial_cuentas'].includes(empleadoActivo.id) && (
+                      <div className="p-3 bg-slate-950 border border-slate-800 rounded-xl space-y-2">
+                        <span className="font-bold text-slate-300 block">Especialidad de {empleadoActivo.apodo}:</span>
+                        <p className="text-[11px] text-slate-400 leading-relaxed">
+                          {empleadoActivo.misionPrincipal}
+                        </p>
+                      </div>
+                    )}
+
+                  </div>
+                )}
+
+                {/* VISTA 3: Perfil LinkedIn & Benchmarks */}
                 {subPestañaLateral === 'linkedin' && (
                   <div className="bg-slate-900/90 border border-slate-800 p-3 rounded-xl space-y-3 text-xs">
                     
-                    {/* Trayectoria */}
                     <div className="space-y-1">
                       <span className="text-[10px] font-mono font-bold text-cyan-400 uppercase tracking-wider flex items-center gap-1">
                         <Briefcase className="h-3 w-3" />
@@ -1923,7 +2053,6 @@ export default function OrganigramaModule() {
                       </p>
                     </div>
 
-                    {/* Certificaciones de Prestigio */}
                     <div className="space-y-1.5">
                       <span className="text-[10px] font-mono font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1">
                         <GraduationCap className="h-3 w-3" />
@@ -1939,11 +2068,10 @@ export default function OrganigramaModule() {
                       </div>
                     </div>
 
-                    {/* Hard Skills */}
                     <div className="space-y-1">
                       <span className="text-[10px] font-mono font-bold text-blue-400 uppercase tracking-wider flex items-center gap-1">
                         <Target className="h-3 w-3" />
-                        <span>Hard Skills (Competencias Técnicas Clave):</span>
+                        <span>Hard Skills:</span>
                       </span>
                       <div className="flex flex-wrap gap-1">
                         {empleadoActivo.hardSkills.map((hs, i) => (
@@ -1954,7 +2082,6 @@ export default function OrganigramaModule() {
                       </div>
                     </div>
 
-                    {/* Soft Skills */}
                     <div className="space-y-1">
                       <span className="text-[10px] font-mono font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1">
                         <Star className="h-3 w-3" />
@@ -1972,7 +2099,7 @@ export default function OrganigramaModule() {
                   </div>
                 )}
 
-                {/* VISTA C: Chat Directo e Interactivo */}
+                {/* VISTA 4: Chat Directo e Interactivo */}
                 {subPestañaLateral === 'chat' && (
                   <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-3 space-y-2">
                     <div className="flex items-center justify-between text-[10px] border-b border-slate-800 pb-1">
@@ -1994,7 +2121,7 @@ export default function OrganigramaModule() {
                           }`}
                         >
                           <div className="flex justify-between items-center text-[9px] text-slate-400 mb-0.5 font-mono">
-                            <span>{msg.autor === 'usuario' ? 'Don Tomás' : empleadoActivo.apodo}</span>
+                            <span>{msg.autor === 'usuario' ? 'Tomás' : empleadoActivo.apodo}</span>
                             <span>{msg.hora}</span>
                           </div>
                           <p className="whitespace-pre-wrap">{msg.mensaje}</p>
@@ -2008,7 +2135,7 @@ export default function OrganigramaModule() {
                         value={mensajeInput}
                         onChange={e => setMensajeInput(e.target.value)}
                         onKeyDown={e => e.key === 'Enter' && handleEnviarMensaje()}
-                        placeholder={`Dar orden o consultar a ${empleadoActivo.apodo}...`}
+                        placeholder={`Instrucción o consulta a ${empleadoActivo.apodo}...`}
                         className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-2.5 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#2997ff]"
                       />
                       <button
@@ -2022,13 +2149,13 @@ export default function OrganigramaModule() {
                   </div>
                 )}
 
-                {/* Botón directo a editar entrenamiento */}
+                {/* Botón directo a editar calibración */}
                 <button
                   onClick={() => setPestañaActiva('entrenamiento')}
                   className="w-full py-2 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
                 >
                   <BrainCircuit className="h-4 w-4" />
-                  <span>Editar Atribuciones & Habilidades de {empleadoActivo.apodo}</span>
+                  <span>Calibrar Habilidades & Prompts de {empleadoActivo.apodo}</span>
                 </button>
               </div>
 
@@ -2050,9 +2177,8 @@ export default function OrganigramaModule() {
 
       {/* ── CONTENIDO: EDITOR DE ENTRENAMIENTO & LÓGICA EMPRESARIAL ── */}
       {pestañaActiva === 'entrenamiento' && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 min-h-0 flex-1 overflow-y-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 min-h-0 flex-1 overflow-y-auto p-4">
           
-          {/* Selector de Empleado (4 COLS) */}
           <div className="lg:col-span-4 space-y-2">
             <span className="text-[11px] font-black text-slate-400 uppercase tracking-wider block mb-2">Selecciona Empleado a Calibrar:</span>
             <div className="space-y-1.5 max-h-[600px] overflow-y-auto pr-1">
@@ -2081,7 +2207,6 @@ export default function OrganigramaModule() {
             </div>
           </div>
 
-          {/* Formulario de Entrenamiento & Atribuciones (8 COLS) */}
           <div className="lg:col-span-8 bg-slate-900/90 border border-slate-800 rounded-2xl p-6 space-y-5 shadow-xl">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <div className="flex items-center gap-3">
@@ -2108,7 +2233,7 @@ export default function OrganigramaModule() {
               </div>
 
               <div>
-                <label className="block font-bold text-slate-300 mb-1">Trayectoria LinkedIn & Experiencia de Élite:</label>
+                <label className="block font-bold text-slate-300 mb-1">Trayectoria & Experiencia:</label>
                 <textarea
                   name="trayectoria"
                   defaultValue={empleadoActivo.trayectoriaLinkedIn}
@@ -2193,7 +2318,7 @@ export default function OrganigramaModule() {
 
       {/* ── CONTENIDO: VISTA DE ORGANIGRAMA JERÁRQUICO ── */}
       {pestañaActiva === 'organigrama' && (
-        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-xl flex-1 overflow-y-auto space-y-8">
+        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-xl flex-1 overflow-y-auto space-y-8 m-4">
           <div className="text-center space-y-1">
             <span className="text-[10px] font-mono text-emerald-400 font-bold uppercase tracking-widest">
               ESTRUCTURA DE MANDO CORPORATIVO
@@ -2202,7 +2327,6 @@ export default function OrganigramaModule() {
             <p className="text-xs text-slate-400">Jerarquía directiva, áreas operativas y líneas de reporte 24/7</p>
           </div>
 
-          {/* Nivel 1: Gerencia General */}
           <div className="flex justify-center">
             <div
               onClick={() => {
@@ -2212,18 +2336,16 @@ export default function OrganigramaModule() {
               className="bg-blue-950 border-2 border-blue-500/80 rounded-2xl p-4 w-72 text-center shadow-xl cursor-pointer hover:scale-105 transition hover:shadow-blue-900/50"
             >
               <div className="text-3xl mb-1">👔</div>
-              <h4 className="font-black text-white text-sm">Don Tomás Toro-Moreno</h4>
+              <h4 className="font-black text-white text-sm">Tomás Toro-Moreno</h4>
               <p className="text-xs font-bold text-[#38bdf8]">Gerente General & CEO</p>
               <span className="inline-block mt-2 bg-blue-900 text-blue-200 text-[10px] font-mono px-2 py-0.5 rounded-full">
-                Mando Supremo
+                Liderazgo y Fundador
               </span>
             </div>
           </div>
 
-          {/* Línea conectora */}
           <div className="w-0.5 h-6 bg-slate-700 mx-auto" />
 
-          {/* Nivel 2: Asesoría Legal y DPO */}
           <div className="flex justify-center gap-6 flex-wrap">
             <div
               onClick={() => {
@@ -2256,13 +2378,10 @@ export default function OrganigramaModule() {
             </div>
           </div>
 
-          {/* Línea conectora */}
           <div className="w-0.5 h-6 bg-slate-700 mx-auto" />
 
-          {/* Nivel 3: Áreas Operativas, Comerciales y Tecnológicas */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             
-            {/* Rama Operaciones */}
             <div className="space-y-3 bg-slate-950 p-4 rounded-2xl border border-slate-800">
               <div className="flex items-center gap-2 text-xs font-bold text-blue-400 border-b border-slate-800 pb-2">
                 <Radio className="h-4 w-4" />
@@ -2288,7 +2407,7 @@ export default function OrganigramaModule() {
                   <span className="text-xl">🔧</span>
                   <div>
                     <h5 className="font-bold text-white text-xs">Ignacio Riquelme</h5>
-                    <p className="text-[10px] text-slate-400">Supervisor Técnico Terreno</p>
+                    <p className="text-[10px] text-slate-400">Rector Técnico Virtual</p>
                   </div>
                 </div>
               </div>
@@ -2306,11 +2425,10 @@ export default function OrganigramaModule() {
               </div>
             </div>
 
-            {/* Rama Comercial */}
             <div className="space-y-3 bg-slate-950 p-4 rounded-2xl border border-slate-800">
               <div className="flex items-center gap-2 text-xs font-bold text-emerald-400 border-b border-slate-800 pb-2">
                 <TrendingUp className="h-4 w-4" />
-                <span>Área Comercial & Licitaciones</span>
+                <span>Área Comercial & Marketing</span>
               </div>
               <div
                 onClick={() => { setEmpleadoSeleccionadoId('comercial_jefa'); setPestañaActiva('juego_oficina') }}
@@ -2320,7 +2438,7 @@ export default function OrganigramaModule() {
                   <span className="text-xl">💼</span>
                   <div>
                     <h5 className="font-bold text-white text-xs">Valentina Lagos</h5>
-                    <p className="text-[10px] text-slate-400">Gerente Comercial</p>
+                    <p className="text-[10px] text-slate-400">Gerente Comercial & Mkt</p>
                   </div>
                 </div>
               </div>
@@ -2338,7 +2456,6 @@ export default function OrganigramaModule() {
               </div>
             </div>
 
-            {/* Rama IA y Software */}
             <div className="space-y-3 bg-slate-950 p-4 rounded-2xl border border-slate-800">
               <div className="flex items-center gap-2 text-xs font-bold text-purple-400 border-b border-slate-800 pb-2">
                 <Cpu className="h-4 w-4" />
@@ -2370,52 +2487,6 @@ export default function OrganigramaModule() {
               </div>
             </div>
 
-          </div>
-        </div>
-      )}
-
-      {/* ── MODAL DE REUNIÓN DE DIRECTORIO (MEMORÁNDUM EJECUTIVO) ── */}
-      {mostrarMemorandumDirectorio && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-700 rounded-3xl p-6 sm:p-8 max-w-lg w-full space-y-4 shadow-2xl animate-in zoom-in-95">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <div className="flex items-center gap-2">
-                <span className="text-2xl">🏛️</span>
-                <div>
-                  <h3 className="font-black text-white text-base">Reunión Extraordinaria de Directorio</h3>
-                  <p className="text-[11px] text-slate-400 font-mono">Gama Seguridad SpA • Sala de Consenso</p>
-                </div>
-              </div>
-              <button
-                onClick={() => setMostrarMemorandumDirectorio(false)}
-                className="p-1 text-slate-400 hover:text-white cursor-pointer"
-              >
-                ✕
-              </button>
-            </div>
-
-            <p className="text-xs text-slate-300 leading-relaxed">
-              Todos los 10 empleados IA han tomado sus asientos en la Sala de Directorio para alinear prioridades estratégicas, cumplimiento normativo OS-10 y proyección comercial del trimestre.
-            </p>
-
-            <div className="bg-slate-950 p-3.5 rounded-2xl border border-slate-800 space-y-2 text-xs">
-              <span className="text-[10px] font-mono font-bold text-amber-400 uppercase">Puntos de la Tabla en Discusión:</span>
-              <div className="space-y-1 text-[11px] text-slate-300">
-                <div>1. Expansión a 1.500 abonados bajo el modelo RMR.</div>
-                <div>2. Cero tolerancia en acreditación técnica OS10 ante Carabineros.</div>
-                <div>3. Adjudicación de licitaciones públicas de cámaras y alarmas.</div>
-                <div>4. Automatización total de la verificación por video con IA.</div>
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-2 pt-2">
-              <button
-                onClick={() => setMostrarMemorandumDirectorio(false)}
-                className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold cursor-pointer transition shadow-md"
-              >
-                Supervisar Reunión en la Oficina
-              </button>
-            </div>
           </div>
         </div>
       )}
