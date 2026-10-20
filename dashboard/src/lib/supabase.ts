@@ -78,7 +78,8 @@ export async function getWhatsAppServerUrl(): Promise<string> {
 
 /**
  * Deduplica eventos idénticos emitidos en paralelo por las dos fuentes de Scorpion (MySQL + MDB)
- * o por ráfagas repetidas del panel de alarma.
+ * Conserva el 100% de eventos legítimos consecutivos (re-disparos, aperturas, cierres).
+ * Solo fusiona ecos idénticos que lleguen en la misma ventana de 3 segundos.
  */
 export function deduplicarEventos<T extends Partial<EventoMonitoreo>>(lista: T[]): T[] {
   const vistos = new Map<string, T>()
@@ -87,8 +88,8 @@ export function deduplicarEventos<T extends Partial<EventoMonitoreo>>(lista: T[]
     if ((ev.evento || '').toUpperCase().trim() === 'PREMIUM') continue
 
     const ts = new Date(ev.fecha_hora).getTime()
-    // Ventana de 35 segundos para descartar duplicados paralelos
-    const timeBucket = Math.round(ts / 35000)
+    // Ventana ultra-precisa de 3 segundos solo para descartar duplicados de red simultáneos
+    const timeBucket = Math.round(ts / 3000)
     const c = (ev.cuenta || '').trim().toUpperCase()
     const e = (ev.evento || '').trim().toUpperCase()
     const z = (ev.zona || '').trim().toUpperCase()

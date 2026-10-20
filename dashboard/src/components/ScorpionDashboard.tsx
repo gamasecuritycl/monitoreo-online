@@ -37,6 +37,7 @@ import WhatsAppNotificationToast from './WhatsAppNotificationToast'
 import { lookupContactId } from '@/lib/contact_id_library'
 import { sendMessage, generarMensajeAlerta, generarMensajeEnergia, detectarPatronEvento, type EventInfo } from '@/lib/whatsapp'
 import { Operator, ensureUserAttributes, OPERADORES_PREDETERMINADOS } from '@/types/operator'
+import { getAccountAliases } from '@/lib/alias_cuentas'
 
 // Base de datos de clientes precargada de GENERAL.MDB
 import clientesDataRaw from '@/lib/clientes_general.json'
@@ -590,11 +591,8 @@ export default function ScorpionDashboard() {
     // Descartar 100% cualquier registro de chatbot, prospectos o configuración para que nunca aparezca en la grilla operativa
     if (c.startsWith('LEAD') || c.includes('BOT') || c.startsWith('CFG-') || c === 'WEB-PROSPECTO' || e.includes('BOT') || e.startsWith('LEAD_') || e.startsWith('ESTADO_') || e === 'PROSPECTO_WEB_LANDING') return true
 
-    // Descartar abonados genéricos ajenos a Gama Seguridad
-    if (n.startsWith('ABONADO ') && Object.keys(clientesMap).length > 0) {
-      const existe = Boolean(clientesMap[c] || clientesMap[c.padStart(4, '0')] || clientesMap[c.replace(/^0+/, '')])
-      if (!existe) return true
-    }
+    // NUNCA descartar abonados genéricos legítimos que emitan señales operativas o alarmas
+    if (!c || c.length < 3) return true
 
     return false
   }
@@ -619,9 +617,13 @@ export default function ScorpionDashboard() {
     const vistos = new Map<string, EventoMonitoreo>()
     for (const ev of lista) {
       const ts = parseEventoTimestamp(ev.fecha_hora)
-      // Agrupar en ventana de 45 segundos para descartar duplicados paralelos (MySQL + MDB)
-      const timeBucket = Math.round(ts / 45000)
-      const key = `${(ev.cuenta || '').trim().toUpperCase()}_${(ev.evento || '').trim().toUpperCase()}_${timeBucket}`
+      // Ventana de 3 segundos incluyendo ZONA y USUARIO para NUNCA descartar re-disparos ni señales reales
+      const timeBucket = Math.round(ts / 3000)
+      const c = (ev.cuenta || '').trim().toUpperCase()
+      const e = (ev.evento || '').trim().toUpperCase()
+      const z = (ev.zona || '').trim().toUpperCase()
+      const u = (ev.usuario || '').trim().toUpperCase()
+      const key = `${c}_${e}_${z}_${u}_${timeBucket}`
       
       const existing = vistos.get(key)
       if (!existing) {
@@ -657,7 +659,13 @@ export default function ScorpionDashboard() {
         .limit(300)
 
       if (busqueda.trim()) {
-        query = query.or(`cuenta.ilike.%${busqueda}%,nombre_abonado.ilike.%${busqueda}%`)
+        const aliases = getAccountAliases(busqueda.trim())
+        const orClauses = [
+          `cuenta.ilike.%${busqueda}%`,
+          `nombre_abonado.ilike.%${busqueda}%`,
+          ...aliases.map(a => `cuenta.eq.${a}`)
+        ].join(',')
+        query = query.or(orClauses)
       }
 
       const { data, error } = await query
@@ -721,11 +729,13 @@ export default function ScorpionDashboard() {
         if (currentSig === lastSig && !busqueda.trim()) return
         lastSig = currentSig
 
+        const aliasesBusqueda = new Set(getAccountAliases(busqueda.trim()).map(a => a.toLowerCase()))
         const filtered = busqueda.trim()
-          ? data.filter(e =>
-              e.cuenta?.toLowerCase().includes(busqueda.toLowerCase()) ||
-              e.nombre_abonado?.toLowerCase().includes(busqueda.toLowerCase())
-            )
+          ? data.filter(e => {
+              const c = (e.cuenta || '').toLowerCase().trim()
+              const n = (e.nombre_abonado || '').toLowerCase().trim()
+              return aliasesBusqueda.has(c) || c.includes(busqueda.toLowerCase()) || n.includes(busqueda.toLowerCase())
+            })
           : data
 
         const limpios = filtered.filter(ev => !esCuentaInternaOFrame(ev.cuenta, ev.evento, ev.nombre_abonado))

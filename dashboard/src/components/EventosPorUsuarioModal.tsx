@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useMemo } from 'react'
 import type { EventoMonitoreo } from '@/lib/supabase'
 import { supabase, deduplicarEventos } from '@/lib/supabase'
 import { getSenalLegible } from './EventRow'
+import { getAccountAliases } from '@/lib/alias_cuentas'
 
 // Base de datos de fallback de clientes
 import clientesDataRaw from '@/lib/clientes_general.json'
@@ -113,13 +114,12 @@ export default function EventosPorUsuarioModal({ onClose, eventoInicial }: Event
       if (!cuentaActiva) return
       setLoading(true)
       try {
-        // Consultar los últimos 1000 eventos de esta cuenta en Supabase (insensible a mayúsculas/minúsculas)
-        const ctaUpper = cuentaActiva.toUpperCase().trim()
-        const ctaLower = cuentaActiva.toLowerCase().trim()
+        // Consultar los últimos 1000 eventos de esta cuenta y todos sus alias en Supabase
+        const aliases = getAccountAliases(cuentaActiva)
         const { data, error } = await supabase
           .from('eventos_monitoreo')
           .select('*')
-          .or(`cuenta.eq.${ctaUpper},cuenta.eq.${ctaLower}`)
+          .in('cuenta', aliases)
           .order('fecha_hora', { ascending: false })
           .limit(1000)
 
@@ -179,8 +179,9 @@ export default function EventosPorUsuarioModal({ onClose, eventoInicial }: Event
         (payload) => {
           const nuevo = payload.new as EventoMonitoreo
           if (!nuevo || !nuevo.fecha_hora) return
-          // Validación robusta para cualquier abonado sin importar mayúsculas o minúsculas
-          if ((nuevo.cuenta || '').toUpperCase().trim() !== ctaUpper) return
+          // Validación robusta para la cuenta activa y cualquiera de sus alias
+          const aliasesSet = new Set(getAccountAliases(cuentaActiva).map(a => a.toUpperCase()))
+          if (!aliasesSet.has((nuevo.cuenta || '').toUpperCase().trim())) return
 
           setTodosEventosAbonado(prev => {
             const combinados = deduplicarEventos([nuevo, ...prev])
@@ -222,15 +223,14 @@ export default function EventosPorUsuarioModal({ onClose, eventoInicial }: Event
       let cancelado = false
       const buscarEnSupabase = async () => {
         try {
-          const ctaUpper = cuentaActiva.toUpperCase().trim()
-          const ctaLower = cuentaActiva.toLowerCase().trim()
+          const aliases = getAccountAliases(cuentaActiva)
           const prevDay = new Date(new Date(`${diaSeleccionado}T12:00:00Z`).getTime() - 86400000).toISOString().slice(0, 10)
           const nextDay = new Date(new Date(`${diaSeleccionado}T12:00:00Z`).getTime() + 86400000).toISOString().slice(0, 10)
           
           const { data } = await supabase
             .from('eventos_monitoreo')
             .select('*')
-            .or(`cuenta.eq.${ctaUpper},cuenta.eq.${ctaLower}`)
+            .in('cuenta', aliases)
             .gte('fecha_hora', `${prevDay}T20:00:00Z`)
             .lte('fecha_hora', `${nextDay}T05:00:00Z`)
             .order('fecha_hora', { ascending: true })
@@ -277,18 +277,21 @@ export default function EventosPorUsuarioModal({ onClose, eventoInicial }: Event
     }, 100)
   }, [])
 
-  // Buscar cliente activo en la base de datos (tolerante a mayúsculas/minúsculas)
-  const ctaUpper = cuentaActiva.toUpperCase().trim()
-  const ctaLower = cuentaActiva.toLowerCase().trim()
-  const clienteActivo = clientesMap[ctaUpper] || 
-    clientesMap[ctaLower] || 
-    clientesMap[cuentaActiva] || 
-    clientesGeneralFallback[ctaUpper] || 
-    clientesGeneralFallback[ctaLower] || 
-    clientesGeneralFallback[cuentaActiva] || {
+  // Buscar cliente activo en la base de datos (tolerante a alias y mayúsculas/minúsculas)
+  const allAliases = getAccountAliases(cuentaActiva)
+  let clienteActivo: any = null
+  for (const a of allAliases) {
+    if (clientesMap[a] || clientesGeneralFallback[a]) {
+      clienteActivo = clientesMap[a] || clientesGeneralFallback[a]
+      break
+    }
+  }
+  if (!clienteActivo) {
+    clienteActivo = {
       cuenta: cuentaActiva,
       nombre: eventoInicial?.nombre_abonado || 'SIN NOMBRE REGISTRADO'
     }
+  }
 
   const SYSTEM_ACCOUNTS = new Set([
     'CLIENTES', 'CODIGOS', 'ZONAS', '__SINCRONIZADOR__', 'CONFIG_OPERADORES', 

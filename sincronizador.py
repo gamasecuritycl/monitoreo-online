@@ -114,6 +114,7 @@ HEARTBEAT_ROW_ID = 1492786
 LAST_UPDATE_CHECK = 0
 CLIENTES_LOCAL_MAP = {}
 CODIGOS_LOCAL_MAP = {}
+ALIAS_LOCAL_MAP = {}
 PASSWORDS_PROBAR_MDB = ['Administ', 'SCORPION7', 'SCORPION29', 'SCORPION23', '', 'scorpion', 'SCORPION', 'SCORPION2026', 'admin', 'ADMIN']
 MDB_PASSWORD_CACHE = {}
 MDB_FILE_STATE = {}
@@ -162,6 +163,7 @@ SIA_MAP = {
     # Tests / Supervisión / Sistema
     'RP': 'AUTOTEST', 'RX': 'AUTOTEST MANUAL', 'RY': 'AUTOTEST', 'TX': 'AUTOTEST',
     'TS': 'INICIO DE TEST', 'TE': 'FIN DE TEST', 'TW': 'TEST DE CAMINATA',
+    'YA': 'FALLA DE COMUNICADOR', 'YH': 'RESTABLECIMIENTO COMUNICADOR',
     'ZZ': 'IDENTIFICADOR DE PANEL'
 }
 
@@ -169,6 +171,7 @@ SIA_MAP = {
 CID_FALLBACK_MAP = {
     'E100': 'ALARMA MEDICA', 'R100': 'RESTABLECIMIENTO MEDICO',
     'E110': 'ALARMA DE FUEGO', 'R110': 'RESTABLECIMIENTO FUEGO',
+    'E115': 'ALARMA DE EXTINCION / AGUA', 'R115': 'RESTABLECIMIENTO EXTINCION',
     'E120': 'ALARMA DE PANICO', 'R120': 'RESTABLECIMIENTO PANICO',
     'E121': 'PANICO BAJO COACCION', 'R121': 'RESTABLECIMIENTO COACCION',
     'E122': 'PANICO SILENCIOSO / ASALTO', 'R122': 'RESTABLECIMIENTO ASALTO',
@@ -178,17 +181,33 @@ CID_FALLBACK_MAP = {
     'E137': 'TAMPER / SABOTAJE', 'R137': 'RESTABLECIMIENTO TAMPER',
     'E301': 'FALLA DE CORRIENTE ALTERNA', 'R301': 'RESTABLECIMIENTO AC',
     'E302': 'BATERIA BAJA', 'R302': 'RESTABLECIMIENTO BATERIA',
+    'E315': 'TEST PERIODICO DE COMUNICACION', 'R315': 'RESTABLECIMIENTO TEST COMUNICACION',
+    'E321': 'FALLA DE SIRENA 1', 'R321': 'RESTABLECIMIENTO SIRENA 1',
+    'E330': 'FALLA PERIFERICO DEL SISTEMA', 'R330': 'RESTABLECIMIENTO PERIFERICO',
+    'E344': 'FALLA DETECCION RF / INALAMBRICO', 'R344': 'RESTABLECIMIENTO RF',
     'E351': 'FALLA LINEA TELEFONICA', 'R351': 'RESTABLECIMIENTO TELEFONICO',
+    'E380': 'FALLA DE PROBLEMA EN ZONA', 'R380': 'RESTABLECIMIENTO PROBLEMA EN ZONA',
+    'E381': 'SUPERVISION DE ZONA FALLIDA', 'R381': 'RESTABLECIMIENTO SUPERVISION',
+    'E383': 'TAMPER SENSOR INALAMBRICO', 'R383': 'RESTABLECIMIENTO TAMPER INALAMBRICO',
+    'E384': 'BATERIA BAJA SENSOR RF', 'R384': 'RESTABLECIMIENTO BATERIA SENSOR',
     'E400': 'APERTURA / CIERRE', 'R400': 'CIERRE ESPECIAL',
     'E401': 'APERTURA', 'R401': 'CIERRE',
     'E402': 'APERTURA DE GRUPO', 'R402': 'CIERRE DE GRUPO',
+    'E403': 'ARME AUTOMATICO PROGRAMADO', 'R403': 'DESARME AUTOMATICO PROGRAMADO',
+    'E404': 'DESARME TARDIO', 'R404': 'CIERRE TARDIO',
     'E406': 'APERTURA TRAS ALARMA',
     'E407': 'ARME/DESARME REMOTO', 'R407': 'CIERRE REMOTO',
     'E408': 'ARME RAPIDO', 'R408': 'CIERRE RAPIDO',
     'E409': 'APERTURA CON LLAVE', 'R409': 'CIERRE CON LLAVE',
+    'E456': 'FALLA DE ARMADO CONDICIONAL', 'R456': 'ARMADO TRAS CONDICIONAL',
+    'E459': 'ARME RECIENTE',
     'E530': 'FALLA COBERTURA INALAMBRICA', 'R530': 'RESTABLECIMIENTO COBERTURA',
     'E570': 'ANULACION DE ZONA (BYPASS)', 'R570': 'DESANULACION DE ZONA',
+    'E601': 'TEST MANUAL',
     'E602': 'AUTOTEST', 'R602': 'AUTOTEST OK',
+    'E625': 'HORA / FECHA REINICIADA',
+    'E627': 'ACCESO A PROGRAMACION TECNICA',
+    'R628': 'FIN DE PROGRAMACION TECNICA',
 }
 
 def get_chile_offset_info():
@@ -281,9 +300,36 @@ def parse_fecha_hora(dia_val, hora_val, chile_tz, add_hours=0):
 
     return f"{base_dt.year:04d}-{base_dt.month:02d}-{base_dt.day:02d}T{base_dt.hour:02d}:{base_dt.minute:02d}:{base_dt.second:02d}{chile_tz}"
 
+def normalize_iso_to_utc(iso_str: str) -> str:
+    """
+    Convierte cualquier timestamp ISO (con offset -03:00, -04:00, +00:00 o Z)
+    a una representación UTC canónica estándar (YYYY-MM-DDTHH:MM:SS),
+    eliminando discrepancias entre inserts locales y lecturas de Supabase.
+    """
+    if not iso_str: return ""
+    try:
+        s = str(iso_str).strip().replace('Z', '+00:00')
+        if not ('+' in s[10:] or '-' in s[10:]):
+            chile_tz, _ = get_chile_offset_info()
+            s += chile_tz
+        dt = datetime.fromisoformat(s)
+        dt_utc = dt.astimezone(timezone.utc)
+        return dt_utc.strftime("%Y-%m-%dT%H:%M:%S")
+    except Exception:
+        return str(iso_str).strip()[:19]
+
+def make_event_cache_key(fecha_hora: str, cuenta: str, evento: str, zona: str, usuario: str) -> str:
+    """ Genera una clave única indestructible normalizada en UTC para el set de deduplicación """
+    norm_fh = normalize_iso_to_utc(fecha_hora)
+    c = str(cuenta).strip().upper()
+    e = str(evento).strip().upper()
+    z = str(zona).strip()
+    u = str(usuario).strip()
+    return f"{norm_fh}_{c}_{e}_{z}_{u}"
+
 def load_maestros():
-    """ Carga mapa de clientes y códigos para resolver nombres en vivo """
-    global CLIENTES_LOCAL_MAP, CODIGOS_LOCAL_MAP
+    """ Carga mapa de clientes, códigos y alias para resolver nombres en vivo """
+    global CLIENTES_LOCAL_MAP, CODIGOS_LOCAL_MAP, ALIAS_LOCAL_MAP
     candidate_json = [
         os.path.join(root_dir, "dashboard", "src", "lib", "clientes_general.json"),
         os.path.join(script_dir, "clientes_general.json")
@@ -293,6 +339,19 @@ def load_maestros():
             try:
                 with open(cj, 'r', encoding='utf-8') as f:
                     CLIENTES_LOCAL_MAP = json.load(f)
+                break
+            except Exception: pass
+
+    candidate_alias = [
+        os.path.join(script_dir, "alias_cuentas.json"),
+        os.path.join(root_dir, "alias_cuentas.json"),
+        os.path.join(root_dir, "dashboard", "src", "lib", "alias_cuentas.json")
+    ]
+    for ca in candidate_alias:
+        if os.path.exists(ca):
+            try:
+                with open(ca, 'r', encoding='utf-8') as f:
+                    ALIAS_LOCAL_MAP = json.load(f)
                 break
             except Exception: pass
 
@@ -311,6 +370,51 @@ def load_maestros():
             if db_co:
                 CODIGOS_LOCAL_MAP = db_co
     except Exception: pass
+
+def get_nombre_cliente_con_alias(cuenta: str) -> str:
+    """
+    Resuelve el nombre del abonado utilizando búsqueda directa y enlaces cruzados de alias
+    (ej: C7B4 <-> 0003, C753 <-> 0009). Si no existe en el maestro, retorna ABONADO {cuenta}.
+    """
+    if not cuenta:
+        return "ABONADO DESCONOCIDO"
+    c = str(cuenta).strip().upper()
+
+    def extraer_nombre(obj):
+        if not obj: return ""
+        n = obj.get('nombre', '') if isinstance(obj, dict) else str(obj)
+        n = n.strip()
+        if n and not n.upper().startswith("ABONADO "):
+            return n
+        return ""
+
+    # 1. Búsqueda directa por cuenta original y minúsculas
+    n_dir = extraer_nombre(CLIENTES_LOCAL_MAP.get(c)) or extraer_nombre(CLIENTES_LOCAL_MAP.get(c.lower()))
+    if n_dir:
+        return n_dir
+
+    # 2. Búsqueda con padding de 4 ceros o sin ceros a la izquierda
+    c_pad = c.zfill(4)
+    c_ltrim = c.lstrip('0') or '0'
+    for c_var in [c_pad, c_ltrim]:
+        n_var = extraer_nombre(CLIENTES_LOCAL_MAP.get(c_var)) or extraer_nombre(CLIENTES_LOCAL_MAP.get(c_var.lower()))
+        if n_var:
+            return n_var
+
+    # 3. Búsqueda a través de alias bidireccionales (C7 <-> Numérica)
+    aliases = ALIAS_LOCAL_MAP.get(c, []) or ALIAS_LOCAL_MAP.get(c_pad, []) or ALIAS_LOCAL_MAP.get(c_ltrim, [])
+    for al in aliases:
+        al_clean = str(al).strip().upper()
+        if al_clean != c:
+            n_al = extraer_nombre(CLIENTES_LOCAL_MAP.get(al_clean)) or extraer_nombre(CLIENTES_LOCAL_MAP.get(al_clean.lower()))
+            if n_al:
+                return n_al
+            al_pad = al_clean.zfill(4)
+            n_alpad = extraer_nombre(CLIENTES_LOCAL_MAP.get(al_pad))
+            if n_alpad:
+                return n_alpad
+
+    return f"ABONADO {c}"
 
 def traducir_codigo_evento(raw_code: str) -> str:
     """ Traduce cualquier código SIA o Contact ID crudo a español legible """
@@ -450,7 +554,7 @@ def load_cache():
     cache_set = set()
     try:
         res = requests.get(
-            f"{SUPABASE_URL}/rest/v1/eventos_monitoreo?select=fecha_hora,cuenta,evento,zona,usuario&cuenta=not.in.(CLIENTES,CODIGOS,ZONAS,__SINCRONIZADOR__,CONFIG_OPERADORES)&order=id.desc&limit=500",
+            f"{SUPABASE_URL}/rest/v1/eventos_monitoreo?select=fecha_hora,cuenta,evento,zona,usuario&cuenta=not.in.(CLIENTES,CODIGOS,ZONAS,__SINCRONIZADOR__,CONFIG_OPERADORES)&order=id.desc&limit=2000",
             headers=HEADERS_SUPABASE,
             timeout=15
         )
@@ -461,9 +565,9 @@ def load_cache():
                 ev = str(item.get("evento", "")).strip()
                 zn = str(item.get("zona", "")).strip()
                 us = str(item.get("usuario", "")).strip()
-                key = f"{fh}_{cu}_{ev}_{zn}_{us}"
+                key = make_event_cache_key(fh, cu, ev, zn, us)
                 cache_set.add(key)
-            print(f"[CACHE SUPABASE] {len(cache_set)} claves reales cargadas.")
+            print(f"[CACHE SUPABASE] {len(cache_set)} claves reales normalizadas UTC cargadas.")
     except Exception as e:
         print(f"[CACHE SUPABASE WARN] {e}")
 
@@ -625,20 +729,19 @@ def sincronizar_desde_mysql(cache):
             h_part = f_tokens[1] if len(f_tokens) > 1 else ""
             fecha_hora = parse_fecha_hora(d_part, h_part, chile_tz, add_hours=mysql_diff_hours)
 
-            # Jamás descartar ninguna señal desde el 01/08/2026; ignorar fechas viejas previas para cuidar almacenamiento
+            # Regla de retención: Solo procesar señales de los últimos 90 días (3 meses)
             try:
                 ev_clean = fecha_hora.split('T')[0]
                 ev_parts = [int(p) for p in ev_clean.split('-')]
                 ev_date = datetime(ev_parts[0], ev_parts[1], ev_parts[2])
-                if ev_date < datetime(2026, 8, 1):
+                cutoff_90d = datetime.now() - timedelta(days=90)
+                if ev_date < cutoff_90d or ev_date > datetime.now() + timedelta(days=1):
                     continue
             except Exception: pass
 
-            nombre_abonado = CLIENTES_LOCAL_MAP.get(cuenta, {}).get('nombre', '') if isinstance(CLIENTES_LOCAL_MAP.get(cuenta), dict) else str(CLIENTES_LOCAL_MAP.get(cuenta) or '')
-            if not nombre_abonado:
-                nombre_abonado = f"ABONADO {cuenta}"
+            nombre_abonado = get_nombre_cliente_con_alias(cuenta)
 
-            event_key = f"{fecha_hora}_{cuenta}_{evento}_{zona}_{usuario}"
+            event_key = make_event_cache_key(fecha_hora, cuenta, evento, zona, usuario)
             if event_key in cache or event_key in batch_keys:
                 continue
 
@@ -693,9 +796,10 @@ def sincronizar_desde_mysql(cache):
 
 # ── FUENTE 2: Archivos MDB locales de Scorpion ─────────────────────
 def get_archivos_mdb_activos():
-    """ Retorna todos los archivos MDB de eventos desde el 01/08/2026 en adelante, ordenados del más reciente al más antiguo """
+    """ Retorna todos los archivos MDB de eventos dentro de la ventana de 90 días, ordenados del más reciente al más antiguo """
     archivos = []
     rutas_procesadas = set()
+    cutoff_90d = datetime.now() - timedelta(days=90)
 
     for ruta in rutas_unicas_mdb:
         if os.path.exists(ruta):
@@ -711,12 +815,12 @@ def get_archivos_mdb_activos():
                         if full_path.lower() in rutas_procesadas:
                             continue
                         
-                        # Si el nombre del archivo contiene fecha YYYY-MM-DD, verificar que no sea anterior al 01/08/2026
+                        # Si el nombre del archivo contiene fecha YYYY-MM-DD, verificar que no sea anterior a 90 días
                         m_date = re.search(r'(\d{4})-(\d{2})-(\d{2})', f)
                         if m_date:
                             try:
                                 f_date = datetime(int(m_date.group(1)), int(m_date.group(2)), int(m_date.group(3)))
-                                if f_date < datetime(2026, 8, 1):
+                                if f_date < cutoff_90d:
                                     continue
                             except Exception: pass
                         
@@ -848,24 +952,21 @@ def sincronizar_desde_mdb(cache):
                 # Parseo robusto coordinado con el registro exacto de Scorpion
                 fecha_hora = parse_fecha_hora(dia, hora, chile_tz, add_hours=0)
 
-                # Jamás descartar ninguna señal desde el 01/08/2026; ignorar fechas anteriores para cuidar almacenamiento
+                # Regla de retención: Solo procesar señales de los últimos 90 días (3 meses)
                 try:
                     ev_clean = fecha_hora.split('T')[0]
                     ev_parts = [int(p) for p in ev_clean.split('-')]
                     ev_date = datetime(ev_parts[0], ev_parts[1], ev_parts[2])
-                    if ev_date < datetime(2026, 8, 1) or ev_date > datetime.now() + timedelta(days=1):
+                    cutoff_90d = datetime.now() - timedelta(days=90)
+                    if ev_date < cutoff_90d or ev_date > datetime.now() + timedelta(days=1):
                         continue
                 except Exception: pass
 
-                # Nombre resuelto si viene vacío
-                if not nombre:
-                    nombre = CLIENTES_LOCAL_MAP.get(cuenta, {}).get('nombre', '') if isinstance(CLIENTES_LOCAL_MAP.get(cuenta), dict) else str(CLIENTES_LOCAL_MAP.get(cuenta) or '')
-                    if not nombre:
-                        nombre = CLIENTES_LOCAL_MAP.get(cuenta.lower(), {}).get('nombre', '') if isinstance(CLIENTES_LOCAL_MAP.get(cuenta.lower()), dict) else str(CLIENTES_LOCAL_MAP.get(cuenta.lower()) or '')
-                    if not nombre:
-                        nombre = f"ABONADO {cuenta}"
+                # Nombre resuelto si viene vacío o genérico usando mapa y alias
+                if not nombre or nombre.upper().startswith("ABONADO "):
+                    nombre = get_nombre_cliente_con_alias(cuenta)
 
-                event_key = f"{fecha_hora}_{cuenta}_{evento}_{zona}_{usuario}"
+                event_key = make_event_cache_key(fecha_hora, cuenta, evento, zona, usuario)
                 if event_key in cache or event_key in batch_keys:
                     continue
 

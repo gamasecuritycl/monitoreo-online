@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react'
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getSenalLegible } from './EventRow'
+import { getAccountAliases } from '@/lib/alias_cuentas'
 
 interface Evento {
   id: number
@@ -106,12 +107,18 @@ function parseEventDate(rawStr?: string): ParsedEventDate {
 
 /**
  * Deduplica eventos idénticos emitidos en paralelo por las dos fuentes de Scorpion (MySQL + MDB)
+ * Ventana de 3 segundos incluyendo ZONA y USUARIO para NUNCA descartar
+ * señales consecutivas reales ni re-disparos de sensores.
  */
 function deduplicarEventos(lista: Evento[]): Evento[] {
   const vistos = new Map<string, Evento>()
   for (const ev of lista) {
-    const timeBucket = Math.round((ev._timestamp || 0) / 45000)
-    const key = `${(ev.cuenta || '').trim().toUpperCase()}_${(ev.evento || '').trim().toUpperCase()}_${timeBucket}`
+    const timeBucket = Math.round((ev._timestamp || 0) / 3000)
+    const c = (ev.cuenta || '').trim().toUpperCase()
+    const e = (ev.evento || '').trim().toUpperCase()
+    const z = (ev.zona || '').trim().toUpperCase()
+    const u = (ev.usuario || '').trim().toUpperCase()
+    const key = `${c}_${e}_${z}_${u}_${timeBucket}`
     const existing = vistos.get(key)
     if (!existing) {
       vistos.set(key, ev)
@@ -240,10 +247,26 @@ export default function TodosLosEventosModal({ onClose, clientesMap: propCliente
   const [cargando, setCargando] = useState(false)
   const [mensaje, setMensaje] = useState('Cargando eventos del día...')
   const [clientesLocal, setClientesLocal] = useState<Record<string, any>>({})
+  const [filtroTexto, setFiltroTexto] = useState('')
   
   // Orden: true = Últimos en la parte inferior (00:00 arriba -> 23:59 abajo)
   // false = Últimos en la parte superior (23:59 arriba -> 00:00 abajo)
   const [ordenUltimosAbajo, setOrdenUltimosAbajo] = useState(true)
+
+  // Filtrado reactivo con soporte de alias bidireccionales (ej: '0003' encuentra 'C7B4' y viceversa)
+  const eventosMostrados = useMemo(() => {
+    if (!filtroTexto.trim()) return eventos
+    const q = filtroTexto.trim().toUpperCase()
+    const aliases = new Set(getAccountAliases(q).map(a => a.toUpperCase()))
+    return eventos.filter(e => {
+      const cta = (e.cuenta || '').toUpperCase().trim()
+      const nom = (e.nombre_abonado || '').toUpperCase().trim()
+      const ev = (e.evento || '').toUpperCase().trim()
+      if (aliases.has(cta) || cta.includes(q)) return true
+      if (nom.includes(q) || ev.includes(q)) return true
+      return false
+    })
+  }, [eventos, filtroTexto])
 
   const tableContainerRef = useRef<HTMLDivElement>(null)
 
@@ -464,7 +487,28 @@ export default function TodosLosEventosModal({ onClose, clientesMap: propCliente
               EVENTOS RECIBIDOS {fecha} (DÍA COMPLETO)
             </h1>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* Buscador reactivo de cuenta o abonado con soporte bidireccional de Alias */}
+              <div className="flex items-center gap-1 bg-white px-2 py-0.5 border border-gray-600 shadow-inner">
+                <span className="text-[10px] font-bold text-gray-700">🔍 FILTRAR:</span>
+                <input
+                  type="text"
+                  placeholder="Cuenta (ej. 0003 o C7B4) o Nombre..."
+                  value={filtroTexto}
+                  onChange={(e) => setFiltroTexto(e.target.value)}
+                  className="bg-transparent font-bold px-1 py-0.5 text-xs text-black w-40 md:w-56 focus:outline-none"
+                />
+                {filtroTexto && (
+                  <button
+                    onClick={() => setFiltroTexto('')}
+                    className="text-xs font-bold text-red-600 px-1 hover:text-red-900 cursor-pointer"
+                    title="Limpiar filtro"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+
               <button
                 onClick={toggleOrden}
                 className="bg-[#d4d0c8] hover:bg-[#e0e0e0] border-2 border-t-white border-l-white border-b-gray-700 border-r-gray-700 px-2 py-0.5 font-bold text-[10px] md:text-xs cursor-pointer shadow-sm active:border-t-gray-700 active:border-l-gray-700 active:border-b-white active:border-r-white"
@@ -512,7 +556,7 @@ export default function TodosLosEventosModal({ onClose, clientesMap: propCliente
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {eventos.map((e, index) => {
+                {eventosMostrados.map((e, index) => {
                   const senalLegible = getSenalLegible(e.evento)
                   const customStyle = getRowStyle(senalLegible || e.evento)
                   const rowBg = customStyle ? customStyle.bg : (index % 2 === 0 ? '#ffffff' : '#f5f5f5')
@@ -594,7 +638,7 @@ export default function TodosLosEventosModal({ onClose, clientesMap: propCliente
           {/* Status Bar */}
           <div className="mt-1 bg-[#d4d0c8] border border-t-gray-700 border-l-gray-700 border-b-white border-r-white px-2 py-0.5 text-[10px] text-gray-600 font-bold tracking-wide shrink-0 flex flex-wrap justify-between items-center gap-1">
             <span>
-              {mensaje} {eventos.length > 0 && `(${eventos.length} eventos únicos · 00:00 a 23:59)`}
+              {mensaje} {eventos.length > 0 && `(${eventosMostrados.length} de ${eventos.length} eventos${filtroTexto ? ' filtrados' : ' únicos'} · 00:00 a 23:59)`}
             </span>
             {eventos.length > 0 && (
               <span className="text-gray-700 font-mono text-[9px] md:text-[10px]">
