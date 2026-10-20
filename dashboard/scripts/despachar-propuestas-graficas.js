@@ -56,11 +56,11 @@ async function run() {
       </div>
 
       <h2 style="margin: 0 0 8px 0; font-size: 17px; color: #ffffff; font-weight: 800;">
-        "Seguridad 24/7 Sin Comodato: Alerta Tradicional vs Monitoreo Profesional CRA"
+        "Seguridad 24/7 Sin Comodato: Sirena Tradicional vs Monitoreo Real 24 Horas"
       </h2>
 
       <p style="margin: 0 0 16px 0; font-size: 12px; color: #94a3b8; line-height: 1.5;">
-        <strong>Objetivo:</strong> Educar a las familias de que una sirena sin monitoreo humano solo molesta a los vecinos. En Gama la CRA 24/7 verifica en 15 segundos y coordina con los cuadrantes.
+        <strong>Objetivo:</strong> Educar a las familias de que una sirena sin monitoreo humano solo molesta a los vecinos. En Gama nuestro equipo de monitoreo 24/7 verifica en 15 segundos y coordina de inmediato con Carabineros.
       </p>
 
       <div style="text-align: center; margin: 16px 0; border: 2px solid #1e3a5f; border-radius: 12px; overflow: hidden; background-color: #020617;">
@@ -69,7 +69,7 @@ async function run() {
 
       <div style="background-color: #061122; border-left: 3px solid #38bdf8; padding: 12px; border-radius: 6px; font-size: 12px; color: #cbd5e1;">
         <strong>Copy Sugerido para Redes:</strong><br/>
-        "¿Sabías que una alarma que solo suena no detiene a nadie? 🚨 En Gama Seguridad no te amarramos con comodatos eternos: el equipo es 100% tuyo y nuestra Central Receptora responde en menos de 15 segundos protegiendo a tu familia 24/7. Cotiza en gamasecurity.cl o al +56 9 9101 6912."
+        "¿Sabías que una alarma que solo suena no detiene a nadie? 🚨 En Gama Seguridad no te amarramos con arriendos eternos: el equipo es 100% tuyo y nuestros operadores responden en menos de 15 segundos protegiendo a tu familia 24/7 con aviso directo a Carabineros. Cotiza en gamasecurity.cl o al +56 9 9101 6912."
       </div>
     </div>
 

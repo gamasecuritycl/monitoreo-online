@@ -1831,7 +1831,7 @@ Misión en curso en la oficina virtual. Se registrará la entrega definitiva par
       red: 'Instagram & Facebook',
       herramienta: 'Canva Free + Ideogram',
       titulo: '¿Sabes por qué una alarma sin monitoreo real 24/7 solo hace ruido?',
-      descripcion: 'Carrusel educativo explicando que la sirena asusta al vecino, pero la CRA de Gama despacha a los cuadrantes en menos de 15 segundos.',
+      descripcion: 'Carrusel educativo explicando que una sirena tradicional solo asusta al vecino, mientras que Gama verifica en 15 segundos y avisa a Carabineros.',
       estado: 'SUPEDITADO A APROBACIÓN DE TOMÁS',
       fecha: 'Hoy, 09:30'
     },
@@ -1901,10 +1901,10 @@ Misión en curso en la oficina virtual. Se registrará la entrega definitiva par
     titulo: 'Mito vs Realidad: Los contratos de amarre a 48 meses',
     plataforma: 'TikTok / Reel',
     hook: '🛑 ¿48 meses pagando por una alarma que nunca será tuya? Mira esto antes de firmar con Verisure o ADT.',
-    copy: `¿Estás cansado de pagar arriendos eternos por equipos que nunca serán tuyos? 🚨\n\nEn Chile, las empresas tradicionales te cobran más de $40.000 mensuales y si cancelas, te quitan todo.\n\nEn Gama Seguridad SpA eres el único dueño de tu alarma desde el día 1, sin letras chicas y con monitoreo CRA en 15 segundos.\n\n📲 Cotiza hoy en gamasecurity.cl o al WhatsApp +56 9 9101 6912.`,
-    guion: `🎬 GUION REEL (35 segundos):\n[00:00 - 00:03] HOOK: Texto en pantalla gigante con alarma roja: "¿Arrendar tu propia seguridad por 4 años?".\n[00:03 - 00:15] DOLOR: Mostrar contrato de comodato y calcular el costo total (más de $2 millones en 48 meses sin ser dueño de nada).\n[00:15 - 00:28] SOLUCIÓN: Mostrar la CRA de Gama y App Vetti: "En Gama compras tu equipo y pagas un monitoreo honesto 24/7."\n[00:28 - 00:35] CTA: "Elige seguridad sin amarres. Enlace en bio a gamasecurity.cl".`,
+    copy: `¿Estás cansado de pagar arriendos eternos por equipos que nunca serán tuyos? 🚨\n\nEn Chile, las empresas tradicionales te cobran más de $40.000 mensuales y si cancelas, te quitan todo.\n\nEn Gama Seguridad SpA eres el único dueño de tu alarma desde el día 1, sin letras chicas y con monitoreo real en 15 segundos.\n\n📲 Cotiza hoy en gamasecurity.cl o al WhatsApp +56 9 9101 6912.`,
+    guion: `🎬 GUION REEL (35 segundos):\n[00:00 - 00:03] HOOK: Texto en pantalla gigante con alarma roja: "¿Arrendar tu propia seguridad por 4 años?".\n[00:03 - 00:15] DOLOR: Mostrar contrato de comodato y calcular el costo total (más de $2 millones en 48 meses sin ser dueño de nada).\n[00:15 - 00:28] SOLUCIÓN: Mostrar la central de monitoreo de Gama y App Vetti: "En Gama compras tu equipo y pagas un monitoreo honesto 24/7."\n[00:28 - 00:35] CTA: "Elige seguridad sin amarres. Enlace en bio a gamasecurity.cl".`,
     promptVisual: 'Fotografía comercial estilo cinemático oscuro. Persona sosteniendo smartphone con app de seguridad Gama iluminada en tonos cian y esmeralda. Al fondo, sala de control 24/7 con monitores de alta resolución.',
-    hashtags: '#GamaSeguridad #SeguridadChile #AlarmasSantiago #CRA247 #SinComodato #ChileSeguro',
+    hashtags: '#GamaSeguridad #SeguridadChile #AlarmasSantiago #Monitoreo247 #SinComodato #ChileSeguro',
     mejorHorario: 'Martes o Jueves 19:45 hrs (Pico de interacción familiar en Chile)'
   })
   const [cmDespachandoEmail, setCmDespachandoEmail] = useState<boolean>(false)
@@ -3380,13 +3380,13 @@ Instrucciones de Respuesta:
                             <div className="relative group rounded-xl overflow-hidden border border-slate-800 bg-slate-900 aspect-square">
                               <img
                                 src="/marketing/propuesta-grafica-1.jpg"
-                                alt="Propuesta 1 - Alerta Tradicional vs Monitoreo CRA"
+                                alt="Propuesta 1 - Sirena Tradicional vs Monitoreo Real 24 Horas"
                                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                               />
                               <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-2 transition-opacity">
                                 <button
                                   type="button"
-                                  onClick={() => setModalImagenPreview({ url: '/marketing/propuesta-grafica-1.jpg', titulo: 'Propuesta 1: Alerta Tradicional vs Monitoreo CRA Gama' })}
+                                  onClick={() => setModalImagenPreview({ url: '/marketing/propuesta-grafica-1.jpg', titulo: 'Propuesta 1: Sirena Tradicional vs Monitoreo Real 24 Horas' })}
                                   className="p-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer"
                                 >
                                   <Eye className="h-3.5 w-3.5" />
@@ -3404,10 +3404,10 @@ Instrucciones de Respuesta:
                             </div>
 
                             <h5 className="font-bold text-slate-100 text-[11px] leading-snug">
-                              "Seguridad 24/7 Sin Comodato: Alerta Tradicional vs CRA Gama"
+                              "Seguridad 24/7 Sin Comodato: Sirena Tradicional vs Monitoreo Real 24 Horas"
                             </h5>
                             <p className="text-[10px] text-slate-400 leading-snug">
-                              Destaca que una alarma que solo suena molesta a los vecinos, mientras que la CRA responde en 15s y despacha cuadrantes.
+                              Destaca que una alarma que solo suena molesta a los vecinos, mientras que Gama verifica en 15s y avisa de inmediato a Carabineros.
                             </p>
                           </div>
 
@@ -3519,7 +3519,7 @@ Instrucciones de Respuesta:
                             <div className="flex flex-wrap gap-1">
                               {[
                                 { id: 'comodato', label: '🛑 Anti-Comodato 48m', tema: 'La trampa del comodato a 48 meses en alarmas', angulo: 'Disruptivo & Polémico contra abusos de contratos de arriendo' },
-                                { id: 'cra15s', label: '⚡ CRA 15s vs Sirena', tema: 'Alarma tradicional con sirena vs Central Receptora 24/7', angulo: 'Educativo & Comparativo de alta confianza' },
+                                { id: 'monitoreo15s', label: '⚡ Monitoreo 15s vs Sirena', tema: 'Alarma tradicional con sirena vs Monitoreo Real con Operadores Humanos 24 Horas', angulo: 'Educativo & Comparativo de alta confianza' },
                                 { id: 'panico', label: '📲 App de Pánico & Portonazos', tema: 'Qué hacer ante una encerrona o portonazo con la App Gama', angulo: 'Urgencia & Protección Familiar' },
                                 { id: 'condominios', label: '🏢 Comités & Condominios', tema: 'Reducción de costos de conserjería con cámaras y CRA', angulo: 'Corporativo B2B para Administradores' }
                               ].map(item => (
