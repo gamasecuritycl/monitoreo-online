@@ -2,15 +2,9 @@ const fs = require('fs');
 const path = require('path');
 const { Resend } = require('resend');
 
-const img1Path = 'C:\\Users\\tetor\\.gemini\\antigravity-ide\\brain\\4449a04b-35b9-45d2-b998-c52b5810763b\\propuesta_grafica_1_1792530898024.jpg';
-const img2Path = 'C:\\Users\\tetor\\.gemini\\antigravity-ide\\brain\\4449a04b-35b9-45d2-b998-c52b5810763b\\propuesta_grafica_2_1792530923423.jpg';
-
-// Asegurar carpeta public/marketing
 const publicMktDir = path.join(__dirname, '..', 'public', 'marketing');
-if (!fs.existsSync(publicMktDir)) fs.mkdirSync(publicMktDir, { recursive: true });
-
-fs.copyFileSync(img1Path, path.join(publicMktDir, 'propuesta-grafica-1.jpg'));
-fs.copyFileSync(img2Path, path.join(publicMktDir, 'propuesta-grafica-2.jpg'));
+const img1Path = path.join(publicMktDir, 'propuesta-grafica-1.jpg');
+const img2Path = path.join(publicMktDir, 'propuesta-grafica-2.jpg');
 
 const b64_1 = fs.readFileSync(img1Path).toString('base64');
 const b64_2 = fs.readFileSync(img2Path).toString('base64');

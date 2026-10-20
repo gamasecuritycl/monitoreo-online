@@ -64,7 +64,11 @@ async function processGraphics() {
   fs.writeFileSync(out1Path, final1);
   fs.writeFileSync(out2Path, final2);
 
-  console.log('SUCCESS: Pixel-perfect branded graphics ready!');
+  // También actualizar los artefactos del brain para consistencia absoluta
+  fs.writeFileSync(clean1Path, final1);
+  fs.writeFileSync(clean2Path, final2);
+
+  console.log('SUCCESS: Pixel-perfect branded graphics ready and synced everywhere!');
 }
 
 processGraphics().catch(console.error);
