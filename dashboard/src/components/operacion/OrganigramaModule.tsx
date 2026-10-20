@@ -61,7 +61,8 @@ import {
   Inbox,
   Image as ImageIcon,
   Eye,
-  Download
+  Download,
+  Copy
 } from 'lucide-react'
 
 // ── TIPOS Y MODELOS DEL SIMULADOR ──
@@ -463,7 +464,68 @@ const EMPLEADOS_DEFAULT: EmpleadoSim[] = [
     ]
   },
 
-  // 6. Ejecutivo de Cuentas & Onboarding
+  // 6. Community Manager & Creadora de Contenido RRSS
+  {
+    id: 'comercial_cm',
+    nombre: 'Catalina Fuentes',
+    apodo: 'Cata',
+    rol: 'Community Manager & Creadora de Contenido Viral RRSS',
+    area: 'comercial',
+    areaNombre: 'Piso Comercial & Marketing',
+    avatarEmoji: '📱',
+    colorRopa: '#ec4899',
+    colorPiel: '#fed7aa',
+    colorCabello: '#831843',
+    plumbobColor: '#22c55e',
+    x: 575,
+    y: 385,
+    deskX: 575,
+    deskY: 385,
+    targetX: 575,
+    targetY: 385,
+    estadoAccion: 'working',
+    direccion: 'down',
+    energiaSim: 100,
+    tareaActual: '🎬 Redactando guiones de Reels y ganchos virales para TikTok e Instagram',
+    progresoTarea: 85,
+    burbujaTexto: 'Estructurando hook de 3 segundos contra comodatos de 48 meses...',
+    burbujaTimer: 210,
+    atribucionesEjecutivas: [
+      'Generación de copies, ganchos virales y captions para Instagram, TikTok, LinkedIn y Facebook',
+      'Estructuración de guiones audiovisuales para Reels y TikTok con hooks de 3 segundos',
+      'Diseño de prompts fotográficos y gráficos para Ideogram, Midjourney y Canva Free',
+      'Planificación de la grilla y calendario editorial semanal para visto bueno de Tomás',
+      'Supeditación estricta: todo contenido pasa por la aprobación previa de Tomás Toro-Moreno'
+    ],
+    misionPrincipal: 'Crear contenido irresistible, educativo y anti-comodato que posicione a Gama Seguridad en Chile, atraiga prospectos calificados y eduque a la comunidad sin gastar en publicidad ociosa.',
+    kpis: [
+      { label: 'Contenido Generado', valor: 'Reels, Posts, Guiones 24/7' },
+      { label: 'Aprobación Tomás', valor: '100% Supeditado' }
+    ],
+    trayectoriaLinkedIn: 'Periodista & Estratega de Redes Sociales con 6 años de experiencia en marcas de tecnología y seguridad. Especialista en retención de audiencia en los primeros 3 segundos y storytelling de alta conversión.',
+    certificacionesElite: [
+      'Meta Certified Creative Strategist',
+      'TikTok Academy Content Master',
+      'Copywriting Persuasivo con IA Generativa'
+    ],
+    hardSkills: ['Hooks Virales & Storytelling', 'Guiones Reels/TikTok', 'Copywriting & Captions', 'Prompts Visuales AI', 'Algoritmo Meta/TikTok Chile'],
+    softSkills: ['Chispa Creativa', 'Tono Cercano & Empático', 'Sentido de Urgencia', 'Cuidado de Reputación'],
+    stackHerramientas: ['CapCut', 'Canva Free', 'Meta Business Suite', 'Ideogram', 'Gemini AI Studio'],
+    metodologias: ['Fórmula AIDA', 'Framework PAS (Problema-Agitación-Solución)', 'StoryBrand'],
+    entrenamiento: {
+      systemPrompt: 'Eres Catalina Fuentes ("Cata"), la Community Manager y Creadora de Contenido de Gama Seguridad SpA. Eres fresca, creativa, persuasiva y contundente. Sabes exactamente cómo capturar la atención en Instagram, TikTok, LinkedIn y Facebook hablando de seguridad real (CRA que responde en 15 segundos, dueños de su equipo, sin comodatos tramposos). Siempre entregas ganchos claros, copies listos para publicar con emojis, guiones segundo a segundo y hashtags chilenos. Todo queda supeditado a Tomás.',
+      conocimientosClave: ['Hooks de 3 segundos', 'Comodato vs Propiedad', 'Central Receptora 15s', 'App de Pánico Móvil', 'TikTok & Reels Algorithm'],
+      reglasNegocio: ['Todo contenido es supeditado al visto bueno de Tomás', 'Cero publicaciones directas sin autorización', 'Tono empático sin generar pánico destructivo'],
+      autonomia: 'Creativa Supervisada',
+      temperatura: 0.7,
+      herramientasActivas: ['Estudio de Contenido IA', 'Guionizador Reels', 'Generador de Prompts', 'Despacho Directo Mail']
+    },
+    historialChat: [
+      { autor: 'agente', mensaje: '¡Hola Tomás! Soy Cata, tu Community Manager. Estoy lista para redactar guiones de Reels, carruseles educativos o posts de LinkedIn. ¿De qué tema creamos contenido hoy?', hora: '08:15' }
+    ]
+  },
+
+  // 7. Ejecutivo de Cuentas & Onboarding
   {
     id: 'comercial_cuentas',
     nombre: 'Matías Morales',
@@ -1829,6 +1891,136 @@ Misión en curso en la oficina virtual. Se registrará la entrega definitiva par
     }
   }
 
+  // ── ESTADOS DEL ESTUDIO DE CONTENIDO (COMMUNITY MANAGER CATA) ──
+  const [cmPlataforma, setCmPlataforma] = useState<'TikTok / Reel' | 'Instagram Post / Carrusel' | 'LinkedIn' | 'Facebook'>('TikTok / Reel')
+  const [cmTema, setCmTema] = useState<string>('La trampa del comodato de 48 meses en alarmas')
+  const [cmAngulo, setCmAngulo] = useState<string>('Disruptivo & Polémico contra comodatos')
+  const [cmInstruccionPersonalizada, setCmInstruccionPersonalizada] = useState<string>('')
+  const [cmGenerando, setCmGenerando] = useState<boolean>(false)
+  const [cmContenidoGenerado, setCmContenidoGenerado] = useState<any | null>({
+    titulo: 'Mito vs Realidad: Los contratos de amarre a 48 meses',
+    plataforma: 'TikTok / Reel',
+    hook: '🛑 ¿48 meses pagando por una alarma que nunca será tuya? Mira esto antes de firmar con Verisure o ADT.',
+    copy: `¿Estás cansado de pagar arriendos eternos por equipos que nunca serán tuyos? 🚨\n\nEn Chile, las empresas tradicionales te cobran más de $40.000 mensuales y si cancelas, te quitan todo.\n\nEn Gama Seguridad SpA eres el único dueño de tu alarma desde el día 1, sin letras chicas y con monitoreo CRA en 15 segundos.\n\n📲 Cotiza hoy en gamasecurity.cl o al WhatsApp +56 9 9101 6912.`,
+    guion: `🎬 GUION REEL (35 segundos):\n[00:00 - 00:03] HOOK: Texto en pantalla gigante con alarma roja: "¿Arrendar tu propia seguridad por 4 años?".\n[00:03 - 00:15] DOLOR: Mostrar contrato de comodato y calcular el costo total (más de $2 millones en 48 meses sin ser dueño de nada).\n[00:15 - 00:28] SOLUCIÓN: Mostrar la CRA de Gama y App Vetti: "En Gama compras tu equipo y pagas un monitoreo honesto 24/7."\n[00:28 - 00:35] CTA: "Elige seguridad sin amarres. Enlace en bio a gamasecurity.cl".`,
+    promptVisual: 'Fotografía comercial estilo cinemático oscuro. Persona sosteniendo smartphone con app de seguridad Gama iluminada en tonos cian y esmeralda. Al fondo, sala de control 24/7 con monitores de alta resolución.',
+    hashtags: '#GamaSeguridad #SeguridadChile #AlarmasSantiago #CRA247 #SinComodato #ChileSeguro',
+    mejorHorario: 'Martes o Jueves 19:45 hrs (Pico de interacción familiar en Chile)'
+  })
+  const [cmDespachandoEmail, setCmDespachandoEmail] = useState<boolean>(false)
+  const [cmEmailDespachadoSuccess, setCmEmailDespachadoSuccess] = useState<string | null>(null)
+  const [cmCopiadoFeedback, setCmCopiadoFeedback] = useState<boolean>(false)
+
+  const handleGenerarContenidoCM = async (despacharMail: boolean = false) => {
+    setCmGenerando(true)
+    setCmEmailDespachadoSuccess(null)
+    try {
+      const res = await fetch('/api/agentes/community-manager/generar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          plataforma: cmPlataforma,
+          tema: cmTema,
+          angulo: cmAngulo,
+          instruccionExtra: cmInstruccionPersonalizada,
+          targetEmail: 'tetoromoreno@gamasecurity.cl',
+          despacharEmail: despacharMail
+        })
+      })
+      const data = await res.json()
+      if (data.ok && data.contenido) {
+        setCmContenidoGenerado(data.contenido)
+        if (despacharMail && data.emailDespachado) {
+          setCmEmailDespachadoSuccess('✓ Contenido y guion despachado exitosamente a tetoromoreno@gamasecurity.cl')
+        }
+        const s = simsRef.current.find(item => item.id === 'comercial_cm')
+        if (s) {
+          s.tareaActual = '📱 ' + data.contenido.titulo.slice(0, 35) + '...'
+          s.progresoTarea = 95
+          s.burbujaTexto = 'Nuevo contenido listo para ' + cmPlataforma + ' supeditado a Tomás'
+          s.burbujaTimer = 220
+        }
+        setFeedOperaciones(prev => [
+          {
+            id: 'ev-' + Date.now(),
+            hora: new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }),
+            simId: 'comercial_cm',
+            simNombre: 'Catalina Fuentes',
+            simEmoji: '📱',
+            rol: 'Community Manager',
+            accion: `Cata generó nueva pieza de contenido para ${cmPlataforma}: "${data.contenido.titulo.slice(0, 40)}...".`,
+            tipo: 'comercial'
+          },
+          ...prev
+        ])
+      } else {
+        alert('Error generando contenido: ' + (data.error || 'Desconocido'))
+      }
+    } catch (err: any) {
+      alert('Error de conexión al generar contenido: ' + err.message)
+    } finally {
+      setCmGenerando(false)
+    }
+  }
+
+  const handleCopiarContenidoCM = () => {
+    if (!cmContenidoGenerado) return
+    const textoCompleto = `TITULO: ${cmContenidoGenerado.titulo}
+PLATAFORMA: ${cmContenidoGenerado.plataforma}
+
+🎯 GANCHO (3 SEGUNDOS):
+${cmContenidoGenerado.hook}
+
+📝 COPY / CAPTION:
+${cmContenidoGenerado.copy}
+
+🎬 GUION / ESTRUCTURA:
+${cmContenidoGenerado.guion || 'N/A'}
+
+🖼️ PROMPT VISUAL RECOMENDADO:
+${cmContenidoGenerado.promptVisual || 'N/A'}
+
+🏷️ HASHTAGS:
+${cmContenidoGenerado.hashtags || 'N/A'}
+
+⏰ MEJOR HORARIO:
+${cmContenidoGenerado.mejorHorario || 'N/A'}`
+
+    navigator.clipboard.writeText(textoCompleto)
+    setCmCopiadoFeedback(true)
+    setTimeout(() => setCmCopiadoFeedback(false), 2500)
+  }
+
+  const handleDespacharContenidoCMMail = async () => {
+    if (!cmContenidoGenerado) return
+    setCmDespachandoEmail(true)
+    setCmEmailDespachadoSuccess(null)
+    try {
+      const res = await fetch('/api/agentes/community-manager/generar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          plataforma: cmContenidoGenerado.plataforma,
+          tema: cmContenidoGenerado.titulo,
+          angulo: cmAngulo,
+          instruccionExtra: 'Reenvío oficial solicitado por Tomás desde el Estudio de Contenido',
+          targetEmail: 'tetoromoreno@gamasecurity.cl',
+          despacharEmail: true
+        })
+      })
+      const data = await res.json()
+      if (data.ok) {
+        setCmEmailDespachadoSuccess('✓ Contenido y guion despachado exitosamente a tetoromoreno@gamasecurity.cl')
+      } else {
+        alert('Error despachando contenido: ' + (data.error || 'Desconocido'))
+      }
+    } catch (err: any) {
+      alert('Error enviando contenido por mail: ' + err.message)
+    } finally {
+      setCmDespachandoEmail(false)
+    }
+  }
+
   const handleAprobarBorradores = () => {
     const ahora = new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })
     setBorradoresMkt(prev => prev.map(p => ({
@@ -1935,25 +2127,28 @@ Misión en curso en la oficina virtual. Se registrará la entrega definitiva par
         setAdminDesbloqueado(true)
       }
 
-      // Cargar empleados persistidos con merge
+      // Cargar empleados persistidos asegurando que todos los agentes definidos existan
       const guardados = localStorage.getItem('gama_oficina_sims_v4')
       if (guardados) {
         const parsed = JSON.parse(guardados)
         if (Array.isArray(parsed) && parsed.length > 0) {
-          const fusionados = parsed.map((emp: EmpleadoSim) => {
-            const defEmp = EMPLEADOS_DEFAULT.find(d => d.id === emp.id)
-            return {
-              ...defEmp,
-              ...emp,
-              nombre: defEmp?.nombre || emp.nombre,
-              apodo: defEmp?.apodo || emp.apodo,
-              x: defEmp?.deskX || emp.deskX || 170,
-              y: defEmp?.deskY || emp.deskY || 135,
-              deskX: defEmp?.deskX || emp.deskX || 170,
-              deskY: defEmp?.deskY || emp.deskY || 135,
-              targetX: defEmp?.deskX || emp.deskX || 170,
-              targetY: defEmp?.deskY || emp.deskY || 135
+          const fusionados = EMPLEADOS_DEFAULT.map((defEmp: EmpleadoSim) => {
+            const empGuardado = parsed.find((p: any) => p.id === defEmp.id)
+            if (empGuardado) {
+              return {
+                ...defEmp,
+                ...empGuardado,
+                nombre: defEmp.nombre,
+                apodo: defEmp.apodo,
+                x: defEmp.deskX,
+                y: defEmp.deskY,
+                deskX: defEmp.deskX,
+                deskY: defEmp.deskY,
+                targetX: defEmp.deskX,
+                targetY: defEmp.deskY
+              }
             }
+            return defEmp
           })
           setEmpleados(fusionados)
           simsRef.current = fusionados
@@ -2541,6 +2736,32 @@ Instrucciones de Respuesta:
       }
     }
 
+    // 4. Si Tomás interactúa con Catalina Fuentes (Community Manager) o pide contenido/guiones
+    if (empleadoActivo.id === 'comercial_cm' || promptLower.includes('community') || promptLower.includes('tiktok') || promptLower.includes('reel') || promptLower.includes('post para') || promptLower.includes('crea contenido') || promptLower.includes('guion')) {
+      if (promptLower.includes('mail') || promptLower.includes('correo') || promptLower.includes('envia') || promptLower.includes('manda')) {
+        fetch('/api/agentes/community-manager/generar', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            plataforma: promptLower.includes('tiktok') || promptLower.includes('reel') ? 'TikTok / Reel' : promptLower.includes('linkedin') ? 'LinkedIn' : 'Instagram Post / Carrusel',
+            tema: mensajeUsuario,
+            angulo: 'Estratégico Gama Seguridad',
+            targetEmail: 'tetoromoreno@gamasecurity.cl',
+            despacharEmail: true
+          })
+        }).then(r => r.json()).then(d => {
+          if (d.ok && d.contenido) {
+            setCmContenidoGenerado(d.contenido)
+            setCmEmailDespachadoSuccess('✓ Pieza de contenido y guion despachada a tetoromoreno@gamasecurity.cl')
+          }
+        }).catch(err => console.error('Error auto-despacho contenido CM:', err))
+
+        if (!respuestaFinal.toLowerCase().includes('tetoromoreno@gamasecurity.cl')) {
+          respuestaFinal += '\n\n📱 [COMMUNITY MANAGER]: ¡Listo Tomás! He redactado la pieza completa con hook de 3 segundos, guion audiovisual y caption con hashtags, y te la acabo de despachar directamente a tu correo tetoromoreno@gamasecurity.cl. También puedes verla y copiarla en mi Estudio de Contenido lateral.'
+        }
+      }
+    }
+
     const s = simsRef.current.find(item => item.id === empleadoActivo.id)
     if (s) {
       s.tareaActual = '⚡ Atendiendo: ' + mensajeUsuario.slice(0, 40) + '...'
@@ -2658,7 +2879,7 @@ Instrucciones de Respuesta:
                 OFICINA AUTÓNOMA VIRTUAL
               </h1>
               <span className="text-[10px] font-mono text-emerald-400 bg-emerald-950/80 border border-emerald-800/60 px-2 py-0.5 rounded-full font-bold">
-                12 ESPECIALISTAS ACTIVOS
+                {empleados.length} ESPECIALISTAS ACTIVOS
               </span>
             </div>
             <p className="text-[11px] text-slate-400">
@@ -2826,7 +3047,7 @@ Instrucciones de Respuesta:
                   </span>
                 </div>
                 <span className="text-[10px] font-mono text-slate-400">
-                  415 Abonados Monitoreados • 12 Especialistas Conectados
+                  415 Abonados Monitoreados • {empleados.length} Especialistas Conectados
                 </span>
               </div>
 
@@ -3250,6 +3471,252 @@ Instrucciones de Respuesta:
                       </div>
                     )}
 
+                    {/* ACCIONES DE CATALINA FUENTES (COMMUNITY MANAGER & CREADORA DE CONTENIDO) */}
+                    {empleadoActivo.id === 'comercial_cm' && (
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between border-b border-slate-800 pb-1.5">
+                          <span className="font-bold text-pink-400 flex items-center gap-1.5 text-xs">
+                            <Sparkles className="h-3.5 w-3.5" />
+                            <span>Estudio de Contenido Viral RRSS</span>
+                          </span>
+                          <span className="text-[9px] font-mono text-amber-300 bg-amber-950/80 px-1.5 py-0.5 rounded border border-amber-800/40">
+                            Supeditado a Tomás
+                          </span>
+                        </div>
+
+                        {/* Configuración del Generador de Contenido */}
+                        <div className="p-3 bg-gradient-to-br from-slate-950 via-slate-900 to-pink-950/30 border border-pink-900/50 rounded-2xl space-y-3">
+                          
+                          {/* 1. Selector de Plataforma */}
+                          <div>
+                            <label className="text-[10px] font-bold text-slate-300 uppercase tracking-wider block mb-1.5">
+                              1. Plataforma de Publicación:
+                            </label>
+                            <div className="grid grid-cols-2 gap-1.5">
+                              {(['TikTok / Reel', 'Instagram Post / Carrusel', 'LinkedIn', 'Facebook'] as const).map(plat => (
+                                <button
+                                  key={plat}
+                                  type="button"
+                                  onClick={() => setCmPlataforma(plat)}
+                                  className={`py-1.5 px-2 rounded-xl text-[10px] font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-all ${
+                                    cmPlataforma === plat
+                                      ? 'bg-pink-600 text-white shadow-md shadow-pink-950/50 border border-pink-400'
+                                      : 'bg-slate-950 text-slate-400 hover:text-slate-200 border border-slate-800'
+                                  }`}
+                                >
+                                  <span>{plat.includes('TikTok') ? '🎬' : plat.includes('Instagram') ? '📸' : plat.includes('LinkedIn') ? '💼' : '👥'}</span>
+                                  <span className="truncate">{plat}</span>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* 2. Selector de Ángulo Estratégico */}
+                          <div>
+                            <label className="text-[10px] font-bold text-slate-300 uppercase tracking-wider block mb-1.5">
+                              2. Ángulo Estratégico de Seguridad:
+                            </label>
+                            <div className="flex flex-wrap gap-1">
+                              {[
+                                { id: 'comodato', label: '🛑 Anti-Comodato 48m', tema: 'La trampa del comodato a 48 meses en alarmas', angulo: 'Disruptivo & Polémico contra abusos de contratos de arriendo' },
+                                { id: 'cra15s', label: '⚡ CRA 15s vs Sirena', tema: 'Alarma tradicional con sirena vs Central Receptora 24/7', angulo: 'Educativo & Comparativo de alta confianza' },
+                                { id: 'panico', label: '📲 App de Pánico & Portonazos', tema: 'Qué hacer ante una encerrona o portonazo con la App Gama', angulo: 'Urgencia & Protección Familiar' },
+                                { id: 'condominios', label: '🏢 Comités & Condominios', tema: 'Reducción de costos de conserjería con cámaras y CRA', angulo: 'Corporativo B2B para Administradores' }
+                              ].map(item => (
+                                <button
+                                  key={item.id}
+                                  type="button"
+                                  onClick={() => {
+                                    setCmTema(item.tema)
+                                    setCmAngulo(item.angulo)
+                                  }}
+                                  className={`py-1 px-2 rounded-lg text-[9px] font-bold cursor-pointer transition-all ${
+                                    cmTema === item.tema
+                                      ? 'bg-slate-800 text-pink-300 border border-pink-500/60'
+                                      : 'bg-slate-950 text-slate-400 hover:text-slate-300 border border-slate-800'
+                                  }`}
+                                >
+                                  {item.label}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* 3. Instrucción Extra de Tomás */}
+                          <div>
+                            <label className="text-[10px] font-bold text-slate-300 uppercase tracking-wider block mb-1">
+                              3. Instrucción o Enfoque Personalizado de Tomás:
+                            </label>
+                            <input
+                              type="text"
+                              value={cmInstruccionPersonalizada}
+                              onChange={e => setCmInstruccionPersonalizada(e.target.value)}
+                              placeholder="Ej: Destacar que en Chicureo y Lo Barnechea tenemos tiempo de respuesta récord..."
+                              className="w-full px-2.5 py-1.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-pink-500"
+                            />
+                          </div>
+
+                          {/* Botón de Generar con IA */}
+                          <div className="pt-1 flex gap-2">
+                            <button
+                              type="button"
+                              onClick={() => handleGenerarContenidoCM(false)}
+                              disabled={cmGenerando}
+                              className="flex-1 py-2 px-3 bg-gradient-to-r from-pink-600 via-rose-600 to-purple-600 hover:brightness-110 disabled:opacity-50 text-white font-black rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-pink-950/40 cursor-pointer active:scale-95 transition-all"
+                            >
+                              {cmGenerando ? (
+                                <>
+                                  <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                                  <span>Cata redactando guion y copy con IA...</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Sparkles className="h-3.5 w-3.5" />
+                                  <span>✨ Generar Contenido con IA</span>
+                                </>
+                              )}
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleGenerarContenidoCM(true)}
+                              disabled={cmGenerando}
+                              title="Generar y despachar directamente a tetoromoreno@gamasecurity.cl"
+                              className="py-2 px-3 bg-slate-800 hover:bg-slate-700 text-pink-300 border border-pink-700/60 font-bold rounded-xl text-xs flex items-center gap-1 cursor-pointer shrink-0"
+                            >
+                              <Mail className="h-3.5 w-3.5" />
+                              <span>Generar + Mail</span>
+                            </button>
+                          </div>
+
+                          {cmEmailDespachadoSuccess && (
+                            <div className="p-2 bg-emerald-950/80 border border-emerald-600/60 rounded-lg text-[10px] text-emerald-200 flex items-center gap-1.5 animate-in fade-in">
+                              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+                              <span>{cmEmailDespachadoSuccess}</span>
+                            </div>
+                          )}
+
+                        </div>
+
+                        {/* Previsualización del Contenido Generado (Feed Card) */}
+                        {cmContenidoGenerado && (
+                          <div className="p-3.5 bg-slate-950 border border-pink-900/60 rounded-2xl space-y-3 animate-in fade-in">
+                            
+                            {/* Encabezado del Post */}
+                            <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+                              <div className="flex items-center gap-2">
+                                <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-pink-500 to-purple-600 flex items-center justify-center text-[10px] font-black text-white">
+                                  G
+                                </div>
+                                <div>
+                                  <div className="flex items-center gap-1">
+                                    <span className="font-bold text-white text-[11px]">gamaseguridad</span>
+                                    <span className="text-[9px] text-sky-400">✓</span>
+                                  </div>
+                                  <span className="text-[9px] text-slate-400">{cmContenidoGenerado.plataforma}</span>
+                                </div>
+                              </div>
+                              <span className="text-[9px] font-mono text-pink-400 bg-pink-950/80 px-2 py-0.5 rounded-full border border-pink-800/40">
+                                Supeditado a Tomás
+                              </span>
+                            </div>
+
+                            {/* Gancho Viral */}
+                            <div className="p-2.5 bg-amber-950/40 border-l-2 border-amber-500 rounded-r-xl space-y-1">
+                              <span className="text-[9px] font-mono font-bold text-amber-400 uppercase tracking-wider">
+                                🎯 Gancho Viral (3 primeros segundos):
+                              </span>
+                              <p className="text-xs font-bold text-white leading-snug">
+                                {cmContenidoGenerado.hook}
+                              </p>
+                            </div>
+
+                            {/* Copy / Caption */}
+                            <div className="space-y-1">
+                              <span className="text-[9px] font-mono font-bold text-slate-400 uppercase">
+                                📝 Copy / Caption Completo:
+                              </span>
+                              <div className="p-2.5 bg-slate-900/80 rounded-xl border border-slate-800 text-[11px] text-slate-200 leading-relaxed whitespace-pre-wrap max-h-48 overflow-y-auto font-sans">
+                                {cmContenidoGenerado.copy}
+                              </div>
+                            </div>
+
+                            {/* Guion Audiovisual si aplica */}
+                            {cmContenidoGenerado.guion && (
+                              <div className="space-y-1">
+                                <span className="text-[9px] font-mono font-bold text-purple-400 uppercase">
+                                  🎬 Guion Audiovisual (Escena por Escena):
+                                </span>
+                                <div className="p-2.5 bg-purple-950/30 rounded-xl border border-purple-900/40 text-[10px] text-purple-200 leading-relaxed whitespace-pre-wrap max-h-40 overflow-y-auto font-mono">
+                                  {cmContenidoGenerado.guion}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Prompt Visual para Arte */}
+                            {cmContenidoGenerado.promptVisual && (
+                              <div className="p-2 bg-slate-900/70 border border-slate-800 rounded-xl space-y-1">
+                                <span className="text-[9px] font-mono font-bold text-cyan-400 uppercase flex items-center gap-1">
+                                  <ImageIcon className="h-3 w-3" />
+                                  Prompt para Arte Visual (Canva / Ideogram):
+                                </span>
+                                <p className="text-[10px] text-slate-400 italic leading-snug">
+                                  "{cmContenidoGenerado.promptVisual}"
+                                </p>
+                              </div>
+                            )}
+
+                            {/* Metadatos de publicación */}
+                            <div className="flex items-center justify-between text-[9px] text-slate-400 pt-1 border-t border-slate-800/80">
+                              <span>⏰ {cmContenidoGenerado.mejorHorario}</span>
+                              <span className="text-sky-400 truncate max-w-[200px]">{cmContenidoGenerado.hashtags}</span>
+                            </div>
+
+                            {/* Botones de Acción sobre la pieza */}
+                            <div className="flex gap-1.5 pt-1">
+                              <button
+                                type="button"
+                                onClick={handleCopiarContenidoCM}
+                                className="flex-1 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-xl text-[10px] flex items-center justify-center gap-1 cursor-pointer transition"
+                              >
+                                {cmCopiadoFeedback ? (
+                                  <>
+                                    <Check className="h-3.5 w-3.5 text-emerald-400" />
+                                    <span className="text-emerald-400">¡Copiado!</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Copy className="h-3.5 w-3.5" />
+                                    <span>Copiar Todo</span>
+                                  </>
+                                )}
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={handleDespacharContenidoCMMail}
+                                disabled={cmDespachandoEmail}
+                                className="flex-1 py-1.5 bg-gradient-to-r from-pink-600 to-rose-600 hover:brightness-110 disabled:opacity-50 text-white font-bold rounded-xl text-[10px] flex items-center justify-center gap-1 cursor-pointer shadow-md transition"
+                              >
+                                {cmDespachandoEmail ? (
+                                  <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                                ) : (
+                                  <Mail className="h-3.5 w-3.5" />
+                                )}
+                                <span>Despachar a mi Mail</span>
+                              </button>
+                            </div>
+
+                          </div>
+                        )}
+
+                        <div className="p-2 bg-blue-950/40 border border-blue-900/60 rounded-xl text-[10px] text-blue-200 leading-relaxed">
+                          💡 <strong>Frontera de Seguridad:</strong> Las piezas de contenido quedan supeditadas a tu visto bueno definitivo antes de ser publicadas en los canales oficiales de Gama Seguridad.
+                        </div>
+
+                      </div>
+                    )}
+
                     {/* ACCIONES DE IGNACIO (ORÁCULO TÉCNICO VIRTUAL) */}
                     {empleadoActivo.id === 'cra_terreno' && (
                       <div className="space-y-3">
@@ -3472,7 +3939,7 @@ Instrucciones de Respuesta:
                           <div className="p-2.5 bg-slate-950 border border-slate-800 rounded-xl space-y-1.5 text-[11px]">
                             <div className="flex justify-between text-slate-400">
                               <span>Modelos Activos Calibrados:</span>
-                              <span className="font-bold text-white">12 Especialistas</span>
+                              <span className="font-bold text-white">{empleados.length} Especialistas</span>
                             </div>
                             <div className="flex justify-between text-slate-400">
                               <span>Tasa de Alucinación:</span>
@@ -4236,7 +4703,7 @@ Instrucciones de Respuesta:
                   </span>
                 </div>
                 <h2 className="text-2xl font-black text-white tracking-tight">
-                  Resultados & Trabajos de los 12 Especialistas
+                  Resultados & Trabajos de los {empleados.length} Especialistas
                 </h2>
                 <p className="text-xs text-slate-300">
                   Auditorías forenses, carpetas normativas, planes de adquisición y directivas para Tomás Toro-Moreno
