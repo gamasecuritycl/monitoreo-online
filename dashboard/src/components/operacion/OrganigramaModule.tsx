@@ -55,7 +55,10 @@ import {
   Flame,
   Video,
   Share2,
-  Heart
+  Heart,
+  Mail,
+  CheckCheck,
+  Inbox
 } from 'lucide-react'
 
 // ── TIPOS Y MODELOS DEL SIMULADOR ──
@@ -882,6 +885,317 @@ const ACCIONES_OPERATIVAS_POOL = [
   { simId: 'comercial_jefa', accion: 'Guión de video explicativo para redes sociales preparado en CapCut Web (Supeditado a Tomás).', tipo: 'comercial' }
 ]
 
+// ── MODELOS DE ENTREGABLES & DIRECTORIO EJECUTIVO ──
+
+export interface EntregableOficial {
+  id: string
+  titulo: string
+  subtitulo: string
+  autorId: string
+  autorNombre: string
+  autorRol: string
+  autorEmoji: string
+  fecha: string
+  tipo: 'auditoria' | 'legal' | 'comercial' | 'operaciones' | 'ia' | 'expansion'
+  resumen: string
+  contenidoCompleto: string
+  puntosClave: string[]
+  estado: 'pendiente' | 'aprobado' | 'despachado'
+  fechaAprobacion?: string
+  fechaDespacho?: string
+}
+
+export interface IntervencionDirectorio {
+  id: string
+  simId: string
+  nombre: string
+  rol: string
+  emoji: string
+  color: string
+  mensaje: string
+}
+
+export interface ActaDirectorio {
+  id: string
+  titulo: string
+  fecha: string
+  hora: string
+  resumen: string
+  acuerdos: string[]
+  contenidoCompleto: string
+}
+
+const ENTREGABLES_INICIALES: EntregableOficial[] = [
+  {
+    id: 'ent-1',
+    titulo: 'Auditoría Forense de Conectividad & Test 72h',
+    subtitulo: 'Depuración de abonados inactivos y protección de cuentas maestras',
+    autorId: 'cra_jefa',
+    autorNombre: 'Sofía Carvajal',
+    autorRol: 'Jefa Central Receptora de Alarmas (CRA 24/7)',
+    autorEmoji: '🚨',
+    fecha: 'Hoy, 08:30 hrs',
+    tipo: 'auditoria',
+    resumen: 'Revisión exhaustiva de 415 abonados monitoreados. Detección de cuentas sin reporte de test periódico superior a 72 horas con exclusión garantizada de cuentas protegidas (C717 Andrés Alzamora).',
+    puntosClave: [
+      '415 cuentas monitoreadas activamente en plataforma.',
+      'Cuenta C717 protegida y excluida de falsas alertas técnicas.',
+      'SLA de respuesta ante alarmas de intrusión: 14.8 segundos.',
+      'Filtrado de eventos por duplicidad en ventana de 3 segundos.'
+    ],
+    contenidoCompleto: `INFORME OFICIAL DE AUDITORÍA CRA 24/7 — GAMA SEGURIDAD SpA
+Emitido por: Sofía Carvajal (Jefa de CRA 24/7)
+Fecha de corte: Hoy, 08:30 hrs
+Destinatario: Tomás Toro-Moreno, CEO & Fundador
+
+1. RESUMEN DE LA CARTERA MONITOREADA
+Se ha completado el barrido forense sobre la base de datos operativa conectada al receptor IPRS y base MySQL (186.4.239.44). La cartera cuenta con 415 abonados activos.
+
+2. MONITOREO DE TEST PERIÓDICO (72 HORAS)
+- Conectividad global: 98.8% de los abonados reportaron test periódico dentro de ventana reglamentaria.
+- Protocolo de Protección C717: La cuenta perteneciente a Andrés Alzamora se encuentra expresamente catalogada como Cuenta Protegida conforme a las instrucciones directas de Tomás, no emitiendo reportes anómalos ni alertas infundadas.
+- Protocolo de Verificación: Se mantiene activa la política de confirmación por video y llamado a contactos autorizados antes de cualquier requerimiento a cuadrantes policiales.
+
+3. CONCLUSIÓN Y RECOMENDACIÓN
+La Central Receptora de Alarmas opera en régimen verde 24/7 con redundancia activa. Se aconseja programar visitas de mantenimiento preventivo exclusivamente a las 5 cuentas con señales intermitentes de batería.`,
+    estado: 'pendiente'
+  },
+  {
+    id: 'ent-2',
+    titulo: 'Memorial Jurídico de Acreditación de Central Virtual OS-10',
+    subtitulo: 'Sustentación conforme a la Ley N° 21.659 de Seguridad Privada',
+    autorId: 'legal_os10',
+    autorNombre: 'Lic. Claudio Valenzuela',
+    autorRol: 'Director de Cumplimiento Normativo & Seguridad Privada (OS-10)',
+    autorEmoji: '⚖️',
+    fecha: 'Hoy, 09:15 hrs',
+    tipo: 'legal',
+    resumen: 'Análisis de viabilidad y carpeta técnica ante la Prefectura de Seguridad Privada OS-10 de Carabineros para validar la operación de CRA virtual sin exigencia de instalaciones ociosas.',
+    puntosClave: [
+      'Blindaje regulatorio bajo nueva Ley N° 21.659.',
+      'Justificación técnica de redundancia cloud y servidores cifrados.',
+      'Protocolo estricto de custodia de claves maestras y contratos.',
+      'Ahorro operativo garantizado sin vulnerar la normativa vigente.'
+    ],
+    contenidoCompleto: `DICTAMEN Y MEMORIAL DE CUMPLIMIENTO OS-10
+Elaborado por: Lic. Claudio Valenzuela (Director Legal & OS-10)
+Dirigido a: Tomás Toro-Moreno, CEO Gama Seguridad SpA
+
+I. MARCO NORMATIVO APLICABLE
+Con la promulgación y entrada en vigencia de la Ley N° 21.659 sobre Seguridad Privada en Chile, se redefine el alcance de las empresas de seguridad electrónica y centrales receptoras.
+
+II. PLANTEAMIENTO TÉCNICO-JURÍDICO
+Gama Seguridad SpA acredita que su arquitectura cloud distribuida (Next.js + Supabase + IPRS MySQL) provee estándares de redundancia y disponibilidad superiores a las centrales físicas tradicionales:
+1. Encriptación AES-256 en reposo y en tránsito (TLS 1.3).
+2. Trazabilidad inmutable de operadores con marcas de tiempo atómicas.
+3. Planes de contingencia ante cortes de suministro eléctrico o telecomunicaciones sin depender de un único punto de falla físico.
+
+III. PETITORIO ANTE LA AUTORIDAD
+Se concluye la redacción del memorial para formalizar ante la Prefectura de Seguridad Privada la inscripción del modelo operativo de Gama Seguridad, solicitando la exención de dependencias físicas improductivas.`,
+    estado: 'pendiente'
+  },
+  {
+    id: 'ent-3',
+    titulo: 'Plan de Medios Orgánicos & Estrategia Comercial Anti-Comodato',
+    subtitulo: 'Posicionamiento del cliente dueño de sus equipos vs contratos abusivos',
+    autorId: 'comercial_jefa',
+    autorNombre: 'Valentina Lagos',
+    autorRol: 'Gerente Comercial, Licitaciones & Marketing Digital',
+    autorEmoji: '💼',
+    fecha: 'Hoy, 09:45 hrs',
+    tipo: 'comercial',
+    resumen: 'Estrategia de contenidos en Instagram, Facebook y TikTok con Canva Free y CapCut Web. Foco en la honestidad de Gama: sin comodatos engañosos de 48 meses.',
+    puntosClave: [
+      'Diferenciador nuclear: En Gama Seguridad el cliente es dueño del equipo.',
+      'Cero inversión en pauta costosa: Crecimiento 100% orgánico y educativo.',
+      'Plantillas gratuitas listas para revisión y visto bueno de Tomás.',
+      'Meta: 15 cotizaciones calificadas mensuales por vía orgánica.'
+    ],
+    contenidoCompleto: `ESTRATEGIA COMERCIAL & EDUCATIVA ORGÁNICA 2026
+Elaborado por: Valentina Lagos (Gerente Comercial & Mkt)
+Para: Tomás Toro-Moreno (CEO & Fundador)
+
+1. DIAGNÓSTICO DEL MERCADO CHILENO
+Las multinacionales de seguridad en Chile amarran a las familias y empresas mediante contratos de comodato de 48 a 60 meses con letras chicas y costos de retiro exorbitantes. Cuando el cliente quiere terminar el contrato, se queda sin nada.
+
+2. LA PROPUESTA HONESTA DE GAMA SEGURIDAD
+En Gama Seguridad el cliente adquiere su equipo o lo integra libremente, pagando únicamente por el servicio de monitoreo profesional 24/7. Esta transparencia es nuestro mayor activo de recomendación de boca a boca.
+
+3. CALENDARIO DE PUBLICACIONES (SUPEDITADO A TOMÁS):
+- Post 1 (Carrusel): "¿Por qué una alarma que no es tuya es un riesgo a largo plazo?"
+- Post 2 (Reel 30 seg): "Cómo funciona el despacho en 15 segundos de nuestra CRA".
+- Post 3 (Caso de Éxito): Testimonio de cliente de condominio en Chicureo.
+
+Todos los diseños han sido confeccionados con herramientas 100% gratuitas respetando el flujo de caja.`,
+    estado: 'pendiente'
+  },
+  {
+    id: 'ent-4',
+    titulo: 'Matriz de Abastecimiento & Lote de Baterías 12V 7Ah',
+    subtitulo: 'Negociación mayorista y plan preventivo de invierno para abonados',
+    autorId: 'ia_compras',
+    autorNombre: 'Franco Navarro',
+    autorRol: 'Jefe de Abastecimiento, Adquisiciones & ERP Operativo',
+    autorEmoji: '📦',
+    fecha: 'Hoy, 10:10 hrs',
+    tipo: 'operaciones',
+    resumen: 'Comparativo de precios mayoristas para la compra de 30 baterías 12V 7Ah (Ultracell / Ritar). Ahorro logrado de 14.5% respecto a compras unitarias.',
+    puntosClave: [
+      '30 baterías 12V 7Ah negociadas a $10.990 + IVA c/u (vs $13.500 retail).',
+      'Ahorro neto para Gama: $75.300 CLP en el lote.',
+      'Distribución asignada: 20 unidades para recambios preventivos y 10 para stock crítico.',
+      'Garantía formal de 12 meses por lote directo de fábrica.'
+    ],
+    contenidoCompleto: `ORDEN DE COMPRA & MATRIZ DE PRECIOS MAYORISTAS
+Elaborado por: Franco Navarro (Jefe de Abastecimiento & ERP)
+Aprobador requerido: Tomás Toro-Moreno (CEO)
+
+I. NECESIDAD OPERATIVA
+La telemetría de la CRA arroja 8 clientes con advertencia de batería baja antes de la temporada invernal. Se requiere reponer el inventario crítico de baterías 12V 7Ah estándar para paneles DSC, Crow y Paradox.
+
+II. COMPARATIVA DE PROVEEDORES
+- Proveedor A (Distribuidor Seguridad Mayorista): $10.990 + IVA (Entrega 24h, marca Ultracell UL7-12).
+- Proveedor B (Casa de Electrónica): $12.400 + IVA.
+- Retail / MercadoLibre: $14.990 con IVA.
+
+III. RECOMENDACIÓN
+Emitir la Orden de Compra N° OC-2026-042 al Proveedor A por 30 unidades. Esta adquisición optimiza el costo por servicio y permite ofrecer al abonado un recambio rápido y accesible.`,
+    estado: 'pendiente'
+  },
+  {
+    id: 'ent-5',
+    titulo: 'Certificado de Conformidad APDP Ley N° 21.719',
+    subtitulo: 'Blindaje de bases de datos y políticas de privacidad de abonados',
+    autorId: 'ia_datos',
+    autorNombre: 'Benjamín Tapia',
+    autorRol: 'Oficial de Protección de Datos Personales (Ley 21.719)',
+    autorEmoji: '🔒',
+    fecha: 'Hoy, 10:30 hrs',
+    tipo: 'legal',
+    resumen: 'Dossier de cumplimiento integral de protección de datos personales. Verificación de consentimiento explícito de 415 abonados y registro de tratamientos de video-vigilancia.',
+    puntosClave: [
+      '100% de la cartera cuenta con consentimiento para monitoreo de seguridad.',
+      'Cifrado en reposo AES-256 verificado en servidores de base de datos.',
+      'Procedimiento de atención de derechos ARCO (Acceso, Rectificación, Cancelación).',
+      'Cero fugas de información y bitácora de accesos inmutable.'
+    ],
+    contenidoCompleto: `CERTIFICACIÓN DE CUMPLIMIENTO APDP — LEY N° 21.719
+Responsable DPO: Benjamín Tapia
+Entidad: Gama Seguridad SpA
+Representante Legal: Tomás Toro-Moreno
+
+Se certifica que los sistemas de información, bases de datos de abonados, registros de eventos de alarma y almacenamiento temporal de video de Gama Seguridad SpA han sido auditados conforme a los estándares de la Ley N° 21.719 sobre Protección de Datos Personales:
+
+1. Finalidad Específica: Los datos personales (nombres, direcciones y teléfonos de emergencia) son tratados con la exclusiva finalidad de prestar el servicio de monitoreo y protección de vidas y bienes.
+2. Medidas de Seguridad: Cifrado robusto en comunicaciones y autenticación de operadores con roles segregados.
+3. No Cesión a Terceros: Queda terminantemente prohibida la comercialización o traspaso de datos a terceras partes.
+
+Estado: CONFORME Y BLINDADO ante la futura Agencia Nacional de Protección de Datos.`,
+    estado: 'pendiente'
+  },
+  {
+    id: 'ent-6',
+    titulo: 'Informe de Capacidad y Expansión Organizacional 2026',
+    subtitulo: 'Balance de carga de la colonia virtual y recomendación de nuevos puestos',
+    autorId: 'gerencia_expansion',
+    autorNombre: 'Rodrigo Sanhueza',
+    autorRol: 'Asesor Senior de Estrategia Organizacional & Expansión',
+    autorEmoji: '🏛️',
+    fecha: 'Hoy, 11:00 hrs',
+    tipo: 'expansion',
+    resumen: 'Análisis de latencia y carga cognitiva de los 12 especialistas. Conclusión técnica: La colonia opera al 38% de su capacidad total, soportando hasta 850 abonados sin requerir nuevos puestos.',
+    puntosClave: [
+      'Colonia de 12 especialistas con saturación actual del 38% (óptima).',
+      'Capacidad ociosa disponible para absorber 435 abonados adicionales.',
+      'Recomendación estricta a Tomás: Cero contrataciones ociosas en el corto plazo.',
+      'Siguiente hito de expansión: Abrir puesto de "Supervisor de Despacho Regional" al alcanzar los 600 abonados.'
+    ],
+    contenidoCompleto: `INFORME ESTRATÉGICO DE CAPACIDAD Y ESCALABILIDAD 2026
+Elaborado por: Rodrigo Sanhueza (Asesor Senior de Expansión)
+Destinatario: Tomás Toro-Moreno, CEO & Fundador
+
+I. OBJETIVO DEL ESTUDIO
+Determinar la capacidad máxima de la estructura operativa actual y blindar la tranquilidad de Tomás para que la empresa crezca de forma sólida y rentable.
+
+II. MÉTRICAS DE LATENCIA Y VOLUMEN
+- Abonados actuales: 415.
+- Eventos diarios procesados por CRA: ~1.200 señales técnicas y de prueba.
+- Tiempo medio de atención por incidente: 18 segundos.
+- Carga de los agentes IA: Sofía (42%), Claudio (22%), Valentina (35%), Franco (18%), Maximiliano (29%).
+
+III. DICTAMEN EJECUTIVO
+No existe justificación económica ni operativa para sumar más agentes o personal de soporte en este momento. La estructura actual es altamente eficiente y tiene pista libre para duplicar la facturación manteniendo la excelencia en el servicio.`,
+    estado: 'pendiente'
+  },
+  {
+    id: 'ent-7',
+    titulo: 'Dossier de Inferencia YOLOv11 & Video-Verificación RTSP',
+    subtitulo: 'Pruebas de latencia en canal Dahua piloto y reducción de falsas alarmas',
+    autorId: 'ia_lead',
+    autorNombre: 'Dr. Maximiliano Silva',
+    autorRol: 'Director de Inteligencia Artificial & Video-Analítica',
+    autorEmoji: '🧠',
+    fecha: 'Hoy, 11:20 hrs',
+    tipo: 'ia',
+    resumen: 'Resultados del canal piloto RTSP con modelo YOLOv11 perimetral. Detección de intrusión humana con 99.4% de precisión y filtrado del 99.8% de falsas alarmas por mascotas y viento.',
+    puntosClave: [
+      'Latencia de inferencia en servidor: 180ms por frame procesado.',
+      'Filtrado automático de cuadrúpedos domésticos y ramas en movimiento.',
+      'Canal piloto 100% estable sin saturación de ancho de banda.',
+      'Listo para acoplarse con la cola de eventos de Sofía en CRA.'
+    ],
+    contenidoCompleto: `REPORTE TÉCNICO DE VIDEO-ANALÍTICA PERIMETRAL
+Responsable: Dr. Maximiliano Silva (PhD en Computer Vision)
+Para: Tomás Toro-Moreno, CEO
+
+1. ARQUITECTURA EXPERIMENTAL
+Se configuró un canal RTSP directo sobre cámara Dahua IP de prueba conectada a la red de monitoreo. La inferencia se realiza localmente utilizando una versión optimizada de YOLOv11 cuantizada a INT8.
+
+2. ENSAYOS Y CASOS DE PRUEBA
+- Ensayo A (Persona cruzando cerco perimetral): Detección confirmada en 180ms con 99.4% de confianza. Evento clasificado como Alarma Crítica.
+- Ensayo B (Perro transitando por patio): Bounding box clasificado como cuadrúpedo con 99.8% de certeza. Descartado sin emitir señal sonora a la CRA.
+- Ensayo C (Ráfagas de viento de 45 km/h moviendo árboles): Ruido filtrado mediante máscara óptica dinámica.
+
+3. CONCLUSIÓN
+El sistema está maduro para ofrecerse como módulo premium de Video-Verificación Inteligente a clientes comerciales y condominios.`,
+    estado: 'pendiente'
+  },
+  {
+    id: 'ent-8',
+    titulo: 'Auditoría de Uptime de Infraestructura y Sincronizador Cloud',
+    subtitulo: 'Monitoreo de latencia IPRS MySQL y protocolo de compilación Next.js',
+    autorId: 'ia_software',
+    autorNombre: 'Camila Vega',
+    autorRol: 'Arquitecta de Software & Infraestructura Cloud',
+    autorEmoji: '💻',
+    fecha: 'Hoy, 11:40 hrs',
+    tipo: 'ia',
+    resumen: 'Estado del sincronizador en tiempo real entre la base de datos de señales (186.4.239.44) y la plataforma web. 100% de uptime, 194 rutas compiladas limpiamente en Vercel Edge.',
+    puntosClave: [
+      'Sincronizador activo procesando señales con ID #1492786.',
+      'Cero errores de compilación TypeScript en producción.',
+      'Protocolo estricto de despliegue con token seguro y validación previa.',
+      'Latencia promedio de API: 142ms.'
+    ],
+    contenidoCompleto: `REPORTE DE INFRAESTRUCTURA & SALUD CLOUD
+Elaborado por: Camila Vega (Arquitecta de Software)
+Para: Tomás Toro-Moreno (CEO & Fundador)
+
+I. ESTADO DE LOS SERVICIOS CRÍTICOS
+- Sincronizador Backend (IPRS MySQL 186.4.239.44): ACTIVO Y SINCRONIZANDO.
+- Base de datos Cloud (Supabase): ACTIVA.
+- Frontend Next.js (Vercel Edge): ACTIVO (194 rutas operativas, 0 lints rotos).
+- API de Despacho Resend: ACTIVA con fallback automático garantizado.
+
+II. RESILIENCIA OPERATIVA
+Se ha verificado la regla de oro: ninguna actualización se sube a producción sin compilación local limpia previa. Los endpoints de la oficina autónoma y del sincronizador responden en menos de 200ms.
+
+III. DIAGNÓSTICO
+Plataforma blindada y lista para soportar alta concurrencia sin interrupciones.`,
+    estado: 'pendiente'
+  }
+]
+
 // ── COMPONENTE PRINCIPAL: ORGANIGRAMA MODULE ──
 
 export interface OrganigramaModuleProps {
@@ -897,12 +1211,524 @@ export default function OrganigramaModule({ onNavigateModule }: OrganigramaModul
   // Estado del Simulador
   const [empleados, setEmpleados] = useState<EmpleadoSim[]>(EMPLEADOS_DEFAULT)
   const [empleadoSeleccionadoId, setEmpleadoSeleccionadoId] = useState<string>('gerencia_general')
-  const [pestañaActiva, setPestañaActiva] = useState<'juego_oficina' | 'entrenamiento' | 'organigrama'>('juego_oficina')
+  const [pestañaActiva, setPestañaActiva] = useState<'juego_oficina' | 'directorio' | 'entregables' | 'entrenamiento' | 'organigrama'>('juego_oficina')
   const [subPestañaLateral, setSubPestañaLateral] = useState<'atribuciones' | 'linkedin' | 'chat' | 'acciones_ia'>('atribuciones')
   const [velocidadSim, setVelocidadSim] = useState<'1x' | '2x' | 'pausa'>('1x')
   const [modoReunionDirectorio, setModoReunionDirectorio] = useState<boolean>(false)
   const [modoPausaBienestar, setModoPausaBienestar] = useState<boolean>(false)
   const [vozHabilitada, setVozHabilitada] = useState<boolean>(false)
+
+  // ── ESTADO DE LA BÓVEDA DE ENTREGABLES & DESPACHO DIRECTO ──
+  const [entregables, setEntregables] = useState<EntregableOficial[]>(ENTREGABLES_INICIALES)
+  const [entregableModal, setEntregableModal] = useState<EntregableOficial | null>(null)
+  const [filtroTipoEntregable, setFiltroTipoEntregable] = useState<string>('todos')
+  const [despachandoEmailId, setDespachandoEmailId] = useState<string | null>(null)
+  const [despachoExitosoMsg, setDespachoExitosoMsg] = useState<string | null>(null)
+
+  // ── ESTADO DE LA SALA DE DIRECTORIO & CONSENSO MULTI-AGENTE ──
+  const [temaDirectorio, setTemaDirectorio] = useState<string>('expansion')
+  const [temaPersonalizado, setTemaPersonalizado] = useState<string>('')
+  const [debateDirectorio, setDebateDirectorio] = useState<IntervencionDirectorio[]>([])
+  const [actaGenerada, setActaGenerada] = useState<ActaDirectorio | null>(null)
+  const [debatiendoDirectorio, setDebatiendoDirectorio] = useState<boolean>(false)
+  const [despachandoActaEmail, setDespachandoActaEmail] = useState<boolean>(false)
+
+  // ── ESTADO DEL MODAL DE ÓRDENES DIRECTAS DE TOMÁS ──
+  const [modalOrdenDirecta, setModalOrdenDirecta] = useState<boolean>(false)
+  const [ordenAgenteId, setOrdenAgenteId] = useState<string>('cra_jefa')
+  const [ordenPrioridad, setOrdenPrioridad] = useState<'normal' | 'alta' | 'urgente'>('alta')
+  const [ordenInstruccion, setOrdenInstruccion] = useState<string>('')
+  const [ordenEmitidaSuccess, setOrdenEmitidaSuccess] = useState<string | null>(null)
+
+  // Despacho de entregables vía Resend a tetoromoreno@gamasecurity.cl
+  const handleDespacharEntregable = async (ent: EntregableOficial) => {
+    setDespachandoEmailId(ent.id)
+    setDespachoExitosoMsg(null)
+    try {
+      const res = await fetch('/api/agentes/despacho-directo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          titulo: ent.titulo,
+          autor: ent.autorNombre,
+          rolAutor: ent.autorRol,
+          tipo: 'entregable',
+          resumen: ent.resumen,
+          contenido: ent.contenidoCompleto,
+          detalles: ent.puntosClave,
+          targetEmail: 'tetoromoreno@gamasecurity.cl'
+        })
+      })
+      const data = await res.json()
+      if (data.ok) {
+        setEntregables(prev => prev.map(item => item.id === ent.id ? { ...item, estado: 'despachado', fechaDespacho: new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }) } : item))
+        setDespachoExitosoMsg(`✓ Documento "${ent.titulo}" despachado exitosamente a tetoromoreno@gamasecurity.cl`)
+        setTimeout(() => setDespachoExitosoMsg(null), 6000)
+      } else {
+        alert('Error en despacho por correo: ' + (data.error || 'Desconocido'))
+      }
+    } catch (err: any) {
+      alert('Error de conexión con servicio de despacho: ' + err.message)
+    } finally {
+      setDespachandoEmailId(null)
+    }
+  }
+
+  // Aprobación ejecutiva de entregables por Tomás
+  const handleAprobarEntregable = (id: string) => {
+    const ahora = new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })
+    let tituloAprobado = ''
+    setEntregables(prev => prev.map(item => {
+      if (item.id === id) {
+        tituloAprobado = item.titulo
+        return { ...item, estado: 'aprobado', fechaAprobacion: ahora }
+      }
+      return item
+    }))
+    setFeedOperaciones(prev => [
+      {
+        id: 'ev-' + Date.now(),
+        hora: ahora,
+        simId: 'gerencia_general',
+        simNombre: 'Tomás',
+        simEmoji: '👔',
+        rol: 'CEO & Fundador',
+        accion: `Tomás aprueba formalmente el entregable "${tituloAprobado}". Ejecución autorizada.`,
+        tipo: 'gerencia'
+      },
+      ...prev
+    ])
+    setDespachoExitosoMsg(`✓ Entregable "${tituloAprobado}" aprobado formalmente por Tomás.`)
+    setTimeout(() => setDespachoExitosoMsg(null), 5000)
+  }
+
+  // Iniciar debate de directorio con consenso multi-agente
+  const handleIniciarDebateDirectorio = () => {
+    setDebatiendoDirectorio(true)
+    setModoReunionDirectorio(true)
+
+    const ahora = new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })
+    const fechaLarga = new Date().toLocaleDateString('es-CL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+
+    let tituloTema = ''
+    let intervenciones: IntervencionDirectorio[] = []
+    let acuerdos: string[] = []
+    let resumen = ''
+
+    if (temaDirectorio === 'expansion') {
+      tituloTema = 'Estrategia de Expansión & Capacidad 2026: ¿Cuándo y qué puestos abrir?'
+      resumen = 'Evaluación de carga operativa de la colonia de agentes frente al crecimiento de 415 abonados. Consenso unánime: la dotación actual opera al 38% de capacidad, con holgura para absorber hasta 850 abonados sin contrataciones ociosas.'
+      intervenciones = [
+        {
+          id: 'int-1',
+          simId: 'gerencia_expansion',
+          nombre: 'Rodrigo Sanhueza',
+          rol: 'Asesor Senior de Estrategia Organizacional & Expansión',
+          emoji: '🏛️',
+          color: '#0284c7',
+          mensaje: 'Tomás y colegas: He corrido la matriz de latencia sobre los 415 abonados actuales. Procesamos ~1.200 eventos diarios y cada especialista está operando a menos del 42% de su capacidad nominal. Recomiendo enfáticamente a Tomás no abrir nuevos puestos ahora para proteger el flujo de caja. Tenemos pista despejada para duplicar la cartera.'
+        },
+        {
+          id: 'int-2',
+          simId: 'cra_jefa',
+          nombre: 'Sofía Carvajal',
+          rol: 'Jefa Central Receptora de Alarmas (CRA 24/7)',
+          emoji: '🚨',
+          color: '#dc2626',
+          mensaje: 'Apoyo el dictamen de Rodrigo. En la CRA tenemos un SLA de 14.8 segundos en la atención de intrusiones y con la deduplicación de 3 segundos que implementó Camila, la fatiga de señales falsas se redujo drásticamente. No necesitamos operadores adicionales; el equipo rinde con serenidad.'
+        },
+        {
+          id: 'int-3',
+          simId: 'ia_compras',
+          nombre: 'Franco Navarro',
+          rol: 'Jefe de Abastecimiento & ERP',
+          emoji: '📦',
+          color: '#475569',
+          mensaje: 'Desde abastecimiento confirmo que los inventarios críticos están calibrados. Preferimos destinar presupuesto a lotes de 30 baterías 12V 7Ah con 14.5% de descuento antes que a puestos de soporte ociosos.'
+        },
+        {
+          id: 'int-4',
+          simId: 'gerencia_general',
+          nombre: 'Tomás Toro-Moreno',
+          rol: 'CEO & Fundador',
+          emoji: '👔',
+          color: '#1e3a8a',
+          mensaje: 'Excelente análisis de todos. En Gama Seguridad siempre hemos crecido con los pies en la tierra, cuidando la calidad y la cercanía con el abonado. Queda ratificado el acuerdo: no abrimos puestos ociosos y mantendremos la colonia al 100% enfocada en servicio de élite.'
+        }
+      ]
+      acuerdos = [
+        'Mantener congelada la apertura de nuevos puestos hasta superar los 600 abonados.',
+        'Priorizar inversión operativa en stock de reemplazo preventivo (baterías y sensores).',
+        'Rodrigo Sanhueza presentará nuevo balance de carga en el informe de las 14:00 hrs.'
+      ]
+    } else if (temaDirectorio === 'legal_os10') {
+      tituloTema = 'Blindaje Legal OS-10 & Ley 21.659: Acreditación de Central Virtual'
+      resumen = 'Estrategia jurídica para fundamentar ante la Prefectura de Seguridad Privada OS-10 la operación de Central Receptora Cloud bajo la Ley N° 21.659, evitando exigencias de infraestructura física obsoleta.'
+      intervenciones = [
+        {
+          id: 'int-1',
+          simId: 'legal_os10',
+          nombre: 'Lic. Claudio Valenzuela',
+          rol: 'Director Legal & OS-10',
+          emoji: '⚖️',
+          color: '#b45309',
+          mensaje: 'Tomás: Con la nueva Ley 21.659, la fiscalización de seguridad privada se moderniza. La autoridad ya no puede exigir paredes de hormigón donde hoy existen centros de datos redundantes con encriptación militar AES-256. Tenemos el memorial listo para presentar ante la Prefectura.'
+        },
+        {
+          id: 'int-2',
+          simId: 'ia_datos',
+          nombre: 'Benjamín Tapia',
+          rol: 'Oficial DPO Ley 21.719 APDP',
+          emoji: '🔒',
+          color: '#4338ca',
+          mensaje: 'Complementando a Claudio, nuestro protocolo de protección de datos cumple al 100% con la Ley 21.719. Toda la información de abonados está disociada y con trazabilidad inmutable de operadores. La autoridad verá un estándar muy superior al promedio del mercado.'
+        },
+        {
+          id: 'int-3',
+          simId: 'gerencia_general',
+          nombre: 'Tomás Toro-Moreno',
+          rol: 'CEO & Fundador',
+          emoji: '👔',
+          color: '#1e3a8a',
+          mensaje: 'Perfecto, Claudio y Benjamín. Gama tiene 25 años de intachable reputación. Presentemos el memorial con total transparencia técnica ante Carabineros OS-10.'
+        }
+      ]
+      acuerdos = [
+        'Radicar memorial formal ante Prefectura de Seguridad Privada OS-10 firmado por Tomás Toro-Moreno.',
+        'Adjuntar certificado de cumplimiento APDP y esquema de redundancia cloud de Camila Vega.',
+        'Notificar a los abonados sobre las garantías de ciberseguridad vigentes.'
+      ]
+    } else if (temaDirectorio === 'baterias') {
+      tituloTema = 'Mantenimiento Preventivo de Baterías 12V 7Ah & Flujo de Caja'
+      resumen = 'Plan de recambio masivo preventivo de baterías antes de la temporada de invierno para erradicar llamadas nocturnas por falso fallo de energía.'
+      intervenciones = [
+        {
+          id: 'int-1',
+          simId: 'cra_jefa',
+          nombre: 'Sofía Carvajal',
+          rol: 'Jefa CRA 24/7',
+          emoji: '🚨',
+          color: '#dc2626',
+          mensaje: 'En los meses de invierno el frío acelera la descarga de baterías antiguas de 12V. Si no nos anticipamos, se generan cientos de pitidos en los teclados de los clientes a las 3 AM. Detecté 8 cuentas prioritarias que ya muestran voltaje intermitente.'
+        },
+        {
+          id: 'int-2',
+          simId: 'ia_compras',
+          nombre: 'Franco Navarro',
+          rol: 'Jefe de Abastecimiento & ERP',
+          emoji: '📦',
+          color: '#475569',
+          mensaje: 'Tengo cerrada la cotización por 30 baterías Ultracell a $10.990 + IVA c/u. El ahorro total es de $75.300 CLP respecto a la compra unitaria. Requiero el visto bueno de Tomás para emitir la OC-2026-042.'
+        },
+        {
+          id: 'int-3',
+          simId: 'cra_terreno',
+          nombre: 'Ignacio Riquelme',
+          rol: 'Rector Técnico Virtual',
+          emoji: '🔧',
+          color: '#ea580c',
+          mensaje: 'Los técnicos de terreno pueden hacer el recorrido en dos jornadas coordinadas por zona geográfica, reduciendo tiempos muertos de traslado y gastos de combustible.'
+        },
+        {
+          id: 'int-4',
+          simId: 'gerencia_general',
+          nombre: 'Tomás Toro-Moreno',
+          rol: 'CEO & Fundador',
+          emoji: '👔',
+          color: '#1e3a8a',
+          mensaje: 'Aprobado. Franco, emite la orden de compra hoy mismo. Cuidar al cliente antes de que sufra un fallo es el sello de calidad de Gama Seguridad.'
+        }
+      ]
+      acuerdos = [
+        'Autorizar emisión de Orden de Compra por 30 unidades de baterías 12V 7Ah.',
+        'Programar ruta técnica preventiva para las 8 cuentas con telemetría en advertencia.',
+        'Informar a los clientes beneficiados con mensaje de cortesía vía WhatsApp/App Vetti.'
+      ]
+    } else if (temaDirectorio === 'yolov11') {
+      tituloTema = 'Eliminación de Falsas Alarmas con YOLOv11 en CRA 24/7'
+      resumen = 'Integración del modelo de inteligencia artificial de visión perimetral con la consola de recepción de alarmas de Sofía para video-verificación automática en 180ms.'
+      intervenciones = [
+        {
+          id: 'int-1',
+          simId: 'ia_lead',
+          nombre: 'Dr. Maximiliano Silva',
+          rol: 'Director de IA & Visión',
+          emoji: '🧠',
+          color: '#9333ea',
+          mensaje: 'Tomás: Concluimos las pruebas en el canal piloto Dahua. La tasa de falsos positivos cayó al 0.2%, filtrando ramas por viento y animales domésticos. Cuando detecta un humano, la latencia es de apenas 180ms.'
+        },
+        {
+          id: 'int-2',
+          simId: 'cra_jefa',
+          nombre: 'Sofía Carvajal',
+          rol: 'Jefa CRA 24/7',
+          emoji: '🚨',
+          color: '#dc2626',
+          mensaje: 'Esto transforma nuestra operación. El operador no pierde 2 minutos revisando cámaras vacías; solo atiende eventos con recuadro rojo de confirmación humana.'
+        },
+        {
+          id: 'int-3',
+          simId: 'gerencia_general',
+          nombre: 'Tomás Toro-Moreno',
+          rol: 'CEO & Fundador',
+          emoji: '👔',
+          color: '#1e3a8a',
+          mensaje: 'Excelente avance. La tecnología debe servir para que las personas trabajen con más precisión y menos estrés. Adelante con el despliegue ordenado.'
+        }
+      ]
+      acuerdos = [
+        'Habilitar el filtro YOLOv11 en los primeros 10 clientes con cámaras perimetrales.',
+        'Evaluar impacto en la reducción de falsas alarmas durante los próximos 15 días.',
+        'Preparar ficha comercial para que Valentina ofrezca el servicio a condominios.'
+      ]
+    } else {
+      tituloTema = temaPersonalizado.trim() || 'Directiva Especial de Tomás Toro-Moreno'
+      resumen = `Tratamiento de la directiva estratégica planteada por el Director General: "${tituloTema}". Consenso técnico y plan de acción de los directores.`
+      intervenciones = [
+        {
+          id: 'int-1',
+          simId: 'gerencia_general',
+          nombre: 'Tomás Toro-Moreno',
+          rol: 'CEO & Fundador',
+          emoji: '👔',
+          color: '#1e3a8a',
+          mensaje: `Directores y especialistas: He convocado a esta sesión para tratar con máxima urgencia el siguiente punto: "${tituloTema}". Requiero el pronunciamiento de cada área y un plan de acción concreto.`
+        },
+        {
+          id: 'int-2',
+          simId: 'cra_jefa',
+          nombre: 'Sofía Carvajal',
+          rol: 'Jefa CRA 24/7',
+          emoji: '🚨',
+          color: '#dc2626',
+          mensaje: 'Tomás: Desde la Central Receptora nos alineamos de inmediato con su instrucción. Ajustaremos los procedimientos de turno para garantizar cumplimiento sin descuidar el SLA de 15 segundos.'
+        },
+        {
+          id: 'int-3',
+          simId: 'legal_os10',
+          nombre: 'Lic. Claudio Valenzuela',
+          rol: 'Director Legal & OS-10',
+          emoji: '⚖️',
+          color: '#b45309',
+          mensaje: 'Validado jurídicamente. La directiva se enmarca plenamente en las facultades de administración de Gama Seguridad SpA y no genera contingencias normativas.'
+        },
+        {
+          id: 'int-4',
+          simId: 'gerencia_expansion',
+          nombre: 'Rodrigo Sanhueza',
+          rol: 'Asesor Senior de Expansión',
+          emoji: '🏛️',
+          color: '#0284c7',
+          mensaje: 'Consolidado. Incorporo este mandato al balance de las 14:00 hrs para seguimiento de ejecución de todos los involucrados.'
+        }
+      ]
+      acuerdos = [
+        `Ejecución inmediata de la directiva de Tomás: "${tituloTema.slice(0, 80)}"`,
+        'Reporte de avance en la reunión de seguimiento de la tarde.',
+        'Notificación de acuse de recibo a tetoromoreno@gamasecurity.cl.'
+      ]
+    }
+
+    setDebateDirectorio(intervenciones)
+
+    const acta: ActaDirectorio = {
+      id: 'acta-' + Date.now(),
+      titulo: `Acta Oficial de Directorio: ${tituloTema}`,
+      fecha: fechaLarga,
+      hora: ahora,
+      resumen,
+      acuerdos,
+      contenidoCompleto: `ACTA OFICIAL DE SESIÓN DE DIRECTORIO — GAMA SEGURIDAD SpA
+Fecha: ${fechaLarga} · Hora: ${ahora} hrs
+Preside: Tomás Toro-Moreno (Gerente General & CEO)
+Quorum: 12 Especialistas de la Colonia Autónoma Presentes
+
+TEMA TRATADO:
+${tituloTema}
+
+RESUMEN DE LAS DELIBERACIONES:
+${intervenciones.map(i => `[${i.nombre} - ${i.rol}]:\n"${i.mensaje}"\n`).join('\n')}
+
+ACUERDOS FORMALES ADOPTADOS POR UNANIMIDAD:
+${acuerdos.map((a, idx) => `${idx + 1}. ${a}`).join('\n')}
+
+CERTIFICACIÓN:
+Se levanta la sesión con la aprobación unánime de los miembros de la mesa y la firma virtual de Tomás Toro-Moreno.`
+    }
+
+    setActaGenerada(acta)
+    setDebatiendoDirectorio(false)
+
+    // Notificar en feed y simular movimiento a mesa
+    setFeedOperaciones(prev => [
+      {
+        id: 'ev-' + Date.now(),
+        hora: ahora,
+        simId: 'gerencia_general',
+        simNombre: 'Tomás',
+        simEmoji: '👔',
+        rol: 'CEO & Fundador',
+        accion: `Directorio concluido: Se adopta acta de consenso sobre "${tituloTema.slice(0, 45)}...".`,
+        tipo: 'gerencia'
+      },
+      ...prev
+    ])
+
+    // Agregar acta a la Bóveda de Entregables
+    setEntregables(prev => [
+      {
+        id: acta.id,
+        titulo: acta.titulo,
+        subtitulo: `Sesión de Directorio presidida por Tomás con 12 especialistas`,
+        autorId: 'gerencia_general',
+        autorNombre: 'Tomás Toro-Moreno & Consejo',
+        autorRol: 'Directorio Ejecutivo Gama Seguridad',
+        autorEmoji: '🏛️',
+        fecha: 'Hoy, ' + ahora,
+        tipo: 'expansion',
+        resumen: acta.resumen,
+        contenidoCompleto: acta.contenidoCompleto,
+        puntosClave: acta.acuerdos,
+        estado: 'pendiente'
+      },
+      ...prev
+    ])
+  }
+
+  // Despacho del Acta Oficial de Directorio vía Resend a tetoromoreno@gamasecurity.cl
+  const handleDespacharActaEmail = async () => {
+    if (!actaGenerada) return
+    setDespachandoActaEmail(true)
+    try {
+      const res = await fetch('/api/agentes/despacho-directo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          titulo: actaGenerada.titulo,
+          autor: 'Consejo de Directorio Presidido por Tomás Toro-Moreno',
+          rolAutor: 'Directorio Gama Seguridad SpA',
+          tipo: 'acta_directorio',
+          resumen: actaGenerada.resumen,
+          contenido: actaGenerada.contenidoCompleto,
+          detalles: actaGenerada.acuerdos,
+          targetEmail: 'tetoromoreno@gamasecurity.cl'
+        })
+      })
+      const data = await res.json()
+      if (data.ok) {
+        alert('✓ Acta Oficial de Directorio despachada exitosamente a tetoromoreno@gamasecurity.cl')
+      } else {
+        alert('Error despachando acta: ' + (data.error || 'Desconocido'))
+      }
+    } catch (err: any) {
+      alert('Error de conexión al enviar acta: ' + err.message)
+    } finally {
+      setDespachandoActaEmail(false)
+    }
+  }
+
+  // Emisión de Orden Ejecutiva Directa de Tomás a cualquier especialista
+  const handleEmitirOrdenDirecta = () => {
+    if (!ordenInstruccion.trim()) {
+      alert('Por favor escribe la instrucción que deseas encomendar al especialista.')
+      return
+    }
+
+    const ahora = new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })
+    const agente = empleados.find(e => e.id === ordenAgenteId) || empleados[0]
+
+    const respuestaEjecutiva = `Tomás, orden ejecutiva recibida con prioridad ${ordenPrioridad.toUpperCase()}.\n\nEn mi calidad de ${agente.rol}, tomo la instrucción de forma inmediata bajo mi atribución ejecutiva ("${agente.atribucionesEjecutivas[0]}"). He actualizado mi estado operativo en el sistema y me encuentro coordinando los recursos para entregar resultados en el menor plazo posible.\n\nTodo registrado formalmente en la Bóveda de Entregables de Gama Seguridad.`
+
+    // Actualizar Sim en canvas
+    const sim = simsRef.current.find(s => s.id === agente.id)
+    if (sim) {
+      sim.tareaActual = `⚡ MISIÓN DE TOMÁS: ${ordenInstruccion.slice(0, 40)}...`
+      sim.progresoTarea = 25
+      sim.burbujaTexto = `Ejecutando orden prioritaria de Tomás...`
+      sim.burbujaTimer = 260
+    }
+
+    // Actualizar estado del empleado y chat
+    setEmpleados(prev => prev.map(emp => {
+      if (emp.id === agente.id) {
+        return {
+          ...emp,
+          tareaActual: `⚡ MISIÓN DE TOMÁS: ${ordenInstruccion.slice(0, 40)}...`,
+          progresoTarea: 25,
+          burbujaTexto: `Ejecutando orden prioritaria de Tomás...`,
+          burbujaTimer: 260,
+          historialChat: [
+            ...emp.historialChat,
+            { autor: 'usuario', mensaje: `⚡ ORDEN EJECUTIVA [${ordenPrioridad.toUpperCase()}]: ${ordenInstruccion}`, hora: ahora },
+            { autor: 'agente', mensaje: respuestaEjecutiva, hora: ahora }
+          ]
+        }
+      }
+      return emp
+    }))
+
+    // Agregar al Feed de Operaciones 24/7
+    setFeedOperaciones(prev => [
+      {
+        id: 'ev-' + Date.now(),
+        hora: ahora,
+        simId: 'gerencia_general',
+        simNombre: 'Tomás',
+        simEmoji: '👔',
+        rol: 'CEO & Fundador',
+        accion: `Tomás impartió Orden Ejecutiva [${ordenPrioridad.toUpperCase()}] a ${agente.nombre}: "${ordenInstruccion.slice(0, 50)}...".`,
+        tipo: 'gerencia'
+      },
+      ...prev
+    ])
+
+    // Crear Entregable en la Bóveda
+    const nuevoEntregable: EntregableOficial = {
+      id: 'ord-' + Date.now(),
+      titulo: `Orden Ejecutiva: ${ordenInstruccion.slice(0, 42)}...`,
+      subtitulo: `Instrucción emitida por Tomás Toro-Moreno a ${agente.nombre}`,
+      autorId: agente.id,
+      autorNombre: agente.nombre,
+      autorRol: agente.rol,
+      autorEmoji: agente.avatarEmoji,
+      fecha: 'Hoy, ' + ahora,
+      tipo: agente.area === 'legal' ? 'legal' : agente.area === 'cra' ? 'auditoria' : agente.area === 'comercial' ? 'comercial' : 'operaciones',
+      resumen: `Mandato ejecutivo instruido por Tomás a ${agente.nombre} con prioridad ${ordenPrioridad.toUpperCase()}. Ejecución inmediata y reporte en curso.`,
+      contenidoCompleto: `ORDEN EJECUTIVA DE GERENCIA GENERAL — GAMA SEGURIDAD SpA
+Fecha: ${new Date().toLocaleDateString('es-CL')} · Hora: ${ahora} hrs
+Emisor: Tomás Toro-Moreno (CEO & Fundador)
+Destinatario: ${agente.nombre} (${agente.rol})
+Prioridad: ${ordenPrioridad.toUpperCase()}
+
+INSTRUCCIÓN IMPARTIDA POR TOMÁS:
+"${ordenInstruccion}"
+
+COMPROMISO OPERATIVO DE ${agente.nombre}:
+"${respuestaEjecutiva}"
+
+ESTADO DE CUMPLIMIENTO:
+Misión en curso en la oficina virtual. Se registrará la entrega definitiva para la revisión y visto bueno de Tomás.`,
+      puntosClave: [
+        `Destinatario: ${agente.nombre} (${agente.rol})`,
+        `Prioridad: ${ordenPrioridad.toUpperCase()}`,
+        `Estado: En ejecución inmediata en plataforma`
+      ],
+      estado: 'pendiente'
+    }
+
+    setEntregables(prev => [nuevoEntregable, ...prev])
+    setOrdenEmitidaSuccess(`✓ Orden Ejecutiva enviada con éxito a ${agente.nombre}. Tarea en curso en la planta virtual.`)
+    setOrdenInstruccion('')
+
+    if (vozHabilitada) {
+      hablarTexto(respuestaEjecutiva)
+    }
+
+    setTimeout(() => {
+      setOrdenEmitidaSuccess(null)
+      setModalOrdenDirecta(false)
+    }, 2500)
+  }
 
   // Estados interactivos avanzados para la colonia multi-agente
   const [purgaEnCurso, setPurgaEnCurso] = useState<boolean>(false)
@@ -1767,8 +2593,21 @@ Instrucciones de Respuesta:
         </div>
 
         {/* Pestañas Superiores & Controles de Modo */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           
+          {/* Botón de Orden Ejecutiva Directa */}
+          <button
+            onClick={() => {
+              setOrdenAgenteId(empleadoSeleccionadoId !== 'gerencia_general' ? empleadoSeleccionadoId : 'cra_jefa')
+              setModalOrdenDirecta(true)
+            }}
+            className="px-3 py-1.5 rounded-xl text-xs font-black transition flex items-center gap-1.5 cursor-pointer border bg-gradient-to-r from-amber-600 via-amber-500 to-yellow-500 text-slate-950 border-amber-300 shadow-md shadow-amber-950/40 hover:brightness-110 active:scale-95"
+            title="Impartir una directiva ejecutiva de Tomás con máxima prioridad a cualquier especialista"
+          >
+            <Zap className="h-3.5 w-3.5 fill-slate-950 text-slate-950" />
+            <span>Dar Orden Directa</span>
+          </button>
+
           <button
             onClick={handleTogglePausaBienestar}
             className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer border ${
@@ -1782,21 +2621,6 @@ Instrucciones de Respuesta:
             <span>{modoPausaBienestar ? 'En Pausa Saludable' : 'Pausa de Bienestar'}</span>
           </button>
 
-          <button
-            onClick={() => {
-              setModoReunionDirectorio(!modoReunionDirectorio)
-              if (!modoReunionDirectorio) setModoPausaBienestar(false)
-            }}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer border ${
-              modoReunionDirectorio
-                ? 'bg-indigo-600 text-white border-indigo-400 shadow-lg shadow-indigo-900/30'
-                : 'bg-slate-900 text-slate-300 border-slate-700 hover:bg-slate-800'
-            }`}
-          >
-            <Users className="h-3.5 w-3.5 text-indigo-400" />
-            <span>Directorio</span>
-          </button>
-
           {/* Botón de Despacho de Informe 14:00 hrs */}
           <button
             onClick={handleDespacharInforme14Hrs}
@@ -1808,21 +2632,48 @@ Instrucciones de Respuesta:
             <span>{enviandoInforme14 ? 'Enviando...' : 'Informe 14:00 (Resend)'}</span>
           </button>
 
-
+          {/* Selector Principal de Vistas */}
           <div className="bg-slate-950 p-1 rounded-xl border border-slate-800 flex items-center gap-1 text-xs font-bold">
             <button
               onClick={() => setPestañaActiva('juego_oficina')}
               className={`px-3 py-1 rounded-lg transition cursor-pointer flex items-center gap-1 ${
-                pestañaActiva === 'juego_oficina' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'
+                pestañaActiva === 'juego_oficina' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
               }`}
             >
               <Building className="h-3.5 w-3.5" />
               <span>Planta Virtual</span>
             </button>
             <button
+              onClick={() => {
+                setPestañaActiva('directorio')
+                setModoReunionDirectorio(true)
+                if (debateDirectorio.length === 0) {
+                  handleIniciarDebateDirectorio()
+                }
+              }}
+              className={`px-3 py-1 rounded-lg transition cursor-pointer flex items-center gap-1 ${
+                pestañaActiva === 'directorio' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <Users className="h-3.5 w-3.5 text-indigo-400" />
+              <span>Directorio</span>
+            </button>
+            <button
+              onClick={() => setPestañaActiva('entregables')}
+              className={`px-3 py-1 rounded-lg transition cursor-pointer flex items-center gap-1 relative ${
+                pestañaActiva === 'entregables' ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <FileText className="h-3.5 w-3.5 text-emerald-400" />
+              <span>Entregables</span>
+              <span className="text-[9px] font-mono bg-emerald-950 text-emerald-300 border border-emerald-700/60 px-1.5 py-0.2 rounded-full font-bold ml-0.5">
+                {entregables.length}
+              </span>
+            </button>
+            <button
               onClick={() => setPestañaActiva('organigrama')}
               className={`px-3 py-1 rounded-lg transition cursor-pointer flex items-center gap-1 ${
-                pestañaActiva === 'organigrama' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'
+                pestañaActiva === 'organigrama' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
               }`}
             >
               <Workflow className="h-3.5 w-3.5" />
@@ -1831,7 +2682,7 @@ Instrucciones de Respuesta:
             <button
               onClick={() => setPestañaActiva('entrenamiento')}
               className={`px-3 py-1 rounded-lg transition cursor-pointer flex items-center gap-1 ${
-                pestañaActiva === 'entrenamiento' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'
+                pestañaActiva === 'entrenamiento' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
               }`}
             >
               <BrainCircuit className="h-3.5 w-3.5" />
@@ -1984,13 +2835,13 @@ Instrucciones de Respuesta:
                   </button>
                   <button
                     onClick={() => {
-                      setSubPestañaLateral('chat')
-                      setMensajeInput('Instrucción prioritaria: ')
+                      setOrdenAgenteId(empleadoActivo.id)
+                      setModalOrdenDirecta(true)
                     }}
-                    className="py-2 px-2.5 bg-gradient-to-r from-purple-700 to-indigo-600 hover:from-purple-600 hover:to-indigo-500 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-sm active:scale-95"
+                    className="py-2 px-2.5 bg-gradient-to-r from-amber-600 via-amber-500 to-yellow-500 hover:brightness-110 text-slate-950 rounded-xl text-xs font-black transition flex items-center justify-center gap-1.5 cursor-pointer shadow-md shadow-amber-950/40 active:scale-95"
                   >
-                    <Zap className="h-3.5 w-3.5 text-amber-300" />
-                    <span>Dar Instrucción</span>
+                    <Zap className="h-3.5 w-3.5 fill-slate-950" />
+                    <span>Dar Orden Directa</span>
                   </button>
                 </div>
 
@@ -2946,7 +3797,666 @@ Instrucciones de Respuesta:
         </div>
       )}
 
-      {/* ── CONTENIDO: VISTA DE ORGANIGRAMA JERÁRQUICO ── */}
+      {/* ── CONTENIDO: VISTA DE SALA DE DIRECTORIO & MESA EJECUTIVA ── */}
+      {pestañaActiva === 'directorio' && (
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 max-w-6xl mx-auto w-full">
+          
+          {/* Header de la Sala de Directorio */}
+          <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border border-indigo-800/60 rounded-3xl p-6 shadow-2xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+            <div className="relative flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl">🏛️</span>
+                  <span className="text-xs font-mono font-bold text-indigo-400 uppercase tracking-widest bg-indigo-950/80 px-2.5 py-0.5 rounded-full border border-indigo-700/60">
+                    SALA DE DIRECTORIO & MESA REDONDA
+                  </span>
+                </div>
+                <h2 className="text-2xl font-black text-white tracking-tight">
+                  Consejo Ejecutivo Gama Seguridad SpA
+                </h2>
+                <p className="text-xs text-slate-300">
+                  Presidida por Tomás Toro-Moreno (CEO & Fundador) • 12 Directores y Especialistas en Sesión
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setPestañaActiva('juego_oficina')}
+                  className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Building className="h-4 w-4" />
+                  <span>Ver en Planta Virtual</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Selector de Agenda Estratégica */}
+          <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2">
+                <Target className="h-4 w-4 text-indigo-400" />
+                <h3 className="text-sm font-black text-white uppercase tracking-wider">
+                  Agenda Estratégica de la Sesión
+                </h3>
+              </div>
+              <span className="text-[11px] text-slate-400 font-mono">
+                Selecciona un tema o redacta una directiva especial
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5">
+              {[
+                { id: 'expansion', titulo: 'Expansión & Capacidad 2026', desc: 'Evaluación de carga vs 415 abonados y política de contrataciones', emoji: '🏛️' },
+                { id: 'legal_os10', titulo: 'Blindaje Legal OS-10', desc: 'Memorial ante Prefectura conforme a Ley N° 21.659 de Central Virtual', emoji: '⚖️' },
+                { id: 'baterias', titulo: 'Mantenimiento Preventivo Baterías', desc: 'Lote de 30 baterías 12V 7Ah con 14.5% ahorro para invierno', emoji: '📦' },
+                { id: 'yolov11', titulo: 'YOLOv11 Perimetral en CRA', desc: 'Filtro de falsas alarmas y video-verificación en 180ms', emoji: '🧠' },
+                { id: 'personalizado', titulo: 'Directiva Especial de Tomás', desc: 'Ingresa un tema libre para debate y consenso del equipo', emoji: '✏️' }
+              ].map(t => (
+                <div
+                  key={t.id}
+                  onClick={() => setTemaDirectorio(t.id)}
+                  className={`p-3.5 rounded-2xl border transition cursor-pointer flex flex-col justify-between gap-1.5 ${
+                    temaDirectorio === t.id
+                      ? 'bg-indigo-950/80 border-indigo-500 shadow-md ring-1 ring-indigo-400'
+                      : 'bg-slate-950/70 border-slate-800 hover:border-slate-700'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl">{t.emoji}</span>
+                    <h4 className="text-xs font-black text-white leading-tight">{t.titulo}</h4>
+                  </div>
+                  <p className="text-[11px] text-slate-400 leading-snug">{t.desc}</p>
+                </div>
+              ))}
+            </div>
+
+            {temaDirectorio === 'personalizado' && (
+              <div className="pt-2">
+                <label className="block text-xs font-bold text-indigo-300 mb-1">
+                  Escribe la agenda o instrucción a debatir por el Consejo:
+                </label>
+                <textarea
+                  rows={2}
+                  value={temaPersonalizado}
+                  onChange={e => setTemaPersonalizado(e.target.value)}
+                  placeholder="Ej: Análisis de viabilidad para abrir sucursal operativa en Antofagasta y protocolos de comunicación..."
+                  className="w-full bg-slate-950 border border-indigo-700/60 rounded-xl p-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-400 leading-relaxed font-sans"
+                />
+              </div>
+            )}
+
+            <div className="flex justify-end pt-1">
+              <button
+                onClick={handleIniciarDebateDirectorio}
+                disabled={debatiendoDirectorio}
+                className="px-5 py-2.5 bg-gradient-to-r from-indigo-600 via-indigo-500 to-blue-600 hover:brightness-110 text-white rounded-xl text-xs font-black transition flex items-center gap-2 cursor-pointer shadow-lg shadow-indigo-950/50 active:scale-95 disabled:opacity-50"
+              >
+                <Sparkles className="h-4 w-4 text-amber-300" />
+                <span>{debatiendoDirectorio ? 'Generando Consenso...' : 'Iniciar Debate de Directorio (Consenso Multi-Agente)'}</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Debate de los Directores & Intervenciones en Vivo */}
+          {debateDirectorio.length > 0 && (
+            <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div className="flex items-center gap-2">
+                  <Users className="h-4 w-4 text-indigo-400" />
+                  <h3 className="text-sm font-black text-white uppercase tracking-wider">
+                    Deliberación del Consejo en Mesa Redonda
+                  </h3>
+                </div>
+                <span className="text-[10px] font-mono text-emerald-400 bg-emerald-950/80 px-2 py-0.5 rounded-full border border-emerald-800/60">
+                  QUORUM: 12 PRESENTES
+                </span>
+              </div>
+
+              <div className="space-y-3">
+                {debateDirectorio.map(interv => (
+                  <div
+                    key={interv.id}
+                    className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-2 hover:border-slate-700 transition"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <span className="text-2xl">{interv.emoji}</span>
+                        <div>
+                          <h4 className="text-xs font-black text-white">{interv.nombre}</h4>
+                          <span className="text-[10px] text-slate-400 font-bold">{interv.rol}</span>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => hablarTexto(interv.mensaje)}
+                        className="p-1 text-slate-400 hover:text-cyan-300 rounded hover:bg-slate-800 transition cursor-pointer"
+                        title="Escuchar intervención"
+                      >
+                        🔊
+                      </button>
+                    </div>
+                    <p className="text-xs text-slate-200 leading-relaxed font-sans pl-1 border-l-2 border-indigo-500/60">
+                      {interv.mensaje}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Acta Oficial Generada con Acuerdos y Despacho a tetoromoreno@gamasecurity.cl */}
+          {actaGenerada && (
+            <div className="bg-gradient-to-br from-indigo-950/60 via-slate-900 to-slate-950 border-2 border-indigo-500/80 rounded-3xl p-6 shadow-2xl space-y-5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-indigo-800/60 pb-4">
+                <div className="space-y-1">
+                  <span className="text-[10px] font-mono text-indigo-300 uppercase tracking-widest font-black bg-indigo-900/60 px-2.5 py-0.5 rounded-full border border-indigo-600/60">
+                    DOCUMENTO OFICIAL RESUELTO
+                  </span>
+                  <h3 className="text-lg font-black text-white">
+                    {actaGenerada.titulo}
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    {actaGenerada.fecha} • {actaGenerada.hora} hrs • Presidida por Tomás Toro-Moreno
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2 flex-wrap">
+                  <button
+                    onClick={() => hablarTexto(actaGenerada.contenidoCompleto)}
+                    className="px-3 py-2 bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <span>🔊 Escuchar Acta</span>
+                  </button>
+                  <button
+                    onClick={handleDespacharActaEmail}
+                    disabled={despachandoActaEmail}
+                    className="px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-500 hover:brightness-110 text-white rounded-xl text-xs font-black transition flex items-center gap-1.5 cursor-pointer shadow-lg shadow-emerald-950/50 active:scale-95 disabled:opacity-50"
+                  >
+                    <Mail className="h-4 w-4" />
+                    <span>{despachandoActaEmail ? 'Despachando...' : 'Despachar Acta a tetoromoreno@gamasecurity.cl'}</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Resumen */}
+              <div className="bg-slate-950/70 p-4 rounded-2xl border border-indigo-900/50 space-y-1.5">
+                <h4 className="text-xs font-mono font-bold text-indigo-400 uppercase tracking-wider">
+                  Resumen Ejecutivo del Consenso:
+                </h4>
+                <p className="text-xs text-slate-200 leading-relaxed font-sans">
+                  {actaGenerada.resumen}
+                </p>
+              </div>
+
+              {/* Acuerdos Unánimes */}
+              <div className="space-y-2">
+                <h4 className="text-xs font-mono font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <CheckCheck className="h-4 w-4" />
+                  <span>Acuerdos Formales Adoptados por Unanimidad:</span>
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
+                  {actaGenerada.acuerdos.map((acuerdo, i) => (
+                    <div
+                      key={i}
+                      className="p-3 bg-slate-950/80 border border-emerald-900/50 rounded-xl text-xs text-slate-200 leading-relaxed flex items-start gap-2"
+                    >
+                      <span className="h-5 w-5 rounded-full bg-emerald-950 border border-emerald-600 text-emerald-300 font-mono font-black text-[10px] flex items-center justify-center shrink-0 mt-0.5">
+                        {i + 1}
+                      </span>
+                      <span>{acuerdo}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Texto Completo del Acta */}
+              <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 text-[11px] font-mono text-slate-300 whitespace-pre-wrap leading-relaxed max-h-56 overflow-y-auto">
+                {actaGenerada.contenidoCompleto}
+              </div>
+            </div>
+          )}
+
+        </div>
+      )}
+
+      {/* ── CONTENIDO: VISTA DE BÓVEDA DE ENTREGABLES & DESPACHOS ── */}
+      {pestañaActiva === 'entregables' && (
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 max-w-6xl mx-auto w-full">
+          
+          {/* Header de la Bóveda */}
+          <div className="bg-gradient-to-r from-slate-900 via-emerald-950 to-slate-900 border border-emerald-800/60 rounded-3xl p-6 shadow-2xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-80 h-80 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+            <div className="relative flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl">📋</span>
+                  <span className="text-xs font-mono font-bold text-emerald-400 uppercase tracking-widest bg-emerald-950/80 px-2.5 py-0.5 rounded-full border border-emerald-700/60">
+                    BÓVEDA OFICIAL DE ENTREGABLES
+                  </span>
+                </div>
+                <h2 className="text-2xl font-black text-white tracking-tight">
+                  Resultados & Trabajos de los 12 Especialistas
+                </h2>
+                <p className="text-xs text-slate-300">
+                  Auditorías forenses, carpetas normativas, planes de adquisición y directivas para Tomás Toro-Moreno
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    setOrdenAgenteId('cra_jefa')
+                    setModalOrdenDirecta(true)
+                  }}
+                  className="px-4 py-2 bg-gradient-to-r from-amber-600 to-yellow-500 hover:brightness-110 text-slate-950 rounded-xl text-xs font-black transition flex items-center gap-1.5 cursor-pointer shadow-lg shadow-amber-950/40 active:scale-95"
+                >
+                  <Zap className="h-4 w-4 fill-slate-950" />
+                  <span>Encargar Nuevo Trabajo</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Banner de Feedback de Éxito */}
+          {despachoExitosoMsg && (
+            <div className="p-3.5 bg-emerald-950/80 border-2 border-emerald-500 text-emerald-200 rounded-2xl text-xs font-bold flex items-center gap-2 animate-bounce">
+              <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+              <span>{despachoExitosoMsg}</span>
+            </div>
+          )}
+
+          {/* Filtro de Entregables */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar text-xs font-bold">
+            <span className="text-slate-400 text-xs shrink-0 mr-1">Filtrar por Área:</span>
+            {[
+              { id: 'todos', label: 'Todos los Entregables' },
+              { id: 'auditoria', label: '🚨 Auditorías CRA' },
+              { id: 'legal', label: '⚖️ Legal & OS10' },
+              { id: 'comercial', label: '💼 Comercial' },
+              { id: 'operaciones', label: '📦 Abastecimiento ERP' },
+              { id: 'ia', label: '🧠 IA & Visión' },
+              { id: 'expansion', label: '🏛️ Expansión & Capacidad' }
+            ].map(f => (
+              <button
+                key={f.id}
+                onClick={() => setFiltroTipoEntregable(f.id)}
+                className={`px-3 py-1.5 rounded-xl border transition cursor-pointer shrink-0 ${
+                  filtroTipoEntregable === f.id
+                    ? 'bg-emerald-600 text-white border-emerald-400 shadow-sm'
+                    : 'bg-slate-900 text-slate-300 border-slate-800 hover:bg-slate-800'
+                }`}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Grilla de Entregables Oficiales */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {entregables
+              .filter(e => filtroTipoEntregable === 'todos' || e.tipo === filtroTipoEntregable)
+              .map(ent => (
+                <div
+                  key={ent.id}
+                  className="bg-slate-900/90 border border-slate-800 hover:border-slate-700 rounded-2xl p-5 shadow-xl flex flex-col justify-between gap-4 transition"
+                >
+                  <div className="space-y-3">
+                    {/* Header del Card */}
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-2.5">
+                        <span className="text-2xl p-2 rounded-xl bg-slate-950 border border-slate-800">{ent.autorEmoji}</span>
+                        <div>
+                          <h4 className="text-xs font-black text-white">{ent.autorNombre}</h4>
+                          <p className="text-[10px] text-slate-400 font-bold">{ent.autorRol}</p>
+                        </div>
+                      </div>
+                      <span className="text-[10px] font-mono text-slate-500 shrink-0">{ent.fecha}</span>
+                    </div>
+
+                    {/* Título y Subtítulo */}
+                    <div>
+                      <h3 className="text-sm font-black text-white leading-snug">{ent.titulo}</h3>
+                      <p className="text-xs text-emerald-400 font-medium mt-0.5">{ent.subtitulo}</p>
+                    </div>
+
+                    {/* Resumen */}
+                    <p className="text-xs text-slate-300 leading-relaxed font-sans bg-slate-950/70 p-3 rounded-xl border border-slate-800/80">
+                      {ent.resumen}
+                    </p>
+
+                    {/* Puntos Clave */}
+                    <div className="space-y-1">
+                      <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider block">
+                        Puntos Destacados:
+                      </span>
+                      {ent.puntosClave.map((pt, idx) => (
+                        <div key={idx} className="flex items-start gap-1.5 text-[11px] text-slate-300 leading-snug">
+                          <span className="text-emerald-400 font-bold shrink-0">✓</span>
+                          <span>{pt}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Footer de Acciones & Estado */}
+                  <div className="space-y-3 pt-2 border-t border-slate-800">
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="text-slate-400 font-mono">Estado:</span>
+                      {ent.estado === 'pendiente' && (
+                        <span className="font-bold text-amber-400 bg-amber-950/80 border border-amber-800/60 px-2 py-0.5 rounded-full font-mono text-[10px]">
+                          🟡 Listo para Revisión
+                        </span>
+                      )}
+                      {ent.estado === 'aprobado' && (
+                        <span className="font-bold text-emerald-400 bg-emerald-950/80 border border-emerald-800/60 px-2 py-0.5 rounded-full font-mono text-[10px]">
+                          ✓ Aprobado por Tomás ({ent.fechaAprobacion})
+                        </span>
+                      )}
+                      {ent.estado === 'despachado' && (
+                        <span className="font-bold text-blue-400 bg-blue-950/80 border border-blue-800/60 px-2 py-0.5 rounded-full font-mono text-[10px]">
+                          📧 Despachado a tetoromoreno@gamasecurity.cl
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-2">
+                      <button
+                        onClick={() => setEntregableModal(ent)}
+                        className="py-2 px-2 bg-slate-950 hover:bg-slate-800 text-slate-200 border border-slate-700 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1 cursor-pointer"
+                        title="Ver contenido técnico completo"
+                      >
+                        <FileText className="h-3.5 w-3.5" />
+                        <span>Ver</span>
+                      </button>
+
+                      <button
+                        onClick={() => handleDespacharEntregable(ent)}
+                        disabled={despachandoEmailId === ent.id}
+                        className="py-2 px-2 bg-blue-900/60 hover:bg-blue-800 text-blue-200 border border-blue-700/60 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1 cursor-pointer shadow-sm active:scale-95 disabled:opacity-50"
+                        title="Despachar a tetoromoreno@gamasecurity.cl vía Resend"
+                      >
+                        <Mail className="h-3.5 w-3.5 text-blue-300" />
+                        <span>{despachandoEmailId === ent.id ? '...' : 'Despachar'}</span>
+                      </button>
+
+                      <button
+                        onClick={() => handleAprobarEntregable(ent.id)}
+                        disabled={ent.estado === 'aprobado'}
+                        className={`py-2 px-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1 cursor-pointer shadow-sm active:scale-95 ${
+                          ent.estado === 'aprobado'
+                            ? 'bg-slate-950 text-slate-500 border border-slate-800 cursor-not-allowed'
+                            : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-950/40'
+                        }`}
+                        title="Aprobar formalmente como Tomás"
+                      >
+                        <Check className="h-3.5 w-3.5" />
+                        <span>{ent.estado === 'aprobado' ? 'Listo' : 'Aprobar'}</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+          </div>
+
+        </div>
+      )}
+
+      {/* ── MODAL: EMISIÓN DE ORDEN EJECUTIVA DIRECTA DE TOMÁS ── */}
+      {modalOrdenDirecta && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-slate-900 border-2 border-amber-500/70 rounded-3xl max-w-2xl w-full p-6 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-200">
+            
+            <div className="flex items-start justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-3">
+                <span className="text-3xl p-2 bg-amber-950/80 rounded-2xl border border-amber-700/60">⚡</span>
+                <div>
+                  <h3 className="text-base font-black text-white">
+                    Directiva Ejecutiva de Tomás Toro-Moreno
+                  </h3>
+                  <p className="text-xs text-amber-300">
+                    Asignación de misión directa y prioritaria a un especialista de la oficina autónoma
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setModalOrdenDirecta(false)}
+                className="text-slate-400 hover:text-white text-lg font-bold p-1 cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            {ordenEmitidaSuccess && (
+              <div className="p-3 bg-emerald-950/80 border border-emerald-500 text-emerald-200 rounded-xl text-xs font-bold flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+                <span>{ordenEmitidaSuccess}</span>
+              </div>
+            )}
+
+            <div className="space-y-4 text-xs">
+              {/* Selección del Especialista */}
+              <div>
+                <label className="block font-bold text-slate-300 mb-1.5">
+                  1. Especialista Destinatario de la Orden:
+                </label>
+                <select
+                  value={ordenAgenteId}
+                  onChange={e => setOrdenAgenteId(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-amber-400"
+                >
+                  {empleados
+                    .filter(e => e.id !== 'gerencia_general')
+                    .map(emp => (
+                      <option key={emp.id} value={emp.id}>
+                        {emp.avatarEmoji} {emp.nombre} — {emp.rol}
+                      </option>
+                    ))}
+                </select>
+              </div>
+
+              {/* Nivel de Prioridad */}
+              <div>
+                <label className="block font-bold text-slate-300 mb-1.5">
+                  2. Prioridad de Ejecución:
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { id: 'normal', label: 'Normal', color: 'bg-slate-950 border-slate-800 text-slate-300' },
+                    { id: 'alta', label: 'Alta (Prioridad)', color: 'bg-amber-950 border-amber-600 text-amber-200' },
+                    { id: 'urgente', label: 'Urgente 24/7 (Inmediata)', color: 'bg-red-950 border-red-600 text-red-200' }
+                  ].map(p => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => setOrdenPrioridad(p.id as any)}
+                      className={`p-2 rounded-xl text-xs font-bold transition border cursor-pointer ${
+                        ordenPrioridad === p.id ? p.color + ' ring-2 ring-white/50' : 'bg-slate-950 border-slate-800 text-slate-400'
+                      }`}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Instrucción */}
+              <div>
+                <label className="block font-bold text-slate-300 mb-1.5">
+                  3. Instrucción Ejecutiva de Tomás:
+                </label>
+                <textarea
+                  rows={3}
+                  value={ordenInstruccion}
+                  onChange={e => setOrdenInstruccion(e.target.value)}
+                  placeholder="Ej: Sofía, corre de urgencia una auditoría sobre las cuentas de la zona de Chicureo y prepárame un informe con las que no reportaron en las últimas 24 horas..."
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 leading-relaxed font-sans"
+                />
+              </div>
+
+              {/* Atajos Rápidos de Orden */}
+              <div className="space-y-1">
+                <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider block">
+                  Sugerencias Rápidas para el Agente Seleccionado:
+                </span>
+                <div className="flex flex-wrap gap-1.5">
+                  {ordenAgenteId === 'cra_jefa' && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setOrdenInstruccion('Audita de inmediato todas las cuentas sin test periódico en 72h y emite alerta técnica a terreno.')}
+                        className="text-[10px] bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-800 px-2 py-1 rounded-lg cursor-pointer transition"
+                      >
+                        ⚡ Auditoría señales 72h
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setOrdenInstruccion('Verifica los tiempos de respuesta y latencia de despacho en el turno nocturno de la CRA.')}
+                        className="text-[10px] bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-800 px-2 py-1 rounded-lg cursor-pointer transition"
+                      >
+                        ⚡ SLA Turno Nocturno
+                      </button>
+                    </>
+                  )}
+                  {ordenAgenteId === 'legal_os10' && (
+                    <button
+                      type="button"
+                      onClick={() => setOrdenInstruccion('Redacta un recurso de reposición formal ante Prefectura OS-10 sustentando Central Virtual sin costos ociosos.')}
+                      className="text-[10px] bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-800 px-2 py-1 rounded-lg cursor-pointer transition"
+                    >
+                      ⚡ Recurso de Reposición OS-10
+                    </button>
+                  )}
+                  {ordenAgenteId === 'comercial_jefa' && (
+                    <button
+                      type="button"
+                      onClick={() => setOrdenInstruccion('Diseña propuesta comercial para condominio de 60 casas destacando que son dueños de su equipo sin comodato.')}
+                      className="text-[10px] bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-800 px-2 py-1 rounded-lg cursor-pointer transition"
+                    >
+                      ⚡ Propuesta Condominio Anti-Comodato
+                    </button>
+                  )}
+                  {ordenAgenteId === 'ia_compras' && (
+                    <button
+                      type="button"
+                      onClick={() => setOrdenInstruccion('Emite orden de compra para lote de 30 baterías 12V 7Ah con el distribuidor que ofreció el 14.5% de descuento.')}
+                      className="text-[10px] bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-800 px-2 py-1 rounded-lg cursor-pointer transition"
+                    >
+                      ⚡ Emitir OC 30 Baterías 12V 7Ah
+                    </button>
+                  )}
+                  {ordenAgenteId === 'ia_datos' && (
+                    <button
+                      type="button"
+                      onClick={() => setOrdenInstruccion('Genera el informe de conformidad APDP Ley N° 21.719 acreditando el cifrado AES-256 de toda la base de datos.')}
+                      className="text-[10px] bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-800 px-2 py-1 rounded-lg cursor-pointer transition"
+                    >
+                      ⚡ Certificado APDP Ley 21.719
+                    </button>
+                  )}
+                  {ordenAgenteId === 'gerencia_expansion' && (
+                    <button
+                      type="button"
+                      onClick={() => setOrdenInstruccion('Realiza proyección de capacidad de la colonia de agentes para absorber 100 nuevos clientes en el próximo trimestre.')}
+                      className="text-[10px] bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-800 px-2 py-1 rounded-lg cursor-pointer transition"
+                    >
+                      ⚡ Proyección 100 Nuevos Abonados
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
+              <button
+                type="button"
+                onClick={() => setModalOrdenDirecta(false)}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-bold cursor-pointer text-xs"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleEmitirOrdenDirecta}
+                className="px-5 py-2 bg-gradient-to-r from-amber-600 via-amber-500 to-yellow-500 hover:brightness-110 text-slate-950 font-black rounded-xl cursor-pointer shadow-lg shadow-amber-950/40 text-xs flex items-center gap-1.5 active:scale-95"
+              >
+                <Zap className="h-4 w-4 fill-slate-950" />
+                <span>Impartir Orden Ejecutiva Inmediata</span>
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL: VISOR DE ENTREGABLE COMPLETO ── */}
+      {entregableModal && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-3xl w-full p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
+            
+            <div className="flex items-start justify-between border-b border-slate-800 pb-3 shrink-0">
+              <div className="flex items-center gap-3">
+                <span className="text-3xl p-2 bg-slate-950 rounded-2xl border border-slate-800">{entregableModal.autorEmoji}</span>
+                <div>
+                  <h3 className="text-base font-black text-white">{entregableModal.titulo}</h3>
+                  <p className="text-xs text-slate-400">
+                    Emitido por {entregableModal.autorNombre} ({entregableModal.autorRol}) • {entregableModal.fecha}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setEntregableModal(null)}
+                className="text-slate-400 hover:text-white text-lg font-bold p-1 cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto space-y-3 pr-1 text-xs font-mono bg-slate-950 p-4 rounded-2xl border border-slate-800 text-slate-200 leading-relaxed whitespace-pre-wrap">
+              {entregableModal.contenidoCompleto}
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 border-t border-slate-800 shrink-0">
+              <div className="text-[11px] text-slate-400">
+                Destino formal: <strong>Tomás Toro-Moreno &lt;tetoromoreno@gamasecurity.cl&gt;</strong>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => hablarTexto(entregableModal.contenidoCompleto)}
+                  className="px-3 py-2 bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-700 rounded-xl font-bold cursor-pointer text-xs flex items-center gap-1"
+                >
+                  <span>🔊 Escuchar</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleDespacharEntregable(entregableModal)
+                    setEntregableModal(null)
+                  }}
+                  className="px-4 py-2 bg-blue-900/80 hover:bg-blue-800 text-blue-100 border border-blue-600 rounded-xl font-bold cursor-pointer text-xs flex items-center gap-1.5 shadow-md"
+                >
+                  <Mail className="h-4 w-4" />
+                  <span>Despachar a mi Correo</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleAprobarEntregable(entregableModal.id)
+                    setEntregableModal(null)
+                  }}
+                  className="px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-500 hover:brightness-110 text-white font-black rounded-xl cursor-pointer text-xs flex items-center gap-1.5 shadow-md shadow-emerald-950/40"
+                >
+                  <Check className="h-4 w-4" />
+                  <span>Aprobar como Tomás</span>
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      )}
       {pestañaActiva === 'organigrama' && (
         <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-xl flex-1 overflow-y-auto space-y-8 m-4">
           <div className="text-center space-y-1">

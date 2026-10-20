@@ -1033,3 +1033,31 @@
 [REPLICA SUCCESS] Replicado a: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
 [REPLICA SUCCESS] Replicado a: C:\SCORPION\BASES DE DATOS\GENERAL.mdb
 [SYNC] Contenido idéntico al último sincronizado.
+=================================================================
+  GAMA SECURITY - Sincronizador Activo de Clientes & Expedientes
+  Inicio: 2026-10-16 11:40:06
+=================================================================
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\Users\tetor\Downloads\GENERAL.mdb
+[REPLICA SUCCESS] Replicado a: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[REPLICA SUCCESS] Replicado a: C:\SCORPION\BASES DE DATOS\GENERAL.mdb
+[SYNC] Subiendo a Supabase: 466 abonados, 914 con autorizados...
+[10:54:13] [SUPABASE] Clientes insertados/actualizados exitosamente (466 cuentas).
+[10:54:15] [SUPABASE] Personas autorizadas insertadas/actualizadas exitosamente (914 cuentas).
+[LOCAL JSON] Archivo actualizado: C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
+[LOCAL JSON] Archivo actualizado: C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
+[SYNC SUCCESS] Sincronización completada exitosamente a las 10:54:15!
+=================================================================
+  GAMA SECURITY - Sincronizador Activo de Clientes & Expedientes
+  Inicio: 2026-10-19 11:53:27
+=================================================================
+
+[CAMBIO DETECTADO] Leyendo archivo más reciente: C:\Users\tetor\Downloads\GENERAL.mdb
+[REPLICA SUCCESS] Replicado a: C:\SCORPION\BASE DE DATOS\GENERAL.mdb
+[REPLICA SUCCESS] Replicado a: C:\SCORPION\BASES DE DATOS\GENERAL.mdb
+[SYNC] Subiendo a Supabase: 466 abonados, 914 con autorizados...
+[12:19:06] [SUPABASE] Clientes insertados/actualizados exitosamente (466 cuentas).
+[12:19:08] [SUPABASE] Personas autorizadas insertadas/actualizadas exitosamente (914 cuentas).
+[LOCAL JSON] Archivo actualizado: C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
+[LOCAL JSON] Archivo actualizado: C:\Users\tetor\Downloads\MONITOREO ONLINE\monitoreo-online\dashboard\src\lib\clientes_general.json
+[SYNC SUCCESS] Sincronización completada exitosamente a las 12:19:09!
