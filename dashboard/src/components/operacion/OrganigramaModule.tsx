@@ -2,10 +2,12 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react'
 import {
+  User,
   Users,
   Building,
   Shield,
   Radio,
+  Receipt,
   Wrench,
   TrendingUp,
   FileText,
@@ -882,7 +884,11 @@ const ACCIONES_OPERATIVAS_POOL = [
 
 // ── COMPONENTE PRINCIPAL: ORGANIGRAMA MODULE ──
 
-export default function OrganigramaModule() {
+export interface OrganigramaModuleProps {
+  onNavigateModule?: (moduloId: string) => void
+}
+
+export default function OrganigramaModule({ onNavigateModule }: OrganigramaModuleProps = {}) {
   const [adminDesbloqueado, setAdminDesbloqueado] = useState<boolean>(true)
   const [claveAdminInput, setClaveAdminInput] = useState<string>('')
   const [errorClaveAdmin, setErrorClaveAdmin] = useState<boolean>(false)
@@ -896,6 +902,13 @@ export default function OrganigramaModule() {
   const [velocidadSim, setVelocidadSim] = useState<'1x' | '2x' | 'pausa'>('1x')
   const [modoReunionDirectorio, setModoReunionDirectorio] = useState<boolean>(false)
   const [modoPausaBienestar, setModoPausaBienestar] = useState<boolean>(false)
+  const [vozHabilitada, setVozHabilitada] = useState<boolean>(false)
+
+  // Estados interactivos avanzados para la colonia multi-agente
+  const [purgaEnCurso, setPurgaEnCurso] = useState<boolean>(false)
+  const [escenarioYolo, setEscenarioYolo] = useState<'humano' | 'mascota' | 'viento'>('humano')
+  const [resultadoYolo, setResultadoYolo] = useState<string | null>(null)
+  const [certificadoApdpVisible, setCertificadoApdpVisible] = useState<boolean>(false)
 
   const [enviandoInforme14, setEnviandoInforme14] = useState<boolean>(false)
 
@@ -916,13 +929,12 @@ export default function OrganigramaModule() {
     }
   }
 
-
   // Estados interactivos de herramientas de área
   const [cargandoInformeSofia, setCargandoInformeSofia] = useState<boolean>(false)
   const [resultadoInformeSofia, setResultadoInformeSofia] = useState<any | null>(null)
   const [emailEnviadoStatus, setEmailEnviadoStatus] = useState<string | null>(null)
 
-  const [borradoresMkt] = useState<any[]>([
+  const [borradoresMkt, setBorradoresMkt] = useState<any[]>([
     {
       id: 'mkt-1',
       red: 'Instagram & Facebook',
@@ -942,6 +954,74 @@ export default function OrganigramaModule() {
       fecha: 'Hoy, 10:15'
     }
   ])
+
+  const handleAprobarBorradores = () => {
+    const ahora = new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })
+    setBorradoresMkt(prev => prev.map(p => ({
+      ...p,
+      estado: `✓ APROBADO POR TOMÁS (${ahora})`
+    })))
+    setFeedOperaciones(prev => [
+      {
+        id: 'ev-' + Date.now(),
+        hora: ahora,
+        simId: 'gerencia_general',
+        simNombre: 'Tomás',
+        simEmoji: '👔',
+        rol: 'CEO',
+        accion: 'Tomás aprueba formalmente los borradores de marketing orgánico de Valentina para publicación programada.',
+        tipo: 'gerencia'
+      },
+      ...prev
+    ])
+    alert('✓ Borradores de marketing aprobados formalmente por Tomás. Valentina coordinará publicación.')
+  }
+
+  const handlePurgarContexto = () => {
+    setPurgaEnCurso(true)
+    setTimeout(() => {
+      setPurgaEnCurso(false)
+      const ahora = new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })
+      setFeedOperaciones(prev => [
+        {
+          id: 'ev-' + Date.now(),
+          hora: ahora,
+          simId: 'ia_reclutamiento',
+          simNombre: 'Loreto Baeza',
+          simEmoji: '🧩',
+          rol: 'Talento IA',
+          accion: 'Purga de contexto ejecutada con éxito: 12 especialistas con buffer liberado a 0 tokens y fatiga cognitiva neutralizada.',
+          tipo: 'ia'
+        },
+        ...prev
+      ])
+      alert('✓ Purga de memoria y contexto completada con éxito. La colonia de agentes opera al 100% de coherencia cognitiva sin alucinaciones.')
+    }, 1200)
+  }
+
+  const handleSimularYolo = (escenario: 'humano' | 'mascota' | 'viento') => {
+    setEscenarioYolo(escenario)
+    if (escenario === 'humano') {
+      setResultadoYolo('🚨 INTRUSIÓN PERIMETRAL DETECTADA (Confianza: 99.4%)\nBounding Box: [x:140, y:220, w:60, h:180] • Clasificación: Persona sospechosa en cerco perimetral.\nAcción Automática: Pre-alarma enviada a Sofía en CRA 24/7 para verificación prioritaria.')
+    } else if (escenario === 'mascota') {
+      setResultadoYolo('🟢 FALSA ALARMA DESCARTADA (Confianza: 99.8%)\nBounding Box: [x:310, y:450, w:35, h:25] • Clasificación: Cuadrúpedo doméstico (Gato / Perro).\nAcción Automática: Evento filtrado silenciosamente sin disparar llamada al abonado.')
+    } else {
+      setResultadoYolo('💨 RUIDO AMBIENTAL FILTRADO (Confianza: 99.9%)\nPatrón: Movimiento oscilatorio de ramas de árbol con viento racheado de 45 km/h.\nAcción Automática: Sensibilidad óptica auto-calibrada en canal piloto.')
+    }
+  }
+
+  const hablarTexto = (texto: string) => {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      try {
+        window.speechSynthesis.cancel()
+        const cleanText = texto.replace(/[*_#`]/g, '')
+        const utterance = new SpeechSynthesisUtterance(cleanText)
+        utterance.lang = 'es-CL'
+        utterance.rate = 1.05
+        window.speechSynthesis.speak(utterance)
+      } catch {}
+    }
+  }
 
   const [manualSeleccionado, setManualSeleccionado] = useState<string>('dsc_neo')
 
@@ -1488,7 +1568,7 @@ export default function OrganigramaModule() {
     }
   }
 
-  const handleEnviarMensaje = () => {
+  const handleEnviarMensaje = async () => {
     if (!mensajeInput.trim() || enviandoChat) return
     const mensajeUsuario = mensajeInput.trim()
     setMensajeInput('')
@@ -1509,42 +1589,86 @@ export default function OrganigramaModule() {
       return a
     }))
 
-    setTimeout(() => {
-      let respuestaSim = ''
-      const promptMinus = mensajeUsuario.toLowerCase()
+    // 1. Intentar consultar a la IA real (Gemini 2.5 Flash) con el System Prompt del especialista
+    let respuestaFinal = ''
+    try {
+      const contextoSystem = `
+${empleadoActivo.entrenamiento.systemPrompt}
+Tu Nombre: ${empleadoActivo.nombre} (${empleadoActivo.apodo})
+Tu Rol: ${empleadoActivo.rol}
+Área: ${empleadoActivo.areaNombre}
+Atribuciones Ejecutivas:
+${empleadoActivo.atribucionesEjecutivas.map(a => '- ' + a).join('\n')}
+Misión Principal: ${empleadoActivo.misionPrincipal}
+Reglas de Negocio:
+${empleadoActivo.entrenamiento.reglasNegocio.map(r => '- ' + r).join('\n')}
 
-      if (promptMinus.includes('orden') || promptMinus.includes('autorizo') || promptMinus.includes('haz') || promptMinus.includes('revisa')) {
-        respuestaSim = 'Entendido, Tomás. En mi rol como ' + empleadoActivo.rol + ', tomo la instrucción y procedo a ejecutar bajo mi atribución: "' + empleadoActivo.atribucionesEjecutivas[0] + '".'
-        const s = simsRef.current.find(item => item.id === empleadoActivo.id)
-        if (s) {
-          s.tareaActual = '⚡ Ejecutando: ' + mensajeUsuario.slice(0, 40) + '...'
-          s.progresoTarea = 25
+Instrucciones de Respuesta:
+- Estás conversando directamente con Tomás Toro-Moreno, CEO y Fundador de Gama Seguridad.
+- Responde siempre en primera persona, manteniendo absoluta fidelidad a tu especialidad profesional.
+- Sé ejecutivo, profesional, cálido y pragmático. No uses introducciones vacías como "Hola, como modelo de IA...". Habla como la persona y especialista real que eres en la empresa.
+- Mantén la respuesta concisa y contundente (1 a 3 párrafos como máximo).
+`
+      const promptCompleto = `${contextoSystem}\n\nHistorial previo:\n${empleadoActivo.historialChat.slice(-4).map(m => `${m.autor === 'usuario' ? 'Tomás' : empleadoActivo.apodo}: ${m.mensaje}`).join('\n')}\nTomás: ${mensajeUsuario}\n${empleadoActivo.apodo}:`
+
+      const res = await fetch('/api/gemini', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: promptCompleto })
+      })
+      if (res.ok) {
+        const data = await res.json()
+        if (data.ok && (data.texto || data.text)) {
+          respuestaFinal = (data.texto || data.text).trim()
         }
-      } else if (promptMinus.includes('habilidad') || promptMinus.includes('experiencia') || promptMinus.includes('certificacion')) {
-        respuestaSim = 'Cuento con ' + empleadoActivo.certificacionesElite[0] + ' y domino ' + empleadoActivo.hardSkills.slice(0, 3).join(', ') + ' para garantizar la más alta precisión operativa.'
-      } else if (promptMinus.includes('estado') || promptMinus.includes('reporte') || promptMinus.includes('kpi')) {
-        respuestaSim = 'Reportando novedad: KPI principal ' + empleadoActivo.kpis[0].label + ' en ' + empleadoActivo.kpis[0].valor + '. Operaciones estables 24/7.'
-      } else {
-        respuestaSim = 'Recibido, Tomás. Coordinando con el equipo bajo el estándar de ' + (empleadoActivo.metodologias[0] || 'Gama Seguridad') + '. Todo bajo control y en marcha.'
       }
+    } catch (e) {
+      console.warn('Fallback local para chat de especialista:', e)
+    }
 
-      setEmpleados(prev => prev.map(a => {
-        if (a.id === empleadoActivo.id) {
-          return {
-            ...a,
-            burbujaTexto: respuestaSim.slice(0, 48) + '...',
-            burbujaTimer: 200,
-            historialChat: [
-              ...a.historialChat,
-              { autor: 'agente', mensaje: respuestaSim, hora: new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }) }
-            ]
-          }
+    // 2. Si no hubo respuesta de la API de IA (ej: sin conexión o límite), usar fallback contextual inteligente
+    if (!respuestaFinal) {
+      const promptMinus = mensajeUsuario.toLowerCase()
+      if (promptMinus.includes('orden') || promptMinus.includes('autorizo') || promptMinus.includes('haz') || promptMinus.includes('revisa')) {
+        respuestaFinal = 'Entendido, Tomás. En mi rol como ' + empleadoActivo.rol + ', tomo la instrucción y procedo a ejecutar bajo mi atribución: "' + empleadoActivo.atribucionesEjecutivas[0] + '".'
+      } else if (promptMinus.includes('habilidad') || promptMinus.includes('experiencia') || promptMinus.includes('certificacion')) {
+        respuestaFinal = 'Cuento con ' + empleadoActivo.certificacionesElite[0] + ' y domino ' + empleadoActivo.hardSkills.slice(0, 3).join(', ') + ' para garantizar la más alta precisión operativa.'
+      } else if (promptMinus.includes('estado') || promptMinus.includes('reporte') || promptMinus.includes('kpi')) {
+        respuestaFinal = 'Reportando novedad: KPI principal ' + empleadoActivo.kpis[0].label + ' en ' + empleadoActivo.kpis[0].valor + '. Operaciones estables 24/7.'
+      } else {
+        respuestaFinal = 'Recibido, Tomás. Coordinando con el equipo bajo el estándar de ' + (empleadoActivo.metodologias[0] || 'Gama Seguridad') + '. Todo bajo control y en marcha.'
+      }
+    }
+
+    const s = simsRef.current.find(item => item.id === empleadoActivo.id)
+    if (s) {
+      s.tareaActual = '⚡ Atendiendo: ' + mensajeUsuario.slice(0, 40) + '...'
+      s.progresoTarea = 45
+      s.burbujaTexto = respuestaFinal.slice(0, 52) + '...'
+      s.burbujaTimer = 220
+    }
+
+    setEmpleados(prev => prev.map(a => {
+      if (a.id === empleadoActivo.id) {
+        return {
+          ...a,
+          burbujaTexto: respuestaFinal.slice(0, 52) + '...',
+          burbujaTimer: 220,
+          historialChat: [
+            ...a.historialChat,
+            { autor: 'agente', mensaje: respuestaFinal, hora: new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }) }
+          ]
         }
-        return a
-      }))
+      }
+      return a
+    }))
 
-      setEnviandoChat(false)
-    }, 500)
+    // Hablar con Web Speech API si el usuario lo tiene habilitado
+    if (vozHabilitada) {
+      hablarTexto(respuestaFinal)
+    }
+
+    setEnviandoChat(false)
   }
 
   const handleEjecutarAuditoriaSofia = async (enviarEmail: boolean = false) => {
@@ -2175,13 +2299,338 @@ export default function OrganigramaModule() {
                       </div>
                     )}
 
-                    {/* Otros empleados */}
-                    {['gerencia_general', 'ia_lead', 'ia_software', 'ia_datos', 'ia_compras', 'comercial_cuentas'].includes(empleadoActivo.id) && (
-                      <div className="p-3 bg-slate-950 border border-slate-800 rounded-xl space-y-2">
-                        <span className="font-bold text-slate-300 block">Especialidad de {empleadoActivo.apodo}:</span>
-                        <p className="text-[11px] text-slate-400 leading-relaxed">
-                          {empleadoActivo.misionPrincipal}
-                        </p>
+                    {/* ACCIONES DE TOMÁS (GERENCIA GENERAL & FUNDADOR) */}
+                    {empleadoActivo.id === 'gerencia_general' && (
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between border-b border-slate-800 pb-1.5">
+                          <span className="font-bold text-blue-400 flex items-center gap-1.5">
+                            <Shield className="h-3.5 w-3.5" />
+                            <span>Mando Directivo & Gobernanza</span>
+                          </span>
+                          <span className="text-[10px] font-mono text-emerald-400">CEO & Fundador</span>
+                        </div>
+
+                        <div className="space-y-2">
+                          <button
+                            onClick={handleAprobarBorradores}
+                            className="w-full py-2 px-3 bg-gradient-to-r from-blue-700 to-indigo-600 hover:from-blue-600 hover:to-indigo-500 text-white rounded-xl font-bold flex items-center justify-between cursor-pointer transition text-xs shadow-md"
+                          >
+                            <span className="flex items-center gap-1.5">
+                              <CheckCircle2 className="h-4 w-4 text-emerald-300" />
+                              <span>Aprobar Borradores de Marketing</span>
+                            </span>
+                            <span className="text-[10px] bg-blue-950/80 px-2 py-0.5 rounded font-mono">
+                              Visto Bueno
+                            </span>
+                          </button>
+
+                          <button
+                            onClick={handleTogglePausaBienestar}
+                            className="w-full py-2 px-3 bg-slate-950 hover:bg-slate-800 border border-emerald-800/60 text-emerald-300 rounded-xl font-bold flex items-center justify-between cursor-pointer transition text-xs"
+                          >
+                            <span className="flex items-center gap-1.5">
+                              <Heart className="h-4 w-4 text-emerald-400" />
+                              <span>{modoPausaBienestar ? 'Finalizar Pausa Saludable' : 'Pausa de Bienestar Colectiva'}</span>
+                            </span>
+                            <span className="text-[10px] font-mono text-slate-400">Casino / Zen</span>
+                          </button>
+
+                          <div className="p-2.5 bg-slate-950 border border-slate-800 rounded-xl space-y-1 text-[11px]">
+                            <div className="font-bold text-slate-200">Directiva Estratégica 2026:</div>
+                            <p className="text-slate-400 text-[10px] leading-relaxed">
+                              Gama Seguridad SpA protege a 415+ abonados con tecnología de propiedad del cliente. Prohibición expresa de comodatos forzosos y cláusulas leoninas.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* ACCIONES DE RODRIGO (ASESORÍA SENIOR DE EXPANSIÓN) */}
+                    {empleadoActivo.id === 'gerencia_expansion' && (
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between border-b border-slate-800 pb-1.5">
+                          <span className="font-bold text-indigo-400 flex items-center gap-1.5">
+                            <TrendingUp className="h-3.5 w-3.5" />
+                            <span>Capacidad & Expansión Organizacional</span>
+                          </span>
+                          <span className="text-[10px] font-mono text-emerald-400">Balance Carga</span>
+                        </div>
+
+                        <div className="space-y-2">
+                          <button
+                            onClick={handleDespacharInforme14Hrs}
+                            disabled={enviandoInforme14}
+                            className="w-full py-2 px-3 bg-gradient-to-r from-indigo-700 to-purple-600 hover:from-indigo-600 hover:to-purple-500 text-white rounded-xl font-bold flex items-center justify-between cursor-pointer transition text-xs shadow-md"
+                          >
+                            <span className="flex items-center gap-1.5">
+                              <Send className="h-4 w-4" />
+                              <span>Despachar Consolidado 14:00 hrs</span>
+                            </span>
+                            <span className="text-[10px] bg-indigo-950/80 px-2 py-0.5 rounded font-mono">
+                              {enviandoInforme14 ? 'Enviando...' : 'Resend'}
+                            </span>
+                          </button>
+
+                          <div className="p-2.5 bg-slate-950 border border-slate-800 rounded-xl space-y-1.5 text-[11px]">
+                            <div className="flex justify-between items-center text-slate-300">
+                              <span className="font-bold">Abonados Activos:</span>
+                              <span className="font-mono text-white">415</span>
+                            </div>
+                            <div className="flex justify-between items-center text-slate-300">
+                              <span className="font-bold">Ratio por Especialista:</span>
+                              <span className="font-mono text-emerald-400">34.6 abonados/agente</span>
+                            </div>
+                            <div className="flex justify-between items-center text-slate-300">
+                              <span className="font-bold">Capacidad Restante:</span>
+                              <span className="font-mono text-cyan-400">+135 abonados (hasta 550)</span>
+                            </div>
+                            <div className="p-2 bg-emerald-950/40 border border-emerald-800/40 rounded-lg text-[10px] text-emerald-200">
+                              ✓ Diagnóstico: Topología de agentes en equilibrio óptimo. No se requiere contratar nuevos agentes que generen fricción o ruido.
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* ACCIONES DE LORETO (TALENTO & RECLUTAMIENTO IA) */}
+                    {empleadoActivo.id === 'ia_reclutamiento' && (
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between border-b border-slate-800 pb-1.5">
+                          <span className="font-bold text-pink-400 flex items-center gap-1.5">
+                            <BrainCircuit className="h-3.5 w-3.5" />
+                            <span>Arquitectura & Salud Cognitiva IA</span>
+                          </span>
+                          <span className="text-[10px] font-mono text-emerald-400">12 Modelos</span>
+                        </div>
+
+                        <div className="space-y-2">
+                          <button
+                            onClick={handlePurgarContexto}
+                            disabled={purgaEnCurso}
+                            className="w-full py-2 px-3 bg-gradient-to-r from-pink-700 to-rose-600 hover:from-pink-600 hover:to-rose-500 text-white rounded-xl font-bold flex items-center justify-between cursor-pointer transition text-xs shadow-md"
+                          >
+                            <span className="flex items-center gap-1.5">
+                              <RefreshCw className={`h-4 w-4 ${purgaEnCurso ? 'animate-spin' : ''}`} />
+                              <span>Purgar Contexto & Fatiga Cognitiva</span>
+                            </span>
+                            <span className="text-[10px] bg-pink-950/80 px-2 py-0.5 rounded font-mono">
+                              {purgaEnCurso ? 'Purgando...' : 'Limpiar'}
+                            </span>
+                          </button>
+
+                          <div className="p-2.5 bg-slate-950 border border-slate-800 rounded-xl space-y-1.5 text-[11px]">
+                            <div className="flex justify-between text-slate-400">
+                              <span>Modelos Activos Calibrados:</span>
+                              <span className="font-bold text-white">12 Especialistas</span>
+                            </div>
+                            <div className="flex justify-between text-slate-400">
+                              <span>Tasa de Alucinación:</span>
+                              <span className="font-bold text-emerald-400">0.0% (Validado)</span>
+                            </div>
+                            <div className="flex justify-between text-slate-400">
+                              <span>Horario Purga Automática:</span>
+                              <span className="font-bold text-cyan-400">13:00 hrs diaria</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* ACCIONES DE MAXIMILIANO (DIRECTOR DE IA & VISIÓN) */}
+                    {empleadoActivo.id === 'ia_lead' && (
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between border-b border-slate-800 pb-1.5">
+                          <span className="font-bold text-purple-400 flex items-center gap-1.5">
+                            <Zap className="h-3.5 w-3.5" />
+                            <span>Visión Artificial & YOLOv11</span>
+                          </span>
+                          <span className="text-[10px] font-mono text-emerald-400">Latencia 180ms</span>
+                        </div>
+
+                        <div className="space-y-2">
+                          <span className="text-[10px] text-slate-400 font-mono block">Probar Inferencia en Canal Piloto:</span>
+                          <div className="grid grid-cols-3 gap-1">
+                            <button
+                              onClick={() => handleSimularYolo('humano')}
+                              className={`py-1.5 px-2 rounded-lg text-[10px] font-bold transition cursor-pointer border ${
+                                escenarioYolo === 'humano' ? 'bg-purple-600 text-white border-purple-400' : 'bg-slate-950 text-slate-300 border-slate-800'
+                              }`}
+                            >
+                              🚨 Humano
+                            </button>
+                            <button
+                              onClick={() => handleSimularYolo('mascota')}
+                              className={`py-1.5 px-2 rounded-lg text-[10px] font-bold transition cursor-pointer border ${
+                                escenarioYolo === 'mascota' ? 'bg-purple-600 text-white border-purple-400' : 'bg-slate-950 text-slate-300 border-slate-800'
+                              }`}
+                            >
+                              🐕 Mascota
+                            </button>
+                            <button
+                              onClick={() => handleSimularYolo('viento')}
+                              className={`py-1.5 px-2 rounded-lg text-[10px] font-bold transition cursor-pointer border ${
+                                escenarioYolo === 'viento' ? 'bg-purple-600 text-white border-purple-400' : 'bg-slate-950 text-slate-300 border-slate-800'
+                              }`}
+                            >
+                              💨 Viento
+                            </button>
+                          </div>
+
+                          {resultadoYolo && (
+                            <div className="p-2.5 bg-slate-950 border border-purple-900/60 rounded-xl space-y-1 text-[11px] font-mono whitespace-pre-wrap leading-relaxed text-slate-200">
+                              {resultadoYolo}
+                            </div>
+                          )}
+
+                          <div className="p-2 bg-slate-950 border border-slate-800 rounded-lg flex items-center justify-between text-[10px] text-slate-400">
+                            <span>Canal RTSP Dahua:</span>
+                            <span className="text-emerald-400 font-bold font-mono">1 Cámara Activa (60 FPS)</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* ACCIONES DE CAMILA (ARQUITECTA DE SOFTWARE & CLOUD) */}
+                    {empleadoActivo.id === 'ia_software' && (
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between border-b border-slate-800 pb-1.5">
+                          <span className="font-bold text-cyan-400 flex items-center gap-1.5">
+                            <Code2 className="h-3.5 w-3.5" />
+                            <span>Infraestructura Cloud & Sincronizador</span>
+                          </span>
+                          <span className="text-[10px] font-mono text-emerald-400">Uptime 99.99%</span>
+                        </div>
+
+                        <div className="space-y-2">
+                          <div className="p-2.5 bg-slate-950 border border-slate-800 rounded-xl space-y-1.5 text-[11px]">
+                            <div className="flex justify-between items-center text-slate-300">
+                              <span>Sincronizador (Backend):</span>
+                              <span className="text-emerald-400 font-bold flex items-center gap-1">
+                                <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                                <span>Activo (ID #1492786)</span>
+                              </span>
+                            </div>
+                            <div className="flex justify-between items-center text-slate-300">
+                              <span>IPRS Cloud (MySQL):</span>
+                              <span className="text-emerald-400 font-mono">186.4.239.44 OK</span>
+                            </div>
+                            <div className="flex justify-between items-center text-slate-300">
+                              <span>Frontend Vercel:</span>
+                              <span className="text-emerald-400 font-mono">194 rutas (0 errores)</span>
+                            </div>
+                            <div className="flex justify-between items-center text-slate-300">
+                              <span>Deduplicación de Señales:</span>
+                              <span className="text-cyan-400 font-mono">3s precisión (Zona/Usuario)</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* ACCIONES DE BENJAMÍN (OFICIAL DPO LEY 21.719 APDP) */}
+                    {empleadoActivo.id === 'ia_datos' && (
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between border-b border-slate-800 pb-1.5">
+                          <span className="font-bold text-indigo-400 flex items-center gap-1.5">
+                            <Lock className="h-3.5 w-3.5" />
+                            <span>Protección de Datos (Ley 21.719)</span>
+                          </span>
+                          <span className="text-[10px] font-mono text-emerald-400">100% Conforme</span>
+                        </div>
+
+                        <div className="space-y-2">
+                          <button
+                            onClick={() => setCertificadoApdpVisible(!certificadoApdpVisible)}
+                            className="w-full py-2 px-3 bg-indigo-950 hover:bg-indigo-900 border border-indigo-700/60 text-indigo-200 rounded-xl font-bold flex items-center justify-between cursor-pointer transition text-xs"
+                          >
+                            <span className="flex items-center gap-1.5">
+                              <ShieldCheck className="h-4 w-4 text-emerald-400" />
+                              <span>{certificadoApdpVisible ? 'Ocultar Certificado APDP' : 'Emitir Certificado APDP'}</span>
+                            </span>
+                            <span className="text-[10px] font-mono text-indigo-300">Ver Constancia</span>
+                          </button>
+
+                          {certificadoApdpVisible && (
+                            <div className="p-3 bg-slate-950 border border-indigo-900 rounded-xl space-y-2 text-[10px] font-mono text-slate-300 leading-relaxed">
+                              <div className="font-bold text-emerald-400 border-b border-slate-800 pb-1">
+                                CERTIFICADO OFICIAL APDP — LEY N° 21.719
+                              </div>
+                              <div>Titular: Gama Seguridad SpA</div>
+                              <div>Responsable DPO: Benjamín Tapia</div>
+                              <div>Cartera Auditada: 415 Abonados con consentimiento verificado</div>
+                              <div>Cifrado en Reposo: AES-256 (Supabase Cloud)</div>
+                              <div className="text-emerald-300 font-bold">Estado: Conforme y Blindado ante Agencia de Protección de Datos</div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* ACCIONES DE FRANCO (ABASTECIMIENTO & ERP) */}
+                    {empleadoActivo.id === 'ia_compras' && (
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between border-b border-slate-800 pb-1.5">
+                          <span className="font-bold text-slate-300 flex items-center gap-1.5">
+                            <Receipt className="h-3.5 w-3.5" />
+                            <span>Control de Stock & Abastecimiento</span>
+                          </span>
+                          <span className="text-[10px] font-mono text-emerald-400">Ahorro 14.5%</span>
+                        </div>
+
+                        <div className="space-y-2">
+                          <div className="p-2.5 bg-slate-950 border border-slate-800 rounded-xl space-y-1.5 text-[11px]">
+                            <div className="flex justify-between items-center text-slate-300">
+                              <span>Baterías 12V 7Ah (Gel/Plomo):</span>
+                              <span className="font-bold text-emerald-400 font-mono">42 unid. (Mín: 25)</span>
+                            </div>
+                            <div className="flex justify-between items-center text-slate-300">
+                              <span>Sensores PIR DSC Neo:</span>
+                              <span className="font-bold text-emerald-400 font-mono">18 unid. (Mín: 10)</span>
+                            </div>
+                            <div className="flex justify-between items-center text-slate-300">
+                              <span>Fuentes de Poder 12V 2A:</span>
+                              <span className="font-bold text-emerald-400 font-mono">15 unid. (Mín: 8)</span>
+                            </div>
+                          </div>
+
+                          <div className="p-2 bg-slate-950 border border-slate-800 rounded-xl text-[10px] text-slate-400 leading-snug">
+                            💼 <strong>Convenio Mayorista:</strong> Cotizaciones sincronizadas con Intcomex y Anixter para reposición inmediata en 24h.
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* ACCIONES DE MATÍAS (ÉXITO DE CLIENTES & RETENCIÓN) */}
+                    {empleadoActivo.id === 'comercial_cuentas' && (
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between border-b border-slate-800 pb-1.5">
+                          <span className="font-bold text-sky-400 flex items-center gap-1.5">
+                            <User className="h-3.5 w-3.5" />
+                            <span>Retención & Éxito de Clientes</span>
+                          </span>
+                          <span className="text-[10px] font-mono text-emerald-400">NPS 96/100</span>
+                        </div>
+
+                        <div className="space-y-2">
+                          <div className="p-2.5 bg-slate-950 border border-slate-800 rounded-xl space-y-1.5 text-[11px]">
+                            <div className="flex justify-between items-center text-slate-300">
+                              <span>Tasa de Retención:</span>
+                              <span className="font-bold text-emerald-400 font-mono">99.65% Anual</span>
+                            </div>
+                            <div className="flex justify-between items-center text-slate-300">
+                              <span>Churn Mensual:</span>
+                              <span className="font-bold text-emerald-400 font-mono">0.35% (Meta &lt; 1%)</span>
+                            </div>
+                            <div className="flex justify-between items-center text-slate-300">
+                              <span>Abonados en App Vetti:</span>
+                              <span className="font-bold text-cyan-400 font-mono">312 conectados</span>
+                            </div>
+                          </div>
+
+                          <div className="p-2 bg-sky-950/40 border border-sky-900/60 rounded-xl text-[10px] text-sky-200 leading-relaxed">
+                            🤝 <strong>Fidelización:</strong> Trato directo y sin burocracia. Cuando un cliente llama, lo atiende una persona o un especialista con respuesta en segundos.
+                          </div>
+                        </div>
                       </div>
                     )}
 
@@ -2248,34 +2697,65 @@ export default function OrganigramaModule() {
                   </div>
                 )}
 
-                {/* VISTA 4: Chat Directo e Interactivo */}
+                {/* VISTA 4: Chat Directo e Interactivo con IA Real */}
                 {subPestañaLateral === 'chat' && (
                   <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-3 space-y-2">
-                    <div className="flex items-center justify-between text-[10px] border-b border-slate-800 pb-1">
-                      <span className="font-bold text-slate-300 flex items-center gap-1">
-                        <MessageSquare className="h-3 w-3 text-[#2997ff]" />
+                    <div className="flex items-center justify-between text-[10px] border-b border-slate-800 pb-1.5">
+                      <span className="font-bold text-slate-300 flex items-center gap-1.5">
+                        <MessageSquare className="h-3.5 w-3.5 text-[#2997ff]" />
                         <span>Despacho con {empleadoActivo.apodo}</span>
                       </span>
-                      <span className="text-emerald-400 font-mono font-bold">En Línea 24/7</span>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          onClick={() => setVozHabilitada(!vozHabilitada)}
+                          className={`px-2 py-0.5 rounded text-[9px] font-bold cursor-pointer transition flex items-center gap-1 border ${
+                            vozHabilitada
+                              ? 'bg-emerald-600 text-white border-emerald-400'
+                              : 'bg-slate-950 text-slate-400 border-slate-800 hover:text-white'
+                          }`}
+                          title="Activar o desactivar síntesis de voz natural en español"
+                        >
+                          <span>{vozHabilitada ? '🔊 Voz: ON' : '🔈 Voz: OFF'}</span>
+                        </button>
+                        <span className="text-emerald-400 font-mono font-bold">24/7 Gemini</span>
+                      </div>
                     </div>
 
-                    <div className="max-h-48 overflow-y-auto space-y-1.5 pr-1 text-xs">
+                    <div className="max-h-52 overflow-y-auto space-y-2 pr-1 text-xs">
                       {empleadoActivo.historialChat.map((msg, i) => (
                         <div
                           key={i}
-                          className={`p-2 rounded-xl leading-relaxed text-[11px] ${
+                          className={`p-2.5 rounded-xl leading-relaxed text-[11px] ${
                             msg.autor === 'usuario'
-                              ? 'bg-blue-900/40 text-blue-100 ml-3 border border-blue-800/40'
-                              : 'bg-slate-950 text-slate-200 mr-3 border border-slate-800'
+                              ? 'bg-blue-900/40 text-blue-100 ml-4 border border-blue-800/40'
+                              : 'bg-slate-950 text-slate-200 mr-4 border border-slate-800 shadow-xs'
                           }`}
                         >
-                          <div className="flex justify-between items-center text-[9px] text-slate-400 mb-0.5 font-mono">
-                            <span>{msg.autor === 'usuario' ? 'Tomás' : empleadoActivo.apodo}</span>
-                            <span>{msg.hora}</span>
+                          <div className="flex justify-between items-center text-[9px] text-slate-400 mb-1 font-mono">
+                            <span className="font-bold text-slate-300">{msg.autor === 'usuario' ? '👔 Tomás' : `${empleadoActivo.avatarEmoji} ${empleadoActivo.apodo}`}</span>
+                            <div className="flex items-center gap-1.5">
+                              <span>{msg.hora}</span>
+                              {msg.autor === 'agente' && (
+                                <button
+                                  onClick={() => hablarTexto(msg.mensaje)}
+                                  className="text-slate-400 hover:text-cyan-300 cursor-pointer text-[10px] p-0.5 rounded hover:bg-slate-800 transition"
+                                  title="Escuchar con voz natural"
+                                >
+                                  🔊
+                                </button>
+                              )}
+                            </div>
                           </div>
-                          <p className="whitespace-pre-wrap">{msg.mensaje}</p>
+                          <p className="whitespace-pre-wrap leading-relaxed">{msg.mensaje}</p>
                         </div>
                       ))}
+
+                      {enviandoChat && (
+                        <div className="p-2 rounded-xl bg-slate-950/80 border border-slate-800 mr-6 text-slate-400 text-[10px] flex items-center gap-2">
+                          <span className="h-2 w-2 rounded-full bg-cyan-400 animate-ping" />
+                          <span>{empleadoActivo.apodo} está analizando con IA y redactando...</span>
+                        </div>
+                      )}
                     </div>
 
                     <div className="flex items-center gap-1.5 pt-1">
@@ -2284,8 +2764,9 @@ export default function OrganigramaModule() {
                         value={mensajeInput}
                         onChange={e => setMensajeInput(e.target.value)}
                         onKeyDown={e => e.key === 'Enter' && handleEnviarMensaje()}
-                        placeholder={`Instrucción o consulta a ${empleadoActivo.apodo}...`}
-                        className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-2.5 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#2997ff]"
+                        disabled={enviandoChat}
+                        placeholder={`Instrucción o consulta directa a ${empleadoActivo.apodo}...`}
+                        className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-2.5 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#2997ff] disabled:opacity-60"
                       />
                       <button
                         onClick={handleEnviarMensaje}
