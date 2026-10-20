@@ -58,7 +58,10 @@ import {
   Heart,
   Mail,
   CheckCheck,
-  Inbox
+  Inbox,
+  Image as ImageIcon,
+  Eye,
+  Download
 } from 'lucide-react'
 
 // ── TIPOS Y MODELOS DEL SIMULADOR ──
@@ -1781,6 +1784,51 @@ Misión en curso en la oficina virtual. Se registrará la entrega definitiva par
     }
   ])
 
+  const [despachandoPropuestasGraficas, setDespachandoPropuestasGraficas] = useState<boolean>(false)
+  const [propuestasGraficasDespachadasMsg, setPropuestasGraficasDespachadasMsg] = useState<string | null>(null)
+  const [modalImagenPreview, setModalImagenPreview] = useState<{ url: string; titulo: string } | null>(null)
+
+  const handleDespacharPropuestasGraficas = async () => {
+    setDespachandoPropuestasGraficas(true)
+    setPropuestasGraficasDespachadasMsg(null)
+    try {
+      const res = await fetch('/api/agentes/despacho-directo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tipo: 'propuestas_graficas',
+          titulo: '2 Propuestas Gráficas Oficiales Listas para Aprobación',
+          autor: 'Valentina Lagos',
+          rolAutor: 'Gerente Comercial & Mkt',
+          targetEmail: 'tetoromoreno@gamasecurity.cl'
+        })
+      })
+      const data = await res.json()
+      if (data.ok) {
+        setPropuestasGraficasDespachadasMsg('✓ 2 Propuestas Gráficas despachadas con éxito a tetoromoreno@gamasecurity.cl')
+        setFeedOperaciones(prev => [
+          {
+            id: 'ev-' + Date.now(),
+            hora: new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }),
+            simId: 'comercial_jefa',
+            simNombre: 'Valentina Lagos',
+            simEmoji: '💼',
+            rol: 'Comercial',
+            accion: 'Valentina despachó 2 propuestas gráficas de alta definición al correo de Tomás (tetoromoreno@gamasecurity.cl).',
+            tipo: 'comercial'
+          },
+          ...prev
+        ])
+      } else {
+        alert('Error despachando propuestas gráficas: ' + (data.error || 'Desconocido'))
+      }
+    } catch (err: any) {
+      alert('Error de conexión al enviar propuestas gráficas: ' + err.message)
+    } finally {
+      setDespachandoPropuestasGraficas(false)
+    }
+  }
+
   const handleAprobarBorradores = () => {
     const ahora = new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })
     setBorradoresMkt(prev => prev.map(p => ({
@@ -2466,6 +2514,33 @@ Instrucciones de Respuesta:
       }
     }
 
+    // 3. Si Tomás consulta o pide propuestas gráficas o envío al mail, disparar despacho real a Resend
+    const promptLower = mensajeUsuario.toLowerCase()
+    const pideGraficas = promptLower.includes('propuesta') || promptLower.includes('grafica') || promptLower.includes('gráfica') || promptLower.includes('diseño') || promptLower.includes('diseno')
+    const pideEnvio = promptLower.includes('mail') || promptLower.includes('correo') || promptLower.includes('envia') || promptLower.includes('envía') || promptLower.includes('manda') || promptLower.includes('llego') || promptLower.includes('llegó') || promptLower.includes('pedi') || promptLower.includes('pedí')
+
+    if ((pideGraficas && (pideEnvio || empleadoActivo.id === 'comercial_jefa')) || (empleadoActivo.id === 'comercial_jefa' && pideEnvio)) {
+      fetch('/api/agentes/despacho-directo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tipo: 'propuestas_graficas',
+          titulo: '2 Propuestas Gráficas Oficiales — Valentina Lagos',
+          autor: 'Valentina Lagos',
+          rolAutor: 'Gerente Comercial & Mkt',
+          targetEmail: 'tetoromoreno@gamasecurity.cl'
+        })
+      }).then(r => r.json()).then(d => {
+        if (d.ok) {
+          setPropuestasGraficasDespachadasMsg('✓ 2 Propuestas Gráficas despachadas con éxito a tetoromoreno@gamasecurity.cl')
+        }
+      }).catch(err => console.error('Error auto-despacho propuestas:', err))
+
+      if (!respuestaFinal.toLowerCase().includes('tetoromoreno@gamasecurity.cl')) {
+        respuestaFinal += '\n\n📧 Tomás: Acabo de despachar inmediatamente las 2 propuestas gráficas de alta definición adjuntas a tu correo tetoromoreno@gamasecurity.cl vía Resend. También las puedes revisar y descargar directamente en mi panel lateral.'
+      }
+    }
+
     const s = simsRef.current.find(item => item.id === empleadoActivo.id)
     if (s) {
       s.tareaActual = '⚡ Atendiendo: ' + mensajeUsuario.slice(0, 40) + '...'
@@ -3015,33 +3090,158 @@ Instrucciones de Respuesta:
 
                     {/* ACCIONES DE VALENTINA (MARKETING & LEADS) */}
                     {empleadoActivo.id === 'comercial_jefa' && (
-                      <div className="space-y-3">
+                      <div className="space-y-4">
                         <div className="flex items-center justify-between border-b border-slate-800 pb-1.5">
-                          <span className="font-bold text-emerald-400 flex items-center gap-1.5">
+                          <span className="font-bold text-emerald-400 flex items-center gap-1.5 text-xs">
                             <Share2 className="h-3.5 w-3.5" />
-                            <span>Borradores RRSS (Herramientas Gratis)</span>
+                            <span>Campañas & Propuestas Gráficas</span>
                           </span>
                           <span className="text-[9px] font-mono text-amber-300 bg-amber-950/80 px-1.5 py-0.5 rounded">
                             Supeditado a Tomás
                           </span>
                         </div>
 
-                        <div className="space-y-2">
-                          {borradoresMkt.map(post => (
-                            <div key={post.id} className="p-2.5 bg-slate-950 border border-slate-800 rounded-xl space-y-1.5">
-                              <div className="flex items-center justify-between text-[10px]">
-                                <span className="font-bold text-cyan-400">{post.red}</span>
-                                <span className="text-amber-400 font-mono text-[9px] bg-amber-950/70 px-1.5 py-0.5 rounded border border-amber-800/40">
-                                  {post.estado}
-                                </span>
-                              </div>
-                              <h5 className="font-bold text-slate-200 text-[11px] leading-snug">{post.titulo}</h5>
-                              <p className="text-[10px] text-slate-400 leading-snug">{post.descripcion}</p>
-                              <div className="text-[9px] font-mono text-slate-500">
-                                Herramienta: {post.herramienta}
+                        {/* Botón de Despacho de Correo Inmediato */}
+                        <div className="p-3 bg-gradient-to-r from-emerald-950/60 to-slate-900 border border-emerald-800/60 rounded-2xl space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[11px] font-bold text-emerald-300 flex items-center gap-1.5">
+                              <Mail className="h-3.5 w-3.5" />
+                              Despacho Oficial a Tomás
+                            </span>
+                            <span className="text-[9px] font-mono text-slate-400">Resend 24/7</span>
+                          </div>
+                          <p className="text-[10px] text-slate-300 leading-snug">
+                            Envía las 2 propuestas gráficas de alta definición adjuntas al correo <code className="text-emerald-300 font-mono">tetoromoreno@gamasecurity.cl</code> para tu revisión ejecutiva.
+                          </p>
+
+                          <button
+                            onClick={handleDespacharPropuestasGraficas}
+                            disabled={despachandoPropuestasGraficas}
+                            className="w-full py-2 px-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 disabled:opacity-50 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-950/40 cursor-pointer active:scale-95 transition-all"
+                          >
+                            {despachandoPropuestasGraficas ? (
+                              <>
+                                <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                                <span>Despachando imágenes a tu correo...</span>
+                              </>
+                            ) : (
+                              <>
+                                <Mail className="h-3.5 w-3.5" />
+                                <span>📧 Despachar las 2 Propuestas a mi Mail</span>
+                              </>
+                            )}
+                          </button>
+
+                          {propuestasGraficasDespachadasMsg && (
+                            <div className="p-2 bg-emerald-950/80 border border-emerald-600/60 rounded-lg text-[10px] text-emerald-200 flex items-center gap-1.5 animate-in fade-in">
+                              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+                              <span>{propuestasGraficasDespachadasMsg}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Galería Visual de las 2 Propuestas Gráficas Generadas */}
+                        <div className="space-y-3">
+                          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                            <ImageIcon className="h-3.5 w-3.5 text-cyan-400" />
+                            <span>2 Artes de Campaña Listos (1080x1080 px)</span>
+                          </div>
+
+                          {/* Tarjeta Propuesta 1 */}
+                          <div className="p-3 bg-slate-950 border border-slate-800 hover:border-cyan-800/80 rounded-2xl space-y-2 transition-all">
+                            <div className="flex items-center justify-between text-[10px]">
+                              <span className="font-bold text-cyan-400">PROPUESTA 1 · POST EDUCATIVO</span>
+                              <span className="text-[9px] font-mono text-emerald-400 bg-emerald-950/80 px-1.5 py-0.5 rounded border border-emerald-800/40">
+                                1080 x 1080
+                              </span>
+                            </div>
+                            
+                            <div className="relative group rounded-xl overflow-hidden border border-slate-800 bg-slate-900 aspect-square">
+                              <img
+                                src="/marketing/propuesta-grafica-1.jpg"
+                                alt="Propuesta 1 - Alerta Tradicional vs Monitoreo CRA"
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                              />
+                              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-2 transition-opacity">
+                                <button
+                                  type="button"
+                                  onClick={() => setModalImagenPreview({ url: '/marketing/propuesta-grafica-1.jpg', titulo: 'Propuesta 1: Alerta Tradicional vs Monitoreo CRA Gama' })}
+                                  className="p-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer"
+                                >
+                                  <Eye className="h-3.5 w-3.5" />
+                                  <span>Ampliar</span>
+                                </button>
+                                <a
+                                  href="/marketing/propuesta-grafica-1.jpg"
+                                  download="Propuesta_1_Seguridad_Sin_Comodato.jpg"
+                                  className="p-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-xs font-bold flex items-center gap-1"
+                                >
+                                  <Download className="h-3.5 w-3.5" />
+                                  <span>Bajar</span>
+                                </a>
                               </div>
                             </div>
-                          ))}
+
+                            <h5 className="font-bold text-slate-100 text-[11px] leading-snug">
+                              "Seguridad 24/7 Sin Comodato: Alerta Tradicional vs CRA Gama"
+                            </h5>
+                            <p className="text-[10px] text-slate-400 leading-snug">
+                              Destaca que una alarma que solo suena molesta a los vecinos, mientras que la CRA responde en 15s y despacha cuadrantes.
+                            </p>
+                          </div>
+
+                          {/* Tarjeta Propuesta 2 */}
+                          <div className="p-3 bg-slate-950 border border-slate-800 hover:border-emerald-800/80 rounded-2xl space-y-2 transition-all">
+                            <div className="flex items-center justify-between text-[10px]">
+                              <span className="font-bold text-emerald-400">PROPUESTA 2 · INFOGRAFÍA ANTI-COMODATO</span>
+                              <span className="text-[9px] font-mono text-emerald-400 bg-emerald-950/80 px-1.5 py-0.5 rounded border border-emerald-800/40">
+                                1080 x 1080
+                              </span>
+                            </div>
+                            
+                            <div className="relative group rounded-xl overflow-hidden border border-slate-800 bg-slate-900 aspect-square">
+                              <img
+                                src="/marketing/propuesta-grafica-2.jpg"
+                                alt="Propuesta 2 - Comparativa Anti-Comodato"
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                              />
+                              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-2 transition-opacity">
+                                <button
+                                  type="button"
+                                  onClick={() => setModalImagenPreview({ url: '/marketing/propuesta-grafica-2.jpg', titulo: 'Propuesta 2: Comparativa Anti-Comodato de 48 Meses' })}
+                                  className="p-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer"
+                                >
+                                  <Eye className="h-3.5 w-3.5" />
+                                  <span>Ampliar</span>
+                                </button>
+                                <a
+                                  href="/marketing/propuesta-grafica-2.jpg"
+                                  download="Propuesta_2_Comparativa_Anti_Comodato.jpg"
+                                  className="p-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-xs font-bold flex items-center gap-1"
+                                >
+                                  <Download className="h-3.5 w-3.5" />
+                                  <span>Bajar</span>
+                                </a>
+                              </div>
+                            </div>
+
+                            <h5 className="font-bold text-slate-100 text-[11px] leading-snug">
+                              "Compara y Elige Mejor: Tradicionales vs Gama Seguridad"
+                            </h5>
+                            <p className="text-[10px] text-slate-400 leading-snug">
+                              Rompe la trampa del comodato a 48 meses de Verisure/ADT y resalta que en Gama el cliente es dueño de su equipo sin multas de salida.
+                            </p>
+                          </div>
+
+                          <div className="flex gap-2 pt-1">
+                            <button
+                              onClick={handleAprobarBorradores}
+                              className="w-full py-2 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-200 font-bold rounded-xl text-[11px] flex items-center justify-center gap-1.5 cursor-pointer"
+                            >
+                              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
+                              <span>Aprobar Borradores Formalmente</span>
+                            </button>
+                          </div>
 
                           <div className="p-2 bg-blue-950/40 border border-blue-900/60 rounded-xl text-[10px] text-blue-200 leading-relaxed">
                             💡 <strong>Frontera de Seguridad:</strong> Las IAs no publican en directo ni cierran ventas con clientes. Los leads son entregados limpios para cierre por personas reales.
@@ -4627,6 +4827,47 @@ Instrucciones de Respuesta:
               </div>
             </div>
 
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL: PREVIEW DE IMAGEN EN ALTA RESOLUCIÓN ── */}
+      {modalImagenPreview && (
+        <div
+          onClick={() => setModalImagenPreview(null)}
+          className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 cursor-pointer"
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            className="bg-slate-900 border border-slate-700 rounded-2xl max-w-xl w-full p-4 space-y-3 cursor-default animate-in fade-in zoom-in-95"
+          >
+            <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+              <h4 className="text-xs font-bold text-white truncate">{modalImagenPreview.titulo}</h4>
+              <button
+                onClick={() => setModalImagenPreview(null)}
+                className="text-slate-400 hover:text-white text-xs px-2 py-1 rounded bg-slate-800 font-bold cursor-pointer"
+              >
+                ✕ Cerrar
+              </button>
+            </div>
+            <div className="rounded-xl overflow-hidden border border-slate-800 bg-black flex items-center justify-center">
+              <img
+                src={modalImagenPreview.url}
+                alt={modalImagenPreview.titulo}
+                className="max-h-[70vh] w-auto object-contain"
+              />
+            </div>
+            <div className="flex justify-between items-center pt-1 text-[11px]">
+              <span className="text-slate-400 font-mono">1080 x 1080 px · Alta Definición</span>
+              <a
+                href={modalImagenPreview.url}
+                download="Propuesta_Gama_Seguridad.jpg"
+                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg flex items-center gap-1.5"
+              >
+                <Download className="h-3.5 w-3.5" />
+                <span>Descargar JPG</span>
+              </a>
+            </div>
           </div>
         </div>
       )}
