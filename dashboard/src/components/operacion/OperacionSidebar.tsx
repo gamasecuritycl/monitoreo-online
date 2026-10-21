@@ -55,7 +55,8 @@ export default function OperacionSidebar({
     {
       titulo: 'DIRECCIÓN & EQUIPO IA 24/7',
       items: [
-        { id: 'organigrama', label: 'Oficina Autónoma Virtual (Sims IA 24/7)', icon: Users, desc: 'Simulación Sims en vivo con 10 empleados IA interactivos' },
+        { id: 'organigrama', label: 'Oficina Autónoma Virtual (Sims IA 24/7)', icon: Users, desc: 'Simulación Sims en vivo con empleados IA interactivos' },
+        { id: 'presupuestos_ia', label: 'Asesor de Presupuestos (Gonzalo Ramos IA)', icon: Sparkles, desc: 'Ingeniero preventa: diseña proyectos DSC, Dahua, Paradox y cotizaciones PDF' },
         { id: 'autonomia', label: 'Agentes Autónomos IA', icon: Bot, desc: 'Supervisión 24/7 y auditoría en vivo' },
       ]
     },

@@ -31,6 +31,7 @@ import { BotLeadsModal } from '@/components/SalesGama/Modal/BotLeadsModal'
 import { OperacionesBotHub } from '@/components/SalesGama/OperacionesBotHub'
 import EntrenamientoBotModule from './operacion/EntrenamientoBotModule'
 import OrganigramaModule from './operacion/OrganigramaModule'
+import AgentePresupuestosModule from './operacion/AgentePresupuestosModule'
 
 import {
   Shield,
@@ -392,7 +393,7 @@ export function normalizeCuentaCode(cta: any): string {
 }
 
 export default function OperacionCRM() {
-  const [moduloActivo, setModuloActivo] = useState<'ficha360' | 'autonomia' | 'salesbot' | 'entrenamiento_bot' | 'presupuestos' | 'mercadopublico' | 'facturacion' | 'serv_tecnico' | 'kpis' | 'config' | 'marketing' | 'landing_marketing' | 'gestion_mails' | 'compras' | 'contratos' | 'ley21719' | 'organigrama' | null>(null)
+  const [moduloActivo, setModuloActivo] = useState<'ficha360' | 'autonomia' | 'salesbot' | 'entrenamiento_bot' | 'presupuestos' | 'presupuestos_ia' | 'mercadopublico' | 'facturacion' | 'serv_tecnico' | 'kpis' | 'config' | 'marketing' | 'landing_marketing' | 'gestion_mails' | 'compras' | 'contratos' | 'ley21719' | 'organigrama' | null>(null)
   const [sidebarAbierto, setSidebarAbierto] = useState<boolean>(false)
   const [filtroCategoriaLaunchpad, setFiltroCategoriaLaunchpad] = useState<string>('TODOS')
 
@@ -685,8 +686,8 @@ export default function OperacionCRM() {
   })
   const [cotizaciones, setCotizaciones] = useState<CotizacionDolibarr[]>([])
   
-  // Selector Vista Cotizaciones (Tabla de Presupuestos vs Kanban Pipeline EspoCRM)
-  const [vistaCotizaciones, setVistaCotizaciones] = useState<'tabla' | 'kanban'>('tabla')
+  // Selector Vista Cotizaciones (Tabla de Presupuestos vs Kanban Pipeline EspoCRM vs Asesor IA Preventa Gonzalo Ramos)
+  const [vistaCotizaciones, setVistaCotizaciones] = useState<'tabla' | 'kanban' | 'ia_preventa'>('tabla')
 
   // Modales Facturación & Abonos Parciales
   const [mostrarModalAbono, setMostrarModalAbono] = useState(false)
@@ -1732,6 +1733,53 @@ export default function OperacionCRM() {
     if (moduloOrigenCotizacion) {
       setModuloActivo(moduloOrigenCotizacion)
       setModuloOrigenCotizacion(null)
+    }
+  }
+
+  const handleGuardarPresupuestoIA = async (p: any) => {
+    const nuevaCot: CotizacionDolibarr = {
+      id: Date.now(),
+      codigo_cotizacion: p.folioSugerido || siguienteCorrelativoCode,
+      cuenta: 'PROSPECTO-IA',
+      rut_cliente: '76.000.000-0',
+      nombre_cliente: p.clienteNombre,
+      empresa_facturadora_id: 'gama_seguridad',
+      direccion: p.tipoPropiedad || 'Santiago',
+      ciudad_cliente: 'Santiago',
+      vendedor: 'Gonzalo Ramos (IA Preventa)',
+      tipo_receptor: 'prospecto',
+      etapa_pipeline: 'propuesta_presentada',
+      fecha: new Date().toLocaleDateString('es-CL'),
+      validez_dias: 15,
+      items: (p.equipos || []).map((eq: any, idx: number) => ({
+        id: idx + 1,
+        descripcion: `${eq.marca} ${eq.modelo} - ${eq.descripcion}`,
+        cantidad: eq.cantidad,
+        precio_unitario: eq.precioUnitarioNeto,
+        descuento: 0,
+        subtotal: eq.subtotalNeto
+      })),
+      subtotal_neto: p.subtotalNetoTotal || 0,
+      total_descuentos: 0,
+      neto_con_descuento: p.subtotalNetoTotal || 0,
+      monto_iva: p.iva19 || 0,
+      monto_total_iva_incluido: p.totalBruto || 0,
+      estado: 'Enviado',
+      observaciones: `Diseño preventa elaborado por Gonzalo Ramos IA. Modalidad: ${p.modalidad === 'con_monitoreo' ? 'Con Monitoreo 24/7' : 'Proyecto Cerrado'}. ${p.observacionesTecnicas?.join(' | ') || ''}`
+    }
+    const listaNueva = [nuevaCot, ...cotizaciones]
+    setCotizaciones(listaNueva)
+    try {
+      localStorage.setItem('gama_cotizaciones', JSON.stringify(listaNueva))
+      await supabase.from('eventos_monitoreo').upsert({
+        cuenta: 'COTIZACIONES_DOLIBARR',
+        nombre_abonado: JSON.stringify(listaNueva),
+        evento: 'NUEVO_PRESUPUESTO_IA',
+        fecha_hora: new Date().toISOString()
+      })
+      alert(`✓ Presupuesto ${nuevaCot.codigo_cotizacion} para ${nuevaCot.nombre_cliente} guardado exitosamente en el Pipeline de Presupuestos.`)
+    } catch (e: any) {
+      console.error('Guardado localmente:', e)
     }
   }
 
@@ -3308,6 +3356,7 @@ export default function OperacionCRM() {
           moduloActivo === 'entrenamiento_bot' ? 'Entrenamiento Bot Ventas' :
           moduloActivo === 'salesbot' ? 'Sales-Bot IA & Leads' :
           moduloActivo === 'presupuestos' ? 'Presupuestos Comerciales' :
+          moduloActivo === 'presupuestos_ia' ? 'Asesor de Presupuestos (Gonzalo Ramos IA)' :
           moduloActivo === 'mercadopublico' ? 'Mercado Público & Licitaciones' :
           moduloActivo === 'landing_marketing' ? 'Landing Marketing' :
           moduloActivo === 'gestion_mails' ? 'Gestión de Mails IA' :
@@ -3581,6 +3630,7 @@ export default function OperacionCRM() {
                     moduloActivo === 'entrenamiento_bot' ? 'Entrenamiento Bot Ventas' :
                     moduloActivo === 'salesbot' ? 'Sales-Bot IA & Leads' :
                     moduloActivo === 'presupuestos' ? 'Presupuestos Comerciales' :
+                    moduloActivo === 'presupuestos_ia' ? 'Asesor de Presupuestos (Gonzalo Ramos IA)' :
                     moduloActivo === 'mercadopublico' ? 'Mercado Público & Licitaciones' :
                     moduloActivo === 'landing_marketing' ? 'Landing Marketing' :
                     moduloActivo === 'gestion_mails' ? 'Gestión de Mails IA' :
@@ -4567,6 +4617,17 @@ export default function OperacionCRM() {
                       <LayoutGrid className="h-4 w-4" />
                       <span>Pipeline Kanban</span>
                     </button>
+                    <button
+                      onClick={() => setVistaCotizaciones('ia_preventa')}
+                      className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
+                        vistaCotizaciones === 'ia_preventa'
+                          ? 'bg-gradient-to-r from-emerald-600 to-teal-700 text-white shadow-sm'
+                          : 'text-emerald-700 hover:text-emerald-900 bg-emerald-50/70 border border-emerald-200/60'
+                      }`}
+                    >
+                      <Sparkles className="h-4 w-4 text-emerald-400" />
+                      <span>Asesor IA Preventa (Gonzalo)</span>
+                    </button>
                   </div>
 
                   <button
@@ -4579,7 +4640,17 @@ export default function OperacionCRM() {
                 </div>
               </div>
 
-              {/* ── BENTO TILES DE FILTRO RÁPIDO POR CATEGORÍA Y ESTADO ── */}
+              {/* VISTA ASESOR PREVENTA IA (GONZALO RAMOS) */}
+              {vistaCotizaciones === 'ia_preventa' ? (
+                <div className="flex-1 flex flex-col min-h-0">
+                  <AgentePresupuestosModule
+                    onVolverATabla={() => setVistaCotizaciones('tabla')}
+                    onGuardarEnCRM={handleGuardarPresupuestoIA}
+                  />
+                </div>
+              ) : (
+                <>
+                  {/* ── BENTO TILES DE FILTRO RÁPIDO POR CATEGORÍA Y ESTADO ── */}
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
                 {[
                   { id: 'todas', label: 'Todos los Presupuestos', count: resumenCotizacionesKPI.total, sub: `$${Math.round(resumenCotizacionesKPI.montoTotal).toLocaleString('es-CL')} CLP`, color: 'text-[#1E40AF]' },
@@ -5197,10 +5268,23 @@ export default function OperacionCRM() {
                 </div>
               )}
 
-            </div>
+            </>
           )}
 
-          {/* ── MÓDULO MERCADO PÚBLICO & LICITACIONES ESTATALES CHILECOMPRA ── */}
+        </div>
+      )}
+
+      {/* ── MÓDULO ASESOR DE PRESUPUESTOS (GONZALO RAMOS IA) DIRECTO DESDE SIDEBAR ── */}
+      {moduloActivo === 'presupuestos_ia' && (
+        <div className="flex-1 bg-white rounded-2xl p-4 sm:p-6 flex flex-col gap-4 border border-slate-300/80 shadow-sm min-h-0 overflow-y-auto">
+          <AgentePresupuestosModule
+            onVolverATabla={() => setModuloActivo('presupuestos')}
+            onGuardarEnCRM={handleGuardarPresupuestoIA}
+          />
+        </div>
+      )}
+
+      {/* ── MÓDULO MERCADO PÚBLICO & LICITACIONES ESTATALES CHILECOMPRA ── */}
           {moduloActivo === 'mercadopublico' && (
             <div className="flex-1 bg-white rounded-2xl p-1.5 sm:p-6 lg:p-8 flex flex-col gap-4 sm:gap-6 border border-slate-300/80 shadow-sm min-h-0 overflow-y-auto">
               <MercadoPublicoModule onCotizarLicitacion={handleCotizarDesdeLicitacion} />

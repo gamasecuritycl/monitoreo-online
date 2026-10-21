@@ -583,6 +583,66 @@ const EMPLEADOS_DEFAULT: EmpleadoSim[] = [
     ]
   },
 
+  // 6.5. Ingeniero Preventa & Presupuestos de Seguridad Electrónica
+  {
+    id: 'preventa_gonzalo',
+    nombre: 'Ing. Gonzalo Ramos',
+    apodo: 'Gonzalo',
+    rol: 'Ingeniero Preventa & Arquitectura de Seguridad Electrónica',
+    area: 'comercial',
+    areaNombre: 'Piso Comercial & Marketing',
+    avatarEmoji: '⚡',
+    colorRopa: '#0d9488',
+    colorPiel: '#fed7aa',
+    colorCabello: '#1e293b',
+    plumbobColor: '#22c55e',
+    x: 415,
+    y: 520,
+    deskX: 415,
+    deskY: 520,
+    targetX: 415,
+    targetY: 520,
+    estadoAccion: 'working',
+    direccion: 'down',
+    energiaSim: 100,
+    tareaActual: '📐 Diseñando arquitectura híbrida DSC Neo y Dahua TiOC para parcelas',
+    progresoTarea: 90,
+    burbujaTexto: 'Calculando costo neto de equipos, mano de obra y 19% IVA...',
+    burbujaTimer: 175,
+    atribucionesEjecutivas: [
+      'Dimensionamiento técnico de sistemas de intrusión cableados e inalámbricos (DSC, Paradox, Vetti, Crow)',
+      'Diseño de proyectos de videovigilancia IP y analítica disuasiva (Dahua WizSense/TiOC, Hikvision AcuSense/ColorVu)',
+      'Generación de presupuestos ejecutivos oficiales con desglose de equipos, mano de obra y 19% IVA',
+      'Asesoramiento en modalidad dual: Proyectos Cerrados (venta directa) o con Monitoreo 24/7 Gama'
+    ],
+    misionPrincipal: 'Diseñar la solución técnica exacta para cada cliente de Gama Seguridad, recomendando los equipos más robustos del mercado con total transparencia y rigor técnico.',
+    kpis: [
+      { label: 'Eficacia Preventa', valor: '98.5%' },
+      { label: 'Tiempo de Cotización', valor: '< 60 seg' }
+    ],
+    trayectoriaLinkedIn: 'Ingeniero en Telecomunicaciones y Seguridad Electrónica con más de 12 años dimensionando proyectos críticos de intrusión perimetral, CCTV con IA y centrales de monitoreo.',
+    certificacionesElite: [
+      'DSC Certified Installer (PowerSeries Neo & Pro)',
+      'Dahua Certified Security Specialist (DH-CSS)',
+      'Hikvision HCSA & Paradox Security Expert'
+    ],
+    hardSkills: ['Cálculo de Ancho de Banda y Almacenamiento WD Purple', 'Protocolos Contact ID / SIA', 'Zonificación Antimascota'],
+    softSkills: ['Claridad Técnica para Clientes', 'Cero Comodatos Engañosos', 'Rigor de Costos'],
+    stackHerramientas: ['Gemini 2.5 Pro Engine', 'Generador PDF Gama Oficial', 'Catálogo Vetti & DSC Neo'],
+    metodologias: ['Ingeniería Preventa Consultiva', 'Arquitectura en Capas de Seguridad'],
+    entrenamiento: {
+      systemPrompt: 'Eres Gonzalo Ramos, Ingeniero Preventa de Gama Seguridad SpA. Experto en alarmas DSC Neo, Paradox, Vetti y videovigilancia Dahua TiOC y Hikvision. Diseñas proyectos transparentes sin comodatos.',
+      conocimientosClave: ['Catálogo DSC Neo', 'Dahua TiOC', 'Hikvision AcuSense', 'Vetti', '19% IVA', 'Tarifas de monitoreo Gama'],
+      reglasNegocio: ['Desglosar siempre equipos y mano de obra', 'Cero comodato engañoso', 'Garantía 12 meses'],
+      autonomia: 'Autonomía Total 24/7',
+      temperatura: 0.2,
+      herramientasActivas: ['Cotizador IA Preventa', 'Generador PDF Oficial', 'Despacho WhatsApp']
+    },
+    historialChat: [
+      { autor: 'agente', mensaje: 'Tomás, catálogo de equipos actualizado con DSC Neo, TiOC y Hikvision listo para presupuestar.', hora: '08:20' }
+    ]
+  },
+
   // 7. Líder de IA & Visión Artificial
   {
     id: 'ia_lead',
