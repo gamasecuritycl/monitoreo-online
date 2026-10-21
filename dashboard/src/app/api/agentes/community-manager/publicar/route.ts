@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { Resend } from 'resend'
+import { getMetaIntegrationConfig } from '@/lib/sales-gama/supabase'
 
 function getResendClient() {
   const envKey = process.env.RESEND_API_KEY
@@ -25,10 +26,11 @@ export async function POST(req: NextRequest) {
       ? imageUrl
       : `https://gamasecurity.cl${imageUrl}`
 
-    // 1. Verificar si existen credenciales Meta Graph API en .env.local
-    const metaToken = process.env.META_PAGE_ACCESS_TOKEN || process.env.META_ACCESS_TOKEN
-    const igAccountId = process.env.META_INSTAGRAM_ACCOUNT_ID
-    const fbPageId = process.env.META_FACEBOOK_PAGE_ID
+    // 1. Obtener credenciales de Meta activas desde Supabase (las mismas del chatbot) o fallback a env
+    const metaConfig = await getMetaIntegrationConfig().catch(() => null)
+    const metaToken = metaConfig?.pageAccessToken || process.env.META_PAGE_ACCESS_TOKEN || process.env.META_ACCESS_TOKEN
+    const igAccountId = metaConfig?.instagramAccountId || process.env.META_INSTAGRAM_ACCOUNT_ID
+    const fbPageId = metaConfig?.pageId || process.env.META_FACEBOOK_PAGE_ID
     const webhookUrl = process.env.SOCIAL_PUBLISH_WEBHOOK_URL || process.env.MAKE_SOCIAL_WEBHOOK_URL
 
     let metaResult: any = null
