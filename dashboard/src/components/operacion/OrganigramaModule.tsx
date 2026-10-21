@@ -1891,6 +1891,53 @@ Misión en curso en la oficina virtual. Se registrará la entrega definitiva par
     }
   }
 
+  const [publicandoRedesId, setPublicandoRedesId] = useState<string | null>(null)
+  const [publicadoRedesExito, setPublicadoRedesExito] = useState<{ [id: string]: string }>({})
+
+  const handleAprobarYPublicarRedes = async (propuestaId: string, titulo: string, imageUrl: string, copyTexto: string) => {
+    setPublicandoRedesId(propuestaId)
+    try {
+      const res = await fetch('/api/agentes/community-manager/publicar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          propuestaId,
+          titulo,
+          imageUrl,
+          copy: copyTexto,
+          redes: ['Instagram', 'Facebook'],
+          vistoBuenoPor: 'Tomás Toro-Moreno (CEO & Fundador)'
+        })
+      })
+      const data = await res.json()
+      if (data.ok) {
+        setPublicadoRedesExito(prev => ({
+          ...prev,
+          [propuestaId]: '✓ Aprobada y Publicada / Agendada en Redes Sociales'
+        }))
+        setFeedOperaciones(prev => [
+          {
+            id: 'ev-' + Date.now(),
+            hora: new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }),
+            simId: 'comercial_jefa',
+            simNombre: 'Cata Fuentes',
+            simEmoji: '📱',
+            rol: 'Community Manager',
+            accion: `Tomás dio Visto Bueno a "${titulo}". Publicación autorizada y emitida hacia canales digitales de Gama Seguridad.`,
+            tipo: 'comercial'
+          },
+          ...prev
+        ])
+      } else {
+        alert('Error autorizando publicación: ' + (data.error || 'Desconocido'))
+      }
+    } catch (err: any) {
+      alert('Error de conexión: ' + err.message)
+    } finally {
+      setPublicandoRedesId(null)
+    }
+  }
+
   // ── ESTADOS DEL ESTUDIO DE CONTENIDO (COMMUNITY MANAGER CATA) ──
   const [cmPlataforma, setCmPlataforma] = useState<'TikTok / Reel' | 'Instagram Post / Carrusel' | 'LinkedIn' | 'Facebook'>('TikTok / Reel')
   const [cmTema, setCmTema] = useState<string>('La trampa del comodato de 48 meses en alarmas')
@@ -3409,6 +3456,28 @@ Instrucciones de Respuesta:
                             <p className="text-[10px] text-slate-400 leading-snug">
                               Destaca que una alarma que solo suena molesta a los vecinos, mientras que Gama verifica en 15s y avisa de inmediato a Carabineros.
                             </p>
+
+                            {publicadoRedesExito['propuesta-1'] ? (
+                              <div className="p-1.5 bg-emerald-950/80 border border-emerald-500/40 rounded-lg text-[10px] text-emerald-300 font-bold flex items-center gap-1">
+                                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
+                                <span>{publicadoRedesExito['propuesta-1']}</span>
+                              </div>
+                            ) : (
+                              <button
+                                type="button"
+                                disabled={publicandoRedesId === 'propuesta-1'}
+                                onClick={() => handleAprobarYPublicarRedes(
+                                  'propuesta-1',
+                                  'Seguridad 24/7 Sin Comodato',
+                                  '/marketing/propuesta-grafica-1.jpg',
+                                  '¿Sabías que una alarma que solo suena no detiene a nadie? 🚨 En Gama Seguridad no te amarramos con arriendos eternos: el equipo es 100% tuyo y nuestros operadores responden en menos de 15 segundos protegiendo a tu familia 24/7 con aviso directo a Carabineros. Cotiza en gamasecurity.cl o al +56 9 9101 6912. #GamaSeguridad #SeguridadChile #AlarmasSantiago #Monitoreo247 #SinComodato'
+                                )}
+                                className="w-full py-1.5 bg-cyan-700 hover:bg-cyan-600 disabled:opacity-50 text-white font-bold rounded-lg text-[10px] flex items-center justify-center gap-1 cursor-pointer transition-colors shadow-sm"
+                              >
+                                <CheckCircle2 className="h-3 w-3 text-cyan-200" />
+                                <span>{publicandoRedesId === 'propuesta-1' ? 'Procesando Visto Bueno...' : '✓ Aprobar y Publicar en Redes'}</span>
+                              </button>
+                            )}
                           </div>
 
                           {/* Tarjeta Propuesta 2 */}
@@ -3452,6 +3521,28 @@ Instrucciones de Respuesta:
                             <p className="text-[10px] text-slate-400 leading-snug">
                               Rompe la trampa del comodato a 48 meses de Verisure/ADT y resalta que en Gama el cliente es dueño de su equipo sin multas de salida.
                             </p>
+
+                            {publicadoRedesExito['propuesta-2'] ? (
+                              <div className="p-1.5 bg-emerald-950/80 border border-emerald-500/40 rounded-lg text-[10px] text-emerald-300 font-bold flex items-center gap-1">
+                                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
+                                <span>{publicadoRedesExito['propuesta-2']}</span>
+                              </div>
+                            ) : (
+                              <button
+                                type="button"
+                                disabled={publicandoRedesId === 'propuesta-2'}
+                                onClick={() => handleAprobarYPublicarRedes(
+                                  'propuesta-2',
+                                  'Compara Antes de Contratar: Tradicionales vs Gama',
+                                  '/marketing/propuesta-grafica-2.jpg',
+                                  '¿Comodato de 48 meses y equipos que nunca son tuyos? 🛑 En Chile mereces transparencia. En Gama Seguridad SpA eres el único dueño de tu alarma desde el primer día, sin letras chicas ni cláusulas de amarre. 25 años de confianza real. Cotiza en gamasecurity.cl o al +56 9 9101 6912. #GamaSeguridad #ChileSeguro #AlarmasSantiago #SinComodato'
+                                )}
+                                className="w-full py-1.5 bg-emerald-700 hover:bg-emerald-600 disabled:opacity-50 text-white font-bold rounded-lg text-[10px] flex items-center justify-center gap-1 cursor-pointer transition-colors shadow-sm"
+                              >
+                                <CheckCircle2 className="h-3 w-3 text-emerald-200" />
+                                <span>{publicandoRedesId === 'propuesta-2' ? 'Procesando Visto Bueno...' : '✓ Aprobar y Publicar en Redes'}</span>
+                              </button>
+                            )}
                           </div>
 
                           <div className="flex gap-2 pt-1">
