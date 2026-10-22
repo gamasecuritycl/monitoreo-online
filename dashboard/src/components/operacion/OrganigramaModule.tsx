@@ -62,8 +62,29 @@ import {
   Image as ImageIcon,
   Eye,
   Download,
-  Copy
+  Copy,
+  ZoomIn,
+  ZoomOut,
+  PartyPopper
 } from 'lucide-react'
+
+const InstagramIcon = ({ className = 'h-4 w-4' }: { className?: string }) => (
+  <svg
+    viewBox="0 0 24 24"
+    width="24"
+    height="24"
+    stroke="currentColor"
+    strokeWidth="2"
+    fill="none"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+  >
+    <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
+    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+    <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
+  </svg>
+)
 
 // ── TIPOS Y MODELOS DEL SIMULADOR ──
 
@@ -156,14 +177,15 @@ interface ZonaOficina {
 }
 
 const ZONAS_MAPA: ZonaOficina[] = [
-  { id: 'z_gerencia', nombre: '1. Despacho Tomás Toro-Moreno', colorPiso: '#0f172a', bordeColor: '#3b82f6', x: 25, y: 25, w: 290, h: 235, icono: '👔', descripcion: 'Liderazgo estratégico, finanzas y gobernanza' },
-  { id: 'z_legal', nombre: '2. Asesoría Legal & OS10', colorPiso: '#1c1917', bordeColor: '#f59e0b', x: 345, y: 25, w: 300, h: 235, icono: '⚖️', descripcion: 'Cumplimiento normativo Ley 21.659 y Ley 21.719 APDP' },
-  { id: 'z_directorio', nombre: '3. Sala de Directorio & Consenso', colorPiso: '#1e1b4b', bordeColor: '#818cf8', x: 675, y: 25, w: 300, h: 235, icono: '🏛️', descripcion: 'Mesa redonda ejecutiva y consenso multi-agente' },
-  { id: 'z_cra', nombre: '4. Central Receptora CRA 24/7', colorPiso: '#09152b', bordeColor: '#2563eb', x: 25, y: 295, w: 290, h: 320, icono: '🚨', descripcion: 'Monitoreo 24/7, despacho de móviles y verificación por video' },
-  { id: 'z_comercial', nombre: '5. Piso Comercial & Marketing', colorPiso: '#062c22', bordeColor: '#10b981', x: 345, y: 295, w: 300, h: 320, icono: '💼', descripcion: 'Mercado Público, generación de leads supeditada y retención' },
-  { id: 'z_ia', nombre: '6. Laboratorio de IA & Software', colorPiso: '#24083e', bordeColor: '#c084fc', x: 675, y: 295, w: 300, h: 185, icono: '🧠', descripcion: 'Modelos de visión, automatizaciones y APIS seguras' },
-  { id: 'z_casino', nombre: '7. Casino Gourmet ("El Buen Sabor")', colorPiso: '#062e1e', bordeColor: '#10b981', x: 675, y: 495, w: 145, h: 125, icono: '🥗', descripcion: 'Menús balanceados, jugos naturales y nutrición para el equipo' },
-  { id: 'z_zen', nombre: '8. Zen, Yoga & Arcade Lounge', colorPiso: '#24103a', bordeColor: '#a855f7', x: 830, y: 495, w: 145, h: 125, icono: '🧘‍♂️', descripcion: 'Yoga, sauna relajante y zona arcade para pausas y descanso' }
+  { id: 'z_gerencia', nombre: '1. Despacho Tomás Toro-Moreno', colorPiso: '#0f172a', bordeColor: '#3b82f6', x: 25, y: 25, w: 275, h: 220, icono: '👔', descripcion: 'Liderazgo estratégico, finanzas y gobernanza' },
+  { id: 'z_legal', nombre: '2. Asesoría Legal & OS10', colorPiso: '#1c1917', bordeColor: '#f59e0b', x: 320, y: 25, w: 275, h: 220, icono: '⚖️', descripcion: 'Cumplimiento normativo Ley 21.659 y Ley 21.719 APDP' },
+  { id: 'z_directorio', nombre: '3. Sala de Directorio & Consenso', colorPiso: '#1e1b4b', bordeColor: '#818cf8', x: 615, y: 25, w: 285, h: 220, icono: '🏛️', descripcion: 'Mesa redonda ejecutiva y consenso multi-agente' },
+  { id: 'z_terraza', nombre: '4. Terraza Jardín & Café Barista', colorPiso: '#064e3b', bordeColor: '#10b981', x: 920, y: 25, w: 255, h: 220, icono: '🌿☕', descripcion: 'Terraza exterior con plantas, sombrillas y café espresso gourmet' },
+  { id: 'z_cra', nombre: '5. Central Receptora CRA 24/7', colorPiso: '#09152b', bordeColor: '#2563eb', x: 25, y: 265, w: 275, h: 415, icono: '🚨', descripcion: 'Monitoreo 24/7, despacho de móviles y verificación por video' },
+  { id: 'z_comercial', nombre: '6. Piso Comercial & Preventa', colorPiso: '#062c22', bordeColor: '#10b981', x: 320, y: 265, w: 275, h: 415, icono: '💼', descripcion: 'Marketing, ventas supeditadas, cotizaciones y retención' },
+  { id: 'z_ia', nombre: '7. Laboratorio de IA & Software', colorPiso: '#24083e', bordeColor: '#c084fc', x: 615, y: 265, w: 285, h: 195, icono: '🧠', descripcion: 'Modelos de visión, automatizaciones y APIs seguras' },
+  { id: 'z_casino', nombre: '8. Casino Gourmet ("El Buen Sabor")', colorPiso: '#062e1e', bordeColor: '#10b981', x: 615, y: 480, w: 285, h: 200, icono: '🥗🍲', descripcion: 'Menús balanceados, jugos naturales y cocina gourmet' },
+  { id: 'z_arcade', nombre: '9. Mega Arcade & Gaming Lounge 3D', colorPiso: '#3b0764', bordeColor: '#c084fc', x: 920, y: 265, w: 255, h: 415, icono: '🎮🕹️', descripcion: 'Arcade neón, mesa de futbolín / taca-taca, ping-pong y pufs de relax' }
 ]
 
 // ── PLANTILLA DE EMPLEADOS NUTRIDA CON TRATO CERCANO Y CALIBRACIÓN PROFUNDA ──
@@ -226,6 +248,67 @@ const EMPLEADOS_DEFAULT: EmpleadoSim[] = [
     },
     historialChat: [
       { autor: 'agente', mensaje: 'Buenos días, Tomás. Oficina virtual operativa y monitoreando en verde.', hora: '08:00' }
+    ]
+  },
+
+  // 1.5. Subgerente de Operaciones & Supervisión Continua
+  {
+    id: 'subgerente_operaciones',
+    nombre: 'Esteban Morales',
+    apodo: 'Esteban',
+    rol: 'Subgerente de Operaciones & Supervisión Continua',
+    emailCorporativo: 'operaciones@gamasecurity.cl',
+    area: 'operaciones',
+    areaNombre: 'Supervisión General & Calidad Operativa',
+    avatarEmoji: '📋',
+    colorRopa: '#1e293b',
+    colorPiel: '#fed7aa',
+    colorCabello: '#475569',
+    plumbobColor: '#22c55e',
+    x: 200,
+    y: 340,
+    deskX: 200,
+    deskY: 340,
+    targetX: 200,
+    targetY: 340,
+    estadoAccion: 'working',
+    direccion: 'down',
+    energiaSim: 100,
+    tareaActual: '📋 Supervisando en vivo el desempeño, SLAs y bienestar de todas las áreas',
+    progresoTarea: 85,
+    burbujaTexto: 'Ronda de supervisión activa: 415 cuentas protegidas y equipo motivado 🚀',
+    burbujaTimer: 180,
+    atribucionesEjecutivas: [
+      'Supervisión continua en terreno virtual de SLAs, tiempos de respuesta y bitácoras',
+      'Auditoría de puestos: CRA 24/7, Comercial, Preventa, Legal, Soporte y Laboratorio IA',
+      'Detección y resolución inmediata de cuellos de botella operativos antes de que escalen',
+      'Fomento activo de un clima laboral feliz, motivación constante y pausas saludables'
+    ],
+    misionPrincipal: 'Supervisar con liderazgo cercano y rigor técnico que cada especialista cumpla sus objetivos con excelencia y en un entorno de trabajo feliz.',
+    kpis: [
+      { label: 'SLA Supervisado', valor: '99.98%' },
+      { label: 'Clima Laboral', valor: 'Excelente (98%)' }
+    ],
+    trayectoriaLinkedIn: 'Más de 10 años en gestión de operaciones de seguridad y liderazgo de equipos de alto rendimiento. Especialista en optimización de flujos y clima organizacional.',
+    certificacionesElite: [
+      'Master en Dirección de Operaciones & Seguridad Integral',
+      'Certificación Six Sigma Green Belt',
+      'Liderazgo y Gestión de Equipos de Alto Rendimiento'
+    ],
+    hardSkills: ['Auditoría Operativa', 'Control de SLAs', 'Resolución Rápida en Terreno'],
+    softSkills: ['Liderazgo Motivador', 'Empatía y Firmeza', 'Escucha Activa'],
+    stackHerramientas: ['Terminal de Supervisión Gama', 'Dashboard Operativo', 'Radar de Rendimiento'],
+    metodologias: ['Supervisión por Objetivos', 'Gemba Walk (Ronda en Terreno)'],
+    entrenamiento: {
+      systemPrompt: 'Eres Esteban Morales, Subgerente de Operaciones de Gama Seguridad. Supervisas a todo el personal, recorres las áreas, aseguras el cumplimiento de metas y mantienes a los agentes felices y enfocados.',
+      conocimientosClave: ['Metas de la empresa', 'SLAs de monitoreo', 'Supervisión sin fricción', 'Bienestar del equipo'],
+      reglasNegocio: ['Reportar periódicamente a Tomás', 'Garantizar calidad sin estresar al equipo', 'Resolver trabas en el acto'],
+      autonomia: 'Autonomía Total 24/7',
+      temperatura: 0.2,
+      herramientasActivas: ['Ronda de Supervisión', 'Evaluador de SLAs', 'Motivador de Equipo']
+    },
+    historialChat: [
+      { autor: 'agente', mensaje: 'Tomás, acabo de terminar la ronda matutina. Todas las áreas operan en verde y con alta motivación.', hora: '08:25' }
     ]
   },
 
@@ -1353,6 +1436,13 @@ export default function OrganigramaModule({ onNavigateModule }: OrganigramaModul
   const [modoPausaBienestar, setModoPausaBienestar] = useState<boolean>(false)
   const [vozHabilitada, setVozHabilitada] = useState<boolean>(false)
 
+  // ── ESTADO DEL MODO JUEGO HD, ZOOM, PANTALLA COMPLETA Y SUPERVISIÓN ──
+  const [zoomJuego, setZoomJuego] = useState<'1x' | '1.35x' | '1.7x'>('1x')
+  const [modoPantallaCompleta, setModoPantallaCompleta] = useState<boolean>(false)
+  const [modoCelebracionOficina, setModoCelebracionOficina] = useState<boolean>(false)
+  const [rondaSupervisionActiva, setRondaSupervisionActiva] = useState<boolean>(false)
+  const [modalPropuestasInstagram, setModalPropuestasInstagram] = useState<boolean>(false)
+
   // ── ESTADO DE LA BÓVEDA DE ENTREGABLES & DESPACHO DIRECTO ──
   const [entregables, setEntregables] = useState<EntregableOficial[]>(ENTREGABLES_INICIALES)
   const [entregableModal, setEntregableModal] = useState<EntregableOficial | null>(null)
@@ -2321,6 +2411,89 @@ ${cmContenidoGenerado.mejorHorario || 'N/A'}`
     return () => clearInterval(timer)
   }, [velocidadSim, empleados])
 
+  // ── PUNTOS DE PATRULLA PARA EL SUBGERENTE ESTEBAN MORALES ──
+  const rondaPasoRef = useRef<number>(0)
+  const esperaRondaRef = useRef<number>(0)
+  const PUNTOS_RONDA_ESTEBAN = [
+    { x: 170, y: 135, zona: '1. Despacho Tomás', frase: 'Reportando a Tomás: Todo el equipo operando con 99.98% SLA y en armonía.' },
+    { x: 450, y: 135, zona: '2. Legal & OS10', frase: 'Auditando cumplimiento Ley 21.659 y APDP con Claudio. Protocolos al 100%.' },
+    { x: 757, y: 135, zona: '3. Sala de Directorio', frase: 'Inspeccionando directivas y consensos de gobierno corporativo.' },
+    { x: 1045, y: 135, zona: '4. Terraza Barista', frase: 'Verificando recarga de café barista y descanso saludable al aire libre ☕🌿.' },
+    { x: 170, y: 470, zona: '5. Central CRA 24/7', frase: 'Revisando tiempos de respuesta de alarma: promedio 8.4 seg. Impecable 🚨.' },
+    { x: 450, y: 470, zona: '6. Comercial & Preventa', frase: 'Revisando con Valentina las 2 propuestas para Instagram y embudo RMR 💼.' },
+    { x: 757, y: 360, zona: '7. Laboratorio IA', frase: 'Auditando microservicios autónomos con Maximiliano y Camila 🧠.' },
+    { x: 757, y: 580, zona: '8. Casino El Buen Sabor', frase: 'Supervisando calidad de colaciones y pausas de hidratación 🥗.' },
+    { x: 1045, y: 470, zona: '9. Mega Arcade Lounge', frase: 'Confirmando ambiente de diversión y desconexión positiva 🎮🕹️.' }
+  ]
+
+  const handleActivarRondaSupervision = () => {
+    setRondaSupervisionActiva(true)
+    rondaPasoRef.current = 0
+    esperaRondaRef.current = 0
+    const esteban = simsRef.current.find(s => s.id === 'subgerente_operaciones')
+    if (esteban) {
+      esteban.targetX = PUNTOS_RONDA_ESTEBAN[0].x
+      esteban.targetY = PUNTOS_RONDA_ESTEBAN[0].y
+      esteban.burbujaTexto = '📋 Iniciando Ronda de Supervisión Continua por las 9 áreas...'
+      esteban.burbujaTimer = 180
+    }
+    setFeedOperaciones(prev => [
+      {
+        id: 'ev-' + Date.now(),
+        hora: new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }),
+        simId: 'subgerente_operaciones',
+        simNombre: 'Esteban Morales',
+        simEmoji: '📋',
+        rol: 'Subgerente de Operaciones',
+        accion: 'Esteban Morales inicia ronda de supervisión y control de calidad en tiempo real por los 9 sectores de la oficina.',
+        tipo: 'terreno'
+      },
+      ...prev
+    ])
+  }
+
+  const handleToggleCelebracionOficina = () => {
+    const nuevoEstado = !modoCelebracionOficina
+    setModoCelebracionOficina(nuevoEstado)
+    if (nuevoEstado) {
+      simsRef.current.forEach((sim, idx) => {
+        if (idx % 2 === 0) {
+          // Va al Mega Arcade
+          sim.targetX = 960 + (idx % 3) * 45
+          sim.targetY = 340 + Math.floor(idx / 3) * 45
+          sim.burbujaTexto = '¡Felicidades equipo Gama! 🎉 A jugar Arcade y Taca-taca'
+          sim.burbujaTimer = 220
+        } else {
+          // Va a la Terraza Barista
+          sim.targetX = 960 + (idx % 3) * 40
+          sim.targetY = 90 + Math.floor(idx / 3) * 35
+          sim.burbujaTexto = '¡Excelente jornada! Café barista y descanso merecido ☕🌿'
+          sim.burbujaTimer = 220
+        }
+      })
+      setFeedOperaciones(prev => [
+        {
+          id: 'ev-' + Date.now(),
+          hora: new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }),
+          simId: 'gerencia_general',
+          simNombre: 'Tomás',
+          simEmoji: '👔',
+          rol: 'CEO',
+          accion: 'Tomás activó el Modo Celebración y Fiesta Gamer: el equipo disfruta del Mega Arcade 3D y Terraza Barista.',
+          tipo: 'bienestar'
+        },
+        ...prev
+      ])
+    } else {
+      simsRef.current.forEach(sim => {
+        sim.targetX = sim.deskX
+        sim.targetY = sim.deskY
+        sim.burbujaTexto = 'Retomando puestos con energía y enfoque ⚡'
+        sim.burbujaTimer = 140
+      })
+    }
+  }
+
   // ── MOTOR DEL JUEGO SIMS: BUCLE SYNCHRONOUS 60 FPS DIRECTO AL CANVAS ──
   useEffect(() => {
     if (!adminDesbloqueado || pestañaActiva !== 'juego_oficina') return
@@ -2412,77 +2585,220 @@ ${cmContenidoGenerado.mejorHorario || 'N/A'}`
         ctx.stroke()
       })
 
-      // Mesa de Reuniones en Directorio (Sala 3)
+      // Mesa de Reuniones en Directorio (Sala 3: x: 615, y: 25, w: 285, h: 220)
       ctx.fillStyle = '#1e1b4b'
       ctx.strokeStyle = '#6366f1'
       ctx.lineWidth = 2.5
       ctx.beginPath()
-      ctx.ellipse(825, 135, 95, 50, 0, 0, Math.PI * 2)
+      ctx.ellipse(757, 135, 90, 48, 0, 0, Math.PI * 2)
       ctx.fill()
       ctx.stroke()
       
       // Pantalla de Proyección de Directorio
       ctx.fillStyle = '#0f172a'
-      ctx.fillRect(750, 45, 150, 18)
+      ctx.fillRect(675, 42, 165, 18)
       ctx.fillStyle = '#38bdf8'
       ctx.font = 'bold 9px monospace'
-      ctx.fillText('📊 GAMA DIRECTIVA Q4: 99.98% SLA', 758, 58)
+      ctx.fillText('📊 GAMA DIRECTIVA Q4: 99.98% SLA', 683, 55)
 
-      // ── DETALLES DE BIENESTAR: SALA 7 (CASINO GOURMET EL BUEN SABOR) ──
-      ctx.fillStyle = '#064e3b'
-      ctx.fillRect(690, 535, 110, 24)
-      ctx.strokeStyle = '#10b981'
-      ctx.lineWidth = 1.5
-      ctx.strokeRect(690, 535, 110, 24)
-      
-      ctx.fillStyle = '#a7f3d0'
-      ctx.font = '10px system-ui'
-      ctx.fillText('🥗 Buffet Saludable', 698, 551)
-
-      ctx.fillStyle = '#0f172a'
-      ctx.beginPath()
-      ctx.arc(745, 585, 14, 0, Math.PI * 2)
-      ctx.fill()
-      ctx.strokeStyle = '#059669'
-      ctx.stroke()
-
-      // ── DETALLES DE BIENESTAR: SALA 8 (ZEN, YOGA & ARCADE LOUNGE) ──
-      ctx.fillStyle = '#06b6d4'
-      ctx.fillRect(845, 535, 34, 18)
-      ctx.strokeStyle = '#22d3ee'
+      // ── SALA 4: TERRAZA JARDÍN & CAFÉ BARISTA AL AIRE LIBRE (x: 920, y: 25, w: 255, h: 220) ──
+      // Suelo de madera tipo deck
+      ctx.strokeStyle = 'rgba(180, 83, 9, 0.25)'
       ctx.lineWidth = 1
-      ctx.strokeRect(845, 535, 34, 18)
-      ctx.fillStyle = '#ffffff'
-      ctx.font = '10px system-ui'
-      ctx.fillText('🧘', 855, 548)
+      for (let dy = 35; dy < 240; dy += 16) {
+        ctx.beginPath()
+        ctx.moveTo(925, dy)
+        ctx.lineTo(1170, dy)
+        ctx.stroke()
+      }
 
-      ctx.fillStyle = '#78350f'
-      ctx.fillRect(890, 530, 36, 30)
+      // Barra de Café Espresso Gourmet
+      ctx.fillStyle = '#1c1917'
+      ctx.fillRect(940, 52, 90, 26)
       ctx.strokeStyle = '#f59e0b'
       ctx.lineWidth = 1.5
-      ctx.strokeRect(890, 530, 36, 30)
+      ctx.strokeRect(940, 52, 90, 26)
       ctx.fillStyle = '#fef3c7'
-      ctx.font = '9px system-ui'
-      ctx.fillText('♨️ Sauna', 893, 548)
+      ctx.font = 'bold 9px system-ui'
+      ctx.fillText('☕ Espresso Bar', 948, 68)
 
-      const vaporZenY = 524 - ((tickCountRef.current % 40) * 0.35)
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.45)'
+      // Vapor subiendo del café
+      const vaporCafeY = 46 - ((tickCountRef.current % 40) * 0.4)
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.4)'
       ctx.beginPath()
-      ctx.arc(908, vaporZenY, 2.5, 0, Math.PI * 2)
+      ctx.arc(970, vaporCafeY, 2.5, 0, Math.PI * 2)
       ctx.fill()
 
-      ctx.fillStyle = '#3b0764'
-      ctx.fillRect(935, 565, 30, 42)
-      ctx.strokeStyle = '#c084fc'
+      // Gran Sombrilla de Sol Terraza
+      ctx.fillStyle = '#0f766e'
+      ctx.beginPath()
+      ctx.arc(1085, 110, 42, 0, Math.PI * 2)
+      ctx.fill()
+      ctx.strokeStyle = '#14b8a6'
+      ctx.lineWidth = 2
+      ctx.stroke()
+      ctx.fillStyle = '#042f2e'
+      ctx.beginPath()
+      ctx.arc(1085, 110, 7, 0, Math.PI * 2)
+      ctx.fill()
+
+      // Mesas de Terraza y Sillas
+      ctx.fillStyle = '#1e293b'
+      ctx.beginPath()
+      ctx.arc(980, 160, 16, 0, Math.PI * 2)
+      ctx.fill()
+      ctx.strokeStyle = '#10b981'
       ctx.lineWidth = 1.5
-      ctx.strokeRect(935, 565, 30, 42)
-      ctx.fillStyle = (tickCountRef.current % 30 < 15) ? '#22d3ee' : '#e879f9'
-      ctx.fillRect(938, 570, 24, 14)
+      ctx.stroke()
+
+      // Plantas decorativas Ficus / Palmeras
+      ctx.fillStyle = '#10b981'
+      ctx.font = '16px system-ui'
+      ctx.fillText('🌿', 1140, 60)
+      ctx.fillText('🌴', 1140, 220)
+      ctx.fillText('🪴', 930, 220)
+
+      // ── SALA 8: CASINO GOURMET EL BUEN SABOR (x: 615, y: 480, w: 285, h: 200) ──
+      ctx.fillStyle = '#064e3b'
+      ctx.fillRect(645, 510, 125, 26)
+      ctx.strokeStyle = '#10b981'
+      ctx.lineWidth = 1.5
+      ctx.strokeRect(645, 510, 125, 26)
+      
+      ctx.fillStyle = '#a7f3d0'
+      ctx.font = 'bold 9px system-ui'
+      ctx.fillText('🥗 Buffet Gourmet Gama', 655, 527)
+
+      // Platos calientes y ensaladas
+      ctx.fillStyle = '#f59e0b'
+      ctx.beginPath()
+      ctx.arc(740, 523, 4, 0, Math.PI * 2)
+      ctx.arc(752, 523, 4, 0, Math.PI * 2)
+      ctx.fill()
+
+      // Mesa de comedor redonda con sillas
+      ctx.fillStyle = '#0f172a'
+      ctx.beginPath()
+      ctx.arc(830, 580, 22, 0, Math.PI * 2)
+      ctx.fill()
+      ctx.strokeStyle = '#059669'
+      ctx.lineWidth = 1.5
+      ctx.stroke()
+
+      // ── SALA 9: MEGA ARCADE & GAMING LOUNGE 3D (x: 920, y: 265, w: 255, h: 415) ──
+      // Franjas de suelo neón púrpura
+      ctx.strokeStyle = 'rgba(192, 132, 252, 0.15)'
+      ctx.lineWidth = 1
+      for (let ay = 280; ay < 670; ay += 25) {
+        ctx.beginPath()
+        ctx.moveTo(925, ay)
+        ctx.lineTo(1170, ay)
+        ctx.stroke()
+      }
+
+      // Máquina Arcade 1: Pac-Man (Amarillo Neón)
+      ctx.fillStyle = '#3b0764'
+      ctx.fillRect(940, 290, 38, 48)
+      ctx.strokeStyle = '#eab308'
+      ctx.lineWidth = 1.5
+      ctx.strokeRect(940, 290, 38, 48)
+      ctx.fillStyle = (tickCountRef.current % 40 < 20) ? '#fef08a' : '#ca8a04'
+      ctx.fillRect(944, 296, 30, 18)
+      ctx.fillStyle = '#000000'
+      ctx.font = 'bold 8px monospace'
+      ctx.fillText('PAC', 949, 309)
       ctx.fillStyle = '#ffffff'
       ctx.font = '9px system-ui'
-      ctx.fillText('🕹️', 944, 600)
+      ctx.fillText('🕹️', 952, 332)
 
-      // 4. Actualizar Física y Dibujar los 10 Sims en Tiempo Real
+      // Máquina Arcade 2: Street Fighter / Gama Arena (Cyan Neón)
+      ctx.fillStyle = '#1e1b4b'
+      ctx.fillRect(990, 290, 38, 48)
+      ctx.strokeStyle = '#06b6d4'
+      ctx.lineWidth = 1.5
+      ctx.strokeRect(990, 290, 38, 48)
+      ctx.fillStyle = (tickCountRef.current % 30 < 15) ? '#22d3ee' : '#e879f9'
+      ctx.fillRect(994, 296, 30, 18)
+      ctx.fillStyle = '#000000'
+      ctx.font = 'bold 8px monospace'
+      ctx.fillText('FIGHT', 996, 309)
+      ctx.fillStyle = '#ffffff'
+      ctx.font = '9px system-ui'
+      ctx.fillText('👾', 1002, 332)
+
+      // Mesa de Taca-taca / Futbolín
+      ctx.fillStyle = '#14532d'
+      ctx.fillRect(970, 390, 115, 60)
+      ctx.strokeStyle = '#22c55e'
+      ctx.lineWidth = 2
+      ctx.strokeRect(970, 390, 115, 60)
+      // Líneas de la cancha y barras de metal
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)'
+      ctx.lineWidth = 1
+      ctx.beginPath()
+      ctx.arc(1027, 420, 14, 0, Math.PI * 2)
+      ctx.moveTo(1027, 390)
+      ctx.lineTo(1027, 450)
+      ctx.stroke()
+      // Barras de jugadores
+      ctx.strokeStyle = '#94a3b8'
+      ctx.lineWidth = 2
+      ctx.beginPath()
+      ctx.moveTo(955, 405)
+      ctx.lineTo(1100, 405)
+      ctx.moveTo(955, 435)
+      ctx.lineTo(1100, 435)
+      ctx.stroke()
+      // Mini jugadores
+      ctx.fillStyle = '#ef4444'
+      ctx.fillRect(995, 402, 6, 6)
+      ctx.fillRect(1045, 402, 6, 6)
+      ctx.fillStyle = '#3b82f6'
+      ctx.fillRect(1015, 432, 6, 6)
+      ctx.fillRect(1065, 432, 6, 6)
+      ctx.fillStyle = '#ffffff'
+      ctx.font = 'bold 9px system-ui'
+      ctx.fillText('⚽ Taca-taca Gama', 985, 385)
+
+      // Mesa de Ping-Pong
+      ctx.fillStyle = '#1e3a8a'
+      ctx.fillRect(970, 500, 115, 56)
+      ctx.strokeStyle = '#38bdf8'
+      ctx.lineWidth = 2
+      ctx.strokeRect(970, 500, 115, 56)
+      // Red de Ping Pong
+      ctx.strokeStyle = '#ffffff'
+      ctx.lineWidth = 1.5
+      ctx.beginPath()
+      ctx.moveTo(1027, 497)
+      ctx.lineTo(1027, 559)
+      ctx.stroke()
+      ctx.fillStyle = '#ffffff'
+      ctx.font = 'bold 9px system-ui'
+      ctx.fillText('🏓 Ping-Pong Pro', 985, 495)
+
+      // Sillones Puff Gamer Relax
+      ctx.fillStyle = '#a855f7'
+      ctx.beginPath()
+      ctx.arc(955, 610, 18, 0, Math.PI * 2)
+      ctx.fill()
+      ctx.fillStyle = '#06b6d4'
+      ctx.beginPath()
+      ctx.arc(1125, 610, 18, 0, Math.PI * 2)
+      ctx.fill()
+
+      // ── EFECTO DE CONFETI EN MODO FIESTA / CELEBRACIÓN ──
+      if (modoCelebracionOficina) {
+        const coloresConfeti = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#06b6d4']
+        for (let c = 0; c < 35; c++) {
+          const cx = ((tickCountRef.current * 3 + c * 37) % canvas.width)
+          const cy = ((tickCountRef.current * 2 + c * 23) % canvas.height)
+          ctx.fillStyle = coloresConfeti[c % coloresConfeti.length]
+          ctx.fillRect(cx, cy, 6, 6)
+        }
+      }
+
+      // 4. Actualizar Física y Dibujar los Sims en Tiempo Real
       sims.forEach(sim => {
         let nx = sim.x
         let ny = sim.y
@@ -2493,16 +2809,52 @@ ${cmContenidoGenerado.mejorHorario || 'N/A'}`
           if (modoReunionDirectorio) {
             const indexSim = sims.findIndex(s => s.id === sim.id)
             const angulo = (indexSim / sims.length) * Math.PI * 2
-            sim.targetX = 825 + Math.cos(angulo) * 75
+            sim.targetX = 757 + Math.cos(angulo) * 75
             sim.targetY = 135 + Math.sin(angulo) * 38
           } else if (modoPausaBienestar) {
             const indexSim = sims.findIndex(s => s.id === sim.id)
             if (indexSim % 2 === 0) {
               sim.targetX = 715 + (indexSim % 3) * 28
-              sim.targetY = 550 + Math.floor(indexSim / 3) * 16
+              sim.targetY = 560 + Math.floor(indexSim / 3) * 16
             } else {
-              sim.targetX = 860 + (indexSim % 3) * 32
-              sim.targetY = 550 + Math.floor(indexSim / 3) * 16
+              sim.targetX = 980 + (indexSim % 3) * 32
+              sim.targetY = 160 + Math.floor(indexSim / 3) * 16
+            }
+          }
+
+          // Rutina Autónoma de Patrulla para Subgerente Esteban Morales
+          if (rondaSupervisionActiva && sim.id === 'subgerente_operaciones') {
+            const puntoActual = PUNTOS_RONDA_ESTEBAN[rondaPasoRef.current]
+            if (puntoActual) {
+              sim.targetX = puntoActual.x
+              sim.targetY = puntoActual.y
+              if (Math.hypot(sim.x - puntoActual.x, sim.y - puntoActual.y) < 8) {
+                esperaRondaRef.current += factorVelocidad
+                sim.burbujaTexto = puntoActual.frase
+                sim.burbujaTimer = 120
+                if (esperaRondaRef.current > 100) {
+                  esperaRondaRef.current = 0
+                  rondaPasoRef.current++
+                  if (rondaPasoRef.current >= PUNTOS_RONDA_ESTEBAN.length) {
+                    rondaPasoRef.current = 0
+                    setRondaSupervisionActiva(false)
+                    sim.targetX = sim.deskX
+                    sim.targetY = sim.deskY
+                    sim.burbujaTexto = 'Ronda de supervisión completada. SLAs y moral en nivel óptimo 🚀'
+                    sim.burbujaTimer = 180
+                    setFeedOperaciones(prev => [{
+                      id: 'ev-' + Date.now(),
+                      hora: new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }),
+                      simId: 'subgerente_operaciones',
+                      simNombre: 'Esteban Morales',
+                      simEmoji: '📋',
+                      rol: 'Subgerente de Operaciones',
+                      accion: 'Ronda de supervisión finalizada con éxito: 100% de cumplimiento operativo, SLA 99.98% y alta moral en el equipo.',
+                      tipo: 'cra'
+                    }, ...prev])
+                  }
+                }
+              }
             }
           }
 
@@ -2511,7 +2863,7 @@ ${cmContenidoGenerado.mejorHorario || 'N/A'}`
           const dist = Math.hypot(dx, dy)
 
           if (dist > 3) {
-            const speed = 1.8 * factorVelocidad
+            const speed = 2.0 * factorVelocidad
             nx += (dx / dist) * speed
             ny += (dy / dist) * speed
             estado = 'walking'
@@ -2523,25 +2875,36 @@ ${cmContenidoGenerado.mejorHorario || 'N/A'}`
               if (modoReunionDirectorio) {
                 estado = 'meeting'
               } else if (modoPausaBienestar) {
-                estado = nx < 820 ? 'buffet' : 'zen'
+                estado = nx < 850 ? 'buffet' : 'coffee'
                 sim.energiaSim = 100
               } else if (Math.hypot(nx - sim.deskX, ny - sim.deskY) < 5) {
                 estado = 'working'
-              } else if (nx > 675 && ny > 495) {
-                estado = nx < 820 ? 'buffet' : 'zen'
+              } else if (nx > 920 && ny > 265) {
+                estado = 'zen'
+              } else if (nx > 920 && ny <= 265) {
+                estado = 'coffee'
               } else {
                 estado = 'talking'
               }
             }
           }
 
-          if (tickCountRef.current % 180 === 0 && !modoReunionDirectorio && !modoPausaBienestar) {
-            if (Math.random() < 0.12 && estado === 'working') {
-              sim.targetX = 720 + Math.random() * 50
-              sim.targetY = 540 + Math.random() * 30
-              sim.burbujaTexto = 'Pausa saludable en El Buen Sabor... 🥗'
-              sim.burbujaTimer = 180
-            } else if (Math.random() < 0.08 && (estado === 'buffet' || estado === 'zen')) {
+          // Pausas espontáneas y autónomas hacia el Casino o la Terraza
+          if (tickCountRef.current % 200 === 0 && !modoReunionDirectorio && !modoPausaBienestar && !rondaSupervisionActiva && !modoCelebracionOficina) {
+            if (Math.random() < 0.10 && estado === 'working') {
+              // 50% va a la Terraza Barista, 50% al Buffet Gourmet
+              if (Math.random() < 0.5) {
+                sim.targetX = 960 + Math.random() * 60
+                sim.targetY = 120 + Math.random() * 50
+                sim.burbujaTexto = 'Café espresso y aire fresco en la Terraza ☕🌿'
+                sim.burbujaTimer = 180
+              } else {
+                sim.targetX = 700 + Math.random() * 70
+                sim.targetY = 560 + Math.random() * 30
+                sim.burbujaTexto = 'Pausa saludable en El Buen Sabor... 🥗'
+                sim.burbujaTimer = 180
+              }
+            } else if (Math.random() < 0.08 && (estado === 'buffet' || estado === 'zen' || estado === 'coffee')) {
               sim.targetX = sim.deskX
               sim.targetY = sim.deskY
               sim.burbujaTexto = 'Retomando funciones con energía renovada ⚡'
@@ -2551,8 +2914,8 @@ ${cmContenidoGenerado.mejorHorario || 'N/A'}`
 
           if (estado === 'working') {
             sim.energiaSim = Math.max(70, sim.energiaSim - 0.005 * factorVelocidad)
-          } else if (estado === 'buffet' || estado === 'zen') {
-            sim.energiaSim = Math.min(100, sim.energiaSim + 0.1 * factorVelocidad)
+          } else if (estado === 'buffet' || estado === 'zen' || estado === 'coffee') {
+            sim.energiaSim = Math.min(100, sim.energiaSim + 0.12 * factorVelocidad)
           }
 
           if (sim.burbujaTimer > 0) {
@@ -2565,55 +2928,109 @@ ${cmContenidoGenerado.mejorHorario || 'N/A'}`
         sim.estadoAccion = estado
         sim.direccion = direccion
 
-        // DIBUJAR AL SIM
-        const bob = Math.sin((tickCountRef.current + sim.x * 0.1) * 0.15) * 1.5
+        // ── DIBUJAR AL SIM CON ANIMACIÓN Y APARIENCIA MEJORADA ──
+        const bob = Math.sin((tickCountRef.current + sim.x * 0.1) * 0.2) * 1.5
+        const breath = Math.sin(tickCountRef.current * 0.07 + sim.x) * 0.8
 
-        const plumbobY = ny - 32 + (estado === 'walking' ? bob : 0)
+        // Sombra suave en el suelo debajo del Sim
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.45)'
+        ctx.beginPath()
+        ctx.ellipse(nx, ny + 10, 9, 3.5, 0, 0, Math.PI * 2)
+        ctx.fill()
+
+        // Piernas con animación de balanceo al caminar
+        const legSwing = estado === 'walking' ? Math.sin((tickCountRef.current + sim.x) * 0.35) * 3.5 : 0
+        ctx.fillStyle = '#0f172a'
+        ctx.fillRect(nx - 5, ny + 6 + legSwing, 4, 8)
+        ctx.fillRect(nx + 1, ny + 6 - legSwing, 4, 8)
+
+        // Torso / Ropa con respiración suave
+        ctx.fillStyle = sim.colorRopa
+        ctx.fillRect(nx - 6, ny - 8 + breath, 12, 14)
+
+        // Corbata distintiva para Tomás Toro-Moreno (CEO)
+        if (sim.id === 'gerencia_general') {
+          ctx.fillStyle = '#dc2626'
+          ctx.beginPath()
+          ctx.moveTo(nx, ny - 5 + breath)
+          ctx.lineTo(nx + 2, ny + 2 + breath)
+          ctx.lineTo(nx, ny + 5 + breath)
+          ctx.lineTo(nx - 2, ny + 2 + breath)
+          ctx.fill()
+        }
+
+        // Portapapeles / Tablet de supervisión para Esteban Morales
+        if (sim.id === 'subgerente_operaciones') {
+          ctx.fillStyle = '#b45309'
+          ctx.fillRect(nx + 7, ny - 5 + breath, 6, 10)
+          ctx.fillStyle = '#fef3c7'
+          ctx.fillRect(nx + 8, ny - 4 + breath, 4, 8)
+        }
+
+        // Cabeza
+        ctx.fillStyle = sim.colorPiel
+        ctx.beginPath()
+        ctx.arc(nx, ny - 16 + breath, 7.5, 0, Math.PI * 2)
+        ctx.fill()
+
+        // Cabello
+        ctx.fillStyle = sim.colorCabello
+        ctx.beginPath()
+        ctx.arc(nx, ny - 19 + breath, 7.5, Math.PI, Math.PI * 2)
+        ctx.fill()
+
+        // Ojos y animación de parpadeo realista
+        const parpadeando = (tickCountRef.current % 140) < 6
+        if (!parpadeando) {
+          ctx.fillStyle = '#0f172a'
+          ctx.fillRect(nx - 3.5, ny - 17 + breath, 2, 2)
+          ctx.fillRect(nx + 1.5, ny - 17 + breath, 2, 2)
+        } else {
+          ctx.strokeStyle = '#0f172a'
+          ctx.lineWidth = 1
+          ctx.beginPath()
+          ctx.moveTo(nx - 4, ny - 16 + breath)
+          ctx.lineTo(nx - 2, ny - 16 + breath)
+          ctx.moveTo(nx + 1, ny - 16 + breath)
+          ctx.lineTo(nx + 3, ny - 16 + breath)
+          ctx.stroke()
+        }
+
+        // Plumbob 3D giratorio
+        const pFase = tickCountRef.current * 0.08
+        const pWidth = Math.abs(Math.sin(pFase)) * 5.5 + 1
+        const plumbobY = ny - 32 + (estado === 'walking' ? bob : breath)
+        
         ctx.fillStyle = sim.id === empleadoSeleccionadoId ? '#38bdf8' : sim.plumbobColor
         ctx.beginPath()
         ctx.moveTo(nx, plumbobY - 8)
-        ctx.lineTo(nx + 5, plumbobY)
+        ctx.lineTo(nx + pWidth, plumbobY)
         ctx.lineTo(nx, plumbobY + 8)
-        ctx.lineTo(nx - 5, plumbobY)
+        ctx.lineTo(nx - pWidth, plumbobY)
         ctx.closePath()
         ctx.fill()
-        ctx.strokeStyle = '#ffffff'
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)'
         ctx.lineWidth = 1
         ctx.stroke()
 
-        ctx.fillStyle = sim.colorPiel
-        ctx.beginPath()
-        ctx.arc(nx, ny - 16, 7.5, 0, Math.PI * 2)
-        ctx.fill()
-
-        ctx.fillStyle = sim.colorCabello
-        ctx.beginPath()
-        ctx.arc(nx, ny - 19, 7.5, Math.PI, Math.PI * 2)
-        ctx.fill()
-
-        ctx.fillStyle = sim.colorRopa
-        ctx.fillRect(nx - 6, ny - 8, 12, 14)
-
-        ctx.fillStyle = '#0f172a'
-        ctx.fillRect(nx - 5, ny + 6, 4, 8)
-        ctx.fillRect(nx + 1, ny + 6, 4, 8)
-
+        // Etiqueta de nombre del Sim
         ctx.fillStyle = '#f8fafc'
         ctx.font = 'bold 9px system-ui, -apple-system, sans-serif'
         ctx.textAlign = 'center'
         ctx.fillText(sim.apodo, nx, ny + 24)
         ctx.textAlign = 'start'
 
+        // Burbuja de pensamiento / diálogo
         if (sim.burbujaTimer > 0 && sim.burbujaTexto) {
           ctx.font = 'bold 9px system-ui, -apple-system, sans-serif'
           const textW = ctx.measureText(sim.burbujaTexto).width
-          const bubbleW = Math.max(90, Math.min(200, textW + 16))
+          const bubbleW = Math.max(90, Math.min(230, textW + 16))
           const bubbleH = 22
           const bubbleX = Math.max(20, Math.min(canvas.width - bubbleW - 20, nx - bubbleW / 2))
           const bubbleY = ny - 56
 
           ctx.fillStyle = 'rgba(15, 23, 42, 0.95)'
-          ctx.strokeStyle = '#38bdf8'
+          ctx.strokeStyle = sim.id === 'subgerente_operaciones' ? '#f59e0b' : '#38bdf8'
           ctx.lineWidth = 1.5
           ctx.beginPath()
           ctx.roundRect(bubbleX, bubbleY, bubbleW, bubbleH, 6)
@@ -2630,7 +3047,7 @@ ${cmContenidoGenerado.mejorHorario || 'N/A'}`
 
     animId = requestAnimationFrame(render)
     return () => cancelAnimationFrame(animId)
-  }, [adminDesbloqueado, pestañaActiva, velocidadSim, modoReunionDirectorio, modoPausaBienestar, empleadoSeleccionadoId])
+  }, [adminDesbloqueado, pestañaActiva, velocidadSim, modoReunionDirectorio, modoPausaBienestar, rondaSupervisionActiva, modoCelebracionOficina, empleadoSeleccionadoId])
 
   const interactuarEnCanvas = (x: number, y: number) => {
     const sims = simsRef.current
@@ -2643,8 +3060,8 @@ ${cmContenidoGenerado.mejorHorario || 'N/A'}`
 
     const targetSim = sims.find(e => e.id === empleadoSeleccionadoId)
     if (targetSim) {
-      targetSim.targetX = Math.max(50, Math.min(950, x))
-      targetSim.targetY = Math.max(50, Math.min(590, y))
+      targetSim.targetX = Math.max(50, Math.min(1150, x))
+      targetSim.targetY = Math.max(50, Math.min(650, y))
       targetSim.burbujaTexto = 'Moviéndome a la posición indicada...'
       targetSim.burbujaTimer = 140
     }
@@ -3008,6 +3425,19 @@ Instrucciones de Respuesta:
         {/* Pestañas Superiores & Controles de Modo */}
         <div className="flex items-center gap-2 flex-wrap">
           
+          {/* Botón Destacado: Propuestas Gráficas Instagram de Valentina */}
+          <button
+            onClick={() => setModalPropuestasInstagram(true)}
+            className="px-3 py-1.5 rounded-xl text-xs font-black transition flex items-center gap-1.5 cursor-pointer border bg-gradient-to-r from-pink-600 via-rose-500 to-amber-500 text-white border-pink-400 shadow-md shadow-pink-950/40 hover:brightness-110 active:scale-95 animate-pulse"
+            title="Revisar y publicar las 2 propuestas gráficas de Instagram de Valentina Lagos"
+          >
+            <InstagramIcon className="h-3.5 w-3.5 text-white" />
+            <span>📱 Propuestas Instagram (2 Listas)</span>
+            <span className="bg-white text-pink-700 text-[10px] font-black px-1.5 py-0.2 rounded-full shadow-sm">
+              NUEVO
+            </span>
+          </button>
+
           {/* Botón de Orden Ejecutiva Directa */}
           <button
             onClick={() => {
@@ -3113,41 +3543,113 @@ Instrucciones de Respuesta:
           {/* COLUMNA IZQUIERDA: CANVAS 2D + FEED EN VIVO (8 COLS) */}
           <div className="lg:col-span-8 flex flex-col gap-3 min-h-0 overflow-y-auto pr-1">
             
-            {/* CANVAS INTERACTIVO 2D DE LA OFICINA */}
-            <div className="relative bg-slate-900/90 border border-slate-800 rounded-2xl p-2 shadow-2xl">
+            {/* CANVAS INTERACTIVO 2D DE LA OFICINA (MODO JUEGO HD 1200x700) */}
+            <div className={`relative bg-slate-900/90 border border-slate-800 rounded-2xl p-2.5 shadow-2xl transition-all duration-300 ${
+              modoPantallaCompleta ? 'fixed inset-0 z-50 rounded-none p-4 bg-slate-950 flex flex-col justify-between overflow-hidden' : ''
+            }`}>
               
-              <div className="absolute top-4 left-4 z-10 bg-slate-900/90 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-700 flex items-center gap-2 text-xs">
-                <span className="text-[10px] font-mono text-slate-400">Velocidad:</span>
-                <button onClick={() => setVelocidadSim('1x')} className={`px-2 py-0.5 rounded font-bold cursor-pointer ${velocidadSim === '1x' ? 'bg-blue-600 text-white' : 'text-slate-400'}`}>1x</button>
-                <button onClick={() => setVelocidadSim('2x')} className={`px-2 py-0.5 rounded font-bold cursor-pointer ${velocidadSim === '2x' ? 'bg-blue-600 text-white' : 'text-slate-400'}`}>2x</button>
-                <button onClick={() => setVelocidadSim('pausa')} className={`px-2 py-0.5 rounded font-bold cursor-pointer ${velocidadSim === 'pausa' ? 'bg-amber-600 text-white' : 'text-slate-400'}`}>⏸</button>
+              {/* Barra Superior de Control del Juego */}
+              <div className="flex items-center justify-between gap-2 flex-wrap mb-2">
+                <div className="flex items-center gap-1.5 bg-slate-950/90 px-2.5 py-1 rounded-xl border border-slate-800 text-xs">
+                  <span className="text-[10px] font-mono text-slate-400">Velocidad:</span>
+                  <button onClick={() => setVelocidadSim('1x')} className={`px-2 py-0.5 rounded font-bold cursor-pointer text-xs ${velocidadSim === '1x' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'}`}>1x</button>
+                  <button onClick={() => setVelocidadSim('2x')} className={`px-2 py-0.5 rounded font-bold cursor-pointer text-xs ${velocidadSim === '2x' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'}`}>2x</button>
+                  <button onClick={() => setVelocidadSim('pausa')} className={`px-2 py-0.5 rounded font-bold cursor-pointer text-xs ${velocidadSim === 'pausa' ? 'bg-amber-600 text-white' : 'text-slate-400 hover:text-white'}`}>⏸</button>
+                </div>
+
+                {/* Controles de Zoom & Resolución del Juego */}
+                <div className="flex items-center gap-1 bg-slate-950/90 px-2.5 py-1 rounded-xl border border-slate-800 text-xs">
+                  <span className="text-[10px] font-mono text-slate-400">Zoom:</span>
+                  <button
+                    onClick={() => setZoomJuego('1x')}
+                    className={`px-2 py-0.5 rounded text-xs font-bold cursor-pointer ${zoomJuego === '1x' ? 'bg-cyan-600 text-white' : 'text-slate-400 hover:text-white'}`}
+                  >
+                    1.0x
+                  </button>
+                  <button
+                    onClick={() => setZoomJuego('1.35x')}
+                    className={`px-2 py-0.5 rounded text-xs font-bold cursor-pointer ${zoomJuego === '1.35x' ? 'bg-cyan-600 text-white' : 'text-slate-400 hover:text-white'}`}
+                  >
+                    1.35x Grande
+                  </button>
+                  <button
+                    onClick={() => setZoomJuego('1.7x')}
+                    className={`px-2 py-0.5 rounded text-xs font-bold cursor-pointer ${zoomJuego === '1.7x' ? 'bg-cyan-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'}`}
+                  >
+                    1.7x HD+
+                  </button>
+                </div>
+
+                {/* Botones de Acción Rápida en el Juego */}
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={handleActivarRondaSupervision}
+                    className={`px-2.5 py-1 rounded-xl text-xs font-bold flex items-center gap-1 cursor-pointer border transition ${
+                      rondaSupervisionActiva
+                        ? 'bg-amber-500 text-slate-950 border-amber-300 animate-pulse font-black'
+                        : 'bg-slate-950 text-amber-300 border-amber-800/60 hover:bg-slate-800'
+                    }`}
+                    title="Forzar al Subgerente Esteban Morales a recorrer y auditar todas las áreas"
+                  >
+                    <span>📋</span>
+                    <span>{rondaSupervisionActiva ? 'Ronda Activa...' : 'Ronda Subgerente'}</span>
+                  </button>
+
+                  <button
+                    onClick={handleToggleCelebracionOficina}
+                    className={`px-2.5 py-1 rounded-xl text-xs font-bold flex items-center gap-1 cursor-pointer border transition ${
+                      modoCelebracionOficina
+                        ? 'bg-purple-600 text-white border-purple-400 shadow-md animate-pulse font-black'
+                        : 'bg-slate-950 text-purple-300 border-purple-800/60 hover:bg-slate-800'
+                    }`}
+                    title="Activar fiesta y juego en el Mega Arcade 3D y Terraza Barista"
+                  >
+                    <PartyPopper className="h-3.5 w-3.5 text-purple-300" />
+                    <span>{modoCelebracionOficina ? '¡Fiesta Gamer!' : 'Fiesta Arcade'}</span>
+                  </button>
+
+                  <button
+                    onClick={() => setModoPantallaCompleta(!modoPantallaCompleta)}
+                    className="px-2.5 py-1 rounded-xl text-xs font-bold flex items-center gap-1 cursor-pointer border bg-slate-950 text-slate-300 border-slate-800 hover:bg-slate-800 hover:text-white"
+                    title={modoPantallaCompleta ? 'Salir de Pantalla Completa' : 'Ver oficina en pantalla completa tipo juego'}
+                  >
+                    {modoPantallaCompleta ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
+                    <span>{modoPantallaCompleta ? 'Salir' : 'Pantalla Completa'}</span>
+                  </button>
+                </div>
               </div>
 
-              <div className="absolute top-4 right-4 z-10 text-[11px] font-mono text-emerald-400 bg-slate-900/90 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-700 flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-                <span>Haz clic en un Sim para ver su trabajo o darle órdenes</span>
+              {/* Contenedor del Lienzo con Soporte de Zoom y Scroll Suave */}
+              <div className="overflow-auto max-w-full max-h-[72vh] rounded-xl border border-slate-800/80 bg-[#090d16] flex items-center justify-center p-1">
+                <div style={{
+                  transform: zoomJuego === '1.7x' ? 'scale(1.7)' : zoomJuego === '1.35x' ? 'scale(1.35)' : 'scale(1)',
+                  transformOrigin: 'top center',
+                  transition: 'transform 0.25s ease-out'
+                }}>
+                  <canvas
+                    ref={canvasRef}
+                    width={1200}
+                    height={700}
+                    onClick={handleCanvasClick}
+                    onTouchStart={handleTouchCanvas}
+                    className="cursor-pointer shadow-2xl block border border-slate-800/80 rounded-xl bg-[#090d16] touch-none"
+                    style={{ imageRendering: 'pixelated' }}
+                  />
+                </div>
               </div>
 
-              <canvas
-                ref={canvasRef}
-                width={1000}
-                height={640}
-                onClick={handleCanvasClick}
-                onTouchStart={handleTouchCanvas}
-                className="w-full h-auto rounded-xl cursor-pointer border border-slate-800/80 shadow-2xl bg-[#090d16] touch-none"
-                style={{ imageRendering: 'pixelated' }}
-              />
-
+              {/* Barra Inferior de Salas con los 9 Sectores */}
               <div className="flex items-center gap-2 overflow-x-auto pt-2 text-[10px] font-mono text-slate-400 no-scrollbar">
-                <span className="font-bold text-slate-300 shrink-0">Salas:</span>
-                <span className="bg-slate-900 px-2 py-0.5 rounded border border-slate-800 shrink-0">👔 1. Tomás</span>
-                <span className="bg-slate-900 px-2 py-0.5 rounded border border-slate-800 shrink-0">⚖️ 2. Legal OS10</span>
-                <span className="bg-slate-900 px-2 py-0.5 rounded border border-slate-800 shrink-0">🏛️ 3. Directorio</span>
-                <span className="bg-slate-900 px-2 py-0.5 rounded border border-slate-800 shrink-0">🚨 4. CRA 24/7</span>
-                <span className="bg-slate-900 px-2 py-0.5 rounded border border-slate-800 shrink-0">💼 5. Comercial & Mkt</span>
-                <span className="bg-slate-900 px-2 py-0.5 rounded border border-slate-800 shrink-0">🧠 6. Laboratorio IA</span>
-                <span className="bg-emerald-950/80 text-emerald-300 border border-emerald-800/60 px-2 py-0.5 rounded shrink-0 font-bold">🥗 7. Casino Gourmet</span>
-                <span className="bg-purple-950/80 text-purple-300 border border-purple-800/60 px-2 py-0.5 rounded shrink-0 font-bold">🧘‍♂️ 8. Zen & Arcade</span>
+                <span className="font-bold text-slate-300 shrink-0">9 Sectores Gama:</span>
+                <span className="bg-slate-900 px-2 py-0.5 rounded border border-slate-800 shrink-0">👔 1. Tomás Toro-Moreno</span>
+                <span className="bg-slate-900 px-2 py-0.5 rounded border border-slate-800 shrink-0">⚖️ 2. Legal OS10 & APDP</span>
+                <span className="bg-slate-900 px-2 py-0.5 rounded border border-slate-800 shrink-0">🏛️ 3. Directorio Ejecutivo</span>
+                <span className="bg-emerald-950/80 text-emerald-300 border border-emerald-800/60 px-2 py-0.5 rounded shrink-0 font-bold">🌿☕ 4. Terraza Barista</span>
+                <span className="bg-slate-900 px-2 py-0.5 rounded border border-slate-800 shrink-0">🚨 5. CRA 24/7</span>
+                <span className="bg-slate-900 px-2 py-0.5 rounded border border-slate-800 shrink-0">💼 6. Comercial & Mkt</span>
+                <span className="bg-slate-900 px-2 py-0.5 rounded border border-slate-800 shrink-0">🧠 7. Laboratorio IA</span>
+                <span className="bg-emerald-950/80 text-emerald-300 border border-emerald-800/60 px-2 py-0.5 rounded shrink-0 font-bold">🥗 8. Casino Gourmet</span>
+                <span className="bg-purple-950/80 text-purple-300 border border-purple-800/60 px-2 py-0.5 rounded shrink-0 font-bold">🎮🕹️ 9. Mega Arcade 3D</span>
               </div>
             </div>
 
@@ -5503,6 +6005,235 @@ Instrucciones de Respuesta:
                 <Download className="h-3.5 w-3.5" />
                 <span>Descargar JPG</span>
               </a>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL: PROPUESTAS GRÁFICAS DE INSTAGRAM (VALENTINA LAGOS) ── */}
+      {modalPropuestasInstagram && (
+        <div
+          onClick={() => setModalPropuestasInstagram(false)}
+          className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 overflow-y-auto cursor-pointer"
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            className="bg-slate-900 border border-slate-700/80 rounded-2xl max-w-5xl w-full p-4 sm:p-6 space-y-4 cursor-default animate-in fade-in zoom-in-95 shadow-2xl my-auto"
+          >
+            {/* Encabezado del Modal */}
+            <div className="flex items-start justify-between pb-3 border-b border-slate-800">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-gradient-to-tr from-pink-600 via-rose-500 to-amber-500 flex items-center justify-center text-white shadow-md">
+                  <InstagramIcon className="h-5 w-5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-base font-black text-white">
+                      Propuestas Oficiales de Marketing para Instagram
+                    </h3>
+                    <span className="bg-pink-950 text-pink-300 border border-pink-700/60 text-[10px] font-black px-2 py-0.5 rounded-full">
+                      2 LISTAS PARA PUBLICAR
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-400">
+                    Diseñadas por Valentina Lagos (Gerente Comercial & Mkt) en resolución 1080x1080 HD para revisión de Tomás Toro-Moreno.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setModalPropuestasInstagram(false)}
+                className="text-slate-400 hover:text-white text-xs px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 font-bold cursor-pointer transition"
+              >
+                ✕ Cerrar
+              </button>
+            </div>
+
+            {/* Mensaje de Despacho Exitoso si aplica */}
+            {propuestasGraficasDespachadasMsg && (
+              <div className="p-3 bg-emerald-950/80 border border-emerald-500/50 rounded-xl text-emerald-200 text-xs font-semibold flex items-center gap-2 animate-in fade-in">
+                <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+                <span>{propuestasGraficasDespachadasMsg}</span>
+              </div>
+            )}
+
+            {/* Grilla de las 2 Propuestas */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 max-h-[72vh] overflow-y-auto pr-1">
+              
+              {/* PROPUESTA 1 */}
+              <div className="bg-slate-950/80 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between space-y-3 hover:border-pink-500/40 transition">
+                <div className="space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-black font-mono px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800/60">
+                      PROPUESTA #1 · CONTENIDO EDUCATIVO
+                    </span>
+                    <span className="text-[10px] font-mono text-slate-500">1080 x 1080 px</span>
+                  </div>
+
+                  <h4 className="text-sm font-bold text-white">
+                    ¿Sirena que solo suena vs Monitoreo Real 24 Horas?
+                  </h4>
+
+                  {/* Preview Visual */}
+                  <div className="relative group rounded-xl overflow-hidden border border-slate-800 bg-black aspect-square max-h-72 flex items-center justify-center">
+                    <img
+                      src="/marketing/propuesta-grafica-1.jpg"
+                      alt="Propuesta 1 Instagram Gama Seguridad"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-2 transition-opacity">
+                      <button
+                        type="button"
+                        onClick={() => setModalImagenPreview({ url: '/marketing/propuesta-grafica-1.jpg', titulo: 'Propuesta 1: Sirena Tradicional vs Monitoreo Real 24 Horas' })}
+                        className="p-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer"
+                      >
+                        <Eye className="h-3.5 w-3.5" />
+                        <span>Ver en Pantalla Completa</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Copywriting redactado por Valentina */}
+                  <div className="bg-slate-900/90 p-3 rounded-xl border border-slate-800/80 space-y-1.5 text-xs text-slate-300">
+                    <p className="font-semibold text-slate-200">Copy sugerido para la publicación:</p>
+                    <p className="text-[11px] leading-relaxed text-slate-400">
+                      "¿Sabías que una sirena tradicional solo avisa a los vecinos cuando el intruso ya está adentro? 🚨 En Gama Seguridad SpA conectamos tu hogar o empresa a nuestra Central CRA 24/7 con verificación humana en segundos y despacho de emergencia. Tu seguridad no puede depender de la suerte."
+                    </p>
+                    <p className="text-[10px] font-mono text-cyan-400">
+                      #GamaSeguridad #Monitoreo247 #SeguridadChile #ProteccionHogar #SeguridadElectronica
+                    </p>
+                  </div>
+
+                  {publicadoRedesExito['prop-1'] && (
+                    <div className="p-2 bg-emerald-950 border border-emerald-500/50 rounded-lg text-emerald-300 text-[11px] font-bold flex items-center gap-1.5">
+                      <Check className="h-3.5 w-3.5" />
+                      <span>{publicadoRedesExito['prop-1']}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Acciones para Propuesta 1 */}
+                <div className="pt-2 border-t border-slate-800/80 flex items-center gap-2 flex-wrap">
+                  <button
+                    onClick={() => handleAprobarYPublicarRedes(
+                      'prop-1',
+                      'Sirena Tradicional vs Monitoreo Real 24 Horas',
+                      '/marketing/propuesta-grafica-1.jpg',
+                      '¿Sabías que una sirena tradicional solo avisa a los vecinos cuando el intruso ya está adentro? En Gama Seguridad SpA conectamos tu hogar o empresa a nuestra Central CRA 24/7.'
+                    )}
+                    disabled={publicandoRedesId === 'prop-1'}
+                    className="flex-1 py-2 px-3 bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer shadow-md transition disabled:opacity-50"
+                  >
+                    <InstagramIcon className="h-3.5 w-3.5" />
+                    <span>{publicandoRedesId === 'prop-1' ? 'Publicando...' : '✓ Aprobar y Publicar en Instagram'}</span>
+                  </button>
+
+                  <a
+                    href="/marketing/propuesta-grafica-1.jpg"
+                    download="Gama_Propuesta_1_Instagram.jpg"
+                    className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-bold flex items-center gap-1 cursor-pointer transition"
+                    title="Descargar imagen en alta resolución"
+                  >
+                    <Download className="h-3.5 w-3.5" />
+                  </a>
+                </div>
+              </div>
+
+              {/* PROPUESTA 2 */}
+              <div className="bg-slate-950/80 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between space-y-3 hover:border-emerald-500/40 transition">
+                <div className="space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-black font-mono px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800/60">
+                      PROPUESTA #2 · COMPARATIVA ANTI-COMODATO
+                    </span>
+                    <span className="text-[10px] font-mono text-slate-500">1080 x 1080 px</span>
+                  </div>
+
+                  <h4 className="text-sm font-bold text-white">
+                    Comparativa Anti-Comodato de 48 Meses
+                  </h4>
+
+                  {/* Preview Visual */}
+                  <div className="relative group rounded-xl overflow-hidden border border-slate-800 bg-black aspect-square max-h-72 flex items-center justify-center">
+                    <img
+                      src="/marketing/propuesta-grafica-2.jpg"
+                      alt="Propuesta 2 Instagram Gama Seguridad"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-2 transition-opacity">
+                      <button
+                        type="button"
+                        onClick={() => setModalImagenPreview({ url: '/marketing/propuesta-grafica-2.jpg', titulo: 'Propuesta 2: Comparativa Anti-Comodato de 48 Meses' })}
+                        className="p-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer"
+                      >
+                        <Eye className="h-3.5 w-3.5" />
+                        <span>Ver en Pantalla Completa</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Copywriting redactado por Valentina */}
+                  <div className="bg-slate-900/90 p-3 rounded-xl border border-slate-800/80 space-y-1.5 text-xs text-slate-300">
+                    <p className="font-semibold text-slate-200">Copy sugerido para la publicación:</p>
+                    <p className="text-[11px] leading-relaxed text-slate-400">
+                      "No caigas en la trampa del arriendo forzoso a 48 meses. 🛡️ Mientras las multinacionales te atan con letras chicas y se llevan tus equipos al terminar el contrato, en Gama Seguridad SpA los equipos son 100% tuyos desde el primer día. Transparencia real y 25 años de experiencia."
+                    </p>
+                    <p className="text-[10px] font-mono text-emerald-400">
+                      #AntiComodato #GamaSeguridad #EquiposTuyos #SinLetraChica #SeguridadTransparente
+                    </p>
+                  </div>
+
+                  {publicadoRedesExito['prop-2'] && (
+                    <div className="p-2 bg-emerald-950 border border-emerald-500/50 rounded-lg text-emerald-300 text-[11px] font-bold flex items-center gap-1.5">
+                      <Check className="h-3.5 w-3.5" />
+                      <span>{publicadoRedesExito['prop-2']}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Acciones para Propuesta 2 */}
+                <div className="pt-2 border-t border-slate-800/80 flex items-center gap-2 flex-wrap">
+                  <button
+                    onClick={() => handleAprobarYPublicarRedes(
+                      'prop-2',
+                      'Comparativa Anti-Comodato de 48 Meses',
+                      '/marketing/propuesta-grafica-2.jpg',
+                      'No caigas en la trampa del arriendo forzoso a 48 meses. En Gama Seguridad SpA los equipos son 100% tuyos desde el primer día.'
+                    )}
+                    disabled={publicandoRedesId === 'prop-2'}
+                    className="flex-1 py-2 px-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer shadow-md transition disabled:opacity-50"
+                  >
+                    <InstagramIcon className="h-3.5 w-3.5" />
+                    <span>{publicandoRedesId === 'prop-2' ? 'Publicando...' : '✓ Aprobar y Publicar en Instagram'}</span>
+                  </button>
+
+                  <a
+                    href="/marketing/propuesta-grafica-2.jpg"
+                    download="Gama_Propuesta_2_Instagram.jpg"
+                    className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-bold flex items-center gap-1 cursor-pointer transition"
+                    title="Descargar imagen en alta resolución"
+                  >
+                    <Download className="h-3.5 w-3.5" />
+                  </a>
+                </div>
+              </div>
+
+            </div>
+
+            {/* Barra de Reenvío Directo por Correo a Tomás */}
+            <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 flex items-center justify-between gap-3 flex-wrap">
+              <div className="flex items-center gap-2 text-xs text-slate-400">
+                <Mail className="h-4 w-4 text-blue-400" />
+                <span>¿Prefieres recibir las piezas gráficas en tu correo personal?</span>
+              </div>
+              <button
+                onClick={handleDespacharPropuestasGraficas}
+                disabled={despachandoPropuestasGraficas}
+                className="px-4 py-1.5 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-500 text-white flex items-center gap-1.5 cursor-pointer shadow transition disabled:opacity-50"
+              >
+                <Send className="h-3.5 w-3.5" />
+                <span>{despachandoPropuestasGraficas ? 'Enviando...' : '📧 Reenviar a tetoromoreno@gamasecurity.cl'}</span>
+              </button>
             </div>
           </div>
         </div>
