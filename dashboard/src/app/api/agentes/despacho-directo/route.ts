@@ -22,7 +22,7 @@ export async function POST(req: Request) {
       targetEmail = 'tetoromoreno@gamasecurity.cl'
     } = body
 
-    if (!titulo || !contenido) {
+    if (!titulo || (!contenido && tipo !== 'propuestas_graficas')) {
       return NextResponse.json({ error: 'Faltan campos obligatorios (titulo, contenido)' }, { status: 400 })
     }
 
@@ -247,9 +247,10 @@ ${contenido}
     let emailResult: any = null
 
     try {
+      const destinatarios = Array.from(new Set([targetEmail, 'tomas.toromoreno@gmail.com', 'tetoromoreno@gamasecurity.cl']))
       const emailPayload: any = {
         from: 'Gama Seguridad Agentes <reportes@gamasecurity.cl>',
-        to: [targetEmail],
+        to: destinatarios,
         subject,
         html: htmlContent
       }

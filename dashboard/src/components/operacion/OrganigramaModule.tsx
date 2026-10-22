@@ -2494,6 +2494,533 @@ ${cmContenidoGenerado.mejorHorario || 'N/A'}`
     }
   }
 
+  // ── UTILIDADES DE COLOR PARA RENDERIZADO 64-BIT CASI 3D (ALTO RENDIMIENTO) ──
+  const lighten = (hex: string, amount: number): string => {
+    try {
+      const clean = hex.startsWith('#') ? hex.slice(1) : hex
+      const num = parseInt(clean.length === 3 ? clean.split('').map(c => c + c).join('') : clean, 16)
+      const r = Math.min(255, ((num >> 16) & 255) + amount)
+      const g = Math.min(255, ((num >> 8) & 255) + amount)
+      const b = Math.min(255, (num & 255) + amount)
+      return `rgb(${r},${g},${b})`
+    } catch {
+      return hex
+    }
+  }
+
+  const darken = (hex: string, amount: number): string => {
+    try {
+      const clean = hex.startsWith('#') ? hex.slice(1) : hex
+      const num = parseInt(clean.length === 3 ? clean.split('').map(c => c + c).join('') : clean, 16)
+      const r = Math.max(0, ((num >> 16) & 255) - amount)
+      const g = Math.max(0, ((num >> 8) & 255) - amount)
+      const b = Math.max(0, (num & 255) - amount)
+      return `rgb(${r},${g},${b})`
+    } catch {
+      return hex
+    }
+  }
+
+  // ── MOTOR DE RENDERIZADO HUMANIZADO 64-BIT PSEUDO-3D ──
+  const drawHumanoid64Bit = (
+    ctx: CanvasRenderingContext2D,
+    sim: EmpleadoSim,
+    tick: number,
+    isSelected: boolean,
+    canvasW: number
+  ) => {
+    const nx = sim.x
+    const ny = sim.y
+    const isWalking = sim.estadoAccion === 'walking'
+
+    // Ciclo de marcha y respiración orgánica
+    const walkPhase = (tick * 0.22) + (sim.x * 0.08)
+    const legSwingL = isWalking ? Math.sin(walkPhase) * 5.5 : 0
+    const legSwingR = isWalking ? -Math.sin(walkPhase) * 5.5 : 0
+    const bob = isWalking ? Math.abs(Math.sin(walkPhase * 2)) * 2 : 0
+    const breath = Math.sin((tick * 0.07) + (sim.x * 0.05)) * 0.9
+
+    const baseFootY = ny + 12
+    const hipY = ny - 4 - bob + breath
+    const shoulderY = ny - 24 - bob + breath
+    const headY = ny - 36 - bob + breath
+
+    // 1. Sombra 3D Volumétrica en el Suelo
+    const shadowGrad = ctx.createRadialGradient(nx, baseFootY, 2, nx, baseFootY, 16)
+    shadowGrad.addColorStop(0, 'rgba(0, 0, 0, 0.70)')
+    shadowGrad.addColorStop(0.5, 'rgba(0, 0, 0, 0.35)')
+    shadowGrad.addColorStop(1, 'rgba(0, 0, 0, 0)')
+    ctx.fillStyle = shadowGrad
+    ctx.beginPath()
+    ctx.ellipse(nx, baseFootY, isWalking ? 18 : 15, 6, 0, 0, Math.PI * 2)
+    ctx.fill()
+
+    // 2. Piernas y Zapatos 3D con sombreado cilíndrico
+    const pantsColor = sim.id === 'gerencia_general' ? '#0f172a' : sim.id === 'legal_os10' ? '#18181b' : sim.id === 'subgerente_operaciones' ? '#334155' : '#1e293b'
+    const pantsShade = '#090d16'
+    const shoesColor = sim.id === 'gerencia_general' || sim.id === 'legal_os10' ? '#0a0a0a' : '#451a03'
+
+    // Pierna Izquierda
+    const legLx = nx - 5
+    const footLy = baseFootY + legSwingL
+    ctx.fillStyle = pantsColor
+    ctx.beginPath()
+    ctx.moveTo(legLx - 3, hipY)
+    ctx.lineTo(legLx + 3, hipY)
+    ctx.lineTo(legLx + 2, footLy - 3)
+    ctx.lineTo(legLx - 2, footLy - 3)
+    ctx.closePath()
+    ctx.fill()
+    ctx.fillStyle = pantsShade
+    ctx.fillRect(legLx + 1, hipY, 1.5, Math.max(0, footLy - 3 - hipY))
+
+    // Zapato Izquierdo
+    ctx.fillStyle = shoesColor
+    ctx.beginPath()
+    ctx.roundRect(legLx - 4, footLy - 3, 8, 5, 2)
+    ctx.fill()
+    ctx.fillStyle = '#ffffff'
+    ctx.fillRect(legLx - 3, footLy + 1, 6, 1)
+
+    // Pierna Derecha
+    const legRx = nx + 5
+    const footRy = baseFootY + legSwingR
+    ctx.fillStyle = pantsColor
+    ctx.beginPath()
+    ctx.moveTo(legRx - 3, hipY)
+    ctx.lineTo(legRx + 3, hipY)
+    ctx.lineTo(legRx + 2, footRy - 3)
+    ctx.lineTo(legRx - 2, footRy - 3)
+    ctx.closePath()
+    ctx.fill()
+    ctx.fillStyle = pantsShade
+    ctx.fillRect(legRx + 1, hipY, 1.5, Math.max(0, footRy - 3 - hipY))
+
+    // Zapato Derecho
+    ctx.fillStyle = shoesColor
+    ctx.beginPath()
+    ctx.roundRect(legRx - 4, footRy - 3, 8, 5, 2)
+    ctx.fill()
+    ctx.fillStyle = '#ffffff'
+    ctx.fillRect(legRx - 3, footRy + 1, 6, 1)
+
+    // 3. Torso y Traje Humanizado 64-Bit (con degradado volumétrico 3D)
+    const torsoGrad = ctx.createLinearGradient(nx - 11, shoulderY, nx + 11, hipY)
+    torsoGrad.addColorStop(0, lighten(sim.colorRopa, 30))
+    torsoGrad.addColorStop(0.5, sim.colorRopa)
+    torsoGrad.addColorStop(1, darken(sim.colorRopa, 40))
+
+    ctx.fillStyle = torsoGrad
+    ctx.beginPath()
+    ctx.roundRect(nx - 10, shoulderY, 20, hipY - shoulderY + 2, 4)
+    ctx.fill()
+    ctx.strokeStyle = darken(sim.colorRopa, 50)
+    ctx.lineWidth = 1
+    ctx.stroke()
+
+    // Cuello de camisa blanca
+    ctx.fillStyle = '#ffffff'
+    ctx.beginPath()
+    ctx.moveTo(nx - 4, shoulderY)
+    ctx.lineTo(nx, shoulderY + 6)
+    ctx.lineTo(nx + 4, shoulderY)
+    ctx.closePath()
+    ctx.fill()
+
+    // Solapas de traje ejecutivo
+    ctx.strokeStyle = darken(sim.colorRopa, 35)
+    ctx.lineWidth = 1.5
+    ctx.beginPath()
+    ctx.moveTo(nx - 6, shoulderY)
+    ctx.lineTo(nx - 2, shoulderY + 8)
+    ctx.lineTo(nx - 2, hipY)
+    ctx.moveTo(nx + 6, shoulderY)
+    ctx.lineTo(nx + 2, shoulderY + 8)
+    ctx.lineTo(nx + 2, hipY)
+    ctx.stroke()
+
+    // Detalles Humanizados por Especialista
+    if (sim.id === 'gerencia_general') {
+      // Tomás Toro-Moreno: Corbata carmesí, clip de oro y pañuelo blanco
+      ctx.fillStyle = '#dc2626'
+      ctx.beginPath()
+      ctx.moveTo(nx - 2, shoulderY + 3)
+      ctx.lineTo(nx + 2, shoulderY + 3)
+      ctx.lineTo(nx + 2.5, hipY - 2)
+      ctx.lineTo(nx, hipY + 1)
+      ctx.lineTo(nx - 2.5, hipY - 2)
+      ctx.closePath()
+      ctx.fill()
+      ctx.fillStyle = '#eab308'
+      ctx.fillRect(nx - 2, shoulderY + 10, 4, 1.5)
+      ctx.fillStyle = '#ffffff'
+      ctx.fillRect(nx - 8, shoulderY + 5, 4, 1.5)
+    } else if (sim.id === 'subgerente_operaciones') {
+      // Esteban Morales: Credencial dorada de operaciones
+      ctx.fillStyle = '#f59e0b'
+      ctx.fillRect(nx - 7, shoulderY + 5, 4, 5)
+      ctx.fillStyle = '#ffffff'
+      ctx.fillRect(nx - 6.5, shoulderY + 6, 3, 3)
+    } else if (sim.id === 'legal_os10') {
+      // Claudio: Corbata ámbar
+      ctx.fillStyle = '#f59e0b'
+      ctx.fillRect(nx - 1.5, shoulderY + 3, 3, 10)
+    } else if (sim.id === 'comercial_jefa') {
+      // Valentina: Collar dorado
+      ctx.strokeStyle = '#fef08a'
+      ctx.lineWidth = 1
+      ctx.beginPath()
+      ctx.arc(nx, shoulderY + 3, 3.5, 0, Math.PI)
+      ctx.stroke()
+    } else if (sim.id === 'cra_jefa' || sim.id === 'cra_terreno') {
+      // CRA: Insignia Gama Security
+      ctx.fillStyle = '#38bdf8'
+      ctx.beginPath()
+      ctx.moveTo(nx - 6, shoulderY + 4)
+      ctx.lineTo(nx - 3, shoulderY + 4)
+      ctx.lineTo(nx - 4.5, shoulderY + 8)
+      ctx.closePath()
+      ctx.fill()
+    }
+
+    // 4. Brazos y Manos 3D
+    const armSwingL = isWalking ? -Math.sin(walkPhase) * 6 : 0
+    const armSwingR = isWalking ? Math.sin(walkPhase) * 6 : 0
+
+    // Brazo Izquierdo
+    ctx.fillStyle = sim.colorRopa
+    ctx.beginPath()
+    ctx.roundRect(nx - 13, shoulderY + 2, 4, 15 + armSwingL, 2)
+    ctx.fill()
+    ctx.fillStyle = sim.colorPiel
+    ctx.beginPath()
+    ctx.arc(nx - 11, shoulderY + 17 + armSwingL, 2.5, 0, Math.PI * 2)
+    ctx.fill()
+    // Reloj de oro en Tomás
+    if (sim.id === 'gerencia_general') {
+      ctx.fillStyle = '#fbbf24'
+      ctx.fillRect(nx - 13, shoulderY + 15 + armSwingL, 4, 1.5)
+    }
+
+    // Brazo Derecho
+    ctx.fillStyle = sim.colorRopa
+    ctx.beginPath()
+    ctx.roundRect(nx + 9, shoulderY + 2, 4, 15 + armSwingR, 2)
+    ctx.fill()
+    ctx.fillStyle = sim.colorPiel
+    ctx.beginPath()
+    ctx.arc(nx + 11, shoulderY + 17 + armSwingR, 2.5, 0, Math.PI * 2)
+    ctx.fill()
+
+    // 5. Herramientas de Mando en Mano
+    if (sim.id === 'subgerente_operaciones') {
+      // Esteban: Portapapeles y tablet de auditoría
+      ctx.fillStyle = '#78350f'
+      ctx.fillRect(nx + 11, shoulderY + 8 + armSwingR, 8, 12)
+      ctx.fillStyle = '#fef3c7'
+      ctx.fillRect(nx + 12, shoulderY + 9 + armSwingR, 6, 9)
+      ctx.fillStyle = '#22c55e'
+      ctx.fillRect(nx + 13, shoulderY + 11 + armSwingR, 4, 1.5)
+      ctx.fillStyle = '#3b82f6'
+      ctx.fillRect(nx + 13, shoulderY + 14 + armSwingR, 4, 1.5)
+    } else if (sim.id === 'comercial_jefa') {
+      // Valentina: Smartphone con pantalla Instagram
+      ctx.fillStyle = '#0f172a'
+      ctx.fillRect(nx + 11, shoulderY + 10 + armSwingR, 6, 10)
+      ctx.fillStyle = '#ec4899'
+      ctx.fillRect(nx + 11.5, shoulderY + 11 + armSwingR, 5, 7.5)
+      ctx.fillStyle = '#ffffff'
+      ctx.beginPath()
+      ctx.arc(nx + 14, shoulderY + 14.5 + armSwingR, 1.5, 0, Math.PI * 2)
+      ctx.stroke()
+    } else if (sim.id === 'legal_os10') {
+      // Claudio: Maletín legal
+      ctx.fillStyle = '#451a03'
+      ctx.fillRect(nx - 17, shoulderY + 12 + armSwingL, 9, 7)
+      ctx.fillStyle = '#fbbf24'
+      ctx.fillRect(nx - 14, shoulderY + 14 + armSwingL, 3, 2)
+    } else if (sim.id === 'ia_lead') {
+      // Maximiliano: Tablet con gráficos violeta
+      ctx.fillStyle = '#1e1b4b'
+      ctx.fillRect(nx + 10, shoulderY + 9 + armSwingR, 8, 11)
+      ctx.fillStyle = '#c084fc'
+      ctx.fillRect(nx + 11, shoulderY + 10 + armSwingR, 6, 8)
+    }
+
+    // 6. Cabeza y Rostro Humanizado 64-Bit Volumétrico 3D
+    ctx.fillStyle = darken(sim.colorPiel, 18)
+    ctx.fillRect(nx - 2.5, shoulderY - 2, 5, 4)
+
+    const headGrad = ctx.createRadialGradient(nx - 3, headY - 3, 2, nx, headY, 10)
+    headGrad.addColorStop(0, lighten(sim.colorPiel, 25))
+    headGrad.addColorStop(0.7, sim.colorPiel)
+    headGrad.addColorStop(1, darken(sim.colorPiel, 22))
+
+    ctx.fillStyle = headGrad
+    ctx.beginPath()
+    ctx.arc(nx, headY, 9, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.strokeStyle = darken(sim.colorPiel, 32)
+    ctx.lineWidth = 0.8
+    ctx.stroke()
+
+    // Ojos Humanizados (esclerótica blanca, iris y brillo)
+    const isBlink = (tick % 150) < 6
+    if (!isBlink) {
+      // Ojo Izquierdo
+      ctx.fillStyle = '#ffffff'
+      ctx.beginPath()
+      ctx.roundRect(nx - 5.5, headY - 2, 3.5, 3, 1)
+      ctx.fill()
+      ctx.fillStyle = '#1e293b'
+      ctx.beginPath()
+      ctx.arc(nx - 4, headY - 0.5, 1.2, 0, Math.PI * 2)
+      ctx.fill()
+      ctx.fillStyle = '#ffffff'
+      ctx.fillRect(nx - 4.5, headY - 1.2, 0.8, 0.8)
+
+      // Ojo Derecho
+      ctx.fillStyle = '#ffffff'
+      ctx.beginPath()
+      ctx.roundRect(nx + 2, headY - 2, 3.5, 3, 1)
+      ctx.fill()
+      ctx.fillStyle = '#1e293b'
+      ctx.beginPath()
+      ctx.arc(nx + 3.5, headY - 0.5, 1.2, 0, Math.PI * 2)
+      ctx.fill()
+      ctx.fillStyle = '#ffffff'
+      ctx.fillRect(nx + 3, headY - 1.2, 0.8, 0.8)
+    } else {
+      ctx.strokeStyle = '#475569'
+      ctx.lineWidth = 1.2
+      ctx.beginPath()
+      ctx.moveTo(nx - 5.5, headY)
+      ctx.lineTo(nx - 2, headY)
+      ctx.moveTo(nx + 2, headY)
+      ctx.lineTo(nx + 5.5, headY)
+      ctx.stroke()
+    }
+
+    // Cejas Humanizadas
+    ctx.strokeStyle = darken(sim.colorCabello, 10)
+    ctx.lineWidth = 1.2
+    ctx.beginPath()
+    ctx.moveTo(nx - 6, headY - 3.5)
+    ctx.lineTo(nx - 2.5, headY - 4)
+    ctx.moveTo(nx + 2.5, headY - 4)
+    ctx.lineTo(nx + 6, headY - 3.5)
+    ctx.stroke()
+
+    // Sombra de nariz y boca
+    ctx.fillStyle = darken(sim.colorPiel, 25)
+    ctx.fillRect(nx - 0.5, headY + 1.5, 1.2, 1.5)
+    ctx.strokeStyle = '#be123c'
+    ctx.lineWidth = 1
+    ctx.beginPath()
+    ctx.arc(nx, headY + 4, 2.5, 0.1, Math.PI - 0.1)
+    ctx.stroke()
+
+    // Rasgos faciales humanizados específicos:
+    if (sim.id === 'gerencia_general') {
+      // Tomás: Barba ejecutiva recortada con canas de distinción
+      ctx.fillStyle = '#334155'
+      ctx.beginPath()
+      ctx.arc(nx, headY + 5, 5.5, 0, Math.PI)
+      ctx.fill()
+      ctx.fillStyle = '#94a3b8'
+      ctx.fillRect(nx - 3, headY + 5, 1.5, 1)
+      ctx.fillRect(nx + 1.5, headY + 5, 1.5, 1)
+    } else if (sim.id === 'subgerente_operaciones') {
+      // Esteban: Barba corta de sombra
+      ctx.fillStyle = 'rgba(71, 85, 105, 0.45)'
+      ctx.beginPath()
+      ctx.arc(nx, headY + 5.5, 5, 0, Math.PI)
+      ctx.fill()
+    } else if (sim.id === 'legal_os10' || sim.id === 'ia_lead') {
+      // Claudio & Maximiliano: Lentes
+      ctx.strokeStyle = sim.id === 'legal_os10' ? '#fbbf24' : '#38bdf8'
+      ctx.lineWidth = 1.2
+      ctx.strokeRect(nx - 6, headY - 2.5, 4.5, 4)
+      ctx.strokeRect(nx + 1.5, headY - 2.5, 4.5, 4)
+      ctx.beginPath()
+      ctx.moveTo(nx - 1.5, headY - 0.5)
+      ctx.lineTo(nx + 1.5, headY - 0.5)
+      ctx.stroke()
+    }
+
+    // 7. Cabello 3D Esculpido y Detallado
+    const hairGrad = ctx.createLinearGradient(nx - 9, headY - 12, nx + 9, headY)
+    hairGrad.addColorStop(0, lighten(sim.colorCabello, 30))
+    hairGrad.addColorStop(0.6, sim.colorCabello)
+    hairGrad.addColorStop(1, darken(sim.colorCabello, 35))
+
+    if (sim.id === 'comercial_jefa' || sim.id === 'comercial_cm') {
+      // Valentina: Melena larga ondulada sobre los hombros
+      ctx.fillStyle = hairGrad
+      ctx.beginPath()
+      ctx.arc(nx, headY - 3, 10.5, Math.PI * 0.85, Math.PI * 2.15)
+      ctx.fill()
+      ctx.fillRect(nx - 11, headY - 2, 4, 16)
+      ctx.fillRect(nx + 7, headY - 2, 4, 16)
+    } else if (sim.id === 'cra_jefa') {
+      // Romina: Coleta de caballo y auricular CRA
+      ctx.fillStyle = hairGrad
+      ctx.beginPath()
+      ctx.arc(nx, headY - 2, 9.5, Math.PI * 0.85, Math.PI * 2.15)
+      ctx.fill()
+      ctx.beginPath()
+      ctx.arc(nx + 7, headY - 8, 4.5, 0, Math.PI * 2)
+      ctx.fill()
+      ctx.strokeStyle = '#0284c7'
+      ctx.lineWidth = 1.8
+      ctx.beginPath()
+      ctx.arc(nx, headY - 3, 10, Math.PI * 0.9, Math.PI * 1.6)
+      ctx.stroke()
+      ctx.fillStyle = '#0284c7'
+      ctx.beginPath()
+      ctx.arc(nx - 9, headY, 3, 0, Math.PI * 2)
+      ctx.fill()
+      ctx.strokeStyle = '#94a3b8'
+      ctx.lineWidth = 1
+      ctx.beginPath()
+      ctx.moveTo(nx - 9, headY)
+      ctx.lineTo(nx - 3, headY + 4)
+      ctx.stroke()
+    } else if (sim.id === 'ia_software') {
+      // Camila: Bob con flequillo recto
+      ctx.fillStyle = hairGrad
+      ctx.beginPath()
+      ctx.arc(nx, headY - 2, 10, Math.PI * 0.8, Math.PI * 2.2)
+      ctx.fill()
+      ctx.fillRect(nx - 10, headY - 2, 3.5, 10)
+      ctx.fillRect(nx + 6.5, headY - 2, 3.5, 10)
+      ctx.fillRect(nx - 6, headY - 8, 12, 3)
+    } else {
+      // Tomás, Esteban, Claudio: Corte ejecutivo 3D
+      ctx.fillStyle = hairGrad
+      ctx.beginPath()
+      ctx.arc(nx, headY - 3, 9.5, Math.PI * 0.8, Math.PI * 2.2)
+      ctx.fill()
+      ctx.fillStyle = lighten(sim.colorCabello, 35)
+      ctx.fillRect(nx - 5, headY - 11, 4, 1.5)
+    }
+
+    // 8. Plumbob 3D Diamante Octaédrico Giratorio con Refracción
+    const pPhase = tick * 0.08
+    const pAngle = pPhase % (Math.PI * 2)
+    const pRadiusX = 7
+    const pRadiusY = 11
+    const plumbobY = headY - 24
+
+    const topV = { x: nx, y: plumbobY - pRadiusY }
+    const botV = { x: nx, y: plumbobY + pRadiusY }
+    const leftV = { x: nx + Math.sin(pAngle) * pRadiusX, y: plumbobY }
+    const rightV = { x: nx + Math.sin(pAngle + Math.PI / 2) * pRadiusX, y: plumbobY }
+    const frontV = { x: nx + Math.sin(pAngle + Math.PI * 1.5) * pRadiusX, y: plumbobY }
+
+    const basePlumbobColor = isSelected ? '#38bdf8' : sim.plumbobColor
+
+    // Cara 1: Superior Frontal
+    ctx.fillStyle = lighten(basePlumbobColor, 35)
+    ctx.beginPath()
+    ctx.moveTo(topV.x, topV.y)
+    ctx.lineTo(leftV.x, leftV.y)
+    ctx.lineTo(frontV.x, frontV.y)
+    ctx.closePath()
+    ctx.fill()
+
+    // Cara 2: Superior Lateral
+    ctx.fillStyle = basePlumbobColor
+    ctx.beginPath()
+    ctx.moveTo(topV.x, topV.y)
+    ctx.lineTo(frontV.x, frontV.y)
+    ctx.lineTo(rightV.x, rightV.y)
+    ctx.closePath()
+    ctx.fill()
+
+    // Cara 3: Inferior Frontal
+    ctx.fillStyle = darken(basePlumbobColor, 20)
+    ctx.beginPath()
+    ctx.moveTo(botV.x, botV.y)
+    ctx.lineTo(leftV.x, leftV.y)
+    ctx.lineTo(frontV.x, frontV.y)
+    ctx.closePath()
+    ctx.fill()
+
+    // Cara 4: Inferior Lateral
+    ctx.fillStyle = darken(basePlumbobColor, 40)
+    ctx.beginPath()
+    ctx.moveTo(botV.x, botV.y)
+    ctx.lineTo(frontV.x, frontV.y)
+    ctx.lineTo(rightV.x, rightV.y)
+    ctx.closePath()
+    ctx.fill()
+
+    // Aristas de cristal
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.75)'
+    ctx.lineWidth = 1
+    ctx.beginPath()
+    ctx.moveTo(topV.x, topV.y)
+    ctx.lineTo(leftV.x, leftV.y)
+    ctx.lineTo(botV.x, botV.y)
+    ctx.lineTo(rightV.x, rightV.y)
+    ctx.closePath()
+    ctx.moveTo(topV.x, topV.y)
+    ctx.lineTo(frontV.x, frontV.y)
+    ctx.lineTo(botV.x, botV.y)
+    ctx.stroke()
+
+    if ((tick % 60) < 10) {
+      ctx.fillStyle = '#ffffff'
+      ctx.beginPath()
+      ctx.arc(nx - 1, plumbobY - 3, 1.8, 0, Math.PI * 2)
+      ctx.fill()
+    }
+
+    // 9. Etiqueta / Nombre
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.85)'
+    ctx.beginPath()
+    ctx.roundRect(nx - 28, ny + 20, 56, 14, 4)
+    ctx.fill()
+    ctx.strokeStyle = isSelected ? '#38bdf8' : 'rgba(255, 255, 255, 0.15)'
+    ctx.lineWidth = 1
+    ctx.stroke()
+
+    ctx.fillStyle = isSelected ? '#38bdf8' : '#f8fafc'
+    ctx.font = 'bold 9px system-ui, -apple-system, sans-serif'
+    ctx.textAlign = 'center'
+    ctx.fillText(sim.apodo, nx, ny + 30)
+    ctx.textAlign = 'start'
+
+    // 10. Burbuja de Diálogo / Pensamiento
+    if (sim.burbujaTimer > 0 && sim.burbujaTexto) {
+      ctx.font = 'bold 9.5px system-ui, -apple-system, sans-serif'
+      const textW = ctx.measureText(sim.burbujaTexto).width
+      const bubbleW = Math.max(100, Math.min(240, textW + 18))
+      const bubbleH = 24
+      const bubbleX = Math.max(20, Math.min(canvasW - bubbleW - 20, nx - bubbleW / 2))
+      const bubbleY = headY - 38
+
+      ctx.fillStyle = 'rgba(11, 19, 38, 0.96)'
+      ctx.strokeStyle = sim.id === 'subgerente_operaciones' ? '#f59e0b' : isSelected ? '#38bdf8' : '#0284c7'
+      ctx.lineWidth = 1.5
+      ctx.beginPath()
+      ctx.roundRect(bubbleX, bubbleY, bubbleW, bubbleH, 7)
+      ctx.fill()
+      ctx.stroke()
+
+      ctx.fillStyle = 'rgba(11, 19, 38, 0.96)'
+      ctx.beginPath()
+      ctx.moveTo(nx - 4, bubbleY + bubbleH)
+      ctx.lineTo(nx, bubbleY + bubbleH + 4)
+      ctx.lineTo(nx + 4, bubbleY + bubbleH)
+      ctx.fill()
+
+      ctx.fillStyle = '#ffffff'
+      ctx.fillText(sim.burbujaTexto, bubbleX + 9, bubbleY + 16)
+    }
+  }
+
   // ── MOTOR DEL JUEGO SIMS: BUCLE SYNCHRONOUS 60 FPS DIRECTO AL CANVAS ──
   useEffect(() => {
     if (!adminDesbloqueado || pestañaActiva !== 'juego_oficina') return
@@ -2550,39 +3077,90 @@ ${cmContenidoGenerado.mejorHorario || 'N/A'}`
         }
       })
 
-      // 3. Dibujar Muebles y Escritorios
+      // 3. Dibujar Muebles y Escritorios 3D con Bisel e Iluminación
       sims.forEach(emp => {
-        // Escritorio de madera/metal
-        ctx.fillStyle = '#1e293b'
-        ctx.fillRect(emp.deskX - 28, emp.deskY - 14, 56, 28)
+        // Sombra proyectada por el escritorio
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.45)'
+        ctx.fillRect(emp.deskX - 30, emp.deskY - 12, 60, 32)
+
+        // Base del escritorio 3D (Cara frontal en sombra)
+        ctx.fillStyle = '#0f172a'
+        ctx.fillRect(emp.deskX - 28, emp.deskY + 8, 56, 8)
+
+        // Tapa superior del escritorio (Madera/antracita con degradado 3D)
+        const deskGrad = ctx.createLinearGradient(emp.deskX - 28, emp.deskY - 14, emp.deskX + 28, emp.deskY + 8)
+        deskGrad.addColorStop(0, '#334155')
+        deskGrad.addColorStop(0.5, '#1e293b')
+        deskGrad.addColorStop(1, '#0f172a')
+        ctx.fillStyle = deskGrad
+        ctx.fillRect(emp.deskX - 28, emp.deskY - 14, 56, 22)
+        ctx.strokeStyle = '#475569'
+        ctx.lineWidth = 1.2
+        ctx.strokeRect(emp.deskX - 28, emp.deskY - 14, 56, 22)
+
+        // Bisel superior iluminado
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)'
+        ctx.lineWidth = 1
+        ctx.beginPath()
+        ctx.moveTo(emp.deskX - 28, emp.deskY - 14)
+        ctx.lineTo(emp.deskX + 28, emp.deskY - 14)
+        ctx.stroke()
+
+        // Silla ergonómica ejecutiva con respaldo 3D
+        ctx.fillStyle = '#020617'
+        ctx.beginPath()
+        ctx.arc(emp.deskX, emp.deskY + 16, 10, 0, Math.PI * 2)
+        ctx.fill()
         ctx.strokeStyle = '#334155'
         ctx.lineWidth = 1.5
-        ctx.strokeRect(emp.deskX - 28, emp.deskY - 14, 56, 28)
+        ctx.stroke()
+        // Respaldo de malla
+        ctx.fillStyle = '#1e293b'
+        ctx.beginPath()
+        ctx.arc(emp.deskX, emp.deskY + 19, 7, Math.PI, Math.PI * 2)
+        ctx.fill()
 
-        // Pantalla / Monitor de computador (Doble monitor con brillo)
+        // Soporte de monitor
+        ctx.fillStyle = '#64748b'
+        ctx.fillRect(emp.deskX - 4, emp.deskY - 6, 8, 4)
+
+        // Monitores Duales Curvos 3D
+        // Monitor Izquierdo
         ctx.fillStyle = '#020617'
-        ctx.fillRect(emp.deskX - 20, emp.deskY - 12, 18, 6)
-        ctx.fillRect(emp.deskX + 2, emp.deskY - 12, 18, 6)
-        
-        // Brillo de pantalla
-        ctx.fillStyle = emp.area === 'operaciones' ? '#22c55e' : emp.area === 'ia' ? '#a855f7' : '#38bdf8'
-        ctx.fillRect(emp.deskX - 19, emp.deskY - 11, 16, 4)
-        ctx.fillRect(emp.deskX + 3, emp.deskY - 11, 16, 4)
+        ctx.fillRect(emp.deskX - 23, emp.deskY - 18, 20, 11)
+        ctx.strokeStyle = '#475569'
+        ctx.lineWidth = 1
+        ctx.strokeRect(emp.deskX - 23, emp.deskY - 18, 20, 11)
 
-        // Taza de café o cuaderno
+        // Monitor Derecho
+        ctx.fillStyle = '#020617'
+        ctx.fillRect(emp.deskX + 3, emp.deskY - 18, 20, 11)
+        ctx.strokeStyle = '#475569'
+        ctx.lineWidth = 1
+        ctx.strokeRect(emp.deskX + 3, emp.deskY - 18, 20, 11)
+
+        // Pantallas con resplandor en vivo según área
+        const glowColor = emp.area === 'operaciones' ? '#10b981' : emp.area === 'ia' ? '#a855f7' : emp.area === 'legal' ? '#f59e0b' : '#38bdf8'
+        ctx.fillStyle = glowColor
+        ctx.fillRect(emp.deskX - 21.5, emp.deskY - 16.5, 17, 8)
+        ctx.fillRect(emp.deskX + 4.5, emp.deskY - 16.5, 17, 8)
+
+        // Gráficos y líneas de terminal en las pantallas
+        ctx.fillStyle = '#ffffff'
+        ctx.fillRect(emp.deskX - 20, emp.deskY - 15, 8, 1)
+        ctx.fillRect(emp.deskX - 20, emp.deskY - 13, 12, 1)
+        ctx.fillRect(emp.deskX + 6, emp.deskY - 15, 10, 1)
+        ctx.fillRect(emp.deskX + 6, emp.deskY - 13, 14, 1)
+
+        // Taza de café humeante
         ctx.fillStyle = '#f59e0b'
         ctx.beginPath()
-        ctx.arc(emp.deskX + 22, emp.deskY - 4, 3, 0, Math.PI * 2)
+        ctx.arc(emp.deskX + 22, emp.deskY - 3, 3.5, 0, Math.PI * 2)
         ctx.fill()
-
-        // Silla ergonómica
-        ctx.fillStyle = '#0f172a'
+        ctx.fillStyle = '#78350f'
         ctx.beginPath()
-        ctx.arc(emp.deskX, emp.deskY + 12, 9, 0, Math.PI * 2)
+        ctx.arc(emp.deskX + 22, emp.deskY - 3, 2, 0, Math.PI * 2)
         ctx.fill()
-        ctx.strokeStyle = '#334155'
-        ctx.lineWidth = 1
-        ctx.stroke()
       })
 
       // Mesa de Reuniones en Directorio (Sala 3: x: 615, y: 25, w: 285, h: 220)
@@ -2928,118 +3506,19 @@ ${cmContenidoGenerado.mejorHorario || 'N/A'}`
         sim.estadoAccion = estado
         sim.direccion = direccion
 
-        // ── DIBUJAR AL SIM CON ANIMACIÓN Y APARIENCIA MEJORADA ──
-        const bob = Math.sin((tickCountRef.current + sim.x * 0.1) * 0.2) * 1.5
-        const breath = Math.sin(tickCountRef.current * 0.07 + sim.x) * 0.8
+      })
 
-        // Sombra suave en el suelo debajo del Sim
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.45)'
-        ctx.beginPath()
-        ctx.ellipse(nx, ny + 10, 9, 3.5, 0, 0, Math.PI * 2)
-        ctx.fill()
-
-        // Piernas con animación de balanceo al caminar
-        const legSwing = estado === 'walking' ? Math.sin((tickCountRef.current + sim.x) * 0.35) * 3.5 : 0
-        ctx.fillStyle = '#0f172a'
-        ctx.fillRect(nx - 5, ny + 6 + legSwing, 4, 8)
-        ctx.fillRect(nx + 1, ny + 6 - legSwing, 4, 8)
-
-        // Torso / Ropa con respiración suave
-        ctx.fillStyle = sim.colorRopa
-        ctx.fillRect(nx - 6, ny - 8 + breath, 12, 14)
-
-        // Corbata distintiva para Tomás Toro-Moreno (CEO)
-        if (sim.id === 'gerencia_general') {
-          ctx.fillStyle = '#dc2626'
-          ctx.beginPath()
-          ctx.moveTo(nx, ny - 5 + breath)
-          ctx.lineTo(nx + 2, ny + 2 + breath)
-          ctx.lineTo(nx, ny + 5 + breath)
-          ctx.lineTo(nx - 2, ny + 2 + breath)
-          ctx.fill()
-        }
-
-        // Portapapeles / Tablet de supervisión para Esteban Morales
-        if (sim.id === 'subgerente_operaciones') {
-          ctx.fillStyle = '#b45309'
-          ctx.fillRect(nx + 7, ny - 5 + breath, 6, 10)
-          ctx.fillStyle = '#fef3c7'
-          ctx.fillRect(nx + 8, ny - 4 + breath, 4, 8)
-        }
-
-        // Cabeza
-        ctx.fillStyle = sim.colorPiel
-        ctx.beginPath()
-        ctx.arc(nx, ny - 16 + breath, 7.5, 0, Math.PI * 2)
-        ctx.fill()
-
-        // Cabello
-        ctx.fillStyle = sim.colorCabello
-        ctx.beginPath()
-        ctx.arc(nx, ny - 19 + breath, 7.5, Math.PI, Math.PI * 2)
-        ctx.fill()
-
-        // Ojos y animación de parpadeo realista
-        const parpadeando = (tickCountRef.current % 140) < 6
-        if (!parpadeando) {
-          ctx.fillStyle = '#0f172a'
-          ctx.fillRect(nx - 3.5, ny - 17 + breath, 2, 2)
-          ctx.fillRect(nx + 1.5, ny - 17 + breath, 2, 2)
-        } else {
-          ctx.strokeStyle = '#0f172a'
-          ctx.lineWidth = 1
-          ctx.beginPath()
-          ctx.moveTo(nx - 4, ny - 16 + breath)
-          ctx.lineTo(nx - 2, ny - 16 + breath)
-          ctx.moveTo(nx + 1, ny - 16 + breath)
-          ctx.lineTo(nx + 3, ny - 16 + breath)
-          ctx.stroke()
-        }
-
-        // Plumbob 3D giratorio
-        const pFase = tickCountRef.current * 0.08
-        const pWidth = Math.abs(Math.sin(pFase)) * 5.5 + 1
-        const plumbobY = ny - 32 + (estado === 'walking' ? bob : breath)
-        
-        ctx.fillStyle = sim.id === empleadoSeleccionadoId ? '#38bdf8' : sim.plumbobColor
-        ctx.beginPath()
-        ctx.moveTo(nx, plumbobY - 8)
-        ctx.lineTo(nx + pWidth, plumbobY)
-        ctx.lineTo(nx, plumbobY + 8)
-        ctx.lineTo(nx - pWidth, plumbobY)
-        ctx.closePath()
-        ctx.fill()
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)'
-        ctx.lineWidth = 1
-        ctx.stroke()
-
-        // Etiqueta de nombre del Sim
-        ctx.fillStyle = '#f8fafc'
-        ctx.font = 'bold 9px system-ui, -apple-system, sans-serif'
-        ctx.textAlign = 'center'
-        ctx.fillText(sim.apodo, nx, ny + 24)
-        ctx.textAlign = 'start'
-
-        // Burbuja de pensamiento / diálogo
-        if (sim.burbujaTimer > 0 && sim.burbujaTexto) {
-          ctx.font = 'bold 9px system-ui, -apple-system, sans-serif'
-          const textW = ctx.measureText(sim.burbujaTexto).width
-          const bubbleW = Math.max(90, Math.min(230, textW + 16))
-          const bubbleH = 22
-          const bubbleX = Math.max(20, Math.min(canvas.width - bubbleW - 20, nx - bubbleW / 2))
-          const bubbleY = ny - 56
-
-          ctx.fillStyle = 'rgba(15, 23, 42, 0.95)'
-          ctx.strokeStyle = sim.id === 'subgerente_operaciones' ? '#f59e0b' : '#38bdf8'
-          ctx.lineWidth = 1.5
-          ctx.beginPath()
-          ctx.roundRect(bubbleX, bubbleY, bubbleW, bubbleH, 6)
-          ctx.fill()
-          ctx.stroke()
-
-          ctx.fillStyle = '#ffffff'
-          ctx.fillText(sim.burbujaTexto, bubbleX + 8, bubbleY + 14)
-        }
+      // 4. Renderizado Pseudo-3D Humanizado 64-Bit con Ordenamiento de Profundidad (Y-Sorting)
+      // Los especialistas más cercanos a la pantalla se superponen naturalmente en 3D
+      const simsOrdenados = [...sims].sort((a, b) => a.y - b.y)
+      simsOrdenados.forEach(sim => {
+        drawHumanoid64Bit(
+          ctx,
+          sim,
+          tickCountRef.current,
+          sim.id === empleadoSeleccionadoId,
+          canvas.width
+        )
       })
 
       animId = requestAnimationFrame(render)
