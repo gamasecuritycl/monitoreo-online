@@ -97,6 +97,7 @@ export interface EmpleadoSim {
   nombre: string
   apodo: string
   rol: string
+  emailCorporativo?: string
   area: CategoriaArea
   areaNombre: string
   avatarEmoji: string
@@ -174,6 +175,7 @@ const EMPLEADOS_DEFAULT: EmpleadoSim[] = [
     nombre: 'Tomás Toro-Moreno',
     apodo: 'Tomás',
     rol: 'Gerente General & Fundador (CEO)',
+    emailCorporativo: 'tetoromoreno@gamasecurity.cl',
     area: 'gerencia',
     areaNombre: 'Gerencia General / Directorio',
     avatarEmoji: '👔',
@@ -233,6 +235,7 @@ const EMPLEADOS_DEFAULT: EmpleadoSim[] = [
     nombre: 'Lic. Claudio Valenzuela',
     apodo: 'Claudio',
     rol: 'Director de Cumplimiento Normativo & Seguridad Privada (OS-10)',
+    emailCorporativo: 'legal@gamasecurity.cl',
     area: 'legal',
     areaNombre: 'Asesoría Legal & OS10',
     avatarEmoji: '⚖️',
@@ -291,6 +294,7 @@ const EMPLEADOS_DEFAULT: EmpleadoSim[] = [
     nombre: 'Sofía Carvajal',
     apodo: 'Sofía',
     rol: 'Jefa de Operaciones Central Receptora de Alarmas (CRA 24/7)',
+    emailCorporativo: 'operaciones@gamasecurity.cl',
     area: 'operaciones',
     areaNombre: 'Central Receptora CRA 24/7',
     avatarEmoji: '🚨',
@@ -348,9 +352,10 @@ const EMPLEADOS_DEFAULT: EmpleadoSim[] = [
   // 4. Rector Técnico Virtual
   {
     id: 'cra_terreno',
-    nombre: 'Ignacio Riquelme',
-    apodo: 'Ignacio',
-    rol: 'Rector Técnico Virtual de Alarmas & Hardware',
+    nombre: 'Andrés Alzamora',
+    apodo: 'Andrés',
+    rol: 'Jefe Técnico de Terreno, Instalaciones & Soporte Hardware',
+    emailCorporativo: 'soporte@gamasecurity.cl',
     area: 'operaciones',
     areaNombre: 'Central Receptora CRA 24/7',
     avatarEmoji: '🔧',
@@ -366,29 +371,29 @@ const EMPLEADOS_DEFAULT: EmpleadoSim[] = [
     targetY: 520,
     estadoAccion: 'working',
     direccion: 'down',
-    energiaSim: 92,
-    tareaActual: '📖 Oráculo Técnico: Consulta de manuales DSC PowerSeries, Neo y Paradox',
-    progresoTarea: 60,
-    burbujaTexto: 'Soporte remoto activo: Guía de programación sección [001] lista.',
+    energiaSim: 95,
+    tareaActual: '🔧 Coordinando instalaciones en terreno, cambios de batería y soporte técnico',
+    progresoTarea: 85,
+    burbujaTexto: 'Bitácora técnica de terreno al día: instalaciones y OTs coordinadas.',
     burbujaTimer: 150,
     atribucionesEjecutivas: [
-      'Oráculo mundial y rector de manuales de hardware (DSC, Paradox, Honeywell)',
-      'Resolución remota de trabas de programación (*8 5555, comunicadores IP/3G)',
-      'Asistencia técnica virtual sin pisar terreno',
-      'Supervisión de diagramas de conexión y resistencias de fin de línea'
+      'Ejecución y supervisión de instalaciones de alarmas y cámaras en terreno',
+      'Resolución técnica en sitio de conexionado de paneles DSC, Neo, Paradox y comunicadores',
+      'Atención de soporte técnico directo a abonados vía soporte@gamasecurity.cl',
+      'Mantenimiento preventivo, cambio de baterías y revisión de enlaces de comunicación'
     ],
-    misionPrincipal: 'Ser el oráculo técnico virtual definitivo para resolver cualquier dilema de programación o conexionado de paneles de alarma del mundo de forma remota.',
+    misionPrincipal: 'Liderar con excelencia las operaciones de terreno y soporte técnico de Gama Seguridad, garantizando que cada sistema quede impecablemente instalado.',
     kpis: [
-      { label: 'Manuales Dominados', valor: '100% Global' },
-      { label: 'Resolución Remota', valor: '97.8%' }
+      { label: 'Instalaciones Exitosas', valor: '99.2%' },
+      { label: 'Resolución Terreno', valor: '< 24 hrs' }
     ],
-    trayectoriaLinkedIn: 'Ingeniero en Automatización y Master en Sistemas de Intrusión. Conoce de memoria cada manual técnico, sección de programación y tabla de códigos de las marcas líderes del mundo.',
+    trayectoriaLinkedIn: 'Técnico Senior de Terreno en Gama Seguridad con más de 15 años de trayectoria práctica instalando y configurando sistemas de seguridad electrónica, CCTV y centrales de alarma.',
     certificacionesElite: [
-      'Master Installer DSC (PowerSeries Classic, PC1832, Neo HS2032/64)',
-      'Paradox Certified Specialist (Spectra SP, Magellan, EVO)',
-      'Honeywell Security Systems Master'
+      'Técnico Especialista en Intrusión & CCTV Gama Seguridad',
+      'Instalador Certificado DSC PowerSeries & Neo',
+      'Especialista en Hardware y Cableado Estructurado'
     ],
-    hardSkills: ['Programación Paneles DSC/Paradox', 'Configuración IP TL280 / 3G', 'Zonificación Remota'],
+    hardSkills: ['Instalaciones en Terreno', 'Configuración de Comunicadores', 'Diagnóstico de Hardware'],
     softSkills: ['Pedagogía Técnica', 'Diagnóstico Inmediato', 'Paciencia Didáctica'],
     stackHerramientas: ['Consola de Manuales Gama', 'DLS 5', 'BabyWare Paradox'],
     metodologias: ['Troubleshooting Remoto en Árbol', 'Soporte Nivel 3'],
@@ -411,6 +416,7 @@ const EMPLEADOS_DEFAULT: EmpleadoSim[] = [
     nombre: 'Valentina Lagos',
     apodo: 'Valentina',
     rol: 'Gerente Comercial & Estratega de Marketing Digital',
+    emailCorporativo: 'marketing@gamasecurity.cl',
     area: 'comercial',
     areaNombre: 'Piso Comercial & Marketing',
     avatarEmoji: '💼',
@@ -470,6 +476,7 @@ const EMPLEADOS_DEFAULT: EmpleadoSim[] = [
     nombre: 'Catalina Fuentes',
     apodo: 'Cata',
     rol: 'Community Manager & Creadora de Contenido Viral RRSS',
+    emailCorporativo: 'marketing@gamasecurity.cl',
     area: 'comercial',
     areaNombre: 'Piso Comercial & Marketing',
     avatarEmoji: '📱',
@@ -531,6 +538,7 @@ const EMPLEADOS_DEFAULT: EmpleadoSim[] = [
     nombre: 'Matías Morales',
     apodo: 'Matías',
     rol: 'Subgerente de Éxito de Clientes & Retención',
+    emailCorporativo: 'clientes@gamasecurity.cl',
     area: 'comercial',
     areaNombre: 'Piso Comercial & Marketing',
     avatarEmoji: '📞',
@@ -589,6 +597,7 @@ const EMPLEADOS_DEFAULT: EmpleadoSim[] = [
     nombre: 'Ing. Gonzalo Ramos',
     apodo: 'Gonzalo',
     rol: 'Ingeniero Preventa & Arquitectura de Seguridad Electrónica',
+    emailCorporativo: 'preventa@gamasecurity.cl',
     area: 'comercial',
     areaNombre: 'Piso Comercial & Marketing',
     avatarEmoji: '⚡',
@@ -938,7 +947,8 @@ const EMPLEADOS_DEFAULT: EmpleadoSim[] = [
     id: 'gerencia_expansion',
     nombre: 'Rodrigo Sanhueza',
     apodo: 'Rodrigo',
-    rol: 'Asesor Senior de Estrategia Organizacional & Expansión',
+    rol: 'Director de Finanzas, Control de Gestión & Cobranzas',
+    emailCorporativo: 'cobranza@gamasecurity.cl',
     area: 'gerencia',
     areaNombre: 'Gerencia General / Directorio',
     avatarEmoji: '🏛️',
@@ -4512,7 +4522,15 @@ Instrucciones de Respuesta:
                 <span className="text-3xl">{empleadoActivo.avatarEmoji}</span>
                 <div>
                   <h3 className="text-base font-black text-white">{empleadoActivo.nombre}</h3>
-                  <p className="text-xs text-[#2997ff] font-bold">{empleadoActivo.rol}</p>
+                  <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                    <p className="text-xs text-[#2997ff] font-bold">{empleadoActivo.rol}</p>
+                    {empleadoActivo.emailCorporativo && (
+                      <span className="text-[10px] font-mono text-cyan-300 bg-cyan-950/80 px-2 py-0.5 rounded border border-cyan-800/60 flex items-center gap-1">
+                        <Mail className="h-3 w-3 text-cyan-400" />
+                        {empleadoActivo.emailCorporativo}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
               <span className="text-xs bg-amber-950 text-amber-300 border border-amber-800/60 px-3 py-1 rounded-full font-mono font-bold">

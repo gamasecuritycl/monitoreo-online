@@ -8,16 +8,69 @@ function getResend() {
   return new Resend(k)
 }
 
+function getEmailRouting(tipo_evento?: string, customCc?: any, customBcc?: any, customReplyTo?: string) {
+  const t = (tipo_evento || '').toUpperCase()
+  let defaultCc: string[] = []
+  let defaultReplyTo = 'contacto@gamasecurity.cl'
+
+  if (t === 'COTIZACION' || t.includes('PRESUPUESTO')) {
+    defaultCc = ['preventa@gamasecurity.cl']
+    defaultReplyTo = 'preventa@gamasecurity.cl'
+  } else if (t === 'COBRANZA' || t === 'FACTURA' || t.includes('PAGO') || t.includes('ABONO')) {
+    defaultCc = ['cobranza@gamasecurity.cl']
+    defaultReplyTo = 'cobranza@gamasecurity.cl'
+  } else if (t === 'ORDEN_TRABAJO' || t === 'SERVICIO_TECNICO' || t.includes('TECNICO') || t.includes('OT')) {
+    // soporte@gamasecurity.cl está asignado a Andrés Alzamora (Técnico en terreno e instalaciones)
+    defaultCc = ['soporte@gamasecurity.cl']
+    defaultReplyTo = 'soporte@gamasecurity.cl'
+  } else if (t === 'CONTRATO' || t === 'LEGAL' || t.includes('LEY21719')) {
+    defaultCc = ['legal@gamasecurity.cl']
+    defaultReplyTo = 'legal@gamasecurity.cl'
+  } else if (t === 'REPORTE_HISTORICO' || t.includes('MONITOREO') || t.includes('EVENTO')) {
+    defaultCc = ['operaciones@gamasecurity.cl']
+    defaultReplyTo = 'operaciones@gamasecurity.cl'
+  }
+
+  const finalCc = customCc !== undefined 
+    ? (Array.isArray(customCc) ? customCc : [customCc].filter(Boolean))
+    : defaultCc
+
+  const finalBcc = customBcc !== undefined 
+    ? (Array.isArray(customBcc) ? customBcc : [customBcc].filter(Boolean))
+    : ['tetoromoreno@gamasecurity.cl']
+
+  const finalReplyTo = customReplyTo || defaultReplyTo
+
+  return {
+    cc: finalCc.length > 0 ? finalCc : undefined,
+    bcc: finalBcc.length > 0 ? finalBcc : undefined,
+    replyTo: finalReplyTo
+  }
+}
+
 export async function POST(req: Request) {
   try {
     const body = await req.json()
-    const { cuenta, nombre_cliente, tipo_evento, fecha_hora, destinatarios, cotizacion, empresa_emisora, pdf_base64 } = body
+    const {
+      cuenta,
+      nombre_cliente,
+      tipo_evento,
+      fecha_hora,
+      destinatarios,
+      cotizacion,
+      empresa_emisora,
+      pdf_base64,
+      cc,
+      bcc,
+      reply_to
+    } = body
 
     if (!destinatarios || (Array.isArray(destinatarios) && destinatarios.length === 0)) {
       return NextResponse.json({ error: 'No recipients provided' }, { status: 400 })
     }
 
     const toList = Array.isArray(destinatarios) ? destinatarios : [destinatarios]
+    const routing = getEmailRouting(tipo_evento || (cotizacion ? 'COTIZACION' : undefined), cc, bcc, reply_to)
 
     // IF THIS IS A COTIZACION / PRESUPUESTO EMAIL
     if (tipo_evento === 'COTIZACION' || cotizacion) {
@@ -122,6 +175,9 @@ export async function POST(req: Request) {
       let response = await getResend().emails.send({
         from: 'EMPRESA GAMA <contacto@gamasecurity.cl>',
         to: toList,
+        cc: routing.cc,
+        bcc: routing.bcc,
+        replyTo: routing.replyTo,
         subject: `Presupuesto N° ${cot.codigo_cotizacion || 'PR2607'} — ${emp.razon_social || 'EMPRESA GAMA'}`,
         html: htmlContent,
         attachments: attachments
@@ -132,6 +188,9 @@ export async function POST(req: Request) {
         response = await getResend().emails.send({
           from: 'EMPRESA GAMA <onboarding@resend.dev>',
           to: toList,
+          cc: routing.cc,
+          bcc: routing.bcc,
+          replyTo: routing.replyTo,
           subject: `Presupuesto N° ${cot.codigo_cotizacion || 'PR2607'} — ${emp.razon_social || 'EMPRESA GAMA'}`,
           html: htmlContent,
           attachments: attachments
@@ -250,6 +309,9 @@ export async function POST(req: Request) {
       let response = await getResend().emails.send({
         from: 'EMPRESA GAMA <contacto@gamasecurity.cl>',
         to: toList,
+        cc: routing.cc,
+        bcc: routing.bcc,
+        replyTo: routing.replyTo,
         subject: `Reporte Histórico de Monitoreo [Cuenta #${cuenta}] — ${nombre_cliente || 'EMPRESA GAMA'}`,
         html: htmlContent,
         attachments: attachments.length > 0 ? attachments : undefined
@@ -259,6 +321,9 @@ export async function POST(req: Request) {
         response = await getResend().emails.send({
           from: 'EMPRESA GAMA <onboarding@resend.dev>',
           to: toList,
+          cc: routing.cc,
+          bcc: routing.bcc,
+          replyTo: routing.replyTo,
           subject: `Reporte Histórico de Monitoreo [Cuenta #${cuenta}] — ${nombre_cliente || 'EMPRESA GAMA'}`,
           html: htmlContent,
           attachments: attachments.length > 0 ? attachments : undefined
@@ -320,6 +385,9 @@ export async function POST(req: Request) {
     let response = await getResend().emails.send({
       from: 'EMPRESA GAMA <contacto@gamasecurity.cl>',
       to: toList,
+      cc: routing.cc,
+      bcc: routing.bcc,
+      replyTo: routing.replyTo,
       subject: `Notificación de ${(tipo_evento || 'Evento').toUpperCase()}`,
       html: htmlContent,
       attachments
@@ -329,6 +397,9 @@ export async function POST(req: Request) {
       response = await getResend().emails.send({
         from: 'EMPRESA GAMA <onboarding@resend.dev>',
         to: toList,
+        cc: routing.cc,
+        bcc: routing.bcc,
+        replyTo: routing.replyTo,
         subject: `Notificación de ${(tipo_evento || 'Evento').toUpperCase()}`,
         html: htmlContent,
         attachments
