@@ -20,20 +20,173 @@ const SERVICIOS_MAP: Record<string, string> = {
   general: 'Cotización Integral de Seguridad'
 }
 
+// ── ESCUDO ANTI-SPAM & ANTI-BOTS (7 CAPAS) ──
+const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000 // 15 minutos
+const RATE_LIMIT_MAX_REQ = 3
+const ipRateMap = new Map<string, number[]>()
+
+function isRateLimited(ip: string): boolean {
+  const now = Date.now()
+  const history = (ipRateMap.get(ip) || []).filter(ts => now - ts < RATE_LIMIT_WINDOW_MS)
+  if (history.length >= RATE_LIMIT_MAX_REQ) {
+    ipRateMap.set(ip, history)
+    return true
+  }
+  history.push(now)
+  ipRateMap.set(ip, history)
+  return false
+}
+
+function escapeHtml(str: string): string {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
+/**
+ * Detecta cadenas aleatorias tipo bot / base64 sin espacios como:
+ * "nlTRxBKvobMijcmKiutVLou" o "fAKurFocqyjKUONnEc" o blobs "data:...;base64,"
+ */
+function isBotGibberishOrBase64(value: string): boolean {
+  const trimmed = value.trim()
+  if (!trimmed) return false
+
+  // 1. Bloquear payloads base64 o data URIs explícitos
+  if (/data:[a-z]+\/[a-z0-9.+-]+;base64,/i.test(trimmed)) return true
+  if (trimmed.length >= 28 && /^[A-Za-z0-9+/=_-]+$/.test(trimmed)) return true
+
+  // 2. Cadena única sin espacios de >= 12 caracteres con múltiples cambios aleatorios mayúscula/minúscula
+  if (!/\s/.test(trimmed) && trimmed.length >= 12) {
+    let caseTransitions = 0
+    for (let i = 1; i < trimmed.length; i++) {
+      const prevUpper = /[A-Z]/.test(trimmed[i - 1])
+      const prevLower = /[a-z]/.test(trimmed[i - 1])
+      const currUpper = /[A-Z]/.test(trimmed[i])
+      const currLower = /[a-z]/.test(trimmed[i])
+      if ((prevUpper && currLower) || (prevLower && currUpper)) {
+        caseTransitions++
+      }
+    }
+    if (caseTransitions >= 4) return true
+  }
+
+  // 3. Múltiples tokens gibberish dentro de un texto
+  const words = trimmed.split(/\s+/)
+  if (words.length <= 2) {
+    for (const w of words) {
+      if (w.length >= 14 && /^[A-Za-z0-9]+$/.test(w)) {
+        const uppers = (w.match(/[A-Z]/g) || []).length
+        const lowers = (w.match(/[a-z]/g) || []).length
+        if (uppers >= 4 && lowers >= 4) return true
+      }
+    }
+  }
+
+  return false
+}
+
+/**
+ * Detecta el patrón clásico de bots con Gmail dot-trick: "ezo.q.i.m.o9.4.7@gmail.com"
+ */
+function isSuspiciousBotEmail(email: string): boolean {
+  const trimmed = email.trim().toLowerCase()
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
+  if (!emailRegex.test(trimmed) || trimmed.length > 120) return true
+
+  const [localPart, domain] = trimmed.split('@')
+  if ((domain === 'gmail.com' || domain === 'googlemail.com')) {
+    const dotCount = (localPart.match(/\./g) || []).length
+    if (dotCount >= 4) return true
+  }
+  return false
+}
+
+function isAllowedOrigin(req: Request): boolean {
+  const origin = req.headers.get('origin') || ''
+  const referer = req.headers.get('referer') || ''
+  const source = origin || referer
+  if (!source) return false
+  return (
+    source.includes('gamasecurity.cl') ||
+    source.includes('vercel.app') ||
+    source.includes('localhost') ||
+    source.includes('127.0.0.1')
+  )
+}
+
 export async function POST(req: Request) {
   try {
-    const body = await req.json()
-    const { name, email, phone, service, message } = body
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || req.headers.get('x-real-ip') || '127.0.0.1'
+
+    // Capa 1: Límite de tamaño de payload (evita archivos base64 pesados)
+    const contentLength = Number(req.headers.get('content-length') || '0')
+    if (contentLength > 10_000) {
+      return NextResponse.json({ error: 'Solicitud demasiado grande.' }, { status: 413 })
+    }
+
+    // Capa 2: Validación de Origin/Referer (bloquea scripts externos directos)
+    if (!isAllowedOrigin(req)) {
+      console.warn(`[ANTI-SPAM] Origen no autorizado bloqueado desde IP ${ip}`)
+      return NextResponse.json({ error: 'Origen no autorizado.' }, { status: 403 })
+    }
+
+    // Capa 3: Rate Limiting por IP (máx 3 envíos cada 15 min)
+    if (isRateLimited(ip)) {
+      console.warn(`[ANTI-SPAM] Rate limit excedido desde IP ${ip}`)
+      return NextResponse.json({ error: 'Demasiadas solicitudes. Intenta nuevamente en unos minutos o escríbenos por WhatsApp.' }, { status: 429 })
+    }
+
+    const rawText = await req.text()
+    if (rawText.length > 10_000) {
+      return NextResponse.json({ error: 'Solicitud demasiado grande.' }, { status: 413 })
+    }
+
+    const body = JSON.parse(rawText)
+    const { name, email, phone, service, message, website, _ts } = body
+
+    // Capa 4: Honeypot silencioso (los bots rellenan el campo oculto "website")
+    if (website && String(website).trim().length > 0) {
+      console.warn(`[ANTI-SPAM] Honeypot activado desde IP ${ip} (website="${website}")`)
+      return NextResponse.json({ success: true, message: 'Solicitud procesada.' })
+    }
+
+    // Capa 5: Verificación de tiempo mínimo humano (>= 2.5 segundos desde que cargó el formulario)
+    const loadedAt = Number(_ts)
+    const elapsedMs = Date.now() - loadedAt
+    if (!loadedAt || Number.isNaN(loadedAt) || elapsedMs < 2500 || elapsedMs > 24 * 60 * 60 * 1000) {
+      console.warn(`[ANTI-SPAM] Envío automatizado sin tiempo humano válido desde IP ${ip} (elapsedMs=${elapsedMs})`)
+      return NextResponse.json({ success: true, message: 'Solicitud procesada.' })
+    }
 
     if (!name || !email) {
       return NextResponse.json({ error: 'Nombre y correo electrónico son obligatorios.' }, { status: 400 })
     }
 
-    const serviceLabel = SERVICIOS_MAP[service] || service || 'Seguridad Electrónica y Monitoreo'
-    const cleanPhone = phone ? phone.trim() : 'No especificado'
-    const waPhone = phone ? phone.replace(/[^0-9]/g, '') : ''
+    const rawName = String(name).trim().slice(0, 100)
+    const rawEmail = String(email).trim().slice(0, 120)
+    const rawPhone = phone ? String(phone).trim().slice(0, 30) : ''
+    const rawMessage = message ? String(message).trim().slice(0, 2000) : ''
 
-    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || req.headers.get('x-real-ip') || '127.0.0.1'
+    // Capa 6: Filtro Anti-Gibberish / Anti-Base64 / Anti-Gmail-Dot-Trick
+    if (
+      isSuspiciousBotEmail(rawEmail) ||
+      isBotGibberishOrBase64(rawName) ||
+      isBotGibberishOrBase64(rawMessage)
+    ) {
+      console.warn(`[ANTI-SPAM] Bot gibberish/base64/dot-trick bloqueado desde IP ${ip} | name="${rawName}" | email="${rawEmail}"`)
+      return NextResponse.json({ success: true, message: 'Solicitud procesada.' })
+    }
+
+    // Capa 7: Sanitización HTML para los correos
+    const safeName = escapeHtml(rawName)
+    const safeEmail = escapeHtml(rawEmail)
+    const safeMessage = escapeHtml(rawMessage)
+    const serviceLabel = escapeHtml(SERVICIOS_MAP[service] || service || 'Seguridad Electrónica y Monitoreo')
+    const cleanPhone = rawPhone ? escapeHtml(rawPhone) : 'No especificado'
+    const waPhone = rawPhone ? rawPhone.replace(/[^0-9]/g, '') : ''
 
     const now = new Date()
     const fechaHoraChilena = new Intl.DateTimeFormat('es-CL', {
@@ -67,11 +220,11 @@ export async function POST(req: Request) {
             <table style="width: 100%; font-size: 13px; line-height: 1.6; border-collapse: collapse;">
               <tr>
                 <td style="padding: 6px 0; color: #64748b; width: 140px; font-weight: 600;">Nombre Completo:</td>
-                <td style="padding: 6px 0; color: #0f172a; font-weight: 700; font-size: 14px;">${name}</td>
+                <td style="padding: 6px 0; color: #0f172a; font-weight: 700; font-size: 14px;">${safeName}</td>
               </tr>
               <tr>
                 <td style="padding: 6px 0; color: #64748b; font-weight: 600;">Correo Electrónico:</td>
-                <td style="padding: 6px 0;"><a href="mailto:${email}" style="color: #0066cc; font-weight: 600; text-decoration: none;">${email}</a></td>
+                <td style="padding: 6px 0;"><a href="mailto:${safeEmail}" style="color: #0066cc; font-weight: 600; text-decoration: none;">${safeEmail}</a></td>
               </tr>
               <tr>
                 <td style="padding: 6px 0; color: #64748b; font-weight: 600;">Teléfono:</td>
@@ -90,7 +243,7 @@ export async function POST(req: Request) {
           <!-- Mensaje / Requerimiento -->
           <div style="background-color: #ffffff; border: 1px solid #cbd5e1; border-left: 4px solid #005bea; border-radius: 8px; padding: 16px; margin-bottom: 24px;">
             <p style="margin: 0 0 6px 0; font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase;">Detalles del Requerimiento / Propiedad:</p>
-            <p style="margin: 0; font-size: 13px; color: #1e293b; line-height: 1.6; white-space: pre-line;">${message ? message : 'El cliente no ingresó mensaje adicional.'}</p>
+            <p style="margin: 0; font-size: 13px; color: #1e293b; line-height: 1.6; white-space: pre-line;">${safeMessage ? safeMessage : 'El cliente no ingresó mensaje adicional.'}</p>
           </div>
 
           <!-- Acciones Rápidas -->
@@ -131,7 +284,7 @@ export async function POST(req: Request) {
               ✓
             </div>
             <h2 style="margin: 0; font-size: 18px; font-weight: 800; color: #0f172a;">
-              ¡Hemos recibido tu solicitud, ${name}!
+              ¡Hemos recibido tu solicitud, ${safeName}!
             </h2>
             <p style="margin: 8px auto 0 auto; font-size: 14px; color: #475569; line-height: 1.5; max-width: 480px;">
               Gracias por ponerte en contacto con <strong>Gama Seguridad</strong>. Nuestro equipo de ingenieros y ejecutivos especialistas ya está revisando tu requerimiento.
@@ -152,10 +305,10 @@ export async function POST(req: Request) {
                 <td style="padding: 4px 0; color: #64748b;">Teléfono de contacto:</td>
                 <td style="padding: 4px 0; color: #0f172a; font-weight: 600;">${cleanPhone}</td>
               </tr>
-              ${message ? `
+              ${safeMessage ? `
               <tr>
                 <td style="padding: 4px 0; color: #64748b; vertical-align: top;">Detalles:</td>
-                <td style="padding: 4px 0; color: #334155;">${message}</td>
+                <td style="padding: 4px 0; color: #334155;">${safeMessage}</td>
               </tr>` : ''}
             </table>
           </div>

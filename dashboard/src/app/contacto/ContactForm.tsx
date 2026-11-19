@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 
 const inputCls =
   'w-full bg-[#0f2240] border border-[#1e3a5f] rounded-lg px-4 py-3 text-white placeholder:text-slate-500'
@@ -18,11 +18,15 @@ const SERVICIOS = [
 
 export default function ContactForm() {
   const [state, setState] = useState<'idle' | 'sending' | 'ok' | 'error'>('idle')
+  const loadedAtRef = useRef<number>(Date.now())
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setState('sending')
-    const payload = Object.fromEntries(new FormData(e.currentTarget).entries())
+    const payload = {
+      ...Object.fromEntries(new FormData(e.currentTarget).entries()),
+      _ts: loadedAtRef.current,
+    }
     try {
       const res = await fetch('/api/contacto-landing', {
         method: 'POST',
@@ -46,6 +50,15 @@ export default function ContactForm() {
 
   return (
     <form onSubmit={onSubmit} className="apple-card-dark p-6 sm:p-8 space-y-4">
+      {/* Honeypot invisible anti-bots */}
+      <input
+        name="website"
+        type="text"
+        tabIndex={-1}
+        autoComplete="off"
+        aria-hidden="true"
+        style={{ position: 'absolute', left: '-9999px', opacity: 0, height: 0, width: 0 }}
+      />
       <div className="grid sm:grid-cols-2 gap-4">
         <input name="name" required placeholder="Nombre y apellido" aria-label="Nombre" className={inputCls} />
         <input name="phone" required placeholder="Teléfono" aria-label="Teléfono" className={inputCls} />

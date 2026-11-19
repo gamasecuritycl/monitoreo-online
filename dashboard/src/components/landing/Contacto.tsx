@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { CheckCircle2, AlertCircle, Loader2, Send, Mail, Phone, ExternalLink } from 'lucide-react'
 
@@ -24,8 +24,10 @@ export default function Contacto({ onOpenLegal }: ContactoProps = {}) {
     email: '',
     phone: '',
     service: '',
-    message: ''
+    message: '',
+    website: ''
   })
+  const loadedAtRef = useRef<number>(Date.now())
   const [aceptoPolitica, setAceptoPolitica] = useState(true)
   const [sending, setSending] = useState(false)
   const [sent, setSent] = useState(false)
@@ -57,6 +59,7 @@ export default function Contacto({ onOpenLegal }: ContactoProps = {}) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...formData,
+          _ts: loadedAtRef.current,
           consentimiento_ley_21719: true
         })
       })
@@ -228,7 +231,8 @@ export default function Contacto({ onOpenLegal }: ContactoProps = {}) {
                         type="button"
                         onClick={() => {
                           setSent(false)
-                          setFormData({ name: '', email: '', phone: '', service: '', message: '' })
+                          setFormData({ name: '', email: '', phone: '', service: '', message: '', website: '' })
+                          loadedAtRef.current = Date.now()
                         }}
                         className="px-5 py-2.5 rounded-xl border border-slate-300 text-slate-700 text-xs font-semibold hover:bg-slate-50 transition-colors"
                       >
@@ -246,6 +250,17 @@ export default function Contacto({ onOpenLegal }: ContactoProps = {}) {
                   </motion.div>
                 ) : (
                   <form onSubmit={handleSubmit} className="space-y-4">
+                    {/* Honeypot invisible anti-bots */}
+                    <input
+                      name="website"
+                      type="text"
+                      value={formData.website}
+                      onChange={handleChange}
+                      tabIndex={-1}
+                      autoComplete="off"
+                      aria-hidden="true"
+                      style={{ position: 'absolute', left: '-9999px', opacity: 0, height: 0, width: 0 }}
+                    />
                     {errorMessage && (
                       <div className="p-3.5 bg-red-50 border border-red-200 rounded-xl flex items-center gap-2.5 text-xs text-red-700">
                         <AlertCircle className="w-4 h-4 flex-shrink-0" />
